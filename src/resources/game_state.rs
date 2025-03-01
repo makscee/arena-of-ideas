@@ -52,7 +52,7 @@ impl GameState {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum Tab {
     Connect,
     Login,
@@ -69,7 +69,7 @@ pub enum Tab {
 }
 
 impl Tab {
-    pub fn ui(&self, ui: &mut Ui, world: &mut World) {
+    pub fn ui(&self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         match self {
             Tab::MainMenu => {
                 ui.vertical_centered_justified(|ui| {
@@ -88,17 +88,18 @@ impl Tab {
             Tab::Register => LoginPlugin::tab_register(ui, world),
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
-            Tab::Shop => MatchPlugin::shop_tab(ui, world),
+            Tab::Shop => MatchPlugin::shop_tab(ui, world)?,
             Tab::Roster => match cur_state(world) {
-                GameState::Match => MatchPlugin::roster_tab(ui, world),
+                GameState::Match => MatchPlugin::roster_tab(ui, world)?,
                 GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world),
                 _ => unreachable!(),
             },
+            Tab::Team => MatchPlugin::team_tab(ui, world)?,
             Tab::Triggers => FusionEditorPlugin::triggers_tab(ui, world),
             Tab::Actions => FusionEditorPlugin::actions_tab(ui, world),
             Tab::FusionResult => FusionEditorPlugin::fusion_result_tab(ui, world),
-            Tab::Team => MatchPlugin::team_tab(ui, world),
-        }
+        };
+        Ok(())
     }
 }
 

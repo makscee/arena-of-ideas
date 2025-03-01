@@ -2,6 +2,17 @@ use spacetimedb_sdk::DbContext;
 
 use super::*;
 
+static CORE_UNIT_NAME_LINKS: OnceCell<Mutex<HashMap<String, Entity>>> = OnceCell::new();
+pub fn core_unit_by_name(name: &str) -> Result<Entity, ExpressionError> {
+    CORE_UNIT_NAME_LINKS
+        .get()
+        .unwrap()
+        .lock()
+        .get(name)
+        .copied()
+        .to_e_fn(|| format!("Core unit {name} not found"))
+}
+
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
     cn().subscription_builder()
@@ -15,6 +26,24 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
                     All::load_recursive(0)
                         .unwrap()
                         .unpack(world.spawn_empty().id(), world);
+                    let pid = player_id();
+                    let entity = world
+                        .get_id_link(pid)
+                        .expect(&format!("Player#{pid} not found"));
+                    save_player_entity(entity);
+                    let units: HashMap<String, Entity> = HashMap::from_iter(
+                        All::get_by_id(0, world)
+                            .unwrap()
+                            .core_load(world)
+                            .unwrap()
+                            .into_iter()
+                            .filter_map(|h| h.units_load(world).ok())
+                            .flatten()
+                            .map(|u| (u.name.clone(), u.entity())),
+                    );
+                    *CORE_UNIT_NAME_LINKS
+                        .get_or_init(|| HashMap::default().into())
+                        .lock() = units;
                 });
             });
         })

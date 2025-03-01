@@ -59,7 +59,7 @@ impl ConnectPlugin {
         Self::connect(|_, identity, token| {
             info!("Connected {identity}");
             let token = token.to_owned();
-            save_identity(identity);
+            save_player_identity(identity);
             Self::save_credentials(identity.clone(), token.clone())
                 .expect("Failed to save credentials");
             OperationsPlugin::add(move |world| {

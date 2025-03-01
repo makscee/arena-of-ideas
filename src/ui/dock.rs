@@ -32,7 +32,10 @@ impl TabViewer for DockContext {
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {
         let world = self.world.as_mut().unwrap();
-        tab.ui(ui, world);
+        match tab.ui(ui, world) {
+            Ok(_) => {}
+            Err(e) => format!("Tab {tab} error: {e}").notify_error(world),
+        }
     }
 
     fn closeable(&mut self, tab: &mut Self::Tab) -> bool {

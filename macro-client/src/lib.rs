@@ -2,6 +2,7 @@ use darling::FromMeta;
 use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::ToTokens;
 use schema::*;
 use syn::*;
@@ -160,10 +161,36 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &component_link_fields,
                 &component_link_types,
             );
+            let component_link_fields_load = component_link_fields
+                .iter()
+                .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+                .collect_vec();
+            let child_link_fields_load = child_link_fields
+                .iter()
+                .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+                .collect_vec();
             quote! {
                 #[derive(Component, Clone, Default, Debug)]
                 #input
                 #common
+                impl #struct_ident {
+                    #(
+                        pub fn #component_link_fields_load<'a>(&self, world: &'a World) -> Result<&'a #component_link_types, ExpressionError> {
+                            let entity = self.entity();
+                            #component_link_types::get(entity, world)
+                                .to_e_fn(|| format!("{} not found for {}", #component_link_types::kind_s(), entity))
+                        }
+                    )*
+                    #(
+                        pub fn #child_link_fields_load<'a>(&self, world: &'a World) -> Result<Vec<&'a #child_link_types>, ExpressionError> {
+                            let children = self.collect_children::<#child_link_types>(world);
+                            if children.is_empty() {
+                                return Err(ExpressionError::Custom(format!("No {} children found for {}", #child_link_types::kind_s(), self.entity())));
+                            }
+                            Ok(children)
+                        }
+                    )*
+                }
                 impl std::fmt::Display for #struct_ident {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                         write!(f, "{}", self.kind())
@@ -370,7 +397,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #data_to_dir
                     }
                     fn load_recursive(id: u64) -> Option<Self> {
-                        let mut d = Self::get(id)?;
+                        let mut d = Self::load(id)?;
                         let children = cn()
                             .db
                             .nodes_relations()

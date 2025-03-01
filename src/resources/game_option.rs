@@ -92,6 +92,7 @@ impl OptionResource for ConnectOption {
 static PLAYER_NAME: Mutex<&'static str> = Mutex::new("");
 static PLAYER_ID: Mutex<u64> = Mutex::new(0);
 static PLAYER_IDENTITY: Mutex<Identity> = Mutex::new(Identity::ZERO);
+static PLAYER_ENTITY: Mutex<Entity> = Mutex::new(Entity::PLACEHOLDER);
 pub fn player_id() -> u64 {
     *PLAYER_ID.lock()
 }
@@ -101,8 +102,17 @@ pub fn player_name() -> &'static str {
 pub fn player_identity() -> Identity {
     *PLAYER_IDENTITY.lock()
 }
-pub fn save_identity(identity: Identity) {
+pub fn player_entity() -> Entity {
+    *PLAYER_ENTITY.lock()
+}
+pub fn player(world: &World) -> Result<&Player, ExpressionError> {
+    Player::get(player_entity(), world).to_e("Player not found")
+}
+pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;
+}
+pub fn save_player_entity(entity: Entity) {
+    *PLAYER_ENTITY.lock() = entity;
 }
 impl OptionResource for LoginOption {
     fn fulfill(world: &mut World) {

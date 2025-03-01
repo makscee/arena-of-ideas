@@ -46,30 +46,35 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         let entity = self.get_entity().expect("Node not linked to world");
         Self::find_up_entity::<T>(entity, world)
     }
-    fn collect_children_entity<'a, T: Component>(
-        entity: Entity,
-        context: &'a Context,
-    ) -> Vec<(Entity, &'a T)> {
-        context
-            .get_children(entity)
+    fn collect_children_entity<'a, T: Component>(entity: Entity, world: &'a World) -> Vec<&'a T> {
+        entity
+            .get_children(world)
             .into_iter()
-            .filter_map(|e| context.get_component::<T>(e).map(|c| (e, c)))
+            .filter_map(|e| world.get::<T>(e))
             .collect_vec()
     }
-    fn collect_children<'a, T: Component>(&self, context: &'a Context) -> Vec<(Entity, &'a T)> {
+    fn collect_children<'a, T: Component>(&self, world: &'a World) -> Vec<&'a T> {
         let entity = self.get_entity().expect("Node not linked to world");
-        Self::collect_children_entity(entity, context)
+        Self::collect_children_entity(entity, world)
     }
 }
 
 pub trait NodeExt: Sized {
-    fn get(id: u64) -> Option<Self>;
+    fn get(entity: Entity, world: &World) -> Option<&Self>;
+    fn get_by_id(id: u64, world: &World) -> Option<&Self>;
+    fn load(id: u64) -> Option<Self>;
 }
 impl<T> NodeExt for T
 where
     T: Node + GetNodeKind + GetNodeKindSelf,
 {
-    fn get(id: u64) -> Option<Self> {
+    fn get(entity: Entity, world: &World) -> Option<&Self> {
+        world.get::<Self>(entity)
+    }
+    fn get_by_id(id: u64, world: &World) -> Option<&Self> {
+        world.get::<Self>(world.get_id_link(id)?)
+    }
+    fn load(id: u64) -> Option<Self> {
         let kind = Self::kind_s();
         cn().db
             .tnodes()

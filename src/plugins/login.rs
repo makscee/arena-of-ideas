@@ -78,7 +78,7 @@ impl LoginPlugin {
                 .tnodes()
                 .iter()
                 .find(|n| n.kind == kind && n.data == data)
-                .and_then(|d| Player::get(d.id));
+                .and_then(|d| Player::load(d.id));
             if let Some(player) = player {
                 let mut cs = client_state().clone();
                 cs.last_logged_in = Some((player.name.clone(), identity));
