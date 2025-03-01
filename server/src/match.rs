@@ -74,7 +74,41 @@ impl House {
 }
 
 #[reducer]
-fn match_buy(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
+fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    let g = m.g;
+    let sc = m
+        .shop_case_load(ctx)?
+        .into_iter()
+        .find(|s| s.id() == id)
+        .to_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
+    if sc.price > g {
+        return Err("Not enough g".into());
+    }
+    sc.sold = true;
+    let mut all = All::load(ctx);
+    let unit = all
+        .core_units(ctx)?
+        .into_iter()
+        .find(|u| u.name == sc.unit)
+        .to_e_s_fn(|| format!("Failed to find unit {}", sc.unit))?;
+    let mut house = unit.find_parent::<House>(ctx)?;
+    let _ = m.team_load(ctx)?.houses_load(ctx);
+    let houses = &mut m.team_mut().houses;
+    if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
+        unit.clear_ids();
+        h.units.push(unit.clone());
+    } else {
+        house.color_load(ctx)?;
+        let _ = house.status_abilities_load(ctx);
+        let _ = house.action_abilities_load(ctx);
+        house.units.push(unit.clone());
+        house.clear_ids();
+        houses.push(house);
+    }
+    player.save(ctx);
+
     // let c = &ctx.wrap()?;
     // let mut m = Match::get(c)?;
     // let slot = slot as usize;
@@ -158,18 +192,21 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
 
 #[reducer]
 fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
-    // let c = &ctx.wrap()?;
-    // let mut m = Match::get(c)?;
-    // let price = c.global_settings().match_g.reroll;
-    // if m.g < price {
-    //     return Err("Not enough g".into());
-    // }
-    // m.g -= price;
-    // m.fill_case(c)?;
-    // m.save(c);
-    // for node in &m.shop_case {
-    //     NodeDomain::Match.node_update(c, node);
-    // }
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    let cost = ctx.global_settings().match_g.reroll;
+    if m.g < cost {
+        return Err("Not enough g".into());
+    }
+    m.g -= cost;
+    let sc = m.shop_case_load(ctx)?;
+    let mut all = All::load(ctx);
+    let units = all.core_units(ctx)?;
+    for c in sc {
+        c.sold = false;
+        c.unit = units.choose(&mut ctx.rng()).unwrap().name.clone();
+    }
+    player.save(ctx);
     Ok(())
 }
 
@@ -229,15 +266,12 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     if let Ok(m) = player.active_match_load(ctx) {
-        m.delete_recursive(ctx);
+        for m in m {
+            m.delete_recursive(ctx)
+        }
     }
-    let mut all = All::get(ctx, 0).unwrap();
-    let units = all
-        .core_load(ctx)?
-        .into_iter()
-        .filter_map(|h| h.units_load(ctx).ok())
-        .flatten()
-        .collect_vec();
+    let mut all = All::load(ctx);
+    let units = all.core_units(ctx)?;
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = Match::new_full(
@@ -254,7 +288,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
             )
         })
         .collect_vec();
-    player.active_match = Some(m);
+    player.active_match = [m].into();
     player.save(ctx);
     Ok(())
 }

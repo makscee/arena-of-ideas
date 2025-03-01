@@ -110,7 +110,7 @@ pub enum Reducer {
     LoginByIdentity,
     Logout,
     MatchBuy {
-        slot: u8,
+        id: u64,
     },
     MatchEditFusions {
         fusions: Vec<Vec<String>>,

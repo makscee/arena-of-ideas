@@ -21,11 +21,12 @@ pub trait Node: Default + Sized {
     fn save(self, ctx: &ReducerContext);
 }
 
-pub trait NodeExt: Sized {
+pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn to_tnode(&self, id: u64) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<Self>;
-    fn find_parent(ctx: &ReducerContext, id: u64) -> Option<Self>;
+    fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
+    fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
     fn set_parent(&mut self, ctx: &ReducerContext, parent: u64);
     fn insert_self(&self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
@@ -99,7 +100,7 @@ where
             .filter_map(|id| Self::get(ctx, id))
             .collect()
     }
-    fn find_parent(ctx: &ReducerContext, id: u64) -> Option<Self> {
+    fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self> {
         let mut id = id;
         while let Some(parent) = id.parent(ctx) {
             id = parent;
@@ -109,6 +110,10 @@ where
         }
         None
     }
+    fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
+        P::find_parent_of_id(ctx, self.id())
+            .to_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
+    }
     fn set_parent(&mut self, ctx: &ReducerContext, parent: u64) {
         if self.get_id().is_none() {
             self.set_id(next_id(ctx));
@@ -117,5 +122,19 @@ where
             id: self.id(),
             parent,
         });
+    }
+}
+
+impl All {
+    pub fn load(ctx: &ReducerContext) -> Self {
+        All::get(ctx, 0).unwrap()
+    }
+    pub fn core_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut Unit>, String> {
+        Ok(self
+            .core_load(ctx)?
+            .into_iter()
+            .filter_map(|h| h.units_load(ctx).ok())
+            .flatten()
+            .collect_vec())
     }
 }

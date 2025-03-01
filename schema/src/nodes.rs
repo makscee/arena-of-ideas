@@ -10,7 +10,7 @@ struct Player {
     pub name: String,
     pub player_data: NodeComponent<PlayerData>,
     pub identity: NodeComponent<PlayerIdentity>,
-    pub active_match: NodeComponent<Match>,
+    pub active_match: NodeChildren<Match>,
 }
 
 struct PlayerData {

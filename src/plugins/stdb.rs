@@ -1,4 +1,4 @@
-use spacetimedb_sdk::DbContext;
+use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
 
@@ -18,13 +18,6 @@ struct StdbData {
 
 impl StdbPlugin {
     fn update(world: &mut World) {
-        if !world.is_resource_changed::<StdbData>() {
-            let q = world.resource::<StdbData>().nodes_queue.len();
-            if q > 0 {
-                info!("Nodes in queue: {q}");
-            }
-            return;
-        }
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
                 if let Some(entity) = world.get_id_link(node.id) {
@@ -98,6 +91,30 @@ fn subscribe_table_updates() {
         let node = node.clone();
         OperationsPlugin::add(move |world| {
             world.resource_mut::<StdbData>().nodes_queue.push(node);
+        });
+    });
+    db.tnodes().on_update(|_, _, node| {
+        info!("Node updated {}#{}", node.kind, node.id);
+        let node = node.clone();
+        OperationsPlugin::add(move |world| {
+            let Some(entity) = world.get_id_link(node.id) else {
+                error!("Failed to update entity: id link not found");
+                return;
+            };
+            node.unpack(entity, world);
+        });
+    });
+    db.tnodes().on_delete(|_, node| {
+        info!("Node deleted {}#{}", node.kind, node.id);
+        let node = node.clone();
+        OperationsPlugin::add(move |world| {
+            let Some(entity) = world.get_id_link(node.id) else {
+                error!("Failed to delete entity: id link not found");
+                return;
+            };
+            if let Ok(e) = world.get_entity_mut(entity) {
+                e.try_despawn_recursive();
+            }
         });
     });
     db.battle().on_insert(|_, row| {

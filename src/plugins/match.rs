@@ -39,7 +39,8 @@ impl MatchPlugin {
     }
     pub fn shop_tab(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let player = player(world)?;
-        let m = player.active_match_load(world)?;
+        let matches = player.active_match_load(world)?;
+        let m = matches.into_iter().next().unwrap();
 
         ui.horizontal(|ui| {
             format!("[yellow [h2 {}g]]", m.g).label(ui);
@@ -69,7 +70,8 @@ impl MatchPlugin {
     }
     pub fn roster_tab(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let player = player(world)?;
-        let m = player.active_match_load(world)?;
+        let matches = player.active_match_load(world)?;
+        let m = matches.into_iter().next().unwrap();
         let Ok(houses) = m.team_load(world)?.houses_load(world) else {
             return Ok(());
         };
@@ -96,7 +98,8 @@ impl MatchPlugin {
     }
     pub fn team_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let player = player(world)?;
-        let m = player.active_match_load(world)?;
+        let matches = player.active_match_load(world)?;
+        let m = matches.into_iter().next().unwrap();
 
         let mut fusion_edit = None;
         let mut last_slot = -1;
@@ -171,7 +174,7 @@ impl MatchPlugin {
                     .ui(ui)
                     .clicked()
                 {
-                    cn().reducers.match_buy(i as u8).unwrap();
+                    cn().reducers.match_buy(sc.id()).unwrap();
                 }
                 let entity = core_unit_by_name(&sc.unit)?;
                 let context = &Context::new_world(&world).set_owner(entity).take();

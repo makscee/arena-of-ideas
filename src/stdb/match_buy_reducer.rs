@@ -10,12 +10,12 @@ use spacetimedb_sdk::__codegen::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchBuyArgs {
-    pub slot: u8,
+    pub id: u64,
 }
 
 impl From<MatchBuyArgs> for super::Reducer {
     fn from(args: MatchBuyArgs) -> Self {
-        Self::MatchBuy { slot: args.slot }
+        Self::MatchBuy { id: args.id }
     }
 }
 
@@ -35,7 +35,7 @@ pub trait match_buy {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_buy`] callbacks.
-    fn match_buy(&self, slot: u8) -> __anyhow::Result<()>;
+    fn match_buy(&self, id: u64) -> __anyhow::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_buy`.
     ///
     /// The [`super::EventContext`] passed to the `callback`
@@ -48,7 +48,7 @@ pub trait match_buy {
     /// to cancel the callback.
     fn on_match_buy(
         &self,
-        callback: impl FnMut(&super::EventContext, &u8) + Send + 'static,
+        callback: impl FnMut(&super::EventContext, &u64) + Send + 'static,
     ) -> MatchBuyCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_buy`],
     /// causing it not to run in the future.
@@ -56,12 +56,12 @@ pub trait match_buy {
 }
 
 impl match_buy for super::RemoteReducers {
-    fn match_buy(&self, slot: u8) -> __anyhow::Result<()> {
-        self.imp.call_reducer("match_buy", MatchBuyArgs { slot })
+    fn match_buy(&self, id: u64) -> __anyhow::Result<()> {
+        self.imp.call_reducer("match_buy", MatchBuyArgs { id })
     }
     fn on_match_buy(
         &self,
-        mut callback: impl FnMut(&super::EventContext, &u8) + Send + 'static,
+        mut callback: impl FnMut(&super::EventContext, &u64) + Send + 'static,
     ) -> MatchBuyCallbackId {
         MatchBuyCallbackId(self.imp.on_reducer(
             "match_buy",
@@ -69,7 +69,7 @@ impl match_buy for super::RemoteReducers {
                 let super::EventContext {
                     event:
                         __sdk::Event::Reducer(__sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchBuy { slot },
+                            reducer: super::Reducer::MatchBuy { id },
                             ..
                         }),
                     ..
@@ -77,7 +77,7 @@ impl match_buy for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, slot)
+                callback(ctx, id)
             }),
         ))
     }
