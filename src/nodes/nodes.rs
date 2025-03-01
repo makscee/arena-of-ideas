@@ -91,6 +91,10 @@ impl TNode {
         d.set_id(self.id);
         d
     }
+    pub fn unpack(&self, entity: Entity, world: &mut World) {
+        let kind = NodeKind::from_str(&self.kind).unwrap();
+        kind.unpack(entity, &self.data, Some(self.id), world);
+    }
 }
 
 #[derive(Resource, Default)]

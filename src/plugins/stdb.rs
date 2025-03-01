@@ -2,6 +2,48 @@ use spacetimedb_sdk::DbContext;
 
 use super::*;
 
+pub struct StdbPlugin;
+
+impl Plugin for StdbPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<StdbData>()
+            .add_systems(Update, Self::update);
+    }
+}
+
+#[derive(Resource, Default)]
+struct StdbData {
+    nodes_queue: Vec<TNode>,
+}
+
+impl StdbPlugin {
+    fn update(world: &mut World) {
+        if !world.is_resource_changed::<StdbData>() {
+            let q = world.resource::<StdbData>().nodes_queue.len();
+            if q > 0 {
+                info!("Nodes in queue: {q}");
+            }
+            return;
+        }
+        world.resource_scope(|world, mut d: Mut<StdbData>| {
+            d.nodes_queue.retain(|node| {
+                if let Some(entity) = world.get_id_link(node.id) {
+                    node.unpack(entity, world);
+                    return false;
+                }
+                let Some(rel) = cn().db.nodes_relations().id().find(&node.id) else {
+                    return true;
+                };
+                let Some(parent) = world.get_id_link(rel.parent) else {
+                    return true;
+                };
+                node.unpack(world.spawn_empty().set_parent(parent).id(), world);
+                false
+            });
+        });
+    }
+}
+
 static CORE_UNIT_NAME_LINKS: OnceCell<Mutex<HashMap<String, Entity>>> = OnceCell::new();
 pub fn core_unit_by_name(name: &str) -> Result<Entity, ExpressionError> {
     CORE_UNIT_NAME_LINKS
@@ -51,20 +93,11 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
 }
 fn subscribe_table_updates() {
     let db = cn().db();
-    db.tnodes().on_insert(|_, row| {
-        let kind = NodeKind::from_str(&row.kind).unwrap();
-        let id = row.id;
-        info!("Node inserted {kind}");
-        let data = row.data.clone();
+    db.tnodes().on_insert(|_, node| {
+        info!("Node inserted {}#{}", node.kind, node.id);
+        let node = node.clone();
         OperationsPlugin::add(move |world| {
-            let entity = if let Some(entity) = world.get_id_link(id) {
-                entity
-            } else {
-                let entity = world.spawn_empty().id();
-                world.add_id_link(id, entity);
-                entity
-            };
-            kind.unpack(entity, &data, Some(id), world);
+            world.resource_mut::<StdbData>().nodes_queue.push(node);
         });
     });
     db.battle().on_insert(|_, row| {
