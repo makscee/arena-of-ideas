@@ -87,15 +87,19 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         return Err("Not enough g".into());
     }
     sc.sold = true;
+    let unit = sc.unit.clone();
+    let price = sc.price;
+    m.g -= price;
     let mut all = All::load(ctx);
     let unit = all
         .core_units(ctx)?
         .into_iter()
-        .find(|u| u.name == sc.unit)
-        .to_e_s_fn(|| format!("Failed to find unit {}", sc.unit))?;
+        .find(|u| u.name == unit)
+        .to_e_s_fn(|| format!("Failed to find unit {}", unit))?;
     let mut house = unit.find_parent::<House>(ctx)?;
     let _ = m.team_load(ctx)?.houses_load(ctx);
     let houses = &mut m.team_mut().houses;
+    let mut unit = unit.clone().with_children(ctx).with_components(ctx);
     if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
         unit.clear_ids();
         h.units.push(unit.clone());
@@ -108,60 +112,6 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         houses.push(house);
     }
     player.save(ctx);
-
-    // let c = &ctx.wrap()?;
-    // let mut m = Match::get(c)?;
-    // let slot = slot as usize;
-    // let sc = &mut m.shop_case[slot];
-    // if sc.sold {
-    //     return Err("Unit already sold".into());
-    // }
-    // if sc.price > m.g {
-    //     return Err("Not enough g".into());
-    // }
-    // sc.sold = true;
-    // m.g -= sc.price;
-    // NodeDomain::Match.node_update(c, sc);
-    // let mut unit =
-    //     Unit::from_table(c, NodeDomain::Core, sc.unit_id).to_e_s("Failed to find Core unit")?;
-    // let mut house: House = NodeDomain::Core.node_parent(c, unit.id()).unwrap();
-    // unit.clear_ids();
-    // if let Some(mut ability) = NodeDomain::Core.node_parent::<ActionAbility>(c, sc.unit_id) {
-    //     if let Some(h) = m.find_house(&house.name) {
-    //         if let Some(ability) = h.find_action(&ability.name) {
-    //             unit.to_table(c, NodeDomain::Match, ability.id());
-    //         } else {
-    //             ability.clear_ids();
-    //             ability.units.push(unit);
-    //             ability.to_table(c, NodeDomain::Match, h.id());
-    //         }
-    //     } else {
-    //         ability.clear_ids();
-    //         house.clear_ids();
-    //         ability.units.push(unit);
-    //         house.action_abilities.push(ability);
-    //         house.to_table(c, NodeDomain::Match, m.id());
-    //     }
-    // } else if let Some(mut ability) = NodeDomain::Core.node_parent::<StatusAbility>(c, sc.unit_id) {
-    //     if let Some(h) = m.find_house(&house.name) {
-    //         if let Some(ability) = h.find_status(&ability.name) {
-    //             unit.to_table(c, NodeDomain::Match, ability.id());
-    //         } else {
-    //             ability.clear_ids();
-    //             ability.units.push(unit);
-    //             ability.to_table(c, NodeDomain::Match, h.id());
-    //         }
-    //     } else {
-    //         ability.clear_ids();
-    //         house.clear_ids();
-    //         ability.units.push(unit);
-    //         house.status_abilities.push(ability);
-    //         house.to_table(c, NodeDomain::Match, m.id());
-    //     }
-    // } else {
-    //     return Err("Ability not found".into());
-    // }
-    // m.save(c);
     Ok(())
 }
 
@@ -233,32 +183,39 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
 
 #[reducer]
 fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result<(), String> {
-    // let c = &ctx.wrap()?;
-    // let m = Match::get(c)?;
-    // let fusions = fusions
-    //     .into_iter()
-    //     .map(|fusion| Fusion::from_strings(0, &fusion).unwrap())
-    //     .collect_vec();
-    // if fusions
-    //     .iter()
-    //     .any(|f| f.units.is_empty() || f.triggers.is_empty())
-    // {
-    //     return Err("Fusion can't be empty".into());
-    // }
-    // let roster_units: HashMap<String, Unit> = HashMap::from_iter(
-    //     m.all_units()?
-    //         .into_iter()
-    //         .map(|u| (u.name.clone(), u.clone())),
-    // );
-    // info!("{fusions:?}");
-    // for fusion in &m.team().fusions {
-    //     NodeDomain::Match.delete_by_id_recursive(c, fusion.id());
-    // }
-    // for (i, mut fusion) in fusions.into_iter().enumerate() {
-    //     fusion.slot = Some(UnitSlot::new(i as i32));
-    //     fusion.to_table(c, NodeDomain::Match, m.team().id());
-    // }
-    // m.save(c);
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    let fusions = fusions
+        .into_iter()
+        .map(|fusion| Fusion::from_strings(0, &fusion).unwrap())
+        .collect_vec();
+    debug!("{fusions:?}");
+    if fusions
+        .iter()
+        .any(|f| f.units.is_empty() || f.triggers.is_empty())
+    {
+        return Err("Fusion can't be empty".into());
+    }
+    let roster_units = m
+        .team_load(ctx)?
+        .houses_load(ctx)?
+        .into_iter()
+        .filter_map(|h| h.units_load(ctx).ok())
+        .flatten()
+        .map(|u| &u.name)
+        .collect_vec();
+    if let Some(unit) = fusions
+        .iter()
+        .find_map(|f| f.units.iter().find(|u| !roster_units.contains(u)))
+    {
+        return Err(format!("Fusion unit {} not contained in roseter", unit));
+    }
+    let _ = m.team_load(ctx)?.fusions_load(ctx);
+    for f in &m.team().fusions {
+        f.delete_recursive(ctx);
+    }
+    m.team_mut().fusions = fusions;
+    player.save(ctx);
     Ok(())
 }
 

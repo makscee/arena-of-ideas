@@ -91,13 +91,13 @@ impl Tab {
             Tab::Shop => MatchPlugin::shop_tab(ui, world)?,
             Tab::Roster => match cur_state(world) {
                 GameState::Match => MatchPlugin::roster_tab(ui, world)?,
-                GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world),
+                GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world)?,
                 _ => unreachable!(),
             },
             Tab::Team => MatchPlugin::team_tab(ui, world)?,
             Tab::Triggers => FusionEditorPlugin::triggers_tab(ui, world),
             Tab::Actions => FusionEditorPlugin::actions_tab(ui, world),
-            Tab::FusionResult => FusionEditorPlugin::fusion_result_tab(ui, world),
+            Tab::FusionResult => FusionEditorPlugin::fusion_result_tab(ui, world)?,
         };
         Ok(())
     }

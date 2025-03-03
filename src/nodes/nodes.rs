@@ -178,3 +178,19 @@ impl OnUnpack for NodeKind {
         }
     }
 }
+
+impl Team {
+    pub fn roster_units_load<'a>(&self, world: &'a World) -> Vec<&'a Unit> {
+        self.houses_load(world)
+            .into_iter()
+            .flat_map(|h| h.units_load(world))
+            .collect_vec()
+    }
+}
+
+impl Fusion {
+    pub fn team_load<'a>(&self, world: &'a World) -> Result<&'a Team, ExpressionError> {
+        self.find_up::<Team>(world)
+            .to_e("Failed to find parent Team of Fusion")
+    }
+}

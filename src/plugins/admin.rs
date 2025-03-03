@@ -71,15 +71,7 @@ impl AdminPlugin {
                             entity
                         };
                         editing_entity = Some(entity);
-                        Fusion::open_editor_window(
-                            entity,
-                            world,
-                            &battle_world,
-                            |fusion, world| {
-                                world.insert_resource(EditedFusion { fusion });
-                            },
-                        )
-                        .unwrap();
+                        todo!();
                     }
                     if let Some(entity) = entity {
                         let rect = r.rect;

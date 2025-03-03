@@ -9,44 +9,30 @@ impl Plugin for FusionEditorPlugin {
 #[derive(Resource)]
 struct FusionEditorData {
     fusion: Fusion,
-    world: World,
-    on_save: Box<dyn Fn(Fusion, &mut World) + Send + Sync>,
+    on_save: Box<dyn Fn(Fusion, &mut World) -> Result<(), ExpressionError> + Send + Sync>,
 }
 
 impl FusionEditorPlugin {
     pub fn edit_entity(
         entity: Entity,
         world: &mut World,
-        team_world: &World,
-        on_save: impl Fn(Fusion, &mut World) + Send + Sync + 'static,
+        on_save: impl Fn(Fusion, &mut World) -> Result<(), ExpressionError> + Send + Sync + 'static,
     ) -> Result<(), ExpressionError> {
-        let fusion = team_world.get::<Fusion>(entity).to_e("Fusion not found")?;
-
-        let team = fusion.find_up::<Team>(team_world).unwrap();
-        let mut team = Team::pack(team.entity(), team_world).to_e("Failed to pack Team")?;
-        team.clear_entities();
-        let mut team_world = World::new();
-        let team_entity = team_world.spawn_empty().id();
-        team.unpack(team_entity, &mut team_world);
-        let fusion = Fusion::find_by_slot(fusion.slot, &mut team_world).unwrap();
+        let fusion = Fusion::pack(entity, world).to_e("Failed to pack Fusion")?;
         world.insert_resource(FusionEditorData {
             fusion,
-            world: team_world,
             on_save: Box::new(on_save),
         });
         GameState::FusionEditor.set_next(world);
         Ok(())
     }
-    pub fn roster_tab(ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|_, mut r: Mut<FusionEditorData>| {
-            let FusionEditorData {
-                fusion,
-                world,
-                on_save: _,
-            } = r.as_mut();
+    pub fn roster_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
+            let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let mut changed = false;
-            for (unit, stats) in world.query::<(&Unit, &UnitStats)>().iter(world) {
+            for unit in fusion.team_load(world)?.roster_units_load(world) {
                 let selected = fusion.units.contains(&unit.name);
+                let stats = unit.description_load(world)?.stats_load(world)?;
                 DARK_FRAME
                     .stroke(if selected { STROKE_LIGHT } else { STROKE_DARK })
                     .show(ui, |ui| {
@@ -66,15 +52,12 @@ impl FusionEditorPlugin {
                 world.entity_mut(fusion.entity()).insert(fusion.clone());
                 Fusion::init(fusion.entity(), world).log();
             }
-        });
+            Ok(())
+        })
     }
     pub fn triggers_tab(ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|_, mut r: Mut<FusionEditorData>| {
-            let FusionEditorData {
-                fusion,
-                world,
-                on_save: _,
-            } = r.as_mut();
+        world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
+            let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
             ui.vertical(|ui| {
                 for u in 0..fusion.units.len() {
@@ -111,12 +94,8 @@ impl FusionEditorPlugin {
         });
     }
     pub fn actions_tab(ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|_, mut r: Mut<FusionEditorData>| {
-            let FusionEditorData {
-                fusion,
-                world,
-                on_save: _,
-            } = r.as_mut();
+        world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
+            let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
             if fusion.triggers.is_empty() {
                 "Select at least one trigger"
@@ -158,14 +137,10 @@ impl FusionEditorPlugin {
             }
         });
     }
-    pub fn fusion_result_tab(ui: &mut Ui, world: &mut World) {
+    pub fn fusion_result_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut save = false;
-        world.resource_scope(|_, mut r: Mut<FusionEditorData>| {
-            let FusionEditorData {
-                fusion,
-                world,
-                on_save: _,
-            } = r.as_mut();
+        world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
+            let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world).set_owner(fusion.entity()).take();
             let size = ui.available_size();
             let size = size.x.at_most(size.y).at_least(150.0);
@@ -252,8 +227,12 @@ impl FusionEditorPlugin {
         });
         if save {
             world.resource_scope(|world, d: Mut<FusionEditorData>| {
-                (d.on_save)(d.fusion.clone(), world);
-            });
+                let fusion = d.fusion.clone();
+                let entity = fusion.entity();
+                fusion.unpack(entity, world);
+                (d.on_save)(d.fusion.clone(), world)
+            })?;
         }
+        Ok(())
     }
 }

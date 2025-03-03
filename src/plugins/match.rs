@@ -29,19 +29,14 @@ const FRAME: Frame = Frame {
 };
 
 impl MatchPlugin {
-    fn on_enter(world: &mut World) {
-        let player = Player::get(player_entity(), world).unwrap();
-        let Ok(m) = player.active_match_load(world) else {
-            "No active match found".notify_error(world);
-            GameState::Title.set_next(world);
-            return;
-        };
+    fn on_enter(world: &mut World) {}
+    fn load_match(world: &World) -> Result<&Match, ExpressionError> {
+        let player = player(world)?;
+        let matches = player.active_match_load(world);
+        matches.into_iter().next().to_e("Match not found")
     }
     pub fn shop_tab(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        let player = player(world)?;
-        let matches = player.active_match_load(world)?;
-        let m = matches.into_iter().next().unwrap();
-
+        let m = Self::load_match(world)?;
         ui.horizontal(|ui| {
             format!("[yellow [h2 {}g]]", m.g).label(ui);
             if format!("[h2 reroll [yellow {}g]]", global_settings().match_g.reroll)
@@ -51,7 +46,7 @@ impl MatchPlugin {
                 cn().reducers.match_reroll().unwrap();
             }
         });
-        let shop_case = m.shop_case_load(world)?;
+        let shop_case = m.shop_case_load(world);
         let shop_slots = shop_case.len();
         let full_rect = ui.available_rect_before_wrap();
         let slot_rect =
@@ -69,17 +64,9 @@ impl MatchPlugin {
         .inner
     }
     pub fn roster_tab(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        let player = player(world)?;
-        let matches = player.active_match_load(world)?;
-        let m = matches.into_iter().next().unwrap();
-        let Ok(houses) = m.team_load(world)?.houses_load(world) else {
-            return Ok(());
-        };
-        for unit in houses
-            .into_iter()
-            .filter_map(|h| h.units_load(world).ok())
-            .flatten()
-        {
+        let m = Self::load_match(world)?;
+        let houses = m.team_load(world)?.houses_load(world);
+        for unit in houses.into_iter().map(|h| h.units_load(world)).flatten() {
             let stats = unit.description_load(world)?.stats_load(world)?;
             DARK_FRAME.show(ui, |ui| {
                 show_unit_tag(unit, stats, ui, world);
@@ -97,15 +84,11 @@ impl MatchPlugin {
         Ok(())
     }
     pub fn team_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let player = player(world)?;
-        let matches = player.active_match_load(world)?;
-        let m = matches.into_iter().next().unwrap();
-
+        let m = Self::load_match(world)?;
         let mut fusion_edit = None;
         let mut last_slot = -1;
-        let Ok(fusions) = m.team_load(world)?.fusions_load(world) else {
-            return Ok(());
-        };
+        let team = m.team_load(world)?.clone();
+        let fusions = team.fusions_load(world);
         for fusion in fusions {
             let slot = fusion.slot;
             let r = show_slot(
@@ -117,11 +100,11 @@ impl MatchPlugin {
             last_slot = last_slot.at_least(slot);
             fusion.paint(r.rect, ui, world).unwrap();
             let context = &Context::new_world(world).set_owner(fusion.entity()).take();
-            for rep in fusion.collect_children::<Representation>(world) {
+            if let Some(rep) = Representation::get(fusion.entity(), world) {
                 rep.paint(r.rect, context, ui).log();
             }
             if r.clicked() {
-                fusion_edit = Some(slot);
+                fusion_edit = Some(fusion.entity());
             }
             if r.drag_started() {
                 r.dnd_set_drag_payload(slot);
@@ -149,12 +132,14 @@ impl MatchPlugin {
                 ui,
             );
             if r.clicked() {
-                fusion_edit = Some(slot);
+                let entity = world.spawn_empty().set_parent(team.entity()).id();
+                Fusion::new(slot, default(), default()).unpack(entity, world);
+                fusion_edit = Some(entity);
             }
         }
 
-        if let Some(slot) = fusion_edit {
-            Self::edit_fusion(slot, world);
+        if let Some(entity) = fusion_edit {
+            Self::edit_fusion(entity, world)?;
         }
         Ok(())
     }
@@ -207,39 +192,18 @@ impl MatchPlugin {
         )
         .inner
     }
-    fn edit_fusion(slot: i32, world: &mut World) {
-        if !world.contains_resource::<MatchData>() {
-            error!("Match not loaded");
-            return;
-        }
-        let mut md = world.remove_resource::<MatchData>().unwrap();
-        let entity = if let Some(fusion) = Fusion::find_by_slot(slot, &mut md.team_world) {
-            fusion.entity()
-        } else {
-            let team = md
-                .team_world
-                .query::<&Team>()
-                .single(&md.team_world)
-                .entity();
-            let entity = md.team_world.spawn_empty().set_parent(team).id();
-            Fusion::new_full(slot, default(), default()).unpack(entity, &mut md.team_world);
-            entity
-        };
-        md.editing_entity = Some(entity);
-        FusionEditorPlugin::edit_entity(entity, world, &md.team_world, |f, world| {
-            let mut md = world.resource_mut::<MatchData>();
-            let entity = md.editing_entity.unwrap();
-            f.unpack(entity, &mut md.team_world);
-            let fusions = md
-                .team_world
-                .query::<&Fusion>()
-                .iter(&md.team_world)
+    fn edit_fusion(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
+        FusionEditorPlugin::edit_entity(entity, world, |f, world| {
+            let m = Self::load_match(world)?;
+            let fusions = m
+                .team_load(world)?
+                .fusions_load(world)
+                .into_iter()
                 .map(|f| f.to_strings_root())
                 .collect_vec();
             cn().reducers.match_edit_fusions(fusions).unwrap();
             GameState::Match.set_next(world);
+            Ok(())
         })
-        .log();
-        world.insert_resource(md);
     }
 }

@@ -182,12 +182,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     )*
                     #(
-                        pub fn #child_link_fields_load<'a>(&self, world: &'a World) -> Result<Vec<&'a #child_link_types>, ExpressionError> {
-                            let children = self.collect_children::<#child_link_types>(world);
-                            if children.is_empty() {
-                                return Err(ExpressionError::Custom(format!("No {} children found for {}", #child_link_types::kind_s(), self.entity())));
-                            }
-                            Ok(children)
+                        pub fn #child_link_fields_load<'a>(&self, world: &'a World) -> Vec<&'a #child_link_types> {
+                            self.collect_children::<#child_link_types>(world)
                         }
                     )*
                 }

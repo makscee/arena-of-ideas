@@ -70,9 +70,8 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
                         All::get_by_id(0, world)
                             .unwrap()
                             .core_load(world)
-                            .unwrap()
                             .into_iter()
-                            .filter_map(|h| h.units_load(world).ok())
+                            .map(|h| h.units_load(world))
                             .flatten()
                             .map(|u| (u.name.clone(), u.entity())),
                     );
@@ -136,6 +135,5 @@ pub fn subscribe_reducers() {
             return;
         }
         e.event.notify_error();
-        todo!();
     });
 }
