@@ -117,26 +117,16 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
 
 #[reducer]
 fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    // if NodeDomain::Match
-    //     .node_collect::<Fusion>(c)
-    //     .into_iter()
-    //     .any(|f| f.units.contains(&name))
-    // {
-    //     return Err("Can't sell fused unit".into());
-    // }
-    // if let Some(unit) = NodeDomain::Match
-    //     .node_collect::<Unit>(c)
-    //     .into_iter()
-    //     .find(|u| u.name == name)
-    // {
-    //     NodeDomain::Match.delete_by_id_recursive(c, unit.id());
-    // } else {
-    //     return Err("Unit not found".into());
-    // }
-    // let mut m = Match::get(c)?;
-    // m.g += c.global_settings().match_g.unit_sell;
-    // Match::fill_gaps(c);
-    // m.save(c);
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    m.g += ctx.global_settings().match_g.unit_sell;
+    m.update_self(ctx);
+    let unit = m
+        .roster_units_load(ctx)?
+        .into_iter()
+        .find(|u| u.name == name)
+        .to_e_s_fn(|| format!("Failed to find unit {name}"))?;
+    unit.delete_recursive(ctx);
     Ok(())
 }
 
@@ -197,11 +187,8 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
         return Err("Fusion can't be empty".into());
     }
     let roster_units = m
-        .team_load(ctx)?
-        .houses_load(ctx)?
+        .roster_units_load(ctx)?
         .into_iter()
-        .filter_map(|h| h.units_load(ctx).ok())
-        .flatten()
         .map(|u| &u.name)
         .collect_vec();
     if let Some(unit) = fusions

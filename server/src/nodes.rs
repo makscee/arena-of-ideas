@@ -138,3 +138,15 @@ impl All {
             .collect_vec())
     }
 }
+
+impl Match {
+    pub fn roster_units_load(&mut self, ctx: &ReducerContext) -> Result<Vec<&mut Unit>, String> {
+        Ok(self
+            .team_load(ctx)?
+            .houses_load(ctx)?
+            .into_iter()
+            .filter_map(|h| h.units_load(ctx).ok())
+            .flatten()
+            .collect_vec())
+    }
+}
