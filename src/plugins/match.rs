@@ -117,8 +117,8 @@ impl MatchPlugin {
                     Stroke::new(2.0, YELLOW),
                 );
             }
-            if let Some(i) = r.dnd_release_payload::<usize>() {
-                if slot as usize != *i {
+            if let Some(i) = r.dnd_release_payload::<i32>() {
+                if slot != *i {
                     cn().reducers.match_reorder(*i as u8, slot as u8).unwrap();
                 }
             }
@@ -201,6 +201,15 @@ impl MatchPlugin {
                 .into_iter()
                 .map(|f| f.to_strings_root())
                 .collect_vec();
+            for f in m
+                .team_load(world)?
+                .fusions_load(world)
+                .iter()
+                .map(|f| f.entity())
+                .collect_vec()
+            {
+                world.entity_mut(f).despawn_recursive();
+            }
             cn().reducers.match_edit_fusions(fusions).unwrap();
             GameState::Match.set_next(world);
             Ok(())

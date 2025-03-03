@@ -152,22 +152,23 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), String> {
-    // let c = &ctx.wrap()?;
-    // let slot = slot as usize;
-    // let target = target as usize;
-    // let mut slots = NodeDomain::Match.node_collect::<UnitSlot>(c);
-    // if slot >= slots.len() {
-    //     return Err("Slot outside of team length".into());
-    // }
-    // slots.sort_by_key(|s| s.slot);
-    // let target = target.min(slots.len() - 1);
-    // let unit = slots.remove(slot);
-    // slots.insert(target, unit);
-    // for (i, slot) in slots.iter_mut().enumerate() {
-    //     slot.slot = i as i32;
-    //     NodeDomain::Match.node_update(c, slot);
-    // }
-    // Match::register_update(c)
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    let slot = slot as usize;
+    let target = target as usize;
+    let fusions = m.team_load(ctx)?.fusions_load(ctx)?;
+    fusions.sort_by_key(|f| f.slot);
+    if slot >= fusions.len() {
+        return Err("Slot outside of team length".into());
+    }
+    let target = target.min(fusions.len() - 1);
+    let f = fusions.remove(slot);
+    fusions.insert(target, f);
+    for (i, slot) in fusions.iter_mut().enumerate() {
+        slot.slot = i as i32;
+    }
+    debug!("{fusions:?}");
+    player.save(ctx);
     Ok(())
 }
 
