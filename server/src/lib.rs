@@ -59,10 +59,14 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
 
 trait CtxExt {
     fn global_settings(&self) -> GlobalSettings;
+    fn next_id(&self) -> u64;
 }
 
 impl CtxExt for ReducerContext {
     fn global_settings(&self) -> GlobalSettings {
         GlobalSettings::get(self)
+    }
+    fn next_id(&self) -> u64 {
+        GlobalData::next_id(self)
     }
 }

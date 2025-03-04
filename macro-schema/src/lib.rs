@@ -42,11 +42,6 @@ pub fn nodes(_: TokenStream) -> TokenStream {
             None,
             #(#names,)*
         }
-        impl NodeKind {
-            pub fn key(self, id: u64) -> String {
-                format!("{id}_{self}")
-            }
-        }
         #(
             impl GetNodeKind for #names {
                 fn kind(&self) -> NodeKind {

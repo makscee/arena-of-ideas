@@ -75,7 +75,7 @@ impl LoginPlugin {
             let data = PlayerIdentity::new(Some(identity.to_string())).get_data();
             let player = cn()
                 .db
-                .tnodes()
+                .nodes_world()
                 .iter()
                 .find(|n| n.kind == kind && n.data == data)
                 .and_then(|d| Player::load(d.id));

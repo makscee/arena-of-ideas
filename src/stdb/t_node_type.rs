@@ -10,8 +10,8 @@ use spacetimedb_sdk::__codegen::{
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct TNode {
-    pub key: String,
     pub id: u64,
+    pub parent: u64,
     pub kind: String,
     pub data: String,
 }

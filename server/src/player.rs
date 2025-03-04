@@ -10,18 +10,19 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = Player::validate_name(ctx, name)?;
     let pass_hash = Some(Player::hash_pass(ctx, pass)?);
     Player::clear_identity(ctx, &ctx.sender);
-    let mut player = Player::new(name);
-    player.id = Some(next_id(ctx));
-    player.player_data = Some(PlayerData::new(pass_hash, false, 0));
-    player.identity = Some(PlayerIdentity::new(Some(ctx.sender.to_string())));
-    player.set_parent(ctx, 0);
-    player.save(ctx);
+    let mut player = Player::new(ctx, 0, name);
+    player.player_data = Some(PlayerData::new(ctx, player.id, pass_hash, false, 0));
+    player.identity = Some(PlayerIdentity::new(
+        ctx,
+        player.id,
+        Some(ctx.sender.to_string()),
+    ));
     Ok(())
 }
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut player = Player::get_by_data(ctx, &format!("\"{name}\"")).to_e_s("Player not found")?;
+    let mut player = Player::find_by_data(ctx, name.clone()).to_e_s("Player not found")?;
     debug!("{player:?}");
     if player.player_data_load(ctx)?.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
@@ -30,7 +31,11 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         Player::clear_identity(ctx, &ctx.sender);
-        player.identity = Some(PlayerIdentity::new(Some(ctx.sender.to_string())));
+        player.identity = Some(PlayerIdentity::new(
+            ctx,
+            player.id,
+            Some(ctx.sender.to_string()),
+        ));
         player.login(ctx)?.save(ctx);
         Ok(())
     }
@@ -75,7 +80,7 @@ impl Player {
             Err("Names must not be empty".to_string())
         } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
             Err(format!("Wrong character: {c}"))
-        } else if ctx.db.tnodes().data().filter(&name).next().is_some() {
+        } else if ctx.db.nodes_world().data().filter(&name).next().is_some() {
             Err(format!("Name is taken"))
         } else {
             Ok(name)
@@ -103,8 +108,7 @@ impl Player {
         }
     }
     pub fn find_identity(ctx: &ReducerContext, identity: &Identity) -> Option<PlayerIdentity> {
-        let data = PlayerIdentity::new(Some(identity.to_string())).get_data();
-        PlayerIdentity::get_by_data(ctx, &data)
+        PlayerIdentity::find_by_data(ctx, Some(identity.to_string()))
     }
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
         let data = self.player_data_load(ctx)?;

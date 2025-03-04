@@ -81,18 +81,18 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
                 });
             });
         })
-        .subscribe(["select * from tnodes", "select * from nodes_relations"]);
+        .subscribe(["select * from nodes_world", "select * from nodes_relations"]);
 }
 fn subscribe_table_updates() {
     let db = cn().db();
-    db.tnodes().on_insert(|_, node| {
+    db.nodes_world().on_insert(|_, node| {
         info!("Node inserted {}#{}", node.kind, node.id);
         let node = node.clone();
         OperationsPlugin::add(move |world| {
             world.resource_mut::<StdbData>().nodes_queue.push(node);
         });
     });
-    db.tnodes().on_update(|_, _, node| {
+    db.nodes_world().on_update(|_, _, node| {
         info!("Node updated {}#{}", node.kind, node.id);
         let node = node.clone();
         OperationsPlugin::add(move |world| {
@@ -103,7 +103,7 @@ fn subscribe_table_updates() {
             node.unpack(entity, world);
         });
     });
-    db.tnodes().on_delete(|_, node| {
+    db.nodes_world().on_delete(|_, node| {
         info!("Node deleted {}#{}", node.kind, node.id);
         let node = node.clone();
         OperationsPlugin::add(move |world| {

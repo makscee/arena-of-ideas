@@ -172,7 +172,7 @@ pub fn table_conversions(
     quote! {
         fn with_components(mut self, ctx: &ReducerContext) -> Self {
             #(
-                self.#component_link_fields = #component_link_types::get(ctx, self.id())
+                self.#component_link_fields = self.find_child::<#component_link_types>(ctx).ok()
                     .map(|d| d.with_components(ctx)
                         .with_children(ctx)
                     );
@@ -180,37 +180,23 @@ pub fn table_conversions(
             self
         }
         fn with_children(mut self, ctx: &ReducerContext) -> Self {
-            let children = ctx
-                .db
-                .nodes_relations()
-                .parent()
-                .filter(self.id())
-                .map(|r| r.id)
-                .collect_vec();
             #(
-                self.#child_link_fields = children
-                    .iter()
-                    .filter_map(|id| #child_link_types::get(ctx, *id).map(|d|
-                        d.with_components(ctx).with_children(ctx)))
+                self.#child_link_fields = self.collect_children::<#child_link_types>(ctx)
+                    .into_iter()
+                    .map(|n| n.with_components(ctx).with_children(ctx))
                     .collect();
             )*
             self
         }
         fn save(mut self, ctx: &ReducerContext) {
-            if self.id.is_none() {
-                self.id = Some(next_id(ctx));
-            }
-            let id = self.id();
-            self.insert_or_update_self(ctx);
+            self.update_self(ctx);
             #(
                 if let Some(mut d) = self.#component_link_fields.take() {
-                    d.id = Some(id);
                     d.save(ctx);
                 }
             )*
             #(
                 for mut d in std::mem::take(&mut self.#child_link_fields) {
-                    d.set_parent(ctx, id);
                     d.save(ctx);
                 }
             )*
@@ -234,36 +220,6 @@ pub fn common_node_fns(
         .collect_vec();
     quote! {
         impl #struct_ident {
-            pub fn new(
-                #(
-                    #all_data_fields: #all_data_types,
-                )*
-            ) -> Self {
-                Self {
-                    #(
-                        #all_data_fields,
-                    )*
-                    ..default()
-                }
-            }
-            pub fn new_full(
-                #(
-                    #all_data_fields: #all_data_types,
-                )*
-                #(
-                    #component_link_fields: #component_link_types,
-                )*
-            ) -> Self {
-                Self {
-                    #(
-                        #all_data_fields,
-                    )*
-                    #(
-                        #component_link_fields: Some(#component_link_fields),
-                    )*
-                    ..default()
-                }
-            }
             #(
                 pub fn #component_link_fields(&self) -> &#component_link_types {
                     self.#component_link_fields.as_ref().expect(#component_link_fields_err)

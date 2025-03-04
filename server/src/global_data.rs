@@ -25,8 +25,13 @@ impl GlobalData {
 
     pub fn next_id(ctx: &ReducerContext) -> u64 {
         let mut gd = Self::get(ctx);
+        let ts = Timestamp::now().into_micros_since_epoch();
+        if gd.next_id >= ts {
+            gd.next_id += 1;
+        } else {
+            gd.next_id = ts;
+        }
         let id = gd.next_id;
-        gd.next_id += 1;
         ctx.db.global_data().always_zero().update(gd);
         id
     }

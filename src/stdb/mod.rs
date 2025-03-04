@@ -29,15 +29,14 @@ pub mod match_insert_reducer;
 pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
-pub mod node_spawn_reducer;
 pub mod nodes_relations_table;
+pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
 pub mod sync_assets_reducer;
 pub mod t_battle_type;
 pub mod t_node_relation_type;
 pub mod t_node_type;
-pub mod tnodes_table;
 
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
@@ -75,15 +74,14 @@ pub use match_reorder_reducer::{
 };
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
-pub use node_spawn_reducer::{node_spawn, set_flags_for_node_spawn, NodeSpawnCallbackId};
 pub use nodes_relations_table::*;
+pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
 pub use t_battle_type::TBattle;
 pub use t_node_relation_type::TNodeRelation;
 pub use t_node_type::TNode;
-pub use tnodes_table::*;
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -124,11 +122,6 @@ pub enum Reducer {
     MatchSell {
         name: String,
     },
-    NodeSpawn {
-        id: Option<u64>,
-        kinds: Vec<String>,
-        datas: Vec<String>,
-    },
     Register {
         name: String,
         pass: String,
@@ -164,7 +157,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchReorder { .. } => "match_reorder",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
-            Reducer::NodeSpawn { .. } => "node_spawn",
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
             Reducer::SyncAssets { .. } => "sync_assets",
@@ -248,13 +240,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "node_spawn" => Ok(
-                __sdk::parse_reducer_args::<node_spawn_reducer::NodeSpawnArgs>(
-                    "node_spawn",
-                    &value.args,
-                )?
-                .into(),
-            ),
             "register" => Ok(__sdk::parse_reducer_args::<register_reducer::RegisterArgs>(
                 "register",
                 &value.args,
@@ -291,7 +276,7 @@ pub struct DbUpdate {
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
     nodes_relations: __sdk::TableUpdate<TNodeRelation>,
-    tnodes: __sdk::TableUpdate<TNode>,
+    nodes_world: __sdk::TableUpdate<TNode>,
 }
 
 impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
@@ -316,7 +301,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.nodes_relations =
                         nodes_relations_table::parse_table_update(table_update)?
                 }
-                "tnodes" => db_update.tnodes = tnodes_table::parse_table_update(table_update)?,
+                "nodes_world" => {
+                    db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
+                }
 
                 unknown => __anyhow::bail!("Unknown table {unknown:?} in DatabaseUpdate"),
             }
@@ -339,7 +326,7 @@ impl __sdk::DbUpdate for DbUpdate {
         cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
         cache.apply_diff_to_table::<TNodeRelation>("nodes_relations", &self.nodes_relations);
-        cache.apply_diff_to_table::<TNode>("tnodes", &self.tnodes);
+        cache.apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world);
     }
     fn invoke_row_callbacks(
         &self,
@@ -363,7 +350,7 @@ impl __sdk::DbUpdate for DbUpdate {
             &self.nodes_relations,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TNode>("tnodes", &self.tnodes, event);
+        callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
     }
 }
 
@@ -692,6 +679,6 @@ impl __sdk::SpacetimeModule for RemoteModule {
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
         nodes_relations_table::register_table(client_cache);
-        tnodes_table::register_table(client_cache);
+        nodes_world_table::register_table(client_cache);
     }
 }

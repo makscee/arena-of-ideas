@@ -48,9 +48,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &child_link_types,
             );
             if let Fields::Named(ref mut fields) = fields {
+                fields
+                    .named
+                    .push(Field::parse_named.parse2(quote! { pub id: u64 }).unwrap());
                 fields.named.push(
                     Field::parse_named
-                        .parse2(quote! { pub id: Option<u64> })
+                        .parse2(quote! { pub parent: u64 })
                         .unwrap(),
                 );
             }
@@ -70,10 +73,57 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
             quote! {
-                #[derive(Default, Debug, Clone)]
+                #[derive(Default, Debug)]
                 #input
                 #common
                 impl #struct_ident {
+                    pub fn new(
+                        ctx: &ReducerContext,
+                        parent: u64,
+                        #(
+                            #all_data_fields: #all_data_types,
+                        )*
+                    ) -> Self {
+                        let d = Self {
+                            id: ctx.next_id(),
+                            parent,
+                            #(
+                                #all_data_fields,
+                            )*
+                            ..default()
+                        };
+                        d.insert_self(ctx);
+                        d
+                    }
+                    pub fn new_full(
+                        ctx: &ReducerContext,
+                        parent: u64,
+                        #(
+                            #all_data_fields: #all_data_types,
+                        )*
+                        #(
+                            #component_link_fields: #component_link_types,
+                        )*
+                        #(
+                            #child_link_fields: Vec<#child_link_types>,
+                        )*
+                    ) -> Self {
+                        let d = Self {
+                            id: ctx.next_id(),
+                            parent,
+                            #(
+                                #all_data_fields,
+                            )*
+                            #(
+                                #component_link_fields: Some(#component_link_fields),
+                            )*
+                            #(
+                                #child_link_fields,
+                            )*
+                        };
+                        d.insert_self(ctx);
+                        d
+                    }
                     #(
                         pub fn #component_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #component_link_types, String> {
                             let id = self.id();
@@ -88,7 +138,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #(
                         pub fn #child_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#child_link_types>, String> {
                             if self.#child_link_fields.is_empty() {
-                                self.#child_link_fields = #child_link_types::collect_children(ctx, self.id());
+                                self.#child_link_fields = #child_link_types::collect_children_of_id(ctx, self.id());
                             }
                             if self.#child_link_fields.is_empty() {
                                 return Err(format!("No {} children found for {}", #child_link_types::kind_s(), self.id()));
@@ -96,44 +146,36 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             Ok(&mut self.#child_link_fields)
                         }
                     )*
+                    pub fn find_by_data(
+                        ctx: &ReducerContext,
+                        #(
+                            #all_data_fields: #all_data_types,
+                        )*
+                    ) -> Option<Self> {
+                        let kind = Self::kind_s().to_string();
+                        let data = Self {
+                            #(
+                                #all_data_fields,
+                            )*
+                            ..default()
+                        }.get_data();
+                        let n = ctx
+                            .db
+                            .nodes_world()
+                            .data()
+                            .filter(&data)
+                            .find(|n| n.kind == kind);
+                        n.map(|n| n.to_node())
+                    }
                 }
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions
                     fn id(&self) -> u64 {
-                        self.id.expect("Id not set")
-                    }
-                    fn get_id(&self) -> Option<u64> {
                         self.id
                     }
                     fn set_id(&mut self, id: u64) {
-                        self.id = Some(id);
-                    }
-                    fn clear_ids(&mut self) {
-                        self.id = None;
-                        #(
-                            if let Some(d) = &mut self.#component_link_fields {
-                                d.clear_ids();
-                            }
-                        )*
-                        #(
-                            for d in self.#child_link_fields.iter_mut() {
-                                d.clear_ids();
-                            }
-                        )*
-                    }
-                    fn gather_ids(&self, data: &mut HashSet<u64>) {
-                        data.extend(self.id.iter().copied());
-                        #(
-                            if let Some(d) = &self.#component_link_fields {
-                                d.gather_ids(data);
-                            }
-                        )*
-                        #(
-                            for d in self.#child_link_fields.iter() {
-                                d.gather_ids(data);
-                            }
-                        )*
+                        self.id = id;
                     }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
@@ -143,6 +185,27 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             Ok(v) => (#(self.#all_data_fields),*) = v,
                             Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
                         }
+                    }
+                    fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self {
+                        let mut d = Self::new(
+                            ctx, parent,
+                            #(
+                                self.#all_data_fields.clone(),
+                            )*
+                        );
+                        d.id = ctx.next_id();
+                        d.parent = parent;
+                        #(
+                            if let Some(n) = self.#component_link_fields.as_ref() {
+                                d.#component_link_fields = Some(n.clone(ctx, d.id));
+                            }
+                        )*
+                        #(
+                            for n in &self.#child_link_fields {
+                                d.#child_link_fields.push(n.clone(ctx, d.id));
+                            }
+                        )*
+                        d
                     }
                 }
             }

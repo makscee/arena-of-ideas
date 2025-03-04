@@ -77,7 +77,7 @@ where
     fn load(id: u64) -> Option<Self> {
         let kind = Self::kind_s();
         cn().db
-            .tnodes()
+            .nodes_world()
             .key()
             .find(&kind.key(id))
             .map(|d| d.to_node())

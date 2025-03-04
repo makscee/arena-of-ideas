@@ -2,13 +2,13 @@ use std::collections::VecDeque;
 
 use super::*;
 
-#[table(public, name = tnodes)]
+#[table(public, name = nodes_world)]
 #[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]
-    pub key: String,
-    #[index(btree)]
     pub id: u64,
+    #[index(btree)]
+    pub parent: u64,
     #[index(btree)]
     pub kind: String,
     #[index(btree)]
@@ -30,11 +30,11 @@ pub trait NodeIdExt {
 }
 impl NodeIdExt for u64 {
     fn parent(self, ctx: &ReducerContext) -> Option<u64> {
-        ctx.db.nodes_relations().id().find(self).map(|n| n.parent)
+        ctx.db.nodes_world().id().find(self).map(|n| n.parent)
     }
     fn children(self, ctx: &ReducerContext) -> Vec<u64> {
         ctx.db
-            .nodes_relations()
+            .nodes_world()
             .parent()
             .filter(self)
             .map(|d| d.id)
@@ -45,7 +45,7 @@ impl NodeIdExt for u64 {
         let mut q = VecDeque::from([self]);
         while let Some(id) = q.pop_front() {
             vec.push(id);
-            for r in ctx.db.nodes_relations().parent().filter(id) {
+            for r in ctx.db.nodes_world().parent().filter(id) {
                 q.push_back(r.id);
             }
         }
@@ -54,19 +54,13 @@ impl NodeIdExt for u64 {
 }
 
 impl TNode {
-    pub fn find_by_key(ctx: &ReducerContext, key: &String) -> Option<Self> {
-        ctx.db.tnodes().key().find(key)
-    }
     pub fn filter_by_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<Self> {
-        ctx.db.tnodes().kind().filter(kind.as_ref()).collect()
+        ctx.db.nodes_world().kind().filter(kind.as_ref()).collect()
     }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
         let ids = id.children_recursive(ctx);
         for id in &ids {
-            ctx.db.tnodes().id().delete(id);
-        }
-        for id in ids {
-            ctx.db.nodes_relations().id().delete(id);
+            ctx.db.nodes_world().id().delete(id);
         }
     }
 }
@@ -78,27 +72,12 @@ impl TNode {
         d.set_id(self.id);
         d
     }
-    pub fn new(id: u64, kind: NodeKind, data: String) -> Self {
+    pub fn new(parent: u64, kind: NodeKind, data: String) -> Self {
         Self {
-            key: kind.key(id),
-            id,
+            id: Timestamp::now().into_micros_since_epoch(),
             kind: kind.to_string(),
             data,
+            parent,
         }
     }
-}
-
-#[reducer]
-fn node_spawn(
-    ctx: &ReducerContext,
-    id: Option<u64>,
-    kinds: Vec<String>,
-    datas: Vec<String>,
-) -> Result<(), String> {
-    let id = id.unwrap_or_else(|| next_id(ctx));
-    for (kind, data) in kinds.into_iter().zip(datas.into_iter()) {
-        let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-        ctx.db.tnodes().insert(TNode::new(id, kind, data));
-    }
-    Ok(())
 }

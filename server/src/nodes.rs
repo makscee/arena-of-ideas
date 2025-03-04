@@ -8,10 +8,7 @@ macro_schema::nodes!();
 
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
-    fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
-    fn clear_ids(&mut self);
-    fn gather_ids(&self, data: &mut HashSet<u64>);
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
@@ -19,23 +16,23 @@ pub trait Node: Default + Sized {
     fn with_components(self, ctx: &ReducerContext) -> Self;
     fn with_children(self, ctx: &ReducerContext) -> Self;
     fn save(self, ctx: &ReducerContext);
+    fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self;
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn to_tnode(&self, id: u64) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<Self>;
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
-    fn set_parent(&mut self, ctx: &ReducerContext, parent: u64);
+    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
     fn insert_self(&self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
     fn delete_self(&self, ctx: &ReducerContext);
     fn delete_recursive(&self, ctx: &ReducerContext);
-    fn insert_or_update_self(&self, ctx: &ReducerContext);
     fn tnode_collect_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self>;
-    fn collect_children(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
+    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
+    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
 }
 
 impl<T> NodeExt for T
@@ -46,46 +43,31 @@ where
         TNode::new(id, self.kind(), self.get_data())
     }
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self> {
-        let kind = Self::kind_s();
-        ctx.db
-            .tnodes()
-            .key()
-            .find(kind.key(id))
-            .map(|d| d.to_node())
-    }
-    fn get_by_data(ctx: &ReducerContext, data: &String) -> Option<T> {
-        let kind = T::kind_s().to_string();
-        ctx.db
-            .tnodes()
-            .data()
-            .filter(data)
-            .find(|d| d.kind == kind)
-            .map(|n| n.to_node())
+        ctx.db.nodes_world().id().find(id).map(|d| d.to_node())
     }
     fn insert_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());
-        match ctx.db.tnodes().try_insert(node.clone()) {
+        match ctx.db.nodes_world().try_insert(node.clone()) {
             Ok(_) => {}
             Err(e) => error!("Insert of {node:?} failed: {e}"),
         }
     }
     fn update_self(&self, ctx: &ReducerContext) {
         let node = self.to_tnode(self.id());
-        ctx.db.tnodes().key().update(node);
+        ctx.db.nodes_world().id().update(node);
     }
     fn delete_self(&self, ctx: &ReducerContext) {
-        let key = self.kind().key(self.id());
-        ctx.db.tnodes().key().delete(key);
-    }
-    fn insert_or_update_self(&self, ctx: &ReducerContext) {
-        self.delete_self(ctx);
-        self.insert_self(ctx);
+        ctx.db.nodes_world().id().delete(self.id());
     }
     fn delete_recursive(&self, ctx: &ReducerContext) {
         TNode::delete_by_id_recursive(ctx, self.id());
     }
     fn tnode_collect_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
-        ctx.db.tnodes().kind().filter(&kind.to_string()).collect()
+        ctx.db
+            .nodes_world()
+            .kind()
+            .filter(&kind.to_string())
+            .collect()
     }
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self> {
         Self::tnode_collect_kind(ctx, T::kind_s())
@@ -93,12 +75,15 @@ where
             .map(|d| d.to_node::<T>())
             .collect()
     }
-    fn collect_children(ctx: &ReducerContext, parent: u64) -> Vec<Self> {
+    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self> {
         parent
             .children(ctx)
             .into_iter()
             .filter_map(|id| Self::get(ctx, id))
             .collect()
+    }
+    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
+        P::collect_children_of_id(ctx, self.id())
     }
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self> {
         let mut id = id;
@@ -114,14 +99,29 @@ where
         P::find_parent_of_id(ctx, self.id())
             .to_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
     }
-    fn set_parent(&mut self, ctx: &ReducerContext, parent: u64) {
-        if self.get_id().is_none() {
-            self.set_id(next_id(ctx));
+    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
+        let mut c = P::collect_children_of_id(ctx, self.id());
+        if c.len() > 1 {
+            return Err(format!(
+                "More than 1 child of {} kind {} found",
+                self.id(),
+                P::kind_s()
+            ));
         }
-        ctx.db.nodes_relations().insert(TNodeRelation {
-            id: self.id(),
-            parent,
-        });
+        if c.is_empty() {
+            return Err(format!(
+                "No children of {} kind {} found",
+                self.id(),
+                P::kind_s()
+            ));
+        }
+        Ok(c.remove(0))
+    }
+}
+
+impl House {
+    fn f(mut self, ctx: &ReducerContext) {
+        let d = ctx.db.nodes_world().id().delete(0);
     }
 }
 
