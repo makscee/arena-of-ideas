@@ -26,19 +26,10 @@ impl GlobalData {
     pub fn next_id(ctx: &ReducerContext) -> u64 {
         let mut gd = Self::get(ctx);
         let ts = Timestamp::now().into_micros_since_epoch();
-        if gd.next_id >= ts {
-            gd.next_id += 1;
-        } else {
-            gd.next_id = ts;
-        }
+        gd.next_id = ts.max(gd.next_id + 1);
         let id = gd.next_id;
         ctx.db.global_data().always_zero().update(gd);
         id
-    }
-    pub fn set_next_id(ctx: &ReducerContext, value: u64) {
-        let mut gd = Self::get(ctx);
-        gd.next_id = value;
-        ctx.db.global_data().always_zero().update(gd);
     }
 
     pub fn get(ctx: &ReducerContext) -> Self {

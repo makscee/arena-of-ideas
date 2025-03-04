@@ -58,19 +58,6 @@ impl AdminPlugin {
                     let entity = slot_entities[side as usize][i];
                     let r = show_battle_slot(i + 1, slots, side, ui);
                     if r.clicked() {
-                        let entity = if let Some(entity) = entity {
-                            entity
-                        } else {
-                            let entity = battle_world
-                                .spawn_empty()
-                                .set_parent(if side { entity_left } else { entity_right })
-                                .id();
-                            Fusion::new_full(i as i32, default(), default())
-                                .unpack(entity, &mut battle_world);
-                            slot_entities[side as usize][i] = Some(entity);
-                            entity
-                        };
-                        editing_entity = Some(entity);
                         todo!();
                     }
                     if let Some(entity) = entity {

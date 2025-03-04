@@ -10,7 +10,7 @@ struct Player {
     pub name: String,
     pub player_data: NodeComponent<PlayerData>,
     pub identity: NodeComponent<PlayerIdentity>,
-    pub active_match: NodeChildren<Match>,
+    pub active_match: NodeComponent<Match>,
 }
 
 struct PlayerData {
@@ -68,7 +68,6 @@ struct Team {
 
 struct Match {
     pub g: i32,
-    pub last_update: u64,
     pub shop_case: NodeChildren<ShopCaseUnit>,
     pub team: NodeComponent<Team>,
 }

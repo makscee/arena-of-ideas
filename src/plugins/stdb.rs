@@ -24,10 +24,7 @@ impl StdbPlugin {
                     node.unpack(entity, world);
                     return false;
                 }
-                let Some(rel) = cn().db.nodes_relations().id().find(&node.id) else {
-                    return true;
-                };
-                let Some(parent) = world.get_id_link(rel.parent) else {
+                let Some(parent) = world.get_id_link(node.parent) else {
                     return true;
                 };
                 node.unpack(world.spawn_empty().set_parent(parent).id(), world);
@@ -81,7 +78,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
                 });
             });
         })
-        .subscribe(["select * from nodes_world", "select * from nodes_relations"]);
+        .subscribe(["select * from nodes_world"]);
 }
 fn subscribe_table_updates() {
     let db = cn().db();

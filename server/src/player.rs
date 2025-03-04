@@ -137,7 +137,7 @@ impl GetPlayer for ReducerContext {
     fn player(&self) -> Result<Player, String> {
         let id = Player::find_identity(self, &self.sender)
             .to_e_s("Player not found")?
-            .id();
+            .parent();
         Player::get(self, id).to_e_s("Identity exists but Player does not")
     }
 }

@@ -123,20 +123,6 @@ impl MatchPlugin {
                 }
             }
         }
-        if last_slot + 1 < global_settings().team_slots as i32 {
-            let slot = last_slot + 1;
-            let r = show_slot(
-                slot as usize,
-                global_settings().team_slots as usize,
-                false,
-                ui,
-            );
-            if r.clicked() {
-                let entity = world.spawn_empty().set_parent(team.entity()).id();
-                Fusion::new(slot, default(), default()).unpack(entity, world);
-                fusion_edit = Some(entity);
-            }
-        }
 
         if let Some(entity) = fusion_edit {
             Self::edit_fusion(entity, world)?;

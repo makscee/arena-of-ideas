@@ -170,20 +170,20 @@ pub fn table_conversions(
     child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn with_components(mut self, ctx: &ReducerContext) -> Self {
+        fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
                 self.#component_link_fields = self.find_child::<#component_link_types>(ctx).ok()
-                    .map(|d| d.with_components(ctx)
-                        .with_children(ctx)
+                    .map(|mut d| std::mem::take(d.with_components(ctx)
+                        .with_children(ctx))
                     );
             )*
             self
         }
-        fn with_children(mut self, ctx: &ReducerContext) -> Self {
+        fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
                 self.#child_link_fields = self.collect_children::<#child_link_types>(ctx)
                     .into_iter()
-                    .map(|n| n.with_components(ctx).with_children(ctx))
+                    .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
                     .collect();
             )*
             self
@@ -205,8 +205,8 @@ pub fn table_conversions(
 }
 pub fn common_node_fns(
     struct_ident: &Ident,
-    all_data_fields: &Vec<Ident>,
-    all_data_types: &Vec<Type>,
+    _all_data_fields: &Vec<Ident>,
+    _all_data_types: &Vec<Type>,
     component_link_fields: &Vec<Ident>,
     component_link_types: &Vec<TokenStream>,
 ) -> TokenStream {

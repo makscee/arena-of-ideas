@@ -8,19 +8,20 @@ macro_schema::nodes!();
 
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
+    fn parent(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn inject_data(&mut self, data: &str);
     fn get_data(&self) -> String;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
-    fn with_components(self, ctx: &ReducerContext) -> Self;
-    fn with_children(self, ctx: &ReducerContext) -> Self;
+    fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
+    fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(self, ctx: &ReducerContext);
     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self;
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
-    fn to_tnode(&self, id: u64) -> TNode;
+    fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
@@ -39,21 +40,28 @@ impl<T> NodeExt for T
 where
     T: Node + GetNodeKind + GetNodeKindSelf,
 {
-    fn to_tnode(&self, id: u64) -> TNode {
-        TNode::new(id, self.kind(), self.get_data())
+    fn to_tnode(&self) -> TNode {
+        TNode::new(self.id(), self.parent(), self.kind(), self.get_data())
     }
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self> {
-        ctx.db.nodes_world().id().find(id).map(|d| d.to_node())
+        let kind = Self::kind_s().to_string();
+        let node: TNode = ctx.db.nodes_world().id().find(id)?;
+        if node.kind == kind {
+            Some(node.to_node())
+        } else {
+            None
+        }
     }
     fn insert_self(&self, ctx: &ReducerContext) {
-        let node = self.to_tnode(self.id());
+        let node = self.to_tnode();
+        debug!("insert {node:?}");
         match ctx.db.nodes_world().try_insert(node.clone()) {
             Ok(_) => {}
             Err(e) => error!("Insert of {node:?} failed: {e}"),
         }
     }
     fn update_self(&self, ctx: &ReducerContext) {
-        let node = self.to_tnode(self.id());
+        let node = self.to_tnode();
         ctx.db.nodes_world().id().update(node);
     }
     fn delete_self(&self, ctx: &ReducerContext) {
@@ -116,12 +124,6 @@ where
             ));
         }
         Ok(c.remove(0))
-    }
-}
-
-impl House {
-    fn f(mut self, ctx: &ReducerContext) {
-        let d = ctx.db.nodes_world().id().delete(0);
     }
 }
 

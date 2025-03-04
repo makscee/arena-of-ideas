@@ -15,14 +15,6 @@ pub struct TNode {
     pub data: String,
 }
 
-#[table(public, name = nodes_relations)]
-pub struct TNodeRelation {
-    #[primary_key]
-    pub id: u64,
-    #[index(btree)]
-    pub parent: u64,
-}
-
 pub trait NodeIdExt {
     fn parent(self, ctx: &ReducerContext) -> Option<u64>;
     fn children(self, ctx: &ReducerContext) -> Vec<u64>;
@@ -72,12 +64,12 @@ impl TNode {
         d.set_id(self.id);
         d
     }
-    pub fn new(parent: u64, kind: NodeKind, data: String) -> Self {
+    pub fn new(id: u64, parent: u64, kind: NodeKind, data: String) -> Self {
         Self {
-            id: Timestamp::now().into_micros_since_epoch(),
+            id,
+            parent,
             kind: kind.to_string(),
             data,
-            parent,
         }
     }
 }

@@ -12,9 +12,6 @@ fn sync_assets(
     for n in ctx.db.nodes_world().iter() {
         ctx.db.nodes_world().delete(n);
     }
-    for r in ctx.db.nodes_relations().iter() {
-        ctx.db.nodes_relations().delete(r);
-    }
     let all = All::from_strings(0, &all).to_e_s("Failed to parse All structure")?;
     all.save(ctx);
     Ok(())

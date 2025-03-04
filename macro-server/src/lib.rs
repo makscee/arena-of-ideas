@@ -128,7 +128,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #component_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #component_link_types, String> {
                             let id = self.id();
                             if self.#component_link_fields.is_none() {
-                                self.#component_link_fields = #component_link_types::get(ctx, id);
+                                self.#component_link_fields = Some(self.find_child::<#component_link_types>(ctx)?);
                             }
                             self.#component_link_fields
                                 .as_mut()
@@ -176,6 +176,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn set_id(&mut self, id: u64) {
                         self.id = id;
+                    }
+                    fn parent(&self) -> u64 {
+                        self.parent
                     }
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()

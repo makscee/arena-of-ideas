@@ -71,15 +71,17 @@ impl LoginPlugin {
     fn on_subscribed() {
         OperationsPlugin::add(|world| {
             let identity = ConnectOption::get(world).identity;
-            let kind = NodeKind::PlayerIdentity.to_string();
-            let data = PlayerIdentity::new(Some(identity.to_string())).get_data();
-            let player = cn()
-                .db
-                .nodes_world()
-                .iter()
-                .find(|n| n.kind == kind && n.data == data)
-                .and_then(|d| Player::load(d.id));
-            if let Some(player) = player {
+            for n in cn().db.nodes_world().iter() {
+                dbg!(n);
+            }
+            let Some(identity_node) = PlayerIdentity::find_by_data(Some(identity.to_string()))
+            else {
+                "Failed to find Player after login".notify_error(world);
+                return;
+            };
+            dbg!(&identity_node);
+            if let Some(player) = Player::load(identity_node.parent.unwrap()) {
+                dbg!(&player);
                 let mut cs = client_state().clone();
                 cs.last_logged_in = Some((player.name.clone(), identity));
                 cs.save();

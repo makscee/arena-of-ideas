@@ -4,76 +4,76 @@ use super::*;
 
 #[reducer]
 fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
-    // let mut player = ctx.player()?;
-    // let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
-    // let g = m.g;
-    // let sc = m
-    //     .shop_case_load(ctx)?
-    //     .into_iter()
-    //     .find(|s| s.id() == id)
-    //     .to_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
-    // if sc.price > g {
-    //     return Err("Not enough g".into());
-    // }
-    // sc.sold = true;
-    // let unit = sc.unit.clone();
-    // let price = sc.price;
-    // m.g -= price;
-    // let mut all = All::load(ctx);
-    // let unit = all
-    //     .core_units(ctx)?
-    //     .into_iter()
-    //     .find(|u| u.name == unit)
-    //     .to_e_s_fn(|| format!("Failed to find unit {}", unit))?;
-    // let mut house = unit.find_parent::<House>(ctx)?;
-    // let _ = m.team_load(ctx)?.houses_load(ctx);
-    // let houses = &mut m.team_mut().houses;
-    // let mut unit = unit.clone().with_children(ctx).with_components(ctx);
-    // if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
-    //     h.units.push(unit.clone());
-    // } else {
-    //     house.color_load(ctx)?;
-    //     let _ = house.status_abilities_load(ctx);
-    //     let _ = house.action_abilities_load(ctx);
-    //     house.units.push(unit.clone());
-    //     houses.push(house);
-    // }
-    // player.save(ctx);
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let g = m.g;
+    let sc = m
+        .shop_case_load(ctx)?
+        .into_iter()
+        .find(|s| s.id() == id)
+        .to_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
+    if sc.price > g {
+        return Err("Not enough g".into());
+    }
+    sc.sold = true;
+    let unit = sc.unit.clone();
+    let price = sc.price;
+    m.g -= price;
+    let mut all = All::load(ctx);
+    let unit = all
+        .core_units(ctx)?
+        .into_iter()
+        .find(|u| u.name == unit)
+        .to_e_s_fn(|| format!("Failed to find unit {}", unit))?
+        .with_children(ctx)
+        .with_components(ctx);
+    let mut house = unit.find_parent::<House>(ctx)?;
+    let houses = m.team_load(ctx)?.houses_load(ctx)?;
+    if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
+        unit.clone(ctx, h.id);
+    } else {
+        house.color_load(ctx)?;
+        let _ = house.status_abilities_load(ctx);
+        let _ = house.action_abilities_load(ctx);
+        let house = house.clone(ctx, m.team_load(ctx)?.id);
+        unit.clone(ctx, house.id);
+    }
+    player.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
+    let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
-    m.update_self(ctx);
     let unit = m
         .roster_units_load(ctx)?
         .into_iter()
         .find(|u| u.name == name)
         .to_e_s_fn(|| format!("Failed to find unit {name}"))?;
     unit.delete_recursive(ctx);
+    player.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
-    // let mut player = ctx.player()?;
-    // let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
-    // let cost = ctx.global_settings().match_g.reroll;
-    // if m.g < cost {
-    //     return Err("Not enough g".into());
-    // }
-    // m.g -= cost;
-    // let sc = m.shop_case_load(ctx)?;
-    // let mut all = All::load(ctx);
-    // let units = all.core_units(ctx)?;
-    // for c in sc {
-    //     c.sold = false;
-    //     c.unit = units.choose(&mut ctx.rng()).unwrap().name.clone();
-    // }
-    // player.save(ctx);
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let cost = ctx.global_settings().match_g.reroll;
+    if m.g < cost {
+        return Err("Not enough g".into());
+    }
+    m.g -= cost;
+    let sc = m.shop_case_load(ctx)?;
+    let mut all = All::load(ctx);
+    let units = all.core_units(ctx)?;
+    for c in sc {
+        c.sold = false;
+        c.unit = units.choose(&mut ctx.rng()).unwrap().name.clone();
+    }
+    player.save(ctx);
     Ok(())
 }
 
@@ -136,31 +136,32 @@ fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result
 
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
-    // let mut player = ctx.player()?;
-    // if let Ok(m) = player.active_match_load(ctx) {
-    //     for m in m {
-    //         m.delete_recursive(ctx)
-    //     }
-    // }
-    // let mut all = All::load(ctx);
-    // let units = all.core_units(ctx)?;
-    // let gs = ctx.global_settings();
-    // let price = gs.match_g.unit_buy;
-    // let mut m = Match::new_full(
-    //     gs.match_g.initial,
-    //     Timestamp::now().into_micros_since_epoch(),
-    //     Team::new("Test Team".into()),
-    // );
-    // m.shop_case = (0..3)
-    //     .map(|_| {
-    //         ShopCaseUnit::new(
-    //             units.choose(&mut ctx.rng()).unwrap().name.clone(),
-    //             price,
-    //             false,
-    //         )
-    //     })
-    //     .collect_vec();
-    // player.active_match = [m].into();
-    // player.save(ctx);
+    let mut player = ctx.player()?;
+    if let Ok(m) = player.active_match_load(ctx) {
+        m.delete_recursive(ctx);
+    }
+    let mut all = All::load(ctx);
+    let units = all.core_units(ctx)?;
+    let gs = ctx.global_settings();
+    let price = gs.match_g.unit_buy;
+    let mut m = Match::new(ctx, player.id, gs.match_g.initial);
+    let mut team = Team::new(ctx, m.id, "Test Team".into());
+    team.fusions = (0..ctx.global_settings().team_slots)
+        .map(|i| Fusion::new(ctx, team.id, i as i32, default(), default()))
+        .collect();
+    m.team = Some(team);
+    m.shop_case = (0..3)
+        .map(|_| {
+            ShopCaseUnit::new(
+                ctx,
+                m.id,
+                units.choose(&mut ctx.rng()).unwrap().name.clone(),
+                price,
+                false,
+            )
+        })
+        .collect_vec();
+    player.active_match = Some(m);
+    player.save(ctx);
     Ok(())
 }

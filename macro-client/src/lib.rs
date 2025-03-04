@@ -153,6 +153,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         .parse2(quote! { pub id: Option<u64> })
                         .unwrap(),
                 );
+                fields.named.push(
+                    Field::parse_named
+                        .parse2(quote! { pub parent: Option<u64> })
+                        .unwrap(),
+                );
             }
             let common = common_node_fns(
                 struct_ident,
@@ -186,6 +191,25 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             self.collect_children::<#child_link_types>(world)
                         }
                     )*
+                    pub fn find_by_data(
+                        #(
+                            #all_data_fields: #all_data_types,
+                        )*
+                    ) -> Option<Self> {
+                        let kind = Self::kind_s().to_string();
+                        let data = Self {
+                            #(
+                                #all_data_fields,
+                            )*
+                            ..default()
+                        }.get_data();
+                        let n = cn()
+                            .db
+                            .nodes_world()
+                            .iter()
+                            .find(|n| n.kind == kind && n.data == data);
+                        n.map(|n| n.to_node())
+                    }
                 }
                 impl std::fmt::Display for #struct_ident {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -363,24 +387,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn set_id(&mut self, id: u64) {
                         self.id = Some(id);
                     }
+                    fn set_parent(&mut self, id: u64) {
+                        self.parent = Some(id);
+                    }
                     fn entity(&self) -> Entity {
                         self.entity.unwrap()
                     }
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity
-                    }
-                    fn clear_entities(&mut self) {
-                        self.entity = None;
-                        #(
-                            if let Some(d) = &mut self.#component_link_fields {
-                                d.clear_entities();
-                            }
-                        )*
-                        #(
-                            for d in self.#child_link_fields.iter_mut() {
-                                d.clear_entities();
-                            }
-                        )*
                     }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         #data_from_dir
@@ -396,7 +410,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let mut d = Self::load(id)?;
                         let children = cn()
                             .db
-                            .nodes_relations()
+                            .nodes_world()
                             .iter()
                             .filter(|r| r.parent == id)
                             .map(|r| r.id)
