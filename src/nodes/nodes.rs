@@ -18,6 +18,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn set_parent(&mut self, id: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
+    fn from_dir_new(parent: u64, path: String, dir: &Dir) -> Option<Self>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir(&self, path: String) -> DirEntry;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;

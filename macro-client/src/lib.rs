@@ -143,19 +143,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             }.into_token_stream();
             let data_type_ident = quote! { (#(#all_data_types),*) };
             if let Fields::Named(ref mut fields) = fields {
-                fields.named.push(
+                fields.named.insert(
+                    0,
                     Field::parse_named
                         .parse2(quote! { pub entity: Option<Entity> })
                         .unwrap(),
                 );
-                fields.named.push(
-                    Field::parse_named
-                        .parse2(quote! { pub id: Option<u64> })
-                        .unwrap(),
-                );
-                fields.named.push(
+                fields.named.insert(
+                    0,
                     Field::parse_named
                         .parse2(quote! { pub parent: Option<u64> })
+                        .unwrap(),
+                );
+                fields.named.insert(
+                    0,
+                    Field::parse_named
+                        .parse2(quote! { pub id: Option<u64> })
                         .unwrap(),
                 );
             }
@@ -395,6 +398,26 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity
+                    }
+                    fn from_dir_new(parent: u64, path: String, dir: &Dir) -> Option<Self> {
+                        let file = dir.get_dir(&path)?.files().next()?;
+                        let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
+                        let mut d = Self::default();
+                        d.inject_data(file.contents_utf8()?);
+                        d.id = Some(id);
+                        d.parent = Some(parent);
+                        #(
+                            d.#component_link_fields = #component_link_types::from_dir_new(id, format!("{path}/{}", #component_link_fields_str), dir);
+                        )*
+                        #(
+                            d.#child_link_fields = dir
+                                .get_dir(format!("{path}/{}", #child_link_fields_str))
+                                .into_iter()
+                                .flat_map(|d| d.dirs())
+                                .filter_map(|d| #child_link_types::from_dir_new(id, d.path().to_string_lossy().to_string(), dir))
+                                .collect_vec();
+                        )*
+                        Some(d)
                     }
                     fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         #data_from_dir
