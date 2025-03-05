@@ -191,6 +191,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn parent(&self) -> u64 {
                         self.parent
                     }
+                    fn set_parent(&mut self, id: u64) {
+                        self.parent = id;
+                    }
                     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self {
                         let mut d = Self::new(
                             ctx, parent,

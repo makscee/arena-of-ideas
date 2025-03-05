@@ -62,6 +62,7 @@ impl TNode {
         let mut d = T::default();
         d.inject_data(&self.data).to_str_err()?;
         d.set_id(self.id);
+        d.set_parent(self.parent);
         Ok(d)
     }
     pub fn new(id: u64, parent: u64, kind: NodeKind, data: String) -> Self {

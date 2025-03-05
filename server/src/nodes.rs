@@ -10,6 +10,7 @@ pub trait Node: Default + Sized {
     fn id(&self) -> u64;
     fn parent(&self) -> u64;
     fn set_id(&mut self, id: u64);
+    fn set_parent(&mut self, id: u64);
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
