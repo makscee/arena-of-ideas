@@ -48,6 +48,10 @@ impl GameState {
                     .split_below(0.into(), 0.5, Tab::FusionResult.into());
                 ds
             }
+            GameState::Incubator => {
+                let mut ds = DockState::new([Tab::IncubatorUnits].into());
+                ds
+            }
             _ => DockState::new(default()),
         }
     }
@@ -65,6 +69,8 @@ pub enum Tab {
     Triggers,
     Actions,
     FusionResult,
+
+    IncubatorUnits,
 
     Admin,
 }
@@ -89,16 +95,19 @@ impl Tab {
             Tab::Register => LoginPlugin::tab_register(ui, world),
             Tab::Connect => ConnectPlugin::tab(ui),
             Tab::Admin => AdminPlugin::tab(ui, world),
-            Tab::Shop => MatchPlugin::shop_tab(ui, world)?,
+            Tab::Shop => MatchPlugin::tab_shop(ui, world)?,
             Tab::Roster => match cur_state(world) {
-                GameState::Match => MatchPlugin::roster_tab(ui, world)?,
+                GameState::Match => MatchPlugin::tab_roster(ui, world)?,
                 GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world)?,
                 _ => unreachable!(),
             },
-            Tab::Team => MatchPlugin::team_tab(ui, world)?,
-            Tab::Triggers => FusionEditorPlugin::triggers_tab(ui, world),
-            Tab::Actions => FusionEditorPlugin::actions_tab(ui, world),
-            Tab::FusionResult => FusionEditorPlugin::fusion_result_tab(ui, world)?,
+            Tab::Team => MatchPlugin::tab_team(ui, world)?,
+            Tab::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
+            Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
+            Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
+            Tab::IncubatorUnits => {
+                IncubatorPlugin::tab_units(ui, world)?;
+            }
         };
         Ok(())
     }

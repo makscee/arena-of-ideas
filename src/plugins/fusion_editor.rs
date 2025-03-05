@@ -55,7 +55,7 @@ impl FusionEditorPlugin {
             Ok(())
         })
     }
-    pub fn triggers_tab(ui: &mut Ui, world: &mut World) {
+    pub fn tab_triggers(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
@@ -93,7 +93,7 @@ impl FusionEditorPlugin {
             });
         });
     }
-    pub fn actions_tab(ui: &mut Ui, world: &mut World) {
+    pub fn tab_actions(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
@@ -137,7 +137,7 @@ impl FusionEditorPlugin {
             }
         });
     }
-    pub fn fusion_result_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn tab_fusion_result(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut save = false;
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();

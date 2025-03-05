@@ -46,9 +46,6 @@ impl NodeIdExt for u64 {
 }
 
 impl TNode {
-    pub fn filter_by_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<Self> {
-        ctx.db.nodes_world().kind().filter(kind.as_ref()).collect()
-    }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
         let ids = id.children_recursive(ctx);
         for id in &ids {

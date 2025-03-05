@@ -16,17 +16,10 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         return Err("Not enough g".into());
     }
     sc.sold = true;
-    let unit = sc.unit.clone();
+    let unit = sc.unit;
     let price = sc.price;
     m.g -= price;
-    let mut all = All::load(ctx);
-    let unit = all
-        .core_units(ctx)?
-        .into_iter()
-        .find(|u| u.name == unit)
-        .to_e_s_fn(|| format!("Failed to find unit {}", unit))?
-        .with_children(ctx)
-        .with_components(ctx);
+    let unit = Unit::get(ctx, unit).to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?;
     let mut house = unit.find_parent::<House>(ctx)?;
     let houses = m.team_load(ctx)?.houses_load(ctx)?;
     if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
@@ -71,7 +64,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let units = all.core_units(ctx)?;
     for c in sc {
         c.sold = false;
-        c.unit = units.choose(&mut ctx.rng()).unwrap().name.clone();
+        c.unit = units.choose(&mut ctx.rng()).unwrap().id;
     }
     player.save(ctx);
     Ok(())
@@ -155,8 +148,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
             ShopCaseUnit::new(
                 ctx,
                 m.id,
-                units.choose(&mut ctx.rng()).unwrap().name.clone(),
                 price,
+                units.choose(&mut ctx.rng()).unwrap().id,
                 false,
             )
         })

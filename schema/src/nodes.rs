@@ -83,7 +83,7 @@ struct Match {
 }
 
 struct ShopCaseUnit {
-    pub unit: String,
+    pub unit: u64,
     pub price: i32,
     pub sold: bool,
 }

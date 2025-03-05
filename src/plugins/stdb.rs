@@ -34,17 +34,6 @@ impl StdbPlugin {
     }
 }
 
-static CORE_UNIT_NAME_LINKS: OnceCell<Mutex<HashMap<String, Entity>>> = OnceCell::new();
-pub fn core_unit_by_name(name: &str) -> Result<Entity, ExpressionError> {
-    CORE_UNIT_NAME_LINKS
-        .get()
-        .unwrap()
-        .lock()
-        .get(name)
-        .copied()
-        .to_e_fn(|| format!("Core unit {name} not found"))
-}
-
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
     cn().subscription_builder()
@@ -54,29 +43,15 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
             on_success();
             subscribe_table_updates();
             OperationsPlugin::add(|world| {
-                All::load_recursive(0)
-                    .unwrap()
-                    .unpack(world.spawn_empty().id(), world);
+                dbg!(All::load_recursive(0).unwrap()).unpack(world.spawn_empty().id(), world);
                 let pid = player_id();
                 let entity = world
                     .get_id_link(pid)
                     .expect(&format!("Player#{pid} not found"));
                 save_player_entity(entity);
-                let units: HashMap<String, Entity> = HashMap::from_iter(
-                    All::get_by_id(0, world)
-                        .unwrap()
-                        .core_load(world)
-                        .into_iter()
-                        .map(|h| h.units_load(world))
-                        .flatten()
-                        .map(|u| (u.name.clone(), u.entity())),
-                );
-                *CORE_UNIT_NAME_LINKS
-                    .get_or_init(|| HashMap::default().into())
-                    .lock() = units;
             });
         })
-        .subscribe(["select * from nodes_world"]);
+        .subscribe_to_all_tables();
 }
 fn subscribe_table_updates() {
     let db = cn().db();

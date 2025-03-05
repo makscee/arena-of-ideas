@@ -202,6 +202,9 @@ impl AdminPlugin {
             std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
             dir.extract(path).unwrap();
         }
+        if "Incubator".cstr().button(ui).clicked() {
+            GameState::Incubator.set_next(world);
+        }
     }
     fn update(world: &mut World) {
         // let egui_context = world

@@ -431,21 +431,31 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn load_recursive(id: u64) -> Option<Self> {
                         let mut d = Self::load(id)?;
-                        let children = cn()
-                            .db
-                            .nodes_world()
-                            .iter()
-                            .filter(|r| r.parent == id)
-                            .map(|r| r.id)
-                            .sorted()
-                            .collect_vec();
                         #(
-                            d.#component_link_fields = #component_link_types::load_recursive(id);
+                            let kind = #component_link_types::kind_s().to_string();
+                            if let Some(id) = cn()
+                                .db
+                                .nodes_world()
+                                .iter()
+                                .find(|n| n.parent == d.id() && n.kind == kind)
+                                .map(|n| n.id)
+                            {
+                                d.#component_link_fields = #component_link_types::load_recursive(id);
+                            }
                         )*
                         #(
-                            d.#child_link_fields = children
+                            let kind = #child_link_types::kind_s().to_string();
+                            d.#child_link_fields = cn()
+                                .db
+                                .nodes_world()
                                 .iter()
-                                .filter_map(|id| #child_link_types::load_recursive(*id))
+                                .filter_map(|n| {
+                                    if n.parent == d.id() && n.kind == kind {
+                                        #child_link_types::load_recursive(n.id)
+                                    } else {
+                                        None
+                                    }
+                                })
                                 .collect();
                         )*
                         Some(d)

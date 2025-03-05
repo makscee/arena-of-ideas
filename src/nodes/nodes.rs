@@ -12,6 +12,36 @@ pub trait GetVar: GetNodeKind + Debug {
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
+impl All {
+    fn f() {
+        let mut d = All::default();
+
+        let kind = Incubator::kind_s().to_string();
+        if let Some(id) = cn()
+            .db
+            .nodes_world()
+            .iter()
+            .find(|n| n.parent == d.id() && n.kind == kind)
+            .map(|n| n.id)
+        {
+            d.incubator = Incubator::load_recursive(id);
+        }
+
+        d.players = cn()
+            .db
+            .nodes_world()
+            .iter()
+            .filter_map(|n| {
+                if n.parent == d.id() && n.kind == "Player" {
+                    Player::load_recursive(n.id)
+                } else {
+                    None
+                }
+            })
+            .collect();
+    }
+}
+
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
@@ -64,6 +94,7 @@ pub trait NodeExt: Sized {
     fn get(entity: Entity, world: &World) -> Option<&Self>;
     fn get_by_id(id: u64, world: &World) -> Option<&Self>;
     fn load(id: u64) -> Option<Self>;
+    fn load_by_parent(parent: u64) -> Option<Self>;
 }
 impl<T> NodeExt for T
 where
@@ -78,12 +109,20 @@ where
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id).map(|d| d.to_node())
     }
+    fn load_by_parent(parent: u64) -> Option<Self> {
+        let kind = Self::kind_s().to_string();
+        cn().db
+            .nodes_world()
+            .iter()
+            .find(|n| n.kind == kind && n.parent == parent)
+            .map(|n| n.to_node())
+    }
 }
 
 impl TNode {
     pub fn to_node<T: Node>(self) -> T {
         let mut d = T::default();
-        d.inject_data(&self.data);
+        d.inject_data(&self.data).unwrap();
         d.set_id(self.id);
         d.set_parent(self.parent);
         d
