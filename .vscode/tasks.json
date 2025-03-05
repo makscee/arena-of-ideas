@@ -248,7 +248,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "spacetime publish aoi_dev -p server -y"
+      "command": "spacetime publish aoidev -p server -y"
     },
     {
       "label": "STDB: Publish & Clear",
@@ -256,7 +256,7 @@
       "group": {
         "kind": "build"
       },
-      "command": "spacetime publish -c aoi_dev -p server -y"
+      "command": "spacetime publish -c aoidev -p server -y"
     },
     {
       "label": "STDB: Start",

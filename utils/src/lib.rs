@@ -14,7 +14,7 @@ pub fn now_micros() -> i64 {
 }
 pub fn now_seconds() -> f64 {
     if cfg!(feature = "server") {
-        Timestamp::now().into_micros_since_epoch() as f64 / 1000000.0
+        Timestamp::now().to_micros_since_unix_epoch() as f64 / 1000000.0
     } else {
         Utc::now().timestamp_millis() as f64 / 1000.0
     }

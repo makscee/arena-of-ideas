@@ -102,7 +102,7 @@ pub fn parse_content_tree() {
     // panic!();
     let all = All::from_dir_new(0, "all/0".into(), dir);
     dbg!(&all);
-    panic!();
+    // panic!();
     ALL.set(all.unwrap()).unwrap();
 
     UNIT_REP

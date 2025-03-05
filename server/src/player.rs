@@ -113,7 +113,7 @@ impl Player {
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
         let data = self.player_data_load(ctx)?;
         debug!("{data:?}");
-        data.last_login = Timestamp::now().into_micros_since_epoch();
+        data.last_login = Timestamp::now().to_micros_since_unix_epoch() as u64;
         data.online = true;
         Ok(self)
     }

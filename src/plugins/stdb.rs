@@ -48,34 +48,32 @@ pub fn core_unit_by_name(name: &str) -> Result<Entity, ExpressionError> {
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
     cn().subscription_builder()
-        .on_error(|e| e.event.notify_error())
+        .on_error(|_, error| error.to_string().notify_error_op())
         .on_applied(move |e| {
-            e.event.on_success(|| {
-                info!("Subscription applied");
-                on_success();
-                subscribe_table_updates();
-                OperationsPlugin::add(|world| {
-                    All::load_recursive(0)
+            info!("Subscription applied");
+            on_success();
+            subscribe_table_updates();
+            OperationsPlugin::add(|world| {
+                All::load_recursive(0)
+                    .unwrap()
+                    .unpack(world.spawn_empty().id(), world);
+                let pid = player_id();
+                let entity = world
+                    .get_id_link(pid)
+                    .expect(&format!("Player#{pid} not found"));
+                save_player_entity(entity);
+                let units: HashMap<String, Entity> = HashMap::from_iter(
+                    All::get_by_id(0, world)
                         .unwrap()
-                        .unpack(world.spawn_empty().id(), world);
-                    let pid = player_id();
-                    let entity = world
-                        .get_id_link(pid)
-                        .expect(&format!("Player#{pid} not found"));
-                    save_player_entity(entity);
-                    let units: HashMap<String, Entity> = HashMap::from_iter(
-                        All::get_by_id(0, world)
-                            .unwrap()
-                            .core_load(world)
-                            .into_iter()
-                            .map(|h| h.units_load(world))
-                            .flatten()
-                            .map(|u| (u.name.clone(), u.entity())),
-                    );
-                    *CORE_UNIT_NAME_LINKS
-                        .get_or_init(|| HashMap::default().into())
-                        .lock() = units;
-                });
+                        .core_load(world)
+                        .into_iter()
+                        .map(|h| h.units_load(world))
+                        .flatten()
+                        .map(|u| (u.name.clone(), u.entity())),
+                );
+                *CORE_UNIT_NAME_LINKS
+                    .get_or_init(|| HashMap::default().into())
+                    .lock() = units;
             });
         })
         .subscribe(["select * from nodes_world"]);

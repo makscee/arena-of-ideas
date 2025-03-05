@@ -1,4 +1,5 @@
 use spacetimedb_lib::{bsatn, de::Deserialize, ser::Serialize, Identity};
+use spacetimedb_sdk::credentials;
 
 use super::*;
 
@@ -24,6 +25,10 @@ pub fn is_connected() -> bool {
 struct Credentials {
     identity: Identity,
     token: String,
+}
+
+fn creds_store() -> credentials::File {
+    credentials::File::new("aoi")
 }
 
 impl ConnectPlugin {
@@ -79,9 +84,8 @@ impl ConnectPlugin {
     pub fn connect(on_connect: fn(&DbConnection, Identity, &str)) {
         let (uri, module) = current_server();
         info!("Connect start {} {}", uri, module);
-        let credentials = Self::load_credentials().unwrap_or_default();
         let c = DbConnection::builder()
-            .with_credentials(credentials)
+            .with_token(creds_store().load().expect("Error loading credentials"))
             .with_uri(uri)
             .with_module_name(module)
             .on_connect(on_connect)

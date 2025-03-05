@@ -1,4 +1,4 @@
-use spacetimedb_sdk::{Event, Table};
+use spacetimedb_sdk::{Event, ReducerEvent, Table};
 
 use super::*;
 
@@ -30,16 +30,11 @@ pub trait StdbStatusExt {
     fn notify_error(&self);
 }
 
-impl<R> StdbStatusExt for Event<R> {
+impl<R> StdbStatusExt for ReducerEvent<R> {
     fn on_success(&self, f: impl FnOnce() + Send + Sync + 'static) {
-        match self {
-            Event::Reducer(r) => match &r.status {
-                spacetimedb_sdk::Status::Committed => f(),
-                spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
-                _ => panic!(),
-            },
-            Event::SubscribeApplied | Event::UnsubscribeApplied => f(),
-            Event::SubscribeError(e) => e.to_string().notify_error_op(),
+        match &self.status {
+            spacetimedb_sdk::Status::Committed => f(),
+            spacetimedb_sdk::Status::Failed(e) => e.notify_error_op(),
             _ => panic!(),
         }
     }
@@ -51,18 +46,10 @@ impl<R> StdbStatusExt for Event<R> {
         sfn: impl FnOnce() + Send + Sync + 'static,
         efn: impl FnOnce() + Send + Sync + 'static,
     ) {
-        match self {
-            Event::Reducer(r) => match &r.status {
-                spacetimedb_sdk::Status::Committed => sfn(),
-                spacetimedb_sdk::Status::Failed(e) => {
-                    e.notify_error_op();
-                    efn()
-                }
-                _ => panic!(),
-            },
-            Event::SubscribeApplied | Event::UnsubscribeApplied => sfn(),
-            Event::SubscribeError(e) => {
-                e.to_string().notify_error_op();
+        match &self.status {
+            spacetimedb_sdk::Status::Committed => sfn(),
+            spacetimedb_sdk::Status::Failed(e) => {
+                e.notify_error_op();
                 efn()
             }
             _ => panic!(),
@@ -83,11 +70,8 @@ impl<R> StdbStatusExt for Event<R> {
     }
 }
 
-impl EventContext {
+impl ReducerEventContext {
     pub fn check_identity(&self) -> bool {
-        match &self.event {
-            Event::Reducer(r) => r.caller_identity == player_identity(),
-            _ => true,
-        }
+        self.event.caller_identity == player_identity()
     }
 }

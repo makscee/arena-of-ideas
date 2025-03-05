@@ -24,7 +24,7 @@ fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Resul
         * 1000000;
     ctx.db.daily_update_timer().insert(DailyUpdateTimer {
         scheduled_id: 0,
-        scheduled_at: Timestamp::from_micros_since_epoch(next_day).into(),
+        scheduled_at: Timestamp::from_micros_since_unix_epoch(next_day as i64).into(),
     });
     Ok(())
 }
