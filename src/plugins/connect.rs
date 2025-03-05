@@ -65,8 +65,7 @@ impl ConnectPlugin {
             info!("Connected {identity}");
             let token = token.to_owned();
             save_player_identity(identity);
-            Self::save_credentials(identity.clone(), token.clone())
-                .expect("Failed to save credentials");
+            creds_store().save(token.clone()).unwrap();
             OperationsPlugin::add(move |world| {
                 ConnectOption { identity, token }.save(world);
                 GameState::proceed(world);

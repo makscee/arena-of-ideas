@@ -65,8 +65,22 @@ impl LoginPlugin {
         }
     }
     fn complete() {
-        subscribe_game(Self::on_subscribed);
-        subscribe_reducers();
+        cn().reducers
+            .incubator_new_node(
+                NodeKind::Unit.to_string(),
+                Unit {
+                    name: "Test Unit".into(),
+                    ..default()
+                }
+                .get_data(),
+            )
+            .unwrap();
+        info!("Called incubator new node");
+        cn().reducers.on_incubator_new_node(|e, _, _| {
+            e.event.notify_error();
+        });
+        // subscribe_game(Self::on_subscribed);
+        // subscribe_reducers();
     }
     fn on_subscribed() {
         OperationsPlugin::add(|world| {

@@ -109,6 +109,7 @@ fn main() {
             DockPlugin,
             FusionEditorPlugin,
             StdbPlugin,
+            IncubatorPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();

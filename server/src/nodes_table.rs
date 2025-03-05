@@ -58,11 +58,11 @@ impl TNode {
 }
 
 impl TNode {
-    pub fn to_node<T: Node>(self) -> T {
+    pub fn to_node<T: Node + StringData>(self) -> Result<T, String> {
         let mut d = T::default();
-        d.inject_data(&self.data);
+        d.inject_data(&self.data).to_str_err()?;
         d.set_id(self.id);
-        d
+        Ok(d)
     }
     pub fn new(id: u64, parent: u64, kind: NodeKind, data: String) -> Self {
         Self {

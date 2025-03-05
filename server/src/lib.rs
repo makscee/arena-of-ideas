@@ -2,6 +2,7 @@ mod battle;
 mod daily_updater;
 mod global_data;
 mod global_settings;
+mod incubator;
 mod inflating_number;
 mod r#match;
 mod nodes;
@@ -54,6 +55,12 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
+    All {
+        name: "all".into(),
+        ..default()
+    }
+    .insert_self(ctx);
+    Incubator::new(ctx, 0, "incubator".into());
     Ok(())
 }
 

@@ -282,10 +282,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_data(&self) -> String {
                         ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
                     }
-                    fn inject_data(&mut self, data: &str) {
+                    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
                         match ron::from_str::<#data_type_ident>(data) {
-                            Ok(v) => (#(self.#all_data_fields),*) = v,
-                            Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
+                            Ok(v) => {(#(self.#all_data_fields),*) = v; Ok(())}
+                            Err(e) => Err(format!("{} parsing error from {data}: {e}", self.kind()).into()),
                         }
                     }
                 }

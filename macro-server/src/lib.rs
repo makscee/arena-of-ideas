@@ -165,7 +165,18 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             .data()
                             .filter(&data)
                             .find(|n| n.kind == kind);
-                        n.map(|n| n.to_node())
+                        n.map(|n| n.to_node().unwrap())
+                    }
+                }
+                impl StringData for #struct_ident {
+                    fn get_data(&self) -> String {
+                        ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
+                    }
+                    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
+                        match ron::from_str::<#data_type_ident>(data) {
+                            Ok(v) => {(#(self.#all_data_fields),*) = v; Ok(())}
+                            Err(e) => Err(format!("{} parsing error from {data}: {e}", self.kind()).into()),
+                        }
                     }
                 }
                 impl Node for #struct_ident {
@@ -179,15 +190,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn parent(&self) -> u64 {
                         self.parent
-                    }
-                    fn get_data(&self) -> String {
-                        ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
-                    }
-                    fn inject_data(&mut self, data: &str) {
-                        match ron::from_str::<#data_type_ident>(data) {
-                            Ok(v) => (#(self.#all_data_fields),*) = v,
-                            Err(e) => panic!("{} parsing error from {data}: {e}", self.kind()),
-                        }
                     }
                     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self {
                         let mut d = Self::new(
@@ -219,10 +221,38 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
 }
 #[proc_macro_attribute]
 pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(item as syn::DeriveInput);
-    quote! {
-        #[derive(spacetimedb::SpacetimeType)]
-        #input
+    let mut input = parse_macro_input!(item as syn::DeriveInput);
+    let struct_ident = &input.ident;
+    match &mut input.data {
+        Data::Enum(DataEnum {
+            enum_token: _,
+            brace_token: _,
+            variants,
+        }) => {
+            let variants = variants
+                .iter()
+                .map(|v| v.ident.clone())
+                .filter(|v| v != "None")
+                .collect_vec();
+            quote! {
+                #[derive(spacetimedb::SpacetimeType)]
+                #input
+                impl NodeKind {
+                    pub fn convert(self, data: &str) -> Result<TNode, ExpressionError> {
+                        match self {
+                            Self::None => Err("Can't convert None kind".into()),
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::default();
+                                d.inject_data(data)?;
+                                Ok(d.to_tnode())
+                            }
+                            )*
+                        }
+                    }
+                }
+            }
+            .into()
+        }
+        _ => unimplemented!(),
     }
-    .into()
 }

@@ -13,6 +13,7 @@ pub enum GameState {
     Register,
     Match,
     FusionEditor,
+    Incubator,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,

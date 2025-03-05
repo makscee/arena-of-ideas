@@ -81,6 +81,19 @@ impl<T> OptionExpressionError<T> for Option<T> {
     }
 }
 
+pub trait ExpressionErrorString<T> {
+    fn to_str_err(self) -> Result<T, String>;
+}
+
+impl<T> ExpressionErrorString<T> for Result<T, ExpressionError> {
+    fn to_str_err(self) -> Result<T, String> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => Err(e.to_string()),
+        }
+    }
+}
+
 impl ExpressionError {
     pub fn not_supported_single(op: &'static str, value: VarValue) -> Self {
         Self::OperationNotSupported {
@@ -106,6 +119,11 @@ impl Into<String> for ExpressionError {
 
 impl From<&str> for ExpressionError {
     fn from(value: &str) -> Self {
+        Self::Custom(value.into())
+    }
+}
+impl From<String> for ExpressionError {
+    fn from(value: String) -> Self {
         Self::Custom(value.into())
     }
 }

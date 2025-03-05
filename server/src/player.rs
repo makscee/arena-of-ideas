@@ -7,6 +7,8 @@ use super::*;
 
 #[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
+    info!("register sender {}", ctx.sender);
+    info!("register identity {}", ctx.identity());
     let name = Player::validate_name(ctx, name)?;
     let pass_hash = Some(Player::hash_pass(ctx, pass)?);
     Player::clear_identity(ctx, &ctx.sender);
@@ -22,6 +24,8 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
+    info!("login sender {}", ctx.sender);
+    info!("login identity {}", ctx.identity());
     let mut player = Player::find_by_data(ctx, name.clone()).to_e_s("Player not found")?;
     debug!("{player:?}");
     if player.player_data_load(ctx)?.pass_hash.is_none() {
@@ -113,7 +117,7 @@ impl Player {
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
         let data = self.player_data_load(ctx)?;
         debug!("{data:?}");
-        data.last_login = Timestamp::now().to_micros_since_unix_epoch() as u64;
+        data.last_login = ctx.timestamp.to_micros_since_unix_epoch() as u64;
         data.online = true;
         Ok(self)
     }

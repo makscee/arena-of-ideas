@@ -10,8 +10,6 @@ pub trait Node: Default + Sized {
     fn id(&self) -> u64;
     fn parent(&self) -> u64;
     fn set_id(&mut self, id: u64);
-    fn inject_data(&mut self, data: &str);
-    fn get_data(&self) -> String;
     fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
     fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
@@ -38,7 +36,7 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
 
 impl<T> NodeExt for T
 where
-    T: Node + GetNodeKind + GetNodeKindSelf,
+    T: Node + GetNodeKind + GetNodeKindSelf + StringData,
 {
     fn to_tnode(&self) -> TNode {
         TNode::new(self.id(), self.parent(), self.kind(), self.get_data())
@@ -47,7 +45,7 @@ where
         let kind = Self::kind_s().to_string();
         let node: TNode = ctx.db.nodes_world().id().find(id)?;
         if node.kind == kind {
-            Some(node.to_node())
+            node.to_node().ok()
         } else {
             None
         }
@@ -80,7 +78,7 @@ where
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self> {
         Self::tnode_collect_kind(ctx, T::kind_s())
             .into_iter()
-            .map(|d| d.to_node::<T>())
+            .filter_map(|d| d.to_node::<T>().ok())
             .collect()
     }
     fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self> {

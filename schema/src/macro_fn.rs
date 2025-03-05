@@ -136,7 +136,7 @@ pub fn strings_conversions(
             }
             let (_, _, data) = strings[i].splitn(3, ' ').collect_tuple()?;
             let mut d = Self::default();
-            d.inject_data(data);
+            d.inject_data(data).unwrap();
             let i_str = i.to_string();
             #(
                 d.#component_link_fields = strings.iter().enumerate().skip(i).find_map(|(i, s)| {

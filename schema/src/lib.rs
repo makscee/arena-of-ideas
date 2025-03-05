@@ -30,14 +30,17 @@ use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use utils::*;
 
 pub trait StringData: Sized {
-    fn inject_data(&mut self, data: &str);
+    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
     fn get_data(&self) -> String;
 }
 impl<T: Serialize + DeserializeOwned> StringData for T {
-    fn inject_data(&mut self, data: &str) {
+    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
         match ron::from_str(data) {
-            Ok(v) => *self = v,
-            Err(e) => log::error!("Deserialize error: {e}"),
+            Ok(v) => {
+                *self = v;
+                Ok(())
+            }
+            Err(e) => Err(format!("Deserialize error: {e}").into()),
         }
     }
     fn get_data(&self) -> String {
