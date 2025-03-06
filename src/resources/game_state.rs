@@ -71,6 +71,7 @@ pub enum Tab {
     FusionResult,
 
     IncubatorUnits,
+    IncubatorNewUnit,
 
     Admin,
 }
@@ -108,6 +109,7 @@ impl Tab {
             Tab::IncubatorUnits => {
                 IncubatorPlugin::tab_units(ui, world)?;
             }
+            Tab::IncubatorNewUnit => IncubatorPlugin::tab_new_unit(ui, world)?,
         };
         Ok(())
     }
