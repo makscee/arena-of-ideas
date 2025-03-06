@@ -49,7 +49,7 @@ impl GameState {
                 ds
             }
             GameState::Incubator => {
-                let mut ds = DockState::new([Tab::IncubatorUnits].into());
+                let mut ds = DockState::new([Tab::IncubatorUnit].into());
                 ds
             }
             _ => DockState::new(default()),
@@ -70,8 +70,9 @@ pub enum Tab {
     Actions,
     FusionResult,
 
-    IncubatorUnits,
-    IncubatorNewUnit,
+    IncubatorUnit,
+    IncubatorUnitStats,
+    IncubatorNewNode,
 
     Admin,
 }
@@ -106,10 +107,10 @@ impl Tab {
             Tab::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
             Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
-            Tab::IncubatorUnits => {
-                IncubatorPlugin::tab_units(ui, world)?;
-            }
-            Tab::IncubatorNewUnit => IncubatorPlugin::tab_new_unit(ui, world)?,
+
+            Tab::IncubatorUnit => IncubatorPlugin::tab_unit(ui, world)?,
+            Tab::IncubatorUnitStats => IncubatorPlugin::tab_unit_stats(ui, world)?,
+            Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
         };
         Ok(())
     }

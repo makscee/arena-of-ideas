@@ -23,7 +23,6 @@ use nodes::*;
 use nodes_table::*;
 use player::*;
 use r#match::*;
-use rand::{distributions::Alphanumeric, seq::IteratorRandom, Rng};
 use schema::*;
 use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 

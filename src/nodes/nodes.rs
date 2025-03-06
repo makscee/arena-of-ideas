@@ -12,36 +12,6 @@ pub trait GetVar: GetNodeKind + Debug {
     fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
-impl All {
-    fn f() {
-        let mut d = All::default();
-
-        let kind = Incubator::kind_s().to_string();
-        if let Some(id) = cn()
-            .db
-            .nodes_world()
-            .iter()
-            .find(|n| n.parent == d.id() && n.kind == kind)
-            .map(|n| n.id)
-        {
-            d.incubator = Incubator::load_recursive(id);
-        }
-
-        d.players = cn()
-            .db
-            .nodes_world()
-            .iter()
-            .filter_map(|n| {
-                if n.parent == d.id() && n.kind == "Player" {
-                    Player::load_recursive(n.id)
-                } else {
-                    None
-                }
-            })
-            .collect();
-    }
-}
-
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);

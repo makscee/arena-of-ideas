@@ -30,7 +30,7 @@ impl Selector {
         ui.horizontal(|ui| {
             ui.label(self.name);
             let lookup_id = ui.id();
-            let r = ComboBox::from_id_source(ui.next_auto_id())
+            let r = ComboBox::from_id_salt(ui.next_auto_id())
                 .selected_text(value.cstr().widget(1.0, ui))
                 .show_ui(ui, |ui| {
                     let mut lookup = ui

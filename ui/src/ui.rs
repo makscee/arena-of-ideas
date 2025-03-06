@@ -185,7 +185,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.visuals.selection.bg_fill = YELLOW_DARK;
         style.visuals.resize_corner_size = 0.0;
         style.visuals.window_stroke = Stroke::NONE;
-        style.visuals.window_fill = TRANSPARENT;
+        style.visuals.window_fill = EMPTINESS;
         style.visuals.extreme_bg_color = TRANSPARENT;
         style.visuals.widgets = Widgets {
             noninteractive: WidgetVisuals {

@@ -252,6 +252,17 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
+                    pub fn save_from_strings(self, ctx: &ReducerContext, parent: u64, datas: &Vec<String>) -> Result<(), ExpressionError> {
+                        match self {
+                            Self::None => {return Err("Can't convert None kind".into());}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::from_strings(0, datas).to_e_fn(|| format!("Failed to convert {self} from {datas:?}"))?;
+                                d.clone(ctx, parent);
+                            }
+                            )*
+                        }
+                        Ok(())
+                    }
                 }
             }
             .into()

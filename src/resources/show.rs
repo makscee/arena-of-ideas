@@ -325,6 +325,13 @@ impl Show for Material {
         }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        let mut rect = ui.available_rect_before_wrap();
+        rect.set_width(150.0);
+        rect.set_height(150.0);
+        let mut p = Painter::new(rect, ui.ctx());
+        for i in &self.0 {
+            i.paint(&Context::default(), &mut p, ui).log();
+        }
         self.0.show_mut(prefix, ui)
     }
 }

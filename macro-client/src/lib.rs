@@ -578,6 +578,46 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         };
                     }
+                    pub fn show_data(self, data: &str, context: &Context, ui: &mut Ui) {
+                        match self {
+                            Self::None => {}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::default();
+                                d.inject_data(data).log();
+                                d.show(None, context, ui);
+                            })*
+                        }
+                    }
+                    pub fn show_data_mut(self, data: &mut String, ui: &mut Ui) {
+                        match self {
+                            Self::None => {}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::default();
+                                d.inject_data(data).log();
+                                d.show_mut(None, ui);
+                                *data = d.get_data();
+                            })*
+                        }
+                    }
+                    pub fn show_strings(self, datas: &Vec<String>, context: &Context, ui: &mut Ui) {
+                        match self {
+                            Self::None => {}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::from_strings(0, &datas).unwrap();
+                                d.show(None, context, ui);
+                            })*
+                        }
+                    }
+                    pub fn show_strings_mut(self, datas: &mut Vec<String>, ui: &mut Ui) {
+                        match self {
+                            Self::None => {}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::from_strings(0, &datas).unwrap();
+                                d.show_mut(None, ui);
+                                *datas = d.to_strings_root();
+                            })*
+                        }
+                    }
                     pub fn unpack(self, entity: Entity, data: &str, id: Option<u64>, world: &mut World) {
                         match self {
                             Self::None => {}
@@ -588,6 +628,14 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                 n.unpack(entity, world);
                             })*
                         };
+                    }
+                    pub fn to_empty_strings(self) -> Vec<String> {
+                        match self {
+                            NodeKind::None => panic!("Can't convert None to Node"),
+                            #(#struct_ident::#variants => {
+                                #variants::default().to_strings_root()
+                            })*
+                        }
                     }
                 }
             }.into()

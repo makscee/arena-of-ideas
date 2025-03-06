@@ -15,7 +15,7 @@ pub mod global_data_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
-pub mod incubator_new_node_reducer;
+pub mod incubator_push_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
@@ -54,8 +54,8 @@ pub use global_settings_type::GlobalSettings;
 pub use identity_disconnected_reducer::{
     identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
 };
-pub use incubator_new_node_reducer::{
-    incubator_new_node, set_flags_for_incubator_new_node, IncubatorNewNodeCallbackId,
+pub use incubator_push_reducer::{
+    incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
 };
 pub use login_by_identity_reducer::{
     login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
@@ -99,9 +99,9 @@ pub enum Reducer {
         timer: DailyUpdateTimer,
     },
     IdentityDisconnected,
-    IncubatorNewNode {
+    IncubatorPush {
         kind: String,
-        data: String,
+        datas: Vec<String>,
     },
     Login {
         name: String,
@@ -149,7 +149,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::BattleInsert { .. } => "battle_insert",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
-            Reducer::IncubatorNewNode { .. } => "incubator_new_node",
+            Reducer::IncubatorPush { .. } => "incubator_push",
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
@@ -185,9 +185,9 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 identity_disconnected_reducer::IdentityDisconnectedArgs,
             >("identity_disconnected", &value.args)?
             .into()),
-            "incubator_new_node" => Ok(__sdk::parse_reducer_args::<
-                incubator_new_node_reducer::IncubatorNewNodeArgs,
-            >("incubator_new_node", &value.args)?
+            "incubator_push" => Ok(__sdk::parse_reducer_args::<
+                incubator_push_reducer::IncubatorPushArgs,
+            >("incubator_push", &value.args)?
             .into()),
             "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
                 "login",

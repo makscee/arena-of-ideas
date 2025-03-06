@@ -239,7 +239,7 @@ fn compose_ui(
     let collapse_override_id = Id::new("collapse_override");
     let hovered_id = id.with("hovered");
     let mut collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !default_open);
-    let collapsed_inner = get_ctx_bool_id_default(ui.ctx(), collapse_inner_id, true);
+    let collapsed_inner = get_ctx_bool_id_default(ui.ctx(), collapse_inner_id, false);
     if let Some(collapse_override) = get_ctx_bool_id(ui.ctx(), collapse_override_id) {
         collapsed = collapse_override;
         set_ctx_bool_id(ui.ctx(), collapsed_id, collapse_override);
@@ -358,7 +358,7 @@ fn show_triangle(openness: f32, rect: Rect, hovered: bool, ui: &mut Ui) {
 
 pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn default_open(&self) -> bool {
-        false
+        true
     }
     fn has_header(&self) -> bool;
     fn has_body(&self) -> bool;
