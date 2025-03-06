@@ -20,13 +20,24 @@ impl StdbPlugin {
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
-                if let Some(entity) = world.get_id_link(node.id) {
-                    node.unpack(entity, world);
-                    return false;
+                let mut cur_node = node.clone();
+                let mut id = node.id;
+                loop {
+                    let parent = cur_node.parent.get_node().unwrap();
+                    if parent.kind.to_kind().is_component(cur_node.kind.to_kind()) {
+                        cur_node = parent;
+                        id = cur_node.id;
+                    } else {
+                        break;
+                    }
                 }
                 let Some(parent) = world.get_id_link(node.parent) else {
                     return true;
                 };
+                if let Some(entity) = world.get_id_link(id) {
+                    node.unpack(entity, world);
+                    return false;
+                }
                 node.unpack(world.spawn_empty().set_parent(parent).id(), world);
                 false
             });

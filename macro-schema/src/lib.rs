@@ -35,7 +35,7 @@ pub fn nodes(_: TokenStream) -> TokenStream {
         pub trait GetNodeKindSelf {
             fn kind_s() -> NodeKind;
         }
-        #[derive(Debug, Default, Clone, Copy, Display, EnumIter, PartialEq, Eq, strum_macros::EnumString, strum_macros::AsRefStr)]
+        #[derive(Debug, Default, Clone, Copy, Display, EnumIter, PartialEq, Eq, strum_macros::EnumString, strum_macros::AsRefStr, Hash)]
         #[node_kinds]
         pub enum NodeKind {
             #[default]

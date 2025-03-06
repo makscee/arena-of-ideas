@@ -498,6 +498,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         world.entity_mut(entity).insert(self);
                         kind.on_unpack(entity, world);
                     }
+                    fn component_kinds() -> HashSet<NodeKind> {
+                        [
+                            #(
+                                NodeKind::#component_link_types,
+                            )*
+                        ].into()
+                    }
                 }
                 impl From<&str> for #struct_ident {
                     fn from(value: &str) -> Self {
@@ -635,6 +642,16 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(#struct_ident::#variants => {
                                 #variants::default().to_strings_root()
                             })*
+                        }
+                    }
+                    pub fn is_component(self, child: NodeKind) -> bool {
+                        match self {
+                            NodeKind::None => false,
+                            #(
+                                #struct_ident::#variants => {
+                                    #variants::component_kinds().contains(&child)
+                                }
+                            )*
                         }
                     }
                 }

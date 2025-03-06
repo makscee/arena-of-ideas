@@ -75,3 +75,13 @@ impl ReducerEventContext {
         self.event.caller_identity == player_identity()
     }
 }
+
+pub trait NodeIdExt {
+    fn get_node(self) -> Option<TNode>;
+}
+
+impl NodeIdExt for u64 {
+    fn get_node(self) -> Option<TNode> {
+        cn().db.nodes_world().id().find(&self)
+    }
+}

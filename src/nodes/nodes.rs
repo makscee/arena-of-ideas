@@ -58,6 +58,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         let entity = self.get_entity().expect("Node not linked to world");
         Self::collect_children_entity(entity, world)
     }
+    fn component_kinds() -> HashSet<NodeKind>;
 }
 
 pub trait NodeExt: Sized {
@@ -146,6 +147,16 @@ impl WorldNodeExt for World {
 impl ToCstr for NodeKind {
     fn cstr(&self) -> Cstr {
         self.to_string()
+    }
+}
+
+pub trait NodeKindExt {
+    fn to_kind(&self) -> NodeKind;
+}
+
+impl NodeKindExt for String {
+    fn to_kind(&self) -> NodeKind {
+        NodeKind::from_str(self).unwrap()
     }
 }
 
