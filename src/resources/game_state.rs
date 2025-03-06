@@ -1,3 +1,5 @@
+use egui_dock::NodeIndex;
+
 use super::*;
 
 #[derive(
@@ -49,7 +51,21 @@ impl GameState {
                 ds
             }
             GameState::Incubator => {
-                let mut ds = DockState::new([Tab::IncubatorUnit].into());
+                let mut tabs = [
+                    Tab::IncubatorUnit,
+                    Tab::IncubatorUnitDescription,
+                    Tab::IncubatorUnitStats,
+                    // Tab::IncubatorHouse,
+                ]
+                .to_vec();
+                let mut ds = DockState::new(tabs.remove(0).into());
+                let len = tabs.len() as f32;
+                for (i, tab) in tabs.drain(..).enumerate() {
+                    let i = i as f32;
+                    let parent = NodeIndex(ds.main_surface().len() - 1);
+                    let fract = 1.0 / (len - i + 1.0);
+                    ds.main_surface_mut().split_right(parent, fract, tab.into());
+                }
                 ds
             }
             _ => DockState::new(default()),
@@ -72,6 +88,9 @@ pub enum Tab {
 
     IncubatorUnit,
     IncubatorUnitStats,
+    IncubatorUnitDescription,
+    IncubatorHouse,
+
     IncubatorNewNode,
 
     Admin,
@@ -108,8 +127,12 @@ impl Tab {
             Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
 
-            Tab::IncubatorUnit => IncubatorPlugin::tab_unit(ui, world)?,
-            Tab::IncubatorUnitStats => IncubatorPlugin::tab_unit_stats(ui, world)?,
+            Tab::IncubatorUnit => IncubatorPlugin::tab_kind(NodeKind::Unit, ui, world)?,
+            Tab::IncubatorUnitStats => IncubatorPlugin::tab_kind(NodeKind::UnitStats, ui, world)?,
+            Tab::IncubatorUnitDescription => {
+                IncubatorPlugin::tab_kind(NodeKind::UnitDescription, ui, world)?
+            }
+            Tab::IncubatorHouse => IncubatorPlugin::tab_kind(NodeKind::House, ui, world)?,
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
         };
         Ok(())

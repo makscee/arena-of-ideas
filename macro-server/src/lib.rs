@@ -201,7 +201,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 self.#all_data_fields.clone(),
                             )*
                         );
-                        d.id = ctx.next_id();
                         d.parent = parent;
                         #(
                             if let Some(n) = self.#component_link_fields.as_ref() {

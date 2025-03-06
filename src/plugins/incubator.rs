@@ -44,8 +44,7 @@ impl IncubatorPlugin {
         });
     }
     fn open_editor(kind: NodeKind, world: &mut World) {
-        world.resource_mut::<IncubatorData>().edit_node =
-            Some((NodeKind::Unit, kind.to_empty_strings()));
+        world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
         DockPlugin::push(
             |dt| {
                 if let Some(s) = dt.state.find_tab(&Tab::IncubatorNewNode) {
@@ -53,64 +52,68 @@ impl IncubatorPlugin {
                     dt.state.set_focused_node_and_surface((s.0, s.1));
                     return;
                 }
-                dt.state
-                    .main_surface_mut()
-                    .split_left(0.into(), 0.5, Tab::IncubatorNewNode.into());
+                dt.state.main_surface_mut().split_below(
+                    0.into(),
+                    0.5,
+                    Tab::IncubatorNewNode.into(),
+                );
             },
             world,
         );
     }
-
-    pub fn tab_unit(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        ui.vertical(|ui| {
-            let kind = NodeKind::Unit;
-            let nodes = All::get_by_id(0, world)
-                .unwrap()
-                .incubator_load(world)?
-                .units_load(world);
-            for unit in nodes {
-                unit.name.label(ui);
-            }
-            br(ui);
-            if format!("New {kind}")
-                .cstr_s(CstrStyle::Bold)
-                .button(ui)
-                .clicked()
-            {
-                Self::open_editor(kind, world);
-            }
-            Ok(())
-        })
-        .inner
+    fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
+        All::get_by_id(0, world).unwrap().incubator_load(world)
     }
-    pub fn tab_unit_stats(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    fn new_node_btn(kind: NodeKind, ui: &mut Ui, world: &mut World) {
+        br(ui);
+        if format!("New {kind}")
+            .cstr_s(CstrStyle::Bold)
+            .button(ui)
+            .clicked()
+        {
+            Self::open_editor(kind, world)
+        }
+    }
+    pub fn tab_kind(kind: NodeKind, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         ui.vertical(|ui| {
-            let kind = NodeKind::UnitStats;
-            let nodes = All::get_by_id(0, world)
-                .unwrap()
-                .incubator_load(world)?
-                .unit_stats_load(world);
-            for node in nodes {
-                format!(
-                    "[b [yellow {}]] / [b [red {}]] (-{})",
-                    node.pwr, node.hp, node.dmg
-                )
-                .label(ui);
+            match kind {
+                NodeKind::Unit => {
+                    for node in Self::incubator(world)?.units_load(world) {
+                        node.name.label(ui);
+                    }
+                }
+                NodeKind::UnitDescription => {
+                    for node in Self::incubator(world)?.unit_descriptions_load(world) {
+                        node.description.cstr_s(CstrStyle::Small).label(ui);
+                    }
+                }
+                NodeKind::UnitStats => {
+                    for node in Self::incubator(world)?.unit_stats_load(world) {
+                        format!(
+                            "[b [yellow {}]] / [b [red {}]] (-{})",
+                            node.pwr, node.hp, node.dmg
+                        )
+                        .label(ui);
+                    }
+                }
+                NodeKind::House => todo!(),
+                NodeKind::HouseColor => todo!(),
+                NodeKind::ActionAbility => todo!(),
+                NodeKind::ActionAbilityDescription => todo!(),
+                NodeKind::AbilityEffect => todo!(),
+                NodeKind::StatusAbility => todo!(),
+                NodeKind::StatusAbilityDescription => todo!(),
+                NodeKind::Reaction => todo!(),
+                NodeKind::Representation => todo!(),
+                _ => unreachable!(),
             }
-            br(ui);
-            if format!("New {kind}")
-                .cstr_s(CstrStyle::Bold)
-                .button(ui)
-                .clicked()
-            {
-                Self::open_editor(kind, world);
-            }
+            Self::new_node_btn(kind, ui, world);
             Ok(())
         })
         .inner
     }
     pub fn tab_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        world.resource_scope(|world, mut d: Mut<IncubatorData>| {
+        world.resource_scope(|_, mut d: Mut<IncubatorData>| {
             let Some((kind, datas)) = &mut d.edit_node else {
                 "no editing node".cstr_c(VISIBLE_DARK).label(ui);
                 return;
@@ -121,7 +124,8 @@ impl IncubatorPlugin {
             kind.show_strings_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
-                    .incubator_push(kind.to_string(), datas.clone());
+                    .incubator_push(kind.to_string(), datas.clone())
+                    .unwrap();
             }
         });
         Ok(())
