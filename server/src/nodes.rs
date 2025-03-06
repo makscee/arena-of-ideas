@@ -17,6 +17,7 @@ pub trait Node: Default + Sized {
     fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(self, ctx: &ReducerContext);
     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self;
+    fn to_tnode_vec(&self) -> Vec<TNode>;
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {

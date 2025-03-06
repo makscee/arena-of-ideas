@@ -214,6 +214,20 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         d
                     }
+                    fn to_tnode_vec(&self) -> Vec<TNode> {
+                        let mut v = [self.to_tnode()].to_vec();
+                        #(
+                            if let Some(d) = self.#component_link_fields.as_ref() {
+                                v.extend(d.to_tnode_vec());
+                            }
+                        )*
+                        #(
+                            for d in &self.#child_link_fields {
+                                v.extend(d.to_tnode_vec());
+                            }
+                        )*
+                        v
+                    }
                 }
             }
             .into()
@@ -247,6 +261,16 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                 let mut d = #variants::default();
                                 d.inject_data(data)?;
                                 Ok(d.to_tnode())
+                            }
+                            )*
+                        }
+                    }
+                    pub fn tnode_vec_from_strings(self, datas: &Vec<String>) -> Result<Vec<TNode>, ExpressionError> {
+                        match self {
+                            Self::None => {return Err("Can't convert None kind".into());}
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::from_strings(0, datas).to_e_fn(|| format!("Failed to convert {self} from {datas:?}"))?;
+                                Ok(d.to_tnode_vec())
                             }
                             )*
                         }

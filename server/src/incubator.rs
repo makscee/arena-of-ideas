@@ -5,7 +5,12 @@ fn incubator_push(ctx: &ReducerContext, kind: String, datas: Vec<String>) -> Res
     let player = ctx.player()?;
     let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
     let parent = All::load(ctx).incubator_load(ctx)?.id;
-    kind.save_from_strings(ctx, parent, &datas).to_str_err()?;
+    let nodes = kind.tnode_vec_from_strings(&datas).to_str_err()?;
+    for mut node in nodes {
+        node.parent = parent;
+        node.id = ctx.next_id();
+        ctx.db.nodes_world().insert(node);
+    }
     Ok(())
 }
 
