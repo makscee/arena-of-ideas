@@ -16,6 +16,7 @@ pub enum GameState {
     Match,
     FusionEditor,
     Incubator,
+    IncubatorLinks,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -70,6 +71,7 @@ impl GameState {
                 }
                 ds
             }
+            GameState::IncubatorLinks => DockState::new(Tab::IncubatorLinks.into()),
             _ => DockState::new(default()),
         }
     }
@@ -96,6 +98,7 @@ pub enum Tab {
     IncubatorRepresentation,
 
     IncubatorNewNode,
+    IncubatorLinks,
 
     Admin,
 }
@@ -132,6 +135,7 @@ impl Tab {
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
+            Tab::IncubatorLinks => IncubatorPlugin::tab_links(ui, world)?,
             Tab::IncubatorUnit => IncubatorPlugin::tab_kind(NodeKind::Unit, ui, world)?,
             Tab::IncubatorUnitStats => IncubatorPlugin::tab_kind(NodeKind::UnitStats, ui, world)?,
             Tab::IncubatorUnitDescription => {

@@ -12,6 +12,7 @@ impl Plugin for IncubatorPlugin {
 
 #[derive(Resource, Default)]
 struct IncubatorData {
+    links_node: Option<(u64, NodeKind)>,
     callback_id: Option<IncubatorPushCallbackId>,
     edit_node: Option<(NodeKind, Vec<String>)>,
 }
@@ -42,6 +43,10 @@ impl IncubatorPlugin {
                 format!("New incubator node reducer callback not set").notify_error(world);
             }
         });
+    }
+    fn open_links(id: u64, kind: NodeKind, world: &mut World) {
+        world.resource_mut::<IncubatorData>().links_node = Some((id, kind));
+        GameState::IncubatorLinks.set_next(world);
     }
     fn open_editor(kind: NodeKind, world: &mut World) {
         world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
@@ -75,11 +80,15 @@ impl IncubatorPlugin {
         }
     }
     pub fn tab_kind(kind: NodeKind, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut open_links: Option<(u64, NodeKind)> = None;
         ui.vertical(|ui| {
             match kind {
                 NodeKind::Unit => {
                     for node in Self::incubator(world)?.units_load(world) {
                         node.name.label(ui);
+                        if "links".cstr().button(ui).clicked() {
+                            open_links = Some((node.id(), node.kind()));
+                        }
                     }
                 }
                 NodeKind::UnitDescription => {
@@ -119,6 +128,9 @@ impl IncubatorPlugin {
                 _ => unreachable!(),
             }
             Self::new_node_btn(kind, ui, world);
+            if let Some((id, kind)) = open_links {
+                Self::open_links(id, kind, world);
+            }
             Ok(())
         })
         .inner
@@ -139,6 +151,20 @@ impl IncubatorPlugin {
                     .unwrap();
             }
         });
+        Ok(())
+    }
+    pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let (id, kind) = world.resource::<IncubatorData>().links_node.unwrap();
+        const LINKS: LazyCell<HashMap<NodeKind, HashSet<NodeKind>>> =
+            LazyCell::new(|| NodeKind::get_incubator_links());
+        let links = LINKS.get(&kind).cloned().unwrap();
+        ui.columns(links.len() + 1, |ui| {
+            kind.cstr().label(&mut ui[0]);
+            for (i, kind) in links.iter().enumerate() {
+                kind.cstr().label(&mut ui[i + 1]);
+            }
+        });
+
         Ok(())
     }
 }
