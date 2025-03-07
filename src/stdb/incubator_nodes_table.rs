@@ -5,42 +5,42 @@
 use super::t_incubator_type::TIncubator;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-/// Table handle for the table `nodes_incubator`.
+/// Table handle for the table `incubator_nodes`.
 ///
-/// Obtain a handle from the [`NodesIncubatorTableAccess::nodes_incubator`] method on [`super::RemoteTables`],
-/// like `ctx.db.nodes_incubator()`.
+/// Obtain a handle from the [`IncubatorNodesTableAccess::incubator_nodes`] method on [`super::RemoteTables`],
+/// like `ctx.db.incubator_nodes()`.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes_incubator().on_insert(...)`.
-pub struct NodesIncubatorTableHandle<'ctx> {
+/// like `ctx.db.incubator_nodes().on_insert(...)`.
+pub struct IncubatorNodesTableHandle<'ctx> {
     imp: __sdk::TableHandle<TIncubator>,
     ctx: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
 #[allow(non_camel_case_types)]
-/// Extension trait for access to the table `nodes_incubator`.
+/// Extension trait for access to the table `incubator_nodes`.
 ///
 /// Implemented for [`super::RemoteTables`].
-pub trait NodesIncubatorTableAccess {
+pub trait IncubatorNodesTableAccess {
     #[allow(non_snake_case)]
-    /// Obtain a [`NodesIncubatorTableHandle`], which mediates access to the table `nodes_incubator`.
-    fn nodes_incubator(&self) -> NodesIncubatorTableHandle<'_>;
+    /// Obtain a [`IncubatorNodesTableHandle`], which mediates access to the table `incubator_nodes`.
+    fn incubator_nodes(&self) -> IncubatorNodesTableHandle<'_>;
 }
 
-impl NodesIncubatorTableAccess for super::RemoteTables {
-    fn nodes_incubator(&self) -> NodesIncubatorTableHandle<'_> {
-        NodesIncubatorTableHandle {
-            imp: self.imp.get_table::<TIncubator>("nodes_incubator"),
+impl IncubatorNodesTableAccess for super::RemoteTables {
+    fn incubator_nodes(&self) -> IncubatorNodesTableHandle<'_> {
+        IncubatorNodesTableHandle {
+            imp: self.imp.get_table::<TIncubator>("incubator_nodes"),
             ctx: std::marker::PhantomData,
         }
     }
 }
 
-pub struct NodesIncubatorInsertCallbackId(__sdk::CallbackId);
-pub struct NodesIncubatorDeleteCallbackId(__sdk::CallbackId);
+pub struct IncubatorNodesInsertCallbackId(__sdk::CallbackId);
+pub struct IncubatorNodesDeleteCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::Table for NodesIncubatorTableHandle<'ctx> {
+impl<'ctx> __sdk::Table for IncubatorNodesTableHandle<'ctx> {
     type Row = TIncubator;
     type EventContext = super::EventContext;
 
@@ -51,51 +51,51 @@ impl<'ctx> __sdk::Table for NodesIncubatorTableHandle<'ctx> {
         self.imp.iter()
     }
 
-    type InsertCallbackId = NodesIncubatorInsertCallbackId;
+    type InsertCallbackId = IncubatorNodesInsertCallbackId;
 
     fn on_insert(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesIncubatorInsertCallbackId {
-        NodesIncubatorInsertCallbackId(self.imp.on_insert(Box::new(callback)))
+    ) -> IncubatorNodesInsertCallbackId {
+        IncubatorNodesInsertCallbackId(self.imp.on_insert(Box::new(callback)))
     }
 
-    fn remove_on_insert(&self, callback: NodesIncubatorInsertCallbackId) {
+    fn remove_on_insert(&self, callback: IncubatorNodesInsertCallbackId) {
         self.imp.remove_on_insert(callback.0)
     }
 
-    type DeleteCallbackId = NodesIncubatorDeleteCallbackId;
+    type DeleteCallbackId = IncubatorNodesDeleteCallbackId;
 
     fn on_delete(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row) + Send + 'static,
-    ) -> NodesIncubatorDeleteCallbackId {
-        NodesIncubatorDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
+    ) -> IncubatorNodesDeleteCallbackId {
+        IncubatorNodesDeleteCallbackId(self.imp.on_delete(Box::new(callback)))
     }
 
-    fn remove_on_delete(&self, callback: NodesIncubatorDeleteCallbackId) {
+    fn remove_on_delete(&self, callback: IncubatorNodesDeleteCallbackId) {
         self.imp.remove_on_delete(callback.0)
     }
 }
 
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
-    let _table = client_cache.get_or_make_table::<TIncubator>("nodes_incubator");
+    let _table = client_cache.get_or_make_table::<TIncubator>("incubator_nodes");
     _table.add_unique_constraint::<u64>("id", |row| &row.id);
 }
-pub struct NodesIncubatorUpdateCallbackId(__sdk::CallbackId);
+pub struct IncubatorNodesUpdateCallbackId(__sdk::CallbackId);
 
-impl<'ctx> __sdk::TableWithPrimaryKey for NodesIncubatorTableHandle<'ctx> {
-    type UpdateCallbackId = NodesIncubatorUpdateCallbackId;
+impl<'ctx> __sdk::TableWithPrimaryKey for IncubatorNodesTableHandle<'ctx> {
+    type UpdateCallbackId = IncubatorNodesUpdateCallbackId;
 
     fn on_update(
         &self,
         callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
-    ) -> NodesIncubatorUpdateCallbackId {
-        NodesIncubatorUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    ) -> IncubatorNodesUpdateCallbackId {
+        IncubatorNodesUpdateCallbackId(self.imp.on_update(Box::new(callback)))
     }
 
-    fn remove_on_update(&self, callback: NodesIncubatorUpdateCallbackId) {
+    fn remove_on_update(&self, callback: IncubatorNodesUpdateCallbackId) {
         self.imp.remove_on_update(callback.0)
     }
 }
@@ -111,29 +111,29 @@ pub(super) fn parse_table_update(
     })
 }
 
-/// Access to the `id` unique index on the table `nodes_incubator`,
+/// Access to the `id` unique index on the table `incubator_nodes`,
 /// which allows point queries on the field of the same name
-/// via the [`NodesIncubatorIdUnique::find`] method.
+/// via the [`IncubatorNodesIdUnique::find`] method.
 ///
 /// Users are encouraged not to explicitly reference this type,
 /// but to directly chain method calls,
-/// like `ctx.db.nodes_incubator().id().find(...)`.
-pub struct NodesIncubatorIdUnique<'ctx> {
+/// like `ctx.db.incubator_nodes().id().find(...)`.
+pub struct IncubatorNodesIdUnique<'ctx> {
     imp: __sdk::UniqueConstraintHandle<TIncubator, u64>,
     phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
 }
 
-impl<'ctx> NodesIncubatorTableHandle<'ctx> {
-    /// Get a handle on the `id` unique index on the table `nodes_incubator`.
-    pub fn id(&self) -> NodesIncubatorIdUnique<'ctx> {
-        NodesIncubatorIdUnique {
+impl<'ctx> IncubatorNodesTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `incubator_nodes`.
+    pub fn id(&self) -> IncubatorNodesIdUnique<'ctx> {
+        IncubatorNodesIdUnique {
             imp: self.imp.get_unique_constraint::<u64>("id"),
             phantom: std::marker::PhantomData,
         }
     }
 }
 
-impl<'ctx> NodesIncubatorIdUnique<'ctx> {
+impl<'ctx> IncubatorNodesIdUnique<'ctx> {
     /// Find the subscribed row whose `id` column value is equal to `col_val`,
     /// if such a row is present in the client cache.
     pub fn find(&self, col_val: &u64) -> Option<TIncubator> {

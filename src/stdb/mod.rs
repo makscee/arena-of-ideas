@@ -15,6 +15,8 @@ pub mod global_data_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
+pub mod incubator_links_table;
+pub mod incubator_nodes_table;
 pub mod incubator_push_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
@@ -26,12 +28,12 @@ pub mod match_insert_reducer;
 pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
-pub mod nodes_incubator_table;
 pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
 pub mod sync_assets_reducer;
 pub mod t_battle_type;
+pub mod t_incubator_links_type;
 pub mod t_incubator_type;
 pub mod t_node_type;
 
@@ -54,6 +56,8 @@ pub use global_settings_type::GlobalSettings;
 pub use identity_disconnected_reducer::{
     identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
 };
+pub use incubator_links_table::*;
+pub use incubator_nodes_table::*;
 pub use incubator_push_reducer::{
     incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
 };
@@ -73,12 +77,12 @@ pub use match_reorder_reducer::{
 };
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
-pub use nodes_incubator_table::*;
 pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
 pub use t_battle_type::TBattle;
+pub use t_incubator_links_type::TIncubatorLinks;
 pub use t_incubator_type::TIncubator;
 pub use t_node_type::TNode;
 
@@ -276,7 +280,8 @@ pub struct DbUpdate {
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
-    nodes_incubator: __sdk::TableUpdate<TIncubator>,
+    incubator_links: __sdk::TableUpdate<TIncubatorLinks>,
+    incubator_nodes: __sdk::TableUpdate<TIncubator>,
     nodes_world: __sdk::TableUpdate<TNode>,
 }
 
@@ -298,9 +303,13 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
-                "nodes_incubator" => {
-                    db_update.nodes_incubator =
-                        nodes_incubator_table::parse_table_update(table_update)?
+                "incubator_links" => {
+                    db_update.incubator_links =
+                        incubator_links_table::parse_table_update(table_update)?
+                }
+                "incubator_nodes" => {
+                    db_update.incubator_nodes =
+                        incubator_nodes_table::parse_table_update(table_update)?
                 }
                 "nodes_world" => {
                     db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
@@ -341,8 +350,10 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         diff.global_settings =
             cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        diff.nodes_incubator = cache
-            .apply_diff_to_table::<TIncubator>("nodes_incubator", &self.nodes_incubator)
+        diff.incubator_links =
+            cache.apply_diff_to_table::<TIncubatorLinks>("incubator_links", &self.incubator_links);
+        diff.incubator_nodes = cache
+            .apply_diff_to_table::<TIncubator>("incubator_nodes", &self.incubator_nodes)
             .with_updates_by_pk(|row| &row.id);
         diff.nodes_world = cache
             .apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world)
@@ -360,7 +371,8 @@ pub struct AppliedDiff<'r> {
     daily_update_timer: __sdk::TableAppliedDiff<'r, DailyUpdateTimer>,
     global_data: __sdk::TableAppliedDiff<'r, GlobalData>,
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
-    nodes_incubator: __sdk::TableAppliedDiff<'r, TIncubator>,
+    incubator_links: __sdk::TableAppliedDiff<'r, TIncubatorLinks>,
+    incubator_nodes: __sdk::TableAppliedDiff<'r, TIncubator>,
     nodes_world: __sdk::TableAppliedDiff<'r, TNode>,
 }
 
@@ -386,9 +398,14 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.global_settings,
             event,
         );
+        callbacks.invoke_table_row_callbacks::<TIncubatorLinks>(
+            "incubator_links",
+            &self.incubator_links,
+            event,
+        );
         callbacks.invoke_table_row_callbacks::<TIncubator>(
-            "nodes_incubator",
-            &self.nodes_incubator,
+            "incubator_nodes",
+            &self.incubator_nodes,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
@@ -971,7 +988,8 @@ impl __sdk::SpacetimeModule for RemoteModule {
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
-        nodes_incubator_table::register_table(client_cache);
+        incubator_links_table::register_table(client_cache);
+        incubator_nodes_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
     }
 }

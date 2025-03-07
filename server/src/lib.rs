@@ -25,6 +25,7 @@ use player::*;
 use r#match::*;
 use schema::*;
 use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+use std::collections::{HashMap, HashSet};
 
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
