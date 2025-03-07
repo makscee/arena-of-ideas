@@ -1,7 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use macro_server::*;
 use schema::*;
+use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
 macro_schema::nodes!();
@@ -18,6 +19,9 @@ pub trait Node: Default + Sized {
     fn save(self, ctx: &ReducerContext);
     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self;
     fn to_tnode_vec(&self) -> Vec<TNode>;
+    fn component_kinds() -> HashSet<NodeKind>;
+    fn children_kinds() -> HashSet<NodeKind>;
+    fn reassign_ids(&mut self, ctx: &ReducerContext);
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {

@@ -53,9 +53,11 @@ impl GameState {
             GameState::Incubator => {
                 let mut tabs = [
                     Tab::IncubatorUnit,
+                    Tab::IncubatorRepresentation,
                     Tab::IncubatorUnitDescription,
                     Tab::IncubatorUnitStats,
-                    // Tab::IncubatorHouse,
+                    Tab::IncubatorHouse,
+                    Tab::IncubatorActionAbility,
                 ]
                 .to_vec();
                 let mut ds = DockState::new(tabs.remove(0).into());
@@ -86,10 +88,12 @@ pub enum Tab {
     Actions,
     FusionResult,
 
+    IncubatorHouse,
+    IncubatorActionAbility,
     IncubatorUnit,
     IncubatorUnitStats,
     IncubatorUnitDescription,
-    IncubatorHouse,
+    IncubatorRepresentation,
 
     IncubatorNewNode,
 
@@ -127,13 +131,19 @@ impl Tab {
             Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
 
+            Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
             Tab::IncubatorUnit => IncubatorPlugin::tab_kind(NodeKind::Unit, ui, world)?,
             Tab::IncubatorUnitStats => IncubatorPlugin::tab_kind(NodeKind::UnitStats, ui, world)?,
             Tab::IncubatorUnitDescription => {
                 IncubatorPlugin::tab_kind(NodeKind::UnitDescription, ui, world)?
             }
             Tab::IncubatorHouse => IncubatorPlugin::tab_kind(NodeKind::House, ui, world)?,
-            Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
+            Tab::IncubatorActionAbility => {
+                IncubatorPlugin::tab_kind(NodeKind::ActionAbility, ui, world)?
+            }
+            Tab::IncubatorRepresentation => {
+                IncubatorPlugin::tab_kind(NodeKind::Representation, ui, world)?
+            }
         };
         Ok(())
     }

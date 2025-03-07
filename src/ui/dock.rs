@@ -27,7 +27,16 @@ impl TabViewer for DockContext {
     type Tab = Tab;
 
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
-        tab.as_ref().to_case(Case::Title).into()
+        match tab {
+            Tab::IncubatorHouse => "House".into(),
+            Tab::IncubatorActionAbility => "Action Ability".into(),
+            Tab::IncubatorUnit => "Unit".into(),
+            Tab::IncubatorUnitStats => "Unit Stats".into(),
+            Tab::IncubatorUnitDescription => "Unit Description".into(),
+            Tab::IncubatorRepresentation => "Representation".into(),
+            Tab::IncubatorNewNode => "New Node".into(),
+            _ => tab.as_ref().to_case(Case::Title).into(),
+        }
     }
 
     fn ui(&mut self, ui: &mut Ui, tab: &mut Self::Tab) {

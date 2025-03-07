@@ -169,6 +169,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &component_link_fields,
                 &component_link_types,
             );
+            let common_trait =
+                common_node_trait_fns(struct_ident, &component_link_types, &child_link_types);
             let component_link_fields_load = component_link_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
@@ -384,6 +386,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl Node for #struct_ident {
                     #strings_conversions
+                    #common_trait
                     fn id(&self) -> u64 {
                         self.id.unwrap()
                     }
@@ -497,13 +500,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let kind = self.kind();
                         world.entity_mut(entity).insert(self);
                         kind.on_unpack(entity, world);
-                    }
-                    fn component_kinds() -> HashSet<NodeKind> {
-                        [
-                            #(
-                                NodeKind::#component_link_types,
-                            )*
-                        ].into()
                     }
                 }
                 impl From<&str> for #struct_ident {

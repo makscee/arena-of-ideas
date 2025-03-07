@@ -96,15 +96,26 @@ impl IncubatorPlugin {
                         .label(ui);
                     }
                 }
-                NodeKind::House => todo!(),
-                NodeKind::HouseColor => todo!(),
-                NodeKind::ActionAbility => todo!(),
+                NodeKind::House => {
+                    for node in Self::incubator(world)?.houses_load(world) {
+                        node.name.cstr_s(CstrStyle::Small).label(ui);
+                    }
+                }
+                NodeKind::Representation => {
+                    for node in Self::incubator(world)?.representations_load(world) {
+                        node.material.cstr_s(CstrStyle::Small).label(ui);
+                    }
+                }
+                NodeKind::ActionAbility => {
+                    for node in Self::incubator(world)?.action_abilities_load(world) {
+                        node.name.cstr_s(CstrStyle::Small).label(ui);
+                    }
+                }
                 NodeKind::ActionAbilityDescription => todo!(),
                 NodeKind::AbilityEffect => todo!(),
                 NodeKind::StatusAbility => todo!(),
                 NodeKind::StatusAbilityDescription => todo!(),
                 NodeKind::Reaction => todo!(),
-                NodeKind::Representation => todo!(),
                 _ => unreachable!(),
             }
             Self::new_node_btn(kind, ui, world);

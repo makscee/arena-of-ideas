@@ -233,3 +233,25 @@ pub fn common_node_fns(
         }
     }
 }
+pub fn common_node_trait_fns(
+    _struct_ident: &Ident,
+    component_link_types: &Vec<TokenStream>,
+    child_link_types: &Vec<TokenStream>,
+) -> TokenStream {
+    quote! {
+        fn component_kinds() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#component_link_types,
+                )*
+            ].into()
+        }
+        fn children_kinds() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#child_link_types,
+                )*
+            ].into()
+        }
+    }
+}

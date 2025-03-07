@@ -54,6 +54,50 @@ pub fn nodes(_: TokenStream) -> TokenStream {
                 }
             }
         )*
+        impl NodeKind {
+            pub fn component_kinds(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::component_kinds()
+                        }
+                    )*
+                }
+            }
+            pub fn children_kinds(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::children_kinds()
+                        }
+                    )*
+                }
+            }
+            pub fn get_incubator_links() -> HashMap<Self, HashSet<Self>> {
+                let mut links: HashMap<Self, HashSet<Self>> =
+                    HashMap::from_iter(Self::iter().map(|k| (k, default())));
+                let incubator_children = Incubator::children_kinds();
+                for k in &incubator_children {
+                    for c in k.children_kinds() {
+                        if !incubator_children.contains(&c) {
+                            continue;
+                        }
+                        links.get_mut(&c).unwrap().insert(*k);
+                    }
+                }
+                for (k, l) in &mut links {
+                    for c in k.component_kinds() {
+                        if !incubator_children.contains(&c) {
+                            continue;
+                        }
+                        l.insert(c);
+                    }
+                }
+                links
+            }
+        }
         #nodes
     }
     .into()

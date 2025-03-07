@@ -64,6 +64,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &component_link_fields,
                 &component_link_types,
             );
+            let common_trait =
+                common_node_trait_fns(struct_ident, &component_link_types, &child_link_types);
             let component_link_fields_load = component_link_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
@@ -182,6 +184,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions
+                    #common_trait
                     fn id(&self) -> u64 {
                         self.id
                     }
@@ -227,6 +230,21 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         v
+                    }
+                    fn reassign_ids(&mut self, ctx: &ReducerContext) {
+                        self.id = ctx.next_id();
+                        #(
+                            if let Some(d) = self.#component_link_fields.as_mut() {
+                                d.parent = self.id;
+                                d.reassign_ids(ctx);
+                            }
+                        )*
+                        #(
+                            for d in &mut self.#child_link_fields {
+                                d.parent = self.id;
+                                d.reassign_ids(ctx);
+                            }
+                        )*
                     }
                 }
             }

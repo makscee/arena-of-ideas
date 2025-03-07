@@ -14,6 +14,7 @@ struct Incubator {
     pub unit_descriptions: NodeChildren<UnitDescription>,
     pub unit_stats: NodeChildren<UnitStats>,
     pub action_abilities: NodeChildren<ActionAbility>,
+    pub representations: NodeChildren<Representation>,
 }
 
 struct Player {

@@ -14,10 +14,18 @@ fn incubator_push(ctx: &ReducerContext, kind: String, datas: Vec<String>) -> Res
     Ok(())
 }
 
-#[table(public, name = nodes_incubator)]
+#[table(public, name = incubator_nodes)]
 pub struct TIncubator {
     #[primary_key]
     pub id: u64,
     #[index(btree)]
     pub owner: u64,
+}
+
+#[table(public, name = incubator_links)]
+pub struct TIncubatorLinks {
+    pub from: u64,
+    pub to: u64,
+    pub to_kind: String,
+    pub score: i64,
 }

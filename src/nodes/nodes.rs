@@ -59,6 +59,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
         Self::collect_children_entity(entity, world)
     }
     fn component_kinds() -> HashSet<NodeKind>;
+    fn children_kinds() -> HashSet<NodeKind>;
 }
 
 pub trait NodeExt: Sized {
