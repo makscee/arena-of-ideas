@@ -34,7 +34,7 @@ impl FusionEditorPlugin {
                 let selected = fusion.units.contains(&unit.name);
                 let stats = unit.description_load(world)?.stats_load(world)?;
                 DARK_FRAME
-                    .stroke(if selected { STROKE_LIGHT } else { STROKE_DARK })
+                    .stroke(if selected { STROKE_LIGHT } else { STROKE_BG_DARK })
                     .show(ui, |ui| {
                         show_unit_tag(unit, stats, ui, world);
                         if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
@@ -69,7 +69,7 @@ impl FusionEditorPlugin {
                         };
                         let selected = fusion.triggers.iter().any(|(r, _)| r.eq(&t_ref));
                         DARK_FRAME
-                            .stroke(if selected { STROKE_LIGHT } else { STROKE_DARK })
+                            .stroke(if selected { STROKE_LIGHT } else { STROKE_BG_DARK })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     trigger.show(None, context, ui);
@@ -119,7 +119,7 @@ impl FusionEditorPlugin {
                             .iter()
                             .any(|(_, a)| a.iter().any(|a| a_ref.eq(a)));
                         DARK_FRAME
-                            .stroke(if selected { STROKE_YELLOW } else { STROKE_DARK })
+                            .stroke(if selected { STROKE_YELLOW } else { STROKE_BG_DARK })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     action.show(None, context.clone().set_owner(entity), ui);

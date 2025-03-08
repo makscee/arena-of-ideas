@@ -50,6 +50,10 @@ pub const STROKE_LIGHT: Stroke = Stroke {
 };
 pub const STROKE_DARK: Stroke = Stroke {
     width: 1.0,
+    color: VISIBLE_DARK,
+};
+pub const STROKE_BG_DARK: Stroke = Stroke {
+    width: 1.0,
     color: BG_LIGHT,
 };
 pub const STROKE_YELLOW: Stroke = Stroke {
@@ -89,7 +93,7 @@ pub const DARK_FRAME: Frame = Frame {
     corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: TRANSPARENT,
-    stroke: STROKE_DARK,
+    stroke: STROKE_BG_DARK,
 };
 
 pub struct UiPlugin;
@@ -191,7 +195,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             noninteractive: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: Color32::from_gray(27),
-                bg_stroke: STROKE_DARK, // separators, indentation lines
+                bg_stroke: STROKE_BG_DARK, // separators, indentation lines
                 fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -199,7 +203,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             inactive: WidgetVisuals {
                 weak_bg_fill: Color32::TRANSPARENT,
                 bg_fill: BG_LIGHT, // checkbox background
-                bg_stroke: STROKE_DARK,
+                bg_stroke: STROKE_BG_DARK,
                 fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,
@@ -223,7 +227,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             open: WidgetVisuals {
                 weak_bg_fill: Color32::from_gray(45),
                 bg_fill: Color32::from_gray(27),
-                bg_stroke: STROKE_DARK,
+                bg_stroke: STROKE_BG_DARK,
                 fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
                 corner_radius: CornerRadius::same(13),
                 expansion: 0.0,

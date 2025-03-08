@@ -25,7 +25,7 @@ impl Input {
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             self.name.label(ui);
-            ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_DARK;
+            ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_BG_DARK;
             let mut te = TextEdit::singleline(value)
                 .desired_width(f32::INFINITY)
                 .password(self.password);

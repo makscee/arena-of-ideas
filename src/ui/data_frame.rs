@@ -1,3 +1,5 @@
+use bevy_egui::egui::menu::BarState;
+
 use super::*;
 
 pub struct DataFrameMut<'a, T> {
@@ -25,7 +27,7 @@ const FRAME: Frame = Frame {
     corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: EMPTINESS,
-    stroke: STROKE_DARK,
+    stroke: STROKE_BG_DARK,
 };
 
 impl<'a, T> DataFrame<'a, T>
@@ -75,7 +77,7 @@ where
             }
         });
         let name = |ui: &mut Ui| {
-            self.data.cstr_s(CstrStyle::Bold).label(ui);
+            self.data.cstr().label(ui);
             false
         };
         let context_actions = HashMap::from_iter(self.context_actions.into_iter().map(|(k, v)| {
@@ -114,7 +116,7 @@ where
             "Paste",
             Box::new(move |d| {
                 if let Some(c) = clipboard_get() {
-                    d.inject_data(&c);
+                    d.inject_data(&c).log();
                     true
                 } else {
                     false
@@ -200,7 +202,7 @@ where
             if let Some(name) = self.name {
                 name(data.borrow_mut().deref_mut(), ui)
             } else {
-                self.data.cstr_s(CstrStyle::Bold);
+                self.data.cstr();
                 false
             }
         };
@@ -259,7 +261,11 @@ fn compose_ui(
     let mut header_rect = Rect::ZERO;
     let mut triangle_rect = Rect::ZERO;
     let resp = FRAME
-        .stroke(if hovered { STROKE_LIGHT } else { STROKE_DARK })
+        .stroke(if hovered {
+            STROKE_LIGHT
+        } else {
+            STROKE_BG_DARK
+        })
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
@@ -273,7 +279,19 @@ fn compose_ui(
                             }
                             changed |= name(ui);
                             if !context_actions.is_empty() {
-                                ui.menu_button("+", |ui| {
+                                let (_, resp) = ui.allocate_at_least(
+                                    egui::vec2(8.0, ui.available_height()),
+                                    Sense::click(),
+                                );
+                                ui.painter().circle(
+                                    resp.rect.center(),
+                                    4.0,
+                                    if resp.hovered() { YELLOW } else { BG_DARK },
+                                    STROKE_DARK,
+                                );
+                                let bar_id = ui.id();
+                                let mut bar_state = BarState::load(ui.ctx(), bar_id);
+                                bar_state.bar_menu(&resp, |ui| {
                                     for (name, action) in context_actions {
                                         if ui.button(name).clicked() {
                                             action();
@@ -285,6 +303,7 @@ fn compose_ui(
                                         ui.close_menu();
                                     }
                                 });
+                                bar_state.store(ui.ctx(), bar_id);
                             }
                             if header.is_some() || body.is_some() {
                                 let x = ui.available_height() - 4.0;
@@ -367,7 +386,7 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn show_body(&self, context: &Context, ui: &mut Ui);
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
     fn show_name(&self, ui: &mut Ui) {
-        self.cstr_s(CstrStyle::Bold).label(ui);
+        self.cstr().label(ui);
     }
     fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
         self.show_name(ui);
@@ -559,7 +578,7 @@ impl DataFramed for Expression {
             Expression::B(v) => v.show_mut(Some("x"), ui),
             Expression::C(v) => match Color32::from_hex(v) {
                 Ok(mut c) => {
-                    v.cstr_cs(c, CstrStyle::Bold).label(ui);
+                    v.cstr_c(c).label(ui);
                     let changed = c.show_mut(None, ui);
                     if changed {
                         *v = c.to_hex();
@@ -813,7 +832,7 @@ impl DataFramed for Action {
                                 .map(|a| a.name.clone())
                         })
                     {
-                        name.cstr_cs(color, CstrStyle::Bold).label(ui);
+                        name.cstr_c(color).label(ui);
                     }
                 }
             }

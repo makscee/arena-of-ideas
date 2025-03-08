@@ -184,6 +184,22 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         );
         self
     }
+    pub fn column_ui(
+        mut self,
+        name: &'static str,
+        show: fn(&T, VarValue, &mut Ui, &mut World),
+    ) -> Self {
+        self.columns.insert(
+            name,
+            TableColumn {
+                value: Box::new(|_, _| default()),
+                show: Box::new(show),
+                sortable: false,
+                hide_name: false,
+            },
+        );
+        self
+    }
     pub fn column_btn_mod_dyn(
         mut self,
         name: &'static str,
@@ -528,17 +544,18 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                 });
             }
 
-            Frame::none().inner_margin(Margin::same(13)).show(ui, |ui| {
+            Frame::new().inner_margin(Margin::same(13)).show(ui, |ui| {
                 ui.push_id(Id::new(self.name), |ui| {
                     ui.horizontal(|ui| {
-                        format!("total: {}", state.indices.len()).cstr().label(ui);
+                        format!("total: {}", state.indices.len())
+                            .cstr_c(VISIBLE_DARK)
+                            .label(ui);
                     });
                     TableBuilder::new(ui)
                         .columns(
                             Column::auto(),
                             self.columns.len() + self.selectable as usize,
                         )
-                        .auto_shrink([false, true])
                         .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
                         .header(30.0, |mut row| {
                             for (i, (name, column)) in self.columns.iter().enumerate() {

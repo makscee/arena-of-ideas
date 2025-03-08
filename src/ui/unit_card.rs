@@ -41,7 +41,7 @@ impl UnitCard {
                 sw: 13,
                 se: 13,
             })
-            .stroke(STROKE_DARK)
+            .stroke(STROKE_BG_DARK)
             .show(ui, |ui| {
                 if self.expanded {
                     ui.vertical(|ui| {

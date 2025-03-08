@@ -136,7 +136,7 @@ impl AdminPlugin {
                         .stroke(if resp.hovered() {
                             STROKE_YELLOW
                         } else {
-                            STROKE_DARK
+                            STROKE_BG_DARK
                         })
                         .paint(rect),
                 );

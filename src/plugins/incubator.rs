@@ -13,6 +13,8 @@ impl Plugin for IncubatorPlugin {
 #[derive(Resource, Default)]
 struct IncubatorData {
     links_node: Option<(u64, NodeKind)>,
+    link_types: Vec<NodeKind>,
+    link_type_selected: NodeKind,
     callback_id: Option<IncubatorPushCallbackId>,
     edit_node: Option<(NodeKind, Vec<String>)>,
 }
@@ -108,7 +110,16 @@ impl IncubatorPlugin {
             }
             Self::new_node_btn(kind, ui, world);
             if let Some((id, kind)) = open_links {
-                world.resource_mut::<IncubatorData>().links_node = Some((id, kind));
+                let mut r = world.resource_mut::<IncubatorData>();
+                r.links_node = Some((id, kind));
+                r.link_types = NodeKind::get_incubator_links()
+                    .get(&kind)
+                    .unwrap()
+                    .iter()
+                    .sorted()
+                    .copied()
+                    .collect();
+                r.link_type_selected = r.link_types[0];
                 DockPlugin::set_active(Tab::IncubatorLinks, world);
             }
             Ok(())
@@ -138,6 +149,9 @@ impl IncubatorPlugin {
             "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
             return Ok(());
         };
+        format!("{kind} Links")
+            .cstr_s(CstrStyle::Heading2)
+            .label(ui);
         kind.show(
             world
                 .get_id_link(id)
@@ -145,49 +159,56 @@ impl IncubatorPlugin {
             ui,
             world,
         );
-        const LINKS: LazyCell<HashMap<NodeKind, HashSet<NodeKind>>> =
-            LazyCell::new(|| NodeKind::get_incubator_links());
-        let links = LINKS.get(&kind).cloned().unwrap();
-        ui.columns(links.len(), |ui| {
-            for (i, kind) in links.iter().sorted().enumerate() {
-                let ui = &mut ui[i];
-                ui.vertical_centered_justified(|ui| {
-                    kind.cstr_s(CstrStyle::Bold).label(ui);
-                });
-                Table::new(format!("{kind} links"), move |world| {
-                    let incubator_id = Self::incubator(world).unwrap().id();
-                    let kind = kind.to_string();
-                    cn().db
-                        .nodes_world()
-                        .iter()
-                        .filter_map(|r| {
-                            if r.parent == incubator_id && r.kind == kind {
-                                Some((
-                                    cn().db
-                                        .incubator_links()
-                                        .iter()
-                                        .find_map(|l| {
-                                            if l.from == id && l.to_kind == kind && l.to == r.id {
-                                                Some(l.score as i32)
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                        .unwrap_or_default(),
-                                    r,
-                                ))
-                            } else {
-                                None
-                            }
-                        })
-                        .sorted_by_key(|(score, _)| -*score)
-                        .collect_vec()
-                })
-                .column_cstr("node", |(_, node), _| node.data.cstr_s(CstrStyle::Small))
-                .column_int("score", |(score, _)| *score)
-                .ui(ui, world);
+
+        let mut r = world.resource_mut::<IncubatorData>();
+        let mut selected = r.link_type_selected;
+        ui.horizontal(|ui| {
+            "show type".cstr_c(VISIBLE_DARK).label(ui);
+            if EnumSwitcher::new().show_iter(
+                &mut selected,
+                r.link_types.iter().copied(),
+                ui,
+            ) {
+                r.link_type_selected = selected;
             }
         });
+        Table::new(format!("{selected} links"), move |world| {
+            let incubator_id = Self::incubator(world).unwrap().id();
+            let kind = selected.to_string();
+            cn().db
+                .nodes_world()
+                .iter()
+                .filter_map(|r| {
+                    if r.parent == incubator_id && r.kind == kind {
+                        Some((
+                            cn().db
+                                .incubator_links()
+                                .iter()
+                                .find_map(|l| {
+                                    if l.from == id && l.to_kind == kind && l.to == r.id {
+                                        Some(l.score as i32)
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .unwrap_or_default(),
+                            r,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .sorted_by_key(|(score, _)| -*score)
+                .collect_vec()
+        })
+        .column_ui("node", |(_, node), _, ui, world| {
+            let kind = node.kind.to_kind();
+            let entity = world.get_id_link(node.id).unwrap();
+            kind.show(entity, ui, world);
+        })
+        .column_cstr("data", |(_, node), _| node.data.cstr_s(CstrStyle::Small))
+        .column_int("score", |(score, _)| *score)
+        .ui(ui, world);
 
         Ok(())
     }

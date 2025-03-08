@@ -99,7 +99,7 @@ impl Window {
             corner_radius: ROUNDING,
             shadow: SHADOW,
             fill: EMPTINESS,
-            stroke: STROKE_DARK,
+            stroke: STROKE_BG_DARK,
         };
         let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)

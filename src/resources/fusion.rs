@@ -147,5 +147,5 @@ const FRAME: Frame = Frame {
     corner_radius: ROUNDING,
     shadow: Shadow::NONE,
     fill: TRANSPARENT,
-    stroke: STROKE_DARK,
+    stroke: STROKE_BG_DARK,
 };

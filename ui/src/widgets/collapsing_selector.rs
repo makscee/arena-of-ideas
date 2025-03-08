@@ -15,7 +15,7 @@ impl CollapsingSelector {
             corner_radius: CornerRadius::same(13),
             shadow: Shadow::NONE,
             fill: TRANSPARENT,
-            stroke: STROKE_DARK,
+            stroke: STROKE_BG_DARK,
         };
         FRAME
             .show(ui, |ui| {

@@ -63,6 +63,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             } else {
                 NodeType::OnlyData
             };
+            let default_open = match nt {
+                NodeType::Name => quote! {false},
+                NodeType::Data | NodeType::OnlyData => quote! {true},
+            };
             let name_link = match nt {
                 NodeType::Name => quote! {world.add_name_link(self.name.clone(), entity);},
                 NodeType::Data | NodeType::OnlyData => quote! {},
@@ -223,7 +227,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl ToCstr for #struct_ident {
                     fn cstr(&self) -> Cstr {
-                        format!("[vd [s {self} [vb {}]]]", #name_quote)
+                        format!("[vd {self} [vb {}]]", #name_quote)
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -306,6 +310,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl DataFramed for #struct_ident {
+                    fn default_open(&self) -> bool {
+                        #default_open
+                    }
                     fn has_header(&self) -> bool {
                         true
                     }

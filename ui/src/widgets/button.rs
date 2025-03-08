@@ -45,8 +45,8 @@ impl Button {
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = BG_LIGHT;
-        style.visuals.widgets.hovered.weak_bg_fill = BG_LIGHT;
+        style.visuals.widgets.inactive.weak_bg_fill = BG_DARK;
+        style.visuals.widgets.hovered.weak_bg_fill = BG_DARK;
         self
     }
     pub fn set_bg(self, value: bool, ui: &mut Ui) -> Self {
