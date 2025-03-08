@@ -36,35 +36,13 @@ impl IncubatorPlugin {
         world.resource_mut::<IncubatorData>().callback_id = Some(callback);
     }
     fn on_exit(world: &mut World) {
-        world.resource_scope(|world, mut d: Mut<IncubatorData>| {
+        world.resource_scope(|_, mut d: Mut<IncubatorData>| {
             if let Some(callback) = d.callback_id.take() {
                 cn().reducers.remove_on_incubator_push(callback);
             } else {
-                format!("New incubator node reducer callback not set").notify_error(world);
+                error!("New incubator node reducer callback not set");
             }
         });
-    }
-    fn open_links(id: u64, kind: NodeKind, world: &mut World) {
-        world.resource_mut::<IncubatorData>().links_node = Some((id, kind));
-        GameState::IncubatorLinks.set_next(world);
-    }
-    fn open_editor(kind: NodeKind, world: &mut World) {
-        world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
-        DockPlugin::push(
-            |dt| {
-                if let Some(s) = dt.state.find_tab(&Tab::IncubatorNewNode) {
-                    dt.state.set_active_tab(s);
-                    dt.state.set_focused_node_and_surface((s.0, s.1));
-                    return;
-                }
-                dt.state.main_surface_mut().split_below(
-                    0.into(),
-                    0.5,
-                    Tab::IncubatorNewNode.into(),
-                );
-            },
-            world,
-        );
     }
     fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
         All::get_by_id(0, world).unwrap().incubator_load(world)
@@ -76,7 +54,8 @@ impl IncubatorPlugin {
             .button(ui)
             .clicked()
         {
-            Self::open_editor(kind, world)
+            world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
+            DockPlugin::set_active(Tab::IncubatorNewNode, world);
         }
     }
     pub fn tab_kind(kind: NodeKind, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
@@ -129,7 +108,8 @@ impl IncubatorPlugin {
             }
             Self::new_node_btn(kind, ui, world);
             if let Some((id, kind)) = open_links {
-                Self::open_links(id, kind, world);
+                world.resource_mut::<IncubatorData>().links_node = Some((id, kind));
+                DockPlugin::set_active(Tab::IncubatorLinks, world);
             }
             Ok(())
         })
@@ -154,14 +134,58 @@ impl IncubatorPlugin {
         Ok(())
     }
     pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let (id, kind) = world.resource::<IncubatorData>().links_node.unwrap();
+        let Some((id, kind)) = world.resource::<IncubatorData>().links_node else {
+            "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
+            return Ok(());
+        };
+        kind.show(
+            world
+                .get_id_link(id)
+                .to_e_fn(|| format!("Failed to find node#{id}"))?,
+            ui,
+            world,
+        );
         const LINKS: LazyCell<HashMap<NodeKind, HashSet<NodeKind>>> =
             LazyCell::new(|| NodeKind::get_incubator_links());
         let links = LINKS.get(&kind).cloned().unwrap();
-        ui.columns(links.len() + 1, |ui| {
-            kind.cstr().label(&mut ui[0]);
-            for (i, kind) in links.iter().enumerate() {
-                kind.cstr().label(&mut ui[i + 1]);
+        ui.columns(links.len(), |ui| {
+            for (i, kind) in links.iter().sorted().enumerate() {
+                let ui = &mut ui[i];
+                ui.vertical_centered_justified(|ui| {
+                    kind.cstr_s(CstrStyle::Bold).label(ui);
+                });
+                Table::new(format!("{kind} links"), move |world| {
+                    let incubator_id = Self::incubator(world).unwrap().id();
+                    let kind = kind.to_string();
+                    cn().db
+                        .nodes_world()
+                        .iter()
+                        .filter_map(|r| {
+                            if r.parent == incubator_id && r.kind == kind {
+                                Some((
+                                    cn().db
+                                        .incubator_links()
+                                        .iter()
+                                        .find_map(|l| {
+                                            if l.from == id && l.to_kind == kind && l.to == r.id {
+                                                Some(l.score as i32)
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .unwrap_or_default(),
+                                    r,
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                        .sorted_by_key(|(score, _)| -*score)
+                        .collect_vec()
+                })
+                .column_cstr("node", |(_, node), _| node.data.cstr_s(CstrStyle::Small))
+                .column_int("score", |(score, _)| *score)
+                .ui(ui, world);
             }
         });
 

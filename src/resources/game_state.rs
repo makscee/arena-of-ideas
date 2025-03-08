@@ -16,7 +16,6 @@ pub enum GameState {
     Match,
     FusionEditor,
     Incubator,
-    IncubatorLinks,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -52,7 +51,7 @@ impl GameState {
                 ds
             }
             GameState::Incubator => {
-                let mut tabs = [
+                let node_tabs = [
                     Tab::IncubatorUnit,
                     Tab::IncubatorRepresentation,
                     Tab::IncubatorUnitDescription,
@@ -61,17 +60,14 @@ impl GameState {
                     Tab::IncubatorActionAbility,
                 ]
                 .to_vec();
-                let mut ds = DockState::new(tabs.remove(0).into());
-                let len = tabs.len() as f32;
-                for (i, tab) in tabs.drain(..).enumerate() {
-                    let i = i as f32;
-                    let parent = NodeIndex(ds.main_surface().len() - 1);
-                    let fract = 1.0 / (len - i + 1.0);
-                    ds.main_surface_mut().split_right(parent, fract, tab.into());
-                }
+                let mut ds = DockState::new(node_tabs);
+                ds.main_surface_mut().split_left(
+                    0.into(),
+                    0.4,
+                    [Tab::IncubatorLinks, Tab::IncubatorNewNode].into(),
+                );
                 ds
             }
-            GameState::IncubatorLinks => DockState::new(Tab::IncubatorLinks.into()),
             _ => DockState::new(default()),
         }
     }

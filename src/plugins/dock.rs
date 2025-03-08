@@ -75,6 +75,18 @@ impl DockPlugin {
             state.remove_surface(i);
         }
     }
+    pub fn set_active(tab: Tab, world: &mut World) {
+        Self::push(
+            move |dt| {
+                if let Some(tab) = dt.state.find_tab(&tab) {
+                    dt.state.set_active_tab(tab);
+                } else {
+                    error!("Tab not found: {tab}");
+                }
+            },
+            world,
+        );
+    }
     fn ui(world: &mut World) {
         let Some(ctx) = &egui_context(world).clone() else {
             return;

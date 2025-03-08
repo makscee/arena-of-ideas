@@ -7,9 +7,9 @@ use egui_extras::{Column, TableBuilder};
 use super::*;
 
 #[must_use]
-pub struct Table<T> {
-    name: &'static str,
-    rows_getter: fn(&mut World) -> Vec<T>,
+pub struct Table<'a, T> {
+    name: String,
+    rows_getter: Box<dyn Fn(&mut World) -> Vec<T> + Send + 'a>,
     rows_saved: Option<Vec<T>>,
     columns: IndexMap<&'static str, TableColumn<T>>,
     row_height: f32,
@@ -107,23 +107,23 @@ impl TableState {
     }
 }
 
-impl<T: 'static + Clone + Send + Sync> Table<T> {
-    pub fn new(name: &'static str, rows: fn(&mut World) -> Vec<T>) -> Self {
+impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
+    pub fn new(name: impl ToString, rows: impl Fn(&mut World) -> Vec<T> + Send + 'a) -> Self {
         Self {
-            name,
+            name: name.to_string(),
             columns: default(),
             title: default(),
             selectable: default(),
             filters: default(),
             row_height: 22.0,
-            rows_getter: rows,
+            rows_getter: Box::new(rows),
             rows_saved: None,
         }
     }
-    pub fn new_persistent(name: &'static str, rows: Vec<T>) -> Self {
+    pub fn new_persistent(name: impl ToString, rows: Vec<T>) -> Self {
         Self {
-            name,
-            rows_getter: |_| default(),
+            name: name.to_string(),
+            rows_getter: Box::new(|_| default()),
             rows_saved: Some(rows),
             columns: IndexMap::new(),
             row_height: 0.0,
@@ -487,7 +487,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
     pub fn ui(self, ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let mut need_filter = false;
-        let id = Id::new("table_").with(self.name).with(ui.id());
+        let id = Id::new("table_").with(&self.name).with(ui.id());
         self.cache_rows(id, world);
         world.resource_scope(|world, rows: Mut<TableCacheResource<T>>| {
             let data = &rows.map.get(&id).unwrap().data;
@@ -505,7 +505,7 @@ impl<T: 'static + Clone + Send + Sync> Table<T> {
                 state.indices = (0..data.len()).collect_vec();
             }
             if self.title {
-                title(self.name, ui);
+                title(&self.name, ui);
             }
             if !self.filters.is_empty() {
                 ui.horizontal(|ui| {
