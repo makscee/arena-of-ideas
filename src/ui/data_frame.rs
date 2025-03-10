@@ -26,7 +26,7 @@ const FRAME: Frame = Frame {
     outer_margin: Margin::ZERO,
     corner_radius: ROUNDING,
     shadow: Shadow::NONE,
-    fill: EMPTINESS,
+    fill: TRANSPARENT,
     stroke: STROKE_BG_DARK,
 };
 
@@ -261,11 +261,7 @@ fn compose_ui(
     let mut header_rect = Rect::ZERO;
     let mut triangle_rect = Rect::ZERO;
     let resp = FRAME
-        .stroke(if hovered {
-            STROKE_LIGHT
-        } else {
-            STROKE_BG_DARK
-        })
+        .stroke(if hovered { STROKE_DARK } else { STROKE_BG_DARK })
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {

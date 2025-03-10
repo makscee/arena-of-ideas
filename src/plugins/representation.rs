@@ -98,12 +98,7 @@ impl RepresentationPlugin {
     ) -> Result<(), ExpressionError> {
         let mut p = Painter::new(rect, ui.ctx());
         for a in &m.0 {
-            match a.paint(context, &mut p, ui) {
-                Ok(_) => {}
-                Err(e) => {
-                    return Err(e);
-                }
-            }
+            a.paint(context, &mut p, ui)?
         }
         PainterAction::Paint.paint(context, &mut p, ui)?;
         Ok(())

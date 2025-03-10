@@ -325,13 +325,15 @@ impl Show for Material {
         }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        let mut rect = ui.available_rect_before_wrap();
-        rect.set_width(150.0);
-        rect.set_height(150.0);
-        let mut p = Painter::new(rect, ui.ctx());
-        for i in &self.0 {
-            i.paint(&Context::default(), &mut p, ui).log();
+        let size_id = ui.id().with("view size");
+        let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 150.0));
+        if DragValue::new(&mut size).ui(ui).changed() {
+            ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
         }
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+        RepresentationPlugin::paint_rect(rect, &Context::default(), self, ui).log();
+        ui.painter()
+            .rect_stroke(rect, 0, STROKE_BG_DARK, egui::StrokeKind::Middle);
         self.0.show_mut(prefix, ui)
     }
 }
