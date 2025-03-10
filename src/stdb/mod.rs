@@ -18,6 +18,7 @@ pub mod identity_disconnected_reducer;
 pub mod incubator_links_table;
 pub mod incubator_nodes_table;
 pub mod incubator_push_reducer;
+pub mod incubator_update_core_reducer;
 pub mod incubator_vote_reducer;
 pub mod incubator_votes_table;
 pub mod login_by_identity_reducer;
@@ -63,6 +64,9 @@ pub use incubator_links_table::*;
 pub use incubator_nodes_table::*;
 pub use incubator_push_reducer::{
     incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
+};
+pub use incubator_update_core_reducer::{
+    incubator_update_core, set_flags_for_incubator_update_core, IncubatorUpdateCoreCallbackId,
 };
 pub use incubator_vote_reducer::{
     incubator_vote, set_flags_for_incubator_vote, IncubatorVoteCallbackId,
@@ -115,6 +119,7 @@ pub enum Reducer {
         kind: String,
         datas: Vec<String>,
     },
+    IncubatorUpdateCore,
     IncubatorVote {
         from: u64,
         to: u64,
@@ -167,6 +172,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::IncubatorPush { .. } => "incubator_push",
+            Reducer::IncubatorUpdateCore => "incubator_update_core",
             Reducer::IncubatorVote { .. } => "incubator_vote",
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
@@ -206,6 +212,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "incubator_push" => Ok(__sdk::parse_reducer_args::<
                 incubator_push_reducer::IncubatorPushArgs,
             >("incubator_push", &value.args)?
+            .into()),
+            "incubator_update_core" => Ok(__sdk::parse_reducer_args::<
+                incubator_update_core_reducer::IncubatorUpdateCoreArgs,
+            >("incubator_update_core", &value.args)?
             .into()),
             "incubator_vote" => Ok(__sdk::parse_reducer_args::<
                 incubator_vote_reducer::IncubatorVoteArgs,

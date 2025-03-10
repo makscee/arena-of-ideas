@@ -193,6 +193,9 @@ impl AdminPlugin {
         if "Houses Editor".cstr().button(ui).clicked() {
             GameAssetsEditor::open_houses_window(world);
         }
+        if "Update Core".cstr().button(ui).clicked() {
+            cn().reducers.incubator_update_core().unwrap();
+        }
         if "Export All".cstr().button(ui).clicked() {
             let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();
             dbg!(&all);

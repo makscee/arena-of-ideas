@@ -38,6 +38,8 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self>;
     fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
     fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
+    fn top_link_id<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<u64>;
+    fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
 }
 
 impl<T> NodeExt for T
@@ -128,6 +130,19 @@ where
             ));
         }
         Ok(c.remove(0))
+    }
+    fn top_link_id<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<u64> {
+        let kind = P::kind_s().to_string();
+        ctx.db
+            .incubator_links()
+            .from()
+            .filter(self.id())
+            .filter(|l| l.to_kind == kind)
+            .max_by_key(|l| l.score)
+            .map(|l| l.to)
+    }
+    fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        self.top_link_id::<P>(ctx).and_then(|l| P::get(ctx, l))
     }
 }
 

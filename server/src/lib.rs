@@ -16,6 +16,7 @@ use battle::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;
+use incubator::{incubator_links, incubator_nodes, incubator_votes};
 use inflating_number::*;
 use itertools::Itertools;
 use log::{debug, error, info};
@@ -31,7 +32,7 @@ pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
 }
 
-const ADMIN_IDENTITY_HEX: &str = "c20099004bd74cd8a0333d1f53c5ac65ce26604fc424fbd65f6be1c3e8534736";
+const ADMIN_IDENTITY_HEX: &str = "c2006040747a1f04c2cebab8453bcf8b06c18e17f09e34ff20fd7883e748ca8e";
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
         .map_err(|e| e.to_string())?
