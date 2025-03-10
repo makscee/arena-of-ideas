@@ -16,3 +16,9 @@ fn sync_assets(
     all.save(ctx);
     Ok(())
 }
+
+#[reducer]
+fn incubator_update_core(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    Ok(())
+}

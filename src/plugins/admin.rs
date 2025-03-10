@@ -202,6 +202,9 @@ impl AdminPlugin {
             std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
             dir.extract(path).unwrap();
         }
+        if "Export Incubator Data".cstr().button(ui).clicked() {
+            GameAssets::update_files();
+        }
         if "Incubator".cstr().button(ui).clicked() {
             GameState::Incubator.set_next(world);
         }
