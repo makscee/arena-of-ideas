@@ -1,5 +1,4 @@
 use humanize_duration::prelude::DurationExt;
-use spacetimedb::Timestamp;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use chrono::Utc;

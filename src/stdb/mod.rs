@@ -18,6 +18,8 @@ pub mod identity_disconnected_reducer;
 pub mod incubator_links_table;
 pub mod incubator_nodes_table;
 pub mod incubator_push_reducer;
+pub mod incubator_vote_reducer;
+pub mod incubator_votes_table;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
@@ -35,6 +37,7 @@ pub mod sync_assets_reducer;
 pub mod t_battle_type;
 pub mod t_incubator_links_type;
 pub mod t_incubator_type;
+pub mod t_incubator_votes_type;
 pub mod t_node_type;
 
 pub use admin_daily_update_reducer::{
@@ -61,6 +64,10 @@ pub use incubator_nodes_table::*;
 pub use incubator_push_reducer::{
     incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
 };
+pub use incubator_vote_reducer::{
+    incubator_vote, set_flags_for_incubator_vote, IncubatorVoteCallbackId,
+};
+pub use incubator_votes_table::*;
 pub use login_by_identity_reducer::{
     login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
 };
@@ -84,6 +91,7 @@ pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssets
 pub use t_battle_type::TBattle;
 pub use t_incubator_links_type::TIncubatorLinks;
 pub use t_incubator_type::TIncubator;
+pub use t_incubator_votes_type::TIncubatorVotes;
 pub use t_node_type::TNode;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -106,6 +114,11 @@ pub enum Reducer {
     IncubatorPush {
         kind: String,
         datas: Vec<String>,
+    },
+    IncubatorVote {
+        from: u64,
+        to: u64,
+        vote: i8,
     },
     Login {
         name: String,
@@ -154,6 +167,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::IncubatorPush { .. } => "incubator_push",
+            Reducer::IncubatorVote { .. } => "incubator_vote",
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
@@ -192,6 +206,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "incubator_push" => Ok(__sdk::parse_reducer_args::<
                 incubator_push_reducer::IncubatorPushArgs,
             >("incubator_push", &value.args)?
+            .into()),
+            "incubator_vote" => Ok(__sdk::parse_reducer_args::<
+                incubator_vote_reducer::IncubatorVoteArgs,
+            >("incubator_vote", &value.args)?
             .into()),
             "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
                 "login",
@@ -282,6 +300,7 @@ pub struct DbUpdate {
     global_settings: __sdk::TableUpdate<GlobalSettings>,
     incubator_links: __sdk::TableUpdate<TIncubatorLinks>,
     incubator_nodes: __sdk::TableUpdate<TIncubator>,
+    incubator_votes: __sdk::TableUpdate<TIncubatorVotes>,
     nodes_world: __sdk::TableUpdate<TNode>,
 }
 
@@ -310,6 +329,10 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "incubator_nodes" => {
                     db_update.incubator_nodes =
                         incubator_nodes_table::parse_table_update(table_update)?
+                }
+                "incubator_votes" => {
+                    db_update.incubator_votes =
+                        incubator_votes_table::parse_table_update(table_update)?
                 }
                 "nodes_world" => {
                     db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
@@ -350,11 +373,15 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         diff.global_settings =
             cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        diff.incubator_links =
-            cache.apply_diff_to_table::<TIncubatorLinks>("incubator_links", &self.incubator_links);
+        diff.incubator_links = cache
+            .apply_diff_to_table::<TIncubatorLinks>("incubator_links", &self.incubator_links)
+            .with_updates_by_pk(|row| &row.key);
         diff.incubator_nodes = cache
             .apply_diff_to_table::<TIncubator>("incubator_nodes", &self.incubator_nodes)
             .with_updates_by_pk(|row| &row.id);
+        diff.incubator_votes = cache
+            .apply_diff_to_table::<TIncubatorVotes>("incubator_votes", &self.incubator_votes)
+            .with_updates_by_pk(|row| &row.key);
         diff.nodes_world = cache
             .apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world)
             .with_updates_by_pk(|row| &row.id);
@@ -373,6 +400,7 @@ pub struct AppliedDiff<'r> {
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
     incubator_links: __sdk::TableAppliedDiff<'r, TIncubatorLinks>,
     incubator_nodes: __sdk::TableAppliedDiff<'r, TIncubator>,
+    incubator_votes: __sdk::TableAppliedDiff<'r, TIncubatorVotes>,
     nodes_world: __sdk::TableAppliedDiff<'r, TNode>,
 }
 
@@ -406,6 +434,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TIncubator>(
             "incubator_nodes",
             &self.incubator_nodes,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TIncubatorVotes>(
+            "incubator_votes",
+            &self.incubator_votes,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
@@ -990,6 +1023,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         global_settings_table::register_table(client_cache);
         incubator_links_table::register_table(client_cache);
         incubator_nodes_table::register_table(client_cache);
+        incubator_votes_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
     }
 }

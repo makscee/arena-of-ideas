@@ -6,14 +6,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TIncubatorLinks {
+pub struct TIncubatorVotes {
     pub key: String,
-    pub from: u64,
-    pub to: u64,
-    pub to_kind: String,
-    pub score: i64,
+    pub owner: u64,
+    pub target: String,
+    pub vote: i8,
 }
 
-impl __sdk::InModule for TIncubatorLinks {
+impl __sdk::InModule for TIncubatorVotes {
     type Module = super::RemoteModule;
 }

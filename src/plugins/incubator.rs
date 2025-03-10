@@ -164,11 +164,7 @@ impl IncubatorPlugin {
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {
             "show type".cstr_c(VISIBLE_DARK).label(ui);
-            if EnumSwitcher::new().show_iter(
-                &mut selected,
-                r.link_types.iter().copied(),
-                ui,
-            ) {
+            if EnumSwitcher::new().show_iter(&mut selected, r.link_types.iter().copied(), ui) {
                 r.link_type_selected = selected;
             }
         });
@@ -208,8 +204,48 @@ impl IncubatorPlugin {
         })
         .column_cstr("data", |(_, node), _| node.data.cstr_s(CstrStyle::Small))
         .column_int("score", |(score, _)| *score)
+        .column_btn_mod_dyn(
+            "-",
+            Box::new(move |(_, node), _, _| {
+                cn().reducers.incubator_vote(id, node.id, -1).unwrap();
+            }),
+            Box::new(move |(_, node), _, btn| {
+                if let Some(vote) =
+                    cn().db
+                        .incubator_votes()
+                        .key()
+                        .find(&vote_key(player_id(), id, node.id))
+                {
+                    btn.active(vote.vote == -1)
+                } else {
+                    btn
+                }
+            }),
+        )
+        .column_btn_mod_dyn(
+            "+",
+            Box::new(move |(_, node), _, _| {
+                cn().reducers.incubator_vote(id, node.id, 1).unwrap();
+            }),
+            Box::new(move |(_, node), _, btn| {
+                if let Some(vote) =
+                    cn().db
+                        .incubator_votes()
+                        .key()
+                        .find(&vote_key(player_id(), id, node.id))
+                {
+                    btn.active(vote.vote == 1)
+                } else {
+                    btn
+                }
+            }),
+        )
         .ui(ui, world);
 
         Ok(())
     }
+}
+
+fn vote_key(player: u64, from: u64, to: u64) -> String {
+    format!("{player}_{from}_{to}")
 }

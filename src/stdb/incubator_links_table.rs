@@ -81,6 +81,23 @@ impl<'ctx> __sdk::Table for IncubatorLinksTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TIncubatorLinks>("incubator_links");
+    _table.add_unique_constraint::<String>("key", |row| &row.key);
+}
+pub struct IncubatorLinksUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for IncubatorLinksTableHandle<'ctx> {
+    type UpdateCallbackId = IncubatorLinksUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> IncubatorLinksUpdateCallbackId {
+        IncubatorLinksUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: IncubatorLinksUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 #[doc(hidden)]
@@ -92,4 +109,34 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+/// Access to the `key` unique index on the table `incubator_links`,
+/// which allows point queries on the field of the same name
+/// via the [`IncubatorLinksKeyUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.incubator_links().key().find(...)`.
+pub struct IncubatorLinksKeyUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TIncubatorLinks, String>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> IncubatorLinksTableHandle<'ctx> {
+    /// Get a handle on the `key` unique index on the table `incubator_links`.
+    pub fn key(&self) -> IncubatorLinksKeyUnique<'ctx> {
+        IncubatorLinksKeyUnique {
+            imp: self.imp.get_unique_constraint::<String>("key"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> IncubatorLinksKeyUnique<'ctx> {
+    /// Find the subscribed row whose `key` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &String) -> Option<TIncubatorLinks> {
+        self.imp.find(col_val)
+    }
 }
