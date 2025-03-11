@@ -21,7 +21,7 @@ struct IncubatorData {
 
 impl IncubatorPlugin {
     fn on_enter(world: &mut World) {
-        let callback = cn().reducers.on_incubator_push(|e, kind, datas| {
+        let callback = cn().reducers.on_incubator_push(|e, kind, _| {
             if !e.check_identity() {
                 return;
             }

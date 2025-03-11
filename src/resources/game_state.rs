@@ -59,6 +59,8 @@ impl GameState {
                     Tab::IncubatorHouse,
                     Tab::IncubatorHouseColor,
                     Tab::IncubatorActionAbility,
+                    Tab::IncubatorActionAbilityDescription,
+                    Tab::IncubatorAbilityEffect,
                 ]
                 .to_vec();
                 let mut ds = DockState::new(node_tabs);
@@ -90,6 +92,8 @@ pub enum Tab {
     IncubatorHouse,
     IncubatorHouseColor,
     IncubatorActionAbility,
+    IncubatorActionAbilityDescription,
+    IncubatorAbilityEffect,
     IncubatorUnit,
     IncubatorUnitStats,
     IncubatorUnitDescription,
@@ -143,6 +147,12 @@ impl Tab {
             Tab::IncubatorHouseColor => IncubatorPlugin::tab_kind(NodeKind::HouseColor, ui, world)?,
             Tab::IncubatorActionAbility => {
                 IncubatorPlugin::tab_kind(NodeKind::ActionAbility, ui, world)?
+            }
+            Tab::IncubatorAbilityEffect => {
+                IncubatorPlugin::tab_kind(NodeKind::AbilityEffect, ui, world)?
+            }
+            Tab::IncubatorActionAbilityDescription => {
+                IncubatorPlugin::tab_kind(NodeKind::ActionAbilityDescription, ui, world)?
             }
             Tab::IncubatorRepresentation => {
                 IncubatorPlugin::tab_kind(NodeKind::Representation, ui, world)?

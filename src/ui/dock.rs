@@ -31,6 +31,8 @@ impl TabViewer for DockContext {
             Tab::IncubatorHouse => "House".into(),
             Tab::IncubatorHouseColor => "House Color".into(),
             Tab::IncubatorActionAbility => "Action Ability".into(),
+            Tab::IncubatorActionAbilityDescription => "Ability Description".into(),
+            Tab::IncubatorAbilityEffect => "Ability Effect".into(),
             Tab::IncubatorUnit => "Unit".into(),
             Tab::IncubatorUnitStats => "Unit Stats".into(),
             Tab::IncubatorUnitDescription => "Unit Description".into(),
