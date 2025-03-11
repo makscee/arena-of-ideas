@@ -12,7 +12,10 @@ mod trigger;
 mod var_name;
 mod var_value;
 
+use std::fmt::Display;
+
 pub use action::*;
+use ecolor::Color32;
 pub use error::*;
 pub use event::*;
 pub use expression::*;
@@ -50,3 +53,42 @@ impl<T: Serialize + DeserializeOwned> StringData for T {
 
 pub type NodeChildren<T> = Vec<T>;
 pub type NodeComponent<T> = Option<T>;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct HexColor(pub String);
+
+impl HexColor {
+    pub fn c32(&self) -> Color32 {
+        self.into()
+    }
+    pub fn try_c32(&self) -> Result<Color32, ecolor::ParseHexColorError> {
+        Color32::from_hex(&self.0)
+    }
+}
+impl Default for HexColor {
+    fn default() -> Self {
+        Self("#ffffff".to_owned())
+    }
+}
+impl Display for HexColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl From<String> for HexColor {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Color32> for HexColor {
+    fn from(value: Color32) -> Self {
+        Self(value.to_hex())
+    }
+}
+impl Into<Color32> for &HexColor {
+    fn into(self) -> Color32 {
+        Color32::from_hex(&self.0).unwrap()
+    }
+}

@@ -817,7 +817,7 @@ impl DataFramed for Action {
                 };
                 if let Some(color) = context
                     .find_parent_component::<HouseColor>(entity)
-                    .and_then(|h| Color32::from_hex(&h.color).ok())
+                    .map(|h| h.color.c32())
                 {
                     if let Some(name) = context
                         .find_parent_component::<ActionAbility>(entity)

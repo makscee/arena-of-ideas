@@ -57,6 +57,7 @@ impl GameState {
                     Tab::IncubatorUnitDescription,
                     Tab::IncubatorUnitStats,
                     Tab::IncubatorHouse,
+                    Tab::IncubatorHouseColor,
                     Tab::IncubatorActionAbility,
                 ]
                 .to_vec();
@@ -87,6 +88,7 @@ pub enum Tab {
     FusionResult,
 
     IncubatorHouse,
+    IncubatorHouseColor,
     IncubatorActionAbility,
     IncubatorUnit,
     IncubatorUnitStats,
@@ -138,6 +140,7 @@ impl Tab {
                 IncubatorPlugin::tab_kind(NodeKind::UnitDescription, ui, world)?
             }
             Tab::IncubatorHouse => IncubatorPlugin::tab_kind(NodeKind::House, ui, world)?,
+            Tab::IncubatorHouseColor => IncubatorPlugin::tab_kind(NodeKind::HouseColor, ui, world)?,
             Tab::IncubatorActionAbility => {
                 IncubatorPlugin::tab_kind(NodeKind::ActionAbility, ui, world)?
             }

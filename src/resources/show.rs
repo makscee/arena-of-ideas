@@ -299,6 +299,44 @@ impl Show for Color32 {
         .inner
     }
 }
+impl Show for HexColor {
+    fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        self.cstr().label(ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        if Input::new("hex:")
+            .char_limit(9)
+            .ui_string(&mut self.0, ui)
+            .changed()
+        {
+            return true;
+        }
+        match self.try_c32() {
+            Ok(mut c) => {
+                ui.horizontal(|ui| {
+                    self.cstr().label(ui);
+                    if c.show_mut(prefix, ui) {
+                        *self = c.into();
+                        true
+                    } else {
+                        false
+                    }
+                })
+                .inner
+            }
+            Err(e) => {
+                ui.horizontal(|ui| {
+                    if "reset".cstr().button(ui).clicked() {
+                        *self = default();
+                    }
+                    format!("[red Hex parse err:] {e:?}").label(ui);
+                });
+                false
+            }
+        }
+    }
+}
 impl Show for Entity {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);

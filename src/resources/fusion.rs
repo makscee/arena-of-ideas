@@ -131,7 +131,7 @@ impl Fusion {
         Ok(())
     }
     pub fn find_by_slot(slot: i32, world: &mut World) -> Option<Self> {
-        world.query::<&Fusion>().iter(&world).find_map(|(f)| {
+        world.query::<&Fusion>().iter(&world).find_map(|f| {
             if f.slot == slot {
                 Some(f.clone())
             } else {

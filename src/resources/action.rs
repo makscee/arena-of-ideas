@@ -123,7 +123,7 @@ impl ActionImpl for Action {
                         context.get_owner()?,
                         status,
                         1,
-                        Color32::from_hex(&color).unwrap_or(MISSING_COLOR),
+                        color.c32(),
                     ));
                 }
             }

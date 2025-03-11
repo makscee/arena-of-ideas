@@ -10,11 +10,13 @@ struct All {
 struct Incubator {
     pub name: String,
     pub houses: NodeChildren<House>,
+    pub house_colors: NodeChildren<HouseColor>,
     pub units: NodeChildren<Unit>,
     pub unit_descriptions: NodeChildren<UnitDescription>,
     pub unit_stats: NodeChildren<UnitStats>,
     pub action_abilities: NodeChildren<ActionAbility>,
     pub representations: NodeChildren<Representation>,
+    pub reactions: NodeChildren<Reaction>,
 }
 
 struct Player {
@@ -43,7 +45,7 @@ struct House {
 }
 
 struct HouseColor {
-    pub color: String,
+    pub color: HexColor,
 }
 
 struct ActionAbility {

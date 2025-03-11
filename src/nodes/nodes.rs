@@ -227,10 +227,24 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 let n = House::get_by_id(f(d), world).unwrap();
                 n.name.cstr_s(CstrStyle::Bold)
             }),
-            NodeKind::HouseColor => todo!(),
-            NodeKind::ActionAbility => todo!(),
-            NodeKind::ActionAbilityDescription => todo!(),
-            NodeKind::AbilityEffect => todo!(),
+            NodeKind::HouseColor => self.column_cstr_dyn("color", move |d, world| {
+                let c = &HouseColor::get_by_id(f(d), world).unwrap().color;
+                format!("[{c} {c}]")
+            }),
+            NodeKind::ActionAbility => self.column_cstr_dyn("name", move |d, world| {
+                let n = ActionAbility::get_by_id(f(d), world).unwrap();
+                n.name.cstr_s(CstrStyle::Bold)
+            }),
+            NodeKind::ActionAbilityDescription => {
+                self.column_cstr_dyn("description", move |d, world| {
+                    let n = ActionAbilityDescription::get_by_id(f(d), world).unwrap();
+                    n.description.cstr_s(CstrStyle::Bold)
+                })
+            }
+            NodeKind::AbilityEffect => self.column_cstr_dyn("name", move |d, world| {
+                let n = AbilityEffect::get_by_id(f(d), world).unwrap();
+                n.cstr()
+            }),
             NodeKind::StatusAbility => todo!(),
             NodeKind::StatusAbilityDescription => todo!(),
             NodeKind::Unit => self.column_cstr_dyn("name", move |d, world| {

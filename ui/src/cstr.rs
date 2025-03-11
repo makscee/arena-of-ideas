@@ -396,6 +396,12 @@ impl ToCstr for Color32 {
         self.to_hex().cstr_c(*self)
     }
 }
+impl ToCstr for HexColor {
+    fn cstr(&self) -> Cstr {
+        let s = &self.0;
+        format!("[{s} {s}]")
+    }
+}
 impl ToCstr for VarName {
     fn cstr(&self) -> Cstr {
         self.as_ref().cstr_cs(self.color(), CstrStyle::Small)

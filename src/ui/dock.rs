@@ -29,6 +29,7 @@ impl TabViewer for DockContext {
     fn title(&mut self, tab: &mut Self::Tab) -> WidgetText {
         match tab {
             Tab::IncubatorHouse => "House".into(),
+            Tab::IncubatorHouseColor => "House Color".into(),
             Tab::IncubatorActionAbility => "Action Ability".into(),
             Tab::IncubatorUnit => "Unit".into(),
             Tab::IncubatorUnitStats => "Unit Stats".into(),
@@ -97,7 +98,6 @@ impl DockTree {
                             sw: 13,
                             se: 13,
                         };
-                        style.tab_bar.fill_tab_bar = true;
                         style
                     })
                     .clone();
