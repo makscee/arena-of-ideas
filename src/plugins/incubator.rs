@@ -82,11 +82,14 @@ impl IncubatorPlugin {
     }
     pub fn tab_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
-            let Some((kind, datas)) = &mut d.edit_node else {
-                "no editing node".cstr_c(VISIBLE_DARK).label(ui);
-                return;
+            let (kind, datas) = if let Some((kind, datas)) = &mut d.edit_node {
+                (kind, datas)
+            } else {
+                d.edit_node = Some((NodeKind::Unit, Unit::default().to_strings_root()));
+                let node = d.edit_node.as_mut().unwrap();
+                (&mut node.0, &mut node.1)
             };
-            if Selector::new("Kind").ui_enum(kind, ui) {
+            if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
                 *datas = kind.to_empty_strings();
             }
             kind.show_strings_mut(datas, ui);
