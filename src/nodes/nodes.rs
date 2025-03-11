@@ -92,6 +92,9 @@ where
 }
 
 impl TNode {
+    pub fn kind(&self) -> NodeKind {
+        self.kind.to_kind()
+    }
     pub fn to_node<T: Node>(self) -> T {
         let mut d = T::default();
         d.inject_data(&self.data).unwrap();
@@ -210,5 +213,77 @@ impl Fusion {
     pub fn team_load<'a>(&self, world: &'a World) -> Result<&'a Team, ExpressionError> {
         self.find_up::<Team>(world)
             .to_e("Failed to find parent Team of Fusion")
+    }
+}
+
+pub trait TableNodeView<T> {
+    fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
+}
+
+impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
+    fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
+        match kind {
+            NodeKind::House => self.column_cstr_dyn("name", move |d, world| {
+                let n = House::get_by_id(f(d), world).unwrap();
+                n.name.cstr_s(CstrStyle::Bold)
+            }),
+            NodeKind::HouseColor => todo!(),
+            NodeKind::ActionAbility => todo!(),
+            NodeKind::ActionAbilityDescription => todo!(),
+            NodeKind::AbilityEffect => todo!(),
+            NodeKind::StatusAbility => todo!(),
+            NodeKind::StatusAbilityDescription => todo!(),
+            NodeKind::Unit => self.column_cstr_dyn("name", move |d, world| {
+                let n = Unit::get_by_id(f(d), world).unwrap();
+                n.name.cstr_s(CstrStyle::Bold)
+            }),
+            NodeKind::UnitDescription => self.column_cstr_dyn("description", move |d, world| {
+                let n = UnitDescription::get_by_id(f(d), world).unwrap();
+                n.description.cstr_s(CstrStyle::Bold)
+            }),
+            NodeKind::UnitStats => self
+                .column_cstr_value_dyn(
+                    "pwr",
+                    move |d, world| {
+                        UnitStats::get_by_id(f(d), world)
+                            .map(|n| n.pwr.into())
+                            .unwrap_or_default()
+                    },
+                    move |_, value| value.get_i32().unwrap().cstr_c(YELLOW),
+                )
+                .column_cstr_value_dyn(
+                    "hp",
+                    move |d, world| {
+                        UnitStats::get_by_id(f(d), world)
+                            .map(|n| n.hp.into())
+                            .unwrap_or_default()
+                    },
+                    move |_, value| value.get_i32().unwrap().cstr_c(RED),
+                )
+                .column_cstr_value_dyn(
+                    "dmg",
+                    move |d, world| {
+                        UnitStats::get_by_id(f(d), world)
+                            .map(|n| n.dmg.into())
+                            .unwrap_or_default()
+                    },
+                    move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
+                ),
+            NodeKind::Reaction => todo!(),
+            NodeKind::Representation => self.column_dyn(
+                "view",
+                |_, _| default(),
+                move |d, _, ui, world| {
+                    let d = Representation::get_by_id(f(d), world).unwrap();
+                    let size = 100.0;
+                    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                    ui.set_clip_rect(rect);
+                    d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)
+                        .log();
+                },
+                false,
+            ),
+            _ => unimplemented!(),
+        }
     }
 }

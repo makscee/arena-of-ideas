@@ -149,10 +149,19 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column(
-        mut self,
+        self,
         name: &'static str,
         value: fn(&T, &World) -> VarValue,
         show: fn(&T, VarValue, &mut Ui, &mut World),
+        sortable: bool,
+    ) -> Self {
+        self.column_dyn(name, value, show, sortable)
+    }
+    pub fn column_dyn(
+        mut self,
+        name: &'static str,
+        value: impl Fn(&T, &World) -> VarValue + 'static,
+        show: impl Fn(&T, VarValue, &mut Ui, &mut World) + 'static,
         sortable: bool,
     ) -> Self {
         self.columns.insert(
@@ -166,28 +175,17 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         );
         self
     }
-    pub fn column_dyn(
-        mut self,
-        name: &'static str,
-        value: Box<dyn Fn(&T, &World) -> VarValue>,
-        show: Box<dyn Fn(&T, VarValue, &mut Ui, &mut World)>,
-        sortable: bool,
-    ) -> Self {
-        self.columns.insert(
-            name,
-            TableColumn {
-                value,
-                show,
-                sortable,
-                hide_name: false,
-            },
-        );
-        self
-    }
     pub fn column_ui(
-        mut self,
+        self,
         name: &'static str,
         show: fn(&T, VarValue, &mut Ui, &mut World),
+    ) -> Self {
+        self.column_ui_dyn(name, show)
+    }
+    pub fn column_ui_dyn(
+        mut self,
+        name: &'static str,
+        show: impl Fn(&T, VarValue, &mut Ui, &mut World) + 'static,
     ) -> Self {
         self.columns.insert(
             name,
@@ -203,8 +201,8 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     pub fn column_btn_mod_dyn(
         mut self,
         name: &'static str,
-        on_click: Box<dyn Fn(&T, &mut Ui, &mut World)>,
-        modify: Box<dyn Fn(&T, &mut Ui, Button) -> Button>,
+        on_click: impl Fn(&T, &mut Ui, &mut World) + 'static,
+        modify: impl Fn(&T, &mut Ui, Button) -> Button + 'static,
     ) -> Self {
         self.columns.insert(
             name,
@@ -235,9 +233,9 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     pub fn column_btn_dyn(
         self,
         name: &'static str,
-        on_click: Box<dyn Fn(&T, &mut Ui, &mut World)>,
+        on_click: impl Fn(&T, &mut Ui, &mut World) + 'static,
     ) -> Self {
-        self.column_btn_mod_dyn(name, on_click, Box::new(|_, _, b| b))
+        self.column_btn_mod_dyn(name, on_click, |_, _, b| b)
     }
     pub fn column_btn(self, name: &'static str, on_click: fn(&T, &mut Ui, &mut World)) -> Self {
         self.column_btn_dyn(name, Box::new(on_click))
@@ -245,7 +243,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     pub fn column_cstr_dyn(
         mut self,
         name: &'static str,
-        s: Box<dyn Fn(&T, &World) -> Cstr>,
+        s: impl Fn(&T, &World) -> Cstr + 'static,
     ) -> Self {
         self.columns.insert(
             name,
@@ -261,18 +259,18 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column_cstr(self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
-        self.column_cstr_dyn(name, Box::new(s))
+        self.column_cstr_dyn(name, s)
     }
     pub fn column_cstr_value_dyn(
         mut self,
         name: &'static str,
-        v: Box<dyn Fn(&T) -> VarValue>,
-        s: Box<dyn Fn(&T, VarValue) -> Cstr>,
+        v: impl Fn(&T, &World) -> VarValue + 'static,
+        s: impl Fn(&T, VarValue) -> Cstr + 'static,
     ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
-                value: Box::new(move |d, _| v(d).into()),
+                value: Box::new(move |d, w| v(d, w).into()),
                 show: Box::new(move |d, v, ui, _| {
                     s(d, v).label(ui);
                 }),
@@ -285,16 +283,16 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     pub fn column_cstr_value(
         self,
         name: &'static str,
-        v: fn(&T) -> VarValue,
+        v: fn(&T, &World) -> VarValue,
         s: fn(&T, VarValue) -> Cstr,
     ) -> Self {
-        self.column_cstr_value_dyn(name, Box::new(v), Box::new(s))
+        self.column_cstr_value_dyn(name, v, s)
     }
-    pub fn column_cstr_click(
+    pub fn column_cstr_click_dyn(
         mut self,
         name: &'static str,
-        v: fn(&T, &World) -> Cstr,
-        on_click: fn(&T, &mut World),
+        v: impl Fn(&T, &World) -> Cstr + 'static,
+        on_click: impl Fn(&T, &mut World) + 'static,
     ) -> Self {
         self.columns.insert(
             name,
@@ -311,7 +309,11 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         );
         self
     }
-    pub fn column_int_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> i32>) -> Self {
+    pub fn column_int_dyn(
+        mut self,
+        name: &'static str,
+        value: impl Fn(&T) -> i32 + 'static,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -326,9 +328,13 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column_int(self, name: &'static str, value: fn(&T) -> i32) -> Self {
-        self.column_int_dyn(name, Box::new(value))
+        self.column_int_dyn(name, value)
     }
-    pub fn column_float_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> f32>) -> Self {
+    pub fn column_float_dyn(
+        mut self,
+        name: &'static str,
+        value: impl Fn(&T) -> f32 + 'static,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -343,9 +349,13 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column_float(self, name: &'static str, value: fn(&T) -> f32) -> Self {
-        self.column_float_dyn(name, Box::new(value))
+        self.column_float_dyn(name, value)
     }
-    pub fn column_id_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> u64>) -> Self {
+    pub fn column_id_dyn(
+        mut self,
+        name: &'static str,
+        value: impl Fn(&T) -> u64 + 'static,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -360,9 +370,13 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column_id(self, name: &'static str, value: fn(&T) -> u64) -> Self {
-        self.column_id_dyn(name, Box::new(value))
+        self.column_id_dyn(name, value)
     }
-    pub fn column_ts_dyn(mut self, name: &'static str, value: Box<dyn Fn(&T) -> u64>) -> Self {
+    pub fn column_ts_dyn(
+        mut self,
+        name: &'static str,
+        value: impl Fn(&T) -> u64 + 'static,
+    ) -> Self {
         self.columns.insert(
             name,
             TableColumn {
@@ -379,95 +393,8 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         self
     }
     pub fn column_ts(self, name: &'static str, value: fn(&T) -> u64) -> Self {
-        self.column_ts_dyn(name, Box::new(value))
+        self.column_ts_dyn(name, value)
     }
-    pub fn column_player_click_dyn(
-        mut self,
-        name: &'static str,
-        id: Box<dyn Fn(&T) -> u64>,
-    ) -> Self {
-        self.columns.insert(
-            name,
-            TableColumn {
-                value: Box::new(move |d, _| id(d).into()),
-                show: Box::new(move |_, v, ui, w| {
-                    let id = v.get_u64().unwrap_or_default();
-                    if id == 0 {
-                        "...".cstr().label(ui);
-                    } else {
-                        if todo!("get player name and draw button") {}
-                    }
-                }),
-                sortable: true,
-                hide_name: false,
-            },
-        );
-        self
-    }
-    pub fn column_player_click(self, name: &'static str, id: fn(&T) -> u64) -> Self {
-        self.column_player_click_dyn(name, Box::new(id))
-    }
-    pub fn column_team_dyn(mut self, name: &'static str, id: Box<dyn Fn(&T) -> u64>) -> Self {
-        self.columns.insert(
-            name,
-            TableColumn {
-                value: Box::new(move |d, _| id(d).into()),
-                show: Box::new(|_, id: VarValue, ui: &mut Ui, _: &mut World| {
-                    let id = id.get_u64().unwrap_or_default();
-                    if id == 0 {
-                        "...".cstr().label(ui);
-                    } else {
-                        todo!();
-                        // id.get_team_cached().hover_label(ui, w);
-                    }
-                }),
-                sortable: true,
-                hide_name: false,
-            },
-        );
-        self
-    }
-    pub fn column_team(self, name: &'static str, id: fn(&T) -> u64) -> Self {
-        self.column_team_dyn(name, Box::new(id))
-    }
-    pub fn column_texture(mut self, tex: Box<dyn Fn(&T, &mut World) -> TextureId>) -> Self {
-        self.columns.insert(
-            "texture",
-            TableColumn {
-                value: Box::new(|_, _| default()),
-                show: Box::new(move |d, _, ui, world| {
-                    let tex = tex(d, world);
-                    let size = ui.available_height();
-                    if show_texture(size, tex, ui).hovered() {
-                        const FRAME: Frame = Frame {
-                            inner_margin: Margin::ZERO,
-                            outer_margin: Margin::ZERO,
-                            corner_radius: CornerRadius::same(13),
-                            shadow: SHADOW,
-                            fill: BG_DARK,
-                            stroke: Stroke {
-                                width: 1.0,
-                                color: VISIBLE_LIGHT,
-                            },
-                        };
-                        const SIZE: f32 = 256.0;
-                        cursor_window_frame(ui.ctx(), FRAME, SIZE, |ui| {
-                            show_texture(SIZE, tex, ui);
-                        });
-                    }
-                }),
-                sortable: false,
-                hide_name: true,
-            },
-        );
-        self
-    }
-    // pub fn column_representation_texture(self, rep: fn(&T) -> Representation) -> Self {
-    //     self.column_texture(Box::new(move |d, world| {
-    //         let rep = rep(d);
-    //         TextureRenderPlugin::texture_representation(&rep, world)
-    //     }))
-    // }
     fn cache_rows(&self, id: Id, world: &mut World) {
         let mut need_update = false;
         world.init_resource::<TableCacheResource<T>>();

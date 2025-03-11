@@ -61,67 +61,21 @@ impl IncubatorPlugin {
         }
     }
     pub fn tab_kind(kind: NodeKind, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut open_links: Option<(u64, NodeKind)> = None;
         ui.vertical(|ui| {
-            match kind {
-                NodeKind::Unit => {
-                    for node in Self::incubator(world)?.units_load(world) {
-                        node.name.label(ui);
-                        if "links".cstr().button(ui).clicked() {
-                            open_links = Some((node.id(), node.kind()));
-                        }
-                    }
-                }
-                NodeKind::UnitDescription => {
-                    for node in Self::incubator(world)?.unit_descriptions_load(world) {
-                        node.description.cstr_s(CstrStyle::Small).label(ui);
-                    }
-                }
-                NodeKind::UnitStats => {
-                    for node in Self::incubator(world)?.unit_stats_load(world) {
-                        format!(
-                            "[b [yellow {}]] / [b [red {}]] (-{})",
-                            node.pwr, node.hp, node.dmg
-                        )
-                        .label(ui);
-                    }
-                }
-                NodeKind::House => {
-                    for node in Self::incubator(world)?.houses_load(world) {
-                        node.name.cstr_s(CstrStyle::Small).label(ui);
-                    }
-                }
-                NodeKind::Representation => {
-                    for node in Self::incubator(world)?.representations_load(world) {
-                        node.material.cstr_s(CstrStyle::Small).label(ui);
-                    }
-                }
-                NodeKind::ActionAbility => {
-                    for node in Self::incubator(world)?.action_abilities_load(world) {
-                        node.name.cstr_s(CstrStyle::Small).label(ui);
-                    }
-                }
-                NodeKind::ActionAbilityDescription => todo!(),
-                NodeKind::AbilityEffect => todo!(),
-                NodeKind::StatusAbility => todo!(),
-                NodeKind::StatusAbilityDescription => todo!(),
-                NodeKind::Reaction => todo!(),
-                _ => unreachable!(),
-            }
-            Self::new_node_btn(kind, ui, world);
-            if let Some((id, kind)) = open_links {
-                let mut r = world.resource_mut::<IncubatorData>();
-                r.links_node = Some((id, kind));
-                r.link_types = NodeKind::get_incubator_links()
-                    .get(&kind)
-                    .unwrap()
+            Table::new(kind.to_string(), |world| {
+                let incubator = Self::incubator(world).unwrap().id();
+                let kind = kind.to_string();
+                cn().db
+                    .nodes_world()
                     .iter()
-                    .sorted()
-                    .copied()
-                    .collect();
-                r.link_type_selected = r.link_types[0];
-                DockPlugin::set_active(Tab::IncubatorLinks, world);
-            }
+                    .filter(|n| n.parent == incubator && n.kind == kind)
+                    .map(|n| n.id)
+                    .collect_vec()
+            })
+            .add_node_view_columns(kind, |d| *d)
+            .add_incubator_columns(kind)
+            .ui(ui, world);
+            Self::new_node_btn(kind, ui, world);
             Ok(())
         })
         .inner
@@ -197,19 +151,14 @@ impl IncubatorPlugin {
                 .sorted_by_key(|(score, _)| -*score)
                 .collect_vec()
         })
-        .column_ui("node", |(_, node), _, ui, world| {
-            let kind = node.kind.to_kind();
-            let entity = world.get_id_link(node.id).unwrap();
-            kind.show(entity, ui, world);
-        })
-        .column_cstr("data", |(_, node), _| node.data.cstr_s(CstrStyle::Small))
+        .add_node_view_columns(selected, |(_, node)| node.id)
         .column_int("score", |(score, _)| *score)
         .column_btn_mod_dyn(
             "-",
-            Box::new(move |(_, node), _, _| {
+            move |(_, node), _, _| {
                 cn().reducers.incubator_vote(id, node.id, -1).unwrap();
-            }),
-            Box::new(move |(_, node), _, btn| {
+            },
+            move |(_, node), _, btn| {
                 if let Some(vote) =
                     cn().db
                         .incubator_votes()
@@ -220,14 +169,14 @@ impl IncubatorPlugin {
                 } else {
                     btn
                 }
-            }),
+            },
         )
         .column_btn_mod_dyn(
             "+",
-            Box::new(move |(_, node), _, _| {
+            move |(_, node), _, _| {
                 cn().reducers.incubator_vote(id, node.id, 1).unwrap();
-            }),
-            Box::new(move |(_, node), _, btn| {
+            },
+            move |(_, node), _, btn| {
                 if let Some(vote) =
                     cn().db
                         .incubator_votes()
@@ -238,11 +187,47 @@ impl IncubatorPlugin {
                 } else {
                     btn
                 }
-            }),
+            },
         )
         .ui(ui, world);
 
         Ok(())
+    }
+}
+
+trait TableIncubatorExt {
+    fn add_incubator_columns(self, kind: NodeKind) -> Self;
+}
+
+impl TableIncubatorExt for Table<'_, u64> {
+    fn add_incubator_columns(mut self, kind: NodeKind) -> Self {
+        self = self.column_btn("clone", |d, _, world| {
+            let node = cn().db.nodes_world().id().find(d).unwrap();
+            let kind = node.kind();
+            world.resource_mut::<IncubatorData>().edit_node =
+                Some((kind, [format!("0 _ {}", node.data)].into()));
+            DockPlugin::set_active(Tab::IncubatorNewNode, world);
+        });
+        if NodeKind::get_incubator_links()
+            .get(&kind)
+            .is_some_and(|l| !l.is_empty())
+        {
+            self.column_btn_dyn("links", move |d, _, world| {
+                let mut r = world.resource_mut::<IncubatorData>();
+                r.links_node = Some((*d, kind));
+                r.link_types = NodeKind::get_incubator_links()
+                    .get(&kind)
+                    .unwrap()
+                    .iter()
+                    .sorted()
+                    .copied()
+                    .collect();
+                r.link_type_selected = r.link_types[0];
+                DockPlugin::set_active(Tab::IncubatorLinks, world);
+            })
+        } else {
+            self
+        }
     }
 }
 
