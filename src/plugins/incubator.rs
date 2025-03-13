@@ -74,7 +74,7 @@ impl IncubatorPlugin {
                     .collect_vec()
             })
             .add_node_view_columns(kind, |d| *d)
-            .add_incubator_columns(kind)
+            .add_incubator_columns(kind, |d| *d)
             .ui(ui, world);
             Self::new_node_btn(kind, ui, world);
             Ok(())
@@ -198,20 +198,22 @@ impl IncubatorPlugin {
                 }
             },
         )
+        .add_incubator_columns(selected, |(_, n)| n.id)
         .ui(ui, world);
 
         Ok(())
     }
 }
 
-trait TableIncubatorExt {
-    fn add_incubator_columns(self, kind: NodeKind) -> Self;
+trait TableIncubatorExt<T> {
+    fn add_incubator_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
 }
 
-impl TableIncubatorExt for Table<'_, u64> {
-    fn add_incubator_columns(mut self, kind: NodeKind) -> Self {
-        self = self.column_btn("clone", |d, _, world| {
-            let node = cn().db.nodes_world().id().find(d).unwrap();
+impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T> {
+    fn add_incubator_columns(mut self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
+        self = self.column_btn_dyn("clone", move |d, _, world| {
+            let id = f(d);
+            let node = cn().db.nodes_world().id().find(&id).unwrap();
             let kind = node.kind();
             world.resource_mut::<IncubatorData>().edit_node =
                 Some((kind, [format!("0 _ {}", node.data)].into()));
@@ -223,7 +225,7 @@ impl TableIncubatorExt for Table<'_, u64> {
         {
             self.column_btn_dyn("links", move |d, _, world| {
                 let mut r = world.resource_mut::<IncubatorData>();
-                r.links_node = Some((*d, kind));
+                r.links_node = Some((f(d), kind));
                 r.link_types = NodeKind::get_incubator_links()
                     .get(&kind)
                     .unwrap()
@@ -249,8 +251,11 @@ trait NodeKindGraph {
 }
 
 impl NodeKindGraph for NodeKind {
-    fn show_graph(self, color: Color32, data: &mut IncubatorData, ui: &mut Ui) {
+    fn show_graph(self, mut color: Color32, data: &mut IncubatorData, ui: &mut Ui) {
         ui.horizontal(|ui| {
+            if data.links_node.is_some_and(|(_, k)| k == self) {
+                color = PURPLE;
+            }
             if self
                 .cstr_cs(color, CstrStyle::Small)
                 .as_button()
