@@ -51,18 +51,10 @@ impl GameState {
                 ds
             }
             GameState::Incubator => {
-                let node_tabs = [
-                    Tab::IncubatorUnit,
-                    Tab::IncubatorRepresentation,
-                    Tab::IncubatorUnitDescription,
-                    Tab::IncubatorUnitStats,
-                    Tab::IncubatorHouse,
-                    Tab::IncubatorHouseColor,
-                    Tab::IncubatorActionAbility,
-                    Tab::IncubatorActionAbilityDescription,
-                    Tab::IncubatorAbilityEffect,
-                ]
-                .to_vec();
+                let node_tabs = Incubator::children_kinds()
+                    .into_iter()
+                    .map(|k| Tab::IncubatorKind(k))
+                    .collect_vec();
                 let mut ds = DockState::new(node_tabs);
                 ds.main_surface_mut().split_left(
                     0.into(),
@@ -89,16 +81,7 @@ pub enum Tab {
     Actions,
     FusionResult,
 
-    IncubatorHouse,
-    IncubatorHouseColor,
-    IncubatorActionAbility,
-    IncubatorActionAbilityDescription,
-    IncubatorAbilityEffect,
-    IncubatorUnit,
-    IncubatorUnitStats,
-    IncubatorUnitDescription,
-    IncubatorRepresentation,
-
+    IncubatorKind(NodeKind),
     IncubatorNewNode,
     IncubatorLinks,
 
@@ -138,25 +121,7 @@ impl Tab {
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
             Tab::IncubatorLinks => IncubatorPlugin::tab_links(ui, world)?,
-            Tab::IncubatorUnit => IncubatorPlugin::tab_kind(NodeKind::Unit, ui, world)?,
-            Tab::IncubatorUnitStats => IncubatorPlugin::tab_kind(NodeKind::UnitStats, ui, world)?,
-            Tab::IncubatorUnitDescription => {
-                IncubatorPlugin::tab_kind(NodeKind::UnitDescription, ui, world)?
-            }
-            Tab::IncubatorHouse => IncubatorPlugin::tab_kind(NodeKind::House, ui, world)?,
-            Tab::IncubatorHouseColor => IncubatorPlugin::tab_kind(NodeKind::HouseColor, ui, world)?,
-            Tab::IncubatorActionAbility => {
-                IncubatorPlugin::tab_kind(NodeKind::ActionAbility, ui, world)?
-            }
-            Tab::IncubatorAbilityEffect => {
-                IncubatorPlugin::tab_kind(NodeKind::AbilityEffect, ui, world)?
-            }
-            Tab::IncubatorActionAbilityDescription => {
-                IncubatorPlugin::tab_kind(NodeKind::ActionAbilityDescription, ui, world)?
-            }
-            Tab::IncubatorRepresentation => {
-                IncubatorPlugin::tab_kind(NodeKind::Representation, ui, world)?
-            }
+            Tab::IncubatorKind(kind) => IncubatorPlugin::tab_kind(*kind, ui, world)?,
         };
         Ok(())
     }

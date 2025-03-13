@@ -15,6 +15,7 @@ struct IncubatorData {
     links_node: Option<(u64, NodeKind)>,
     link_types: Vec<NodeKind>,
     link_type_selected: NodeKind,
+    show_kind_tab: Option<NodeKind>,
     callback_id: Option<IncubatorPushCallbackId>,
     edit_node: Option<(NodeKind, Vec<String>)>,
 }
@@ -102,6 +103,11 @@ impl IncubatorPlugin {
         Ok(())
     }
     pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource_mut::<IncubatorData>();
+        NodeKind::House.show_graph(CYAN, &mut data, ui);
+        if let Some(kind) = data.show_kind_tab.take() {
+            DockPlugin::set_active(Tab::IncubatorKind(kind), world);
+        }
         let Some((id, kind)) = world.resource::<IncubatorData>().links_node else {
             "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
             return Ok(());
@@ -236,4 +242,32 @@ impl TableIncubatorExt for Table<'_, u64> {
 
 fn vote_key(player: u64, from: u64, to: u64) -> String {
     format!("{player}_{from}_{to}")
+}
+
+trait NodeKindGraph {
+    fn show_graph(self, color: Color32, data: &mut IncubatorData, ui: &mut Ui);
+}
+
+impl NodeKindGraph for NodeKind {
+    fn show_graph(self, color: Color32, data: &mut IncubatorData, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            if self
+                .cstr_cs(color, CstrStyle::Small)
+                .as_button()
+                .active(data.link_type_selected == self)
+                .ui(ui)
+                .clicked()
+            {
+                data.show_kind_tab = Some(self);
+            }
+            ui.vertical(|ui| {
+                for c in self.component_kinds() {
+                    c.show_graph(VISIBLE_LIGHT, data, ui);
+                }
+                for c in self.children_kinds() {
+                    c.show_graph(RED, data, ui);
+                }
+            });
+        });
+    }
 }
