@@ -55,7 +55,7 @@ impl TNode {
 }
 
 impl TNode {
-    pub fn to_node<T: Node + StringData>(self) -> Result<T, String> {
+    pub fn to_node<T: Node + StringData>(&self) -> Result<T, String> {
         let mut d = T::default();
         d.inject_data(&self.data).to_str_err()?;
         d.set_id(self.id);

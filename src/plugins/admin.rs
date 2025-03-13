@@ -10,10 +10,10 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     fn setup_battle(world: &mut World) {
-        let (left, right) = client_state().battle_test_teams.clone();
+        let (left, right) = client_state().get_battle_test_teams();
         dbg!(&left);
-        let mut left = Team::from_strings(0, &left).unwrap_or_default();
-        let mut right = Team::from_strings(0, &right).unwrap_or_default();
+        let mut left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
+        let mut right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
         let mut battle_world = World::new();
         left.houses = all().core.clone();
         right.houses = all().core.clone();
@@ -36,10 +36,16 @@ impl AdminPlugin {
                     let mut cs = client_state().clone();
                     cs.battle_test_teams.0 = Team::pack(entity_left, &battle_world)
                         .unwrap()
-                        .to_strings_root();
+                        .to_tnodes()
+                        .into_iter()
+                        .map(|n| n.to_ron())
+                        .collect();
                     cs.battle_test_teams.1 = Team::pack(entity_right, &battle_world)
                         .unwrap()
-                        .to_strings_root();
+                        .to_tnodes()
+                        .into_iter()
+                        .map(|n| n.to_ron())
+                        .collect();
                     cs.save();
                     WindowPlugin::close_current(world);
                     return;
@@ -76,8 +82,9 @@ impl AdminPlugin {
         .push(world);
     }
     fn show_battle(world: &mut World) {
-        let left = Team::from_strings(0, &client_state().battle_test_teams.0).unwrap_or_default();
-        let right = Team::from_strings(0, &client_state().battle_test_teams.1).unwrap_or_default();
+        let (left, right) = client_state().get_battle_test_teams();
+        let mut left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
+        let mut right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
         let b = Battle { left, right };
         b.open_window(world);
     }

@@ -1,11 +1,10 @@
 use super::*;
 
 #[reducer]
-fn incubator_push(ctx: &ReducerContext, kind: String, datas: Vec<String>) -> Result<(), String> {
+fn incubator_push(ctx: &ReducerContext, kind: String, nodes: Vec<TNode>) -> Result<(), String> {
     let player = ctx.player()?;
     let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
     let parent = All::load(ctx).incubator_load(ctx)?.id;
-    let nodes = kind.tnode_vec_from_strings(ctx, &datas).to_str_err()?;
     let nodes: HashMap<u64, TNode> = HashMap::from_iter(nodes.into_iter().map(|n| (n.id, n)));
     let link_kinds = NodeKind::get_incubator_links();
     let mut new_links: Vec<(u64, u64)> = default();

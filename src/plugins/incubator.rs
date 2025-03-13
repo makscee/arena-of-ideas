@@ -12,12 +12,15 @@ impl Plugin for IncubatorPlugin {
 
 #[derive(Resource, Default)]
 struct IncubatorData {
-    links_node: Option<(u64, NodeKind)>,
+    table_kind: NodeKind,
+    inspect_node: Option<(u64, NodeKind)>,
     link_types: Vec<NodeKind>,
     link_type_selected: NodeKind,
-    show_kind_tab: Option<NodeKind>,
     callback_id: Option<IncubatorPushCallbackId>,
     edit_node: Option<(NodeKind, Vec<String>)>,
+}
+fn rm(world: &mut World) -> Mut<IncubatorData> {
+    world.resource_mut::<IncubatorData>()
 }
 
 impl IncubatorPlugin {
@@ -36,7 +39,9 @@ impl IncubatorPlugin {
                 },
             );
         });
-        world.resource_mut::<IncubatorData>().callback_id = Some(callback);
+        let mut r = rm(world);
+        r.callback_id = Some(callback);
+        r.table_kind = NodeKind::House;
     }
     fn on_exit(world: &mut World) {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
@@ -57,11 +62,15 @@ impl IncubatorPlugin {
             .button(ui)
             .clicked()
         {
-            world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
+            todo!();
+            // world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
             DockPlugin::set_active(Tab::IncubatorNewNode, world);
         }
     }
-    pub fn tab_kind(kind: NodeKind, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn tab_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = rm(world);
+        let kind = data.table_kind;
+        NodeKind::House.show_graph(CYAN, &mut data, ui);
         ui.vertical(|ui| {
             Table::new(kind.to_string(), |world| {
                 let incubator = Self::incubator(world).unwrap().id();
@@ -86,29 +95,24 @@ impl IncubatorPlugin {
             let (kind, datas) = if let Some((kind, datas)) = &mut d.edit_node {
                 (kind, datas)
             } else {
-                d.edit_node = Some((NodeKind::Unit, Unit::default().to_strings_root()));
+                d.edit_node = Some((NodeKind::Unit, default()));
                 let node = d.edit_node.as_mut().unwrap();
                 (&mut node.0, &mut node.1)
             };
             if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
-                *datas = kind.to_empty_strings();
+                // *datas = kind.to_empty_strings();
             }
-            kind.show_strings_mut(datas, ui);
+            // kind.show_tnodes_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                cn().reducers
-                    .incubator_push(kind.to_string(), datas.clone())
-                    .unwrap();
+                // cn().reducers
+                //     .incubator_push(kind.to_string(), datas.clone())
+                //     .unwrap();
             }
         });
         Ok(())
     }
     pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource_mut::<IncubatorData>();
-        NodeKind::House.show_graph(CYAN, &mut data, ui);
-        if let Some(kind) = data.show_kind_tab.take() {
-            DockPlugin::set_active(Tab::IncubatorKind(kind), world);
-        }
-        let Some((id, kind)) = world.resource::<IncubatorData>().links_node else {
+        let Some((id, kind)) = world.resource::<IncubatorData>().inspect_node else {
             "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
             return Ok(());
         };
@@ -225,7 +229,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
         {
             self.column_btn_dyn("links", move |d, _, world| {
                 let mut r = world.resource_mut::<IncubatorData>();
-                r.links_node = Some((f(d), kind));
+                r.inspect_node = Some((f(d), kind));
                 r.link_types = NodeKind::get_incubator_links()
                     .get(&kind)
                     .unwrap()
@@ -253,17 +257,17 @@ trait NodeKindGraph {
 impl NodeKindGraph for NodeKind {
     fn show_graph(self, mut color: Color32, data: &mut IncubatorData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if data.links_node.is_some_and(|(_, k)| k == self) {
+            if data.inspect_node.is_some_and(|(_, k)| k == self) {
                 color = PURPLE;
             }
             if self
                 .cstr_cs(color, CstrStyle::Small)
                 .as_button()
-                .active(data.link_type_selected == self)
+                .active(data.table_kind == self)
                 .ui(ui)
                 .clicked()
             {
-                data.show_kind_tab = Some(self);
+                data.table_kind = self;
             }
             ui.vertical(|ui| {
                 for c in self.component_kinds() {

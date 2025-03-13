@@ -217,7 +217,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             .nodes_world()
                             .iter()
                             .find(|n| n.kind == kind && n.data == data);
-                        n.map(|n| n.to_node())
+                        n.map(|n| n.to_node().unwrap())
                     }
                 }
                 impl std::fmt::Display for #struct_ident {
@@ -399,6 +399,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn set_id(&mut self, id: u64) {
                         self.id = Some(id);
+                    }
+                    fn parent(&self) -> u64 {
+                        self.parent.unwrap()
                     }
                     fn set_parent(&mut self, id: u64) {
                         self.parent = Some(id);
@@ -609,22 +612,22 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn show_strings(self, datas: &Vec<String>, context: &Context, ui: &mut Ui) {
+                    pub fn show_tnodes(self, nodes: &Vec<TNode>, context: &Context, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
-                                let mut d = #variants::from_strings(0, &datas).unwrap();
+                                let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
                                 d.show(None, context, ui);
                             })*
                         }
                     }
-                    pub fn show_strings_mut(self, datas: &mut Vec<String>, ui: &mut Ui) {
+                    pub fn show_tnodes_mut(self, nodes: &mut Vec<TNode>, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
-                                let mut d = #variants::from_strings(0, &datas).unwrap();
+                                let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
                                 d.show_mut(None, ui);
-                                *datas = d.to_strings_root();
+                                *nodes = d.to_tnodes();
                             })*
                         }
                     }
@@ -638,14 +641,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                 n.unpack(entity, world);
                             })*
                         };
-                    }
-                    pub fn to_empty_strings(self) -> Vec<String> {
-                        match self {
-                            NodeKind::None => panic!("Can't convert None to Node"),
-                            #(#struct_ident::#variants => {
-                                #variants::default().to_strings_root()
-                            })*
-                        }
                     }
                     pub fn is_component(self, child: NodeKind) -> bool {
                         match self {

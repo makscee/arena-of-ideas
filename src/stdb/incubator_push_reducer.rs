@@ -4,18 +4,20 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+use super::t_node_type::TNode;
+
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct IncubatorPushArgs {
     pub kind: String,
-    pub datas: Vec<String>,
+    pub nodes: Vec<TNode>,
 }
 
 impl From<IncubatorPushArgs> for super::Reducer {
     fn from(args: IncubatorPushArgs) -> Self {
         Self::IncubatorPush {
             kind: args.kind,
-            datas: args.datas,
+            nodes: args.nodes,
         }
     }
 }
@@ -36,7 +38,7 @@ pub trait incubator_push {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_push`] callbacks.
-    fn incubator_push(&self, kind: String, datas: Vec<String>) -> __sdk::Result<()>;
+    fn incubator_push(&self, kind: String, nodes: Vec<TNode>) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_push`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +48,7 @@ pub trait incubator_push {
     /// to cancel the callback.
     fn on_incubator_push(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &Vec<String>) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &Vec<TNode>) + Send + 'static,
     ) -> IncubatorPushCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_push`],
     /// causing it not to run in the future.
@@ -54,13 +56,13 @@ pub trait incubator_push {
 }
 
 impl incubator_push for super::RemoteReducers {
-    fn incubator_push(&self, kind: String, datas: Vec<String>) -> __sdk::Result<()> {
+    fn incubator_push(&self, kind: String, nodes: Vec<TNode>) -> __sdk::Result<()> {
         self.imp
-            .call_reducer("incubator_push", IncubatorPushArgs { kind, datas })
+            .call_reducer("incubator_push", IncubatorPushArgs { kind, nodes })
     }
     fn on_incubator_push(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &Vec<String>) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &Vec<TNode>) + Send + 'static,
     ) -> IncubatorPushCallbackId {
         IncubatorPushCallbackId(self.imp.on_reducer(
             "incubator_push",
@@ -68,7 +70,7 @@ impl incubator_push for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::IncubatorPush { kind, datas },
+                            reducer: super::Reducer::IncubatorPush { kind, nodes },
                             ..
                         },
                     ..
@@ -76,7 +78,7 @@ impl incubator_push for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, kind, datas)
+                callback(ctx, kind, nodes)
             }),
         ))
     }

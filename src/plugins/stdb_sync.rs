@@ -12,7 +12,7 @@ impl StdbSyncPlugin {
     fn sync_assets() {
         info!("{}", "Start assets sync".blue());
         let global_settings = global_settings_local().clone();
-        let all = all().to_strings_root();
+        let all = all().to_tnodes();
         cn().reducers.on_sync_assets(|e, _, _| {
             if !e.check_identity() {
                 return;

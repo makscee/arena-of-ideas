@@ -93,7 +93,7 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
 }
 
 #[reducer]
-fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<String>>) -> Result<(), String> {
+fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<TNode>>) -> Result<(), String> {
     // let mut player = ctx.player()?;
     // let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
     // let fusions = fusions

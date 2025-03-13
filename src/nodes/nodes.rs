@@ -15,19 +15,15 @@ pub trait GetVar: GetNodeKind + Debug {
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
+    fn parent(&self) -> u64;
     fn set_parent(&mut self, id: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
     fn from_dir_new(parent: u64, path: String, dir: &Dir) -> Option<Self>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir(&self, path: String) -> DirEntry;
-    fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
-    fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
-    fn to_strings_root(&self) -> Vec<String> {
-        let mut strings = Vec::default();
-        self.to_strings(0, "_", &mut strings);
-        strings
-    }
+    fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
+    fn to_tnodes(&self) -> Vec<TNode>;
     fn load_recursive(id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
@@ -63,6 +59,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
 }
 
 pub trait NodeExt: Sized {
+    fn to_tnode(&self) -> TNode;
     fn get(entity: Entity, world: &World) -> Option<&Self>;
     fn get_by_id(id: u64, world: &World) -> Option<&Self>;
     fn load(id: u64) -> Option<Self>;
@@ -72,6 +69,14 @@ impl<T> NodeExt for T
 where
     T: Node + GetNodeKind + GetNodeKindSelf,
 {
+    fn to_tnode(&self) -> TNode {
+        TNode {
+            id: self.id(),
+            parent: self.parent(),
+            kind: self.kind().to_string(),
+            data: self.get_data(),
+        }
+    }
     fn get(entity: Entity, world: &World) -> Option<&Self> {
         world.get::<Self>(entity)
     }
@@ -79,7 +84,11 @@ where
         world.get::<Self>(world.get_id_link(id)?)
     }
     fn load(id: u64) -> Option<Self> {
-        cn().db.nodes_world().id().find(&id).map(|d| d.to_node())
+        cn().db
+            .nodes_world()
+            .id()
+            .find(&id)
+            .and_then(|d| d.to_node().ok())
     }
     fn load_by_parent(parent: u64) -> Option<Self> {
         let kind = Self::kind_s().to_string();
@@ -87,7 +96,7 @@ where
             .nodes_world()
             .iter()
             .find(|n| n.kind == kind && n.parent == parent)
-            .map(|n| n.to_node())
+            .and_then(|n| n.to_node().ok())
     }
 }
 
@@ -95,16 +104,19 @@ impl TNode {
     pub fn kind(&self) -> NodeKind {
         self.kind.to_kind()
     }
-    pub fn to_node<T: Node>(self) -> T {
+    pub fn to_node<T: Node>(&self) -> Result<T, ExpressionError> {
         let mut d = T::default();
-        d.inject_data(&self.data).unwrap();
+        d.inject_data(&self.data)?;
         d.set_id(self.id);
         d.set_parent(self.parent);
-        d
+        Ok(d)
     }
     pub fn unpack(&self, entity: Entity, world: &mut World) {
         let kind = NodeKind::from_str(&self.kind).unwrap();
         kind.unpack(entity, &self.data, Some(self.id), world);
+    }
+    pub fn to_ron(self) -> String {
+        ron::to_string(&SerdeWrapper::new(self)).unwrap()
     }
 }
 

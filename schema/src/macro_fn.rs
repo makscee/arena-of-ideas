@@ -115,50 +115,48 @@ pub fn strings_conversions(
     child_link_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>) {
-            let entry = format!("{parent} {field} {}", self.get_data());
-            let i = strings.len();
-            strings.push(entry);
+        fn to_tnodes(&self) -> Vec<TNode> {
+            let mut v = [self.to_tnode()].to_vec();
             #(
-                if let Some(d) = &self.#component_link_fields {
-                    d.to_strings(i, #component_link_fields_str, strings);
+                if let Some(d) = self.#component_link_fields.as_ref() {
+                    v.extend(d.to_tnodes());
                 }
             )*
             #(
                 for d in &self.#child_link_fields {
-                    d.to_strings(i, #child_link_fields_str, strings);
+                    v.extend(d.to_tnodes());
                 }
             )*
+            v
         }
-        fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self> {
-            if i >= strings.len() {
-                return None;
-            }
-            let (_, _, data) = strings[i].splitn(3, ' ').collect_tuple()?;
-            let mut d = Self::default();
-            d.inject_data(data).unwrap();
-            let i_str = i.to_string();
+        fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self> {
+            let mut node = nodes
+                .into_iter()
+                .find(|n| n.id == id)?
+                .to_node::<Self>()
+                .ok()?;
             #(
-                d.#component_link_fields = strings.iter().enumerate().skip(i).find_map(|(i, s)| {
-                    let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                    if i_str.eq(parent) && field.eq(#component_link_fields_str) {
-                        #component_link_types::from_strings(i, strings)
-                    } else {
-                        None
-                    }
-                });
+            let kind = NodeKind::#component_link_types.to_string();
+            node.#component_link_fields = nodes
+                .into_iter()
+                .find(|n| n.parent == id && n.kind == kind)
+                .and_then(|n| #component_link_types::from_tnodes(n.id, nodes));
             )*
             #(
-                d.#child_link_fields = strings.iter().enumerate().skip(i).filter_map(|(i, s)| {
-                    let (parent, field, _) = s.splitn(3, ' ').collect_tuple()?;
-                    if i_str.eq(parent) && field.eq(#child_link_fields_str) {
-                        #child_link_types::from_strings(i, strings)
-                    } else {
-                        None
-                    }
-                }).collect();
+                let kind = NodeKind::#child_link_types.to_string();
+                node.#child_link_fields = nodes
+                    .into_iter()
+                    .filter_map(|n| {
+                        if n.parent == id && n.kind == kind {
+                            #child_link_types::from_tnodes(n.id, nodes)
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
             )*
-            Some(d)
+
+            Some(node)
         }
     }
 }

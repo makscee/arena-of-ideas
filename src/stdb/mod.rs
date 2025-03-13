@@ -117,7 +117,7 @@ pub enum Reducer {
     IdentityDisconnected,
     IncubatorPush {
         kind: String,
-        datas: Vec<String>,
+        nodes: Vec<TNode>,
     },
     IncubatorUpdateCore,
     IncubatorVote {
@@ -135,7 +135,7 @@ pub enum Reducer {
         id: u64,
     },
     MatchEditFusions {
-        fusions: Vec<Vec<String>>,
+        fusions: Vec<Vec<TNode>>,
     },
     MatchInsert,
     MatchReorder {
@@ -156,7 +156,7 @@ pub enum Reducer {
     },
     SyncAssets {
         global_settings: GlobalSettings,
-        all: Vec<String>,
+        all: Vec<TNode>,
     },
 }
 

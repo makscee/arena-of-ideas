@@ -51,11 +51,7 @@ impl GameState {
                 ds
             }
             GameState::Incubator => {
-                let node_tabs = Incubator::children_kinds()
-                    .into_iter()
-                    .map(|k| Tab::IncubatorKind(k))
-                    .collect_vec();
-                let mut ds = DockState::new(node_tabs);
+                let mut ds = DockState::new(Tab::IncubatorNodes.into());
                 ds.main_surface_mut().split_left(
                     0.into(),
                     0.4,
@@ -81,7 +77,7 @@ pub enum Tab {
     Actions,
     FusionResult,
 
-    IncubatorKind(NodeKind),
+    IncubatorNodes,
     IncubatorNewNode,
     IncubatorLinks,
 
@@ -121,7 +117,7 @@ impl Tab {
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
             Tab::IncubatorLinks => IncubatorPlugin::tab_links(ui, world)?,
-            Tab::IncubatorKind(kind) => IncubatorPlugin::tab_kind(*kind, ui, world)?,
+            Tab::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
         };
         Ok(())
     }

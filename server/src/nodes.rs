@@ -13,8 +13,8 @@ pub trait Node: Default + Sized {
     fn parent(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn set_parent(&mut self, id: u64);
-    fn from_strings(i: usize, strings: &Vec<String>) -> Option<Self>;
-    fn to_strings(&self, parent: usize, field: &str, strings: &mut Vec<String>);
+    fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
+    fn to_tnodes(&self) -> Vec<TNode>;
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(self, ctx: &ReducerContext);

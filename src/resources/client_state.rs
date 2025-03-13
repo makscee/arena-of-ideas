@@ -1,8 +1,9 @@
 use egui_dock::Surface;
+use spacetimedb_sats::serde::SerdeWrapper;
 
 use super::*;
 
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[derive(Deserialize, Serialize, Clone, Default)]
 pub struct ClientState {
     pub last_logged_in: Option<(String, Identity)>,
     pub edit_anim: Option<Anim>,
@@ -15,6 +16,22 @@ const CLIENT_STATE_FILE: &str = "client_state.ron";
 
 pub fn client_state() -> std::sync::RwLockReadGuard<'static, ClientState> {
     CLIENT_STATE.get_or_init(|| default()).read().unwrap()
+}
+impl ClientState {
+    pub fn get_battle_test_teams(&self) -> (Vec<TNode>, Vec<TNode>) {
+        (
+            self.battle_test_teams
+                .0
+                .iter()
+                .map(|n| ron::from_str::<SerdeWrapper<TNode>>(n).unwrap().0)
+                .collect_vec(),
+            self.battle_test_teams
+                .1
+                .iter()
+                .map(|n| ron::from_str::<SerdeWrapper<TNode>>(n).unwrap().0)
+                .collect_vec(),
+        )
+    }
 }
 fn path() -> PathBuf {
     let mut path = home_dir_path();
