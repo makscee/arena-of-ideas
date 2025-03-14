@@ -117,6 +117,7 @@ pub enum Reducer {
     IdentityDisconnected,
     IncubatorPush {
         nodes: Vec<TNode>,
+        link_from: Option<u64>,
     },
     IncubatorUpdateCore,
     IncubatorVote {

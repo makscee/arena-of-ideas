@@ -1,12 +1,17 @@
 use super::*;
 
 #[reducer]
-fn incubator_push(ctx: &ReducerContext, nodes: Vec<TNode>) -> Result<(), String> {
+fn incubator_push(
+    ctx: &ReducerContext,
+    nodes: Vec<TNode>,
+    link_from: Option<u64>,
+) -> Result<(), String> {
     let player = ctx.player()?;
     let mut next_id = ctx.next_id();
     let nodes = NodeKind::parse_and_reassign_ids(&nodes, &mut next_id).to_str_err()?;
     GlobalData::set_next_id(ctx, next_id);
     let incubator_id = All::load(ctx).incubator_load(ctx)?.id;
+    let root_id = nodes[0].id;
     let nodes: HashMap<u64, TNode> = HashMap::from_iter(nodes.into_iter().map(|n| (n.id, n)));
     let link_kinds = NodeKind::get_incubator_links();
     let mut new_links: Vec<(u64, u64)> = default();
@@ -35,6 +40,9 @@ fn incubator_push(ctx: &ReducerContext, nodes: Vec<TNode>) -> Result<(), String>
                     .insert(ctx);
             new_links.push((link.from, link.to));
         }
+    }
+    if let Some(from_id) = link_from {
+        new_links.push((from_id, root_id));
     }
     for mut node in nodes.into_values() {
         node.parent = incubator_id;

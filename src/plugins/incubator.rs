@@ -15,10 +15,11 @@ struct IncubatorData {
     composed_world: World,
     table_kind: NodeKind,
     inspect_node: Option<(u64, NodeKind)>,
+    new_node_link: Option<u64>,
     link_types: Vec<NodeKind>,
     link_type_selected: NodeKind,
     callback_id: Option<IncubatorPushCallbackId>,
-    edit_node: Option<(NodeKind, Vec<TNode>)>,
+    new_node: Option<(NodeKind, Vec<TNode>)>,
 }
 fn rm(world: &mut World) -> Mut<IncubatorData> {
     world.resource_mut::<IncubatorData>()
@@ -26,7 +27,7 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 
 impl IncubatorPlugin {
     fn on_enter(world: &mut World) {
-        let callback = cn().reducers.on_incubator_push(|e, nodes| {
+        let callback = cn().reducers.on_incubator_push(|e, nodes, _| {
             if !e.check_identity() {
                 return;
             }
@@ -35,7 +36,7 @@ impl IncubatorPlugin {
                 move || {
                     OperationsPlugin::add(move |world| {
                         format!("New {kind} added").notify(world);
-                        rm(world).edit_node = Some((kind, [kind.default_tnode()].into()));
+                        rm(world).new_node = Some((kind, [kind.default_tnode()].into()));
                     });
                 },
                 move || {
@@ -75,14 +76,15 @@ impl IncubatorPlugin {
         rm(world).composed_world = composed_world;
         Ok(())
     }
-    fn new_node_btn(kind: NodeKind, ui: &mut Ui, world: &mut World) {
+    fn new_node_btn(kind: NodeKind, ui: &mut Ui, world: &mut World) -> bool {
         br(ui);
         if format!("New {kind}")
             .cstr_s(CstrStyle::Bold)
             .button(ui)
             .clicked()
         {
-            world.resource_mut::<IncubatorData>().edit_node = Some((
+            let mut r = rm(world);
+            r.new_node = Some((
                 kind,
                 [TNode {
                     id: 0,
@@ -92,7 +94,11 @@ impl IncubatorPlugin {
                 }]
                 .into(),
             ));
+            r.new_node_link = None;
             DockPlugin::set_active(Tab::IncubatorNewNode, world);
+            true
+        } else {
+            false
         }
     }
     pub fn tab_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
@@ -118,19 +124,14 @@ impl IncubatorPlugin {
         })
         .inner
     }
-    pub fn tab_houses(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = rm(world);
-
-        Ok(())
-    }
     pub fn tab_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
-            let (kind, datas) = if let Some((kind, datas)) = &mut d.edit_node {
+            let (kind, datas) = if let Some((kind, datas)) = &mut d.new_node {
                 (kind, datas)
             } else {
                 let kind = NodeKind::Unit;
-                d.edit_node = Some((kind, [kind.default_tnode()].into()));
-                let node = d.edit_node.as_mut().unwrap();
+                d.new_node = Some((kind, [kind.default_tnode()].into()));
+                let node = d.new_node.as_mut().unwrap();
                 (&mut node.0, &mut node.1)
             };
             if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
@@ -144,7 +145,9 @@ impl IncubatorPlugin {
             }
             kind.show_tnodes_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                cn().reducers.incubator_push(datas.clone()).unwrap();
+                cn().reducers
+                    .incubator_push(datas.clone(), d.new_node_link)
+                    .unwrap();
             }
         });
         Ok(())
@@ -168,7 +171,7 @@ impl IncubatorPlugin {
             }
         }
 
-        let mut r = world.resource_mut::<IncubatorData>();
+        let mut r = rm(world);
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {
             "show type".cstr_c(VISIBLE_DARK).label(ui);
@@ -176,6 +179,10 @@ impl IncubatorPlugin {
                 r.link_type_selected = selected;
             }
         });
+        if Self::new_node_btn(selected, ui, world) {
+            let mut r = rm(world);
+            r.new_node_link = Some(id);
+        }
         Table::new(format!("{selected} links"), move |world| {
             let incubator_id = Self::incubator(world).unwrap().id();
             let kind = selected.to_string();
@@ -259,7 +266,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
         self = self.column_btn_dyn("clone", move |d, _, world| {
             let id = f(d);
             let node = cn().db.nodes_world().id().find(&id).unwrap();
-            world.resource_mut::<IncubatorData>().edit_node = Some((kind, [node].into()));
+            world.resource_mut::<IncubatorData>().new_node = Some((kind, [node].into()));
             DockPlugin::set_active(Tab::IncubatorNewNode, world);
         });
         if NodeKind::get_incubator_links()
