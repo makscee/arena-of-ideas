@@ -5,8 +5,8 @@ pub struct IncubatorPlugin;
 impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<IncubatorData>()
-            .add_systems(OnEnter(GameState::Incubator), Self::on_enter)
-            .add_systems(OnExit(GameState::Incubator), Self::on_exit);
+            .add_systems(Startup, Self::startup)
+            .add_systems(OnEnter(GameState::Incubator), Self::on_enter);
     }
 }
 
@@ -26,37 +26,47 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 }
 
 impl IncubatorPlugin {
-    fn on_enter(world: &mut World) {
-        let callback = cn().reducers.on_incubator_push(|e, nodes, _| {
-            if !e.check_identity() {
-                return;
-            }
-            let kind = nodes[0].kind.to_kind();
-            e.event.on_success_error(
-                move || {
-                    OperationsPlugin::add(move |world| {
-                        format!("New {kind} added").notify(world);
-                        rm(world).new_node = Some((kind, [kind.default_tnode()].into()));
-                    });
-                },
-                move || {
-                    format!("Failed to add new {kind}").notify_op();
-                },
-            );
+    fn startup() {
+        on_connect(|_| {
+            cn().reducers.on_incubator_push(|e, nodes, _| {
+                if !e.check_identity() {
+                    return;
+                }
+                let kind = nodes[0].kind.to_kind();
+                e.event.on_success_error(
+                    move || {
+                        OperationsPlugin::add(move |world| {
+                            Self::compose_nodes(world).log();
+                            format!("New {kind} added").notify(world);
+                            rm(world).new_node = Some((kind, [kind.default_tnode()].into()));
+                        });
+                    },
+                    move || {
+                        format!("Failed to add new {kind}").notify_op();
+                    },
+                );
+            });
+            cn().reducers.on_incubator_vote(|e, _, _, _| {
+                if !e.check_identity() {
+                    return;
+                }
+                e.event.on_success_error(
+                    move || {
+                        OperationsPlugin::add(move |world| {
+                            Self::compose_nodes(world).log();
+                        });
+                    },
+                    move || {
+                        "Failed to add vote".notify_op();
+                    },
+                );
+            });
         });
+    }
+    fn on_enter(world: &mut World) {
         let mut r = rm(world);
-        r.callback_id = Some(callback);
         r.table_kind = NodeKind::House;
         Self::compose_nodes(world).log();
-    }
-    fn on_exit(world: &mut World) {
-        world.resource_scope(|_, mut d: Mut<IncubatorData>| {
-            if let Some(callback) = d.callback_id.take() {
-                cn().reducers.remove_on_incubator_push(callback);
-            } else {
-                error!("New incubator node reducer callback not set");
-            }
-        });
     }
     fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
         All::get_by_id(0, world).unwrap().incubator_load(world)
@@ -152,17 +162,30 @@ impl IncubatorPlugin {
         });
         Ok(())
     }
-    pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn tab_inspect(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let data = rm(world);
         let Some((id, kind)) = data.inspect_node else {
             "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
             return Ok(());
         };
-        format!("{kind} Links").cstr_s(CstrStyle::Bold).label(ui);
+        format!("{kind} node").cstr_s(CstrStyle::Bold).label(ui);
         match data.composed_world.get_id_link(id) {
             Some(entity) => {
                 ui.data_frame_force_open();
                 kind.show(entity, ui, &data.composed_world);
+                match kind {
+                    NodeKind::Unit => {
+                        match UnitCard::from_context(
+                            Context::new_world(&data.composed_world).set_owner(entity),
+                        ) {
+                            Ok(c) => c.show(ui),
+                            Err(e) => {
+                                e.cstr().label(ui);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
             }
             None => {
                 "Node absent in core"
@@ -273,7 +296,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
             .get(&kind)
             .is_some_and(|l| !l.is_empty())
         {
-            self.column_btn_dyn("links", move |d, _, world| {
+            self.column_btn_dyn("inspect", move |d, _, world| {
                 let mut r = world.resource_mut::<IncubatorData>();
                 r.inspect_node = Some((f(d), kind));
                 r.link_types = NodeKind::get_incubator_links()

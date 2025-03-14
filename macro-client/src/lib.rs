@@ -233,7 +233,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_var(&self, var: VarName) -> Option<VarValue> {
                         match var {
                             #(
-                                VarName::#var_fields => return Some(VarValue::#var_types(self.#var_fields.clone())),
+                                VarName::#var_fields => return Some(self.#var_fields.clone().into()),
                             )*
                             _ => {
                                 #(
@@ -264,7 +264,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_vars(&self) -> Vec<(VarName, VarValue)> {
                         vec![
                         #(
-                            (VarName::#var_fields, VarValue::#var_types(self.#var_fields.clone()))
+                            (VarName::#var_fields, self.#var_fields.clone().into())
                         ),*
                         ]
                     }

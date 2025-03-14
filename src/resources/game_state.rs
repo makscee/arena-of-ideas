@@ -116,7 +116,7 @@ impl Tab {
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
-            Tab::IncubatorLinks => IncubatorPlugin::tab_links(ui, world)?,
+            Tab::IncubatorLinks => IncubatorPlugin::tab_inspect(ui, world)?,
             Tab::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
         };
         Ok(())

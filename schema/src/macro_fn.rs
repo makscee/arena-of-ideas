@@ -67,6 +67,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     || type_ident == "f32"
                     || type_ident == "String"
                     || type_ident == "Color"
+                    || type_ident == "HexColor"
                 {
                     var_fields.push(field_ident.clone());
                     var_types.push(ty.clone());

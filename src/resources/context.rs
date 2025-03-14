@@ -121,11 +121,20 @@ impl<'w, 's> Context<'w, 's> {
         }
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        self.layers
+        let result = self
+            .layers
             .iter()
             .rev()
             .find_map(|l| l.get_var(var, &self.sources, self.t))
-            .to_e_var(var)
+            .to_e_var(var);
+        if result.is_err() && var == VarName::color {
+            Ok(VISIBLE_LIGHT.into())
+        } else {
+            result
+        }
+    }
+    pub fn get_vars(&self, vars: impl Iterator<Item = VarName>) -> HashMap<VarName, VarValue> {
+        HashMap::from_iter(vars.filter_map(|var| self.get_var(var).ok().map(|value| (var, value))))
     }
     pub fn get_state<'a>(&'a self, entity: Entity) -> Result<&'a NodeState, ExpressionError> {
         self.sources
@@ -151,7 +160,7 @@ impl<'w, 's> Context<'w, 's> {
     pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
         self.get_var(var)?.get_color()
     }
-    pub fn get_vars(&self) -> HashMap<VarName, VarValue> {
+    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
             ContextLayer::Var(var, value) => Some((*var, value.clone())),
             _ => None,

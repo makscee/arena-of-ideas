@@ -345,6 +345,16 @@ impl Into<Color32> for VarValue {
         self.get_color().unwrap()
     }
 }
+impl From<HexColor> for VarValue {
+    fn from(value: HexColor) -> Self {
+        VarValue::Color32(value.c32())
+    }
+}
+impl Into<HexColor> for VarValue {
+    fn into(self) -> HexColor {
+        self.get_color().unwrap().into()
+    }
+}
 impl From<Vec2> for VarValue {
     fn from(value: Vec2) -> Self {
         VarValue::Vec2(value)

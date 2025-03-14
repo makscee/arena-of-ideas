@@ -12,7 +12,37 @@ pub struct UnitCard {
     pub expanded: bool,
 }
 
+const VARS: &'static [VarName] = &[
+    VarName::hp,
+    VarName::pwr,
+    VarName::dmg,
+    VarName::lvl,
+    VarName::tier,
+    VarName::color,
+];
+
 impl UnitCard {
+    pub fn from_context(context: &Context) -> Result<Self, ExpressionError> {
+        let vars = context.get_vars(VARS.iter().copied());
+        Ok(Self {
+            name: context.get_string(VarName::name)?,
+            description: context.get_string(VarName::description)?,
+            house: context
+                .find_parent_component::<House>(context.get_owner()?)
+                .to_e("House not found")?
+                .name
+                .clone(),
+            house_color: context
+                .find_parent_component::<HouseColor>(context.get_owner()?)
+                .to_e("HouseColor not found")?
+                .color
+                .c32(),
+            rarity: Rarity::default(),
+            reaction: Reaction::default(),
+            vars,
+            expanded: false,
+        })
+    }
     pub fn show(&self, ui: &mut Ui) {
         ui.spacing_mut().item_spacing.y = 1.0;
         Frame::new()
@@ -66,7 +96,6 @@ impl UnitCard {
                 } else {
                     self.show_description(ui);
                 }
-                ui.expand_to_include_rect(ui.available_rect_before_wrap());
             });
     }
     fn show_tags(&self, ui: &mut Ui) {
@@ -103,7 +132,7 @@ impl UnitCard {
         tags.ui(ui);
     }
     fn show_description(&self, ui: &mut Ui) {
-        Frame::none()
+        Frame::new()
             .fill(if self.expanded { BG_DARK } else { TRANSPARENT })
             .inner_margin(Margin::same(6))
             .corner_radius(CornerRadius::same(13))

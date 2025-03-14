@@ -119,7 +119,7 @@ impl AnimAction {
                     1.0.into(),
                     NodeKind::None,
                 );
-                for (var, value) in a.context.get_vars() {
+                for (var, value) in a.context.get_vars_layers() {
                     state.insert(0.0, 0.0, var, value, NodeKind::None);
                 }
                 a.targets = vec![entity];

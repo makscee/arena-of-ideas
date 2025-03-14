@@ -1,4 +1,4 @@
-use spacetimedb_lib::{bsatn, de::Deserialize, ser::Serialize, Identity};
+use spacetimedb_lib::{de::Deserialize, ser::Serialize, Identity};
 use spacetimedb_sdk::credentials;
 
 use super::*;
@@ -12,13 +12,24 @@ impl Plugin for ConnectPlugin {
 }
 
 static CONNECTION: OnceCell<DbConnection> = OnceCell::new();
-const CREDENTIALS_FILE: &str = "credentials";
 
 pub fn cn() -> &'static DbConnection {
     CONNECTION.get().unwrap()
 }
 pub fn is_connected() -> bool {
     CONNECTION.get().is_some()
+}
+
+static ON_CONNECT_OPERATIONS: OnceCell<Mutex<VecDeque<Operation>>> = OnceCell::new();
+pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
+    if is_connected() {
+        OperationsPlugin::add(operation);
+    } else {
+        ON_CONNECT_OPERATIONS
+            .get_or_init(|| Mutex::new(default()))
+            .lock()
+            .push_back(Box::new(operation));
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,33 +43,6 @@ fn creds_store() -> credentials::File {
 }
 
 impl ConnectPlugin {
-    fn load_credentials() -> Result<Option<(Identity, String)>> {
-        let mut path = home_dir_path();
-        path.push(CREDENTIALS_FILE);
-        let bytes = match std::fs::read(&path) {
-            Ok(bytes) => bytes,
-            Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound) => return Ok(None),
-            Err(e) => {
-                return Err(e).with_context(|| {
-                    format!("Error reading BSATN-serialized credentials from file {path:?}")
-                })
-            }
-        };
-        let creds = bsatn::from_slice::<Credentials>(&bytes).context(format!(
-            "Error deserializing credentials from bytes stored in file {path:?}",
-        ))?;
-        Ok(Some((creds.identity, creds.token)))
-    }
-    fn save_credentials(identity: Identity, token: String) -> Result<()> {
-        let mut path = home_dir_path();
-        path.push(CREDENTIALS_FILE);
-        let creds = bsatn::to_vec(&Credentials { identity, token })
-            .context("Error serializing credentials for storage in file")?;
-        std::fs::write(&path, creds).with_context(|| {
-            format!("Error writing BSATN-serialized credentials to file {path:?}")
-        })?;
-        Ok(())
-    }
     fn run_connect() {
         info!("Connect start");
         Self::connect(|_, identity, token| {
@@ -92,5 +76,8 @@ impl ConnectPlugin {
             .unwrap();
         c.run_threaded();
         CONNECTION.set(c).ok().unwrap();
+        for op in ON_CONNECT_OPERATIONS.get().unwrap().lock().drain(..) {
+            OperationsPlugin::add(op);
+        }
     }
 }

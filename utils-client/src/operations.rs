@@ -3,7 +3,7 @@ use std::{collections::VecDeque, sync::Mutex};
 use bevy::prelude::*;
 use once_cell::sync::OnceCell;
 
-type Operation = Box<dyn FnOnce(&mut World) + Send + Sync>;
+pub type Operation = Box<dyn FnOnce(&mut World) + Send + Sync>;
 pub struct OperationsPlugin;
 
 static OPERATIONS: OnceCell<Mutex<OperationsData>> = OnceCell::new();

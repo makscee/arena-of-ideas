@@ -348,30 +348,27 @@ impl Show for Entity {
     }
 }
 
+fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
+    let size_id = ui.id().with("view size");
+    let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 150.0));
+    if DragValue::new(&mut size).ui(ui).changed() {
+        ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
+    }
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+    RepresentationPlugin::paint_rect(rect, context, m, ui).log();
+    ui.painter()
+        .rect_stroke(rect, 0, STROKE_BG_DARK, egui::StrokeKind::Middle);
+}
 impl Show for Material {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        let mut rect = ui.available_rect_before_wrap();
-        rect.set_width(150.0);
-        rect.set_height(150.0);
-        let mut p = Painter::new(rect, ui.ctx());
-        for i in &self.0 {
-            i.paint(context, &mut p, ui).log();
-        }
+        material_view(self, context, ui);
         for i in &self.0 {
             i.show(None, context, ui);
         }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        let size_id = ui.id().with("view size");
-        let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 150.0));
-        if DragValue::new(&mut size).ui(ui).changed() {
-            ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
-        }
-        let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-        RepresentationPlugin::paint_rect(rect, &Context::default(), self, ui).log();
-        ui.painter()
-            .rect_stroke(rect, 0, STROKE_BG_DARK, egui::StrokeKind::Middle);
+        material_view(self, &Context::default(), ui);
         self.0.show_mut(prefix, ui)
     }
 }
