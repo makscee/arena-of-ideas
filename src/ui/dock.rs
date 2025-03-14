@@ -70,9 +70,11 @@ impl DockTree {
     pub fn add_tab(&mut self, tab: Tab) {
         self.state.main_surface_mut().push_to_focused_leaf(tab);
     }
-    pub fn ui(&mut self, ctx: &egui::Context, world: World) -> World {
+    pub fn ui(&mut self, ctx: &egui::Context, mut world: World) -> World {
+        TopBottomPanel::top("top_bar").show(ctx, |ui| {
+            TopBar::ui(ui, &mut world);
+        });
         self.context.world = Some(world);
-        TopBottomPanel::top("egui_dock::MenuBar").show(ctx, |ui| egui::menu::bar(ui, |ui| {}));
         CentralPanel::default()
             .frame(Frame::central_panel(&ctx.style()).inner_margin(8.))
             .show(ctx, |ui| {
