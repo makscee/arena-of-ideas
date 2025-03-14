@@ -115,24 +115,16 @@ pub fn strings_conversions(
     child_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn to_tnodes(&self, parent: u64, mut next_id: &mut u64) -> Vec<TNode> {
-            let data = self.get_data();
-            let kind = self.kind().to_string();
-            let id = self.get_id().unwrap_or_else(|| {*next_id = *next_id + 1; *next_id});
-            let mut v = [TNode {
-                id,
-                parent,
-                kind,
-                data,
-            }].to_vec();
+        fn to_tnodes(&self) -> Vec<TNode> {
+            let mut v = [self.to_tnode()].to_vec();
             #(
                 if let Some(d) = self.#component_fields.as_ref() {
-                    v.extend(d.to_tnodes(id, next_id));
+                    v.extend(d.to_tnodes());
                 }
             )*
             #(
                 for d in &self.#child_fields {
-                    v.extend(d.to_tnodes(id, next_id));
+                    v.extend(d.to_tnodes());
                 }
             )*
             v
@@ -165,6 +157,23 @@ pub fn strings_conversions(
             )*
 
             Some(node)
+        }
+        fn reassign_ids(&mut self, next_id: &mut u64) {
+            self.set_id(*next_id);
+            *next_id += 1;
+            let id = self.id();
+            #(
+                if let Some(d) = self.#component_fields.as_mut() {
+                    d.set_parent(id);
+                    d.reassign_ids(next_id);
+                }
+            )*
+            #(
+                for d in &mut self.#child_fields {
+                    d.set_parent(id);
+                    d.reassign_ids(next_id);
+                }
+            )*
         }
     }
 }

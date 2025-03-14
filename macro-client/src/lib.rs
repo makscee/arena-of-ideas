@@ -367,6 +367,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 changed |= d.show_mut(None, ui);
                             } else if format!("add [b {}]", #component_fields_str).button(ui).clicked() {
                                 self.#component_fields = Some(default());
+                                changed = true;
                             }
                         )*
                         #(
@@ -382,9 +383,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                             if let Some(delete) = delete {
                                 self.#child_fields.remove(delete);
+                                changed = true;
                             }
                             if "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold).button(ui).clicked() {
                                 self.#child_fields.push(default());
+                                changed = true;
                             }
                         )*
                         changed
@@ -643,8 +646,10 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                d.show_mut(None, ui);
-                                *nodes = d.to_tnodes(0, &mut 0);
+                                if d.show_mut(None, ui) {
+                                    d.reassign_ids(&mut 0);
+                                    *nodes = d.to_tnodes();
+                                }
                             })*
                         }
                     }

@@ -219,35 +219,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         d
                     }
-                    fn to_tnode_vec(&self) -> Vec<TNode> {
-                        let mut v = [self.to_tnode()].to_vec();
-                        #(
-                            if let Some(d) = self.#component_fields.as_ref() {
-                                v.extend(d.to_tnode_vec());
-                            }
-                        )*
-                        #(
-                            for d in &self.#child_fields {
-                                v.extend(d.to_tnode_vec());
-                            }
-                        )*
-                        v
-                    }
-                    fn reassign_ids(&mut self, ctx: &ReducerContext) {
-                        self.id = ctx.next_id();
-                        #(
-                            if let Some(d) = self.#component_fields.as_mut() {
-                                d.parent = self.id;
-                                d.reassign_ids(ctx);
-                            }
-                        )*
-                        #(
-                            for d in &mut self.#child_fields {
-                                d.parent = self.id;
-                                d.reassign_ids(ctx);
-                            }
-                        )*
-                    }
                 }
             }
             .into()

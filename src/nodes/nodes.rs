@@ -16,6 +16,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn id(&self) -> u64;
     fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
+    fn reassign_ids(&mut self, next_id: &mut u64);
     fn parent(&self) -> u64;
     fn set_parent(&mut self, id: u64);
     fn entity(&self) -> Entity;
@@ -24,7 +25,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir(&self, path: String) -> DirEntry;
     fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
-    fn to_tnodes(&self, parent: u64, next_id: &mut u64) -> Vec<TNode>;
+    fn to_tnodes(&self) -> Vec<TNode>;
     fn load_recursive(id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
