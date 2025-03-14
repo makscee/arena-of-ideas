@@ -256,6 +256,18 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
+                    pub fn parse_and_reassign_ids(nodes: &Vec<TNode>, next_id: &mut u64) -> Result<Vec<TNode>, ExpressionError> {
+                        let root = &nodes[0];
+                        let kind = root.kind.to_kind();
+                        match kind {
+                            Self::None => Err("Can't convert None kind".into()),
+                            #(#struct_ident::#variants => {
+                                let mut d = #variants::from_tnodes(root.id, nodes).to_e_fn(|| format!("Failed to parse"))?;
+                                d.reassign_ids(next_id);
+                                Ok(d.to_tnodes())
+                            })*
+                        }
+                    }
                 }
             }
             .into()

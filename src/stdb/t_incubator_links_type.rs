@@ -10,8 +10,8 @@ pub struct TIncubatorLinks {
     pub key: String,
     pub from: u64,
     pub to: u64,
-    pub to_kind: String,
     pub from_kind: String,
+    pub to_kind: String,
     pub score: i64,
 }
 

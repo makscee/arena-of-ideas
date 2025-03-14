@@ -350,6 +350,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = &self.#component_fields {
                                 d.show(None, context, ui);
+                            } else if let Some(d) = self.entity.and_then(|e| context.get_component::<#component_types>(e)) {
+                                d.show(None, context, ui);
+                            }
+                        )*
+                        #(
+                            if !self.#child_fields.is_empty() {
+                                for d in &self.#child_fields {
+                                    d.show(None, context, ui);
+                                }
+                            } else if let Some(e) = self.entity {
+                                for (_, d) in context.children_components::<#child_types>(e) {
+                                    d.show(None, context, ui);
+                                }
                             }
                         )*
                     }
@@ -680,6 +693,19 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(
                                 #struct_ident::#variants => {
                                     #variants::default().get_data()
+                                }
+                            )*
+                        }
+                    }
+                    pub fn default_tnode(self) -> TNode {
+                        match self {
+                            NodeKind::None => unimplemented!(),
+                            #(
+                                #struct_ident::#variants => {
+                                    let mut d = #variants::default();
+                                    d.set_id(0);
+                                    d.set_parent(0);
+                                    d.to_tnode()
                                 }
                             )*
                         }

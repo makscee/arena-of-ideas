@@ -1,10 +1,12 @@
 use super::*;
 
 #[reducer]
-fn incubator_push(ctx: &ReducerContext, kind: String, nodes: Vec<TNode>) -> Result<(), String> {
+fn incubator_push(ctx: &ReducerContext, nodes: Vec<TNode>) -> Result<(), String> {
     let player = ctx.player()?;
-    let kind = NodeKind::from_str(&kind).map_err(|e| e.to_string())?;
-    let parent = All::load(ctx).incubator_load(ctx)?.id;
+    let mut next_id = ctx.next_id();
+    let nodes = NodeKind::parse_and_reassign_ids(&nodes, &mut next_id).to_str_err()?;
+    GlobalData::set_next_id(ctx, next_id);
+    let incubator_id = All::load(ctx).incubator_load(ctx)?.id;
     let nodes: HashMap<u64, TNode> = HashMap::from_iter(nodes.into_iter().map(|n| (n.id, n)));
     let link_kinds = NodeKind::get_incubator_links();
     let mut new_links: Vec<(u64, u64)> = default();
@@ -20,8 +22,9 @@ fn incubator_push(ctx: &ReducerContext, kind: String, nodes: Vec<TNode>) -> Resu
             .get(&kind)
             .is_some_and(|links| links.contains(&parent_kind))
         {
-            let link = TIncubatorLinks::new(id, parent, parent_kind.to_string(), kind.to_string())
-                .insert(ctx);
+            let link =
+                TIncubatorLinks::new(id, parent_id, parent_kind.to_string(), kind.to_string())
+                    .insert(ctx);
             new_links.push((link.from, link.to));
         } else if link_kinds
             .get(&parent_kind)
@@ -34,7 +37,7 @@ fn incubator_push(ctx: &ReducerContext, kind: String, nodes: Vec<TNode>) -> Resu
         }
     }
     for mut node in nodes.into_values() {
-        node.parent = parent;
+        node.parent = incubator_id;
         ctx.db.nodes_world().insert(node);
     }
     ctx.db.incubator_nodes().insert(TIncubator {

@@ -54,6 +54,16 @@ pub fn nodes(_: TokenStream) -> TokenStream {
                 }
             }
         )*
+
+        pub trait NodeKindExt {
+            fn to_kind(&self) -> NodeKind;
+        }
+
+        impl NodeKindExt for String {
+            fn to_kind(&self) -> NodeKind {
+                NodeKind::from_str(self).unwrap()
+            }
+        }
         impl NodeKind {
             pub fn component_kinds(self) -> HashSet<Self> {
                 match self {

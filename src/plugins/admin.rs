@@ -83,8 +83,8 @@ impl AdminPlugin {
     }
     fn show_battle(world: &mut World) {
         let (left, right) = client_state().get_battle_test_teams();
-        let mut left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
-        let mut right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
+        let left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
+        let right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
         let b = Battle { left, right };
         b.open_window(world);
     }

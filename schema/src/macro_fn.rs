@@ -136,11 +136,11 @@ pub fn strings_conversions(
                 .to_node::<Self>()
                 .ok()?;
             #(
-            let kind = NodeKind::#component_types.to_string();
-            node.#component_fields = nodes
-                .into_iter()
-                .find(|n| n.parent == id && n.kind == kind)
-                .and_then(|n| #component_types::from_tnodes(n.id, nodes));
+                let kind = NodeKind::#component_types.to_string();
+                node.#component_fields = nodes
+                    .into_iter()
+                    .find(|n| n.parent == id && n.kind == kind)
+                    .and_then(|n| #component_types::from_tnodes(n.id, nodes));
             )*
             #(
                 let kind = NodeKind::#child_types.to_string();

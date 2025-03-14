@@ -204,16 +204,6 @@ impl ToCstr for NodeKind {
     }
 }
 
-pub trait NodeKindExt {
-    fn to_kind(&self) -> NodeKind;
-}
-
-impl NodeKindExt for String {
-    fn to_kind(&self) -> NodeKind {
-        NodeKind::from_str(self).unwrap()
-    }
-}
-
 trait OnUnpack {
     fn on_unpack(self, entity: Entity, world: &mut World);
 }

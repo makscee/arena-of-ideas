@@ -26,14 +26,17 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 
 impl IncubatorPlugin {
     fn on_enter(world: &mut World) {
-        let callback = cn().reducers.on_incubator_push(|e, kind, _| {
+        let callback = cn().reducers.on_incubator_push(|e, nodes| {
             if !e.check_identity() {
                 return;
             }
-            let kind = NodeKind::from_str(kind).unwrap();
+            let kind = nodes[0].kind.to_kind();
             e.event.on_success_error(
                 move || {
-                    format!("New {kind} added").notify_op();
+                    OperationsPlugin::add(move |world| {
+                        format!("New {kind} added").notify(world);
+                        rm(world).edit_node = Some((kind, [kind.default_tnode()].into()));
+                    });
                 },
                 move || {
                     format!("Failed to add new {kind}").notify_op();
@@ -65,6 +68,7 @@ impl IncubatorPlugin {
             .map(|h| h.clone().fill_from_incubator())
             .collect_vec();
         let mut composed_world = World::new();
+        dbg!(&houses);
         for house in houses {
             house.unpack(composed_world.spawn_empty().id(), &mut composed_world);
         }
@@ -114,12 +118,18 @@ impl IncubatorPlugin {
         })
         .inner
     }
+    pub fn tab_houses(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = rm(world);
+
+        Ok(())
+    }
     pub fn tab_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
             let (kind, datas) = if let Some((kind, datas)) = &mut d.edit_node {
                 (kind, datas)
             } else {
-                d.edit_node = Some((NodeKind::Unit, default()));
+                let kind = NodeKind::Unit;
+                d.edit_node = Some((kind, [kind.default_tnode()].into()));
                 let node = d.edit_node.as_mut().unwrap();
                 (&mut node.0, &mut node.1)
             };
@@ -134,28 +144,26 @@ impl IncubatorPlugin {
             }
             kind.show_tnodes_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                cn().reducers
-                    .incubator_push(kind.to_string(), datas.clone())
-                    .unwrap();
+                cn().reducers.incubator_push(datas.clone()).unwrap();
             }
         });
         Ok(())
     }
     pub fn tab_links(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some((id, kind)) = world.resource::<IncubatorData>().inspect_node else {
+        let data = rm(world);
+        let Some((id, kind)) = data.inspect_node else {
             "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
             return Ok(());
         };
-        format!("{kind} Links")
-            .cstr_s(CstrStyle::Heading2)
-            .label(ui);
-        kind.show(
-            world
-                .get_id_link(id)
-                .to_e_fn(|| format!("Failed to find node#{id}"))?,
-            ui,
-            world,
-        );
+        format!("{kind} Links").cstr_s(CstrStyle::Bold).label(ui);
+        match data.composed_world.get_id_link(id) {
+            Some(entity) => kind.show(entity, ui, &data.composed_world),
+            None => {
+                "Node absent in core"
+                    .cstr_cs(DARK_RED, CstrStyle::Small)
+                    .label(ui);
+            }
+        }
 
         let mut r = world.resource_mut::<IncubatorData>();
         let mut selected = r.link_type_selected;
@@ -285,8 +293,16 @@ trait NodeKindGraph {
 impl NodeKindGraph for NodeKind {
     fn show_graph(self, mut color: Color32, data: &mut IncubatorData, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            if data.inspect_node.is_some_and(|(_, k)| k == self) {
-                color = PURPLE;
+            if let Some((_, inspect)) = data.inspect_node {
+                if self == inspect {
+                    color = GREEN;
+                } else {
+                    let links = NodeKind::get_incubator_links();
+                    let links = links.get(&inspect).unwrap();
+                    if links.contains(&self) {
+                        color = PURPLE;
+                    }
+                }
             }
             if self
                 .cstr_cs(color, CstrStyle::Small)

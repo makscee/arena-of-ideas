@@ -116,7 +116,6 @@ pub enum Reducer {
     },
     IdentityDisconnected,
     IncubatorPush {
-        kind: String,
         nodes: Vec<TNode>,
     },
     IncubatorUpdateCore,

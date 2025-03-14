@@ -31,6 +31,11 @@ impl GlobalData {
         ctx.db.global_data().always_zero().update(gd);
         id
     }
+    pub fn set_next_id(ctx: &ReducerContext, value: u64) {
+        let mut gd = Self::get(ctx);
+        gd.next_id = value;
+        ctx.db.global_data().always_zero().update(gd);
+    }
 
     pub fn get(ctx: &ReducerContext) -> Self {
         ctx.db.global_data().always_zero().find(0).unwrap()

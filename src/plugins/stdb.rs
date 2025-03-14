@@ -124,7 +124,7 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
-    cn().reducers.on_incubator_push(|e, _, _| {
+    cn().reducers.on_incubator_push(|e, _| {
         if !e.check_identity() {
             return;
         }
