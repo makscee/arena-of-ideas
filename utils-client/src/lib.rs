@@ -254,6 +254,8 @@ impl ToColor for Color32 {
 
 pub trait CtxExt {
     fn bg_clicked(&self) -> Option<Pos2>;
+    fn set_frame_flag(&self, id: impl Into<Id>);
+    fn get_frame_flag(&self, id: impl Into<Id>) -> bool;
 }
 
 impl CtxExt for egui::Context {
@@ -274,6 +276,14 @@ impl CtxExt for egui::Context {
         } else {
             None
         }
+    }
+    fn set_frame_flag(&self, id: impl Into<Id>) {
+        let frame = self.cumulative_pass_nr();
+        self.data_mut(|w| w.insert_temp(id.into(), frame));
+    }
+    fn get_frame_flag(&self, id: impl Into<Id>) -> bool {
+        let frame = self.cumulative_pass_nr();
+        self.data(|r| r.get_temp::<u64>(id.into()).unwrap_or_default() == frame)
     }
 }
 

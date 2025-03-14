@@ -92,7 +92,7 @@ where
             body,
             name,
             context_actions,
-            self.default_open,
+            self.default_open || ui.data_frame_is_force_open(),
             ui,
         );
         r
@@ -217,7 +217,7 @@ where
             body,
             name,
             context_actions,
-            self.default_open,
+            self.default_open || ui.data_frame_is_force_open(),
             ui,
         );
         *self.data = data.into_inner();
@@ -898,5 +898,20 @@ impl DataFramed for Trigger {
     fn show_body(&self, _context: &Context, _ui: &mut Ui) {}
     fn show_body_mut(&mut self, _ui: &mut Ui) -> bool {
         false
+    }
+}
+
+const FORCE_OPEN_ID: &str = "dataframe_force_open";
+pub trait DataFrameUiExt {
+    fn data_frame_force_open(&mut self);
+    fn data_frame_is_force_open(&self) -> bool;
+}
+
+impl DataFrameUiExt for Ui {
+    fn data_frame_force_open(&mut self) {
+        self.ctx().set_frame_flag(FORCE_OPEN_ID);
+    }
+    fn data_frame_is_force_open(&self) -> bool {
+        self.ctx().get_frame_flag(FORCE_OPEN_ID)
     }
 }

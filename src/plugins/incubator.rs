@@ -157,7 +157,10 @@ impl IncubatorPlugin {
         };
         format!("{kind} Links").cstr_s(CstrStyle::Bold).label(ui);
         match data.composed_world.get_id_link(id) {
-            Some(entity) => kind.show(entity, ui, &data.composed_world),
+            Some(entity) => {
+                ui.data_frame_force_open();
+                kind.show(entity, ui, &data.composed_world);
+            }
             None => {
                 "Node absent in core"
                     .cstr_cs(DARK_RED, CstrStyle::Small)
