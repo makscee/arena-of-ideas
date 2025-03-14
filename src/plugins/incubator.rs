@@ -12,12 +12,13 @@ impl Plugin for IncubatorPlugin {
 
 #[derive(Resource, Default)]
 struct IncubatorData {
+    composed_world: World,
     table_kind: NodeKind,
     inspect_node: Option<(u64, NodeKind)>,
     link_types: Vec<NodeKind>,
     link_type_selected: NodeKind,
     callback_id: Option<IncubatorPushCallbackId>,
-    edit_node: Option<(NodeKind, Vec<String>)>,
+    edit_node: Option<(NodeKind, Vec<TNode>)>,
 }
 fn rm(world: &mut World) -> Mut<IncubatorData> {
     world.resource_mut::<IncubatorData>()
@@ -42,6 +43,7 @@ impl IncubatorPlugin {
         let mut r = rm(world);
         r.callback_id = Some(callback);
         r.table_kind = NodeKind::House;
+        Self::compose_nodes(world).log();
     }
     fn on_exit(world: &mut World) {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
@@ -55,6 +57,20 @@ impl IncubatorPlugin {
     fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
         All::get_by_id(0, world).unwrap().incubator_load(world)
     }
+    fn compose_nodes(world: &mut World) -> Result<(), ExpressionError> {
+        let incubator = Self::incubator(world)?;
+        let houses = incubator
+            .houses_load(world)
+            .into_iter()
+            .map(|h| h.clone().fill_from_incubator())
+            .collect_vec();
+        let mut composed_world = World::new();
+        for house in houses {
+            house.unpack(composed_world.spawn_empty().id(), &mut composed_world);
+        }
+        rm(world).composed_world = composed_world;
+        Ok(())
+    }
     fn new_node_btn(kind: NodeKind, ui: &mut Ui, world: &mut World) {
         br(ui);
         if format!("New {kind}")
@@ -62,8 +78,16 @@ impl IncubatorPlugin {
             .button(ui)
             .clicked()
         {
-            todo!();
-            // world.resource_mut::<IncubatorData>().edit_node = Some((kind, kind.to_empty_strings()));
+            world.resource_mut::<IncubatorData>().edit_node = Some((
+                kind,
+                [TNode {
+                    id: 0,
+                    parent: 0,
+                    kind: kind.to_string(),
+                    data: kind.default_data(),
+                }]
+                .into(),
+            ));
             DockPlugin::set_active(Tab::IncubatorNewNode, world);
         }
     }
@@ -100,13 +124,19 @@ impl IncubatorPlugin {
                 (&mut node.0, &mut node.1)
             };
             if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
-                // *datas = kind.to_empty_strings();
+                *datas = [TNode {
+                    id: 0,
+                    parent: 0,
+                    kind: kind.to_string(),
+                    data: kind.default_data(),
+                }]
+                .into();
             }
-            // kind.show_tnodes_mut(datas, ui);
+            kind.show_tnodes_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                // cn().reducers
-                //     .incubator_push(kind.to_string(), datas.clone())
-                //     .unwrap();
+                cn().reducers
+                    .incubator_push(kind.to_string(), datas.clone())
+                    .unwrap();
             }
         });
         Ok(())
@@ -218,9 +248,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
         self = self.column_btn_dyn("clone", move |d, _, world| {
             let id = f(d);
             let node = cn().db.nodes_world().id().find(&id).unwrap();
-            let kind = node.kind();
-            world.resource_mut::<IncubatorData>().edit_node =
-                Some((kind, [format!("0 _ {}", node.data)].into()));
+            world.resource_mut::<IncubatorData>().edit_node = Some((kind, [node].into()));
             DockPlugin::set_active(Tab::IncubatorNewNode, world);
         });
         if NodeKind::get_incubator_links()

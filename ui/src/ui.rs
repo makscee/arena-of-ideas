@@ -4,7 +4,7 @@ use bevy::{app::Startup, prelude::Query};
 use bevy_egui::EguiContext;
 use egui::{
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    CornerRadius, FontData, FontDefinitions, FontFamily, LayerId, Margin, Shadow, Stroke,
+    CornerRadius, FontData, FontDefinitions, FontFamily, Margin, Shadow, Stroke,
 };
 
 use super::*;

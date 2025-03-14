@@ -20,13 +20,16 @@ fn incubator_push(ctx: &ReducerContext, kind: String, nodes: Vec<TNode>) -> Resu
             .get(&kind)
             .is_some_and(|links| links.contains(&parent_kind))
         {
-            let link = TIncubatorLinks::new(id, parent, parent_kind.to_string()).insert(ctx);
+            let link = TIncubatorLinks::new(id, parent, parent_kind.to_string(), kind.to_string())
+                .insert(ctx);
             new_links.push((link.from, link.to));
         } else if link_kinds
             .get(&parent_kind)
             .is_some_and(|links| links.contains(&kind))
         {
-            let link = TIncubatorLinks::new(parent_id, id, kind.to_string()).insert(ctx);
+            let link =
+                TIncubatorLinks::new(parent_id, id, kind.to_string(), parent_kind.to_string())
+                    .insert(ctx);
             new_links.push((link.from, link.to));
         }
     }
@@ -67,6 +70,8 @@ pub struct TIncubatorLinks {
     #[index(btree)]
     pub to: u64,
     #[index(btree)]
+    pub from_kind: String,
+    #[index(btree)]
     pub to_kind: String,
     pub score: i64,
 }
@@ -86,12 +91,13 @@ impl TIncubatorLinks {
     fn key(from: u64, to: u64) -> String {
         format!("{from}_{to}")
     }
-    fn new(from: u64, to: u64, to_kind: String) -> Self {
+    fn new(from: u64, to: u64, to_kind: String, from_kind: String) -> Self {
         Self {
             key: Self::key(from, to),
             from,
             to,
             to_kind,
+            from_kind,
             score: 0,
         }
     }
@@ -103,14 +109,15 @@ impl TIncubatorLinks {
         let mut row = if let Some(row) = ctx.db.incubator_links().key().find(key.clone()) {
             row
         } else {
-            let kind = ctx
-                .db
-                .nodes_world()
-                .id()
-                .find(to)
+            let to_kind = TNode::find(ctx, to)
                 .to_e_s_fn(|| format!("Failed to find node to#{to}"))?
                 .kind;
-            ctx.db.incubator_links().insert(Self::new(from, to, kind))
+            let from_kind = TNode::find(ctx, from)
+                .to_e_s_fn(|| format!("Failed to find node to#{to}"))?
+                .kind;
+            ctx.db
+                .incubator_links()
+                .insert(Self::new(from, to, to_kind, from_kind))
         };
         row.score += delta;
         ctx.db.incubator_links().key().update(row);

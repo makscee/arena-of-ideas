@@ -46,15 +46,15 @@ impl NodeIdExt for u64 {
 }
 
 impl TNode {
+    pub fn find(ctx: &ReducerContext, id: u64) -> Option<Self> {
+        ctx.db.nodes_world().id().find(id)
+    }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
         let ids = id.children_recursive(ctx);
         for id in &ids {
             ctx.db.nodes_world().id().delete(id);
         }
     }
-}
-
-impl TNode {
     pub fn to_node<T: Node + StringData>(&self) -> Result<T, String> {
         let mut d = T::default();
         d.inject_data(&self.data).to_str_err()?;

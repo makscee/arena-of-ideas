@@ -36,13 +36,13 @@ impl AdminPlugin {
                     let mut cs = client_state().clone();
                     cs.battle_test_teams.0 = Team::pack(entity_left, &battle_world)
                         .unwrap()
-                        .to_tnodes()
+                        .to_tnodes(0, &mut 0)
                         .into_iter()
                         .map(|n| n.to_ron())
                         .collect();
                     cs.battle_test_teams.1 = Team::pack(entity_right, &battle_world)
                         .unwrap()
-                        .to_tnodes()
+                        .to_tnodes(0, &mut 0)
                         .into_iter()
                         .map(|n| n.to_ron())
                         .collect();

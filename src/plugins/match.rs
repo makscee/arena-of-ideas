@@ -185,7 +185,7 @@ impl MatchPlugin {
                 .team_load(world)?
                 .fusions_load(world)
                 .into_iter()
-                .map(|f| f.to_tnodes())
+                .map(|f| f.to_tnodes(0, &mut 0))
                 .collect_vec();
             for f in m
                 .team_load(world)?

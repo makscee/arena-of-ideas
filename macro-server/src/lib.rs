@@ -18,12 +18,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             semi_token: _,
         }) => {
             let ParsedNodeFields {
-                component_link_fields,
-                component_link_fields_str,
-                component_link_types,
-                child_link_fields,
-                child_link_fields_str,
-                child_link_types,
+                component_fields,
+                component_fields_str,
+                component_types,
+                child_fields,
+                child_fields_str,
+                child_types,
                 var_fields: _,
                 var_types: _,
                 data_fields: _,
@@ -34,18 +34,18 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 all_data_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
-                &component_link_fields,
-                &component_link_fields_str,
-                &component_link_types,
-                &child_link_fields,
-                &child_link_fields_str,
-                &child_link_types,
+                &component_fields,
+                &component_fields_str,
+                &component_types,
+                &child_fields,
+                &child_fields_str,
+                &child_types,
             );
             let table_conversions = table_conversions(
-                &component_link_fields,
-                &component_link_types,
-                &child_link_fields,
-                &child_link_types,
+                &component_fields,
+                &component_types,
+                &child_fields,
+                &child_types,
             );
             if let Fields::Named(ref mut fields) = fields {
                 fields
@@ -61,16 +61,15 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 struct_ident,
                 &all_data_fields,
                 &all_data_types,
-                &component_link_fields,
-                &component_link_types,
+                &component_fields,
+                &component_types,
             );
-            let common_trait =
-                common_node_trait_fns(struct_ident, &component_link_types, &child_link_types);
-            let component_link_fields_load = component_link_fields
+            let common_trait = common_node_trait_fns(struct_ident, &component_types, &child_types);
+            let component_link_fields_load = component_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
-            let child_link_fields_load = child_link_fields
+            let child_link_fields_load = child_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
@@ -104,10 +103,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             #all_data_fields: #all_data_types,
                         )*
                         #(
-                            #component_link_fields: #component_link_types,
+                            #component_fields: #component_types,
                         )*
                         #(
-                            #child_link_fields: Vec<#child_link_types>,
+                            #child_fields: Vec<#child_types>,
                         )*
                     ) -> Self {
                         let d = Self {
@@ -117,35 +116,35 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 #all_data_fields,
                             )*
                             #(
-                                #component_link_fields: Some(#component_link_fields),
+                                #component_fields: Some(#component_fields),
                             )*
                             #(
-                                #child_link_fields,
+                                #child_fields,
                             )*
                         };
                         d.insert_self(ctx);
                         d
                     }
                     #(
-                        pub fn #component_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #component_link_types, String> {
+                        pub fn #component_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #component_types, String> {
                             let id = self.id();
-                            if self.#component_link_fields.is_none() {
-                                self.#component_link_fields = Some(self.find_child::<#component_link_types>(ctx)?);
+                            if self.#component_fields.is_none() {
+                                self.#component_fields = Some(self.find_child::<#component_types>(ctx)?);
                             }
-                            self.#component_link_fields
+                            self.#component_fields
                                 .as_mut()
-                                .to_e_s_fn(|| format!("{} not found for {}", #component_link_types::kind_s(), id))
+                                .to_e_s_fn(|| format!("{} not found for {}", #component_types::kind_s(), id))
                         }
                     )*
                     #(
-                        pub fn #child_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#child_link_types>, String> {
-                            if self.#child_link_fields.is_empty() {
-                                self.#child_link_fields = #child_link_types::collect_children_of_id(ctx, self.id());
+                        pub fn #child_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#child_types>, String> {
+                            if self.#child_fields.is_empty() {
+                                self.#child_fields = #child_types::collect_children_of_id(ctx, self.id());
                             }
-                            if self.#child_link_fields.is_empty() {
-                                return Err(format!("No {} children found for {}", #child_link_types::kind_s(), self.id()));
+                            if self.#child_fields.is_empty() {
+                                return Err(format!("No {} children found for {}", #child_types::kind_s(), self.id()));
                             }
-                            Ok(&mut self.#child_link_fields)
+                            Ok(&mut self.#child_fields)
                         }
                     )*
                     pub fn find_by_data(
@@ -188,6 +187,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn id(&self) -> u64 {
                         self.id
                     }
+                    fn get_id(&self) -> Option<u64> {
+                        Some(self.id)
+                    }
                     fn set_id(&mut self, id: u64) {
                         self.id = id;
                     }
@@ -206,13 +208,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         );
                         d.parent = parent;
                         #(
-                            if let Some(n) = self.#component_link_fields.as_ref() {
-                                d.#component_link_fields = Some(n.clone(ctx, d.id));
+                            if let Some(n) = self.#component_fields.as_ref() {
+                                d.#component_fields = Some(n.clone(ctx, d.id));
                             }
                         )*
                         #(
-                            for n in &self.#child_link_fields {
-                                d.#child_link_fields.push(n.clone(ctx, d.id));
+                            for n in &self.#child_fields {
+                                d.#child_fields.push(n.clone(ctx, d.id));
                             }
                         )*
                         d
@@ -220,12 +222,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn to_tnode_vec(&self) -> Vec<TNode> {
                         let mut v = [self.to_tnode()].to_vec();
                         #(
-                            if let Some(d) = self.#component_link_fields.as_ref() {
+                            if let Some(d) = self.#component_fields.as_ref() {
                                 v.extend(d.to_tnode_vec());
                             }
                         )*
                         #(
-                            for d in &self.#child_link_fields {
+                            for d in &self.#child_fields {
                                 v.extend(d.to_tnode_vec());
                             }
                         )*
@@ -234,13 +236,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn reassign_ids(&mut self, ctx: &ReducerContext) {
                         self.id = ctx.next_id();
                         #(
-                            if let Some(d) = self.#component_link_fields.as_mut() {
+                            if let Some(d) = self.#component_fields.as_mut() {
                                 d.parent = self.id;
                                 d.reassign_ids(ctx);
                             }
                         )*
                         #(
-                            for d in &mut self.#child_link_fields {
+                            for d in &mut self.#child_fields {
                                 d.parent = self.id;
                                 d.reassign_ids(ctx);
                             }

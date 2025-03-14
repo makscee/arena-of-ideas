@@ -14,6 +14,7 @@ pub trait GetVar: GetNodeKind + Debug {
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn id(&self) -> u64;
+    fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
     fn parent(&self) -> u64;
     fn set_parent(&mut self, id: u64);
@@ -23,7 +24,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir(&self, path: String) -> DirEntry;
     fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
-    fn to_tnodes(&self) -> Vec<TNode>;
+    fn to_tnodes(&self, parent: u64, next_id: &mut u64) -> Vec<TNode>;
     fn load_recursive(id: u64) -> Option<Self>;
     fn pack(entity: Entity, world: &World) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
@@ -56,6 +57,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     }
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
+    fn fill_from_incubator(self) -> Self;
 }
 
 pub trait NodeExt: Sized {
@@ -64,6 +66,8 @@ pub trait NodeExt: Sized {
     fn get_by_id(id: u64, world: &World) -> Option<&Self>;
     fn load(id: u64) -> Option<Self>;
     fn load_by_parent(parent: u64) -> Option<Self>;
+    fn find_incubator_component<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<T>;
+    fn collect_incubator_children<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<T>;
 }
 impl<T> NodeExt for T
 where
@@ -84,11 +88,7 @@ where
         world.get::<Self>(world.get_id_link(id)?)
     }
     fn load(id: u64) -> Option<Self> {
-        cn().db
-            .nodes_world()
-            .id()
-            .find(&id)
-            .and_then(|d| d.to_node().ok())
+        cn().db.nodes_world().id().find(&id)?.to_node().ok()
     }
     fn load_by_parent(parent: u64) -> Option<Self> {
         let kind = Self::kind_s().to_string();
@@ -97,6 +97,43 @@ where
             .iter()
             .find(|n| n.kind == kind && n.parent == parent)
             .and_then(|n| n.to_node().ok())
+    }
+    fn find_incubator_component<P: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<P> {
+        let kind = P::kind_s().to_string();
+        let id = cn()
+            .db
+            .incubator_links()
+            .iter()
+            .filter(|n| n.from == self.id() && n.to_kind == kind)
+            .max_by_key(|n| n.score)?
+            .to;
+        P::load(id)
+    }
+    fn collect_incubator_children<P: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<P> {
+        let kind = self.kind().to_string();
+        let child_kind = P::kind_s().to_string();
+        let mut candidates = cn()
+            .db
+            .incubator_links()
+            .iter()
+            .filter(|l| l.from_kind == child_kind && l.to_kind == kind)
+            .map(|l| l.from)
+            .unique()
+            .collect_vec();
+        candidates.retain(|id| {
+            cn().db
+                .incubator_links()
+                .iter()
+                .filter(|l| l.from == *id && l.to_kind == kind)
+                .max_by_key(|l| l.score)
+                .unwrap()
+                .to
+                == self.id()
+        });
+        candidates
+            .into_iter()
+            .filter_map(|id| P::load(id))
+            .collect()
     }
 }
 
@@ -257,8 +294,16 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 let n = AbilityEffect::get_by_id(f(d), world).unwrap();
                 n.show(None, &default(), ui);
             }),
-            NodeKind::StatusAbility => todo!(),
-            NodeKind::StatusAbilityDescription => todo!(),
+            NodeKind::StatusAbility => self.column_cstr_dyn("name", move |d, world| {
+                let n = StatusAbility::get_by_id(f(d), world).unwrap();
+                n.name.cstr_s(CstrStyle::Bold)
+            }),
+            NodeKind::StatusAbilityDescription => {
+                self.column_cstr_dyn("description", move |d, world| {
+                    let n = StatusAbilityDescription::get_by_id(f(d), world).unwrap();
+                    n.description.cstr_s(CstrStyle::Bold)
+                })
+            }
             NodeKind::Unit => self.column_cstr_dyn("name", move |d, world| {
                 let n = Unit::get_by_id(f(d), world).unwrap();
                 n.name.cstr_s(CstrStyle::Bold)
