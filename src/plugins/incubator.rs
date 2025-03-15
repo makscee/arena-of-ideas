@@ -18,7 +18,6 @@ struct IncubatorData {
     new_node_link: Option<u64>,
     link_types: Vec<NodeKind>,
     link_type_selected: NodeKind,
-    callback_id: Option<IncubatorPushCallbackId>,
     new_node: Option<(NodeKind, Vec<TNode>)>,
 }
 fn rm(world: &mut World) -> Mut<IncubatorData> {
@@ -173,19 +172,29 @@ impl IncubatorPlugin {
             Some(entity) => {
                 ui.data_frame_force_open();
                 kind.show(entity, ui, &data.composed_world);
-                match kind {
+                br(ui);
+                ui.columns(2, |ui| match kind {
                     NodeKind::Unit => {
-                        match UnitCard::from_context(
-                            Context::new_world(&data.composed_world).set_owner(entity),
-                        ) {
-                            Ok(c) => c.show(ui),
+                        let context = Context::new_world(&data.composed_world)
+                            .set_owner(entity)
+                            .take();
+                        match UnitCard::from_context(&context) {
+                            Ok(c) => c.show(&mut ui[0]),
                             Err(e) => {
-                                e.cstr().label(ui);
+                                e.cstr().label(&mut ui[0]);
                             }
                         }
+                        let ui = &mut ui[1];
+                        let size = ui.available_width() - 35.0;
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                        if let Some(rep) = data.composed_world.get::<Representation>(entity) {
+                            rep.pain_or_show_err(rect, &context, ui);
+                        }
+                        unit_rep().pain_or_show_err(rect, &context, ui);
                     }
                     _ => {}
-                }
+                });
             }
             None => {
                 "Node absent in core"
@@ -193,7 +202,7 @@ impl IncubatorPlugin {
                     .label(ui);
             }
         }
-
+        br(ui);
         let mut r = rm(world);
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {

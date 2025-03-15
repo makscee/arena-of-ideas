@@ -109,4 +109,12 @@ impl Representation {
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         RepresentationPlugin::paint_rect(rect, context, &self.material, ui)
     }
+    pub fn pain_or_show_err(&self, rect: Rect, context: &Context, ui: &mut Ui) {
+        match self.paint(rect, context, ui) {
+            Ok(_) => {}
+            Err(e) => {
+                e.cstr().label(ui);
+            }
+        }
+    }
 }
