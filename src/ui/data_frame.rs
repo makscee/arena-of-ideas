@@ -389,13 +389,7 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
         self.show_name(ui);
         false
     }
-}
-
-impl<T> Show for T
-where
-    T: ?Sized + DataFramed,
-{
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         let has_header = self.has_header();
         let has_body = self.has_body();
         let mut df = DataFrame::new(self)
@@ -411,7 +405,7 @@ where
         }
         df.ui(ui);
     }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         let has_header = self.has_header();
         let has_body = self.has_body();
         let default_open = self.default_open();
@@ -426,6 +420,18 @@ where
             df = df.body(move |d, ui| d.show_body_mut(ui));
         }
         df.ui(ui)
+    }
+}
+
+impl<T> Show for T
+where
+    T: ?Sized + DataFramed,
+{
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        self.ui(prefix, context, ui);
+    }
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        self.ui_mut(prefix, ui)
     }
 }
 
@@ -509,25 +515,30 @@ where
         show_mut_vec(self, None, ui)
     }
 }
+
 impl<T> DataFramed for Box<T>
 where
     T: Show + Default + Serialize + DeserializeOwned + Debug + Clone + ToCstr,
 {
+    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        self.deref().show(prefix, context, ui);
+    }
+    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        self.deref_mut().show_mut(prefix, ui)
+    }
     fn has_header(&self) -> bool {
         false
     }
     fn has_body(&self) -> bool {
-        true
+        false
     }
     fn show_header(&self, _: &Context, _: &mut Ui) {}
     fn show_header_mut(&mut self, _: &mut Ui) -> bool {
         false
     }
-    fn show_body(&self, context: &Context, ui: &mut Ui) {
-        self.as_ref().show(None, context, ui);
-    }
-    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
-        self.as_mut().show_mut(None, ui)
+    fn show_body(&self, _: &Context, _: &mut Ui) {}
+    fn show_body_mut(&mut self, _: &mut Ui) -> bool {
+        false
     }
 }
 
@@ -853,7 +864,7 @@ impl DataFramed for PainterAction {
                 x.show(Some("cnt"), context, ui);
                 painter_action.show(Some("action"), context, ui);
             }
-            PainterAction::List(vec) => vec.clone().show(None, context, ui),
+            PainterAction::List(vec) => vec.show(None, context, ui),
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
