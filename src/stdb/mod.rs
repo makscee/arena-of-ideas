@@ -123,7 +123,6 @@ pub enum Reducer {
     IncubatorVote {
         from: u64,
         to: u64,
-        vote: i8,
     },
     Login {
         name: String,

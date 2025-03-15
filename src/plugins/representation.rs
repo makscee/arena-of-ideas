@@ -97,6 +97,9 @@ impl RepresentationPlugin {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let mut p = Painter::new(rect, ui.ctx());
+        if let Ok(color) = context.get_color(VarName::color) {
+            p.color = color;
+        }
         for a in &m.0 {
             a.paint(context, &mut p, ui)?
         }

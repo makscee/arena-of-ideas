@@ -118,7 +118,7 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
-    cn().reducers.on_incubator_vote(|e, _, _, _| {
+    cn().reducers.on_incubator_vote(|e, _, _| {
         if !e.check_identity() {
             return;
         }

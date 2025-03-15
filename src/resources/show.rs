@@ -305,36 +305,40 @@ impl Show for HexColor {
         self.cstr().label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        if Input::new("hex:")
-            .char_limit(9)
+        prefix.show(ui);
+        let mut changed = false;
+        let mut err = None;
+        let c = match self.try_c32() {
+            Ok(c) => {
+                let mut rgb = [c.r(), c.g(), c.b()];
+                if ui.color_edit_button_srgb(&mut rgb).changed() {
+                    *self = Color32::from_rgb(rgb[0], rgb[1], rgb[2]).into();
+                    changed = true;
+                }
+                Some(c)
+            }
+            Err(e) => {
+                err = Some(format!("[red Hex parse err:] {e:?}"));
+                None
+            }
+        };
+        if Input::new("")
+            .char_limit(7)
+            .desired_width(60.0)
+            .color_opt(c)
+            .id("hex input")
             .ui_string(&mut self.0, ui)
             .changed()
         {
-            return true;
+            changed = true;
         }
-        match self.try_c32() {
-            Ok(mut c) => {
-                ui.horizontal(|ui| {
-                    self.cstr().label(ui);
-                    if c.show_mut(prefix, ui) {
-                        *self = c.into();
-                        true
-                    } else {
-                        false
-                    }
-                })
-                .inner
+        if let Some(err) = err {
+            if "reset".cstr().button(ui).clicked() {
+                *self = default();
             }
-            Err(e) => {
-                ui.horizontal(|ui| {
-                    if "reset".cstr().button(ui).clicked() {
-                        *self = default();
-                    }
-                    format!("[red Hex parse err:] {e:?}").label(ui);
-                });
-                false
-            }
+            err.label(ui);
         }
+        changed
     }
 }
 impl Show for Entity {

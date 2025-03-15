@@ -45,7 +45,7 @@ impl IncubatorPlugin {
                     },
                 );
             });
-            cn().reducers.on_incubator_vote(|e, _, _, _| {
+            cn().reducers.on_incubator_vote(|e, _, _| {
                 if !e.check_identity() {
                     return;
                 }
@@ -53,6 +53,8 @@ impl IncubatorPlugin {
                     move || {
                         OperationsPlugin::add(move |world| {
                             Self::compose_nodes(world).log();
+                            TableState::reset_cache(&egui_context(world).unwrap());
+                            TableState::reset_rows_cache::<(i32, TNode)>(world);
                         });
                     },
                     move || {
@@ -152,6 +154,7 @@ impl IncubatorPlugin {
                 }]
                 .into();
             }
+            ui.data_frame_force_open();
             kind.show_tnodes_mut(datas, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
@@ -170,9 +173,6 @@ impl IncubatorPlugin {
         format!("{kind} node").cstr_s(CstrStyle::Bold).label(ui);
         match data.composed_world.get_id_link(id) {
             Some(entity) => {
-                ui.data_frame_force_open();
-                kind.show(entity, ui, &data.composed_world);
-                br(ui);
                 ui.columns(2, |ui| match kind {
                     NodeKind::Unit => {
                         let context = Context::new_world(&data.composed_world)
@@ -185,9 +185,11 @@ impl IncubatorPlugin {
                             }
                         }
                         let ui = &mut ui[1];
-                        let size = ui.available_width() - 35.0;
-                        let (rect, _) =
-                            ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                        let size = ui.available_width();
+                        let rect = ui
+                            .allocate_exact_size(egui::vec2(size, size), Sense::hover())
+                            .0
+                            .shrink(30.0);
                         if let Some(rep) = data.composed_world.get::<Representation>(entity) {
                             rep.pain_or_show_err(rect, &context, ui);
                         }
@@ -195,6 +197,8 @@ impl IncubatorPlugin {
                     }
                     _ => {}
                 });
+                br(ui);
+                kind.show(entity, ui, &data.composed_world);
             }
             None => {
                 "Node absent in core"
@@ -247,36 +251,18 @@ impl IncubatorPlugin {
         .add_node_view_columns(selected, |(_, node)| node.id)
         .column_int("score", |(score, _)| *score)
         .column_btn_mod_dyn(
-            "-",
-            move |(_, node), _, _| {
-                cn().reducers.incubator_vote(id, node.id, -1).unwrap();
-            },
-            move |(_, node), _, btn| {
-                if let Some(vote) =
-                    cn().db
-                        .incubator_votes()
-                        .key()
-                        .find(&vote_key(player_id(), id, node.id))
-                {
-                    btn.active(vote.vote == -1)
-                } else {
-                    btn
-                }
-            },
-        )
-        .column_btn_mod_dyn(
             "+",
             move |(_, node), _, _| {
-                cn().reducers.incubator_vote(id, node.id, 1).unwrap();
+                cn().reducers.incubator_vote(id, node.id).unwrap();
             },
             move |(_, node), _, btn| {
                 if let Some(vote) =
                     cn().db
                         .incubator_votes()
                         .key()
-                        .find(&vote_key(player_id(), id, node.id))
+                        .find(&vote_key(player_id(), id, selected))
                 {
-                    btn.active(vote.vote == 1)
+                    btn.active(vote.to_id == node.id)
                 } else {
                     btn
                 }
@@ -324,8 +310,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
     }
 }
 
-fn vote_key(player: u64, from: u64, to: u64) -> String {
-    format!("{player}_{from}_{to}")
+fn vote_key(owner: u64, from: u64, kind: NodeKind) -> String {
+    format!("{owner}_{from}_{kind}")
 }
 
 trait NodeKindGraph {

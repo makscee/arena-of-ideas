@@ -84,7 +84,7 @@ impl From<String> for HexColor {
 
 impl From<Color32> for HexColor {
     fn from(value: Color32) -> Self {
-        Self(value.to_hex())
+        Self(ecolor::HexColor::Hex6(value).to_string())
     }
 }
 impl Into<Color32> for &HexColor {

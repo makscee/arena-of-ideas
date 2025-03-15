@@ -9,7 +9,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub(super) struct IncubatorVoteArgs {
     pub from: u64,
     pub to: u64,
-    pub vote: i8,
 }
 
 impl From<IncubatorVoteArgs> for super::Reducer {
@@ -17,7 +16,6 @@ impl From<IncubatorVoteArgs> for super::Reducer {
         Self::IncubatorVote {
             from: args.from,
             to: args.to,
-            vote: args.vote,
         }
     }
 }
@@ -38,7 +36,7 @@ pub trait incubator_vote {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_incubator_vote`] callbacks.
-    fn incubator_vote(&self, from: u64, to: u64, vote: i8) -> __sdk::Result<()>;
+    fn incubator_vote(&self, from: u64, to: u64) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `incubator_vote`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -48,7 +46,7 @@ pub trait incubator_vote {
     /// to cancel the callback.
     fn on_incubator_vote(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &i8) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u64, &u64) + Send + 'static,
     ) -> IncubatorVoteCallbackId;
     /// Cancel a callback previously registered by [`Self::on_incubator_vote`],
     /// causing it not to run in the future.
@@ -56,13 +54,13 @@ pub trait incubator_vote {
 }
 
 impl incubator_vote for super::RemoteReducers {
-    fn incubator_vote(&self, from: u64, to: u64, vote: i8) -> __sdk::Result<()> {
+    fn incubator_vote(&self, from: u64, to: u64) -> __sdk::Result<()> {
         self.imp
-            .call_reducer("incubator_vote", IncubatorVoteArgs { from, to, vote })
+            .call_reducer("incubator_vote", IncubatorVoteArgs { from, to })
     }
     fn on_incubator_vote(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u64, &i8) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u64) + Send + 'static,
     ) -> IncubatorVoteCallbackId {
         IncubatorVoteCallbackId(self.imp.on_reducer(
             "incubator_vote",
@@ -70,7 +68,7 @@ impl incubator_vote for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::IncubatorVote { from, to, vote },
+                            reducer: super::Reducer::IncubatorVote { from, to },
                             ..
                         },
                     ..
@@ -78,7 +76,7 @@ impl incubator_vote for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, from, to, vote)
+                callback(ctx, from, to)
             }),
         ))
     }

@@ -121,17 +121,11 @@ impl<'w, 's> Context<'w, 's> {
         }
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        let result = self
-            .layers
+        self.layers
             .iter()
             .rev()
             .find_map(|l| l.get_var(var, &self.sources, self.t))
-            .to_e_var(var);
-        if result.is_err() && var == VarName::color {
-            Ok(VISIBLE_LIGHT.into())
-        } else {
-            result
-        }
+            .to_e_var(var)
     }
     pub fn get_vars(&self, vars: impl Iterator<Item = VarName>) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(vars.filter_map(|var| self.get_var(var).ok().map(|value| (var, value))))
