@@ -379,7 +379,7 @@ impl BattleSimulation {
             fusion.react(event, &mut context).log();
         }
         for child in entity.get_children(&self.world) {
-            if let Some(reaction) = self.world.get::<Reaction>(child) {
+            if let Some(reaction) = self.world.get::<Behavior>(child) {
                 let mut status_context = context.clone().set_owner(child).take();
                 if let Some(actions) = reaction.react(event, &status_context) {
                     match actions.process(&mut status_context) {
@@ -414,7 +414,7 @@ impl BattleSimulation {
         }
         for (r, s) in self
             .world
-            .query::<(&Reaction, &StatusAbility)>()
+            .query::<(&Behavior, &StatusAbility)>()
             .iter(&self.world)
         {
             let context = Context::new_battle_simulation(self)

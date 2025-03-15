@@ -64,15 +64,15 @@ impl Fusion {
             a.retain(|a| !r.eq(a));
         }
     }
-    pub fn get_reaction<'a>(
+    pub fn get_behavior<'a>(
         &self,
         unit: u8,
         context: &'a Context,
-    ) -> Result<&'a Reaction, ExpressionError> {
+    ) -> Result<&'a Behavior, ExpressionError> {
         let unit = self.get_unit(unit, context)?;
         context
-            .get_component::<Reaction>(unit)
-            .to_e("Reaction not found")
+            .get_component::<Behavior>(unit)
+            .to_e("Behavior not found")
     }
     pub fn get_trigger<'a>(
         &self,
@@ -80,18 +80,18 @@ impl Fusion {
         trigger: u8,
         context: &'a Context,
     ) -> Result<&'a Trigger, ExpressionError> {
-        let reaction = self.get_reaction(unit, context)?;
-        Ok(&reaction.triggers[trigger as usize].0)
+        let reaction = self.get_behavior(unit, context)?;
+        Ok(&reaction.triggers[trigger as usize].trigger)
     }
     pub fn get_action<'a>(
         &self,
         r: &UnitActionRef,
         context: &'a Context,
     ) -> Result<(Entity, &'a Action), ExpressionError> {
-        let reaction = self.get_reaction(r.unit, context)?;
+        let reaction = self.get_behavior(r.unit, context)?;
         Ok((
             reaction.entity(),
-            &reaction.triggers[r.trigger as usize].1[r.action as usize],
+            &reaction.triggers[r.trigger as usize].actions[r.action as usize],
         ))
     }
     pub fn react(

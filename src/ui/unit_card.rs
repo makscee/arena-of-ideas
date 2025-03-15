@@ -7,7 +7,7 @@ pub struct UnitCard {
     pub house: String,
     pub house_color: Color32,
     pub rarity: Rarity,
-    pub reaction: Reaction,
+    pub behavior: Behavior,
     pub vars: HashMap<VarName, VarValue>,
     pub expanded: bool,
 }
@@ -38,7 +38,7 @@ impl UnitCard {
                 .color
                 .c32(),
             rarity: Rarity::default(),
-            reaction: Reaction::default(),
+            behavior: Behavior::default(),
             vars,
             expanded: false,
         })
@@ -77,7 +77,7 @@ impl UnitCard {
                     ui.vertical(|ui| {
                         self.show_description(ui);
                         ui.vertical(|ui| {
-                            for (trigger, actions) in &self.reaction.triggers {
+                            for Reaction { trigger, actions } in &self.behavior.triggers {
                                 trigger.cstr().label(ui);
                                 for a in actions.0.iter() {
                                     let r = a.cstr().label_w(ui);

@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{ops::Deref, str::FromStr, sync::Arc};
 
 use bevy::{
     color::Color,
@@ -334,6 +334,16 @@ fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) 
     }
 }
 
+impl<T: ToCstr> ToCstr for Vec<T> {
+    fn cstr(&self) -> Cstr {
+        self.into_iter().map(|i| i.cstr()).join(" ")
+    }
+}
+impl<T: ToCstr> ToCstr for Box<T> {
+    fn cstr(&self) -> Cstr {
+        self.deref().cstr()
+    }
+}
 impl ToCstr for String {
     fn cstr(&self) -> Cstr {
         self.clone()
@@ -562,5 +572,10 @@ impl ToCstr for Event {
 impl ToCstr for ExpressionError {
     fn cstr(&self) -> Cstr {
         format!("{self}").cstr_cs(RED, CstrStyle::Small)
+    }
+}
+impl ToCstr for Reaction {
+    fn cstr(&self) -> Cstr {
+        format!("{}", self.trigger.cstr())
     }
 }

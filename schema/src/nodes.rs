@@ -18,7 +18,7 @@ struct Incubator {
     pub action_ability_descriptions: NodeChildren<ActionAbilityDescription>,
     pub ability_effects: NodeChildren<AbilityEffect>,
     pub representations: NodeChildren<Representation>,
-    pub reactions: NodeChildren<Reaction>,
+    pub reactions: NodeChildren<Behavior>,
 }
 
 struct Player {
@@ -72,7 +72,7 @@ struct StatusAbility {
 
 struct StatusAbilityDescription {
     pub description: String,
-    pub reaction: NodeComponent<Reaction>,
+    pub reaction: NodeComponent<Behavior>,
 }
 
 struct Team {
@@ -108,7 +108,7 @@ struct UnitDescription {
     pub description: String,
     pub representation: NodeComponent<Representation>,
     pub stats: NodeComponent<UnitStats>,
-    pub reaction: NodeComponent<Reaction>,
+    pub reaction: NodeComponent<Behavior>,
 }
 
 struct UnitStats {
@@ -117,8 +117,8 @@ struct UnitStats {
     pub dmg: i32,
 }
 
-struct Reaction {
-    pub triggers: Vec<(Trigger, Actions)>,
+struct Behavior {
+    pub triggers: Vec<Reaction>,
 }
 
 struct Representation {

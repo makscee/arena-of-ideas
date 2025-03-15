@@ -29,6 +29,54 @@ pub trait Injector<T>: Sized {
     }
 }
 
+impl<T> Injector<Self> for Box<T>
+where
+    T: Default + Serialize + DeserializeOwned,
+{
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        todo!()
+    }
+
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        todo!()
+    }
+}
+impl<T> Inject for Box<T>
+where
+    T: Default + Serialize + DeserializeOwned,
+{
+    fn move_inner(&mut self, source: &mut Self) {
+        todo!()
+    }
+
+    fn wrapper() -> Self {
+        todo!()
+    }
+}
+
+impl<T> Injector<Self> for Vec<T>
+where
+    T: Default + Serialize + DeserializeOwned,
+{
+    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+        default()
+    }
+
+    fn get_inner(&self) -> Vec<&Box<Self>> {
+        default()
+    }
+}
+impl<T> Inject for Vec<T>
+where
+    T: Default + Serialize + DeserializeOwned,
+{
+    fn move_inner(&mut self, _: &mut Self) {}
+
+    fn wrapper() -> Self {
+        [default()].into()
+    }
+}
+
 impl Inject for Expression {
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);

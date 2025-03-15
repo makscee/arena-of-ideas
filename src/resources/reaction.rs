@@ -1,12 +1,12 @@
 use super::*;
 
-pub trait ReactionImpl {
+pub trait BehaviorImpl {
     fn react(&self, event: &Event, context: &Context) -> Option<&Actions>;
 }
 
-impl ReactionImpl for Reaction {
+impl BehaviorImpl for Behavior {
     fn react(&self, event: &Event, context: &Context) -> Option<&Actions> {
-        for (trigger, actions) in self.triggers.iter() {
+        for Reaction { trigger, actions } in self.triggers.iter() {
             if trigger.fire(event, context) {
                 return Some(actions);
             }

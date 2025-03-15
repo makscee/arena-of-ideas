@@ -331,7 +331,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
                 ),
-            NodeKind::Reaction => self.column_cstr_dyn("name", move |d, world| {
+            NodeKind::Behavior => self.column_cstr_dyn("name", move |d, world| {
                 let n = AbilityEffect::get_by_id(f(d), world).unwrap();
                 n.cstr()
             }),

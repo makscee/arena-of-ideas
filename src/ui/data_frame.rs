@@ -1,4 +1,5 @@
 use bevy_egui::egui::menu::BarState;
+use serde::de::DeserializeOwned;
 
 use super::*;
 
@@ -392,7 +393,7 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
 
 impl<T> Show for T
 where
-    T: DataFramed,
+    T: ?Sized + DataFramed,
 {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         let has_header = self.has_header();
@@ -425,6 +426,108 @@ where
             df = df.body(move |d, ui| d.show_body_mut(ui));
         }
         df.ui(ui)
+    }
+}
+
+fn show_mut_vec<T: Show + Default + Serialize + DeserializeOwned>(
+    v: &mut Vec<T>,
+    prefix: Option<&str>,
+    ui: &mut Ui,
+) -> bool {
+    prefix.show(ui);
+    let mut changed = false;
+    let mut swap = None;
+    let mut delete = None;
+    let mut insert = None;
+    let len = v.len();
+    fn plus_btn(ui: &mut Ui) -> bool {
+        "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+            .button(ui)
+            .clicked()
+    }
+    for (i, a) in v.iter_mut().enumerate() {
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                        swap = Some((i, i - 1));
+                    }
+                    if i + 1 < len && ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                        swap = Some((i, i + 1));
+                    }
+                });
+                ui.horizontal(|ui| {
+                    if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
+                        delete = Some(i);
+                    }
+                    if plus_btn(ui) {
+                        insert = Some(i + 1);
+                    }
+                });
+            });
+            changed |= a.show_mut(Some(&i.to_string()), ui);
+        });
+    }
+    if v.is_empty() && plus_btn(ui) {
+        insert = Some(0);
+    }
+    if let Some(delete) = delete {
+        changed = true;
+        v.remove(delete);
+    }
+    if let Some(index) = insert {
+        changed = true;
+        v.insert(index, default());
+    }
+    if let Some((a, b)) = swap {
+        changed = true;
+        v.swap(a, b);
+    }
+    changed
+}
+
+impl<T> DataFramed for Vec<T>
+where
+    T: Show + Default + Serialize + DeserializeOwned + Debug + Clone + ToCstr,
+{
+    fn has_header(&self) -> bool {
+        false
+    }
+    fn has_body(&self) -> bool {
+        true
+    }
+    fn show_header(&self, _: &Context, _: &mut Ui) {}
+    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
+        false
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        for (i, v) in self.into_iter().enumerate() {
+            v.show(Some(&format!("[vd {i}:]")), context, ui);
+        }
+    }
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        show_mut_vec(self, None, ui)
+    }
+}
+impl<T> DataFramed for Box<T>
+where
+    T: Show + Default + Serialize + DeserializeOwned + Debug + Clone + ToCstr,
+{
+    fn has_header(&self) -> bool {
+        false
+    }
+    fn has_body(&self) -> bool {
+        true
+    }
+    fn show_header(&self, _: &Context, _: &mut Ui) {}
+    fn show_header_mut(&mut self, _: &mut Ui) -> bool {
+        false
+    }
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        self.as_ref().show(None, context, ui);
+    }
+    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+        self.as_mut().show_mut(None, ui)
     }
 }
 
@@ -750,7 +853,7 @@ impl DataFramed for PainterAction {
                 x.show(Some("cnt"), context, ui);
                 painter_action.show(Some("action"), context, ui);
             }
-            PainterAction::List(vec) => vec.show(None, context, ui),
+            PainterAction::List(vec) => vec.clone().show(None, context, ui),
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {

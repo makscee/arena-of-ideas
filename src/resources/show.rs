@@ -1,5 +1,3 @@
-use serde::de::DeserializeOwned;
-
 use super::*;
 
 pub trait ShowPrefix {
@@ -17,69 +15,6 @@ pub trait Show: StringData {
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool;
 }
 
-impl<T> Show for Vec<Box<T>>
-where
-    T: Show + Default + Serialize + DeserializeOwned,
-{
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        prefix.show(ui);
-        for (i, v) in self.into_iter().enumerate() {
-            v.show(Some(&format!("[vd {i}:]")), context, ui);
-        }
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        prefix.show(ui);
-        let mut changed = false;
-        let mut swap = None;
-        let mut delete = None;
-        let mut insert = None;
-        let len = self.len();
-        fn plus_btn(ui: &mut Ui) -> bool {
-            "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
-                .button(ui)
-                .clicked()
-        }
-        for (i, a) in self.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    ui.horizontal(|ui| {
-                        if i > 0 && "<".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                            swap = Some((i, i - 1));
-                        }
-                        if i + 1 < len && ">".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                            swap = Some((i, i + 1));
-                        }
-                    });
-                    ui.horizontal(|ui| {
-                        if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
-                            delete = Some(i);
-                        }
-                        if plus_btn(ui) {
-                            insert = Some(i + 1);
-                        }
-                    });
-                });
-                changed |= a.show_mut(Some(&i.to_string()), ui);
-            });
-        }
-        if self.is_empty() && plus_btn(ui) {
-            insert = Some(0);
-        }
-        if let Some(delete) = delete {
-            changed = true;
-            self.remove(delete);
-        }
-        if let Some(index) = insert {
-            changed = true;
-            self.insert(index, default());
-        }
-        if let Some((a, b)) = swap {
-            changed = true;
-            self.swap(a, b);
-        }
-        changed
-    }
-}
 impl Show for VarName {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);
@@ -398,24 +333,6 @@ impl Show for Event {
         Selector::new("").ui_enum(self, ui)
     }
 }
-impl Show for Vec<(Trigger, Actions)> {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        todo!()
-    }
-
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        todo!()
-    }
-}
-impl Show for Vec<String> {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        todo!()
-    }
-
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        todo!()
-    }
-}
 impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         todo!()
@@ -423,5 +340,18 @@ impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
 
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         todo!()
+    }
+}
+impl Show for Reaction {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        prefix.show(ui);
+        self.trigger.show(None, context, ui);
+        self.actions.show(None, context, ui);
+    }
+
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        prefix.show(ui);
+        let changed = self.trigger.show_mut(None, ui);
+        self.actions.show_mut(prefix, ui) || changed
     }
 }

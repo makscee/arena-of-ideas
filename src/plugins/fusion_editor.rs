@@ -34,7 +34,11 @@ impl FusionEditorPlugin {
                 let selected = fusion.units.contains(&unit.name);
                 let stats = unit.description_load(world)?.stats_load(world)?;
                 DARK_FRAME
-                    .stroke(if selected { STROKE_LIGHT } else { STROKE_BG_DARK })
+                    .stroke(if selected {
+                        STROKE_LIGHT
+                    } else {
+                        STROKE_BG_DARK
+                    })
                     .show(ui, |ui| {
                         show_unit_tag(unit, stats, ui, world);
                         if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
@@ -61,15 +65,26 @@ impl FusionEditorPlugin {
             let context = &Context::new_world(&world);
             ui.vertical(|ui| {
                 for u in 0..fusion.units.len() {
-                    let triggers = &fusion.get_reaction(u as u8, context).unwrap().triggers;
-                    for (t, (trigger, _)) in triggers.iter().enumerate() {
+                    let triggers = &fusion.get_behavior(u as u8, context).unwrap().triggers;
+                    for (
+                        t,
+                        Reaction {
+                            trigger,
+                            actions: _,
+                        },
+                    ) in triggers.iter().enumerate()
+                    {
                         let t_ref = UnitTriggerRef {
                             unit: u as u8,
                             trigger: t as u8,
                         };
                         let selected = fusion.triggers.iter().any(|(r, _)| r.eq(&t_ref));
                         DARK_FRAME
-                            .stroke(if selected { STROKE_LIGHT } else { STROKE_BG_DARK })
+                            .stroke(if selected {
+                                STROKE_LIGHT
+                            } else {
+                                STROKE_BG_DARK
+                            })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     trigger.show(None, context, ui);
@@ -104,10 +119,17 @@ impl FusionEditorPlugin {
                 return;
             }
             for u in 0..fusion.units.len() {
-                let reaction = &fusion.get_reaction(u as u8, context).unwrap();
+                let reaction = &fusion.get_behavior(u as u8, context).unwrap();
                 let triggers = &reaction.triggers;
                 let entity = reaction.entity();
-                for (t, (_, actions)) in triggers.iter().enumerate() {
+                for (
+                    t,
+                    Reaction {
+                        trigger: _,
+                        actions,
+                    },
+                ) in triggers.iter().enumerate()
+                {
                     for (a, action) in actions.0.iter().enumerate() {
                         let a_ref = UnitActionRef {
                             unit: u as u8,
@@ -119,7 +141,11 @@ impl FusionEditorPlugin {
                             .iter()
                             .any(|(_, a)| a.iter().any(|a| a_ref.eq(a)));
                         DARK_FRAME
-                            .stroke(if selected { STROKE_YELLOW } else { STROKE_BG_DARK })
+                            .stroke(if selected {
+                                STROKE_YELLOW
+                            } else {
+                                STROKE_BG_DARK
+                            })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
                                     action.show(None, context.clone().set_owner(entity), ui);

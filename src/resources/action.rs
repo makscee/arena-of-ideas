@@ -98,8 +98,8 @@ impl ActionImpl for Action {
                         .to_e("StatusDescription not found")?
                         .clone();
                     let reaction = context
-                        .get_component::<Reaction>(entity)
-                        .to_e("Reaction not found")?
+                        .get_component::<Behavior>(entity)
+                        .to_e("Behavior not found")?
                         .clone();
                     let color = context
                         .find_parent_component::<HouseColor>(entity)
