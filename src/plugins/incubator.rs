@@ -179,7 +179,7 @@ impl IncubatorPlugin {
                             .set_owner(entity)
                             .take();
                         match UnitCard::from_context(&context) {
-                            Ok(c) => c.show(&mut ui[0]),
+                            Ok(c) => c.show(&context, &mut ui[0]),
                             Err(e) => {
                                 e.cstr().label(&mut ui[0]);
                             }

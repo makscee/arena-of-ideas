@@ -331,9 +331,9 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
                 ),
-            NodeKind::Behavior => self.column_cstr_dyn("name", move |d, world| {
+            NodeKind::Behavior => self.column_ui_dyn("data", move |d, _, ui, world| {
                 let n = Behavior::get_by_id(f(d), world).unwrap();
-                n.cstr()
+                n.show(None, &default(), ui);
             }),
             NodeKind::Representation => self.column_dyn(
                 "view",

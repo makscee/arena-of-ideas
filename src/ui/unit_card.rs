@@ -23,27 +23,31 @@ const VARS: &'static [VarName] = &[
 
 impl UnitCard {
     pub fn from_context(context: &Context) -> Result<Self, ExpressionError> {
+        let entity = context.get_owner()?;
         let vars = context.get_vars(VARS.iter().copied());
         Ok(Self {
             name: context.get_string(VarName::name)?,
             description: context.get_string(VarName::description)?,
             house: context
-                .find_parent_component::<House>(context.get_owner()?)
+                .find_parent_component::<House>(entity)
                 .to_e("House not found")?
                 .name
                 .clone(),
             house_color: context
-                .find_parent_component::<HouseColor>(context.get_owner()?)
+                .find_parent_component::<HouseColor>(entity)
                 .to_e("HouseColor not found")?
                 .color
                 .c32(),
             rarity: Rarity::default(),
-            behavior: Behavior::default(),
+            behavior: context
+                .get_component::<Behavior>(entity)
+                .cloned()
+                .unwrap_or_default(),
             vars,
-            expanded: false,
+            expanded: true,
         })
     }
-    pub fn show(&self, ui: &mut Ui) {
+    pub fn show(&self, context: &Context, ui: &mut Ui) {
         ui.spacing_mut().item_spacing.y = 1.0;
         Frame::new()
             .fill(BG_DARK)
@@ -80,15 +84,7 @@ impl UnitCard {
                             for Reaction { trigger, actions } in &self.behavior.triggers {
                                 trigger.cstr().label(ui);
                                 for a in actions.0.iter() {
-                                    let r = a.cstr().label_w(ui);
-                                    let rect = r
-                                        .rect
-                                        .translate(egui::vec2(-3.0, 0.0))
-                                        .shrink2(egui::vec2(0.0, 3.0));
-                                    ui.painter().line_segment(
-                                        [rect.left_top(), rect.left_bottom()],
-                                        STROKE_YELLOW,
-                                    );
+                                    a.show(None, context, ui);
                                 }
                             }
                         });
