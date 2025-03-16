@@ -178,7 +178,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             ..Default::default()
         };
         style.wrap_mode = Some(egui::TextWrapMode::Extend);
-        style.spacing.window_margin = Margin::same(0);
+        style.spacing.window_margin = Margin::same(8);
         style.spacing.slider_rail_height = 2.0;
         style.spacing.button_padding = egui::vec2(8.0, 2.0);
         style.visuals.panel_fill = Color32::from_rgb(0, 0, 0);
@@ -188,7 +188,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
         style.visuals.selection.bg_fill = YELLOW_DARK;
         style.visuals.resize_corner_size = 0.0;
-        style.visuals.window_stroke = Stroke::NONE;
+        style.visuals.window_stroke = STROKE_DARK;
         style.visuals.window_fill = EMPTINESS;
         style.visuals.extreme_bg_color = TRANSPARENT;
         style.visuals.widgets = Widgets {

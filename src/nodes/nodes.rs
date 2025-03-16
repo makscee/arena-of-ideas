@@ -263,46 +263,50 @@ pub trait TableNodeView<T> {
 impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
         match kind {
-            NodeKind::House => self.column_cstr_dyn("name", move |d, world| {
-                let n = House::get_by_id(f(d), world).unwrap();
-                n.name.cstr_s(CstrStyle::Bold)
+            NodeKind::House => self.column_cstr_opt_dyn("name", move |d, world| {
+                House::get_by_id(f(d), world).map(|n| n.name.cstr_s(CstrStyle::Bold))
             }),
-            NodeKind::HouseColor => self.column_cstr_dyn("color", move |d, world| {
-                let c = &HouseColor::get_by_id(f(d), world).unwrap().color;
-                format!("[{c} {c}]")
+            NodeKind::HouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
+                HouseColor::get_by_id(f(d), world).map(|n| {
+                    let c = &n.color;
+                    format!("[{c} {c}]")
+                })
             }),
-            NodeKind::ActionAbility => self.column_cstr_dyn("name", move |d, world| {
-                let n = ActionAbility::get_by_id(f(d), world).unwrap();
-                n.name.cstr_s(CstrStyle::Bold)
+            NodeKind::ActionAbility => self.column_cstr_opt_dyn("name", move |d, world| {
+                let n = ActionAbility::get_by_id(f(d), world)?;
+                Some(n.name.cstr_s(CstrStyle::Bold))
             }),
             NodeKind::ActionAbilityDescription => {
-                self.column_cstr_dyn("description", move |d, world| {
-                    let n = ActionAbilityDescription::get_by_id(f(d), world).unwrap();
-                    n.description.cstr_s(CstrStyle::Bold)
+                self.column_cstr_opt_dyn("description", move |d, world| {
+                    let n = ActionAbilityDescription::get_by_id(f(d), world)?;
+                    Some(n.description.cstr_s(CstrStyle::Bold))
                 })
             }
             NodeKind::AbilityEffect => self.column_ui_dyn("data", move |d, _, ui, world| {
-                let n = AbilityEffect::get_by_id(f(d), world).unwrap();
-                n.show(None, &default(), ui);
+                if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
+                    n.show(None, &default(), ui);
+                }
             }),
-            NodeKind::StatusAbility => self.column_cstr_dyn("name", move |d, world| {
-                let n = StatusAbility::get_by_id(f(d), world).unwrap();
-                n.name.cstr_s(CstrStyle::Bold)
+            NodeKind::StatusAbility => self.column_cstr_opt_dyn("name", move |d, world| {
+                let n = StatusAbility::get_by_id(f(d), world)?;
+                Some(n.name.cstr_s(CstrStyle::Bold))
             }),
             NodeKind::StatusAbilityDescription => {
-                self.column_cstr_dyn("description", move |d, world| {
-                    let n = StatusAbilityDescription::get_by_id(f(d), world).unwrap();
-                    n.description.cstr_s(CstrStyle::Bold)
+                self.column_cstr_opt_dyn("description", move |d, world| {
+                    let n = StatusAbilityDescription::get_by_id(f(d), world)?;
+                    Some(n.description.cstr_s(CstrStyle::Bold))
                 })
             }
-            NodeKind::Unit => self.column_cstr_dyn("name", move |d, world| {
-                let n = Unit::get_by_id(f(d), world).unwrap();
-                n.name.cstr_s(CstrStyle::Bold)
+            NodeKind::Unit => self.column_cstr_opt_dyn("name", move |d, world| {
+                let n = Unit::get_by_id(f(d), world)?;
+                Some(n.name.cstr_s(CstrStyle::Bold))
             }),
-            NodeKind::UnitDescription => self.column_cstr_dyn("description", move |d, world| {
-                let n = UnitDescription::get_by_id(f(d), world).unwrap();
-                n.description.cstr_s(CstrStyle::Bold)
-            }),
+            NodeKind::UnitDescription => {
+                self.column_cstr_opt_dyn("description", move |d, world| {
+                    let n = UnitDescription::get_by_id(f(d), world)?;
+                    Some(n.description.cstr_s(CstrStyle::Bold))
+                })
+            }
             NodeKind::UnitStats => self
                 .column_cstr_value_dyn(
                     "pwr",
@@ -332,19 +336,22 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
                 ),
             NodeKind::Behavior => self.column_ui_dyn("data", move |d, _, ui, world| {
-                let n = Behavior::get_by_id(f(d), world).unwrap();
-                n.show(None, &default(), ui);
+                if let Some(n) = Behavior::get_by_id(f(d), world) {
+                    n.show(None, &default(), ui);
+                }
             }),
             NodeKind::Representation => self.column_dyn(
                 "view",
                 |_, _| default(),
                 move |d, _, ui, world| {
-                    let d = Representation::get_by_id(f(d), world).unwrap();
-                    let size = ui.available_height();
-                    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-                    ui.set_clip_rect(rect);
-                    d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)
-                        .log();
+                    if let Some(d) = Representation::get_by_id(f(d), world) {
+                        let size = ui.available_height();
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                        ui.set_clip_rect(rect);
+                        d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)
+                            .log();
+                    }
                 },
                 false,
             ),

@@ -261,6 +261,15 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     pub fn column_cstr(self, name: &'static str, s: fn(&T, &World) -> Cstr) -> Self {
         self.column_cstr_dyn(name, s)
     }
+    pub fn column_cstr_opt_dyn(
+        self,
+        name: &'static str,
+        s: impl Fn(&T, &World) -> Option<Cstr> + 'static,
+    ) -> Self {
+        self.column_cstr_dyn(name, move |d, w| {
+            s(d, w).unwrap_or("[red [s not found]]".into())
+        })
+    }
     pub fn column_cstr_value_dyn(
         mut self,
         name: &'static str,

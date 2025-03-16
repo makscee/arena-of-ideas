@@ -1,3 +1,4 @@
+use bevy::ecs::event::{Event, Events};
 use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
@@ -7,6 +8,7 @@ pub struct StdbPlugin;
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<StdbData>()
+            .init_resource::<Events<StdbEvent>>()
             .add_systems(Update, Self::update);
     }
 }
@@ -14,6 +16,18 @@ impl Plugin for StdbPlugin {
 #[derive(Resource, Default)]
 struct StdbData {
     nodes_queue: Vec<TNode>,
+}
+
+pub enum StdbChange {
+    Update,
+    Insert,
+    Delete,
+}
+#[derive(Event)]
+pub struct StdbEvent {
+    pub entity: Entity,
+    pub node: TNode,
+    pub change: StdbChange,
 }
 
 impl StdbPlugin {
@@ -34,11 +48,15 @@ impl StdbPlugin {
                 let Some(parent) = world.get_id_link(node.parent) else {
                     return true;
                 };
-                if let Some(entity) = world.get_id_link(id) {
-                    node.unpack(entity, world);
-                    return false;
-                }
-                node.unpack(world.spawn_empty().set_parent(parent).id(), world);
+                let entity = world
+                    .get_id_link(id)
+                    .unwrap_or_else(|| world.spawn_empty().set_parent(parent).id());
+                node.unpack(entity, world);
+                world.send_event(StdbEvent {
+                    entity,
+                    node: node.clone(),
+                    change: StdbChange::Insert,
+                });
                 false
             });
         });
@@ -82,6 +100,11 @@ fn subscribe_table_updates() {
                 return;
             };
             node.unpack(entity, world);
+            world.send_event(StdbEvent {
+                entity,
+                node,
+                change: StdbChange::Update,
+            });
         });
     });
     db.nodes_world().on_delete(|_, node| {
@@ -92,6 +115,11 @@ fn subscribe_table_updates() {
                 error!("Failed to delete entity: id link not found");
                 return;
             };
+            world.send_event(StdbEvent {
+                entity,
+                node,
+                change: StdbChange::Delete,
+            });
             if let Ok(e) = world.get_entity_mut(entity) {
                 e.try_despawn_recursive();
             }

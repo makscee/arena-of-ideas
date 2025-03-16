@@ -53,7 +53,7 @@ impl GameState {
                 ds.main_surface_mut().split_left(
                     0.into(),
                     0.4,
-                    [Tab::IncubatorLinks, Tab::IncubatorNewNode].into(),
+                    [Tab::IncubatorInspect, Tab::IncubatorNewNode].into(),
                 );
                 ds
             }
@@ -78,7 +78,7 @@ pub enum Tab {
 
     IncubatorNodes,
     IncubatorNewNode,
-    IncubatorLinks,
+    IncubatorInspect,
 
     Admin,
 }
@@ -116,7 +116,7 @@ impl Tab {
             Tab::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
-            Tab::IncubatorLinks => IncubatorPlugin::tab_inspect(ui, world)?,
+            Tab::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
             Tab::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
         };
         Ok(())

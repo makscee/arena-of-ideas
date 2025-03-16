@@ -79,7 +79,7 @@ impl Player {
             Err("Names must not be empty".to_string())
         } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
             Err(format!("Wrong character: {c}"))
-        } else if ctx.db.nodes_world().data().filter(&name).next().is_some() {
+        } else if Player::find_by_data(ctx, name.clone()).is_some() {
             Err(format!("Name is taken"))
         } else {
             Ok(name)

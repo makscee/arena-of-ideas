@@ -9,9 +9,9 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct TIncubatorVotes {
     pub key: String,
     pub owner: u64,
-    pub from_id: u64,
-    pub to_id: u64,
-    pub target_kind: String,
+    pub from: u64,
+    pub to: u64,
+    pub to_kind: String,
 }
 
 impl __sdk::InModule for TIncubatorVotes {

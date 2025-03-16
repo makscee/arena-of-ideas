@@ -46,15 +46,39 @@ fn incubator_push(
     }
     for mut node in nodes.into_values() {
         node.parent = incubator_id;
+        ctx.db.incubator_nodes().insert(TIncubator {
+            id: node.id,
+            owner: player.id,
+        });
         ctx.db.nodes_world().insert(node);
     }
-    ctx.db.incubator_nodes().insert(TIncubator {
-        id: ctx.next_id(),
-        owner: player.id,
-    });
     for (from, to) in new_links {
         TIncubatorVotes::vote(ctx, &player, from, to)?;
     }
+    Ok(())
+}
+
+#[reducer]
+fn incubator_delete(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    let player = ctx.player()?;
+    let i_node = ctx
+        .db
+        .incubator_nodes()
+        .id()
+        .find(id)
+        .to_e_s_fn(|| format!("Incubator node#{id} not found"))?;
+    if i_node.owner != player.id {
+        return Err(format!(
+            "Incubator node#{id} is not owned by player#{}",
+            player.id
+        ));
+    }
+    ctx.db.incubator_nodes().id().delete(id);
+    ctx.db.incubator_votes().from().delete(id);
+    ctx.db.incubator_votes().to().delete(id);
+    ctx.db.incubator_links().from().delete(id);
+    ctx.db.incubator_links().to().delete(id);
+    ctx.db.nodes_world().id().delete(id);
     Ok(())
 }
 
@@ -94,11 +118,11 @@ pub struct TIncubatorVotes {
     #[index(btree)]
     pub owner: u64,
     #[index(btree)]
-    pub from_id: u64,
+    pub from: u64,
     #[index(btree)]
-    pub to_id: u64,
+    pub to: u64,
     #[index(btree)]
-    pub target_kind: String,
+    pub to_kind: String,
 }
 
 impl TIncubatorLinks {
@@ -143,13 +167,13 @@ impl TIncubatorVotes {
     fn key(owner: u64, from: u64, kind: NodeKind) -> String {
         format!("{owner}_{from}_{kind}")
     }
-    fn new(player: &Player, from: u64, to: u64, kind: NodeKind) -> Self {
+    fn new(player: &Player, from: u64, to: u64, to_kind: NodeKind) -> Self {
         Self {
-            key: Self::key(player.id, from, kind),
+            key: Self::key(player.id, from, to_kind),
             owner: player.id,
-            from_id: from,
-            to_id: to,
-            target_kind: kind.to_string(),
+            from,
+            to,
+            to_kind: to_kind.to_string(),
         }
     }
     fn vote(ctx: &ReducerContext, player: &Player, from: u64, to: u64) -> Result<(), String> {
@@ -159,13 +183,13 @@ impl TIncubatorVotes {
             .to_kind();
         let key = Self::key(player.id, from, kind);
         if let Some(mut row) = ctx.db.incubator_votes().key().find(key.clone()) {
-            TIncubatorLinks::vote(ctx, row.from_id, row.to_id, -1)?;
-            row.to_id = to;
-            TIncubatorLinks::vote(ctx, row.from_id, row.to_id, 1)?;
+            TIncubatorLinks::vote(ctx, row.from, row.to, -1)?;
+            row.to = to;
+            TIncubatorLinks::vote(ctx, row.from, row.to, 1)?;
             ctx.db.incubator_votes().key().update(row);
         } else {
             let row = Self::new(player, from, to, kind);
-            TIncubatorLinks::vote(ctx, row.from_id, row.to_id, 1)?;
+            TIncubatorLinks::vote(ctx, row.from, row.to, 1)?;
             ctx.db.incubator_votes().insert(row);
         };
         Ok(())

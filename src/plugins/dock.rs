@@ -101,5 +101,6 @@ impl DockPlugin {
             let mut taken_world = d.dock.ui(ctx, taken_world);
             mem::swap(&mut taken_world, world);
         });
+        Confirmation::show_current(ctx, world);
     }
 }

@@ -15,6 +15,7 @@ pub mod global_data_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
+pub mod incubator_delete_reducer;
 pub mod incubator_links_table;
 pub mod incubator_nodes_table;
 pub mod incubator_push_reducer;
@@ -59,6 +60,9 @@ pub use global_settings_table::*;
 pub use global_settings_type::GlobalSettings;
 pub use identity_disconnected_reducer::{
     identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
+};
+pub use incubator_delete_reducer::{
+    incubator_delete, set_flags_for_incubator_delete, IncubatorDeleteCallbackId,
 };
 pub use incubator_links_table::*;
 pub use incubator_nodes_table::*;
@@ -115,6 +119,9 @@ pub enum Reducer {
         timer: DailyUpdateTimer,
     },
     IdentityDisconnected,
+    IncubatorDelete {
+        id: u64,
+    },
     IncubatorPush {
         nodes: Vec<TNode>,
         link_from: Option<u64>,
@@ -170,6 +177,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::BattleInsert { .. } => "battle_insert",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
+            Reducer::IncubatorDelete { .. } => "incubator_delete",
             Reducer::IncubatorPush { .. } => "incubator_push",
             Reducer::IncubatorUpdateCore => "incubator_update_core",
             Reducer::IncubatorVote { .. } => "incubator_vote",
@@ -207,6 +215,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "identity_disconnected" => Ok(__sdk::parse_reducer_args::<
                 identity_disconnected_reducer::IdentityDisconnectedArgs,
             >("identity_disconnected", &value.args)?
+            .into()),
+            "incubator_delete" => Ok(__sdk::parse_reducer_args::<
+                incubator_delete_reducer::IncubatorDeleteArgs,
+            >("incubator_delete", &value.args)?
             .into()),
             "incubator_push" => Ok(__sdk::parse_reducer_args::<
                 incubator_push_reducer::IncubatorPushArgs,

@@ -1,3 +1,5 @@
+use bevy::ecs::event::EventReader;
+
 use super::*;
 
 pub struct IncubatorPlugin;
@@ -6,7 +8,8 @@ impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<IncubatorData>()
             .add_systems(Startup, Self::startup)
-            .add_systems(OnEnter(GameState::Incubator), Self::on_enter);
+            .add_systems(OnEnter(GameState::Incubator), Self::on_enter)
+            .add_systems(Update, Self::read_events);
     }
 }
 
@@ -25,6 +28,17 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 }
 
 impl IncubatorPlugin {
+    fn read_events(mut events: EventReader<StdbEvent>) {
+        if events.is_empty() {
+            return;
+        }
+        let incubator_id = Incubator::load_by_parent(0).unwrap().id();
+        if events.read().any(|e| e.node.parent == incubator_id) {
+            OperationsPlugin::add(|world| {
+                Self::compose_nodes(world).log();
+            });
+        }
+    }
     fn startup() {
         on_connect(|_| {
             cn().reducers.on_incubator_push(|e, nodes, _| {
@@ -174,6 +188,28 @@ impl IncubatorPlugin {
             return Ok(());
         };
         format!("{kind} node").cstr_s(CstrStyle::Bold).label(ui);
+        if cn()
+            .db
+            .incubator_nodes()
+            .id()
+            .find(&id)
+            .is_some_and(|n| n.owner == player_id())
+        {
+            if "Delete Node"
+                .cstr_cs(RED, CstrStyle::Bold)
+                .button(ui)
+                .clicked()
+            {
+                Confirmation::new("Delete node?")
+                    .accept(move |world| {
+                        cn().reducers.incubator_delete(id).unwrap();
+                        rm(world).inspect_node = None;
+                    })
+                    .cancel(|_| {})
+                    .push(world);
+            }
+        }
+        let data = rm(world);
         match data.composed_world.get_id_link(id) {
             Some(entity) => {
                 ui.columns(2, |ui| match kind {
@@ -211,6 +247,9 @@ impl IncubatorPlugin {
         }
         br(ui);
         let mut r = rm(world);
+        if r.link_types.is_empty() {
+            return Ok(());
+        }
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {
             "show type".cstr_c(VISIBLE_DARK).label(ui);
@@ -265,7 +304,7 @@ impl IncubatorPlugin {
                         .key()
                         .find(&vote_key(player_id(), id, selected))
                 {
-                    btn.active(vote.to_id == node.id)
+                    btn.active(vote.to == node.id)
                 } else {
                     btn
                 }
@@ -284,17 +323,23 @@ trait TableIncubatorExt<T> {
 
 impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T> {
     fn add_incubator_columns(mut self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
-        self = self.column_btn_dyn("clone", move |d, _, world| {
-            let id = f(d);
-            let node = cn().db.nodes_world().id().find(&id).unwrap();
-            world.resource_mut::<IncubatorData>().new_node = Some((kind, [node].into()));
-            DockPlugin::set_active(Tab::IncubatorNewNode, world);
-        });
-        if NodeKind::get_incubator_links()
-            .get(&kind)
-            .is_some_and(|l| !l.is_empty())
-        {
-            self.column_btn_dyn("inspect", move |d, _, world| {
+        self = self
+            .add_player_column("owner", move |d, _| {
+                let id = f(d);
+                cn().db
+                    .incubator_nodes()
+                    .id()
+                    .find(&id)
+                    .map(|n| n.owner)
+                    .unwrap_or_default()
+            })
+            .column_btn_dyn("clone", move |d, _, world| {
+                let id = f(d);
+                let node = cn().db.nodes_world().id().find(&id).unwrap();
+                world.resource_mut::<IncubatorData>().new_node = Some((kind, [node].into()));
+                DockPlugin::set_active(Tab::IncubatorNewNode, world);
+            })
+            .column_btn_dyn("inspect", move |d, _, world| {
                 let mut r = world.resource_mut::<IncubatorData>();
                 r.inspect_node = Some((f(d), kind));
                 r.link_types = NodeKind::get_incubator_links()
@@ -304,12 +349,12 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
                     .sorted()
                     .copied()
                     .collect();
-                r.link_type_selected = r.link_types[0];
-                DockPlugin::set_active(Tab::IncubatorLinks, world);
-            })
-        } else {
-            self
-        }
+                if !r.link_types.is_empty() {
+                    r.link_type_selected = r.link_types[0];
+                }
+                DockPlugin::set_active(Tab::IncubatorInspect, world);
+            });
+        self
     }
 }
 
