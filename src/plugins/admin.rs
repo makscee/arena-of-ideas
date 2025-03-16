@@ -215,6 +215,18 @@ impl AdminPlugin {
         if "Export Incubator Data".cstr().button(ui).clicked() {
             GameAssets::update_files();
         }
+        let r = "Context Test".cstr().button(ui);
+        ContextMenu::new(r)
+            .add("test1", |ui, _| {
+                debug!("test1");
+            })
+            .add("test2", |ui, _| {
+                debug!("test2");
+            })
+            .add("test3", |ui, _| {
+                debug!("test3");
+            })
+            .ui(ui, world);
         if "Incubator".cstr().button(ui).clicked() {
             GameState::Incubator.set_next(world);
         }

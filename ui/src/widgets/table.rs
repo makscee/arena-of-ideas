@@ -1,7 +1,7 @@
 use core::f32;
 
 use bevy::utils::hashbrown::HashMap;
-use egui::{NumExt, TextureId};
+use egui::NumExt;
 use egui_extras::{Column, TableBuilder};
 
 use super::*;
@@ -479,6 +479,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                             .label(ui);
                     });
                     TableBuilder::new(ui)
+                        .auto_shrink([false, true])
                         .columns(
                             Column::auto(),
                             self.columns.len() + self.selectable as usize,

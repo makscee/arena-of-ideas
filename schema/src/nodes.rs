@@ -17,6 +17,8 @@ struct Incubator {
     pub action_abilities: NodeChildren<ActionAbility>,
     pub action_ability_descriptions: NodeChildren<ActionAbilityDescription>,
     pub ability_effects: NodeChildren<AbilityEffect>,
+    pub status_abilities: NodeChildren<StatusAbility>,
+    pub status_ability_descriptions: NodeChildren<StatusAbilityDescription>,
     pub representations: NodeChildren<Representation>,
     pub reactions: NodeChildren<Behavior>,
 }

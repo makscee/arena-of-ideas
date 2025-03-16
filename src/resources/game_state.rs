@@ -1,5 +1,3 @@
-use egui_dock::NodeIndex;
-
 use super::*;
 
 #[derive(
@@ -76,6 +74,7 @@ pub enum Tab {
     Triggers,
     Actions,
     FusionResult,
+    BattleEditor,
 
     IncubatorNodes,
     IncubatorNewNode,
@@ -114,6 +113,7 @@ impl Tab {
             Tab::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
             Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
             Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
+            Tab::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
 
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
             Tab::IncubatorLinks => IncubatorPlugin::tab_inspect(ui, world)?,

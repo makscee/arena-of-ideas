@@ -117,7 +117,8 @@ impl IncubatorPlugin {
         let kind = data.table_kind;
         NodeKind::House.show_graph(CYAN, &mut data, ui);
         ui.vertical(|ui| {
-            Table::new(kind.to_string(), |world| {
+            Self::new_node_btn(kind, ui, world);
+            let mut t = Table::new(kind.to_string(), |world| {
                 let incubator = Self::incubator(world).unwrap().id();
                 let kind = kind.to_string();
                 cn().db
@@ -126,11 +127,13 @@ impl IncubatorPlugin {
                     .filter(|n| n.parent == incubator && n.kind == kind)
                     .map(|n| n.id)
                     .collect_vec()
-            })
-            .add_node_view_columns(kind, |d| *d)
-            .add_incubator_columns(kind, |d| *d)
-            .ui(ui, world);
-            Self::new_node_btn(kind, ui, world);
+            });
+            if kind == NodeKind::Representation {
+                t = t.row_height(100.0);
+            }
+            t.add_node_view_columns(kind, |d| *d)
+                .add_incubator_columns(kind, |d| *d)
+                .ui(ui, world);
             Ok(())
         })
         .inner
@@ -342,10 +345,10 @@ impl NodeKindGraph for NodeKind {
                 data.table_kind = self;
             }
             ui.vertical(|ui| {
-                for c in self.component_kinds() {
+                for c in self.component_kinds().into_iter().sorted() {
                     c.show_graph(VISIBLE_LIGHT, data, ui);
                 }
-                for c in self.children_kinds() {
+                for c in self.children_kinds().into_iter().sorted() {
                     c.show_graph(RED, data, ui);
                 }
             });

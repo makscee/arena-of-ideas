@@ -1,6 +1,7 @@
 mod admin;
 mod audio;
 mod background;
+mod battle_editor;
 mod camera;
 mod connect;
 mod dock;
@@ -22,6 +23,7 @@ use super::*;
 pub use admin::*;
 pub use audio::*;
 pub use background::*;
+pub use battle_editor::*;
 pub use camera::*;
 pub use connect::*;
 pub use dock::*;

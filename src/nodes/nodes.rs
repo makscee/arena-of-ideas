@@ -340,7 +340,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 |_, _| default(),
                 move |d, _, ui, world| {
                     let d = Representation::get_by_id(f(d), world).unwrap();
-                    let size = 100.0;
+                    let size = ui.available_height();
                     let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
                     ui.set_clip_rect(rect);
                     d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)

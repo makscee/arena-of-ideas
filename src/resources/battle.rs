@@ -1,5 +1,3 @@
-use egui::lerp;
-
 use super::*;
 
 pub struct Battle {
