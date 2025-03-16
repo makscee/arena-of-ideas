@@ -110,6 +110,7 @@ fn main() {
             FusionEditorPlugin,
             StdbPlugin,
             IncubatorPlugin,
+            NotificationsPlugin,
         ))
         .init_state::<GameState>()
         .init_resource::<NotificationsResource>();

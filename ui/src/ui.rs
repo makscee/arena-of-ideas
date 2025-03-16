@@ -125,22 +125,28 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             "../../assets/fonts/SometypeMono-Bold.ttf"
         ))),
     );
-    fonts
-        .families
-        .get_mut(&FontFamily::Monospace)
-        .unwrap()
-        .insert(0, "regular".to_owned());
-    fonts
-        .families
-        .get_mut(&FontFamily::Proportional)
-        .unwrap()
-        .insert(0, "regular".to_owned());
-    fonts
-        .families
-        .insert(FontFamily::Name("medium".into()), vec!["medium".to_owned()]);
-    fonts
-        .families
-        .insert(FontFamily::Name("bold".into()), vec!["bold".to_owned()]);
+    fonts.font_data.insert(
+        "emoji".to_owned(),
+        Arc::new(FontData::from_static(include_bytes!(
+            "../../assets/fonts/NotoEmoji-VariableFont_wght.ttf"
+        ))),
+    );
+    fonts.families.insert(
+        FontFamily::Monospace,
+        vec!["regular".into(), "emoji".into()],
+    );
+    fonts.families.insert(
+        FontFamily::Proportional,
+        vec!["regular".into(), "emoji".into()],
+    );
+    fonts.families.insert(
+        FontFamily::Name("medium".into()),
+        vec!["medium".into(), "emoji".into()],
+    );
+    fonts.families.insert(
+        FontFamily::Name("bold".into()),
+        vec!["bold".into(), "emoji".into()],
+    );
     ctx.set_fonts(fonts);
     ctx.style_mut(|style| {
         style.text_styles = [

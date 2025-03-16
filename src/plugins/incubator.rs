@@ -293,7 +293,7 @@ impl IncubatorPlugin {
         .add_node_view_columns(selected, |(_, node)| node.id)
         .column_int("score", |(score, _)| *score)
         .column_btn_mod_dyn(
-            "+",
+            "♥️",
             move |(_, node), _, _| {
                 cn().reducers.incubator_vote(id, node.id).unwrap();
             },
