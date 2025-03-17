@@ -128,7 +128,7 @@ egui_commonmark = "0.20.0"
 bevy_tasks = "0.15.2"
 regex = "1.10.5"
 bevy_dylib = "0.15.2"
-bevy-inspector-egui = "0.29.1"
+bevy-inspector-egui = "0.30.0"
 
 [dependencies.winit]
 version = "0.30.9"

@@ -42,7 +42,7 @@ impl TabViewer for DockContext {
     }
 
     fn closeable(&mut self, tab: &mut Self::Tab) -> bool {
-        false
+        tab.closeable()
     }
 
     fn on_close(&mut self, tab: &mut Self::Tab) -> bool {

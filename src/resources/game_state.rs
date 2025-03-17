@@ -81,10 +81,18 @@ pub enum Tab {
     IncubatorInspect,
 
     Admin,
+
+    WorldInspector,
 }
 
 impl Tab {
-    pub fn ui(&self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn closeable(self) -> bool {
+        match self {
+            Tab::WorldInspector => true,
+            _ => false,
+        }
+    }
+    pub fn ui(self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         match self {
             Tab::MainMenu => {
                 ui.vertical_centered_justified(|ui| {
@@ -118,6 +126,8 @@ impl Tab {
             Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
             Tab::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
             Tab::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
+
+            Tab::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
         };
         Ok(())
     }

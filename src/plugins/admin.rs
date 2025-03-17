@@ -3,9 +3,7 @@ use super::*;
 pub struct AdminPlugin;
 
 impl Plugin for AdminPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, Self::update);
-    }
+    fn build(&self, _: &mut App) {}
 }
 
 impl AdminPlugin {
@@ -234,24 +232,5 @@ impl AdminPlugin {
         if "Incubator".cstr().button(ui).clicked() {
             GameState::Incubator.set_next(world);
         }
-    }
-    fn update(world: &mut World) {
-        // let egui_context = world
-        //     .query_filtered::<&mut EguiContext, With<bevy::window::PrimaryWindow>>()
-        //     .get_single(world);
-
-        // let Ok(egui_context) = egui_context else {
-        //     return;
-        // };
-        // let mut egui_context = egui_context.clone();
-
-        // egui::Window::new("World Inspector")
-        //     .default_size(egui::vec2(300.0, 300.0))
-        //     .show(egui_context.get_mut(), |ui| {
-        //         egui::ScrollArea::both().show(ui, |ui| {
-        //             bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
-        //             ui.allocate_space(ui.available_size());
-        //         });
-        //     });
     }
 }

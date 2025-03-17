@@ -7,7 +7,8 @@ mod ui;
 mod utils;
 
 use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin, render::camera::ClearColor, state::app::AppExtStates,
+    diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::Condition, render::camera::ClearColor,
+    state::app::AppExtStates,
 };
 use clap::{command, Parser, ValueEnum};
 use include_dir::include_dir;
@@ -80,7 +81,7 @@ fn main() {
         )
         .add_plugins((
             bevy_egui::EguiPlugin,
-            bevy_inspector_egui::quick::WorldInspectorPlugin::new(),
+            bevy_inspector_egui::quick::WorldInspectorPlugin::new().run_if(|| false),
             NoisyShaderPlugin,
         ))
         .add_plugins((
