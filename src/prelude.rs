@@ -78,7 +78,7 @@ pub use egui::{
     TextStyle, TopBottomPanel, Widget, WidgetText,
 };
 pub use egui_dock::DockState;
-pub use egui_dock::Tree;
+pub use egui_tiles::{Tile, TileId, Tiles, Tree};
 pub use epaint::{CircleShape, RectShape, Tessellator};
 pub use include_dir::Dir;
 pub use indexmap::IndexMap;

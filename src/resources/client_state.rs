@@ -9,6 +9,7 @@ pub struct ClientState {
     pub edit_anim: Option<Anim>,
     pub battle_test_teams: (Vec<String>, Vec<String>),
     pub dock_states: HashMap<GameState, Vec<Surface<Tab>>>,
+    pub tile_states: HashMap<GameState, Tree<Pane>>,
 }
 
 static CLIENT_STATE: OnceCell<RwLock<ClientState>> = OnceCell::new();

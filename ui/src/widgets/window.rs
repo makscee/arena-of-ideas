@@ -24,7 +24,6 @@ pub struct Window {
 
 enum WindowResponse {
     None,
-    Tile(Side),
     Close,
 }
 
@@ -139,12 +138,6 @@ impl Window {
                 {
                     self.expand = !self.expand
                 }
-                if "<".cstr().button(ui).clicked() {
-                    r = WindowResponse::Tile(Side::Left);
-                }
-                if ">".cstr().button(ui).clicked() {
-                    r = WindowResponse::Tile(Side::Right);
-                }
                 if "x".cstr().button(ui).clicked() {
                     r = WindowResponse::Close;
                 }
@@ -160,12 +153,10 @@ impl WindowPlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         let mut windows = mem::take(&mut rm(world).windows);
         let mut close = None;
-        let mut tile = None;
         for (id, window) in windows.iter_mut() {
             match window.show(ctx, world) {
                 WindowResponse::None => {}
                 WindowResponse::Close => close = Some(id.clone()),
-                WindowResponse::Tile(side) => tile = Some((side, id.clone())),
             }
             if world.remove_resource::<CloseCurrentWindow>().is_some() {
                 debug!("close window");
@@ -174,10 +165,6 @@ impl WindowPlugin {
         }
         if let Some(close) = close {
             windows.remove(&close);
-        }
-        if let Some((side, tile)) = tile {
-            let w = windows.remove(&tile).unwrap();
-            Tile::new(side, w.content).push(world);
         }
         let mut r = rm(world);
         windows.extend(r.windows.drain());

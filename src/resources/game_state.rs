@@ -23,7 +23,17 @@ pub enum GameState {
     Query,
 }
 
+const TREE_ID: &str = "tree";
 impl GameState {
+    pub fn load_tree(self) -> Tree<Pane> {
+        match self {
+            GameState::Connect => Tree::new_tabs(TREE_ID, Pane::Connect.into()),
+            GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
+            GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
+            GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
+            _ => Tree::empty(TREE_ID),
+        }
+    }
     pub fn load_state(self) -> DockState<Tab> {
         match self {
             GameState::Connect => DockState::new(Tab::Connect.into()),
@@ -235,8 +245,5 @@ fn on_change(world: &mut World) {
         from.cstr().to_colored(),
         to.cstr().to_colored()
     );
-    DockPlugin::load_state_tree(from, to, world);
-
-    // TilePlugin::change_state(to, world);
-    // CameraPlugin::respawn_camera(world);
+    TilePlugin::load_state_tree(from, to, world);
 }

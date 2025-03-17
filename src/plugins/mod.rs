@@ -17,6 +17,7 @@ mod stdb;
 mod stdb_ext;
 mod stdb_sync;
 mod text_column;
+mod tile;
 
 use super::*;
 pub use admin::*;
@@ -38,3 +39,4 @@ pub use stdb::*;
 pub use stdb_ext::*;
 pub use stdb_sync::*;
 pub use text_column::*;
+pub use tile::*;

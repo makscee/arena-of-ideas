@@ -96,11 +96,11 @@ impl DockPlugin {
         for operation in operations {
             (operation)(dock_tree);
         }
-        world.resource_scope(|world, mut d: Mut<DockResource>| {
-            let taken_world = mem::take(world);
-            let mut taken_world = d.dock.ui(ctx, taken_world);
-            mem::swap(&mut taken_world, world);
-        });
+        // world.resource_scope(|world, mut d: Mut<DockResource>| {
+        //     let taken_world = mem::take(world);
+        //     let mut taken_world = d.dock.ui(ctx, taken_world);
+        //     mem::swap(&mut taken_world, world);
+        // });
         Confirmation::show_current(ctx, world);
     }
 }

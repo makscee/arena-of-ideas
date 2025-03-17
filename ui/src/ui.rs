@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use bevy::{app::Startup, prelude::Query};
-use bevy_egui::EguiContext;
+use bevy_egui::{
+    egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
+    EguiContext,
+};
 use egui::{
     style::{HandleShape, Spacing, WidgetVisuals, Widgets},
     CornerRadius, FontData, FontDefinitions, FontFamily, Margin, Shadow, Stroke,
@@ -106,53 +109,74 @@ impl Plugin for UiPlugin {
 
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let ctx = ctx.single_mut().into_inner().get_mut();
-    let mut fonts = FontDefinitions::default();
-    fonts.font_data.insert(
-        "regular".to_owned(),
-        Arc::new(FontData::from_static(include_bytes!(
+    ctx.add_font(FontInsert::new(
+        "mono",
+        FontData::from_static(include_bytes!(
             "../../assets/fonts/SometypeMono-Regular.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "medium".to_owned(),
-        Arc::new(FontData::from_static(include_bytes!(
-            "../../assets/fonts/SometypeMono-Medium.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "bold".to_owned(),
-        Arc::new(FontData::from_static(include_bytes!(
-            "../../assets/fonts/SometypeMono-Bold.ttf"
-        ))),
-    );
-    fonts.font_data.insert(
-        "emoji".to_owned(),
-        Arc::new(FontData::from_static(include_bytes!(
-            "../../assets/fonts/NotoEmoji-VariableFont_wght.ttf"
-        ))),
-    );
-    fonts.families.insert(
-        FontFamily::Monospace,
-        vec!["regular".into(), "emoji".into()],
-    );
-    fonts.families.insert(
-        FontFamily::Proportional,
-        vec!["regular".into(), "emoji".into()],
-    );
-    fonts.families.insert(
-        FontFamily::Name("medium".into()),
-        vec!["medium".into(), "emoji".into()],
-    );
-    fonts.families.insert(
-        FontFamily::Name("bold".into()),
-        vec!["bold".into(), "emoji".into()],
-    );
-    ctx.set_fonts(fonts);
+        )),
+        [
+            InsertFontFamily {
+                family: FontFamily::Monospace,
+                priority: FontPriority::Highest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Proportional,
+                priority: FontPriority::Highest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Name("bold".into()),
+                priority: FontPriority::Highest,
+            },
+        ]
+        .into(),
+    ));
+    // let mut fonts = FontDefinitions::default();
+    // fonts.font_data.insert(
+    //     "regular".to_owned(),
+    //     Arc::new(FontData::from_static(include_bytes!(
+    //         "../../assets/fonts/SometypeMono-Regular.ttf"
+    //     ))),
+    // );
+    // fonts.font_data.insert(
+    //     "medium".to_owned(),
+    //     Arc::new(FontData::from_static(include_bytes!(
+    //         "../../assets/fonts/SometypeMono-Medium.ttf"
+    //     ))),
+    // );
+    // fonts.font_data.insert(
+    //     "bold".to_owned(),
+    //     Arc::new(FontData::from_static(include_bytes!(
+    //         "../../assets/fonts/SometypeMono-Bold.ttf"
+    //     ))),
+    // );
+    // fonts.font_data.insert(
+    //     "emoji".to_owned(),
+    //     Arc::new(FontData::from_static(include_bytes!(
+    //         "../../assets/fonts/NotoEmoji-VariableFont_wght.ttf"
+    //     ))),
+    // );
+    // fonts.families.insert(
+    //     FontFamily::Monospace,
+    //     vec!["regular".into(), "emoji".into()],
+    // );
+    // fonts.families.insert(
+    //     FontFamily::Proportional,
+    //     vec!["regular".into(), "emoji".into()],
+    // );
+    // fonts.families.insert(
+    //     FontFamily::Name("medium".into()),
+    //     vec!["medium".into(), "emoji".into()],
+    // );
+    // fonts.families.insert(
+    //     FontFamily::Name("bold".into()),
+    //     vec!["bold".into(), "emoji".into()],
+    // );
+    // ctx.set_fonts(fonts);
     ctx.style_mut(|style| {
         style.text_styles = [
             (
                 TextStyle::Heading,
-                FontId::new(26.0, FontFamily::Name("medium".into())),
+                FontId::new(26.0, FontFamily::Name("bold".into())),
             ),
             (
                 TextStyle::Name("Heading2".into()),

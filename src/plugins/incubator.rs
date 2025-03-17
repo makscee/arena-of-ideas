@@ -132,7 +132,7 @@ impl IncubatorPlugin {
         NodeKind::House.show_graph(CYAN, &mut data, ui);
         ui.vertical(|ui| {
             Self::new_node_btn(kind, ui, world);
-            let mut t = Table::new(kind.to_string(), |world| {
+            Table::new(kind.to_string(), |world| {
                 let incubator = Self::incubator(world).unwrap().id();
                 let kind = kind.to_string();
                 cn().db
@@ -141,10 +141,10 @@ impl IncubatorPlugin {
                     .filter(|n| n.parent == incubator && n.kind == kind)
                     .map(|n| n.id)
                     .collect_vec()
-            });
-            t.add_node_view_columns(kind, |d| *d)
-                .add_incubator_columns(kind, |d| *d)
-                .ui(ui, world);
+            })
+            .add_node_view_columns(kind, |d| *d)
+            .add_incubator_columns(kind, |d| *d)
+            .ui(ui, world);
             Ok(())
         })
         .inner
