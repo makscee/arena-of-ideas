@@ -73,6 +73,7 @@ glam = { version = "0.29.2", features = ["serde"] }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 color-hex = "0.2.0"
+egui-notify = "0.19.0"
 
 [dependencies]
 ui = { path = "ui" }
@@ -128,7 +129,6 @@ bevy_tasks = "0.15.2"
 regex = "1.10.5"
 bevy_dylib = "0.15.2"
 bevy-inspector-egui = "0.29.1"
-egui-notify = "0.19.0"
 
 [dependencies.winit]
 version = "0.30.9"

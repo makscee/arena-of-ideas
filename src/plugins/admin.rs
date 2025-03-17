@@ -227,8 +227,9 @@ impl AdminPlugin {
                 debug!("test3");
             })
             .ui(ui, world);
-        if "Notification Test ❌".cstr().button(ui).clicked() {
-            NotificationsPlugin::test(world);
+        if "Notification Test".cstr().button(ui).clicked() {
+            "notify test".notify(world);
+            "notify error test".notify_error(world);
         }
         if "Incubator".cstr().button(ui).clicked() {
             GameState::Incubator.set_next(world);

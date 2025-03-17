@@ -134,7 +134,14 @@ impl Show for bool {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
-            Checkbox::new(self, prefix.unwrap_or_default().to_owned().widget(1.0, ui)).ui(ui)
+            Checkbox::new(
+                self,
+                prefix
+                    .unwrap_or_default()
+                    .to_owned()
+                    .widget(1.0, ui.style()),
+            )
+            .ui(ui)
         })
         .inner
         .changed()

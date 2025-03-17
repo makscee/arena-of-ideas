@@ -31,7 +31,7 @@ impl Selector {
             ui.label(self.name);
             let lookup_id = ui.id();
             let r = ComboBox::from_id_salt(ui.next_auto_id())
-                .selected_text(value.cstr().widget(1.0, ui))
+                .selected_text(value.cstr().widget(1.0, ui.style()))
                 .show_ui(ui, |ui| {
                     let mut lookup = ui
                         .ctx()
@@ -78,7 +78,7 @@ impl Selector {
                         } else {
                             e.cstr()
                         }
-                        .widget(1.0, ui);
+                        .widget(1.0, ui.style());
                         let resp = ui.selectable_value(value, e.clone(), text);
                         if take_first && !grayed_out {
                             *value = e;
@@ -109,11 +109,15 @@ impl Selector {
     {
         let mut changed = false;
         ui.label(self.name.clone());
-        ComboBox::from_id_source(self.name.text())
-            .selected_text(value.cstr_c(name_color(&value.to_string())).widget(1.0, ui))
+        ComboBox::from_id_salt(self.name.text())
+            .selected_text(
+                value
+                    .cstr_c(name_color(&value.to_string()))
+                    .widget(1.0, ui.style()),
+            )
             .show_ui(ui, |ui| {
                 for e in values {
-                    let text = e.cstr_c(name_color(&e.to_string())).widget(1.0, ui);
+                    let text = e.cstr_c(name_color(&e.to_string())).widget(1.0, ui.style());
                     changed |= ui.selectable_value(value, e.clone(), text).changed();
                 }
             });

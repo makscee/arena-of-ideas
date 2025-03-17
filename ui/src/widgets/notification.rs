@@ -1,21 +1,41 @@
+use bevy::{
+    app::Update,
+    ecs::system::{ResMut, Single},
+    log::{error, info, warn},
+};
+use bevy_egui::{egui::Style, EguiContext};
+use egui_notify::{Toast, ToastLevel, Toasts};
+
 use super::*;
 
 #[derive(Clone, Debug)]
 pub struct Notification {
     text: Cstr,
-    r#type: NotificationType,
+    level: ToastLevel,
 }
 
-#[derive(Default, Clone, Debug)]
-enum NotificationType {
-    #[default]
-    Alert,
-    Error,
+pub struct NotificationsPlugin;
+
+#[derive(Resource, Default)]
+struct NotificationsData {
+    toasts: Toasts,
 }
 
-#[derive(Resource, Default, Debug)]
-pub struct NotificationsResource {
-    shown: VecDeque<(i64, Notification)>,
+fn rm(world: &mut World) -> Mut<NotificationsData> {
+    world.resource_mut::<NotificationsData>()
+}
+
+impl Plugin for NotificationsPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<NotificationsData>()
+            .add_systems(Update, Self::update);
+    }
+}
+
+impl NotificationsPlugin {
+    fn update(mut data: ResMut<NotificationsData>, ctx: Single<&mut EguiContext>) {
+        data.toasts.show(ctx.into_inner().get_mut());
+    }
 }
 
 impl Notification {
@@ -25,86 +45,33 @@ impl Notification {
     pub fn new(text: Cstr) -> Self {
         Self {
             text,
-            r#type: default(),
+            level: ToastLevel::Info,
         }
     }
     pub fn error(mut self) -> Self {
-        self.r#type = NotificationType::Error;
-        self.text = "Error: ".cstr_c(RED) + &self.text;
+        self.level = ToastLevel::Error;
         self
+    }
+    fn to_toast(self, style: &Style) -> Toast {
+        Toast::custom(self.text.widget(1.0, style), self.level)
     }
     pub fn push_op(self) {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
-        self.text.info();
-        let t = now_micros();
-        let d = &mut world.resource_mut::<NotificationsResource>().shown;
-        d.push_front((t, self));
-        d.make_contiguous();
-    }
-    pub fn popup(world: &mut World) {
-        Confirmation::new("Notifications")
-            .cancel(|_| {})
-            .cancel_name("Close")
-            .content(|ui, world| {
-                Table::new("Notifications", |world| {
-                    world
-                        .resource::<NotificationsResource>()
-                        .shown
-                        .as_slices()
-                        .0
-                        .to_vec()
-                })
-                .column_cstr("text", |(_, n): &(i64, Notification), _| n.text.clone())
-                .column_ts("time", |(t, _)| *t as u64)
-                .ui(ui, world);
-            })
-            .push(world);
-    }
-    pub fn show_recent(ctx: &egui::Context, world: &mut World) {
-        Area::new(Id::new("recent_notifications"))
-            .anchor(Align2::RIGHT_TOP, [0.0, 20.0])
-            .order(Order::Foreground)
-            .show(ctx, |ui| {
-                let now = now_micros();
-                let notifications = world
-                    .resource::<NotificationsResource>()
-                    .shown
-                    .iter()
-                    .filter(|(t, _)| now - *t < 5000000)
-                    .map(|(_, n)| n.clone())
-                    .rev()
-                    .collect_vec();
-                if notifications.is_empty() {
-                    return;
-                }
-                ui.with_layout(Layout::top_down(Align::Max), |ui| {
-                    ui.set_max_width(300.0);
-                    for n in notifications {
-                        FRAME.show(ui, |ui| {
-                            n.text
-                                .as_label(ui)
-                                .wrap_mode(egui::TextWrapMode::Wrap)
-                                .ui(ui);
-                        });
-                    }
-                });
-            });
+        let Some(ctx) = &egui_context(world) else {
+            return;
+        };
+        let text = self.text.to_colored();
+        match self.level {
+            ToastLevel::Info => info!("{}", text),
+            ToastLevel::Warning => warn!("{}", text),
+            ToastLevel::Error => error!("{}", text),
+            ToastLevel::Custom(_, _) | ToastLevel::None | ToastLevel::Success => info!("{}", text),
+        }
+        rm(world).toasts.add(self.to_toast(ctx.style().as_ref()));
     }
 }
-
-const FRAME: Frame = Frame {
-    inner_margin: Margin::same(13),
-    outer_margin: Margin::symmetric(13, 0),
-    corner_radius: CornerRadius::same(13),
-    fill: BG_DARK,
-    shadow: SHADOW,
-    stroke: Stroke {
-        width: 1.0,
-        color: VISIBLE_BRIGHT,
-    },
-};
 
 pub trait NotificationPusher {
     fn to_notification(&self) -> Notification;
@@ -131,9 +98,4 @@ impl NotificationPusher for str {
     fn to_notification(&self) -> Notification {
         Notification::new_string(self.into())
     }
-}
-
-pub trait NotifyStatus {
-    fn notify(&self, world: &mut World);
-    fn notify_op(&self);
 }

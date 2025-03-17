@@ -62,7 +62,8 @@ impl TextColumnPlugin {
                             if !*visible {
                                 a *= 0.5;
                             }
-                            let (_, galley, _) = text.as_label_alpha(a, ui).layout_in_ui(ui);
+                            let (_, galley, _) =
+                                text.as_label_alpha(a, ui.style()).layout_in_ui(ui);
                             let rect = galley.rect;
                             let rect = rect.translate(egui::vec2(p.x - rect.width() * 0.5, p.y));
                             let mut cur_lvl = prev_lvl.get(entity).copied().unwrap_or_default();

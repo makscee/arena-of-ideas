@@ -18,13 +18,13 @@ use super::*;
 pub type Cstr = String;
 
 pub trait CstrTrait {
-    fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText;
-    fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob;
+    fn widget(&self, a: f32, style: &Style) -> WidgetText;
+    fn job(&self, a: f32, style: &Style) -> LayoutJob;
     fn label(&self, ui: &mut Ui) -> Response;
     fn label_w(&self, ui: &mut Ui) -> Response;
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
-    fn as_label(&self, ui: &mut Ui) -> Label;
-    fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label;
+    fn as_label(&self, style: &Style) -> Label;
+    fn as_label_alpha(&self, a: f32, style: &Style) -> Label;
     fn button(self, ui: &mut Ui) -> Response;
     fn as_button(self) -> Button;
     fn get_text(&self) -> String;
@@ -37,28 +37,28 @@ pub trait CstrTrait {
 }
 
 impl CstrTrait for Cstr {
-    fn widget(&self, a: f32, ui: &mut Ui) -> WidgetText {
-        cstr_parse(&self.to_string(), a, ui.style())
+    fn widget(&self, a: f32, style: &Style) -> WidgetText {
+        cstr_parse(&self.to_string(), a, style)
     }
-    fn job(&self, a: f32, ui: &mut Ui) -> LayoutJob {
+    fn job(&self, a: f32, style: &Style) -> LayoutJob {
         let mut job = LayoutJob::default();
-        cstr_parse_into_job(&self, a, &mut job, ui.style());
+        cstr_parse_into_job(&self, a, &mut job, style);
         job
     }
     fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).ui(ui)
+        self.as_label(ui.style()).ui(ui)
     }
     fn label_w(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui).wrap().ui(ui)
+        self.as_label(ui.style()).wrap().ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
-        self.as_label_alpha(a, ui).ui(ui)
+        self.as_label_alpha(a, ui.style()).ui(ui)
     }
-    fn as_label(&self, ui: &mut Ui) -> Label {
-        self.as_label_alpha(1.0, ui)
+    fn as_label(&self, style: &Style) -> Label {
+        self.as_label_alpha(1.0, style)
     }
-    fn as_label_alpha(&self, a: f32, ui: &mut Ui) -> Label {
-        Label::new(self.widget(a, ui)).selectable(false)
+    fn as_label_alpha(&self, a: f32, style: &Style) -> Label {
+        Label::new(self.widget(a, style)).selectable(false)
     }
     fn button(self, ui: &mut Ui) -> Response {
         self.as_button().ui(ui)

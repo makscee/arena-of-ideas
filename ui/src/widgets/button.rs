@@ -80,7 +80,7 @@ impl Button {
         if let Some(title) = self.title {
             title.label(ui);
         }
-        let mut job = self.name.job(1.0, ui);
+        let mut job = self.name.job(1.0, ui.style());
         let mut replace_color = |c: Color32| {
             job.sections[0].format.color = c;
             job.sections[0].byte_range = 0..job.text.len();

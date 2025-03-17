@@ -87,7 +87,6 @@ fn main() {
             UiPlugin,
             LoginPlugin,
             GameStatePlugin,
-            WidgetsPlugin,
             TextColumnPlugin,
             CameraPlugin,
             NodeStatePlugin,
@@ -112,8 +111,7 @@ fn main() {
             IncubatorPlugin,
             NotificationsPlugin,
         ))
-        .init_state::<GameState>()
-        .init_resource::<NotificationsResource>();
+        .init_state::<GameState>();
     for n in NodeKind::iter() {
         n.register(&mut app);
     }
