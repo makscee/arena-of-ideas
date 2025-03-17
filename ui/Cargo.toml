@@ -21,6 +21,5 @@ egui_extras = { workspace = true }
 parking_lot = { workspace = true }
 color-hex = { workspace = true }
 serde = { workspace = true }
-egui_dock = { workspace = true }
 convert_case = { workspace = true }
 egui-notify = { workspace = true }

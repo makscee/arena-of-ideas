@@ -1,4 +1,3 @@
-use egui_dock::Surface;
 use spacetimedb_sats::serde::SerdeWrapper;
 
 use super::*;
@@ -8,7 +7,6 @@ pub struct ClientState {
     pub last_logged_in: Option<(String, Identity)>,
     pub edit_anim: Option<Anim>,
     pub battle_test_teams: (Vec<String>, Vec<String>),
-    pub dock_states: HashMap<GameState, Vec<Surface<Tab>>>,
     pub tile_states: HashMap<GameState, Tree<Pane>>,
 }
 

@@ -277,6 +277,7 @@ impl Show for HexColor {
         if let Some(err) = err {
             if "reset".cstr().button(ui).clicked() {
                 *self = default();
+                changed = true;
             }
             err.label(ui);
         }

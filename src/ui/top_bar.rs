@@ -14,17 +14,7 @@ impl TopBar {
                 _ => {}
             }
             if ui.button("inspector").clicked() {
-                DockPlugin::push(
-                    move |dt| {
-                        let tab = Tab::WorldInspector;
-                        if let Some(tab) = dt.state.find_tab(&tab) {
-                            dt.state.set_active_tab(tab);
-                        } else {
-                            dt.add_tab(tab);
-                        }
-                    },
-                    world,
-                );
+                todo!()
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if let Some(fps) = world

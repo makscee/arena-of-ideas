@@ -120,7 +120,7 @@ impl IncubatorPlugin {
                 .into(),
             ));
             r.new_node_link = None;
-            DockPlugin::set_active(Tab::IncubatorNewNode, world);
+            TilePlugin::set_active(Pane::IncubatorNewNode);
             true
         } else {
             false
@@ -334,7 +334,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
                 let id = f(d);
                 let node = cn().db.nodes_world().id().find(&id).unwrap();
                 world.resource_mut::<IncubatorData>().new_node = Some((kind, [node].into()));
-                DockPlugin::set_active(Tab::IncubatorNewNode, world);
+                TilePlugin::set_active(Pane::IncubatorNewNode);
             })
             .column_btn_dyn("inspect", move |d, _, world| {
                 let mut r = world.resource_mut::<IncubatorData>();
@@ -349,7 +349,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableIncubatorExt<T> for Table<'a, T>
                 if !r.link_types.is_empty() {
                     r.link_type_selected = r.link_types[0];
                 }
-                DockPlugin::set_active(Tab::IncubatorInspect, world);
+                TilePlugin::set_active(Pane::IncubatorInspect);
             });
         self
     }

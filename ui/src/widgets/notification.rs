@@ -1,9 +1,5 @@
-use bevy::{
-    app::Update,
-    ecs::system::{ResMut, Single},
-    log::{error, info, warn},
-};
-use bevy_egui::{egui::Style, EguiContext};
+use bevy::log::{error, info, warn};
+use bevy_egui::egui::Style;
 use egui_notify::{Toast, ToastLevel, Toasts};
 
 use super::*;
@@ -27,14 +23,13 @@ fn rm(world: &mut World) -> Mut<NotificationsData> {
 
 impl Plugin for NotificationsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<NotificationsData>()
-            .add_systems(Update, Self::update);
+        app.init_resource::<NotificationsData>();
     }
 }
 
 impl NotificationsPlugin {
-    fn update(mut data: ResMut<NotificationsData>, ctx: Single<&mut EguiContext>) {
-        data.toasts.show(ctx.into_inner().get_mut());
+    pub fn ui(ctx: &egui::Context, world: &mut World) {
+        rm(world).toasts.show(ctx);
     }
 }
 

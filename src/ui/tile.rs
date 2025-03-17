@@ -1,3 +1,5 @@
+use egui_tiles::SimplificationOptions;
+
 use super::*;
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -77,15 +79,69 @@ pub struct TreeBehavior {
 }
 
 impl egui_tiles::Behavior<Pane> for TreeBehavior {
+    fn simplification_options(&self) -> SimplificationOptions {
+        SimplificationOptions {
+            all_panes_must_have_tabs: true,
+            ..default()
+        }
+    }
+    fn tab_text_color(
+        &self,
+        _visuals: &egui::Visuals,
+        _tiles: &Tiles<Pane>,
+        _tile_id: TileId,
+        state: &egui_tiles::TabState,
+    ) -> Color32 {
+        if state.active {
+            VISIBLE_DARK
+        } else if state.is_being_dragged {
+            YELLOW
+        } else {
+            BG_LIGHT
+        }
+    }
+    fn tab_outline_stroke(
+        &self,
+        _visuals: &egui::Visuals,
+        _tiles: &Tiles<Pane>,
+        _tile_id: TileId,
+        _state: &egui_tiles::TabState,
+    ) -> Stroke {
+        Stroke::NONE
+    }
+    fn resize_stroke(&self, _: &egui::Style, resize_state: egui_tiles::ResizeState) -> Stroke {
+        match resize_state {
+            egui_tiles::ResizeState::Idle => Stroke::NONE,
+            egui_tiles::ResizeState::Hovering => STROKE_LIGHT,
+            egui_tiles::ResizeState::Dragging => STROKE_YELLOW,
+        }
+    }
+    fn on_edit(&mut self, action: egui_tiles::EditAction) {
+        match action {
+            egui_tiles::EditAction::TileResized
+            | egui_tiles::EditAction::TileDropped
+            | egui_tiles::EditAction::TabSelected => {
+                if let Some(world) = self.world.as_mut() {
+                    TilePlugin::request_tree_save(cur_state(world));
+                }
+            }
+            _ => {}
+        }
+    }
     fn pane_ui(
         &mut self,
         ui: &mut egui::Ui,
         _tile_id: egui_tiles::TileId,
         view: &mut Pane,
     ) -> egui_tiles::UiResponse {
-        if let Some(world) = self.world.as_mut() {
-            view.ui(ui, world).log();
-        }
+        ScrollArea::both().show(ui, |ui| {
+            DARK_FRAME.show(ui, |ui| {
+                if let Some(world) = self.world.as_mut() {
+                    view.ui(ui, world).log();
+                }
+                ui.expand_to_include_rect(ui.available_rect_before_wrap());
+            });
+        });
         egui_tiles::UiResponse::None
     }
 

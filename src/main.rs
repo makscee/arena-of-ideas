@@ -106,7 +106,6 @@ fn main() {
             AudioPlugin,
             ConfirmationPlugin,
             AdminPlugin,
-            DockPlugin,
             FusionEditorPlugin,
             StdbPlugin,
             IncubatorPlugin,

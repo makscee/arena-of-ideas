@@ -31,43 +31,19 @@ impl GameState {
             GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
             GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
-            _ => Tree::empty(TREE_ID),
-        }
-    }
-    pub fn load_state(self) -> DockState<Tab> {
-        match self {
-            GameState::Connect => DockState::new(Tab::Connect.into()),
-            GameState::Login => DockState::new(Tab::Login.into()),
-            GameState::Register => DockState::new(Tab::Register.into()),
-            GameState::Title => DockState::new([Tab::MainMenu, Tab::Admin].into()),
-            GameState::Match => {
-                let mut ds = DockState::new([Tab::Shop].into());
-                ds.main_surface_mut()
-                    .split_below(0.into(), 0.5, Tab::Team.into());
-                ds.main_surface_mut()
-                    .split_left(0.into(), 0.15, Tab::Roster.into());
-                ds
-            }
-            GameState::FusionEditor => {
-                let mut ds = DockState::new([Tab::Roster].into());
-                ds.main_surface_mut()
-                    .split_right(0.into(), 0.5, Tab::Triggers.into());
-                ds.main_surface_mut()
-                    .split_right(0.into(), 0.5, Tab::Actions.into());
-                ds.main_surface_mut()
-                    .split_below(0.into(), 0.5, Tab::FusionResult.into());
-                ds
-            }
             GameState::Incubator => {
-                let mut ds = DockState::new(Tab::IncubatorNodes.into());
-                ds.main_surface_mut().split_left(
-                    0.into(),
-                    0.4,
-                    [Tab::IncubatorInspect, Tab::IncubatorNewNode].into(),
-                );
-                ds
+                let mut tiles = Tiles::default();
+                let left = [
+                    tiles.insert_pane(Pane::IncubatorInspect),
+                    tiles.insert_pane(Pane::IncubatorNewNode),
+                ]
+                .into();
+                let left = tiles.insert_tab_tile(left);
+                let right = tiles.insert_pane(Pane::IncubatorNodes);
+                let root = tiles.insert_horizontal_tile([left, right].into());
+                Tree::new(TREE_ID, root, tiles)
             }
-            _ => DockState::new(default()),
+            _ => Tree::empty(TREE_ID),
         }
     }
 }
@@ -245,5 +221,5 @@ fn on_change(world: &mut World) {
         from.cstr().to_colored(),
         to.cstr().to_colored()
     );
-    TilePlugin::load_state_tree(from, to, world);
+    TilePlugin::load_state_tree(to, world);
 }
