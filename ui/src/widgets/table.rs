@@ -2,7 +2,7 @@ use core::f32;
 
 use bevy::utils::hashbrown::HashMap;
 use egui::NumExt;
-use egui_extras::{Column, TableBuilder};
+use egui_extras::{Column, TableBuilder, TableRow};
 
 use super::*;
 
@@ -15,6 +15,7 @@ pub struct Table<'a, T> {
     row_height: f32,
     title: bool,
     selectable: bool,
+    per_row_render: bool,
     filters: Vec<(&'static str, &'static str, VarValue)>,
 }
 
@@ -118,6 +119,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
             row_height: 22.0,
             rows_getter: Box::new(rows),
             rows_saved: None,
+            per_row_render: false,
         }
     }
     pub fn new_persistent(name: impl ToString, rows: Vec<T>) -> Self {
@@ -130,6 +132,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
             title: false,
             selectable: false,
             filters: Vec::new(),
+            per_row_render: false,
         }
     }
     pub fn title(mut self) -> Self {
@@ -146,6 +149,10 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
     }
     pub fn row_height(mut self, value: f32) -> Self {
         self.row_height = value;
+        self
+    }
+    pub fn per_row_render(mut self) -> Self {
+        self.per_row_render = true;
         self
     }
     pub fn column(
@@ -436,6 +443,44 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
             }
         })
     }
+    fn show_row(
+        &self,
+        row: &mut TableRow,
+        data: &Vec<T>,
+        state: &mut TableState,
+        world: &mut World,
+    ) {
+        let mut row_i = row.index();
+        if let Some(i) = state.indices.get(row_i) {
+            row_i = *i;
+        }
+        for (col_i, (_, col)) in self.columns.iter().enumerate() {
+            let index = (col_i, row_i);
+            let cell = state.cells.entry(index).or_default();
+            cell.update();
+            row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
+            row.col(|ui| {
+                let d = &data[row_i];
+                let v: VarValue = cell.get_cached(index, d, &col.value, world);
+                (col.show)(d, v, ui, world);
+                if cell.highlight > 0.0 {
+                    ui.painter().rect_stroke(
+                        ui.min_rect(),
+                        CornerRadius::same(13),
+                        Stroke::new(1.0, YELLOW.gamma_multiply(cell.highlight)),
+                        egui::StrokeKind::Middle,
+                    );
+                }
+            });
+        }
+        if self.selectable {
+            row.col(|ui| {
+                if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
+                    state.selected_row = Some(row_i);
+                }
+            });
+        }
+    }
     pub fn ui(self, ui: &mut Ui, world: &mut World) -> TableState {
         let mut need_sort = false;
         let mut need_filter = false;
@@ -481,7 +526,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
             }
 
             Frame::new().inner_margin(Margin::same(13)).show(ui, |ui| {
-                ui.push_id(Id::new(self.name), |ui| {
+                ui.push_id(Id::new(&self.name), |ui| {
                     ui.horizontal(|ui| {
                         format!("total: {}", state.indices.len())
                             .cstr_c(VISIBLE_DARK)
@@ -529,43 +574,18 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                                 });
                             }
                         })
-                        .body(|body| {
-                            body.rows(self.row_height, state.indices.len(), |mut row| {
-                                let mut row_i = row.index();
-                                if let Some(i) = state.indices.get(row_i) {
-                                    row_i = *i;
-                                }
-                                row.set_selected(state.selected_row.is_some_and(|i| i == row_i));
-                                for (col_i, (_, col)) in self.columns.iter().enumerate() {
-                                    let index = (col_i, row_i);
-                                    let cell = state.cells.entry(index).or_default();
-                                    cell.update();
-                                    row.col(|ui| {
-                                        let d = &data[row_i];
-                                        let v: VarValue =
-                                            cell.get_cached(index, d, &col.value, world);
-                                        (col.show)(d, v, ui, world);
-                                        if cell.highlight > 0.0 {
-                                            ui.painter().rect_stroke(
-                                                ui.min_rect(),
-                                                CornerRadius::same(13),
-                                                Stroke::new(
-                                                    1.0,
-                                                    YELLOW.gamma_multiply(cell.highlight),
-                                                ),
-                                                egui::StrokeKind::Middle,
-                                            );
-                                        }
+                        .body(|mut body| {
+                            if self.per_row_render {
+                                for _ in 0..state.indices.len() {
+                                    body.row(self.row_height, |mut row| {
+                                        self.show_row(&mut row, data, &mut state, world);
                                     });
                                 }
-                                if self.selectable {
-                                    row.col(|ui| {
-                                        if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
-                                            state.selected_row = Some(row_i);
-                                        }
-                                    });
-                                }
-                            })
+                            } else {
+                                body.rows(self.row_height, state.indices.len(), |mut row| {
+                                    self.show_row(&mut row, data, &mut state, world);
+                                });
+                            }
                         });
                 });
             });

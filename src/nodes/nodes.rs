@@ -282,11 +282,14 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     Some(n.description.cstr_s(CstrStyle::Bold))
                 })
             }
-            NodeKind::AbilityEffect => self.column_ui_dyn("data", move |d, _, ui, world| {
-                if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
-                    n.show(None, &default(), ui);
-                }
-            }),
+            NodeKind::AbilityEffect => {
+                self.per_row_render()
+                    .column_ui_dyn("data", move |d, _, ui, world| {
+                        if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
+                            n.show(None, &default(), ui);
+                        }
+                    })
+            }
             NodeKind::StatusAbility => self.column_cstr_opt_dyn("name", move |d, world| {
                 let n = StatusAbility::get_by_id(f(d), world)?;
                 Some(n.name.cstr_s(CstrStyle::Bold))
@@ -335,12 +338,15 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
                 ),
-            NodeKind::Behavior => self.column_ui_dyn("data", move |d, _, ui, world| {
-                if let Some(n) = Behavior::get_by_id(f(d), world) {
-                    n.show(None, &default(), ui);
-                }
-            }),
-            NodeKind::Representation => self.column_dyn(
+            NodeKind::Behavior => {
+                self.per_row_render()
+                    .column_ui_dyn("data", move |d, _, ui, world| {
+                        if let Some(n) = Behavior::get_by_id(f(d), world) {
+                            n.show(None, &default(), ui);
+                        }
+                    })
+            }
+            NodeKind::Representation => self.row_height(100.0).column_dyn(
                 "view",
                 |_, _| default(),
                 move |d, _, ui, world| {
@@ -348,7 +354,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                         let size = ui.available_height();
                         let (rect, _) =
                             ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-                        ui.set_clip_rect(rect);
+                        ui.set_clip_rect(ui.clip_rect().intersect(rect));
                         d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)
                             .log();
                     }

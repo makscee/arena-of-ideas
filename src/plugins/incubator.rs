@@ -142,9 +142,6 @@ impl IncubatorPlugin {
                     .map(|n| n.id)
                     .collect_vec()
             });
-            if kind == NodeKind::Representation {
-                t = t.row_height(100.0);
-            }
             t.add_node_view_columns(kind, |d| *d)
                 .add_incubator_columns(kind, |d| *d)
                 .ui(ui, world);
