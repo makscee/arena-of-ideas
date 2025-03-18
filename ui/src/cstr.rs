@@ -1,4 +1,4 @@
-use std::{ops::Deref, str::FromStr, sync::Arc};
+use std::{cell::LazyCell, ops::Deref, str::FromStr, sync::Arc};
 
 use bevy::{
     color::Color,
@@ -9,6 +9,7 @@ use bevy::{
 use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
 use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
+use egui_colors::Colorix;
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use utils_client::ToC32;
@@ -116,8 +117,8 @@ impl CstrTrait for Cstr {
                 .ok()
                 .and_then(|v| f(v))
                 .and_then(|v| v.get_string().ok())
-                .map(|v| format!("[s [vd {var}:]][vb [b {v}]]"))
-                .unwrap_or(format!("[vb {var}]"));
+                .map(|v| format!("[s [tl {var}:]][th [b {v}]]"))
+                .unwrap_or(format!("[th {var}]"));
             self.replace_range(p..(p + var.len() + 1), &replace);
         }
         self
@@ -191,35 +192,54 @@ impl CstrStyle {
     }
 }
 
-static STRING_STYLE_MAP: OnceCell<HashMap<&'static str, CstrStyle>> = OnceCell::new();
-static STYLE_STRING_MAP: OnceCell<HashMap<CstrStyle, &'static str>> = OnceCell::new();
+static STRING_STYLE_MAP: OnceCell<Mutex<HashMap<&'static str, CstrStyle>>> = OnceCell::new();
+static STYLE_STRING_MAP: OnceCell<Mutex<HashMap<CstrStyle, &'static str>>> = OnceCell::new();
 pub fn init_style_map() {
     let pairs = [
         ("b", CstrStyle::Bold),
         ("s", CstrStyle::Small),
         ("h", CstrStyle::Heading),
         ("h2", CstrStyle::Heading2),
-        ("red", CstrStyle::Color(RED)),
-        ("green", CstrStyle::Color(GREEN)),
-        ("yellow", CstrStyle::Color(YELLOW)),
-        ("vd", CstrStyle::Color(VISIBLE_DARK)),
-        ("vl", CstrStyle::Color(VISIBLE_LIGHT)),
-        ("vb", CstrStyle::Color(VISIBLE_BRIGHT)),
+        ("red", CstrStyle::Color(tokens_error().high_contrast_text())),
+        (
+            "green",
+            CstrStyle::Color(tokens_success().high_contrast_text()),
+        ),
+        (
+            "yellow",
+            CstrStyle::Color(tokens_warning().high_contrast_text()),
+        ),
+        ("tl", CstrStyle::Color(tokens_global().low_contrast_text())),
+        ("th", CstrStyle::Color(tokens_global().high_contrast_text())),
     ];
-    STRING_STYLE_MAP.set(HashMap::from_iter(pairs)).unwrap();
-    STYLE_STRING_MAP
-        .set(HashMap::from_iter(
-            pairs.into_iter().map(|(str, style)| (style, str)),
-        ))
-        .unwrap();
+    *STRING_STYLE_MAP
+        .get_or_init(|| Mutex::new(default()))
+        .lock()
+        .unwrap() = HashMap::from_iter(pairs);
+    *STYLE_STRING_MAP
+        .get_or_init(|| Mutex::new(default()))
+        .lock()
+        .unwrap() = HashMap::from_iter(pairs.into_iter().map(|(str, style)| (style, str)));
 }
 
 impl CstrStyle {
     fn from_str(value: &str) -> Option<Self> {
-        STRING_STYLE_MAP.get().unwrap().get(value).copied()
+        STRING_STYLE_MAP
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get(value)
+            .copied()
     }
     fn to_str(self) -> &'static str {
-        STYLE_STRING_MAP.get().unwrap().get(&self).unwrap()
+        STYLE_STRING_MAP
+            .get()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get(&self)
+            .unwrap()
     }
 }
 
@@ -356,12 +376,12 @@ impl ToCstr for str {
 }
 impl ToCstr for u32 {
     fn cstr(&self) -> Cstr {
-        self.to_string().cstr_c(VISIBLE_LIGHT)
+        self.to_string()
     }
 }
 impl ToCstr for u64 {
     fn cstr(&self) -> Cstr {
-        self.to_string().cstr_c(VISIBLE_LIGHT)
+        self.to_string()
     }
 }
 impl ToCstr for f32 {
@@ -497,7 +517,7 @@ impl ToCstr for Expression {
         if inner.is_empty() {
             self.cstr()
         } else {
-            format!("{}[vd (]{inner}[vd )]", self.cstr())
+            format!("{}[tl (]{inner}[tl )]", self.cstr())
         }
     }
 }
@@ -558,7 +578,7 @@ impl ToCstr for Action {
                 .map(|x| x.cstr_expanded())
                 .chain(inner_a.into_iter().map(|a| a.cstr_expanded()))
                 .join(", ");
-            format!("{s}[vd (]{inner}[vd )]")
+            format!("{s}[tl (]{inner}[tl )]")
         } else {
             s
         }

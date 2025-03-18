@@ -35,7 +35,7 @@ impl Button {
         self
     }
     pub fn gray(self, ui: &mut Ui) -> Self {
-        self.color(VISIBLE_DARK, ui)
+        self.color(tokens_global().subtle_background(), ui)
     }
     pub fn red(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
@@ -45,8 +45,8 @@ impl Button {
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = BG_DARK;
-        style.visuals.widgets.hovered.weak_bg_fill = BG_DARK;
+        style.visuals.widgets.inactive.weak_bg_fill = tokens_global().subtle_background();
+        style.visuals.widgets.hovered.weak_bg_fill = tokens_global().solid_backgrounds();
         self
     }
     pub fn set_bg(self, value: bool, ui: &mut Ui) -> Self {
@@ -87,17 +87,17 @@ impl Button {
             job.sections.truncate(1);
         };
         let style = ui.style_mut();
-        if !self.enabled {
-            style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
-            style.visuals.widgets.noninteractive.fg_stroke.color = VISIBLE_DARK;
-            replace_color(VISIBLE_DARK);
-        } else if self.active {
-            style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
-            style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
-            style.visuals.widgets.inactive.bg_stroke.color = YELLOW;
-            style.visuals.widgets.hovered.bg_stroke.color = YELLOW;
-            replace_color(YELLOW);
-        }
+        // if !self.enabled {
+        //     style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
+        //     style.visuals.widgets.noninteractive.fg_stroke.color = tokens_global().low_contrast_text();
+        //     replace_color(tokens_global().low_contrast_text());
+        // } else if self.active {
+        //     style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
+        //     style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
+        //     style.visuals.widgets.inactive.bg_stroke.color = YELLOW;
+        //     style.visuals.widgets.hovered.bg_stroke.color = YELLOW;
+        //     replace_color(YELLOW);
+        // }
         let sense = if self.enabled {
             Sense::click()
         } else {

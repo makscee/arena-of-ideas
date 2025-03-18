@@ -226,7 +226,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl ToCstr for #struct_ident {
                     fn cstr(&self) -> Cstr {
-                        format!("[vd {self} [vb {}]]", #name_quote)
+                        format!("[tl {self} [th {}]]", #name_quote)
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -384,7 +384,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         #(
-                            #child_fields_str.cstr_c(VISIBLE_DARK).label(ui);
+                            #child_fields_str.cstr_c(tokens_global().low_contrast_text()).label(ui);
                             let mut delete = None;
                             for (i, d) in self.#child_fields.iter_mut().enumerate() {
                                 ui.horizontal(|ui| {
@@ -398,7 +398,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 self.#child_fields.remove(delete);
                                 changed = true;
                             }
-                            if "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold).button(ui).clicked() {
+                            if "+".cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold).button(ui).clicked() {
                                 self.#child_fields.push(default());
                                 changed = true;
                             }

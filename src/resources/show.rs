@@ -6,7 +6,8 @@ pub trait ShowPrefix {
 impl ShowPrefix for Option<&str> {
     fn show(&self, ui: &mut Ui) {
         if let Some(s) = self {
-            s.cstr_cs(VISIBLE_DARK, CstrStyle::Small).label(ui);
+            s.cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Small)
+                .label(ui);
         }
     }
 }
@@ -182,7 +183,9 @@ impl Show for Option<String> {
         if let Some(s) = self {
             s.cstr().label_w(ui);
         } else {
-            "none".cstr_cs(VISIBLE_DARK, CstrStyle::Small).label_w(ui);
+            "none"
+                .cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Small)
+                .label_w(ui);
         }
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
@@ -303,8 +306,12 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     }
     let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
     RepresentationPlugin::paint_rect(rect, context, m, ui).log();
-    ui.painter()
-        .rect_stroke(rect, 0, STROKE_BG_DARK, egui::StrokeKind::Middle);
+    ui.painter().rect_stroke(
+        rect,
+        0,
+        Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+        egui::StrokeKind::Middle,
+    );
 }
 impl Show for Material {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
@@ -334,7 +341,8 @@ impl Show for Actions {
 impl Show for Event {
     fn show(&self, prefix: Option<&str>, _: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        self.cstr_cs(EVENT_COLOR, CstrStyle::Bold).label(ui);
+        self.cstr_cs(tokens_info().low_contrast_text(), CstrStyle::Bold)
+            .label(ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         prefix.show(ui);

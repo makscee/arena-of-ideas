@@ -15,7 +15,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         view: &mut Pane,
     ) -> egui_tiles::UiResponse {
         ScrollArea::both().show(ui, |ui| {
-            DARK_FRAME.show(ui, |ui| {
+            dark_frame().show(ui, |ui| {
                 ui.expand_to_include_rect(ui.available_rect_before_wrap());
                 if let Some(world) = self.world.as_mut() {
                     view.ui(ui, world).log();
@@ -38,11 +38,11 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         state: &egui_tiles::TabState,
     ) -> Color32 {
         if state.active {
-            VISIBLE_DARK
+            tokens_global().low_contrast_text()
         } else if state.is_being_dragged {
-            YELLOW
+            tokens_global().hovered_ui_element_border()
         } else {
-            BG_LIGHT
+            tokens_global().high_contrast_text()
         }
     }
     fn tab_outline_stroke(
@@ -57,8 +57,12 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     fn resize_stroke(&self, _: &egui::Style, resize_state: egui_tiles::ResizeState) -> Stroke {
         match resize_state {
             egui_tiles::ResizeState::Idle => Stroke::NONE,
-            egui_tiles::ResizeState::Hovering => STROKE_LIGHT,
-            egui_tiles::ResizeState::Dragging => STROKE_YELLOW,
+            egui_tiles::ResizeState::Hovering => {
+                Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings())
+            }
+            egui_tiles::ResizeState::Dragging => {
+                Stroke::new(1.0, tokens_global().hovered_ui_element_border())
+            }
         }
     }
     fn on_edit(&mut self, action: egui_tiles::EditAction) {
@@ -125,7 +129,7 @@ impl TileTree {
     pub fn show(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             if let Some(world) = &mut self.behavior.world {
-                world.colorix_mut().colorix.draw_background(ctx, false);
+                world.colorix_mut().global().draw_background(ctx, false);
             }
             self.tree.ui(&mut self.behavior, ui);
         });

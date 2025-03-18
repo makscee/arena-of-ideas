@@ -80,7 +80,7 @@ impl TextColumnPlugin {
                             ui.painter().add(epaint::TextShape::new(
                                 rect.left_top(),
                                 galley,
-                                VISIBLE_LIGHT,
+                                tokens_global().high_contrast_text(),
                             ));
                         } else {
                             remove.push(i);

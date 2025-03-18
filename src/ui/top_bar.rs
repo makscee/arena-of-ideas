@@ -22,13 +22,13 @@ impl TopBar {
                     .get(&FrameTimeDiagnosticsPlugin::FPS)
                 {
                     if let Some(fps) = fps.smoothed() {
-                        format!("[vd fps:] {fps:.0}").label(ui);
+                        format!("[tl fps:] {fps:.0}").label(ui);
                     }
                 }
                 VERSION.cstr().label(ui);
                 current_server()
                     .1
-                    .cstr_cs(VISIBLE_DARK, CstrStyle::Bold)
+                    .cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Bold)
                     .label(ui);
             })
         });

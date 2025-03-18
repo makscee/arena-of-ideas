@@ -48,14 +48,13 @@ impl Input {
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             self.name.label(ui);
-            ui.style_mut().visuals.widgets.inactive.bg_stroke = STROKE_BG_DARK;
             let mut te = TextEdit::singleline(value)
                 .desired_width(self.desired_width)
                 .password(self.password);
             if let Some(color) = self.override_color {
                 te = te.text_color(color);
                 if Rgba::from(color).intensity() < 0.05 {
-                    te = te.background_color(VISIBLE_BRIGHT);
+                    te = te.background_color(tokens_global().high_contrast_text());
                 }
             }
             if let Some(id) = self.id {

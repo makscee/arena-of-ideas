@@ -33,7 +33,7 @@ impl ContextMenu {
                     ui.close_menu();
                 }
             }
-            if "[vd Close]".cstr().button(ui).clicked() {
+            if "[tl Close]".cstr().button(ui).clicked() {
                 ui.close_menu();
             }
         });

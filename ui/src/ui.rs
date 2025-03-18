@@ -1,12 +1,4 @@
-use bevy::{app::Startup, prelude::Query};
-use bevy_egui::{
-    egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
-    EguiContext,
-};
-use egui::{
-    style::{HandleShape, Spacing, WidgetVisuals, Widgets},
-    CornerRadius, FontData, FontFamily, Margin, Shadow, Stroke,
-};
+use egui::{CornerRadius, Margin, Shadow};
 
 use super::*;
 
@@ -18,16 +10,7 @@ macro_rules! hex_color_noa {
     }};
 }
 
-pub const EMPTINESS: Color32 = hex_color_noa!("#040404");
-pub const BG_DARK: Color32 = hex_color_noa!("#161616");
-pub const BG_LIGHT: Color32 = hex_color_noa!("#252525");
-pub const BG_TRANSPARENT: Color32 = Color32::from_black_alpha(235);
-pub const VISIBLE_DARK: Color32 = hex_color_noa!("#606060");
-pub const VISIBLE_LIGHT: Color32 = hex_color_noa!("#B4B4B4");
-pub const VISIBLE_BRIGHT: Color32 = hex_color_noa!("#FFFFFF");
-
 pub const YELLOW: Color32 = hex_color_noa!("#D98F00");
-pub const YELLOW_DARK: Color32 = hex_color_noa!("#996600");
 pub const ORANGE: Color32 = hex_color_noa!("#DC6814");
 pub const RED: Color32 = hex_color_noa!("#DC143C");
 pub const DARK_RED: Color32 = hex_color_noa!("#9D0E2B");
@@ -36,35 +19,9 @@ pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
 pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
 pub const CYAN: Color32 = hex_color_noa!("#00B8D4");
 
-pub const EVENT_COLOR: Color32 = hex_color_noa!("#F7CA55");
-pub const ACTION_COLOR: Color32 = hex_color_noa!("#DE1C1C");
-
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
-
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
-
 pub const CREDITS_SYM: char = '¤';
-
-pub const STROKE_LIGHT: Stroke = Stroke {
-    width: 1.0,
-    color: VISIBLE_LIGHT,
-};
-pub const STROKE_DARK: Stroke = Stroke {
-    width: 1.0,
-    color: VISIBLE_DARK,
-};
-pub const STROKE_BG_DARK: Stroke = Stroke {
-    width: 1.0,
-    color: BG_LIGHT,
-};
-pub const STROKE_YELLOW: Stroke = Stroke {
-    width: 1.0,
-    color: YELLOW,
-};
-pub const STROKE_YELLOW_DARK: Stroke = Stroke {
-    width: 1.0,
-    color: YELLOW_DARK,
-};
 
 pub const SHADOW: Shadow = Shadow {
     offset: [8, 8],
@@ -88,11 +45,13 @@ pub const ROUNDING: CornerRadius = CornerRadius {
 
 pub const UNIT_SIZE: f32 = 1.0;
 
-pub const DARK_FRAME: Frame = Frame {
-    inner_margin: Margin::same(5),
-    outer_margin: Margin::same(5),
-    corner_radius: ROUNDING,
-    shadow: Shadow::NONE,
-    fill: TRANSPARENT,
-    stroke: STROKE_BG_DARK,
-};
+pub fn dark_frame() -> Frame {
+    Frame {
+        inner_margin: Margin::same(5),
+        outer_margin: Margin::same(5),
+        corner_radius: ROUNDING,
+        shadow: Shadow::NONE,
+        fill: tokens_global().subtle_background(),
+        stroke: Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+    }
+}

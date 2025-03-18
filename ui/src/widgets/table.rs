@@ -399,7 +399,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                 value: Box::new(move |d, _| value(d).into()),
                 show: Box::new(|_, v, ui, _| {
                     format_timestamp(v.get_u64().unwrap_or_default())
-                        .cstr_cs(VISIBLE_DARK, CstrStyle::Small)
+                        .cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Small)
                         .label(ui);
                 }),
                 sortable: true,
@@ -475,7 +475,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         }
         if self.selectable {
             row.col(|ui| {
-                if "select".cstr_c(VISIBLE_BRIGHT).button(ui).clicked() {
+                if "select".cstr_c(tokens_global().high_contrast_text()).button(ui).clicked() {
                     state.selected_row = Some(row_i);
                 }
             });
@@ -529,7 +529,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                 ui.push_id(Id::new(&self.name), |ui| {
                     ui.horizontal(|ui| {
                         format!("total: {}", state.indices.len())
-                            .cstr_c(VISIBLE_DARK)
+                            .cstr_c(tokens_global().low_contrast_text())
                             .label(ui);
                     });
                     TableBuilder::new(ui)

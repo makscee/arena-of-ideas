@@ -33,11 +33,11 @@ impl FusionEditorPlugin {
             for unit in fusion.team_load(world)?.roster_units_load(world) {
                 let selected = fusion.units.contains(&unit.name);
                 let stats = unit.description_load(world)?.stats_load(world)?;
-                DARK_FRAME
+                dark_frame()
                     .stroke(if selected {
-                        STROKE_LIGHT
+                        Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings())
                     } else {
-                        STROKE_BG_DARK
+                        Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
                     })
                     .show(ui, |ui| {
                         show_unit_tag(unit, stats, ui, world);
@@ -79,11 +79,14 @@ impl FusionEditorPlugin {
                             trigger: t as u8,
                         };
                         let selected = fusion.triggers.iter().any(|(r, _)| r.eq(&t_ref));
-                        DARK_FRAME
+                        dark_frame()
                             .stroke(if selected {
-                                STROKE_LIGHT
+                                Stroke::new(
+                                    1.0,
+                                    tokens_global().ui_element_border_and_focus_rings(),
+                                )
                             } else {
-                                STROKE_BG_DARK
+                                Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
                             })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
@@ -140,11 +143,11 @@ impl FusionEditorPlugin {
                             .triggers
                             .iter()
                             .any(|(_, a)| a.iter().any(|a| a_ref.eq(a)));
-                        DARK_FRAME
+                        dark_frame()
                             .stroke(if selected {
-                                STROKE_YELLOW
+                                Stroke::new(1.0, tokens_global().hovered_ui_element_border())
                             } else {
-                                STROKE_BG_DARK
+                                Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
                             })
                             .show(ui, |ui| {
                                 ui.horizontal(|ui| {
@@ -192,7 +195,7 @@ impl FusionEditorPlugin {
                             }
                             trigger.show(None, context, ui);
                         });
-                        DARK_FRAME.show(ui, |ui| {
+                        dark_frame().show(ui, |ui| {
                             for (a_i, a_ref) in actions.iter().enumerate() {
                                 let (entity, action) = fusion.get_action(a_ref, context).unwrap();
                                 ui.horizontal(|ui| {
@@ -201,7 +204,10 @@ impl FusionEditorPlugin {
                                     }
                                     if (t_i > 0 || a_i > 0)
                                         && "^"
-                                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                                            .cstr_cs(
+                                                tokens_global().high_contrast_text(),
+                                                CstrStyle::Bold,
+                                            )
                                             .button(ui)
                                             .clicked()
                                     {
@@ -216,7 +222,10 @@ impl FusionEditorPlugin {
                                     }
                                     if (t_i + 1 < fusion.triggers.len() || a_i + 1 < actions.len())
                                         && "v"
-                                            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+                                            .cstr_cs(
+                                                tokens_global().high_contrast_text(),
+                                                CstrStyle::Bold,
+                                            )
                                             .button(ui)
                                             .clicked()
                                     {
@@ -242,7 +251,7 @@ impl FusionEditorPlugin {
                         fusion.remove_trigger(r);
                     }
                     if "save"
-                        .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Heading2)
+                        .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
                         .button(ui)
                         .clicked()
                     {

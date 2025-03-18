@@ -92,20 +92,23 @@ impl Window {
         rm(world).windows.insert(self.id.clone(), self);
     }
     fn show(&mut self, ctx: &egui::Context, world: &mut World) -> WindowResponse {
-        const FRAME: Frame = Frame {
-            inner_margin: MARGIN,
-            outer_margin: Margin::ZERO,
-            corner_radius: ROUNDING,
-            shadow: SHADOW,
-            fill: EMPTINESS,
-            stroke: STROKE_BG_DARK,
-        };
         let mut r = WindowResponse::None;
         let mut w = egui::Window::new(&self.id)
             .default_width(self.default_width)
             .default_height(self.default_height)
             .title_bar(false)
-            .frame(if self.no_frame { Frame::none() } else { FRAME })
+            .frame(if self.no_frame {
+                Frame::new()
+            } else {
+                Frame {
+                    inner_margin: MARGIN,
+                    outer_margin: Margin::ZERO,
+                    corner_radius: ROUNDING,
+                    shadow: SHADOW,
+                    fill: tokens_global().solid_backgrounds(),
+                    stroke: Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings()),
+                }
+            })
             .scroll([self.expand, self.expand])
             .movable(!self.expand)
             .order(self.order);
@@ -132,7 +135,11 @@ impl Window {
                 let rect = rect.with_min_x(rect.max.x);
                 let ui = &mut ui.child_ui(rect, Layout::left_to_right(Align::Max), None);
                 if "o"
-                    .cstr_c(if self.expand { YELLOW } else { VISIBLE_LIGHT })
+                    .cstr_c(if self.expand {
+                        YELLOW
+                    } else {
+                        tokens_global().high_contrast_text()
+                    })
                     .button(ui)
                     .clicked()
                 {

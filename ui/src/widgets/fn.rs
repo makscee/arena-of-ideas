@@ -9,7 +9,7 @@ pub fn br(ui: &mut Ui) {
             [rect.left_top(), rect.right_top()],
             Stroke {
                 width: 1.0,
-                color: VISIBLE_DARK,
+                color: tokens_global().subtle_borders_and_separators(),
             },
         );
     });
@@ -87,7 +87,7 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
         let bottom = rect.bottom() - 6.0;
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
-            VISIBLE_LIGHT,
+            tokens_global().subtle_borders_and_separators(),
             12.0,
             0.5,
         );
@@ -96,13 +96,13 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     });
 }
 pub fn title(text: &str, ui: &mut Ui) {
-    text.cstr_cs(VISIBLE_DARK, CstrStyle::Heading2).label(ui);
+    text.cstr_s(CstrStyle::Heading2).label(ui);
     br(ui);
 }
 
 pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
     const WIDTH: f32 = 350.0;
-    cursor_window_frame(ctx, Frame::none(), WIDTH, content);
+    cursor_window_frame(ctx, Frame::new(), WIDTH, content);
 }
 pub fn cursor_window_frame(
     ctx: &egui::Context,
@@ -140,11 +140,14 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     ui.expand_to_include_rect(rect);
     let mut cui = ui.new_child(UiBuilder::new().max_rect(rect));
     let r = cui.allocate_rect(rect, Sense::click_and_drag());
-    let mut stroke = if r.hovered() {
-        STROKE_YELLOW
-    } else {
-        STROKE_LIGHT
-    };
+    let mut stroke = Stroke::new(
+        1.0,
+        if r.hovered() {
+            tokens_global().hovered_ui_element_border()
+        } else {
+            tokens_global().ui_element_border_and_focus_rings()
+        },
+    );
     let t = cui.ctx().animate_bool(r.id, r.hovered());
     let length = egui::emath::lerp(15.0..=20.0, t);
     stroke.width += t;

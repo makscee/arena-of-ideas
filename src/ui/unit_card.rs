@@ -50,7 +50,7 @@ impl UnitCard {
     pub fn show(&self, context: &Context, ui: &mut Ui) {
         ui.spacing_mut().item_spacing.y = 1.0;
         Frame::new()
-            .fill(BG_DARK)
+            .fill(tokens_global().subtle_background())
             .stroke(Stroke::new(2.0, self.rarity.color()))
             .corner_radius(CornerRadius {
                 nw: 13,
@@ -67,7 +67,7 @@ impl UnitCard {
                 });
             });
         Frame::new()
-            .fill(EMPTINESS)
+            .fill(tokens_global().solid_backgrounds())
             .inner_margin(Margin::same(4))
             .corner_radius(CornerRadius {
                 nw: 0,
@@ -75,7 +75,10 @@ impl UnitCard {
                 sw: 13,
                 se: 13,
             })
-            .stroke(STROKE_BG_DARK)
+            .stroke(Stroke::new(
+                1.0,
+                tokens_global().subtle_borders_and_separators(),
+            ))
             .show(ui, |ui| {
                 if self.expanded {
                     ui.vertical(|ui| {
@@ -108,8 +111,10 @@ impl UnitCard {
                     "hp",
                     RED,
                     format!(
-                        "[b {}[vd /]{}]",
-                        (hp - dmg).to_string().cstr_c(VISIBLE_BRIGHT),
+                        "[b {}[tl /]{}]",
+                        (hp - dmg)
+                            .to_string()
+                            .cstr_c(tokens_global().high_contrast_text()),
                         hp.to_string().cstr_c(RED)
                     ),
                 );
@@ -129,7 +134,11 @@ impl UnitCard {
     }
     fn show_description(&self, ui: &mut Ui) {
         Frame::new()
-            .fill(if self.expanded { BG_DARK } else { TRANSPARENT })
+            .fill(if self.expanded {
+                tokens_global().solid_backgrounds()
+            } else {
+                TRANSPARENT
+            })
             .inner_margin(Margin::same(6))
             .corner_radius(CornerRadius::same(13))
             .show(ui, |ui| {

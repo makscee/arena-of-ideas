@@ -97,7 +97,7 @@ impl LoginPlugin {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
             "New Player"
-                .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
                 .label(ui);
             let mut ld = world.resource_mut::<LoginData>();
             Input::new("name").ui_string(&mut ld.name_field, ui);
@@ -125,7 +125,7 @@ impl LoginPlugin {
             let mut cs = client_state().clone();
             if let Some((name, identity)) = &cs.last_logged_in {
                 format!("Login as {name}")
-                    .cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading2)
+                    .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
                     .label(ui);
                 if (client_settings().auto_login && !ld.login_requested)
                     || Button::new("Login")
@@ -152,7 +152,7 @@ impl LoginPlugin {
                 }
             } else {
                 let mut ld = world.resource_mut::<LoginData>();
-                "Login".cstr_cs(VISIBLE_LIGHT, CstrStyle::Heading).label(ui);
+                "Login".cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading).label(ui);
                 Input::new("name").ui_string(&mut ld.name_field, ui);
                 Input::new("password")
                     .password()

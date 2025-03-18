@@ -19,15 +19,6 @@ struct MatchData {
     editing_entity: Option<Entity>,
 }
 
-const FRAME: Frame = Frame {
-    inner_margin: Margin::same(5),
-    outer_margin: Margin::same(5),
-    corner_radius: ROUNDING,
-    shadow: Shadow::NONE,
-    fill: TRANSPARENT,
-    stroke: STROKE_BG_DARK,
-};
-
 impl MatchPlugin {
     fn on_enter(world: &mut World) {}
     fn load_match(world: &World) -> Result<&Match, ExpressionError> {
@@ -68,7 +59,7 @@ impl MatchPlugin {
         let houses = m.team_load(world)?.houses_load(world);
         for unit in houses.into_iter().map(|h| h.units_load(world)).flatten() {
             let stats = unit.description_load(world)?.stats_load(world)?;
-            DARK_FRAME.show(ui, |ui| {
+            dark_frame().show(ui, |ui| {
                 show_unit_tag(unit, stats, ui, world);
                 if format!(
                     "[b sell [yellow +{}g]]",
@@ -151,7 +142,15 @@ impl MatchPlugin {
                 let context = &Context::new_world(&world).set_owner(entity).take();
                 let name = context.get_string(VarName::name).unwrap();
                 let color = context.get_color(VarName::color).unwrap();
-                TagWidget::new_text(name, if sc.sold { VISIBLE_DARK } else { color }).ui(ui);
+                TagWidget::new_text(
+                    name,
+                    if sc.sold {
+                        tokens_global().low_contrast_text()
+                    } else {
+                        color
+                    },
+                )
+                .ui(ui);
                 let size = ui.available_size();
                 let size = size.x.at_most(size.y);
                 let rect = ui

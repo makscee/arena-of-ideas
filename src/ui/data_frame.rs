@@ -22,14 +22,16 @@ pub struct DataFrame<'a, T> {
     default_open: bool,
 }
 
-const FRAME: Frame = Frame {
-    inner_margin: Margin::ZERO,
-    outer_margin: Margin::ZERO,
-    corner_radius: ROUNDING,
-    shadow: Shadow::NONE,
-    fill: TRANSPARENT,
-    stroke: STROKE_BG_DARK,
-};
+fn frame() -> Frame {
+    Frame {
+        inner_margin: Margin::ZERO,
+        outer_margin: Margin::ZERO,
+        corner_radius: ROUNDING,
+        shadow: Shadow::NONE,
+        fill: TRANSPARENT,
+        stroke: Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+    }
+}
 
 impl<'a, T> DataFrame<'a, T>
 where
@@ -261,18 +263,22 @@ fn compose_ui(
     };
     let mut header_rect = Rect::ZERO;
     let mut triangle_rect = Rect::ZERO;
-    let resp = FRAME
-        .stroke(if hovered { STROKE_DARK } else { STROKE_BG_DARK })
+    let resp = frame()
+        .stroke(if hovered {
+            Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
+        } else {
+            Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
+        })
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
-                    header_rect = FRAME
-                        .fill(BG_DARK)
+                    header_rect = frame()
+                        .fill(tokens_global().subtle_background())
                         .inner_margin(Margin::symmetric(8, 4))
                         .corner_radius(header_rounding)
                         .show(ui, |ui| {
                             if let Some(prefix) = prefix {
-                                format!("[vd [s {prefix}]]").label(ui);
+                                format!("[tl [s {prefix}]]").label(ui);
                             }
                             changed |= name(ui);
                             if !context_actions.is_empty() {
@@ -283,8 +289,15 @@ fn compose_ui(
                                 ui.painter().circle(
                                     resp.rect.center(),
                                     4.0,
-                                    if resp.hovered() { YELLOW } else { BG_DARK },
-                                    STROKE_DARK,
+                                    if resp.hovered() {
+                                        tokens_global().hovered_solid_backgrounds()
+                                    } else {
+                                        tokens_global().subtle_background()
+                                    },
+                                    Stroke::new(
+                                        1.0,
+                                        tokens_global().subtle_borders_and_separators(),
+                                    ),
                                 );
                                 let bar_id = ui.id();
                                 let mut bar_state = BarState::load(ui.ctx(), bar_id);
@@ -296,7 +309,7 @@ fn compose_ui(
                                             ui.close_menu();
                                         }
                                     }
-                                    if "[vd Close]".cstr().button(ui).clicked() {
+                                    if "[tl Close]".cstr().button(ui).clicked() {
                                         ui.close_menu();
                                     }
                                 });
@@ -368,7 +381,11 @@ fn show_triangle(openness: f32, rect: Rect, hovered: bool, ui: &mut Ui) {
     ui.painter().add(egui::Shape::convex_polygon(
         points,
         TRANSPARENT,
-        if hovered { STROKE_YELLOW } else { STROKE_DARK },
+        if hovered {
+            Stroke::new(1.0, tokens_global().hovered_ui_element_border())
+        } else {
+            Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
+        },
     ));
 }
 
@@ -447,7 +464,7 @@ fn show_mut_vec<T: Show + Default + Serialize + DeserializeOwned>(
     let mut insert = None;
     let len = v.len();
     fn plus_btn(ui: &mut Ui) -> bool {
-        "+".cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+        "+".cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
             .button(ui)
             .clicked()
     }
@@ -508,7 +525,7 @@ where
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {
         for (i, v) in self.into_iter().enumerate() {
-            v.show(Some(&format!("[vd {i}:]")), context, ui);
+            v.show(Some(&format!("[tl {i}:]")), context, ui);
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {

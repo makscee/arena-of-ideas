@@ -58,7 +58,6 @@ fn main() {
     };
     load_client_settings();
     load_client_state();
-    init_style_map();
     parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
@@ -66,8 +65,7 @@ fn main() {
         filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
         ..default()
     });
-    app.insert_resource(ClearColor(EMPTINESS.to_color()))
-        .add_systems(Startup, setup)
+    app.add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
         .add_loading_state(

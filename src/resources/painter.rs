@@ -17,7 +17,7 @@ impl Painter {
     pub fn new(rect: Rect, ctx: &egui::Context) -> Self {
         Self {
             rect,
-            color: VISIBLE_LIGHT,
+            color: tokens_global().high_contrast_text(),
             mesh: egui::Mesh::default(),
             tesselator: new_tesselator(0.0, ctx),
             hollow: None,

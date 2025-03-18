@@ -140,12 +140,3 @@ impl Fusion {
         })
     }
 }
-
-const FRAME: Frame = Frame {
-    inner_margin: Margin::same(5),
-    outer_margin: Margin::same(5),
-    corner_radius: ROUNDING,
-    shadow: Shadow::NONE,
-    fill: TRANSPARENT,
-    stroke: STROKE_BG_DARK,
-};

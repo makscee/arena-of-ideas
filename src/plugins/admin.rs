@@ -138,11 +138,14 @@ impl AdminPlugin {
                 t += gt().last_delta();
                 ui.painter().add(
                     Frame::new()
-                        .stroke(if resp.hovered() {
-                            STROKE_YELLOW
-                        } else {
-                            STROKE_BG_DARK
-                        })
+                        .stroke(Stroke::new(
+                            1.0,
+                            if resp.hovered() {
+                                tokens_global().hovered_ui_element_border()
+                            } else {
+                                tokens_global().subtle_borders_and_separators()
+                            },
+                        ))
                         .paint(rect),
                 );
                 let cr = ui.clip_rect();

@@ -181,7 +181,7 @@ impl IncubatorPlugin {
     pub fn tab_inspect(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let data = rm(world);
         let Some((id, kind)) = data.inspect_node else {
-            "Select node to view links".cstr_c(VISIBLE_DARK).label(ui);
+            "Select node to view links".cstr_c(tokens_global().low_contrast_text()).label(ui);
             return Ok(());
         };
         format!("{kind} node").cstr_s(CstrStyle::Bold).label(ui);
@@ -249,7 +249,7 @@ impl IncubatorPlugin {
         }
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {
-            "show type".cstr_c(VISIBLE_DARK).label(ui);
+            "show type".cstr_c(tokens_global().low_contrast_text()).label(ui);
             if EnumSwitcher::new().show_iter(&mut selected, r.link_types.iter().copied(), ui) {
                 r.link_type_selected = selected;
             }
@@ -388,7 +388,7 @@ impl NodeKindGraph for NodeKind {
             }
             ui.vertical(|ui| {
                 for c in self.component_kinds().into_iter().sorted() {
-                    c.show_graph(VISIBLE_LIGHT, data, ui);
+                    c.show_graph(tokens_global().high_contrast_text(), data, ui);
                 }
                 for c in self.children_kinds().into_iter().sorted() {
                     c.show_graph(RED, data, ui);

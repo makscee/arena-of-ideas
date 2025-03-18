@@ -11,7 +11,7 @@ impl GameAssetsEditor {
         //     .collect_vec();
         // Window::new("Houses Editor", move |ui, _| {
         //     if "Export"
-        //         .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+        //         .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
         //         .button(ui)
         //         .clicked()
         //     {

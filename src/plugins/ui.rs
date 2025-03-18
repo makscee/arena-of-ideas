@@ -108,57 +108,8 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.spacing.window_margin = Margin::same(8);
         style.spacing.slider_rail_height = 2.0;
         style.spacing.button_padding = egui::vec2(8.0, 2.0);
-        style.visuals.panel_fill = Color32::from_rgb(0, 0, 0);
         style.visuals.striped = false;
         style.visuals.slider_trailing_fill = true;
-        style.visuals.faint_bg_color = BG_LIGHT;
         style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };
-        style.visuals.selection.bg_fill = YELLOW_DARK;
-        style.visuals.resize_corner_size = 0.0;
-        style.visuals.window_stroke = STROKE_DARK;
-        style.visuals.window_fill = EMPTINESS;
-        style.visuals.extreme_bg_color = TRANSPARENT;
-        style.visuals.widgets = Widgets {
-            noninteractive: WidgetVisuals {
-                weak_bg_fill: Color32::TRANSPARENT,
-                bg_fill: Color32::from_gray(27),
-                bg_stroke: STROKE_BG_DARK, // separators, indentation lines
-                fg_stroke: Stroke::new(1.0, VISIBLE_DARK), // normal text color
-                corner_radius: CornerRadius::same(13),
-                expansion: 0.0,
-            },
-            inactive: WidgetVisuals {
-                weak_bg_fill: Color32::TRANSPARENT,
-                bg_fill: BG_LIGHT, // checkbox background
-                bg_stroke: STROKE_BG_DARK,
-                fg_stroke: Stroke::new(1.0, VISIBLE_LIGHT), // button text
-                corner_radius: CornerRadius::same(13),
-                expansion: 0.0,
-            },
-            hovered: WidgetVisuals {
-                weak_bg_fill: Color32::TRANSPARENT,
-                bg_fill: Color32::from_gray(70),
-                bg_stroke: STROKE_LIGHT, // e.g. hover over window edge or button
-                fg_stroke: Stroke::new(1.5, VISIBLE_BRIGHT),
-                corner_radius: CornerRadius::same(13),
-                expansion: 0.0,
-            },
-            active: WidgetVisuals {
-                weak_bg_fill: Color32::TRANSPARENT,
-                bg_fill: Color32::from_gray(55),
-                bg_stroke: STROKE_YELLOW,
-                fg_stroke: Stroke::new(2.0, YELLOW),
-                corner_radius: CornerRadius::same(13),
-                expansion: 0.0,
-            },
-            open: WidgetVisuals {
-                weak_bg_fill: Color32::from_gray(45),
-                bg_fill: Color32::from_gray(27),
-                bg_stroke: STROKE_BG_DARK,
-                fg_stroke: Stroke::new(1.0, Color32::from_gray(210)),
-                corner_radius: CornerRadius::same(13),
-                expansion: 0.0,
-            },
-        };
     });
 }

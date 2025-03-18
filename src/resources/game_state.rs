@@ -30,10 +30,7 @@ impl GameState {
             GameState::Connect => Tree::new_tabs(TREE_ID, Pane::Connect.into()),
             GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
-            GameState::Title => Tree::new_horizontal(
-                TREE_ID,
-                [Pane::Admin, Pane::MainMenu, Pane::ColorixEditor].into(),
-            ),
+            GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
             GameState::Incubator => {
                 let mut tiles = Tiles::default();
                 let left = [
@@ -72,7 +69,6 @@ pub enum Pane {
     Admin,
 
     WorldInspector,
-    ColorixEditor,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -89,7 +85,7 @@ impl Pane {
                     ui.add_space(ui.available_height() * 0.3);
                     ui.set_width(350.0.at_most(ui.available_width()));
                     if "Open Match"
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
+                        .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
                         .button(ui)
                         .clicked()
                     {
@@ -118,7 +114,6 @@ impl Pane {
             Pane::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
-            Pane::ColorixEditor => colorix_editor(ui, world),
         };
         Ok(())
     }

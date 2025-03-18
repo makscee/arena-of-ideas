@@ -41,7 +41,7 @@ impl TagWidget {
     fn text_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
         let galley = self
             .text
-            .cstr_cs(EMPTINESS, CstrStyle::Bold)
+            .cstr_cs(tokens_global().solid_backgrounds(), CstrStyle::Bold)
             .galley(1.0, ui);
         let size = galley.size();
         self.text_galley = Some(galley);
@@ -52,7 +52,7 @@ impl TagWidget {
             return default();
         };
         let galley = number
-            .cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold)
+            .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
             .galley(1.0, ui);
         let mut size = galley.size();
         size += NUMBER_MARGIN.sum();
@@ -82,7 +82,7 @@ impl TagWidget {
         if self.number.is_some() {
             ui.painter().add(
                 frame
-                    .fill(EMPTINESS)
+                    .fill(tokens_global().solid_backgrounds())
                     .paint(rect.shrink2(OUTER_MARGIN.sum() * 0.5)),
             );
         }
@@ -95,14 +95,14 @@ impl TagWidget {
         ui.painter().galley(
             rect.shrink2(margin_size * 0.5).left_top(),
             self.text_galley.unwrap(),
-            VISIBLE_BRIGHT,
+            tokens_global().high_contrast_text(),
         );
         if let Some(number) = self.number_galley {
             ui.painter().galley(
                 rect.shrink2(margin_size * 0.5).right_top()
                     - egui::vec2(number_size.x - NUMBER_MARGIN.left as f32, 0.0),
                 number,
-                VISIBLE_BRIGHT,
+                tokens_global().high_contrast_text(),
             );
         }
     }
@@ -124,7 +124,9 @@ impl TagsWidget {
         self.tags.push(TagWidget::new_number(
             text,
             color,
-            number.to_string().cstr_cs(VISIBLE_BRIGHT, CstrStyle::Bold),
+            number
+                .to_string()
+                .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold),
         ));
     }
     pub fn add_number_cstr(&mut self, text: impl ToString, color: Color32, number: Cstr) {
