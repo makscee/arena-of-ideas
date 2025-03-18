@@ -26,7 +26,7 @@ impl MatchPlugin {
         let matches = player.active_match_load(world);
         matches.into_iter().next().to_e("Match not found")
     }
-    pub fn tab_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let m = Self::load_match(world)?;
         ui.horizontal(|ui| {
             format!("[yellow [h2 {}g]]", m.g).label(ui);
@@ -54,7 +54,7 @@ impl MatchPlugin {
         })
         .inner
     }
-    pub fn tab_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let m = Self::load_match(world)?;
         let houses = m.team_load(world)?.houses_load(world);
         for unit in houses.into_iter().map(|h| h.units_load(world)).flatten() {
@@ -74,7 +74,7 @@ impl MatchPlugin {
         }
         Ok(())
     }
-    pub fn tab_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let m = Self::load_match(world)?;
         let mut fusion_edit = None;
         let mut last_slot = -1;

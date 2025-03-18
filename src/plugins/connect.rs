@@ -56,7 +56,7 @@ impl ConnectPlugin {
             });
         });
     }
-    pub fn tab(ui: &mut Ui) {
+    pub fn pane(ui: &mut Ui) {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.5 - 25.0);
             format!("Connecting{}", (0..(gt().secs() % 4)).map(|_| ".").join(""))

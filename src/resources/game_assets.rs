@@ -13,9 +13,6 @@ static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 static ALL: OnceCell<All> = OnceCell::new();
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
-pub fn all() -> &'static All {
-    ALL.get().unwrap()
-}
 pub fn unit_rep() -> &'static Representation {
     UNIT_REP.get().unwrap()
 }

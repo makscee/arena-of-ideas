@@ -66,8 +66,10 @@ pub enum Pane {
     IncubatorNewNode,
     IncubatorInspect,
 
-    Admin,
+    BattleView,
+    BattleControls,
 
+    Admin,
     WorldInspector,
 }
 
@@ -93,25 +95,28 @@ impl Pane {
                     }
                 });
             }
-            Pane::Login => LoginPlugin::tab_login(ui, world),
-            Pane::Register => LoginPlugin::tab_register(ui, world),
-            Pane::Connect => ConnectPlugin::tab(ui),
-            Pane::Admin => AdminPlugin::tab(ui, world),
-            Pane::Shop => MatchPlugin::tab_shop(ui, world)?,
+            Pane::Login => LoginPlugin::pane_login(ui, world),
+            Pane::Register => LoginPlugin::pane_register(ui, world),
+            Pane::Connect => ConnectPlugin::pane(ui),
+            Pane::Admin => AdminPlugin::pane(ui, world),
+            Pane::Shop => MatchPlugin::pane_shop(ui, world)?,
             Pane::Roster => match cur_state(world) {
-                GameState::Match => MatchPlugin::tab_roster(ui, world)?,
-                GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world)?,
+                GameState::Match => MatchPlugin::pane_roster(ui, world)?,
+                GameState::FusionEditor => FusionEditorPlugin::pane_roster(ui, world)?,
                 _ => unreachable!(),
             },
-            Pane::Team => MatchPlugin::tab_team(ui, world)?,
-            Pane::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
-            Pane::Actions => FusionEditorPlugin::tab_actions(ui, world),
-            Pane::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
-            Pane::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
+            Pane::Team => MatchPlugin::pane_team(ui, world)?,
+            Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
+            Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
+            Pane::FusionResult => FusionEditorPlugin::pane_fusion_result(ui, world)?,
+            Pane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
 
-            Pane::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
-            Pane::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
-            Pane::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
+            Pane::IncubatorNewNode => IncubatorPlugin::pane_new_node(ui, world)?,
+            Pane::IncubatorInspect => IncubatorPlugin::pane_inspect(ui, world)?,
+            Pane::IncubatorNodes => IncubatorPlugin::pane_nodes(ui, world)?,
+
+            Pane::BattleView => BattlePlugin::pane_view(ui, world)?,
+            Pane::BattleControls => BattlePlugin::pane_controls(ui, world)?,
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
         };

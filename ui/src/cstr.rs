@@ -200,10 +200,10 @@ pub fn init_style_map() {
         ("s", CstrStyle::Small),
         ("h", CstrStyle::Heading),
         ("h2", CstrStyle::Heading2),
-        ("red", CstrStyle::Color(tokens_error().high_contrast_text())),
+        ("red", CstrStyle::Color(tokens_error().low_contrast_text())),
         (
             "green",
-            CstrStyle::Color(tokens_success().high_contrast_text()),
+            CstrStyle::Color(tokens_success().low_contrast_text()),
         ),
         (
             "yellow",

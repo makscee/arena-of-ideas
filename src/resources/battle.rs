@@ -6,7 +6,7 @@ pub struct Battle {
 }
 #[derive(Debug)]
 pub struct BattleSimulation {
-    pub t: f32,
+    pub duration: f32,
     pub world: World,
     pub fusions_left: Vec<Entity>,
     pub fusions_right: Vec<Entity>,
@@ -131,7 +131,7 @@ impl BattleAction {
                         .take(),
                     text,
                 );
-                battle.t += ANIMATION;
+                battle.duration += ANIMATION;
                 true
             }
             BattleAction::Heal(a, b, x) => {
@@ -176,12 +176,12 @@ impl BattleAction {
                         text,
                     );
                 }
-                battle.t += ANIMATION;
+                battle.duration += ANIMATION;
                 true
             }
             BattleAction::VarSet(entity, kind, var, value) => {
                 if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
-                    battle.t,
+                    battle.duration,
                     0.1,
                     *var,
                     value.clone(),
@@ -196,7 +196,10 @@ impl BattleAction {
             BattleAction::Spawn(entity) => {
                 battle
                     .world
-                    .run_system_once_with((*entity, battle.t), NodeStatePlugin::inject_entity_vars)
+                    .run_system_once_with(
+                        (*entity, battle.duration),
+                        NodeStatePlugin::inject_entity_vars,
+                    )
                     .unwrap();
                 add_actions.extend_from_slice(&[BattleAction::VarSet(
                     *entity,
@@ -208,11 +211,11 @@ impl BattleAction {
             }
             BattleAction::ApplyStatus(target, status, charges, color) => {
                 battle.apply_status(*target, status.clone(), *charges, *color);
-                battle.t += ANIMATION;
+                battle.duration += ANIMATION;
                 true
             }
             BattleAction::Wait(t) => {
-                battle.t += *t;
+                battle.duration += *t;
                 false
             }
             BattleAction::Vfx(vars, vfx) => {
@@ -240,45 +243,8 @@ impl BattleAction {
     }
 }
 
-impl Battle {
-    pub fn open_window(self, world: &mut World) {
-        let mut bs = BattleSimulation::new(self).unwrap().start();
-        let mut t = 0.0;
-        let mut playing = false;
-        Window::new("Battle", move |ui, _| {
-            ui.set_min_size(egui::vec2(800.0, 400.0));
-            Slider::new("ts").full_width().ui(&mut t, 0.0..=bs.t, ui);
-            ui.horizontal(|ui| {
-                Checkbox::new(&mut playing, "play").ui(ui);
-                if "+1".cstr().button(ui).clicked() {
-                    bs.run();
-                }
-                if "+10".cstr().button(ui).clicked() {
-                    for _ in 0..10 {
-                        bs.run();
-                    }
-                }
-                if "+100".cstr().button(ui).clicked() {
-                    for _ in 0..100 {
-                        bs.run();
-                    }
-                }
-            });
-            if playing {
-                t += gt().last_delta();
-                t = t.at_most(bs.t);
-            }
-            bs.show_at(t, ui);
-            if t >= bs.t && !bs.ended() {
-                bs.run();
-            }
-        })
-        .push(world);
-    }
-}
-
 impl BattleSimulation {
-    pub fn new(battle: Battle) -> Result<Self, ExpressionError> {
+    pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
         for k in NodeKind::iter() {
             k.register_world(&mut world);
@@ -307,13 +273,13 @@ impl BattleSimulation {
         }
         let fusions_left = entities_by_slot(team_left, &world);
         let fusions_right = entities_by_slot(team_right, &world);
-        Ok(Self {
+        Self {
             world,
             fusions_left,
             fusions_right,
-            t: 0.0,
+            duration: 0.0,
             log: BattleLog::default(),
-        })
+        }
     }
     pub fn start(mut self) -> Self {
         let spawn_actions = self
@@ -353,7 +319,7 @@ impl BattleSimulation {
                 let value = self.send_update_event(entity, var, value);
                 NodeState::from_world_mut(entity, &mut self.world)
                     .unwrap()
-                    .insert(self.t, 0.0, var, value, source);
+                    .insert(self.duration, 0.0, var, value, source);
             }
         }
         let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
@@ -443,7 +409,13 @@ impl BattleSimulation {
                         .map(|v| v.get_i32().unwrap())
                         .unwrap()
                         + charges;
-                    state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
+                    state.insert(
+                        self.duration,
+                        0.0,
+                        VarName::charges,
+                        charges.into(),
+                        default(),
+                    );
                     return;
                 }
             }
@@ -453,12 +425,18 @@ impl BattleSimulation {
 
         let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
         state.insert(0.0, 0.0, VarName::visible, false.into(), default());
-        state.insert(self.t, 0.0, VarName::visible, true.into(), default());
-        state.insert(self.t, 0.0, VarName::charges, charges.into(), default());
-        state.insert(self.t, 0.0, VarName::color, color.into(), default());
+        state.insert(self.duration, 0.0, VarName::visible, true.into(), default());
+        state.insert(
+            self.duration,
+            0.0,
+            VarName::charges,
+            charges.into(),
+            default(),
+        );
+        state.insert(self.duration, 0.0, VarName::color, color.into(), default());
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) {
-        match anim.apply(&mut self.t, context, &mut self.world) {
+        match anim.apply(&mut self.duration, context, &mut self.world) {
             Ok(_) => {}
             Err(e) => error!("Animation error: {e}"),
         }
@@ -500,7 +478,7 @@ impl BattleSimulation {
         }
         if died {
             if self.ended() {
-                self.t += 1.0;
+                self.duration += 1.0;
             }
             [
                 BattleAction::VarSet(entity, NodeKind::None, VarName::visible, false.into()),
@@ -578,25 +556,21 @@ impl BattleSimulation {
             Self::show_card_from_units(&self.pack_units_by_slot(slot, side), ui);
         });
     }
-    pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
+    pub fn show_at(
+        &mut self,
+        t: f32,
+        ui: &mut Ui,
+        slot_fn: impl Fn(usize, bool, &Response, &mut Ui),
+    ) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
             let resp = show_battle_slot(slot + 1, slots, side, ui);
+            slot_fn(slot + 1, side, &resp, ui);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
-            }
-            if resp.clicked() {
-                let units = self.pack_units_by_slot(slot, side);
-                OperationsPlugin::add(move |world| {
-                    Window::new("Unit Card", move |ui, _| {
-                        Self::show_card_from_units(&units, ui);
-                    })
-                    .order(Order::Foreground)
-                    .push(world);
-                });
             }
         }
         let fusions: HashSet<Entity> = HashSet::from_iter(

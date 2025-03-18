@@ -299,9 +299,7 @@ fn compose_ui(
                                         tokens_global().subtle_borders_and_separators(),
                                     ),
                                 );
-                                let bar_id = ui.id();
-                                let mut bar_state = BarState::load(ui.ctx(), bar_id);
-                                bar_state.bar_menu(&resp, |ui| {
+                                resp.bar_menu(|ui| {
                                     for (name, action) in context_actions {
                                         if ui.button(name).clicked() {
                                             action();
@@ -313,7 +311,6 @@ fn compose_ui(
                                         ui.close_menu();
                                     }
                                 });
-                                bar_state.store(ui.ctx(), bar_id);
                             }
                             if header.is_some() || body.is_some() {
                                 let x = ui.available_height() - 4.0;

@@ -86,7 +86,6 @@ impl Button {
             job.sections[0].byte_range = 0..job.text.len();
             job.sections.truncate(1);
         };
-        let style = ui.style_mut();
         // if !self.enabled {
         //     style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
         //     style.visuals.widgets.noninteractive.fg_stroke.color = tokens_global().low_contrast_text();
@@ -115,7 +114,6 @@ impl Button {
         if r.clicked() {
             // AudioPlugin::queue_sound(SoundEffect::Click);
         }
-        ui.reset_style();
         r
     }
 }

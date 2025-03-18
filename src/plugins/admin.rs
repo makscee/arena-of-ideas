@@ -13,8 +13,8 @@ impl AdminPlugin {
         let mut left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
         let mut right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
         let mut battle_world = World::new();
-        left.houses = all().core.clone();
-        right.houses = all().core.clone();
+        left.houses = all(world).core.clone();
+        right.houses = all(world).core.clone();
         let entity_left = battle_world.spawn_empty().id();
         let entity_right = battle_world.spawn_empty().id();
         left.unpack(entity_left, &mut battle_world);
@@ -78,13 +78,6 @@ impl AdminPlugin {
         .default_width(800.0)
         .default_height(200.0)
         .push(world);
-    }
-    fn show_battle(world: &mut World) {
-        let (left, right) = client_state().get_battle_test_teams();
-        let left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
-        let right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
-        let b = Battle { left, right };
-        b.open_window(world);
     }
     fn show_anim_editor(w: &mut World) {
         let mut cs = client_state().clone();
@@ -185,10 +178,7 @@ impl AdminPlugin {
         })
         .push(w);
     }
-    pub fn tab(ui: &mut Ui, world: &mut World) {
-        if "Open Battle".cstr().button(ui).clicked() {
-            Self::show_battle(world);
-        }
+    pub fn pane(ui: &mut Ui, world: &mut World) {
         if "Setup Battle".cstr().button(ui).clicked() {
             Self::setup_battle(world);
         }
@@ -228,6 +218,12 @@ impl AdminPlugin {
                 debug!("test3");
             })
             .ui(ui, world);
+        if "Load Battle".cstr().button(ui).clicked() {
+            BattlePlugin::load_empty(world);
+        }
+        if "Add Battle Panes".cstr().button(ui).clicked() {
+            BattlePlugin::add_panes();
+        }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);
             "notify error test".notify_error(world);

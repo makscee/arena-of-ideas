@@ -126,7 +126,7 @@ impl IncubatorPlugin {
             false
         }
     }
-    pub fn tab_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = rm(world);
         let kind = data.table_kind;
         NodeKind::House.show_graph(CYAN, &mut data, ui);
@@ -149,7 +149,7 @@ impl IncubatorPlugin {
         })
         .inner
     }
-    pub fn tab_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|_, mut d: Mut<IncubatorData>| {
             let (kind, datas) = if let Some((kind, datas)) = &mut d.new_node {
                 (kind, datas)
@@ -178,10 +178,12 @@ impl IncubatorPlugin {
         });
         Ok(())
     }
-    pub fn tab_inspect(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_inspect(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let data = rm(world);
         let Some((id, kind)) = data.inspect_node else {
-            "Select node to view links".cstr_c(tokens_global().low_contrast_text()).label(ui);
+            "Select node to view links"
+                .cstr_c(tokens_global().low_contrast_text())
+                .label(ui);
             return Ok(());
         };
         format!("{kind} node").cstr_s(CstrStyle::Bold).label(ui);
@@ -249,7 +251,9 @@ impl IncubatorPlugin {
         }
         let mut selected = r.link_type_selected;
         ui.horizontal(|ui| {
-            "show type".cstr_c(tokens_global().low_contrast_text()).label(ui);
+            "show type"
+                .cstr_c(tokens_global().low_contrast_text())
+                .label(ui);
             if EnumSwitcher::new().show_iter(&mut selected, r.link_types.iter().copied(), ui) {
                 r.link_type_selected = selected;
             }

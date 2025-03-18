@@ -92,7 +92,7 @@ impl LoginPlugin {
             GameState::proceed(world);
         });
     }
-    pub fn tab_register(ui: &mut Ui, world: &mut World) {
+    pub fn pane_register(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
@@ -117,7 +117,7 @@ impl LoginPlugin {
             }
         });
     }
-    pub fn tab_login(ui: &mut Ui, world: &mut World) {
+    pub fn pane_login(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
             let mut ld = world.resource_mut::<LoginData>();
             ui.add_space(ui.available_height() * 0.3);
@@ -152,7 +152,9 @@ impl LoginPlugin {
                 }
             } else {
                 let mut ld = world.resource_mut::<LoginData>();
-                "Login".cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading).label(ui);
+                "Login"
+                    .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading)
+                    .label(ui);
                 Input::new("name").ui_string(&mut ld.name_field, ui);
                 Input::new("password")
                     .password()

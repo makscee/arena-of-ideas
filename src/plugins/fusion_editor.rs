@@ -26,7 +26,7 @@ impl FusionEditorPlugin {
         GameState::FusionEditor.set_next(world);
         Ok(())
     }
-    pub fn roster_tab(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_roster(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let mut changed = false;
@@ -59,7 +59,7 @@ impl FusionEditorPlugin {
             Ok(())
         })
     }
-    pub fn tab_triggers(ui: &mut Ui, world: &mut World) {
+    pub fn pane_triggers(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
@@ -111,7 +111,7 @@ impl FusionEditorPlugin {
             });
         });
     }
-    pub fn tab_actions(ui: &mut Ui, world: &mut World) {
+    pub fn pane_actions(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();
             let context = &Context::new_world(&world);
@@ -166,7 +166,7 @@ impl FusionEditorPlugin {
             }
         });
     }
-    pub fn tab_fusion_result(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_fusion_result(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut save = false;
         world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
             let FusionEditorData { fusion, on_save: _ } = r.as_mut();

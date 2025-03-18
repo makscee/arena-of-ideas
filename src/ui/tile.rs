@@ -135,3 +135,20 @@ impl TileTree {
         });
     }
 }
+
+pub trait TreeExt {
+    fn add_to_root(&mut self, id: TileId) -> Result<(), ExpressionError>;
+}
+
+impl TreeExt for Tree<Pane> {
+    fn add_to_root(&mut self, id: TileId) -> Result<(), ExpressionError> {
+        let Some(root) = self.root else {
+            return Err("No root tile found".into());
+        };
+        let Tile::Container(container) = self.tiles.get_mut(root).unwrap() else {
+            return Err("Root tile is not container".into());
+        };
+        container.add_child(id);
+        Ok(())
+    }
+}
