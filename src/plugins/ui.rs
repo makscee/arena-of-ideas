@@ -7,7 +7,7 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
-            .add_systems(Startup, setup_ui);
+            .add_systems(Startup, (setup_ui, setup_colorix));
     }
 }
 

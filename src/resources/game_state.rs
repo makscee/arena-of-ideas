@@ -30,7 +30,10 @@ impl GameState {
             GameState::Connect => Tree::new_tabs(TREE_ID, Pane::Connect.into()),
             GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
-            GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
+            GameState::Title => Tree::new_horizontal(
+                TREE_ID,
+                [Pane::Admin, Pane::MainMenu, Pane::ColorixEditor].into(),
+            ),
             GameState::Incubator => {
                 let mut tiles = Tiles::default();
                 let left = [
@@ -49,7 +52,7 @@ impl GameState {
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum Tab {
+pub enum Pane {
     Connect,
     Login,
     Register,
@@ -69,18 +72,19 @@ pub enum Tab {
     Admin,
 
     WorldInspector,
+    ColorixEditor,
 }
 
-impl Tab {
-    pub fn closeable(self) -> bool {
-        match self {
-            Tab::WorldInspector => true,
-            _ => false,
-        }
+impl Into<Vec<Pane>> for Pane {
+    fn into(self) -> Vec<Pane> {
+        [self].into()
     }
+}
+
+impl Pane {
     pub fn ui(self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         match self {
-            Tab::MainMenu => {
+            Pane::MainMenu => {
                 ui.vertical_centered_justified(|ui| {
                     ui.add_space(ui.available_height() * 0.3);
                     ui.set_width(350.0.at_most(ui.available_width()));
@@ -93,27 +97,28 @@ impl Tab {
                     }
                 });
             }
-            Tab::Login => LoginPlugin::tab_login(ui, world),
-            Tab::Register => LoginPlugin::tab_register(ui, world),
-            Tab::Connect => ConnectPlugin::tab(ui),
-            Tab::Admin => AdminPlugin::tab(ui, world),
-            Tab::Shop => MatchPlugin::tab_shop(ui, world)?,
-            Tab::Roster => match cur_state(world) {
+            Pane::Login => LoginPlugin::tab_login(ui, world),
+            Pane::Register => LoginPlugin::tab_register(ui, world),
+            Pane::Connect => ConnectPlugin::tab(ui),
+            Pane::Admin => AdminPlugin::tab(ui, world),
+            Pane::Shop => MatchPlugin::tab_shop(ui, world)?,
+            Pane::Roster => match cur_state(world) {
                 GameState::Match => MatchPlugin::tab_roster(ui, world)?,
                 GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world)?,
                 _ => unreachable!(),
             },
-            Tab::Team => MatchPlugin::tab_team(ui, world)?,
-            Tab::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
-            Tab::Actions => FusionEditorPlugin::tab_actions(ui, world),
-            Tab::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
-            Tab::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
+            Pane::Team => MatchPlugin::tab_team(ui, world)?,
+            Pane::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
+            Pane::Actions => FusionEditorPlugin::tab_actions(ui, world),
+            Pane::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
+            Pane::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
 
-            Tab::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
-            Tab::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
-            Tab::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
+            Pane::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
+            Pane::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
+            Pane::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
 
-            Tab::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
+            Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
+            Pane::ColorixEditor => colorix_editor(ui, world),
         };
         Ok(())
     }

@@ -2,83 +2,28 @@ use egui_tiles::SimplificationOptions;
 
 use super::*;
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum Pane {
-    Connect,
-    Login,
-    Register,
-    MainMenu,
-    Shop,
-    Team,
-    Roster,
-    Triggers,
-    Actions,
-    FusionResult,
-    BattleEditor,
-
-    IncubatorNodes,
-    IncubatorNewNode,
-    IncubatorInspect,
-
-    Admin,
-
-    WorldInspector,
-}
-
-impl Into<Vec<Pane>> for Pane {
-    fn into(self) -> Vec<Pane> {
-        [self].into()
-    }
-}
-
-impl Pane {
-    pub fn ui(self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        match self {
-            Self::MainMenu => {
-                ui.vertical_centered_justified(|ui| {
-                    ui.add_space(ui.available_height() * 0.3);
-                    ui.set_width(350.0.at_most(ui.available_width()));
-                    if "Open Match"
-                        .cstr_cs(VISIBLE_LIGHT, CstrStyle::Bold)
-                        .button(ui)
-                        .clicked()
-                    {
-                        GameState::Match.set_next(world);
-                    }
-                });
-            }
-            Self::Login => LoginPlugin::tab_login(ui, world),
-            Self::Register => LoginPlugin::tab_register(ui, world),
-            Self::Connect => ConnectPlugin::tab(ui),
-            Self::Admin => AdminPlugin::tab(ui, world),
-            Self::Shop => MatchPlugin::tab_shop(ui, world)?,
-            Self::Roster => match cur_state(world) {
-                GameState::Match => MatchPlugin::tab_roster(ui, world)?,
-                GameState::FusionEditor => FusionEditorPlugin::roster_tab(ui, world)?,
-                _ => unreachable!(),
-            },
-            Self::Team => MatchPlugin::tab_team(ui, world)?,
-            Self::Triggers => FusionEditorPlugin::tab_triggers(ui, world),
-            Self::Actions => FusionEditorPlugin::tab_actions(ui, world),
-            Self::FusionResult => FusionEditorPlugin::tab_fusion_result(ui, world)?,
-            Self::BattleEditor => BattleEditorPlugin::tab(ui, world)?,
-
-            Self::IncubatorNewNode => IncubatorPlugin::tab_new_node(ui, world)?,
-            Self::IncubatorInspect => IncubatorPlugin::tab_inspect(ui, world)?,
-            Self::IncubatorNodes => IncubatorPlugin::tab_nodes(ui, world)?,
-
-            Self::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
-        };
-        Ok(())
-    }
-}
-
 #[derive(Default)]
 pub struct TreeBehavior {
     pub world: Option<World>,
 }
 
 impl egui_tiles::Behavior<Pane> for TreeBehavior {
+    fn pane_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        _tile_id: egui_tiles::TileId,
+        view: &mut Pane,
+    ) -> egui_tiles::UiResponse {
+        ScrollArea::both().show(ui, |ui| {
+            DARK_FRAME.show(ui, |ui| {
+                ui.expand_to_include_rect(ui.available_rect_before_wrap());
+                if let Some(world) = self.world.as_mut() {
+                    view.ui(ui, world).log();
+                }
+            });
+        });
+        egui_tiles::UiResponse::None
+    }
     fn simplification_options(&self) -> SimplificationOptions {
         SimplificationOptions {
             all_panes_must_have_tabs: true,
@@ -127,22 +72,6 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             }
             _ => {}
         }
-    }
-    fn pane_ui(
-        &mut self,
-        ui: &mut egui::Ui,
-        _tile_id: egui_tiles::TileId,
-        view: &mut Pane,
-    ) -> egui_tiles::UiResponse {
-        ScrollArea::both().show(ui, |ui| {
-            DARK_FRAME.show(ui, |ui| {
-                if let Some(world) = self.world.as_mut() {
-                    view.ui(ui, world).log();
-                }
-                ui.expand_to_include_rect(ui.available_rect_before_wrap());
-            });
-        });
-        egui_tiles::UiResponse::None
     }
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
@@ -195,6 +124,9 @@ impl Default for TileTree {
 impl TileTree {
     pub fn show(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
+            if let Some(world) = &mut self.behavior.world {
+                world.colorix_mut().colorix.draw_background(ctx, false);
+            }
             self.tree.ui(&mut self.behavior, ui);
         });
     }
