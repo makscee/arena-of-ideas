@@ -28,8 +28,8 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 }
 
 impl IncubatorPlugin {
-    pub fn world_op(world: &mut World, f: impl FnOnce(&mut World)) {
-        f(&mut rm(world).composed_world);
+    pub fn world_op<T>(world: &mut World, f: impl FnOnce(&mut World) -> T) -> T {
+        f(&mut rm(world).composed_world)
     }
     fn read_events(mut events: EventReader<StdbEvent>) {
         if events.is_empty() {

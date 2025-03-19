@@ -4,28 +4,41 @@ pub struct BattlePlugin;
 
 #[derive(Resource)]
 struct BattleData {
+    battle: Battle,
     simulation: BattleSimulation,
     t: f32,
     playing: bool,
 }
 
+fn rm(world: &mut World) -> Mut<BattleData> {
+    world.resource_mut::<BattleData>()
+}
+
 impl BattlePlugin {
-    pub fn load_empty(world: &mut World) {
+    pub fn load_incubator(world: &mut World) -> Result<(), ExpressionError> {
+        let mut team = Team::default();
+        team.houses = IncubatorPlugin::world_op(world, |world| {
+            world
+                .query::<&House>()
+                .iter(world)
+                .filter_map(|h| House::pack(h.entity(), world))
+                .collect_vec()
+        });
+        let battle = Battle {
+            left: team.clone(),
+            right: team.clone(),
+        };
         world.insert_resource(BattleData {
-            simulation: BattleSimulation::new(Battle {
-                left: Team::default(),
-                right: Team::default(),
-            }),
+            simulation: BattleSimulation::new(battle.clone()),
+            battle,
             t: 0.0,
             playing: false,
         });
+        Ok(())
     }
-    pub fn load(simulation: BattleSimulation, world: &mut World) {
-        world.insert_resource(BattleData {
-            simulation,
-            t: 0.0,
-            playing: false,
-        });
+    fn reload_simulation(world: &mut World) {
+        let mut data = rm(world);
+        data.simulation = BattleSimulation::new(data.battle.clone());
     }
     pub fn add_panes() {
         TilePlugin::op(|tree| {
@@ -48,20 +61,40 @@ impl BattlePlugin {
         };
 
         let t = data.t;
-        data.simulation
-            .show_at(t, ui, world, |slot, player_side, resp, ui, world| {
+        data.simulation.show_at(
+            t,
+            ui,
+            world,
+            |slot, player_side, resp, simulation, ui, world| {
                 resp.bar_menu(|ui| {
                     ui.menu_button("add unit", |ui| {
                         IncubatorPlugin::world_op(world, |world| {
-                            for unit in world.query::<&Unit>().iter(world) {
-                                let context =
-                                    Context::new_world(world).set_owner(unit.entity()).take();
+                            let team = if player_side {
+                                simulation.team_left
+                            } else {
+                                simulation.team_right
+                            };
+                            let context =
+                                Context::new_world(&simulation.world).set_owner(team).take();
+                            let units = context.children_components_recursive::<Unit>(team);
+                            for (entity, _) in units {
+                                let context = Context::new_world(&simulation.world)
+                                    .set_owner(entity)
+                                    .take();
                                 if let Ok(name) =
                                     context.get_string(VarName::name).and_then(|name| {
                                         context.get_color(VarName::color).map(|c| (name.cstr_c(c)))
                                     })
                                 {
                                     if name.cstr().button(ui).clicked() {
+                                        OperationsPlugin::add(move |world| {
+                                            Self::add_incubator_unit(
+                                                slot,
+                                                player_side,
+                                                name.get_text(),
+                                                world,
+                                            );
+                                        });
                                         ui.close_menu();
                                     }
                                 }
@@ -73,7 +106,9 @@ impl BattlePlugin {
                     .unwrap_or(Ok(()))
                     .log();
                 });
-            });
+            },
+        );
+
         world.insert_resource(data);
         Ok(())
     }
@@ -83,6 +118,7 @@ impl BattlePlugin {
             return Ok(());
         };
         let BattleData {
+            battle: _,
             simulation,
             t,
             playing,
@@ -116,5 +152,24 @@ impl BattlePlugin {
             simulation.run();
         }
         Ok(())
+    }
+    fn add_incubator_unit(mut slot: usize, player_side: bool, unit: String, world: &mut World) {
+        let mut data = rm(world);
+        let team = if player_side {
+            &mut data.battle.left
+        } else {
+            &mut data.battle.right
+        };
+        if slot > team.fusions.len() {
+            slot = team.fusions.len();
+            team.fusions.push(Fusion {
+                slot: slot as i32,
+                ..default()
+            });
+        } else {
+            slot = slot - 1;
+        }
+        team.fusions[slot].units.push(unit);
+        Self::reload_simulation(world);
     }
 }

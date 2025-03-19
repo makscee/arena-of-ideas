@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone, Debug)]
 pub struct Battle {
     pub left: Team,
     pub right: Team,
@@ -10,6 +11,8 @@ pub struct BattleSimulation {
     pub world: World,
     pub fusions_left: Vec<Entity>,
     pub fusions_right: Vec<Entity>,
+    pub team_left: Entity,
+    pub team_right: Entity,
     pub log: BattleLog,
 }
 #[derive(Default, Debug)]
@@ -277,6 +280,8 @@ impl BattleSimulation {
             world,
             fusions_left,
             fusions_right,
+            team_left,
+            team_right,
             duration: 0.0,
             log: BattleLog::default(),
         }
@@ -561,7 +566,7 @@ impl BattleSimulation {
         t: f32,
         ui: &mut Ui,
         world: &mut World,
-        slot_fn: impl Fn(usize, bool, &Response, &mut Ui, &mut World),
+        slot_fn: impl Fn(usize, bool, &Response, &mut Self, &mut Ui, &mut World),
     ) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
@@ -569,7 +574,7 @@ impl BattleSimulation {
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
             let resp = show_battle_slot(slot + 1, slots, side, ui);
-            slot_fn(slot + 1, side, &resp, ui, world);
+            slot_fn(slot + 1, side, &resp, self, ui, world);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
             }

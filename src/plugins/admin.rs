@@ -219,7 +219,7 @@ impl AdminPlugin {
             })
             .ui(ui, world);
         if "Load Battle".cstr().button(ui).clicked() {
-            BattlePlugin::load_empty(world);
+            BattlePlugin::load_incubator(world).log();
         }
         if "Add Battle Panes".cstr().button(ui).clicked() {
             BattlePlugin::add_panes();
