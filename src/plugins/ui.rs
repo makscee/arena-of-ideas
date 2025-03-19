@@ -27,7 +27,7 @@ impl UiPlugin {
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let ctx = ctx.single_mut().into_inner().get_mut();
     ctx.add_font(FontInsert::new(
-        "mono",
+        "mono_regular",
         FontData::from_static(include_bytes!(
             "../../assets/fonts/SometypeMono-Regular.ttf"
         )),
@@ -45,6 +45,15 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 priority: FontPriority::Highest,
             },
         ]
+        .into(),
+    ));
+    ctx.add_font(FontInsert::new(
+        "mono_bold",
+        FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Bold.ttf")),
+        [InsertFontFamily {
+            family: FontFamily::Name("bold".into()),
+            priority: FontPriority::Highest,
+        }]
         .into(),
     ));
     ctx.add_font(FontInsert::new(

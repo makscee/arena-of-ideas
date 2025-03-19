@@ -12,7 +12,7 @@ use bevy_egui::{
     },
     EguiContext,
 };
-use parking_lot::Mutex;
+use parking_lot::{Mutex, MutexGuard};
 use schema::{ExpressionError, VarValue};
 
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {

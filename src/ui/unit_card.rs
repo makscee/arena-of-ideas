@@ -67,7 +67,7 @@ impl UnitCard {
                 });
             });
         Frame::new()
-            .fill(tokens_global().solid_backgrounds())
+            .fill(tokens_global().subtle_background())
             .inner_margin(Margin::same(4))
             .corner_radius(CornerRadius {
                 nw: 0,
@@ -135,7 +135,7 @@ impl UnitCard {
     fn show_description(&self, ui: &mut Ui) {
         Frame::new()
             .fill(if self.expanded {
-                tokens_global().solid_backgrounds()
+                tokens_global().ui_element_background()
             } else {
                 TRANSPARENT
             })

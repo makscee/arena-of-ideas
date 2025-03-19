@@ -31,9 +31,9 @@ use egui::{
 };
 use indexmap::IndexMap;
 use itertools::Itertools;
-use lerp::Lerp;
+use parking_lot::Mutex;
 use schema::*;
-use std::{cmp::Ordering, collections::VecDeque, mem, ops::RangeInclusive, sync::Mutex};
+use std::{cmp::Ordering, mem, ops::RangeInclusive};
 use strum::IntoEnumIterator;
 use utils_client::*;
 

@@ -560,7 +560,8 @@ impl BattleSimulation {
         &mut self,
         t: f32,
         ui: &mut Ui,
-        slot_fn: impl Fn(usize, bool, &Response, &mut Ui),
+        world: &mut World,
+        slot_fn: impl Fn(usize, bool, &Response, &mut Ui, &mut World),
     ) {
         let slots = global_settings().team_slots as usize;
         let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
@@ -568,7 +569,7 @@ impl BattleSimulation {
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
             let resp = show_battle_slot(slot + 1, slots, side, ui);
-            slot_fn(slot + 1, side, &resp, ui);
+            slot_fn(slot + 1, side, &resp, ui, world);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
             }

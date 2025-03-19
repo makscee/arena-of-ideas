@@ -214,32 +214,18 @@ pub fn init_style_map() {
     ];
     *STRING_STYLE_MAP
         .get_or_init(|| Mutex::new(default()))
-        .lock()
-        .unwrap() = HashMap::from_iter(pairs);
+        .lock() = HashMap::from_iter(pairs);
     *STYLE_STRING_MAP
         .get_or_init(|| Mutex::new(default()))
-        .lock()
-        .unwrap() = HashMap::from_iter(pairs.into_iter().map(|(str, style)| (style, str)));
+        .lock() = HashMap::from_iter(pairs.into_iter().map(|(str, style)| (style, str)));
 }
 
 impl CstrStyle {
     fn from_str(value: &str) -> Option<Self> {
-        STRING_STYLE_MAP
-            .get()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .get(value)
-            .copied()
+        STRING_STYLE_MAP.get().unwrap().lock().get(value).copied()
     }
     fn to_str(self) -> &'static str {
-        STYLE_STRING_MAP
-            .get()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .get(&self)
-            .unwrap()
+        STYLE_STRING_MAP.get().unwrap().lock().get(&self).unwrap()
     }
 }
 

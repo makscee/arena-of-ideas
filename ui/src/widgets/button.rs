@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use super::*;
 
 pub struct Button {
@@ -7,6 +9,7 @@ pub struct Button {
     min_width: f32,
     enabled: bool,
     active: bool,
+    original_style: Option<egui::Style>,
 }
 
 impl Default for Button {
@@ -18,6 +21,7 @@ impl Default for Button {
             active: false,
             icon: None,
             min_width: 0.0,
+            original_style: None,
         }
     }
 }
@@ -29,6 +33,11 @@ impl Button {
             ..Default::default()
         }
     }
+    fn save_style(&mut self, ui: &mut Ui) {
+        if self.original_style.is_none() {
+            self.original_style = Some(ui.style().deref().clone());
+        }
+    }
     pub fn color(self, color: Color32, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
         style.visuals.widgets.inactive.fg_stroke.color = color;
@@ -37,10 +46,9 @@ impl Button {
     pub fn gray(self, ui: &mut Ui) -> Self {
         self.color(tokens_global().subtle_background(), ui)
     }
-    pub fn red(self, ui: &mut Ui) -> Self {
-        let style = ui.style_mut();
-        style.visuals.widgets.inactive.fg_stroke.color = DARK_RED;
-        style.visuals.widgets.hovered.fg_stroke.color = RED;
+    pub fn red(mut self, ui: &mut Ui) -> Self {
+        self.save_style(ui);
+        colorix().style_error(ui);
         self
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
@@ -113,6 +121,9 @@ impl Button {
         };
         if r.clicked() {
             // AudioPlugin::queue_sound(SoundEffect::Click);
+        }
+        if let Some(style) = self.original_style {
+            ui.set_style(style);
         }
         r
     }

@@ -41,7 +41,7 @@ impl TagWidget {
     fn text_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
         let galley = self
             .text
-            .cstr_cs(tokens_global().solid_backgrounds(), CstrStyle::Bold)
+            .cstr_cs(tokens_global().app_background(), CstrStyle::Bold)
             .galley(1.0, ui);
         let size = galley.size();
         self.text_galley = Some(galley);
@@ -82,7 +82,7 @@ impl TagWidget {
         if self.number.is_some() {
             ui.painter().add(
                 frame
-                    .fill(tokens_global().solid_backgrounds())
+                    .fill(tokens_global().app_background())
                     .paint(rect.shrink2(OUTER_MARGIN.sum() * 0.5)),
             );
         }

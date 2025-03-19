@@ -14,8 +14,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         _tile_id: egui_tiles::TileId,
         view: &mut Pane,
     ) -> egui_tiles::UiResponse {
-        ScrollArea::both().show(ui, |ui| {
-            dark_frame().show(ui, |ui| {
+        dark_frame().show(ui, |ui| {
+            ScrollArea::both().show(ui, |ui| {
                 ui.expand_to_include_rect(ui.available_rect_before_wrap());
                 if let Some(world) = self.world.as_mut() {
                     view.ui(ui, world).log();
@@ -44,6 +44,18 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         } else {
             tokens_global().high_contrast_text()
         }
+    }
+    fn tab_bar_color(&self, _: &egui::Visuals) -> Color32 {
+        TRANSPARENT
+    }
+    fn tab_bg_color(
+        &self,
+        _: &egui::Visuals,
+        _: &Tiles<Pane>,
+        _: TileId,
+        _: &egui_tiles::TabState,
+    ) -> Color32 {
+        TRANSPARENT
     }
     fn tab_outline_stroke(
         &self,
@@ -128,9 +140,7 @@ impl Default for TileTree {
 impl TileTree {
     pub fn show(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            if let Some(world) = &mut self.behavior.world {
-                world.colorix_mut().global().draw_background(ctx, false);
-            }
+            colorix().global().draw_background(ctx, false);
             self.tree.ui(&mut self.behavior, ui);
         });
     }

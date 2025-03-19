@@ -1,5 +1,3 @@
-use std::sync::{Mutex, MutexGuard};
-
 use once_cell::sync::OnceCell;
 
 use super::*;
@@ -33,7 +31,7 @@ impl Default for GameTimer {
 }
 
 pub fn gt() -> MutexGuard<'static, GameTimer> {
-    GAME_TIMER.get().unwrap().lock().unwrap()
+    GAME_TIMER.get().unwrap().lock()
 }
 
 impl GameTimer {

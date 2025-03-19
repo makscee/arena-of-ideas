@@ -85,7 +85,7 @@ pub use itertools::EitherOrBoth;
 pub use itertools::Itertools;
 pub use macro_client::*;
 pub use once_cell::sync::OnceCell;
-pub use parking_lot::{const_mutex, Mutex};
+pub use parking_lot::{const_mutex, Mutex, MutexGuard};
 pub use rand::{seq::IteratorRandom, thread_rng, Rng, SeedableRng};
 pub use rand_chacha::ChaCha8Rng;
 pub use ron::{
@@ -109,7 +109,7 @@ pub use std::{
     ops::{Deref, DerefMut},
     path::PathBuf,
     str::FromStr,
-    sync::{MutexGuard, RwLock},
+    sync::RwLock,
     time::UNIX_EPOCH,
 };
 pub use strum::IntoEnumIterator;

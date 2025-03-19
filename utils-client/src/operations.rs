@@ -1,7 +1,8 @@
-use std::{collections::VecDeque, sync::Mutex};
+use super::*;
 
 use bevy::prelude::*;
 use once_cell::sync::OnceCell;
+use std::collections::VecDeque;
 
 pub type Operation = Box<dyn FnOnce(&mut World) + Send + Sync>;
 pub struct OperationsPlugin;
@@ -28,18 +29,12 @@ impl OperationsPlugin {
         Self::add_boxed(operation)
     }
     pub fn add_boxed(operation: Box<impl FnOnce(&mut World) + Send + Sync + 'static>) {
-        OPERATIONS
-            .get()
-            .unwrap()
-            .lock()
-            .unwrap()
-            .queue
-            .push_back(operation)
+        OPERATIONS.get().unwrap().lock().queue.push_back(operation)
     }
 }
 
 fn update(world: &mut World) {
-    while let Some(operation) = OPERATIONS.get().unwrap().lock().unwrap().queue.pop_front() {
+    while let Some(operation) = OPERATIONS.get().unwrap().lock().queue.pop_front() {
         operation(world);
     }
 }

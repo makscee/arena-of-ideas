@@ -8,7 +8,7 @@ impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<IncubatorData>()
             .add_systems(Startup, Self::startup)
-            .add_systems(OnEnter(GameState::Incubator), Self::on_enter)
+            .add_systems(OnEnter(GameState::Title), Self::init)
             .add_systems(Update, Self::read_events);
     }
 }
@@ -28,6 +28,9 @@ fn rm(world: &mut World) -> Mut<IncubatorData> {
 }
 
 impl IncubatorPlugin {
+    pub fn world_op(world: &mut World, f: impl FnOnce(&mut World)) {
+        f(&mut rm(world).composed_world);
+    }
     fn read_events(mut events: EventReader<StdbEvent>) {
         if events.is_empty() {
             return;
@@ -78,7 +81,7 @@ impl IncubatorPlugin {
             });
         });
     }
-    fn on_enter(world: &mut World) {
+    fn init(world: &mut World) {
         let mut r = rm(world);
         r.table_kind = NodeKind::House;
         Self::compose_nodes(world).log();
@@ -194,11 +197,7 @@ impl IncubatorPlugin {
             .find(&id)
             .is_some_and(|n| n.owner == player_id())
         {
-            if "Delete Node"
-                .cstr_cs(RED, CstrStyle::Bold)
-                .button(ui)
-                .clicked()
-            {
+            if "Delete Node".cstr().as_button().red(ui).ui(ui).clicked() {
                 Confirmation::new("Delete node?")
                     .accept(move |world| {
                         cn().reducers.incubator_delete(id).unwrap();

@@ -75,7 +75,6 @@ impl Confirmation {
     }
     fn ui(&mut self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", self.fullscreen, ctx, |ui| {
-            world.colorix_mut().style_error(ui);
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui.style()).wrap().ui(ui);
             });

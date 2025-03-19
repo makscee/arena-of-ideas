@@ -49,15 +49,24 @@ impl BattlePlugin {
 
         let t = data.t;
         data.simulation
-            .show_at(t, ui, |slot, player_side, resp, ui| {
+            .show_at(t, ui, world, |slot, player_side, resp, ui, world| {
                 resp.bar_menu(|ui| {
                     ui.menu_button("add unit", |ui| {
-                        for unit in all(world).incubator_load(world)?.units_load(world) {
-                            if unit.name.clone().button(ui).clicked() {
-                                debug!("Unit {}", unit.name);
-                                ui.close_menu();
+                        IncubatorPlugin::world_op(world, |world| {
+                            for unit in world.query::<&Unit>().iter(world) {
+                                let context =
+                                    Context::new_world(world).set_owner(unit.entity()).take();
+                                if let Ok(name) =
+                                    context.get_string(VarName::name).and_then(|name| {
+                                        context.get_color(VarName::color).map(|c| (name.cstr_c(c)))
+                                    })
+                                {
+                                    if name.cstr().button(ui).clicked() {
+                                        ui.close_menu();
+                                    }
+                                }
                             }
-                        }
+                        });
                         Ok(())
                     })
                     .inner

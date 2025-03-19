@@ -2,6 +2,7 @@ use egui_colors::{
     tokens::{ColorTokens, ThemeColor},
     Theme,
 };
+use parking_lot::{Mutex, MutexGuard};
 
 use super::*;
 
@@ -20,6 +21,11 @@ enum Semantics {
 }
 
 impl Colorix {
+    const fn new() -> Self {
+        Self {
+            semantics: Vec::new(),
+        }
+    }
     pub fn global(&mut self) -> &mut egui_colors::Colorix {
         &mut self.semantics[Semantics::Global as usize]
     }
@@ -37,21 +43,24 @@ impl Colorix {
     }
 }
 
-static TOKENS: Mutex<Vec<ColorTokens>> = Mutex::new(Vec::new());
+static COLORIX: Mutex<Colorix> = Mutex::new(Colorix::new());
+pub fn colorix() -> MutexGuard<'static, Colorix> {
+    COLORIX.lock()
+}
 pub fn tokens_global() -> ColorTokens {
-    TOKENS.lock().unwrap()[Semantics::Global as usize]
+    COLORIX.lock().semantics[Semantics::Global as usize].tokens
 }
 pub fn tokens_error() -> ColorTokens {
-    TOKENS.lock().unwrap()[Semantics::Error as usize]
+    COLORIX.lock().semantics[Semantics::Error as usize].tokens
 }
 pub fn tokens_success() -> ColorTokens {
-    TOKENS.lock().unwrap()[Semantics::Success as usize]
+    COLORIX.lock().semantics[Semantics::Success as usize].tokens
 }
 pub fn tokens_warning() -> ColorTokens {
-    TOKENS.lock().unwrap()[Semantics::Warning as usize]
+    COLORIX.lock().semantics[Semantics::Warning as usize].tokens
 }
 pub fn tokens_info() -> ColorTokens {
-    TOKENS.lock().unwrap()[Semantics::Info as usize]
+    COLORIX.lock().semantics[Semantics::Info as usize].tokens
 }
 
 fn apply_style(colorix: &mut egui_colors::Colorix, ui: &mut Ui) {
@@ -70,7 +79,7 @@ fn override_style(style: &mut egui::Style) {
 pub fn setup_colorix(world: &mut World) {
     let ctx = &egui_context(world).unwrap();
     let theme_main: Theme = [ThemeColor::Custom([0; 3]); 12];
-    let theme_error: Theme = [ThemeColor::Ruby; 12];
+    let theme_error: Theme = [ThemeColor::Red; 12];
     let theme_success: Theme = [ThemeColor::Green; 12];
     let theme_warning: Theme = [ThemeColor::Orange; 12];
     let theme_info: Theme = [ThemeColor::Cyan; 12];
@@ -84,8 +93,7 @@ pub fn setup_colorix(world: &mut World) {
         egui_colors::Colorix::local_from_style(theme_info, true),
     ]
     .to_vec();
-    *TOKENS.lock().unwrap() = semantics.iter().map(|s| s.tokens).collect();
-    world.insert_resource(Colorix { semantics });
+    *COLORIX.lock() = Colorix { semantics };
     world.insert_resource(bevy::render::camera::ClearColor(
         tokens_global().app_background().to_color(),
     ));
@@ -95,13 +103,4 @@ pub fn setup_colorix(world: &mut World) {
 pub trait ColorixExt {
     fn colorix(&self) -> &Colorix;
     fn colorix_mut(&mut self) -> Mut<Colorix>;
-}
-
-impl ColorixExt for World {
-    fn colorix(&self) -> &Colorix {
-        &self.resource::<Colorix>()
-    }
-    fn colorix_mut(&mut self) -> Mut<Colorix> {
-        self.resource_mut::<Colorix>()
-    }
 }
