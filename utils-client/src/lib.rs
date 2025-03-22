@@ -13,7 +13,9 @@ use bevy_egui::{
     EguiContext,
 };
 use parking_lot::{Mutex, MutexGuard};
+use ron::ser::{to_string_pretty, PrettyConfig};
 use schema::{ExpressionError, VarValue};
+use serde::Serialize;
 
 pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
     world
@@ -345,4 +347,7 @@ pub fn clipboard_get() -> Option<String> {
 pub fn clipboard_set(text: String) {
     info!("Clipboard set:\n{text}");
     Clipboard::new().unwrap().set_text(text).unwrap()
+}
+pub fn to_ron_string<T: Serialize>(value: &T) -> String {
+    to_string_pretty(value, PrettyConfig::new().depth_limit(1)).unwrap()
 }

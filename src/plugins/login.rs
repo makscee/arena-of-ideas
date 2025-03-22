@@ -127,16 +127,14 @@ impl LoginPlugin {
                 format!("Login as {name}")
                     .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
                     .label(ui);
-                if (client_settings().auto_login && !ld.login_requested)
+                if (pd().client_settings.auto_login && !ld.login_requested)
                     || Button::new("Login")
                         .enabled(!ld.login_requested)
                         .ui(ui)
                         .clicked()
                 {
                     ld.login_requested = true;
-                    let mut cs = client_settings().clone();
-                    cs.auto_login = false;
-                    cs.save_to_cache();
+                    pd_mut(|data| data.client_settings.auto_login = false);
                     let _ = cn().reducers.login_by_identity();
                 }
                 br(ui);

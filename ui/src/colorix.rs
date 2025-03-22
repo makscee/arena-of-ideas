@@ -62,11 +62,14 @@ impl Colorix {
     pub fn tokens_info(&self) -> ColorTokens {
         self.semantics[Semantics::Info as usize].tokens
     }
-    fn apply(&mut self, ctx: &egui::Context) {
+    pub fn apply(&mut self, ctx: &egui::Context) {
         let theme = self.global().theme().clone();
-        self.semantics[0].update_theme(ctx, theme);
+        self.semantics[0].update_theme(ctx, theme.clone());
         ctx.style_mut(|style| override_style(style));
         init_style_map(self);
+    }
+    pub fn save(self) {
+        *COLORIX.lock() = self;
     }
 }
 
@@ -101,27 +104,4 @@ fn override_style(style: &mut egui::Style) {
     style.visuals.widgets.hovered.corner_radius = CornerRadius::same(8);
     style.visuals.widgets.noninteractive.corner_radius = CornerRadius::same(8);
     style.visuals.widgets.open.corner_radius = CornerRadius::same(8);
-}
-
-pub fn setup_colorix(world: &mut World) {
-    let ctx = &egui_context(world).unwrap();
-    let theme_main: Theme = [ThemeColor::Custom([0; 3]); 12];
-    let theme_error: Theme = [ThemeColor::Red; 12];
-    let theme_success: Theme = [ThemeColor::Green; 12];
-    let theme_warning: Theme = [ThemeColor::Orange; 12];
-    let theme_info: Theme = [ThemeColor::Cyan; 12];
-    let global = egui_colors::Colorix::global(ctx, theme_main);
-    let semantics = [
-        global,
-        egui_colors::Colorix::local_from_style(theme_error, true),
-        egui_colors::Colorix::local_from_style(theme_success, true),
-        egui_colors::Colorix::local_from_style(theme_warning, true),
-        egui_colors::Colorix::local_from_style(theme_info, true),
-    ]
-    .to_vec();
-    *COLORIX.lock() = Colorix { semantics };
-    world.insert_resource(bevy::render::camera::ClearColor(
-        tokens_global().app_background().to_color(),
-    ));
-    colorix().apply(ctx);
 }

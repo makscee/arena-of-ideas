@@ -83,7 +83,7 @@ impl AudioPlugin {
             AudioPlayer::new(source),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(client_settings().fx_volume()),
+                volume: Volume::new(pd().client_settings.fx_volume()),
                 ..default()
             },
         ));
@@ -105,7 +105,7 @@ impl AudioPlugin {
             AudioPlayer::new(bg),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(client_settings().music_volume()),
+                volume: Volume::new(pd().client_settings.music_volume()),
                 ..default()
             },
             BackgroundAudioMarker,

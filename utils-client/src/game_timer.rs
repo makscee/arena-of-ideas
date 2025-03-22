@@ -14,6 +14,7 @@ pub struct GameTimer {
     batches: Vec<f32>,
     paused: bool,
     last_delta: f32,
+    elapsed: f64,
 }
 
 impl Default for GameTimer {
@@ -26,6 +27,7 @@ impl Default for GameTimer {
             batches: default(),
             paused: false,
             last_delta: 0.0,
+            elapsed: 0.0,
         }
     }
 }
@@ -39,10 +41,14 @@ impl GameTimer {
         let t = self.play_head + offset;
         (t / period).floor() != ((t - self.last_delta) / period).floor()
     }
-    pub fn update(&mut self, delta: f32) {
+    pub fn update(&mut self, delta: f32, elapsed: f64) {
         let ps = self.playback_speed;
         let paused = self.paused;
         self.advance_play(delta * ps * (!paused as i32 as f32));
+        self.elapsed = elapsed;
+    }
+    pub fn elapsed(&self) -> f64 {
+        self.elapsed
     }
     pub fn pause(&mut self, value: bool) -> &mut Self {
         self.paused = value;

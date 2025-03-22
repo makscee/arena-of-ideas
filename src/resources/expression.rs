@@ -60,7 +60,7 @@ impl ExpressionImpl for Expression {
                 .filter(|v| v.get_entity().unwrap() != context.get_owner().unwrap())
                 .collect_vec()
                 .into()),
-            Expression::AllEnemyUnits => Ok(context.all_enemeis(context.get_owner()?).into()),
+            Expression::AllEnemyUnits => Ok(context.all_enemies(context.get_owner()?).into()),
             Expression::AdjacentAllyUnits => {
                 Ok(context.adjacent_allies(context.get_owner()?).into())
             }

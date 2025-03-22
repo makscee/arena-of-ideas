@@ -4,5 +4,17 @@
         "markdown",
         "latex",
         "plaintext"
+    ],
+    "cSpell.words": [
+        "colorix",
+        "datas",
+        "emut",
+        "evec",
+        "tesselator",
+        "Tessellator",
+        "thiserror",
+        "tnode",
+        "tnodes",
+        "wgpu"
     ]
 }

@@ -11,3 +11,5 @@ bevy_egui = { workspace = true }
 parking_lot = { workspace = true }
 arboard = { workspace = true }
 strum = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }

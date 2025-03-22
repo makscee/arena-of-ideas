@@ -223,7 +223,7 @@ impl<'w, 's> Context<'w, 's> {
             .map(|e| e.to_value())
             .collect()
     }
-    pub fn all_enemeis(&self, entity: Entity) -> Vec<VarValue> {
+    pub fn all_enemies(&self, entity: Entity) -> Vec<VarValue> {
         self.sources
             .iter()
             .flat_map(|s| s.collect_enemies(entity))

@@ -56,7 +56,7 @@ fn main() {
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
     };
-    load_client_settings();
+    PersistentDataPlugin::load();
     load_client_state();
     parse_content_tree();
     GameState::set_target(target);
@@ -95,6 +95,7 @@ fn main() {
             BackgroundPlugin,
             StdbSyncPlugin,
             MatchPlugin,
+            PersistentDataPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

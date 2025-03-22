@@ -2,6 +2,7 @@ use bevy::{
     ecs::event::EventReader,
     window::{PresentMode, WindowResized},
 };
+use egui_colors::{tokens::ThemeColor, Theme};
 
 use super::*;
 
@@ -20,6 +21,8 @@ pub struct ClientSettings {
     pub volume_master: f32,
     pub volume_music: f32,
     pub volume_fx: f32,
+
+    pub theme: Theme,
 }
 
 impl Default for ClientSettings {
@@ -39,7 +42,14 @@ impl Default for ClientSettings {
             volume_master: 0.6,
             volume_music: 0.5,
             volume_fx: 1.0,
+            theme: [ThemeColor::Gray; 12],
         }
+    }
+}
+
+impl PersistentData for ClientSettings {
+    fn file_name() -> &'static str {
+        "client_settings"
     }
 }
 
@@ -61,33 +71,12 @@ fn path() -> PathBuf {
     path.push(CLIENT_SETTINGS_FILE);
     path
 }
-pub fn load_client_settings() {
-    let mut cs = if let Some(cs) = std::fs::read_to_string(&path())
-        .ok()
-        .and_then(|d| ron::from_str::<ClientSettings>(d.leak()).ok())
-    {
-        cs
-    } else {
-        ClientSettings::default().save_to_file()
-    };
-    if cs.active_server.is_empty() {
-        if cfg!(debug_assertions) {
-            cs.active_server = "dev";
-        } else {
-            cs.active_server = "prod";
-        }
-    }
-    cs.save_to_cache();
-}
-pub fn client_settings() -> std::sync::RwLockReadGuard<'static, ClientSettings> {
-    CLIENT_SETTINGS.get_or_init(|| default()).read().unwrap()
-}
 pub fn current_server() -> (&'static str, &'static str) {
-    let cs = client_settings();
+    let cs = &pd().client_settings;
     cs.servers[cs.active_server]
 }
 pub fn is_dev_mode() -> bool {
-    client_settings().dev_mode
+    pd().client_settings.dev_mode
 }
 
 impl ClientSettings {
@@ -147,20 +136,20 @@ pub struct ClientSettingsPlugin;
 
 impl Plugin for ClientSettingsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
+        app.add_systems(OnEnter(GameState::Loaded), setup)
             .add_systems(Update, on_resize);
     }
 }
 
 fn setup(world: &mut World) {
-    let cs = client_settings().clone();
+    let cs = pd().client_settings.clone();
     cs.apply(world);
 }
 fn on_resize(mut resize_reader: EventReader<WindowResized>) {
     for e in resize_reader.read() {
         debug!("Resize {e:?}");
-        let mut cs = client_settings().clone();
-        cs.resolution = vec2(e.width, e.height);
-        cs.save_to_file().save_to_cache();
+        pd_mut(|data| {
+            data.client_settings.resolution = vec2(e.width, e.height);
+        });
     }
 }

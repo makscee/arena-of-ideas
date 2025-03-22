@@ -18,6 +18,8 @@ impl TopBar {
                     Window::new("theme Editor", |ui, _| {
                         let mut colorix = colorix();
                         colorix.ui_mut(ui);
+                        let theme = colorix.global().theme().clone();
+                        pd_mut(|d| d.client_settings.theme = theme);
                     })
                     .push(world);
                     ui.close_menu();
