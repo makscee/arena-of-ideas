@@ -71,9 +71,6 @@ impl LoginPlugin {
     fn on_subscribed() {
         OperationsPlugin::add(|world| {
             let identity = ConnectOption::get(world).identity;
-            for n in cn().db.nodes_world().iter() {
-                dbg!(n);
-            }
             let Some(identity_node) = PlayerIdentity::find_by_data(Some(identity.to_string()))
             else {
                 "Failed to find Player after login".notify_error(world);
@@ -127,14 +124,14 @@ impl LoginPlugin {
                 format!("Login as {name}")
                     .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
                     .label(ui);
-                if (pd().client_settings.auto_login && !ld.login_requested)
+                if (pd().client_settings.auto_login
                     || Button::new("Login")
                         .enabled(!ld.login_requested)
                         .ui(ui)
-                        .clicked()
+                        .clicked())
+                    && !ld.login_requested
                 {
                     ld.login_requested = true;
-                    pd_mut(|data| data.client_settings.auto_login = false);
                     let _ = cn().reducers.login_by_identity();
                 }
                 br(ui);

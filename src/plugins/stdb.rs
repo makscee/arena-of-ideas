@@ -34,6 +34,10 @@ impl StdbPlugin {
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
+                if node.id == 0 {
+                    node.unpack(world.spawn_empty().id(), world);
+                    return false;
+                }
                 let mut cur_node = node.clone();
                 let mut id = node.id;
                 loop {
@@ -59,6 +63,9 @@ impl StdbPlugin {
                 });
                 false
             });
+            if !d.nodes_queue.is_empty() {
+                debug!("Nodes in queue {}", d.nodes_queue.len());
+            }
         });
     }
 }
@@ -67,17 +74,15 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
     cn().subscription_builder()
         .on_error(|_, error| error.to_string().notify_error_op())
-        .on_applied(move |e| {
+        .on_applied(move |_| {
             info!("Subscription applied");
             on_success();
             subscribe_table_updates();
-            OperationsPlugin::add(|world| {
-                dbg!(All::load_recursive(0).unwrap()).unpack(world.spawn_empty().id(), world);
-                let pid = player_id();
-                let entity = world
-                    .get_id_link(pid)
-                    .expect(&format!("Player#{pid} not found"));
-                save_player_entity(entity);
+            op(|world| {
+                let q = &mut world.resource_mut::<StdbData>().nodes_queue;
+                for node in cn().db.nodes_world().iter() {
+                    q.push(node);
+                }
             });
         })
         .subscribe_to_all_tables();
@@ -87,14 +92,14 @@ fn subscribe_table_updates() {
     db.nodes_world().on_insert(|_, node| {
         info!("Node inserted {}#{}", node.kind, node.id);
         let node = node.clone();
-        OperationsPlugin::add(move |world| {
+        op(move |world| {
             world.resource_mut::<StdbData>().nodes_queue.push(node);
         });
     });
     db.nodes_world().on_update(|_, _, node| {
         info!("Node updated {}#{}", node.kind, node.id);
         let node = node.clone();
-        OperationsPlugin::add(move |world| {
+        op(move |world| {
             let Some(entity) = world.get_id_link(node.id) else {
                 error!("Failed to update entity: id link not found");
                 return;
@@ -110,7 +115,7 @@ fn subscribe_table_updates() {
     db.nodes_world().on_delete(|_, node| {
         info!("Node deleted {}#{}", node.kind, node.id);
         let node = node.clone();
-        OperationsPlugin::add(move |world| {
+        op(move |world| {
             let Some(entity) = world.get_id_link(node.id) else {
                 error!("Failed to delete entity: id link not found");
                 return;

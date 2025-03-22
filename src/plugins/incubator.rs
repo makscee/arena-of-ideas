@@ -9,7 +9,8 @@ impl Plugin for IncubatorPlugin {
         app.init_resource::<IncubatorData>()
             .add_systems(Startup, Self::startup)
             .add_systems(OnEnter(GameState::Title), Self::init)
-            .add_systems(Update, Self::read_events);
+            // .add_systems(Update, Self::read_events)
+            ;
     }
 }
 
@@ -84,7 +85,7 @@ impl IncubatorPlugin {
     fn init(world: &mut World) {
         let mut r = rm(world);
         r.table_kind = NodeKind::House;
-        Self::compose_nodes(world).log();
+        // Self::compose_nodes(world).log();
     }
     fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
         All::get_by_id(0, world).unwrap().incubator_load(world)

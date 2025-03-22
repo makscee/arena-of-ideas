@@ -65,7 +65,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             };
             let default_open = match nt {
                 NodeType::Name => quote! {false},
-                NodeType::Data | NodeType::OnlyData => quote! {true},
+                NodeType::Data | NodeType::OnlyData => quote! {false},
             };
             let name_link = match nt {
                 NodeType::Name => quote! {world.add_name_link(self.name.clone(), entity);},

@@ -33,7 +33,7 @@ impl OperationsPlugin {
     }
 }
 
-pub fn op(f: impl Fn(&mut World) + 'static + Send + Sync) {
+pub fn op(f: impl FnOnce(&mut World) + 'static + Send + Sync) {
     OperationsPlugin::add(f);
 }
 

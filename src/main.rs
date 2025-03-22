@@ -96,6 +96,7 @@ fn main() {
             StdbSyncPlugin,
             MatchPlugin,
             PersistentDataPlugin,
+            NodeGraphPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

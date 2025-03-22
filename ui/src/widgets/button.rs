@@ -44,7 +44,9 @@ impl Button {
         self
     }
     pub fn gray(self, ui: &mut Ui) -> Self {
-        self.color(tokens_global().subtle_background(), ui)
+        let style = ui.style_mut();
+        style.visuals.widgets.inactive.weak_bg_fill = tokens_global().subtle_background();
+        self
     }
     pub fn red(mut self, ui: &mut Ui) -> Self {
         self.save_style(ui);

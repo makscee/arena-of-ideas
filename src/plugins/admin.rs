@@ -224,6 +224,12 @@ impl AdminPlugin {
         if "Add Battle Panes".cstr().button(ui).clicked() {
             BattlePlugin::add_panes();
         }
+        if "Add Node Graph Pane".cstr().button(ui).clicked() {
+            TilePlugin::op(|tree| {
+                let id = tree.tiles.insert_pane(Pane::NodeGraph);
+                tree.add_to_root(id).unwrap();
+            });
+        }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);
             "notify error test".notify_error(world);
