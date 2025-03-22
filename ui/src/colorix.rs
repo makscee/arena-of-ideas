@@ -3,16 +3,18 @@ use egui_colors::{
     Theme,
 };
 use parking_lot::{Mutex, MutexGuard};
+use strum_macros::{Display, EnumIter};
 
 use super::*;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct Colorix {
     pub semantics: Vec<egui_colors::Colorix>,
 }
 
+#[derive(EnumIter, Clone, Copy, Display)]
 #[repr(usize)]
-enum Semantics {
+pub enum Semantics {
     Global,
     Error,
     Success,
@@ -41,6 +43,31 @@ impl Colorix {
     pub fn style_info(&mut self, ui: &mut Ui) {
         apply_style(&mut self.semantics[Semantics::Info as usize], ui);
     }
+    pub fn ui_mut(&mut self, ui: &mut Ui) {
+        self.semantics[0].ui_combo_12(ui, false);
+        self.apply(ui.ctx());
+    }
+    pub fn tokens_global(&self) -> ColorTokens {
+        self.semantics[Semantics::Global as usize].tokens
+    }
+    pub fn tokens_error(&self) -> ColorTokens {
+        self.semantics[Semantics::Error as usize].tokens
+    }
+    pub fn tokens_success(&self) -> ColorTokens {
+        self.semantics[Semantics::Success as usize].tokens
+    }
+    pub fn tokens_warning(&self) -> ColorTokens {
+        self.semantics[Semantics::Warning as usize].tokens
+    }
+    pub fn tokens_info(&self) -> ColorTokens {
+        self.semantics[Semantics::Info as usize].tokens
+    }
+    fn apply(&mut self, ctx: &egui::Context) {
+        let theme = self.global().theme().clone();
+        self.semantics[0].update_theme(ctx, theme);
+        ctx.style_mut(|style| override_style(style));
+        init_style_map(self);
+    }
 }
 
 static COLORIX: Mutex<Colorix> = Mutex::new(Colorix::new());
@@ -48,19 +75,19 @@ pub fn colorix() -> MutexGuard<'static, Colorix> {
     COLORIX.lock()
 }
 pub fn tokens_global() -> ColorTokens {
-    COLORIX.lock().semantics[Semantics::Global as usize].tokens
+    COLORIX.lock().tokens_global()
 }
 pub fn tokens_error() -> ColorTokens {
-    COLORIX.lock().semantics[Semantics::Error as usize].tokens
+    COLORIX.lock().tokens_error()
 }
 pub fn tokens_success() -> ColorTokens {
-    COLORIX.lock().semantics[Semantics::Success as usize].tokens
+    COLORIX.lock().tokens_success()
 }
 pub fn tokens_warning() -> ColorTokens {
-    COLORIX.lock().semantics[Semantics::Warning as usize].tokens
+    COLORIX.lock().tokens_warning()
 }
 pub fn tokens_info() -> ColorTokens {
-    COLORIX.lock().semantics[Semantics::Info as usize].tokens
+    COLORIX.lock().tokens_info()
 }
 
 fn apply_style(colorix: &mut egui_colors::Colorix, ui: &mut Ui) {
@@ -69,11 +96,11 @@ fn apply_style(colorix: &mut egui_colors::Colorix, ui: &mut Ui) {
 }
 
 fn override_style(style: &mut egui::Style) {
-    style.visuals.widgets.active.corner_radius = CornerRadius::same(13);
-    style.visuals.widgets.inactive.corner_radius = CornerRadius::same(13);
-    style.visuals.widgets.hovered.corner_radius = CornerRadius::same(13);
-    style.visuals.widgets.noninteractive.corner_radius = CornerRadius::same(13);
-    style.visuals.widgets.open.corner_radius = CornerRadius::same(13);
+    style.visuals.widgets.active.corner_radius = CornerRadius::same(8);
+    style.visuals.widgets.inactive.corner_radius = CornerRadius::same(8);
+    style.visuals.widgets.hovered.corner_radius = CornerRadius::same(8);
+    style.visuals.widgets.noninteractive.corner_radius = CornerRadius::same(8);
+    style.visuals.widgets.open.corner_radius = CornerRadius::same(8);
 }
 
 pub fn setup_colorix(world: &mut World) {
@@ -84,7 +111,6 @@ pub fn setup_colorix(world: &mut World) {
     let theme_warning: Theme = [ThemeColor::Orange; 12];
     let theme_info: Theme = [ThemeColor::Cyan; 12];
     let global = egui_colors::Colorix::global(ctx, theme_main);
-    ctx.style_mut(|style| override_style(style));
     let semantics = [
         global,
         egui_colors::Colorix::local_from_style(theme_error, true),
@@ -97,10 +123,5 @@ pub fn setup_colorix(world: &mut World) {
     world.insert_resource(bevy::render::camera::ClearColor(
         tokens_global().app_background().to_color(),
     ));
-    init_style_map();
-}
-
-pub trait ColorixExt {
-    fn colorix(&self) -> &Colorix;
-    fn colorix_mut(&mut self) -> Mut<Colorix>;
+    colorix().apply(ctx);
 }

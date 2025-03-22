@@ -96,6 +96,7 @@ impl Window {
         let mut w = egui::Window::new(&self.id)
             .default_width(self.default_width)
             .default_height(self.default_height)
+            .resizable([false, false])
             .title_bar(false)
             .frame(if self.no_frame {
                 Frame::new()
@@ -105,8 +106,8 @@ impl Window {
                     outer_margin: Margin::ZERO,
                     corner_radius: ROUNDING,
                     shadow: SHADOW,
-                    fill: tokens_global().solid_backgrounds(),
-                    stroke: Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings()),
+                    fill: tokens_global().subtle_background(),
+                    stroke: Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
                 }
             })
             .scroll([self.expand, self.expand])
@@ -119,7 +120,6 @@ impl Window {
             w = w.anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO);
         }
         w.show(ctx, |ui| {
-            ui.expand_to_include_rect(ui.available_rect_before_wrap());
             if self.no_frame {
                 (self.content)(ui, world);
                 return;
@@ -131,25 +131,18 @@ impl Window {
                 })
                 .header_response
                 .rect;
-            let rect = {
-                let rect = rect.with_min_x(rect.max.x);
-                let ui = &mut ui.child_ui(rect, Layout::left_to_right(Align::Max), None);
-                if "o"
-                    .cstr_c(if self.expand {
-                        YELLOW
-                    } else {
-                        tokens_global().high_contrast_text()
-                    })
-                    .button(ui)
-                    .clicked()
-                {
-                    self.expand = !self.expand
-                }
-                if "x".cstr().button(ui).clicked() {
-                    r = WindowResponse::Close;
-                }
-                ui.min_rect()
-            };
+            let rect = rect.with_max_x(rect.max.x + 12.0);
+            if close_btn(rect, ui).clicked() {
+                r = WindowResponse::Close;
+            }
+            // let rect = {
+            //     let rect = rect.with_min_x(rect.max.x);
+            //     let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
+            //     if "x".cstr().button(ui).clicked() {
+            //         r = WindowResponse::Close;
+            //     }
+            //     ui.min_rect()
+            // };
             ui.expand_to_include_rect(rect);
         });
         r

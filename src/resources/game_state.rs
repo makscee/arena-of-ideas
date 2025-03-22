@@ -69,6 +69,8 @@ pub enum Pane {
     BattleView,
     BattleControls,
 
+    EditorTeam,
+
     Admin,
     WorldInspector,
 }
@@ -117,6 +119,8 @@ impl Pane {
 
             Pane::BattleView => BattlePlugin::pane_view(ui, world)?,
             Pane::BattleControls => BattlePlugin::pane_controls(ui, world)?,
+
+            Pane::EditorTeam => Team::show_editor(self, ui, world),
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
         };

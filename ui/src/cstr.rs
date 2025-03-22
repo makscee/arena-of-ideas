@@ -9,7 +9,6 @@ use bevy::{
 use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
 use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
-use egui_colors::Colorix;
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use utils_client::ToC32;
@@ -194,23 +193,32 @@ impl CstrStyle {
 
 static STRING_STYLE_MAP: OnceCell<Mutex<HashMap<&'static str, CstrStyle>>> = OnceCell::new();
 static STYLE_STRING_MAP: OnceCell<Mutex<HashMap<CstrStyle, &'static str>>> = OnceCell::new();
-pub fn init_style_map() {
+pub fn init_style_map(colorix: &Colorix) {
     let pairs = [
         ("b", CstrStyle::Bold),
         ("s", CstrStyle::Small),
         ("h", CstrStyle::Heading),
         ("h2", CstrStyle::Heading2),
-        ("red", CstrStyle::Color(tokens_error().low_contrast_text())),
+        (
+            "red",
+            CstrStyle::Color(colorix.tokens_error().low_contrast_text()),
+        ),
         (
             "green",
-            CstrStyle::Color(tokens_success().low_contrast_text()),
+            CstrStyle::Color(colorix.tokens_success().low_contrast_text()),
         ),
         (
             "yellow",
-            CstrStyle::Color(tokens_warning().high_contrast_text()),
+            CstrStyle::Color(colorix.tokens_warning().high_contrast_text()),
         ),
-        ("tl", CstrStyle::Color(tokens_global().low_contrast_text())),
-        ("th", CstrStyle::Color(tokens_global().high_contrast_text())),
+        (
+            "tl",
+            CstrStyle::Color(colorix.tokens_global().low_contrast_text()),
+        ),
+        (
+            "th",
+            CstrStyle::Color(colorix.tokens_global().high_contrast_text()),
+        ),
     ];
     *STRING_STYLE_MAP
         .get_or_init(|| Mutex::new(default()))

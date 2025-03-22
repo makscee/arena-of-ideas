@@ -110,6 +110,7 @@ parking_lot = { workspace = true }
 tween = { workspace = true }
 color-hex = { workspace = true }
 egui_tiles = { workspace = true }
+egui_colors = { workspace = true }
 
 spacetimedb-sdk = "1.0.0"
 spacetimedb-sats = "1.0.0"

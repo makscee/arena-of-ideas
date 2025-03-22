@@ -216,3 +216,21 @@ pub fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui
     );
     ui.painter().add(line);
 }
+pub fn close_btn(rect: Rect, ui: &mut Ui) -> Response {
+    let close_btn_size = egui::vec2(12.0, 12.0);
+    let close_btn_rect = egui::Align2::RIGHT_CENTER.align_size_within_rect(close_btn_size, rect);
+
+    let close_btn_id = ui.auto_id_with("tab_close_btn");
+    let close_btn_response = ui
+        .interact(close_btn_rect, close_btn_id, Sense::click_and_drag())
+        .on_hover_cursor(egui::CursorIcon::Default);
+
+    let visuals = ui.style().interact(&close_btn_response);
+    let rect = close_btn_rect.shrink(2.0).expand(visuals.expansion);
+    let stroke = visuals.fg_stroke;
+    ui.painter()
+        .line_segment([rect.left_top(), rect.right_bottom()], stroke);
+    ui.painter()
+        .line_segment([rect.right_top(), rect.left_bottom()], stroke);
+    close_btn_response
+}

@@ -20,6 +20,7 @@ impl UiPlugin {
             TopBar::ui(ui, world);
         });
         TilePlugin::ui(ctx, world);
+        WindowPlugin::show_all(ctx, world);
         Confirmation::show_current(ctx, world);
         NotificationsPlugin::ui(ctx, world);
     }

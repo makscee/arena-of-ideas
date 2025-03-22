@@ -30,10 +30,10 @@ pub const SHADOW: Shadow = Shadow {
     color: Color32::from_rgba_premultiplied(20, 20, 20, 35),
 };
 pub const MARGIN: Margin = Margin {
-    left: 4,
-    right: 4,
-    top: 4,
-    bottom: 4,
+    left: 8,
+    right: 8,
+    top: 8,
+    bottom: 8,
 };
 
 pub const ROUNDING: CornerRadius = CornerRadius {

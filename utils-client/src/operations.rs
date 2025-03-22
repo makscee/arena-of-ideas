@@ -33,6 +33,10 @@ impl OperationsPlugin {
     }
 }
 
+pub fn op(f: impl Fn(&mut World) + 'static + Send + Sync) {
+    OperationsPlugin::add(f);
+}
+
 fn update(world: &mut World) {
     while let Some(operation) = OPERATIONS.get().unwrap().lock().queue.pop_front() {
         operation(world);

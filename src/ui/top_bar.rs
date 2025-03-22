@@ -13,16 +13,23 @@ impl TopBar {
                 }
                 _ => {}
             }
-            if ui.button("inspector").clicked() {
-                todo!()
-            }
+            ui.menu_button("settings", |ui| {
+                if "theme".cstr().button(ui).clicked() {
+                    Window::new("theme Editor", |ui, _| {
+                        let mut colorix = colorix();
+                        colorix.ui_mut(ui);
+                    })
+                    .push(world);
+                    ui.close_menu();
+                }
+            });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if let Some(fps) = world
                     .resource::<DiagnosticsStore>()
                     .get(&FrameTimeDiagnosticsPlugin::FPS)
                 {
                     if let Some(fps) = fps.smoothed() {
-                        format!("[tl fps:] {fps:.0}").label(ui);
+                        format!("[tl fps:] {fps:.0}").cstr().label(ui);
                     }
                 }
                 VERSION.cstr().label(ui);

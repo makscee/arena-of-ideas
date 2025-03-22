@@ -11,7 +11,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     fn pane_ui(
         &mut self,
         ui: &mut egui::Ui,
-        _tile_id: egui_tiles::TileId,
+        _tile_id: TileId,
         view: &mut Pane,
     ) -> egui_tiles::UiResponse {
         dark_frame().show(ui, |ui| {
