@@ -270,8 +270,8 @@ impl BattleSimulation {
             Context::new_world(&world)
                 .children_components_recursive::<Fusion>(parent)
                 .into_iter()
-                .sorted_by_key(|(_, s)| s.slot)
-                .map(|(e, _)| e)
+                .sorted_by_key(|s| s.slot)
+                .map(|n| n.entity())
                 .collect_vec()
         }
         let fusions_left = entities_by_slot(team_left, &world);

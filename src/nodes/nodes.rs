@@ -61,7 +61,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn fill_from_incubator(self) -> Self;
 }
 
-pub trait NodeExt: Sized {
+pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn to_tnode(&self) -> TNode;
     fn get(entity: Entity, world: &World) -> Option<&Self>;
     fn get_by_id(id: u64, world: &World) -> Option<&Self>;
@@ -69,6 +69,7 @@ pub trait NodeExt: Sized {
     fn load_by_parent(parent: u64) -> Option<Self>;
     fn find_incubator_component<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<T>;
     fn collect_incubator_children<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<T>;
+    fn find_child<'a, T: NodeExt>(&self, world: &'a World) -> Option<&'a T>;
 }
 impl<T> NodeExt for T
 where
@@ -135,6 +136,9 @@ where
             .into_iter()
             .filter_map(|id| P::load(id))
             .collect()
+    }
+    fn find_child<'a, P: NodeExt>(&self, world: &'a World) -> Option<&'a P> {
+        self.collect_children::<P>(world).into_iter().next()
     }
 }
 

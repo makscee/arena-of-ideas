@@ -72,6 +72,9 @@ impl NodeGraphPlugin {
             match change {
                 StdbChange::Insert => {
                     let node = node.clone();
+                    if node.parent == ID_INCUBATOR || node.id == ID_INCUBATOR {
+                        continue;
+                    }
                     op(move |world| {
                         world.entity_mut(entity).insert(GraphNode {
                             pos: pos2(thread_rng().gen(), thread_rng().gen()) * 10.0,

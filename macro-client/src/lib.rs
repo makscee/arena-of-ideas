@@ -190,7 +190,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #(
                         pub fn #component_link_fields_load<'a>(&self, world: &'a World) -> Result<&'a #component_types, ExpressionError> {
                             let entity = self.entity();
-                            #component_types::get(entity, world)
+                            self.find_child::<#component_types>(world)
                                 .to_e_fn(|| format!("{} not found for {}", #component_types::kind_s(), entity))
                         }
                     )*
@@ -350,7 +350,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = &self.#component_fields {
                                 d.show(None, context, ui);
-                            } else if let Some(d) = self.entity.and_then(|e| context.get_component::<#component_types>(e)) {
+                            } else if let Some(d) = self.entity.and_then(|e| context.children_components::<#component_types>(e).into_iter().next()) {
                                 d.show(None, context, ui);
                             }
                         )*
@@ -360,7 +360,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     d.show(None, context, ui);
                                 }
                             } else if let Some(e) = self.entity {
-                                for (_, d) in context.children_components::<#child_types>(e) {
+                                for d in context.children_components::<#child_types>(e) {
                                     d.show(None, context, ui);
                                 }
                             }

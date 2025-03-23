@@ -77,7 +77,8 @@ impl BattlePlugin {
                             let context =
                                 Context::new_world(&simulation.world).set_owner(team).take();
                             let units = context.children_components_recursive::<Unit>(team);
-                            for (entity, _) in units {
+                            for unit in units {
+                                let entity = unit.entity();
                                 let context = Context::new_world(&simulation.world)
                                     .set_owner(entity)
                                     .take();

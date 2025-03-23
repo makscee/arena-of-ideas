@@ -204,13 +204,13 @@ impl<'w, 's> Context<'w, 's> {
         }
         None
     }
-    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.sources
             .iter()
             .flat_map(|s| s.children_components::<T>(entity))
             .collect()
     }
-    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.sources
             .iter()
             .flat_map(|s| s.children_components_recursive::<T>(entity))
@@ -313,28 +313,16 @@ impl ContextSource<'_, '_> {
             _ => None,
         }
     }
-    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.get_children(entity)
             .into_iter()
-            .filter_map(|e| {
-                if let Some(c) = self.get_component(e) {
-                    Some((e, c))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|e| self.get_component(e))
             .collect()
     }
-    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<(Entity, &T)> {
+    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.get_children_recursive(entity)
             .into_iter()
-            .filter_map(|e| {
-                if let Some(c) = self.get_component(e) {
-                    Some((e, c))
-                } else {
-                    None
-                }
-            })
+            .filter_map(|e| self.get_component(e))
             .collect()
     }
     pub fn collect_enemies(&self, entity: Entity) -> Vec<Entity> {
