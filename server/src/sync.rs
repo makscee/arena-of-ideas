@@ -20,25 +20,11 @@ fn sync_assets(
 #[reducer]
 fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let incubator = Incubator::load(ctx);
-    let units = incubator.collect_children::<Unit>(ctx);
-    let mut houses: HashMap<u64, House> = HashMap::from_iter(
-        incubator
-            .collect_children::<House>(ctx)
-            .into_iter()
-            .map(|n| (n.id, n)),
-    );
-    for mut unit in units {
-        unit.description = unit.top_link::<UnitDescription>(ctx).map(|mut d| {
-            d.stats = d.top_link::<UnitStats>(ctx);
-            d
-        });
-        if let Some(house_link) = unit.top_link_id::<House>(ctx) {
-            houses.get_mut(&house_link).unwrap().units.push(unit);
-        }
+    for house in All::load(ctx).core_load(ctx)? {
+        house.delete_recursive(ctx);
     }
-    for house in houses.into_values() {
-        house.clone(ctx, 0);
+    for house in House::collect_children_of_id(ctx, ID_INCUBATOR) {
+        house.fill_from_incubator(ctx).clone(ctx, ID_ALL);
     }
     Ok(())
 }

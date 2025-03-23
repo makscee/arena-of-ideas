@@ -137,7 +137,7 @@ impl IncubatorPlugin {
                 cn().db
                     .nodes_world()
                     .iter()
-                    .filter(|n| n.kind == kind)
+                    .filter(|n| n.kind == kind && n.parent == ID_INCUBATOR)
                     .map(|n| n.id)
                     .collect_vec()
             })

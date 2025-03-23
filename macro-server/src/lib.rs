@@ -219,6 +219,21 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         d
                     }
+                    fn fill_from_incubator(mut self, ctx: &ReducerContext) -> Self {
+                        #(
+                            self.#component_fields = self.find_incubator_component(ctx);
+                            self.#component_fields = self.#component_fields.map(|n| n.fill_from_incubator(ctx));
+                        )*
+                        #(
+                            self.#child_fields = self.collect_incubator_children(ctx);
+                            self.#child_fields = self
+                                .#child_fields
+                                .into_iter()
+                                .map(|n| n.fill_from_incubator(ctx))
+                                .collect();
+                        )*
+                        self
+                    }
                 }
             }
             .into()

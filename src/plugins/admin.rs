@@ -191,7 +191,7 @@ impl AdminPlugin {
         if "Houses Editor".cstr().button(ui).clicked() {
             GameAssetsEditor::open_houses_window(world);
         }
-        if "Update Core".cstr().button(ui).clicked() {
+        if "Incubator Merge".cstr().button(ui).clicked() {
             cn().reducers.incubator_merge().unwrap();
         }
         if "Export All".cstr().button(ui).clicked() {

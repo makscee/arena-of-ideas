@@ -23,9 +23,10 @@ pub trait Node: Default + Sized {
     fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
+    fn fill_from_incubator(self, ctx: &ReducerContext) -> Self;
 }
 
-pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
+pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
@@ -41,6 +42,8 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
     fn top_link_id<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<u64>;
     fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
+    fn find_incubator_component<T: NodeExt>(&self, ctx: &ReducerContext) -> Option<T>;
+    fn collect_incubator_children<T: NodeExt>(&self, ctx: &ReducerContext) -> Vec<T>;
 }
 
 impl<T> NodeExt for T
@@ -144,6 +147,43 @@ where
     }
     fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.top_link_id::<P>(ctx).and_then(|l| P::get(ctx, l))
+    }
+    fn find_incubator_component<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        let kind = P::kind_s().to_string();
+        let id = ctx
+            .db
+            .incubator_links()
+            .iter()
+            .filter(|n| n.from == self.id() && n.to_kind == kind)
+            .max_by_key(|n| n.score)?
+            .to;
+        P::get(ctx, id)
+    }
+    fn collect_incubator_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
+        let kind = self.kind().to_string();
+        let child_kind = P::kind_s().to_string();
+        let mut candidates = ctx
+            .db
+            .incubator_links()
+            .iter()
+            .filter(|l| l.from_kind == child_kind && l.to_kind == kind)
+            .map(|l| l.from)
+            .unique()
+            .collect_vec();
+        candidates.retain(|id| {
+            ctx.db
+                .incubator_links()
+                .iter()
+                .filter(|l| l.from == *id && l.to_kind == kind)
+                .max_by_key(|l| l.score)
+                .unwrap()
+                .to
+                == self.id()
+        });
+        candidates
+            .into_iter()
+            .filter_map(|id| P::get(ctx, id))
+            .collect()
     }
 }
 
