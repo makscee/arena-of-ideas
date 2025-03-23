@@ -475,7 +475,11 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
         }
         if self.selectable {
             row.col(|ui| {
-                if "select".cstr_c(tokens_global().high_contrast_text()).button(ui).clicked() {
+                if "select"
+                    .cstr_c(tokens_global().high_contrast_text())
+                    .button(ui)
+                    .clicked()
+                {
                     state.selected_row = Some(row_i);
                 }
             });
@@ -510,7 +514,7 @@ impl<'a, T: 'static + Clone + Send + Sync> Table<'a, T> {
                         let active = state.filter.is_some_and(|f| f == i);
                         if Button::new(name.to_string())
                             .min_width(100.0)
-                            .active(active)
+                            .active(active, ui)
                             .ui(ui)
                             .clicked()
                         {

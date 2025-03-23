@@ -31,11 +31,20 @@ pub struct StdbEvent {
 }
 
 impl StdbPlugin {
+    fn unpack_node(node: &TNode, entity: Entity, world: &mut World) {
+        node.unpack(entity, world);
+        world.send_event(StdbEvent {
+            entity,
+            node: node.clone(),
+            change: StdbChange::Insert,
+        });
+    }
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
-                if node.id == 0 {
-                    node.unpack(world.spawn_empty().id(), world);
+                if node.id == ID_ALL || node.id == ID_INCUBATOR {
+                    let entity = world.spawn_empty().id();
+                    Self::unpack_node(node, entity, world);
                     return false;
                 }
                 let mut cur_node = node.clone();
@@ -55,12 +64,7 @@ impl StdbPlugin {
                 let entity = world
                     .get_id_link(id)
                     .unwrap_or_else(|| world.spawn_empty().set_parent(parent).id());
-                node.unpack(entity, world);
-                world.send_event(StdbEvent {
-                    entity,
-                    node: node.clone(),
-                    change: StdbChange::Insert,
-                });
+                Self::unpack_node(node, entity, world);
                 false
             });
             if !d.nodes_queue.is_empty() {
@@ -87,51 +91,64 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         })
         .subscribe_to_all_tables();
 }
+
 fn subscribe_table_updates() {
     let db = cn().db();
     db.nodes_world().on_insert(|_, node| {
-        info!("Node inserted {}#{}", node.kind, node.id);
-        let node = node.clone();
-        op(move |world| {
-            world.resource_mut::<StdbData>().nodes_queue.push(node);
-        });
+        on_insert(node);
     });
     db.nodes_world().on_update(|_, _, node| {
-        info!("Node updated {}#{}", node.kind, node.id);
-        let node = node.clone();
-        op(move |world| {
-            let Some(entity) = world.get_id_link(node.id) else {
-                error!("Failed to update entity: id link not found");
-                return;
-            };
-            node.unpack(entity, world);
-            world.send_event(StdbEvent {
-                entity,
-                node,
-                change: StdbChange::Update,
-            });
-        });
+        on_update(node);
     });
     db.nodes_world().on_delete(|_, node| {
-        info!("Node deleted {}#{}", node.kind, node.id);
-        let node = node.clone();
-        op(move |world| {
-            let Some(entity) = world.get_id_link(node.id) else {
-                error!("Failed to delete entity: id link not found");
-                return;
-            };
-            world.send_event(StdbEvent {
-                entity,
-                node,
-                change: StdbChange::Delete,
-            });
-            if let Ok(e) = world.get_entity_mut(entity) {
-                e.try_despawn_recursive();
-            }
-        });
+        on_delete(node);
     });
-    db.battle().on_insert(|_, row| {
+    db.battle().on_insert(|_, _| {
         todo!();
+    });
+}
+
+fn on_insert(node: &TNode) {
+    info!("Node inserted {}#{}", node.kind, node.id);
+    let node = node.clone();
+    op(move |world| {
+        world.resource_mut::<StdbData>().nodes_queue.push(node);
+    });
+}
+
+fn on_delete(node: &TNode) {
+    info!("Node deleted {}#{}", node.kind, node.id);
+    let node = node.clone();
+    op(move |world| {
+        let Some(entity) = world.get_id_link(node.id) else {
+            error!("Failed to delete entity: id link not found");
+            return;
+        };
+        world.send_event(StdbEvent {
+            entity,
+            node,
+            change: StdbChange::Delete,
+        });
+        if let Ok(e) = world.get_entity_mut(entity) {
+            e.try_despawn_recursive();
+        }
+    });
+}
+
+fn on_update(node: &TNode) {
+    info!("Node updated {}#{}", node.kind, node.id);
+    let node = node.clone();
+    op(move |world| {
+        let Some(entity) = world.get_id_link(node.id) else {
+            error!("Failed to update entity: id link not found");
+            return;
+        };
+        node.unpack(entity, world);
+        world.send_event(StdbEvent {
+            entity,
+            node,
+            change: StdbChange::Update,
+        });
     });
 }
 

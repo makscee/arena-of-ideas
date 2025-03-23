@@ -149,7 +149,7 @@ where
 
 impl All {
     pub fn load(ctx: &ReducerContext) -> Self {
-        All::get(ctx, 0).unwrap()
+        All::get(ctx, ID_ALL).unwrap()
     }
     pub fn core_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut Unit>, String> {
         Ok(self
@@ -158,6 +158,11 @@ impl All {
             .filter_map(|h| h.units_load(ctx).ok())
             .flatten()
             .collect_vec())
+    }
+}
+impl Incubator {
+    pub fn load(ctx: &ReducerContext) -> Self {
+        Incubator::get(ctx, ID_INCUBATOR).unwrap()
     }
 }
 

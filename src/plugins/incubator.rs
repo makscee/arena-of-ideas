@@ -36,8 +36,7 @@ impl IncubatorPlugin {
         if events.is_empty() {
             return;
         }
-        let incubator_id = Incubator::load_by_parent(0).unwrap().id();
-        if events.read().any(|e| e.node.parent == incubator_id) {
+        if events.read().any(|e| e.node.parent == ID_INCUBATOR) {
             OperationsPlugin::add(|world| {
                 Self::compose_nodes(world).log();
             });
@@ -87,13 +86,10 @@ impl IncubatorPlugin {
         r.table_kind = NodeKind::House;
         // Self::compose_nodes(world).log();
     }
-    fn incubator<'a>(world: &'a World) -> Result<&'a Incubator, ExpressionError> {
-        All::get_by_id(0, world).unwrap().incubator_load(world)
-    }
     fn compose_nodes(world: &mut World) -> Result<(), ExpressionError> {
-        let incubator = Self::incubator(world)?;
+        let incubator = Incubator::load_recursive(ID_INCUBATOR).unwrap();
         let houses = incubator
-            .houses_load(world)
+            .houses
             .into_iter()
             .map(|h| h.clone().fill_from_incubator())
             .collect_vec();
@@ -136,13 +132,12 @@ impl IncubatorPlugin {
         NodeKind::House.show_graph(CYAN, &mut data, ui);
         ui.vertical(|ui| {
             Self::new_node_btn(kind, ui, world);
-            Table::new(kind.to_string(), |world| {
-                let incubator = Self::incubator(world).unwrap().id();
+            Table::new(kind.to_string(), |_| {
                 let kind = kind.to_string();
                 cn().db
                     .nodes_world()
                     .iter()
-                    .filter(|n| n.parent == incubator && n.kind == kind)
+                    .filter(|n| n.kind == kind)
                     .map(|n| n.id)
                     .collect_vec()
             })
@@ -263,26 +258,25 @@ impl IncubatorPlugin {
             r.new_node_link = Some(id);
         }
         Table::new(format!("{selected} links"), move |world| {
-            let incubator_id = Self::incubator(world).unwrap().id();
             let kind = selected.to_string();
             cn().db
                 .nodes_world()
                 .iter()
-                .filter_map(|r| {
-                    if r.parent == incubator_id && r.kind == kind {
+                .filter_map(|n| {
+                    if n.parent == ID_INCUBATOR && n.kind == kind {
                         Some((
                             cn().db
                                 .incubator_links()
                                 .iter()
                                 .find_map(|l| {
-                                    if l.from == id && l.to_kind == kind && l.to == r.id {
+                                    if l.from == id && l.to_kind == kind && l.to == n.id {
                                         Some(l.score as i32)
                                     } else {
                                         None
                                     }
                                 })
                                 .unwrap_or_default(),
-                            r,
+                            n,
                         ))
                     } else {
                         None
@@ -298,14 +292,14 @@ impl IncubatorPlugin {
             move |(_, node), _, _| {
                 cn().reducers.incubator_vote(id, node.id).unwrap();
             },
-            move |(_, node), _, btn| {
+            move |(_, node), ui, btn| {
                 if let Some(vote) =
                     cn().db
                         .incubator_votes()
                         .key()
                         .find(&vote_key(player_id(), id, selected))
                 {
-                    btn.active(vote.to == node.id)
+                    btn.active(vote.to == node.id, ui)
                 } else {
                     btn
                 }
@@ -384,7 +378,7 @@ impl NodeKindGraph for NodeKind {
             if self
                 .cstr_cs(color, CstrStyle::Small)
                 .as_button()
-                .active(data.table_kind == self)
+                .active(data.table_kind == self, ui)
                 .ui(ui)
                 .clicked()
             {

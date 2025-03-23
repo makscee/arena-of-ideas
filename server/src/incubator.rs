@@ -10,7 +10,6 @@ fn incubator_push(
     let mut next_id = ctx.next_id();
     let nodes = NodeKind::parse_and_reassign_ids(&nodes, &mut next_id).to_str_err()?;
     GlobalData::set_next_id(ctx, next_id);
-    let incubator_id = All::load(ctx).incubator_load(ctx)?.id;
     let root_id = nodes[0].id;
     let nodes: HashMap<u64, TNode> = HashMap::from_iter(nodes.into_iter().map(|n| (n.id, n)));
     let link_kinds = NodeKind::get_incubator_links();
@@ -45,7 +44,7 @@ fn incubator_push(
         new_links.push((from_id, root_id));
     }
     for mut node in nodes.into_values() {
-        node.parent = incubator_id;
+        node.parent = ID_INCUBATOR;
         ctx.db.incubator_nodes().insert(TIncubator {
             id: node.id,
             owner: player.id,
@@ -178,7 +177,7 @@ impl TIncubatorVotes {
     }
     fn vote(ctx: &ReducerContext, player: &Player, from: u64, to: u64) -> Result<(), String> {
         let kind = TNode::find(ctx, to)
-            .to_e_s_fn(|| format!("Node {to} not found"))?
+            .to_e_s_fn(|| format!("Vote failed: node#{to} not found"))?
             .kind
             .to_kind();
         let key = Self::key(player.id, from, kind);

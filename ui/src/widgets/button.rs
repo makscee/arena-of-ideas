@@ -82,8 +82,11 @@ impl Button {
         self.enabled = value;
         self
     }
-    pub fn active(mut self, value: bool) -> Self {
-        self.active = value;
+    pub fn active(mut self, value: bool, ui: &mut Ui) -> Self {
+        if value {
+            self.save_style(ui);
+            colorix().style_info(ui);
+        }
         self
     }
     pub fn ui(self, ui: &mut Ui) -> Response {

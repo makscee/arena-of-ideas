@@ -1,5 +1,3 @@
-use crate::incubator::{incubator_links, incubator_votes};
-
 use super::*;
 
 #[reducer]
@@ -20,10 +18,9 @@ fn sync_assets(
 }
 
 #[reducer]
-fn incubator_update_core(ctx: &ReducerContext) -> Result<(), String> {
+fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let mut all = All::load(ctx);
-    let incubator = all.incubator_load(ctx)?;
+    let incubator = Incubator::load(ctx);
     let units = incubator.collect_children::<Unit>(ctx);
     let mut houses: HashMap<u64, House> = HashMap::from_iter(
         incubator

@@ -506,7 +506,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         Some(s)
                     }
                     fn unpack(mut self, entity: Entity, world: &mut World) {
-                        debug!("Unpack {} into {entity}", self.cstr().to_colored());
+                        debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if let Some(id) = self.id {
                             world.add_id_link(id, entity);

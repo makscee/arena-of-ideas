@@ -58,10 +58,16 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     All {
         name: "all".into(),
+        id: ID_ALL,
         ..default()
     }
     .insert_self(ctx);
-    Incubator::new(ctx, 0, "incubator".into());
+    Incubator {
+        id: ID_INCUBATOR,
+        name: "incubator".into(),
+        ..default()
+    }
+    .insert_self(ctx);
     Ok(())
 }
 

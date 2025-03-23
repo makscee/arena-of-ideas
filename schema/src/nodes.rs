@@ -4,7 +4,6 @@ struct All {
     pub name: String,
     pub players: NodeChildren<Player>,
     pub core: NodeChildren<House>,
-    pub incubator: NodeComponent<Incubator>,
 }
 
 struct Incubator {

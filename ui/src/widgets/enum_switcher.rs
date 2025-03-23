@@ -60,7 +60,7 @@ impl EnumSwitcher {
                     modify_c(&self, &mut c);
                     let active = e.eq(value);
                     ui[i].vertical_centered_justified(|ui| {
-                        if Button::new(c).active(active).ui(ui).clicked() && !active {
+                        if Button::new(c).active(active, ui).ui(ui).clicked() && !active {
                             clicked = true;
                             *value = e;
                         }
@@ -73,7 +73,7 @@ impl EnumSwitcher {
                     let mut c = e.cstr();
                     modify_c(&self, &mut c);
                     let active = e.eq(value);
-                    if Button::new(c).active(active).ui(ui).clicked() && !active {
+                    if Button::new(c).active(active, ui).ui(ui).clicked() && !active {
                         clicked = true;
                         *value = e;
                     }

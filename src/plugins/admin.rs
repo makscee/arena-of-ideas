@@ -192,7 +192,7 @@ impl AdminPlugin {
             GameAssetsEditor::open_houses_window(world);
         }
         if "Update Core".cstr().button(ui).clicked() {
-            cn().reducers.incubator_update_core().unwrap();
+            cn().reducers.incubator_merge().unwrap();
         }
         if "Export All".cstr().button(ui).clicked() {
             let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();

@@ -367,5 +367,5 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
 }
 
 pub fn all(world: &World) -> &All {
-    All::get_by_id(0, world).unwrap()
+    All::get_by_id(ID_ALL, world).unwrap()
 }

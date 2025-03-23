@@ -18,7 +18,7 @@ fn setup_colorix(world: &mut World) {
     let theme_error: Theme = [ThemeColor::Red; 12];
     let theme_success: Theme = [ThemeColor::Green; 12];
     let theme_warning: Theme = [ThemeColor::Orange; 12];
-    let theme_info: Theme = [ThemeColor::Cyan; 12];
+    let theme_info: Theme = [ThemeColor::Custom([YELLOW.r(), YELLOW.g(), YELLOW.b()]); 12];
     let global = egui_colors::Colorix::global(ctx, theme_main);
     let semantics = [
         global,
