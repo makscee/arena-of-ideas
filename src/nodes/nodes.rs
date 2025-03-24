@@ -59,6 +59,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn fill_from_incubator(self) -> Self;
+    fn clear_ids(&mut self);
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {

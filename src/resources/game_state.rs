@@ -74,6 +74,8 @@ pub enum Pane {
     Admin,
     WorldInspector,
     NodeGraph,
+
+    TeamEditorRoster,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -125,6 +127,8 @@ impl Pane {
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
             Pane::NodeGraph => NodeGraphPlugin::pane_ui(ui, world),
+
+            Pane::TeamEditorRoster => TeamEditorPlugin::pane_roster(ui, world)?,
         };
         Ok(())
     }

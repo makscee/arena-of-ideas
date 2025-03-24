@@ -28,6 +28,8 @@ struct DataFrameSettings {
     highlighted: bool,
 }
 
+impl DataFrameSettings {}
+
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum DataFrameResponse {
     None,
@@ -123,13 +125,17 @@ where
                 false
             })
         }));
+        let mut settings = self.settings;
+        if ui.data_frame_is_force_open() {
+            settings.default_open = true;
+        }
         let r = compose_ui(
             self.prefix,
             header,
             body,
             name,
             context_actions,
-            self.settings,
+            settings,
             ui,
         );
         r
@@ -255,13 +261,17 @@ where
                 .into_iter()
                 .map(|(k, v)| (k, || v(data.borrow_mut().deref_mut()))),
         );
+        let mut settings = self.settings;
+        if ui.data_frame_is_force_open() {
+            settings.default_open = true;
+        }
         let r = compose_ui(
             self.prefix,
             header,
             body,
             name,
             context_actions,
-            self.settings,
+            settings,
             ui,
         );
         *self.data = data.into_inner();

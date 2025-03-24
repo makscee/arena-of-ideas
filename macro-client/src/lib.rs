@@ -495,7 +495,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn pack(entity: Entity, world: &World) -> Option<Self> {
                         let mut s = world.get::<Self>(entity)?.clone();
                         #(
-                            s.#component_fields = #component_types::pack(entity, world);
+                            for child in get_children(entity, world) {
+                                if let Some(d) = #component_types::pack(child, world) {
+                                    s.#component_fields = Some(d);
+                                    break;
+                                }
+                            }
                         )*
                         #(
                             for child in get_children(entity, world) {
@@ -513,14 +518,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             world.add_id_link(id, entity);
                         }
                         #name_link
+                        let parent = entity;
                         #(
                             if let Some(d) = self.#component_fields.take() {
+                                let entity = world.spawn_empty().set_parent(parent).id();
+                                debug!("{parent} -> {entity}");
                                 d.unpack(entity, world);
                             }
                         )*
                         #(
                             for d in std::mem::take(&mut self.#child_fields) {
-                                let parent = entity;
                                 let entity = world.spawn_empty().set_parent(parent).id();
                                 debug!("{parent} -> {entity}");
                                 d.unpack(entity, world);
@@ -544,6 +551,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .collect();
                         )*
                         self
+                    }
+                    fn clear_ids(&mut self) {
+                        self.id = None;
+                        #(
+                            if let Some(d) = self.#component_fields.as_mut() {
+                                d.clear_ids();
+                            }
+                        )*
+                        #(
+                            for d in &mut self.#child_fields {
+                                d.clear_ids();
+                            }
+                        )*
                     }
                 }
                 impl From<&str> for #struct_ident {

@@ -1,3 +1,5 @@
+use rand::seq::SliceRandom;
+
 use super::*;
 
 pub struct AdminPlugin;
@@ -229,6 +231,18 @@ impl AdminPlugin {
                 let id = tree.tiles.insert_pane(Pane::NodeGraph);
                 tree.add_to_root(id).unwrap();
             });
+        }
+        if "Add Team Editor Panes".cstr().button(ui).clicked() {
+            TeamEditorPlugin::load_team(default(), world);
+            TeamEditorPlugin::add_panes();
+        }
+        if "Add Unit".cstr().button(ui).clicked() {
+            let unit = dbg!(Context::new_world(world)
+                .children_components_recursive::<Unit>(all(world).entity())
+                .choose(&mut thread_rng()))
+            .unwrap()
+            .entity();
+            TeamEditorPlugin::add_unit(unit, world).log();
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);
