@@ -1,4 +1,3 @@
-use bevy_egui::egui::menu::BarState;
 use serde::de::DeserializeOwned;
 
 use super::*;
@@ -8,9 +7,9 @@ pub struct DataFrameMut<'a, T> {
     prefix: Option<&'a str>,
     header: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> bool>>,
     body: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> bool>>,
-    name: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> bool>>,
+    name: Option<Box<dyn FnOnce(&mut T, &mut Ui) -> DataFrameResponse>>,
     context_actions: HashMap<&'static str, Box<dyn FnOnce(&mut T) -> bool>>,
-    default_open: bool,
+    settings: DataFrameSettings,
 }
 
 pub struct DataFrame<'a, T> {
@@ -18,8 +17,31 @@ pub struct DataFrame<'a, T> {
     prefix: Option<&'a str>,
     header: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
     body: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
+    name: Option<Box<dyn FnOnce(&T, &mut Ui) -> DataFrameResponse + 'a>>,
     context_actions: HashMap<&'static str, Box<dyn FnOnce(&T) + 'a>>,
+    settings: DataFrameSettings,
+}
+
+#[derive(Default)]
+struct DataFrameSettings {
     default_open: bool,
+    highlighted: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum DataFrameResponse {
+    None,
+    NameClicked,
+    Changed,
+}
+
+impl DataFrameResponse {
+    pub fn changed(self) -> bool {
+        self == Self::Changed
+    }
+    pub fn name_clicked(self) -> bool {
+        self == Self::NameClicked
+    }
 }
 
 fn frame() -> Frame {
@@ -43,18 +65,23 @@ where
         Self {
             data,
             header: None,
+            name: None,
             body: None,
             prefix: None,
             context_actions,
-            default_open: true,
+            settings: default(),
         }
     }
     pub fn prefix(mut self, prefix: Option<&'a str>) -> Self {
         self.prefix = prefix;
         self
     }
+    pub fn highlighted(mut self, value: bool) -> Self {
+        self.settings.highlighted = value;
+        self
+    }
     pub fn default_open(mut self, value: bool) -> Self {
-        self.default_open = value;
+        self.settings.default_open = value;
         self
     }
     pub fn header(mut self, f: impl FnOnce(&T, &mut Ui) + 'a) -> Self {
@@ -65,7 +92,7 @@ where
         self.body = Some(Box::new(f));
         self
     }
-    pub fn ui(self, ui: &mut Ui) -> bool {
+    pub fn ui(self, ui: &mut Ui) -> DataFrameResponse {
         let data = RefCell::new(self.data.clone());
         let header = self.header.map(|f| {
             |ui: &mut Ui| {
@@ -80,8 +107,15 @@ where
             }
         });
         let name = |ui: &mut Ui| {
-            self.data.cstr().label(ui);
-            false
+            if let Some(name) = self.name {
+                name(data.borrow_mut().deref_mut(), ui)
+            } else {
+                if self.data.cstr().button(ui).clicked() {
+                    DataFrameResponse::NameClicked
+                } else {
+                    DataFrameResponse::None
+                }
+            }
         };
         let context_actions = HashMap::from_iter(self.context_actions.into_iter().map(|(k, v)| {
             (k, || {
@@ -95,7 +129,7 @@ where
             body,
             name,
             context_actions,
-            self.default_open || ui.data_frame_is_force_open(),
+            self.settings,
             ui,
         );
         r
@@ -133,7 +167,7 @@ where
             prefix: None,
             name: None,
             context_actions,
-            default_open: true,
+            settings: default(),
         }
     }
     pub fn new_inject(data: &'a mut T) -> Self
@@ -160,9 +194,9 @@ where
             if Selector::new("").ui_enum(&mut new_value, ui) {
                 new_value.move_inner(d);
                 *d = new_value;
-                true
+                DataFrameResponse::Changed
             } else {
-                false
+                DataFrameResponse::None
             }
         }));
         r
@@ -171,8 +205,12 @@ where
         self.prefix = prefix;
         self
     }
+    pub fn highlighted(mut self, value: bool) -> Self {
+        self.settings.highlighted = value;
+        self
+    }
     pub fn default_open(mut self, value: bool) -> Self {
-        self.default_open = value;
+        self.settings.default_open = value;
         self
     }
     pub fn header(mut self, f: impl FnOnce(&mut T, &mut Ui) -> bool + 'static) -> Self {
@@ -193,7 +231,7 @@ where
         );
         self
     }
-    pub fn ui(self, ui: &mut Ui) -> bool {
+    pub fn ui(self, ui: &mut Ui) -> DataFrameResponse {
         let data = RefCell::new(self.data.clone());
         let header = self
             .header
@@ -205,8 +243,11 @@ where
             if let Some(name) = self.name {
                 name(data.borrow_mut().deref_mut(), ui)
             } else {
-                self.data.cstr();
-                false
+                if self.data.cstr().button(ui).clicked() {
+                    DataFrameResponse::NameClicked
+                } else {
+                    DataFrameResponse::None
+                }
             }
         };
         let context_actions = HashMap::from_iter(
@@ -220,7 +261,7 @@ where
             body,
             name,
             context_actions,
-            self.default_open || ui.data_frame_is_force_open(),
+            self.settings,
             ui,
         );
         *self.data = data.into_inner();
@@ -232,18 +273,19 @@ fn compose_ui(
     prefix: Option<&str>,
     header: Option<impl FnOnce(&mut Ui) -> bool>,
     body: Option<impl FnOnce(&mut Ui) -> bool>,
-    name: impl FnOnce(&mut Ui) -> bool,
+    name: impl FnOnce(&mut Ui) -> DataFrameResponse,
     context_actions: HashMap<&'static str, impl FnOnce() -> bool>,
-    default_open: bool,
+    settings: DataFrameSettings,
     ui: &mut Ui,
-) -> bool {
+) -> DataFrameResponse {
     let mut changed = false;
+    let mut df_response = DataFrameResponse::None;
     let id = ui.next_auto_id();
     let collapsed_id = id.with("collapsed");
     let collapse_inner_id = id.with("collapse_inner");
     let collapse_override_id = Id::new("collapse_override");
     let hovered_id = id.with("hovered");
-    let mut collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !default_open);
+    let mut collapsed = get_ctx_bool_id_default(ui.ctx(), collapsed_id, !settings.default_open);
     let collapsed_inner = get_ctx_bool_id_default(ui.ctx(), collapse_inner_id, false);
     if let Some(collapse_override) = get_ctx_bool_id(ui.ctx(), collapse_override_id) {
         collapsed = collapse_override;
@@ -254,7 +296,7 @@ fn compose_ui(
     let openness_inner = ui.ctx().animate_bool(collapse_inner_id, collapsed_inner);
     let hovered = get_ctx_bool_id_default(ui.ctx(), hovered_id, false);
 
-    const R: u8 = 13;
+    const R: u8 = 8;
     let header_rounding = CornerRadius {
         nw: R,
         ne: if header.is_none() || collapsed { R } else { 0 },
@@ -264,11 +306,16 @@ fn compose_ui(
     let mut header_rect = Rect::ZERO;
     let mut triangle_rect = Rect::ZERO;
     let resp = frame()
-        .stroke(if hovered {
-            Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
-        } else {
-            Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
-        })
+        .stroke(Stroke::new(
+            1.0,
+            if settings.highlighted {
+                YELLOW
+            } else if hovered {
+                tokens_global().hovered_ui_element_border()
+            } else {
+                tokens_global().subtle_borders_and_separators()
+            },
+        ))
         .show(ui, |ui| {
             ui.vertical(|ui| {
                 ui.horizontal(|ui| {
@@ -280,7 +327,7 @@ fn compose_ui(
                             if let Some(prefix) = prefix {
                                 format!("[tl [s {prefix}]]").label(ui);
                             }
-                            changed |= name(ui);
+                            df_response = name(ui);
                             if !context_actions.is_empty() {
                                 let (_, resp) = ui.allocate_at_least(
                                     egui::vec2(8.0, ui.available_height()),
@@ -365,7 +412,11 @@ fn compose_ui(
         })
         .response;
     set_ctx_bool_id(ui.ctx(), hovered_id, resp.hovered());
-    changed
+    if changed {
+        DataFrameResponse::Changed
+    } else {
+        df_response
+    }
 }
 
 fn show_triangle(openness: f32, rect: Rect, hovered: bool, ui: &mut Ui) {
@@ -396,36 +447,35 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool;
     fn show_body(&self, context: &Context, ui: &mut Ui);
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
-    fn show_name(&self, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn show_name(&self, ui: &mut Ui) -> DataFrameResponse {
+        if self.cstr().button(ui).clicked() {
+            DataFrameResponse::NameClicked
+        } else {
+            DataFrameResponse::None
+        }
     }
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        self.show_name(ui);
-        false
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        self.show_name(ui)
     }
-    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+    fn df<'a>(&'a self, context: &'a Context) -> DataFrame<'a, Self> {
         let has_header = self.has_header();
         let has_body = self.has_body();
-        let mut df = DataFrame::new(self)
-            .prefix(prefix)
-            .default_open(self.default_open());
+        let mut df = DataFrame::new(self).default_open(self.default_open());
+        df.name = Some(Box::new(|d, ui| d.show_name(ui)));
         if has_header {
-            let context = context.clone();
             df = df.header(move |d, ui| d.show_header(&context, ui));
         }
         if has_body {
             let context = context.clone();
             df = df.body(move |d, ui| d.show_body(&context, ui));
         }
-        df.ui(ui);
+        df
     }
-    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+    fn df_mut<'a>(&'a mut self) -> DataFrameMut<'a, Self> {
         let has_header = self.has_header();
         let has_body = self.has_body();
         let default_open = self.default_open();
-        let mut df = DataFrameMut::new_inject(self)
-            .prefix(prefix)
-            .default_open(default_open);
+        let mut df = DataFrameMut::new_inject(self).default_open(default_open);
         df.name = Some(Box::new(|d, ui| d.show_name_mut(ui)));
         if has_header {
             df = df.header(move |d, ui| d.show_header_mut(ui));
@@ -433,7 +483,13 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
         if has_body {
             df = df.body(move |d, ui| d.show_body_mut(ui));
         }
-        df.ui(ui)
+        df
+    }
+    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> DataFrameResponse {
+        self.df(context).prefix(prefix).ui(ui)
+    }
+    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> DataFrameResponse {
+        self.df_mut().prefix(prefix).ui(ui)
     }
 }
 
@@ -445,7 +501,7 @@ where
         self.ui(prefix, context, ui);
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        self.ui_mut(prefix, ui)
+        self.ui_mut(prefix, ui).changed()
     }
 }
 
@@ -534,11 +590,16 @@ impl<T> DataFramed for Box<T>
 where
     T: Show + Default + Serialize + DeserializeOwned + Debug + Clone + ToCstr,
 {
-    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> DataFrameResponse {
         self.deref().show(prefix, context, ui);
+        DataFrameResponse::None
     }
-    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        self.deref_mut().show_mut(prefix, ui)
+    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> DataFrameResponse {
+        if self.deref_mut().show_mut(prefix, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         false
@@ -557,8 +618,12 @@ where
 }
 
 impl DataFramed for Expression {
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        Selector::from_mut(self, ui)
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        if Selector::from_mut(self, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         match self {
@@ -824,8 +889,12 @@ impl DataFramed for Expression {
 }
 
 impl DataFramed for PainterAction {
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        Selector::from_mut(self, ui)
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        if Selector::from_mut(self, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         false
@@ -917,8 +986,12 @@ impl DataFramed for Action {
             _ => false,
         }
     }
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        Selector::from_mut(self, ui)
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        if Selector::from_mut(self, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         match self {
@@ -999,8 +1072,12 @@ impl DataFramed for Action {
     }
 }
 impl DataFramed for Trigger {
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        Selector::from_mut(self, ui)
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        if Selector::from_mut(self, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         match self {

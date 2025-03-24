@@ -23,6 +23,9 @@ fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     for house in All::load(ctx).core_load(ctx)? {
         house.delete_recursive(ctx);
     }
+    for row in ctx.db.incubator_source().iter() {
+        ctx.db.incubator_source().delete(row);
+    }
     for house in House::collect_children_of_id(ctx, ID_INCUBATOR) {
         house.fill_from_incubator(ctx).clone(ctx, ID_ALL);
     }

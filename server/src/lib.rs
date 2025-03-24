@@ -16,7 +16,7 @@ use battle::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;
-use incubator::{incubator_links, incubator_nodes, incubator_votes};
+use incubator::*;
 use inflating_number::*;
 use itertools::Itertools;
 use log::{debug, error, info};

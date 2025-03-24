@@ -87,6 +87,13 @@ fn incubator_vote(ctx: &ReducerContext, from: u64, to: u64) -> Result<(), String
     TIncubatorVotes::vote(ctx, &player, from, to)
 }
 
+#[table(public, name = incubator_source)]
+pub struct TIncubatorSource {
+    #[primary_key]
+    pub node_id: u64,
+    pub incubator_id: u64,
+}
+
 #[table(public, name = incubator_nodes)]
 pub struct TIncubator {
     #[primary_key]

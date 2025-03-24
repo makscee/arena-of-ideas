@@ -65,7 +65,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             };
             let default_open = match nt {
                 NodeType::Name => quote! {false},
-                NodeType::Data | NodeType::OnlyData => quote! {false},
+                NodeType::Data => quote! {false},
+                NodeType::OnlyData => quote! {!#has_body},
             };
             let name_link = match nt {
                 NodeType::Name => quote! {world.add_name_link(self.name.clone(), entity);},
@@ -604,6 +605,15 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             Self::None => default(),
                             #(#struct_ident::#variants => {
                                 world.get::<#variants>(entity).unwrap().get_vars()
+                            })*
+                        }
+                    }
+                    pub fn data_frame_ui(self, entity: Entity, highlighted: bool, ui: &mut Ui, world: &World) -> DataFrameResponse {
+                        let context = Context::new_world(world).set_owner(entity).take();
+                        match self {
+                            Self::None => DataFrameResponse::None,
+                            #(#struct_ident::#variants => {
+                                context.get_component::<#variants>(entity).unwrap().df(&context).highlighted(highlighted).ui(ui)
                             })*
                         }
                     }

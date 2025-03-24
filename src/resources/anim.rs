@@ -229,12 +229,17 @@ impl Show for Anim {
             .prefix(prefix)
             .body(|d, ui| d.actions.show_mut(None, ui))
             .ui(ui)
+            .changed()
     }
 }
 
 impl DataFramed for AnimAction {
-    fn show_name_mut(&mut self, ui: &mut Ui) -> bool {
-        Selector::from_mut(self, ui)
+    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
+        if Selector::from_mut(self, ui) {
+            DataFrameResponse::Changed
+        } else {
+            DataFrameResponse::None
+        }
     }
     fn has_header(&self) -> bool {
         match self {

@@ -20,6 +20,7 @@ pub mod incubator_links_table;
 pub mod incubator_merge_reducer;
 pub mod incubator_nodes_table;
 pub mod incubator_push_reducer;
+pub mod incubator_source_table;
 pub mod incubator_vote_reducer;
 pub mod incubator_votes_table;
 pub mod login_by_identity_reducer;
@@ -38,6 +39,7 @@ pub mod set_password_reducer;
 pub mod sync_assets_reducer;
 pub mod t_battle_type;
 pub mod t_incubator_links_type;
+pub mod t_incubator_source_type;
 pub mod t_incubator_type;
 pub mod t_incubator_votes_type;
 pub mod t_node_type;
@@ -72,6 +74,7 @@ pub use incubator_nodes_table::*;
 pub use incubator_push_reducer::{
     incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
 };
+pub use incubator_source_table::*;
 pub use incubator_vote_reducer::{
     incubator_vote, set_flags_for_incubator_vote, IncubatorVoteCallbackId,
 };
@@ -98,6 +101,7 @@ pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPass
 pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
 pub use t_battle_type::TBattle;
 pub use t_incubator_links_type::TIncubatorLinks;
+pub use t_incubator_source_type::TIncubatorSource;
 pub use t_incubator_type::TIncubator;
 pub use t_incubator_votes_type::TIncubatorVotes;
 pub use t_node_type::TNode;
@@ -321,6 +325,7 @@ pub struct DbUpdate {
     global_settings: __sdk::TableUpdate<GlobalSettings>,
     incubator_links: __sdk::TableUpdate<TIncubatorLinks>,
     incubator_nodes: __sdk::TableUpdate<TIncubator>,
+    incubator_source: __sdk::TableUpdate<TIncubatorSource>,
     incubator_votes: __sdk::TableUpdate<TIncubatorVotes>,
     nodes_world: __sdk::TableUpdate<TNode>,
 }
@@ -350,6 +355,10 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "incubator_nodes" => {
                     db_update.incubator_nodes =
                         incubator_nodes_table::parse_table_update(table_update)?
+                }
+                "incubator_source" => {
+                    db_update.incubator_source =
+                        incubator_source_table::parse_table_update(table_update)?
                 }
                 "incubator_votes" => {
                     db_update.incubator_votes =
@@ -400,6 +409,9 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.incubator_nodes = cache
             .apply_diff_to_table::<TIncubator>("incubator_nodes", &self.incubator_nodes)
             .with_updates_by_pk(|row| &row.id);
+        diff.incubator_source = cache
+            .apply_diff_to_table::<TIncubatorSource>("incubator_source", &self.incubator_source)
+            .with_updates_by_pk(|row| &row.node_id);
         diff.incubator_votes = cache
             .apply_diff_to_table::<TIncubatorVotes>("incubator_votes", &self.incubator_votes)
             .with_updates_by_pk(|row| &row.key);
@@ -421,6 +433,7 @@ pub struct AppliedDiff<'r> {
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
     incubator_links: __sdk::TableAppliedDiff<'r, TIncubatorLinks>,
     incubator_nodes: __sdk::TableAppliedDiff<'r, TIncubator>,
+    incubator_source: __sdk::TableAppliedDiff<'r, TIncubatorSource>,
     incubator_votes: __sdk::TableAppliedDiff<'r, TIncubatorVotes>,
     nodes_world: __sdk::TableAppliedDiff<'r, TNode>,
 }
@@ -455,6 +468,11 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks.invoke_table_row_callbacks::<TIncubator>(
             "incubator_nodes",
             &self.incubator_nodes,
+            event,
+        );
+        callbacks.invoke_table_row_callbacks::<TIncubatorSource>(
+            "incubator_source",
+            &self.incubator_source,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TIncubatorVotes>(
@@ -1044,6 +1062,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
         global_settings_table::register_table(client_cache);
         incubator_links_table::register_table(client_cache);
         incubator_nodes_table::register_table(client_cache);
+        incubator_source_table::register_table(client_cache);
         incubator_votes_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
     }

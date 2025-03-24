@@ -206,6 +206,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 self.#all_data_fields.clone(),
                             )*
                         );
+                        if self.parent == ID_INCUBATOR {
+                            ctx.db.incubator_source().insert(TIncubatorSource {
+                                node_id: d.id,
+                                incubator_id: self.id,
+                            });
+                        }
                         d.parent = parent;
                         #(
                             if let Some(n) = self.#component_fields.as_ref() {

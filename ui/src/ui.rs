@@ -37,10 +37,10 @@ pub const MARGIN: Margin = Margin {
 };
 
 pub const ROUNDING: CornerRadius = CornerRadius {
-    nw: 13,
-    ne: 13,
-    sw: 13,
-    se: 13,
+    nw: 8,
+    ne: 8,
+    sw: 8,
+    se: 8,
 };
 
 pub const UNIT_SIZE: f32 = 1.0;
