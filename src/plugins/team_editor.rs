@@ -121,9 +121,10 @@ impl TeamEditorPlugin {
         for slot in 0..slots {
             let resp = show_slot(slot, slots, false, ui);
             let slot = slot as i32;
+            let fusion = Fusion::find_by_slot(slot, world);
+            let context = Context::new_world(world);
             resp.bar_menu(|ui| {
                 ui.menu_button("add unit", |ui| {
-                    let context = Context::new_world(world);
                     let units = context.children_components_recursive::<Unit>(team);
                     for unit in units {
                         let entity = unit.entity();
@@ -141,9 +142,20 @@ impl TeamEditorPlugin {
                         });
                     }
                 });
+                if let Some(fusion) = &fusion {
+                    ui.menu_button("edit", |ui| {
+                        let mut fusion = fusion.clone();
+                        let entity = fusion.entity();
+
+                        if fusion.show_editor(&context, ui).unwrap_or_default() {
+                            op(move |world| {
+                                *world.get_mut::<Fusion>(entity).unwrap() = fusion;
+                            });
+                        }
+                    });
+                }
             });
-            if let Some(fusion) = Fusion::find_by_slot(slot, world) {
-                let context = Context::new_world(world);
+            if let Some(fusion) = &fusion {
                 if let Err(e) = fusion.paint(resp.rect, &context, ui) {
                     let ui = &mut ui.new_child(UiBuilder::new().max_rect(resp.rect));
                     ui.horizontal_centered(|ui| {

@@ -11,7 +11,6 @@ impl Fusion {
             fusion_stats.dmg += stats.dmg;
             fusion_stats.pwr += stats.pwr;
         }
-        dbg!(&fusion_stats);
         NodeState::from_world_mut(entity, world)
             .unwrap()
             .init_vars(fusion_stats.get_vars());
@@ -30,40 +29,40 @@ impl Fusion {
         context.entity_by_name(unit)
     }
     pub fn remove_unit(&mut self, u: u8) {
-        self.units.remove(u as usize);
-        self.triggers
-            .retain_mut(|(UnitTriggerRef { unit, trigger: _ }, _)| {
-                if *unit == u {
-                    return false;
-                } else if *unit > u {
-                    *unit -= 1;
-                }
-                true
-            });
-        for (_, actions) in self.triggers.iter_mut() {
-            actions.retain_mut(
-                |UnitActionRef {
-                     unit,
-                     trigger: _,
-                     action: _,
-                 }| {
-                    if *unit == u {
-                        return false;
-                    } else if *unit > u {
-                        *unit -= 1;
-                    }
-                    true
-                },
-            );
-        }
+        // self.units.remove(u as usize);
+        // self.triggers
+        //     .retain_mut(|(UnitTriggerRef { unit, trigger: _ }, _)| {
+        //         if *unit == u {
+        //             return false;
+        //         } else if *unit > u {
+        //             *unit -= 1;
+        //         }
+        //         true
+        //     });
+        // for (_, actions) in self.triggers.iter_mut() {
+        //     actions.retain_mut(
+        //         |UnitActionRef {
+        //              unit,
+        //              trigger: _,
+        //              action: _,
+        //          }| {
+        //             if *unit == u {
+        //                 return false;
+        //             } else if *unit > u {
+        //                 *unit -= 1;
+        //             }
+        //             true
+        //         },
+        //     );
+        // }
     }
     pub fn remove_trigger(&mut self, r: UnitTriggerRef) {
-        self.triggers.retain(|(t, _)| !r.eq(t));
+        // self.triggers.retain(|(t, _)| !r.eq(t));
     }
     pub fn remove_action(&mut self, r: UnitActionRef) {
-        for (_, a) in self.triggers.iter_mut() {
-            a.retain(|a| !r.eq(a));
-        }
+        // for (_, a) in self.triggers.iter_mut() {
+        //     a.retain(|a| !r.eq(a));
+        // }
     }
     pub fn get_behavior<'a>(
         &self,
@@ -77,22 +76,29 @@ impl Fusion {
     }
     pub fn get_trigger<'a>(
         &self,
-        unit: u8,
-        trigger: u8,
+        r: UnitTriggerRef,
         context: &'a Context,
     ) -> Result<&'a Trigger, ExpressionError> {
-        let reaction = self.get_behavior(unit, context)?;
-        Ok(&reaction.triggers[trigger as usize].trigger)
+        let reaction = self.get_behavior(r.unit, context)?;
+        Ok(&reaction.triggers[r.trigger as usize].trigger)
     }
-    pub fn get_action<'a>(
+    pub fn get_actions<'a>(
         &self,
         r: &UnitActionRef,
         context: &'a Context,
-    ) -> Result<(Entity, &'a Action), ExpressionError> {
+    ) -> Result<(Entity, Vec<Action>), ExpressionError> {
         let reaction = self.get_behavior(r.unit, context)?;
         Ok((
             reaction.entity(),
-            &reaction.triggers[r.trigger as usize].actions[r.action as usize],
+            reaction.triggers[r.trigger as usize]
+                .actions
+                .0
+                .iter()
+                .skip(r.action_range.start as usize)
+                .enumerate()
+                .take_while(|(i, _)| *i < r.action_range.end as usize)
+                .map(|(_, a)| a.as_ref().clone())
+                .collect_vec(),
         ))
     }
     pub fn react(
@@ -101,14 +107,13 @@ impl Fusion {
         context: &mut Context,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        for (UnitTriggerRef { unit, trigger }, actions) in &self.triggers {
-            if self
-                .get_trigger(*unit, *trigger, context)?
-                .fire(event, context)
-            {
+        if self
+            .get_trigger(self.trigger, context)?
+            .fire(event, context)
+        {
+            for r in &self.actions {
+                let (entity, actions) = self.get_actions(r, context)?;
                 for action in actions {
-                    let (entity, action) = self.get_action(action, context)?;
-                    let action = action.clone();
                     context.set_caster(entity);
                     battle_actions.extend(action.process(context)?);
                 }
@@ -144,5 +149,30 @@ impl Fusion {
                 None
             }
         })
+    }
+    pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
+        let units = self.units_entities(context)?;
+        let triggers = units
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, u)| context.get_component::<Behavior>(u).map(|b| (i, b)))
+            .flat_map(|(i, b)| {
+                b.triggers
+                    .iter()
+                    .enumerate()
+                    .map(move |(ri, r)| (i, ri, r.trigger))
+            })
+            .collect_vec();
+        ui.vertical(|ui| {
+            for (i, ti, trigger) in triggers {
+                if trigger.cstr().button(ui).clicked() {
+                    self.trigger = UnitTriggerRef {
+                        unit: i as u8,
+                        trigger: ti as u8,
+                    }
+                }
+            }
+        });
+        Ok(false)
     }
 }

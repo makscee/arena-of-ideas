@@ -349,11 +349,18 @@ impl Show for Event {
         Selector::new("").ui_enum(self, ui)
     }
 }
-impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
+impl Show for UnitTriggerRef {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         todo!()
     }
-
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        todo!()
+    }
+}
+impl Show for Vec<UnitActionRef> {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+        todo!()
+    }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         todo!()
     }
