@@ -47,16 +47,26 @@ impl StdbPlugin {
                     Self::unpack_node(node, entity, world);
                     return false;
                 }
+                let mut cur_node = node.clone();
+                let mut id = node.id;
+                loop {
+                    let parent = cur_node.parent.get_node().unwrap();
+                    if parent.kind.to_kind().is_component(cur_node.kind.to_kind()) {
+                        cur_node = parent;
+                        id = cur_node.id;
+                    } else {
+                        break;
+                    }
+                }
                 let Some(parent) = world.get_id_link(node.parent) else {
                     return true;
                 };
-                let entity = world.spawn_empty().set_parent(parent).id();
+                let entity = world
+                    .get_id_link(id)
+                    .unwrap_or_else(|| world.spawn_empty().set_parent(parent).id());
                 Self::unpack_node(node, entity, world);
                 false
             });
-            if !d.nodes_queue.is_empty() {
-                debug!("Nodes in queue {}", d.nodes_queue.len());
-            }
         });
     }
 }

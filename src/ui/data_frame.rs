@@ -457,7 +457,7 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool;
     fn show_body(&self, context: &Context, ui: &mut Ui);
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool;
-    fn show_name(&self, ui: &mut Ui) -> DataFrameResponse {
+    fn show_name(&self, _context: &Context, ui: &mut Ui) -> DataFrameResponse {
         if self.cstr().button(ui).clicked() {
             DataFrameResponse::NameClicked
         } else {
@@ -465,13 +465,13 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
         }
     }
     fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
-        self.show_name(ui)
+        self.show_name(&default(), ui)
     }
     fn df<'a>(&'a self, context: &'a Context) -> DataFrame<'a, Self> {
         let has_header = self.has_header();
         let has_body = self.has_body();
         let mut df = DataFrame::new(self).default_open(self.default_open());
-        df.name = Some(Box::new(|d, ui| d.show_name(ui)));
+        df.name = Some(Box::new(|d, ui| d.show_name(context, ui)));
         if has_header {
             df = df.header(move |d, ui| d.show_header(&context, ui));
         }

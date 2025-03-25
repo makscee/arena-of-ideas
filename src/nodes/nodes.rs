@@ -70,7 +70,6 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn load_by_parent(parent: u64) -> Option<Self>;
     fn find_incubator_component<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<T>;
     fn collect_incubator_children<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<T>;
-    fn find_child<'a, T: NodeExt>(&self, world: &'a World) -> Option<&'a T>;
 }
 impl<T> NodeExt for T
 where
@@ -138,12 +137,12 @@ where
             .filter_map(|id| P::load(id))
             .collect()
     }
-    fn find_child<'a, P: NodeExt>(&self, world: &'a World) -> Option<&'a P> {
-        self.collect_children::<P>(world).into_iter().next()
-    }
 }
 
 impl TNode {
+    pub fn find(id: u64) -> Option<Self> {
+        cn().db.nodes_world().id().find(&id)
+    }
     pub fn kind(&self) -> NodeKind {
         self.kind.to_kind()
     }
@@ -209,11 +208,7 @@ impl ToCstr for NodeKind {
     }
 }
 
-trait OnUnpack {
-    fn on_unpack(self, entity: Entity, world: &mut World);
-}
-
-impl OnUnpack for NodeKind {
+impl NodeKind {
     fn on_unpack(self, entity: Entity, world: &mut World) {
         let vars = self.get_vars(entity, world);
         let mut emut = world.entity_mut(entity);
@@ -241,6 +236,45 @@ impl OnUnpack for NodeKind {
             }
             NodeKind::StatusAbility => status_rep().clone().unpack(child(), world),
             _ => {}
+        }
+    }
+    fn show_df_name(
+        &self,
+        entity: Option<Entity>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> DataFrameResponse {
+        let mut response = None;
+        match self {
+            NodeKind::Unit => {
+                if let Some(entity) = entity {
+                    if let Some(unit) = context.get_component::<Unit>(entity) {
+                        if let Some(stats) = context.get_component::<UnitStats>(entity) {
+                            show_unit_tag(unit, stats, context, ui);
+                            response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
+                        }
+                    }
+                }
+            }
+            NodeKind::House => {
+                if let Some(entity) = entity {
+                    if let Some(house) = context.get_component::<House>(entity) {
+                        if let Some(color) = context.get_component::<HouseColor>(entity) {
+                            TagWidget::new_text(&house.name, color.color.c32()).ui(ui);
+                            response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+        if response.is_none() {
+            response = Some(self.cstr().button(ui));
+        }
+        if response.unwrap().clicked() {
+            DataFrameResponse::NameClicked
+        } else {
+            DataFrameResponse::None
         }
     }
 }

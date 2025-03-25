@@ -12,7 +12,7 @@ pub struct TagWidget {
 }
 
 const INNER_MARGIN: Margin = Margin::symmetric(4, 1);
-const OUTER_MARGIN: Margin = Margin::symmetric(4, 4);
+const OUTER_MARGIN: Margin = Margin::symmetric(4, 1);
 const NUMBER_MARGIN: Margin = Margin {
     left: 8,
     right: 2,

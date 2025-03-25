@@ -40,7 +40,12 @@ impl FusionEditorPlugin {
                         Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
                     })
                     .show(ui, |ui| {
-                        show_unit_tag(unit, stats, ui, world);
+                        show_unit_tag(
+                            unit,
+                            stats,
+                            Context::new_world(world).set_owner(unit.entity()),
+                            ui,
+                        );
                         if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                             changed = true;
                             if selected {

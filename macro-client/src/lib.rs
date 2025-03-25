@@ -191,7 +191,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #(
                         pub fn #component_link_fields_load<'a>(&self, world: &'a World) -> Result<&'a #component_types, ExpressionError> {
                             let entity = self.entity();
-                            self.find_child::<#component_types>(world)
+                            #component_types::get(entity, world)
                                 .to_e_fn(|| format!("{} not found for {}", #component_types::kind_s(), entity))
                         }
                     )*
@@ -319,6 +319,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn has_body(&self) -> bool {
                         #has_body
                     }
+                    fn show_name(&self, context: &Context, ui: &mut Ui) -> DataFrameResponse {
+                        self.kind().show_df_name(self.entity, context, ui)
+                    }
                     fn show_header(&self, context: &Context, ui: &mut Ui) {
                         if !#has_body {
                             ui.horizontal(|ui| {
@@ -351,7 +354,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = &self.#component_fields {
                                 d.show(None, context, ui);
-                            } else if let Some(d) = self.entity.and_then(|e| context.children_components::<#component_types>(e).into_iter().next()) {
+                            } else if let Some(d) = self.entity.and_then(|e| context.get_component::<#component_types>(e)) {
                                 d.show(None, context, ui);
                             }
                         )*
@@ -495,12 +498,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn pack(entity: Entity, world: &World) -> Option<Self> {
                         let mut s = world.get::<Self>(entity)?.clone();
                         #(
-                            for child in get_children(entity, world) {
-                                if let Some(d) = #component_types::pack(child, world) {
-                                    s.#component_fields = Some(d);
-                                    break;
-                                }
-                            }
+                            s.#component_fields = #component_types::pack(entity, world);
                         )*
                         #(
                             for child in get_children(entity, world) {
@@ -521,13 +519,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let parent = entity;
                         #(
                             if let Some(d) = self.#component_fields.take() {
-                                let entity = world.spawn_empty().set_parent(parent).id();
-                                debug!("{parent} -> {entity}");
                                 d.unpack(entity, world);
                             }
                         )*
                         #(
                             for d in std::mem::take(&mut self.#child_fields) {
+                                let parent = entity;
                                 let entity = world.spawn_empty().set_parent(parent).id();
                                 debug!("{parent} -> {entity}");
                                 d.unpack(entity, world);

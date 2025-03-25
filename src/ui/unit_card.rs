@@ -149,10 +149,11 @@ impl UnitCard {
     }
 }
 
-pub fn show_unit_tag(unit: &Unit, stats: &UnitStats, ui: &mut Ui, world: &World) {
+pub fn show_unit_tag(unit: &Unit, stats: &UnitStats, context: &Context, ui: &mut Ui) {
     TagWidget::new_number(
         &unit.name,
-        Context::new_world(world)
+        context
+            .clone()
             .set_owner(unit.entity())
             .get_color(VarName::color)
             .unwrap(),

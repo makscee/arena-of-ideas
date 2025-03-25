@@ -77,7 +77,7 @@ impl TeamEditorPlugin {
                     .widget(1.0, ui.style()),
                 |ui| {
                     for unit in context.children_components::<Unit>(house.entity()) {
-                        unit.name.cstr_c(color).label(ui);
+                        unit.show(None, &context, ui);
                     }
                 },
             );

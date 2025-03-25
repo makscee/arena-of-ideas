@@ -60,7 +60,12 @@ impl MatchPlugin {
         for unit in houses.into_iter().map(|h| h.units_load(world)).flatten() {
             let stats = unit.description_load(world)?.stats_load(world)?;
             dark_frame().show(ui, |ui| {
-                show_unit_tag(unit, stats, ui, world);
+                show_unit_tag(
+                    unit,
+                    stats,
+                    Context::new_world(world).set_owner(unit.entity()),
+                    ui,
+                );
                 if format!(
                     "[b sell [yellow +{}g]]",
                     global_settings().match_g.unit_sell
