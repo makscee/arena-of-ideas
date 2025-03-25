@@ -99,9 +99,9 @@ fn apply_style(colorix: &mut egui_colors::Colorix, ui: &mut Ui) {
 }
 
 fn override_style(style: &mut egui::Style) {
-    style.visuals.widgets.active.corner_radius = CornerRadius::same(8);
-    style.visuals.widgets.inactive.corner_radius = CornerRadius::same(8);
-    style.visuals.widgets.hovered.corner_radius = CornerRadius::same(8);
-    style.visuals.widgets.noninteractive.corner_radius = CornerRadius::same(8);
-    style.visuals.widgets.open.corner_radius = CornerRadius::same(8);
+    style.visuals.widgets.active.corner_radius = ROUNDING;
+    style.visuals.widgets.inactive.corner_radius = ROUNDING;
+    style.visuals.widgets.hovered.corner_radius = ROUNDING;
+    style.visuals.widgets.noninteractive.corner_radius = ROUNDING;
+    style.visuals.widgets.open.corner_radius = ROUNDING;
 }

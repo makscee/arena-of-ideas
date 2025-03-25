@@ -248,11 +248,8 @@ impl NodeKind {
         match self {
             NodeKind::Unit => {
                 if let Some(entity) = entity {
-                    if let Some(unit) = context.get_component::<Unit>(entity) {
-                        if let Some(stats) = context.get_component::<UnitStats>(entity) {
-                            show_unit_tag(unit, stats, context, ui);
-                            response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
-                        }
+                    if show_unit_tag(context.clone().set_owner(entity), ui).is_ok() {
+                        response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
                     }
                 }
             }

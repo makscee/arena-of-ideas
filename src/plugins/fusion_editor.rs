@@ -40,12 +40,12 @@ impl FusionEditorPlugin {
                         Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
                     })
                     .show(ui, |ui| {
-                        show_unit_tag(
-                            unit,
-                            stats,
-                            Context::new_world(world).set_owner(unit.entity()),
-                            ui,
-                        );
+                        // show_unit_tag(
+                        //     unit,
+                        //     stats,
+                        //     Context::new_world(world).set_owner(unit.entity()),
+                        //     ui,
+                        // );
                         if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                             changed = true;
                             if selected {
@@ -182,7 +182,7 @@ impl FusionEditorPlugin {
                 let rect = ui
                     .allocate_exact_size(egui::vec2(size, size), Sense::hover())
                     .0;
-                fusion.paint(rect, ui, &world).log();
+                fusion.paint(rect, &context, ui).log();
                 unit_rep().paint(rect.shrink(15.0), context, ui).log();
 
                 ui.vertical(|ui| {

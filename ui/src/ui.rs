@@ -29,19 +29,9 @@ pub const SHADOW: Shadow = Shadow {
     spread: 0,
     color: Color32::from_rgba_premultiplied(20, 20, 20, 35),
 };
-pub const MARGIN: Margin = Margin {
-    left: 8,
-    right: 8,
-    top: 8,
-    bottom: 8,
-};
+pub const MARGIN: Margin = Margin::same(8);
 
-pub const ROUNDING: CornerRadius = CornerRadius {
-    nw: 8,
-    ne: 8,
-    sw: 8,
-    se: 8,
-};
+pub const ROUNDING: CornerRadius = CornerRadius::same(8);
 
 pub const UNIT_SIZE: f32 = 1.0;
 

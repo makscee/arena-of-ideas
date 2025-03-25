@@ -69,28 +69,44 @@ impl Notification {
 }
 
 pub trait NotificationPusher {
-    fn to_notification(&self) -> Notification;
+    fn to_notification(&self) -> Option<Notification>;
     fn notify(&self, world: &mut World) {
-        self.to_notification().push(world)
+        if let Some(n) = self.to_notification() {
+            n.push(world)
+        }
     }
     fn notify_op(&self) {
-        self.to_notification().push_op()
+        if let Some(n) = self.to_notification() {
+            n.push_op()
+        }
     }
     fn notify_error(&self, world: &mut World) {
-        self.to_notification().error().push(world)
+        if let Some(n) = self.to_notification() {
+            n.error().push(world)
+        }
     }
     fn notify_error_op(&self) {
-        self.to_notification().error().push_op();
+        if let Some(n) = self.to_notification() {
+            n.error().push_op()
+        }
     }
 }
 
 impl NotificationPusher for String {
-    fn to_notification(&self) -> Notification {
-        Notification::new_string(self.clone())
+    fn to_notification(&self) -> Option<Notification> {
+        Some(Notification::new_string(self.clone()))
     }
 }
 impl NotificationPusher for str {
-    fn to_notification(&self) -> Notification {
-        Notification::new_string(self.into())
+    fn to_notification(&self) -> Option<Notification> {
+        Some(Notification::new_string(self.into()))
+    }
+}
+impl<T> NotificationPusher for Result<T, ExpressionError> {
+    fn to_notification(&self) -> Option<Notification> {
+        match self {
+            Ok(_) => None,
+            Err(e) => e.cstr().to_notification(),
+        }
     }
 }

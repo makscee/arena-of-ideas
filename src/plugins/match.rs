@@ -60,12 +60,12 @@ impl MatchPlugin {
         for unit in houses.into_iter().map(|h| h.units_load(world)).flatten() {
             let stats = unit.description_load(world)?.stats_load(world)?;
             dark_frame().show(ui, |ui| {
-                show_unit_tag(
-                    unit,
-                    stats,
-                    Context::new_world(world).set_owner(unit.entity()),
-                    ui,
-                );
+                // show_unit_tag(
+                //     unit,
+                //     stats,
+                //     Context::new_world(world).set_owner(unit.entity()),
+                //     ui,
+                // );
                 if format!(
                     "[b sell [yellow +{}g]]",
                     global_settings().match_g.unit_sell
@@ -94,11 +94,8 @@ impl MatchPlugin {
                 ui,
             );
             last_slot = last_slot.at_least(slot);
-            fusion.paint(r.rect, ui, world).unwrap();
             let context = &Context::new_world(world).set_owner(fusion.entity()).take();
-            if let Some(rep) = Representation::get(fusion.entity(), world) {
-                rep.paint(r.rect, context, ui).log();
-            }
+            fusion.paint(r.rect, context, ui).unwrap();
             if r.clicked() {
                 fusion_edit = Some(fusion.entity());
             }

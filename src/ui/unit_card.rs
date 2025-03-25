@@ -149,19 +149,16 @@ impl UnitCard {
     }
 }
 
-pub fn show_unit_tag(unit: &Unit, stats: &UnitStats, context: &Context, ui: &mut Ui) {
+pub fn show_unit_tag(context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
     TagWidget::new_number(
-        &unit.name,
-        context
-            .clone()
-            .set_owner(unit.entity())
-            .get_color(VarName::color)
-            .unwrap(),
+        context.get_string(VarName::name)?,
+        context.get_color(VarName::color)?,
         format!(
             "[b {} {}]",
-            stats.pwr.cstr_c(VarName::pwr.color()),
-            stats.hp.cstr_c(VarName::hp.color())
+            context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
+            context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color())
         ),
     )
     .ui(ui);
+    Ok(())
 }

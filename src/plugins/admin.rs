@@ -69,7 +69,9 @@ impl AdminPlugin {
                     if let Some(entity) = entity {
                         let rect = r.rect;
                         let fusion = battle_world.get::<Fusion>(entity).unwrap();
-                        fusion.paint(rect, ui, &battle_world).log();
+                        fusion
+                            .paint(rect, &Context::new_world(&battle_world), ui)
+                            .log();
                         let context = &Context::new_world(&battle_world).set_owner(entity).take();
                         let rep = battle_world.get::<Representation>(entity).unwrap();
                         rep.paint(rect, context, ui).log();
@@ -242,7 +244,7 @@ impl AdminPlugin {
                 .choose(&mut thread_rng())
                 .unwrap()
                 .entity();
-            TeamEditorPlugin::add_unit(unit, world).log();
+            TeamEditorPlugin::add_roster_unit(unit, world).log();
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);

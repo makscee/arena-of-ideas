@@ -134,7 +134,7 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.animation_time = 0.1;
         style.spacing = Spacing {
             item_spacing: egui::vec2(8.0, 6.0),
-            button_padding: egui::vec2(3.0, 3.0),
+            button_padding: egui::vec2(8.0, 2.0),
             combo_width: 10.0,
             interact_size: egui::vec2(20.0, 20.0),
             ..Default::default()
@@ -142,7 +142,6 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.wrap_mode = Some(egui::TextWrapMode::Extend);
         style.spacing.window_margin = Margin::same(8);
         style.spacing.slider_rail_height = 2.0;
-        style.spacing.button_padding = egui::vec2(8.0, 2.0);
         style.visuals.striped = false;
         style.visuals.slider_trailing_fill = true;
         style.visuals.handle_shape = HandleShape::Rect { aspect_ratio: 0.1 };

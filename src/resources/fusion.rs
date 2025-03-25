@@ -11,6 +11,7 @@ impl Fusion {
             fusion_stats.dmg += stats.dmg;
             fusion_stats.pwr += stats.pwr;
         }
+        dbg!(&fusion_stats);
         NodeState::from_world_mut(entity, world)
             .unwrap()
             .init_vars(fusion_stats.get_vars());
@@ -115,18 +116,23 @@ impl Fusion {
         }
         Ok(battle_actions)
     }
-    pub fn paint(&self, rect: Rect, ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let entity = self.entity();
-        let units = self.units_entities(&Context::new_world(world))?;
+        let units = self.units_entities(context)?;
         for unit in units {
-            let Some(rep) = world.get::<Representation>(unit) else {
+            let Some(rep) = context.get_component::<Representation>(unit) else {
                 continue;
             };
-            let context = Context::new_world(world)
-                .set_owner(unit)
-                .set_owner(entity)
-                .take();
+            let context = context.clone().set_owner(unit).set_owner(entity).take();
             RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)?;
+        }
+        if let Some(rep) = context.get_component::<Representation>(entity) {
+            RepresentationPlugin::paint_rect(
+                rect,
+                context.clone().set_owner(entity),
+                &rep.material,
+                ui,
+            )?;
         }
         Ok(())
     }

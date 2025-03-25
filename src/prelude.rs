@@ -54,6 +54,7 @@ pub use bevy_asset_loader::{
     standard_dynamic_asset::StandardDynamicAssetCollection,
 };
 pub use bevy_common_assets::ron::RonAssetPlugin;
+pub use bevy_egui::egui::UiBuilder;
 pub use bevy_egui::egui::{
     self, epaint::TextShape, Align, CollapsingHeader, Color32, CornerRadius, Frame, Layout, Margin,
     Rect, Shadow, Stroke, Ui,

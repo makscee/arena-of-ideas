@@ -608,11 +608,7 @@ impl BattleSimulation {
                     );
                     if fusions.contains(&entity) {
                         let fusion = self.world.get::<Fusion>(entity).unwrap();
-                        fusion.paint(rect, ui, &self.world).log();
-                    }
-                    match RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui) {
-                        Ok(_) => {}
-                        Err(e) => error!("Rep paint error: {e}"),
+                        fusion.paint(rect, &Context::new_world(world), ui).log();
                     }
                 }
             }
