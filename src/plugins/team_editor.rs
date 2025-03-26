@@ -4,7 +4,7 @@ pub struct TeamEditorPlugin;
 
 #[derive(Resource)]
 struct TeamEditorData {
-    entity: Entity,
+    world: World,
     add_unit: Option<Box<dyn Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync>>,
     on_save: Option<Box<dyn Fn(Team, &mut World) + 'static + Send + Sync>>,
 }
@@ -49,45 +49,30 @@ impl TeamEditorPlugin {
         Ok(())
     }
     pub fn add_panes() {
-        TilePlugin::op(|tree| {
-            if let Some(id) = tree.tiles.find_pane(&Pane::TeamRoster) {
+        TilePlugin::add_to_current(|tree| {
+            if let Some(id) = tree.tiles.find_pane(&Pane::Team(TeamPane::Roster)) {
                 tree.tiles.remove(id);
             }
-            if let Some(id) = tree.tiles.find_pane(&Pane::TeamSlots) {
+            if let Some(id) = tree.tiles.find_pane(&Pane::Team(TeamPane::Slots)) {
                 tree.tiles.remove(id);
             }
-            let roster = tree.tiles.insert_pane(Pane::TeamRoster);
-            let slots = tree.tiles.insert_pane(Pane::TeamSlots);
-            let id = tree.tiles.insert_vertical_tile([slots, roster].into());
-            tree.add_to_root(id).log();
+            let roster = tree.tiles.insert_pane(Pane::Team(TeamPane::Roster));
+            let slots = tree.tiles.insert_pane(Pane::Team(TeamPane::Slots));
+            tree.tiles.insert_vertical_tile([slots, roster].into())
         });
     }
     pub fn load_team(team: Team, world: &mut World) {
-        if let Ok(r) = rm(world) {
-            let team = r.entity;
-            world.entity_mut(team).despawn_recursive();
-        }
-        let entity = world.spawn_empty().id();
-        team.unpack(entity, world);
+        let mut team_world = World::new();
+        team.unpack(team_world.spawn_empty().id(), &mut team_world);
         world.insert_resource(TeamEditorData {
-            entity,
-            add_unit: None,
-            on_save: None,
-        });
-    }
-    pub fn load_team_entity(entity: Entity, world: &mut World) {
-        if world.get::<Team>(entity).is_none() {
-            format!("No team component on {entity}").notify_error(world);
-            return;
-        }
-        world.insert_resource(TeamEditorData {
-            entity,
+            world: team_world,
             add_unit: None,
             on_save: None,
         });
     }
     pub fn add_roster_unit(mut house: House, world: &mut World) -> Result<(), ExpressionError> {
-        let team = rm(world)?.entity;
+        let world = &mut rm(world)?.world;
+        let team = world.query::<&Team>().single(world).entity();
         if house.units.is_empty() {
             return Err("No units in House".into());
         }
@@ -108,7 +93,8 @@ impl TeamEditorPlugin {
         Ok(())
     }
     fn add_slot_unit(entity: Entity, slot: i32, world: &mut World) -> Result<(), ExpressionError> {
-        let team = rm(world)?.entity;
+        let world = &mut rm(world)?.world;
+        let team = world.query::<&Team>().single(world).entity();
         let context = Context::new_world(world);
         let unit = world
             .get::<Unit>(entity)
@@ -132,11 +118,13 @@ impl TeamEditorPlugin {
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some(ed) = world.remove_resource::<TeamEditorData>() else {
+        let Some(mut ed) = world.remove_resource::<TeamEditorData>() else {
             "No team loaded".cstr_c(RED).label(ui);
             return Ok(());
         };
-        let team = ed.entity;
+
+        let team_world = &mut ed.world;
+        let team = team_world.query::<&Team>().single(team_world).entity();
         if let Some(f) = &ed.add_unit {
             ui.menu_button("add unit", |ui| {
                 if let Some(house) = f(ui, world) {
@@ -149,16 +137,16 @@ impl TeamEditorPlugin {
         }
         if let Some(f) = &ed.on_save {
             if "save".cstr().button(ui).clicked() {
-                let team = Team::pack(team, world).to_e("Failed to pack team")?;
+                let team = Team::pack(team, team_world).to_e("Failed to pack team")?;
                 f(team, world);
             }
         }
-        Team::get(team, world)
+        Team::get(team, team_world)
             .unwrap()
-            .show(None, &Context::new_world(world), ui);
-        let context = Context::new_world(world);
+            .show(None, &Context::new_world(team_world), ui);
+        let context = Context::new_world(team_world);
         for house in context.children_components::<House>(team) {
-            let color = house.color_load(world)?.color.c32();
+            let color = house.color_load(team_world)?.color.c32();
             ui.collapsing(
                 house
                     .name
@@ -171,20 +159,24 @@ impl TeamEditorPlugin {
                 },
             );
         }
+
         world.insert_resource(ed);
         Ok(())
     }
     pub fn pane_slots(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some(team) = world.get_resource::<TeamEditorData>().map(|d| d.entity) else {
+        let Some(mut ed) = world.remove_resource::<TeamEditorData>() else {
             "No team loaded".cstr_c(RED).label(ui);
             return Ok(());
         };
+
+        let team_world = &mut ed.world;
+        let team = team_world.query::<&Team>().single(team_world).entity();
         let slots = global_settings().team_slots as usize;
         for slot in 0..slots {
             let resp = show_slot(slot, slots, false, ui);
             let slot = slot as i32;
-            let fusion = Fusion::find_by_slot(slot, world);
-            let context = Context::new_world(world);
+            let fusion = Fusion::find_by_slot(slot, team_world);
+            let context = Context::new_world(team_world);
             resp.bar_menu(|ui| {
                 ui.menu_button("add unit", |ui| {
                     let units = context.children_components_recursive::<Unit>(team);
@@ -226,6 +218,8 @@ impl TeamEditorPlugin {
                 }
             }
         }
+
+        world.insert_resource(ed);
         Ok(())
     }
 }

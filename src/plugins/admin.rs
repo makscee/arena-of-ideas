@@ -227,10 +227,7 @@ impl AdminPlugin {
             BattlePlugin::load_empty(world);
         }
         if "Add Node Graph Pane".cstr().button(ui).clicked() {
-            TilePlugin::op(|tree| {
-                let id = tree.tiles.insert_pane(Pane::NodeGraph);
-                tree.add_to_root(id).unwrap();
-            });
+            TilePlugin::add_to_current(|tree| tree.tiles.insert_pane(Pane::NodeGraph));
         }
         if "Add Team Editor Panes".cstr().button(ui).clicked() {
             TeamEditorPlugin::load_team(default(), world);

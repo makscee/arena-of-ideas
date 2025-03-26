@@ -34,12 +34,12 @@ impl GameState {
             GameState::Incubator => {
                 let mut tiles = Tiles::default();
                 let left = [
-                    tiles.insert_pane(Pane::IncubatorInspect),
-                    tiles.insert_pane(Pane::IncubatorNewNode),
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::Inspect)),
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::NewNode)),
                 ]
                 .into();
                 let left = tiles.insert_tab_tile(left);
-                let right = tiles.insert_pane(Pane::IncubatorNodes);
+                let right = tiles.insert_pane(Pane::Incubator(IncubatorPane::Nodes));
                 let root = tiles.insert_horizontal_tile([left, right].into());
                 Tree::new(TREE_ID, root, tiles)
             }
@@ -55,28 +55,36 @@ pub enum Pane {
     Register,
     MainMenu,
     Shop,
-    Team,
     Roster,
     Triggers,
     Actions,
     FusionResult,
     BattleEditor,
 
-    IncubatorNodes,
-    IncubatorNewNode,
-    IncubatorInspect,
-
-    BattleView,
-    BattleControls,
-
-    EditorTeam,
+    Incubator(IncubatorPane),
+    Battle(BattlePane),
+    Team(TeamPane),
 
     Admin,
     WorldInspector,
     NodeGraph,
+}
 
-    TeamRoster,
-    TeamSlots,
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum IncubatorPane {
+    Nodes,
+    NewNode,
+    Inspect,
+}
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum BattlePane {
+    View,
+    Controls,
+}
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum TeamPane {
+    Slots,
+    Roster,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -111,26 +119,29 @@ impl Pane {
                 GameState::FusionEditor => FusionEditorPlugin::pane_roster(ui, world)?,
                 _ => unreachable!(),
             },
-            Pane::Team => MatchPlugin::pane_team(ui, world)?,
             Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
             Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
             Pane::FusionResult => FusionEditorPlugin::pane_fusion_result(ui, world)?,
             Pane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
 
-            Pane::IncubatorNewNode => IncubatorPlugin::pane_new_node(ui, world)?,
-            Pane::IncubatorInspect => IncubatorPlugin::pane_inspect(ui, world)?,
-            Pane::IncubatorNodes => IncubatorPlugin::pane_nodes(ui, world)?,
+            Pane::Incubator(pane) => match pane {
+                IncubatorPane::NewNode => IncubatorPlugin::pane_new_node(ui, world)?,
+                IncubatorPane::Inspect => IncubatorPlugin::pane_inspect(ui, world)?,
+                IncubatorPane::Nodes => IncubatorPlugin::pane_nodes(ui, world)?,
+            },
 
-            Pane::BattleView => BattlePlugin::pane_view(ui, world)?,
-            Pane::BattleControls => BattlePlugin::pane_controls(ui, world)?,
-
-            Pane::EditorTeam => Team::show_editor(self, ui, world),
+            Pane::Battle(pane) => match pane {
+                BattlePane::View => BattlePlugin::pane_view(ui, world)?,
+                BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
+            },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
             Pane::NodeGraph => NodeGraphPlugin::pane_ui(ui, world),
 
-            Pane::TeamRoster => TeamEditorPlugin::pane_roster(ui, world)?,
-            Pane::TeamSlots => TeamEditorPlugin::pane_slots(ui, world)?,
+            Pane::Team(pane) => match pane {
+                TeamPane::Slots => TeamEditorPlugin::pane_slots(ui, world)?,
+                TeamPane::Roster => TeamEditorPlugin::pane_roster(ui, world)?,
+            },
         };
         Ok(())
     }

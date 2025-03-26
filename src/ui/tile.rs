@@ -7,13 +7,18 @@ pub struct TreeBehavior {
     pub world: Option<World>,
 }
 
+static CURRENT_TILE_ID: Mutex<u64> = Mutex::new(0);
+pub fn cur_tile_id() -> TileId {
+    TileId::from_u64(*CURRENT_TILE_ID.lock())
+}
 impl egui_tiles::Behavior<Pane> for TreeBehavior {
     fn pane_ui(
         &mut self,
         ui: &mut egui::Ui,
-        _tile_id: TileId,
+        tile_id: TileId,
         view: &mut Pane,
     ) -> egui_tiles::UiResponse {
+        *CURRENT_TILE_ID.lock() = tile_id.0;
         dark_frame().show(ui, |ui| {
             ScrollArea::both().show(ui, |ui| {
                 ui.expand_to_include_rect(ui.available_rect_before_wrap());
@@ -38,11 +43,11 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         state: &egui_tiles::TabState,
     ) -> Color32 {
         if state.active {
-            tokens_global().low_contrast_text()
+            tokens_global().high_contrast_text()
         } else if state.is_being_dragged {
             tokens_global().hovered_ui_element_border()
         } else {
-            tokens_global().high_contrast_text()
+            tokens_global().low_contrast_text()
         }
     }
     fn tab_bar_color(&self, _: &egui::Visuals) -> Color32 {
@@ -147,18 +152,28 @@ impl TileTree {
 }
 
 pub trait TreeExt {
-    fn add_to_root(&mut self, id: TileId) -> Result<(), ExpressionError>;
+    fn add_tab(&mut self, tab: TileId, new: TileId) -> Result<(), ExpressionError>;
 }
 
 impl TreeExt for Tree<Pane> {
-    fn add_to_root(&mut self, id: TileId) -> Result<(), ExpressionError> {
-        let Some(root) = self.root else {
-            return Err("No root tile found".into());
-        };
-        let Tile::Container(container) = self.tiles.get_mut(root).unwrap() else {
-            return Err("Root tile is not container".into());
-        };
-        container.add_child(id);
+    fn add_tab(&mut self, cur: TileId, new: TileId) -> Result<(), ExpressionError> {
+        let cur_tile = self.tiles.get_mut(cur).to_e("Failed to get current tile")?;
+        match cur_tile {
+            Tile::Pane(_) => {
+                let container = self
+                    .tiles
+                    .parent_of(cur)
+                    .to_e("Failed to get parent of current tile")?;
+                match self.tiles.get_mut(container).unwrap() {
+                    Tile::Pane(_) => unreachable!(),
+                    Tile::Container(container) => container.add_child(new),
+                }
+            }
+            Tile::Container(container) => {
+                container.add_child(new);
+            }
+        }
+        self.make_active(|tile_id, _| tile_id == new);
         Ok(())
     }
 }

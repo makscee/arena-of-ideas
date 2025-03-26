@@ -22,13 +22,41 @@ impl TilePlugin {
     pub fn op(f: impl Fn(&mut Tree<Pane>) + 'static + Sync + Send) {
         OperationsPlugin::add(move |world| f(&mut rm(world).tree.tree));
     }
-    pub fn add_pane(pane: Pane) {
+    pub fn add_to_current(f: impl Fn(&mut Tree<Pane>) -> TileId + 'static + Sync + Send) {
+        let id = cur_tile_id();
         Self::op(move |tree| {
-            let id = tree.tiles.insert_pane(pane);
-            tree.add_to_root(id);
-        });
+            let new = f(tree);
+            tree.add_tab(id, new).notify_op();
+        })
     }
-
+    pub fn close_current() {
+        let id = cur_tile_id();
+        Self::op(move |tree| {
+            tree.tiles.remove(id);
+        })
+    }
+    pub fn close_match(predicate: fn(&Pane) -> bool) {
+        Self::op(move |tree| {
+            let ids = tree
+                .tiles
+                .iter()
+                .filter_map(|tile| {
+                    if let Tile::Pane(pane) = tile.1 {
+                        if predicate(pane) {
+                            Some(*tile.0)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .collect_vec();
+            for id in ids {
+                tree.tiles.remove(id);
+            }
+        })
+    }
     pub fn request_tree_save(state: GameState) {
         OperationsPlugin::add(move |world| {
             rm(world).save_requested = Some(state);

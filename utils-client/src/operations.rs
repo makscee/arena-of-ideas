@@ -11,7 +11,7 @@ static OPERATIONS: OnceCell<Mutex<OperationsData>> = OnceCell::new();
 
 #[derive(Default)]
 pub struct OperationsData {
-    queue: VecDeque<Operation>,
+    queue: Vec<Operation>,
 }
 
 impl Plugin for OperationsPlugin {
@@ -29,7 +29,7 @@ impl OperationsPlugin {
         Self::add_boxed(operation)
     }
     pub fn add_boxed(operation: Box<impl FnOnce(&mut World) + Send + Sync + 'static>) {
-        OPERATIONS.get().unwrap().lock().queue.push_back(operation)
+        OPERATIONS.get().unwrap().lock().queue.push(operation)
     }
 }
 
@@ -38,7 +38,8 @@ pub fn op(f: impl FnOnce(&mut World) + 'static + Send + Sync) {
 }
 
 fn update(world: &mut World) {
-    while let Some(operation) = OPERATIONS.get().unwrap().lock().queue.pop_front() {
+    let v = std::mem::take(&mut OPERATIONS.get().unwrap().lock().queue);
+    for operation in v {
         operation(world);
     }
 }
