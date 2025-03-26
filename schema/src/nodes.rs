@@ -42,8 +42,8 @@ struct PlayerIdentity {
 struct House {
     pub name: String,
     pub color: NodeComponent<HouseColor>,
-    pub action_abilities: NodeComponent<ActionAbility>,
-    pub status_abilities: NodeComponent<StatusAbility>,
+    pub action_ability: NodeComponent<ActionAbility>,
+    pub status_ability: NodeComponent<StatusAbility>,
     pub units: NodeChildren<Unit>,
 }
 

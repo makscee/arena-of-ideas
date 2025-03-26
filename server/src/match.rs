@@ -26,8 +26,8 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         unit.clone(ctx, h.id);
     } else {
         house.color_load(ctx)?;
-        let _ = house.status_abilities_load(ctx);
-        let _ = house.action_abilities_load(ctx);
+        let _ = house.status_ability_load(ctx);
+        let _ = house.action_ability_load(ctx);
         let house = house.clone(ctx, m.team_load(ctx)?.id);
         unit.clone(ctx, house.id);
     }

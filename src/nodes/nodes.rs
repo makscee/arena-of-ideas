@@ -60,6 +60,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn children_kinds() -> HashSet<NodeKind>;
     fn fill_from_incubator(self) -> Self;
     fn clear_ids(&mut self);
+    fn with_components(self, world: &World) -> Self;
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
@@ -289,6 +290,18 @@ impl Fusion {
     pub fn team_load<'a>(&self, world: &'a World) -> Result<&'a Team, ExpressionError> {
         self.find_up::<Team>(world)
             .to_e("Failed to find parent Team of Fusion")
+    }
+}
+
+impl Unit {
+    pub fn to_house(self, world: &World) -> Result<House, ExpressionError> {
+        let mut house = self
+            .find_up::<House>(world)
+            .cloned()
+            .to_e("House not found")?
+            .with_components(world);
+        house.units.push(self.with_components(world));
+        Ok(house)
     }
 }
 

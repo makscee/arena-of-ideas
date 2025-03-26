@@ -538,10 +538,10 @@ impl BattleSimulation {
     }
     fn pack_units_by_slot(&self, slot: usize, side: bool) -> Vec<Unit> {
         if let Some(f) = self.fusion_by_slot(slot, side) {
-            if let Ok(units) = f.units_entities(&Context::new_battle_simulation(self)) {
+            if let Ok(units) = f.units(&Context::new_battle_simulation(self)) {
                 return units
                     .into_iter()
-                    .map(|u| Unit::pack(u, &self.world).unwrap())
+                    .map(|u| Unit::pack(u.entity(), &self.world).unwrap())
                     .collect_vec();
             }
         }
@@ -561,20 +561,18 @@ impl BattleSimulation {
             Self::show_card_from_units(&self.pack_units_by_slot(slot, side), ui);
         });
     }
-    pub fn show_at(
-        &mut self,
-        t: f32,
-        ui: &mut Ui,
-        world: &mut World,
-        slot_fn: impl Fn(usize, bool, &Response, &mut Self, &mut Ui, &mut World),
-    ) {
+    pub fn show_at(&mut self, t: f32, ui: &mut Ui) {
         let slots = global_settings().team_slots as usize;
-        let center_rect = slot_rect_side(0, true, ui.available_rect_before_wrap(), slots);
+        let center_rect = slot_rect(
+            slot_by_side(0, slots, true),
+            slots * 2 + 1,
+            ui.available_rect_before_wrap(),
+            true,
+        );
         let unit_size = center_rect.width() * UNIT_SIZE;
         let unit_pixels = center_rect.width() * 0.5;
         for (slot, side) in (0..slots).cartesian_product([true, false]) {
             let resp = show_battle_slot(slot + 1, slots, side, ui);
-            slot_fn(slot + 1, side, &resp, self, ui, world);
             if resp.hovered() {
                 self.show_card(slot, side, ui);
             }
@@ -594,22 +592,20 @@ impl BattleSimulation {
             let context = context.clone().set_owner(entity).take();
             if context.get_bool(VarName::visible).unwrap_or(true) {
                 entities.extend(context.get_children(entity));
-                if let Some(rep) = self.world.get::<Representation>(entity) {
-                    let position = context
-                        .get_var(VarName::position)
-                        .unwrap_or_default()
-                        .get_vec2()
-                        .unwrap()
-                        .to_evec2()
-                        * unit_pixels;
-                    let rect = Rect::from_center_size(
-                        center_rect.center() + position,
-                        egui::Vec2::splat(unit_size),
-                    );
-                    if fusions.contains(&entity) {
-                        let fusion = self.world.get::<Fusion>(entity).unwrap();
-                        fusion.paint(rect, &Context::new_world(world), ui).log();
-                    }
+                let position = context
+                    .get_var(VarName::position)
+                    .unwrap_or_default()
+                    .get_vec2()
+                    .unwrap()
+                    .to_evec2()
+                    * unit_pixels;
+                let rect = Rect::from_center_size(
+                    center_rect.center() + position,
+                    egui::Vec2::splat(unit_size),
+                );
+                if fusions.contains(&entity) {
+                    let fusion = context.get_component::<Fusion>(entity).unwrap();
+                    fusion.paint(rect, &context, ui).log();
                 }
             }
         }
@@ -626,10 +622,4 @@ fn slot_by_side(i: usize, team_slots: usize, player_side: bool) -> usize {
     } else {
         team_slots + i
     }
-}
-fn slot_rect_side(i: usize, player_side: bool, full_rect: Rect, team_slots: usize) -> Rect {
-    let full_rect = full_rect.shrink2(egui::vec2(0.0, 10.0));
-    let total_slots = team_slots * 2 + 1;
-    let i = slot_by_side(i, team_slots, player_side);
-    slot_rect(i, total_slots, full_rect, true)
 }

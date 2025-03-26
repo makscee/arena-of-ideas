@@ -222,11 +222,9 @@ impl AdminPlugin {
                 debug!("test3");
             })
             .ui(ui, world);
-        if "Load Battle".cstr().button(ui).clicked() {
-            BattlePlugin::load_incubator(world).log();
-        }
         if "Add Battle Panes".cstr().button(ui).clicked() {
             BattlePlugin::add_panes();
+            BattlePlugin::load_empty(world);
         }
         if "Add Node Graph Pane".cstr().button(ui).clicked() {
             TilePlugin::op(|tree| {
@@ -237,6 +235,7 @@ impl AdminPlugin {
         if "Add Team Editor Panes".cstr().button(ui).clicked() {
             TeamEditorPlugin::load_team(default(), world);
             TeamEditorPlugin::add_panes();
+            TeamEditorPlugin::unit_add_from_core(world).notify(world);
         }
         if "Add Unit".cstr().button(ui).clicked() {
             let unit = Context::new_world(world)
@@ -244,7 +243,6 @@ impl AdminPlugin {
                 .choose(&mut thread_rng())
                 .unwrap()
                 .entity();
-            TeamEditorPlugin::add_roster_unit(unit, world).log();
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);

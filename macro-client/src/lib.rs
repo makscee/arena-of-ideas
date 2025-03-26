@@ -562,6 +562,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
+                    fn with_components(mut self, world: &World) -> Self {
+                        #(
+                            self.#component_fields = #component_types::pack(self.entity(), world);
+                        )*
+                        self
+                    }
                 }
                 impl From<&str> for #struct_ident {
                     fn from(value: &str) -> Self {

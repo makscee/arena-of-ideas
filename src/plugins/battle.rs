@@ -15,15 +15,8 @@ fn rm(world: &mut World) -> Mut<BattleData> {
 }
 
 impl BattlePlugin {
-    pub fn load_incubator(world: &mut World) -> Result<(), ExpressionError> {
-        let mut team = Team::default();
-        team.houses = IncubatorPlugin::world_op(world, |world| {
-            world
-                .query::<&House>()
-                .iter(world)
-                .filter_map(|h| House::pack(h.entity(), world))
-                .collect_vec()
-        });
+    pub fn load_empty(world: &mut World) {
+        let team = Team::default();
         let battle = Battle {
             left: team.clone(),
             right: team.clone(),
@@ -34,11 +27,10 @@ impl BattlePlugin {
             t: 0.0,
             playing: false,
         });
-        Ok(())
     }
     fn reload_simulation(world: &mut World) {
         let mut data = rm(world);
-        data.simulation = BattleSimulation::new(data.battle.clone());
+        data.simulation = BattleSimulation::new(data.battle.clone()).start();
     }
     pub fn add_panes() {
         TilePlugin::op(|tree| {
@@ -61,63 +53,49 @@ impl BattlePlugin {
         };
 
         let t = data.t;
-        data.simulation.show_at(
-            t,
-            ui,
-            world,
-            |slot, player_side, resp, simulation, ui, world| {
-                resp.bar_menu(|ui| {
-                    ui.menu_button("add unit", |ui| {
-                        IncubatorPlugin::world_op(world, |world| {
-                            let team = if player_side {
-                                simulation.team_left
-                            } else {
-                                simulation.team_right
-                            };
-                            let context =
-                                Context::new_world(&simulation.world).set_owner(team).take();
-                            let units = context.children_components_recursive::<Unit>(team);
-                            for unit in units {
-                                let entity = unit.entity();
-                                let context = Context::new_world(&simulation.world)
-                                    .set_owner(entity)
-                                    .take();
-                                if let Ok(name) =
-                                    context.get_string(VarName::name).and_then(|name| {
-                                        context.get_color(VarName::color).map(|c| (name.cstr_c(c)))
-                                    })
-                                {
-                                    if name.cstr().button(ui).clicked() {
-                                        OperationsPlugin::add(move |world| {
-                                            Self::add_incubator_unit(
-                                                slot,
-                                                player_side,
-                                                name.get_text(),
-                                                world,
-                                            );
-                                        });
-                                        ui.close_menu();
-                                    }
-                                }
-                            }
-                        });
-                        Ok(())
-                    })
-                    .inner
-                    .unwrap_or(Ok(()))
-                    .log();
-                });
-            },
-        );
+        data.simulation.show_at(t, ui);
 
         world.insert_resource(data);
         Ok(())
+    }
+    fn open_team_editor(left: bool, world: &mut World) {
+        TeamEditorPlugin::load_team(
+            if left {
+                rm(world).battle.left.clone()
+            } else {
+                rm(world).battle.right.clone()
+            },
+            world,
+        );
+        TeamEditorPlugin::on_save_fn(
+            move |team, world| {
+                if left {
+                    rm(world).battle.left = team;
+                } else {
+                    rm(world).battle.right = team;
+                }
+                Self::reload_simulation(world);
+            },
+            world,
+        )
+        .notify(world);
+        TeamEditorPlugin::unit_add_from_core(world).notify(world);
     }
     pub fn pane_controls(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let Some(mut data) = world.get_resource_mut::<BattleData>() else {
             "[red No battle loaded]".cstr().label(ui);
             return Ok(());
         };
+        if "edit left team".cstr().button(ui).clicked() {
+            op(|world| {
+                Self::open_team_editor(true, world);
+            });
+        }
+        if "edit right team".cstr().button(ui).clicked() {
+            op(|world| {
+                Self::open_team_editor(false, world);
+            });
+        }
         let BattleData {
             battle: _,
             simulation,

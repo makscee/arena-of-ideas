@@ -3,7 +3,8 @@ use super::*;
 impl Fusion {
     pub fn init(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
         let fusion = world.get::<Fusion>(entity).to_e("Fusion not found")?;
-        let units = fusion.units_entities(&Context::new_world(world))?;
+        let context = Context::new_world(world);
+        let units = fusion.units(&context)?.into_iter().map(|u| u.entity());
         let mut fusion_stats = UnitStats::default();
         for u in units {
             let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
@@ -17,12 +18,16 @@ impl Fusion {
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
-    pub fn units_entities(&self, context: &Context) -> Result<Vec<Entity>, ExpressionError> {
-        let mut units: Vec<Entity> = default();
-        for unit in &self.units {
-            units.push(context.entity_by_name(unit)?);
-        }
-        Ok(units)
+    pub fn units<'a>(&'a self, context: &'a Context) -> Result<Vec<&'a Unit>, ExpressionError> {
+        let team = context
+            .get_parent(self.entity())
+            .to_e("Fusion parent not found")
+            .unwrap();
+        Ok(context
+            .children_components_recursive::<Unit>(team)
+            .into_iter()
+            .filter(|u| self.units.contains(&u.name))
+            .collect())
     }
     pub fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
         let unit = &self.units[unit as usize];
@@ -114,8 +119,9 @@ impl Fusion {
     }
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let entity = self.entity();
-        let units = self.units_entities(context)?;
+        let units = self.units(context)?;
         for unit in units {
+            let unit = unit.entity();
             let Some(rep) = context.get_component::<Representation>(unit) else {
                 continue;
             };
@@ -142,7 +148,6 @@ impl Fusion {
         })
     }
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
-        let units = self.units_entities(context)?;
         let behaviors = (0..self.units.len())
             .filter_map(|u| {
                 self.get_behavior(u as u8, context)

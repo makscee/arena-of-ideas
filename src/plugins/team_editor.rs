@@ -5,6 +5,8 @@ pub struct TeamEditorPlugin;
 #[derive(Resource)]
 struct TeamEditorData {
     entity: Entity,
+    add_unit: Option<Box<dyn Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync>>,
+    on_save: Option<Box<dyn Fn(Team, &mut World) + 'static + Send + Sync>>,
 }
 
 fn rm(world: &mut World) -> Result<Mut<TeamEditorData>, ExpressionError> {
@@ -13,6 +15,39 @@ fn rm(world: &mut World) -> Result<Mut<TeamEditorData>, ExpressionError> {
         .to_e("Team not loaded")
 }
 impl TeamEditorPlugin {
+    pub fn unit_add_fn(
+        f: impl Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync,
+        world: &mut World,
+    ) -> Result<(), ExpressionError> {
+        rm(world)?.add_unit = Some(Box::new(f));
+        Ok(())
+    }
+    pub fn unit_add_from_core(world: &mut World) -> Result<(), ExpressionError> {
+        Self::unit_add_fn(
+            |ui, world| {
+                let context = Context::new_world(world);
+                for unit in context.children_components_recursive::<Unit>(all(world).entity()) {
+                    let color = context
+                        .clone()
+                        .set_owner(unit.entity())
+                        .get_color(VarName::color)
+                        .ok_log()?;
+                    if unit.name.cstr_c(color).button(ui).clicked() {
+                        return unit.clone().to_house(world).ok_log();
+                    }
+                }
+                None
+            },
+            world,
+        )
+    }
+    pub fn on_save_fn(
+        f: impl Fn(Team, &mut World) + 'static + Send + Sync,
+        world: &mut World,
+    ) -> Result<(), ExpressionError> {
+        rm(world)?.on_save = Some(Box::new(f));
+        Ok(())
+    }
     pub fn add_panes() {
         TilePlugin::op(|tree| {
             if let Some(id) = tree.tiles.find_pane(&Pane::TeamRoster) {
@@ -28,36 +63,45 @@ impl TeamEditorPlugin {
         });
     }
     pub fn load_team(team: Team, world: &mut World) {
+        if let Ok(r) = rm(world) {
+            let team = r.entity;
+            world.entity_mut(team).despawn_recursive();
+        }
         let entity = world.spawn_empty().id();
         team.unpack(entity, world);
-        world.insert_resource(TeamEditorData { entity });
+        world.insert_resource(TeamEditorData {
+            entity,
+            add_unit: None,
+            on_save: None,
+        });
     }
     pub fn load_team_entity(entity: Entity, world: &mut World) {
         if world.get::<Team>(entity).is_none() {
             format!("No team component on {entity}").notify_error(world);
             return;
         }
-        world.insert_resource(TeamEditorData { entity });
+        world.insert_resource(TeamEditorData {
+            entity,
+            add_unit: None,
+            on_save: None,
+        });
     }
-    pub fn add_roster_unit(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn add_roster_unit(mut house: House, world: &mut World) -> Result<(), ExpressionError> {
         let team = rm(world)?.entity;
-        let unit = world.get::<Unit>(entity).to_e("Unit component not found")?;
+        if house.units.is_empty() {
+            return Err("No units in House".into());
+        }
         let context = Context::new_world(world);
-        let house = context
-            .find_parent_component::<House>(entity)
-            .to_e("House parent not found")?;
         if let Some(team_house) = context
             .children_components::<House>(team)
             .into_iter()
             .find(|h| h.name == house.name)
         {
-            let house = team_house.entity();
-            let mut unit = Unit::pack(entity, world).to_e("Failed to pack Unit")?;
+            let entity = team_house.entity();
+            let mut unit = house.units.remove(0);
             unit.clear_ids();
-            unit.unpack(world.spawn_empty().set_parent(house).id(), world);
+            unit.unpack(world.spawn_empty().set_parent(entity).id(), world);
         } else {
-            let mut house = House::pack(house.entity(), world).to_e("Failed to pack House")?;
-            house.units.retain(|u| u.name == unit.name);
             house.clear_ids();
             house.unpack(world.spawn_empty().set_parent(team).id(), world);
         }
@@ -88,10 +132,27 @@ impl TeamEditorPlugin {
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some(team) = world.get_resource::<TeamEditorData>().map(|d| d.entity) else {
+        let Some(ed) = world.remove_resource::<TeamEditorData>() else {
             "No team loaded".cstr_c(RED).label(ui);
             return Ok(());
         };
+        let team = ed.entity;
+        if let Some(f) = &ed.add_unit {
+            ui.menu_button("add unit", |ui| {
+                if let Some(house) = f(ui, world) {
+                    op(move |world| {
+                        Self::add_roster_unit(house, world).notify(world);
+                    });
+                    ui.close_menu();
+                }
+            });
+        }
+        if let Some(f) = &ed.on_save {
+            if "save".cstr().button(ui).clicked() {
+                let team = Team::pack(team, world).to_e("Failed to pack team")?;
+                f(team, world);
+            }
+        }
         Team::get(team, world)
             .unwrap()
             .show(None, &Context::new_world(world), ui);
@@ -110,6 +171,7 @@ impl TeamEditorPlugin {
                 },
             );
         }
+        world.insert_resource(ed);
         Ok(())
     }
     pub fn pane_slots(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
