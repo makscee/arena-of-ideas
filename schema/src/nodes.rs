@@ -120,7 +120,7 @@ struct UnitStats {
 }
 
 struct Behavior {
-    pub triggers: Vec<Reaction>,
+    pub reactions: Vec<Reaction>,
 }
 
 struct Representation {

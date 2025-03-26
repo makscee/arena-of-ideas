@@ -84,7 +84,7 @@ impl UnitCard {
                     ui.vertical(|ui| {
                         self.show_description(ui);
                         ui.vertical(|ui| {
-                            for Reaction { trigger, actions } in &self.behavior.triggers {
+                            for Reaction { trigger, actions } in &self.behavior.reactions {
                                 trigger.cstr().label(ui);
                                 for a in actions.0.iter() {
                                     a.show(None, context, ui);

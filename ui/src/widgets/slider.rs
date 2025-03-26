@@ -1,5 +1,7 @@
 use super::*;
 
+use egui_double_slider::DoubleSlider;
+
 pub struct Slider {
     name: &'static str,
     show_name: bool,
@@ -49,6 +51,30 @@ impl Slider {
             .logarithmic(self.log)
             .trailing_fill(true)
             .smallest_positive(0.01)
+            .ui(ui)
+            .changed();
+        ui.reset_style();
+        changed
+    }
+    pub fn ui_double<Num: Numeric>(
+        self,
+        from: &mut Num,
+        to: &mut Num,
+        range: RangeInclusive<Num>,
+        ui: &mut Ui,
+    ) -> bool {
+        if self.show_name {
+            ui.label(self.name);
+        }
+        if self.full_width {
+            let width = ui.available_width() - 80.0;
+            if width < 5.0 {
+                return false;
+            }
+            ui.spacing_mut().slider_width = width;
+        }
+        let changed = DoubleSlider::new(from, to, range)
+            .logarithmic(self.log)
             .ui(ui)
             .changed();
         ui.reset_style();

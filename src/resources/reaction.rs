@@ -6,7 +6,7 @@ pub trait BehaviorImpl {
 
 impl BehaviorImpl for Behavior {
     fn react(&self, event: &Event, context: &Context) -> Option<&Actions> {
-        for Reaction { trigger, actions } in self.triggers.iter() {
+        for Reaction { trigger, actions } in self.reactions.iter() {
             if trigger.fire(event, context) {
                 return Some(actions);
             }

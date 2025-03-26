@@ -24,3 +24,4 @@ serde = { workspace = true }
 convert_case = { workspace = true }
 egui-notify = { workspace = true }
 egui_colors = { workspace = true }
+egui_double_slider = { workspace = true }

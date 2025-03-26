@@ -80,25 +80,17 @@ impl Fusion {
         context: &'a Context,
     ) -> Result<&'a Trigger, ExpressionError> {
         let reaction = self.get_behavior(r.unit, context)?;
-        Ok(&reaction.triggers[r.trigger as usize].trigger)
+        Ok(&reaction.reactions[r.trigger as usize].trigger)
     }
-    pub fn get_actions<'a>(
+    pub fn get_action<'a>(
         &self,
         r: &UnitActionRef,
         context: &'a Context,
-    ) -> Result<(Entity, Vec<Action>), ExpressionError> {
-        let reaction = self.get_behavior(r.unit, context)?;
+    ) -> Result<(Entity, &'a Action), ExpressionError> {
+        let behavior = self.get_behavior(r.unit, context)?;
         Ok((
-            reaction.entity(),
-            reaction.triggers[r.trigger as usize]
-                .actions
-                .0
-                .iter()
-                .skip(r.action_range.start as usize)
-                .enumerate()
-                .take_while(|(i, _)| *i < r.action_range.end as usize)
-                .map(|(_, a)| a.as_ref().clone())
-                .collect_vec(),
+            behavior.entity(),
+            &behavior.reactions[r.trigger as usize].actions[r.action as usize],
         ))
     }
     pub fn react(
@@ -112,11 +104,10 @@ impl Fusion {
             .fire(event, context)
         {
             for r in &self.actions {
-                let (entity, actions) = self.get_actions(r, context)?;
-                for action in actions {
-                    context.set_caster(entity);
-                    battle_actions.extend(action.process(context)?);
-                }
+                let (entity, action) = self.get_action(r, context)?;
+                let action = action.clone();
+                context.set_caster(entity);
+                battle_actions.extend(action.process(context)?);
             }
         }
         Ok(battle_actions)
@@ -152,27 +143,81 @@ impl Fusion {
     }
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
         let units = self.units_entities(context)?;
-        let triggers = units
-            .into_iter()
-            .enumerate()
-            .filter_map(|(i, u)| context.get_component::<Behavior>(u).map(|b| (i, b)))
-            .flat_map(|(i, b)| {
-                b.triggers
-                    .iter()
-                    .enumerate()
-                    .map(move |(ri, r)| (i, ri, r.trigger))
+        let behaviors = (0..self.units.len())
+            .filter_map(|u| {
+                self.get_behavior(u as u8, context)
+                    .ok()
+                    .map(|b| (u as u8, b.clone()))
             })
             .collect_vec();
+        let mut changed = false;
         ui.vertical(|ui| {
-            for (i, ti, trigger) in triggers {
-                if trigger.cstr().button(ui).clicked() {
-                    self.trigger = UnitTriggerRef {
-                        unit: i as u8,
-                        trigger: ti as u8,
+            for (u, b) in &behaviors {
+                for (t, reaction) in b.reactions.iter().enumerate() {
+                    let active = self.trigger.unit == *u && self.trigger.trigger == t as u8;
+                    if reaction
+                        .trigger
+                        .cstr()
+                        .as_button()
+                        .active(active, ui)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        self.trigger = UnitTriggerRef {
+                            unit: *u,
+                            trigger: t as u8,
+                        };
+                        changed = true;
                     }
                 }
             }
         });
-        Ok(false)
+        space(ui);
+        ui.vertical(|ui| {
+            for (u, b) in &behaviors {
+                for (t, (a, action)) in b
+                    .reactions
+                    .iter()
+                    .enumerate()
+                    .flat_map(|(i, r)| r.actions.0.iter().enumerate().map(move |a| (i, a)))
+                {
+                    let r = UnitActionRef {
+                        unit: *u,
+                        trigger: t as u8,
+                        action: a as u8,
+                    };
+                    if self.actions.contains(&r) {
+                        continue;
+                    }
+                    if action.cstr().as_button().ui(ui).clicked() {
+                        self.actions.push(r);
+                        changed = true;
+                    }
+                }
+            }
+            space(ui);
+            for (i, r) in self.actions.clone().into_iter().enumerate() {
+                let (_, action) = self.get_action(&r, context).unwrap();
+                ui.horizontal(|ui| {
+                    if i + 1 < self.actions.len() {
+                        if "🔽".cstr().button(ui).clicked() {
+                            self.actions.swap(i, i + 1);
+                            changed = true;
+                        }
+                    }
+                    if i > 0 {
+                        if "🔼".cstr().button(ui).clicked() {
+                            self.actions.swap(i, i - 1);
+                            changed = true;
+                        }
+                    }
+                    if action.cstr().as_button().active(true, ui).ui(ui).clicked() {
+                        self.actions.remove(i);
+                        changed = true;
+                    }
+                });
+            }
+        });
+        Ok(changed)
     }
 }
