@@ -18,7 +18,7 @@ pub struct DataFrame<'a, T> {
     header: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
     body: Option<Box<dyn FnOnce(&T, &mut Ui) + 'a>>,
     name: Option<Box<dyn FnOnce(&T, &mut Ui) -> DataFrameResponse + 'a>>,
-    context_actions: HashMap<&'static str, Box<dyn FnOnce(&T) + 'a>>,
+    context_actions: HashMap<&'static str, Box<dyn FnOnce(&T)>>,
     settings: DataFrameSettings,
 }
 
@@ -306,7 +306,7 @@ fn compose_ui(
     let openness_inner = ui.ctx().animate_bool(collapse_inner_id, collapsed_inner);
     let hovered = get_ctx_bool_id_default(ui.ctx(), hovered_id, false);
 
-    const R: u8 = 8;
+    const R: u8 = ROUNDING.ne;
     let header_rounding = CornerRadius {
         nw: R,
         ne: if header.is_none() || collapsed { R } else { 0 },
@@ -467,11 +467,17 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
     fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
         self.show_name(&default(), ui)
     }
+    fn add_context_actions_mut(
+        _map: &mut HashMap<&'static str, Box<dyn FnOnce(&mut Self) -> bool>>,
+    ) {
+    }
+    fn add_context_actions(_map: &mut HashMap<&'static str, Box<dyn FnOnce(&Self)>>) {}
     fn df<'a>(&'a self, context: &'a Context) -> DataFrame<'a, Self> {
         let has_header = self.has_header();
         let has_body = self.has_body();
         let mut df = DataFrame::new(self).default_open(self.default_open());
         df.name = Some(Box::new(|d, ui| d.show_name(context, ui)));
+        Self::add_context_actions(&mut df.context_actions);
         if has_header {
             df = df.header(move |d, ui| d.show_header(&context, ui));
         }
@@ -487,6 +493,7 @@ pub trait DataFramed: ToCstr + Clone + Debug + StringData + Inject {
         let default_open = self.default_open();
         let mut df = DataFrameMut::new_inject(self).default_open(default_open);
         df.name = Some(Box::new(|d, ui| d.show_name_mut(ui)));
+        Self::add_context_actions_mut(&mut df.context_actions);
         if has_header {
             df = df.header(move |d, ui| d.show_header_mut(ui));
         }

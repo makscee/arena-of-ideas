@@ -382,6 +382,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = &mut self.#component_fields {
                                 changed |= d.show_mut(None, ui);
+                                if "-".cstr().as_button().red(ui).ui(ui).clicked() {
+                                    self.#component_fields = None;
+                                    changed = true;
+                                }
                             } else if format!("add [b {}]", #component_fields_str).button(ui).clicked() {
                                 self.#component_fields = Some(default());
                                 changed = true;

@@ -50,7 +50,11 @@ impl Button {
     }
     pub fn red(mut self, ui: &mut Ui) -> Self {
         self.save_style(ui);
-        colorix().style_error(ui);
+        let stroke = Stroke::new(1.0, RED);
+        ui.style_mut().visuals.widgets.inactive.fg_stroke = stroke;
+        ui.style_mut().visuals.widgets.hovered.fg_stroke = stroke;
+        ui.style_mut().visuals.widgets.inactive.bg_stroke = stroke;
+        ui.style_mut().visuals.widgets.hovered.bg_stroke = stroke;
         self
     }
     pub fn bg(self, ui: &mut Ui) -> Self {
