@@ -10,7 +10,7 @@ pub struct Animator<'w, 's> {
     timeframe: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct Anim {
     actions: Vec<Box<AnimAction>>,
 }

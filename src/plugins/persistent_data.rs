@@ -16,6 +16,7 @@ static EDIT_TS: Mutex<Option<f64>> = Mutex::new(None);
 #[derive(Default, Clone, PartialEq)]
 pub struct Data {
     pub client_settings: ClientSettings,
+    pub client_state: ClientState,
 }
 
 pub fn pd() -> RwLockReadGuard<'static, RawRwLock, Data> {
@@ -73,10 +74,12 @@ impl PersistentDataPlugin {
     pub fn load() {
         let mut data = DATA.get_or_init(|| default()).write();
         data.client_settings = Self::load_data();
+        data.client_state = Self::load_data();
     }
     fn save() {
         let pd = pd();
         pd.client_settings.save();
+        pd.client_state.save();
     }
     fn update() {
         let ts = *EDIT_TS.lock();

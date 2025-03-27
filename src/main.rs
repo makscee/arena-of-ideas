@@ -57,7 +57,6 @@ fn main() {
         RunMode::MigrationUpload => GameState::MigrationUpload,
     };
     PersistentDataPlugin::load();
-    load_client_state();
     parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins.set(LogPlugin {
@@ -97,6 +96,7 @@ fn main() {
             MatchPlugin,
             PersistentDataPlugin,
             NodeGraphPlugin,
+            BattlePlugin,
         ))
         .add_plugins((
             OperationsPlugin,

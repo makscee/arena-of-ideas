@@ -23,7 +23,9 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             ScrollArea::both().show(ui, |ui| {
                 ui.expand_to_include_rect(ui.available_rect_before_wrap());
                 if let Some(world) = self.world.as_mut() {
-                    view.ui(ui, world).log();
+                    if let Err(e) = view.ui(ui, world) {
+                        e.cstr().label(ui);
+                    }
                 }
             });
         });

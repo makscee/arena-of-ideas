@@ -63,14 +63,6 @@ pub enum WindowMode {
     BorderlessFullScreen,
 }
 
-static CLIENT_SETTINGS: OnceCell<RwLock<ClientSettings>> = OnceCell::new();
-const CLIENT_SETTINGS_FILE: &str = "client_settings.ron";
-
-fn path() -> PathBuf {
-    let mut path = home_dir_path();
-    path.push(CLIENT_SETTINGS_FILE);
-    path
-}
 pub fn current_server() -> (&'static str, &'static str) {
     let cs = &pd().client_settings;
     cs.servers[cs.active_server]
@@ -80,24 +72,6 @@ pub fn is_dev_mode() -> bool {
 }
 
 impl ClientSettings {
-    pub fn save_to_cache(self) {
-        *CLIENT_SETTINGS.get_or_init(|| default()).write().unwrap() = self;
-    }
-    pub fn save_to_file(self) -> Self {
-        match std::fs::write(
-            path(),
-            to_string_pretty(&self, PrettyConfig::new())
-                .expect("Failed to serialize default client settings"),
-        ) {
-            Ok(_) => {
-                info!("Store successful {self:?}")
-            }
-            Err(e) => {
-                error!("Store error: {e}")
-            }
-        }
-        self
-    }
     pub fn apply(self, world: &mut World) {
         if let Some(mut window) = world
             .query::<&mut bevy::window::Window>()
@@ -122,7 +96,6 @@ impl ClientSettings {
             };
             AudioPlugin::set_music_volume(self.music_volume(), world);
         }
-        self.save_to_cache();
     }
     pub fn music_volume(&self) -> f32 {
         self.volume_music * self.volume_master

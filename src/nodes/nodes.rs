@@ -18,6 +18,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn set_id(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);
     fn parent(&self) -> u64;
+    fn get_parent(&self) -> Option<u64>;
     fn set_parent(&mut self, id: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
@@ -79,7 +80,7 @@ where
     fn to_tnode(&self) -> TNode {
         TNode {
             id: self.id(),
-            parent: self.parent(),
+            parent: self.get_parent().unwrap_or_default(),
             kind: self.kind().to_string(),
             data: self.get_data(),
         }

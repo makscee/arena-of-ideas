@@ -418,7 +418,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #strings_conversions
                     #common_trait
                     fn id(&self) -> u64 {
-                        self.id.unwrap()
+                        self.id.expect("Id not set")
                     }
                     fn get_id(&self) -> Option<u64> {
                         self.id
@@ -427,13 +427,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         self.id = Some(id);
                     }
                     fn parent(&self) -> u64 {
-                        self.parent.unwrap()
+                        self.parent.expect("Parent not set")
+                    }
+                    fn get_parent(&self) -> Option<u64> {
+                        self.parent
                     }
                     fn set_parent(&mut self, id: u64) {
                         self.parent = Some(id);
                     }
                     fn entity(&self) -> Entity {
-                        self.entity.unwrap()
+                        self.entity.expect("Entity not set")
                     }
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity

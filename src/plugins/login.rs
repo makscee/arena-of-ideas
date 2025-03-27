@@ -38,9 +38,7 @@ impl LoginPlugin {
             e.event.on_success_error(LoginPlugin::complete, || {
                 OperationsPlugin::add(|world| {
                     world.resource_mut::<LoginData>().login_requested = false;
-                    let mut cs = client_state().clone();
-                    cs.last_logged_in = None;
-                    cs.save_to_cache();
+                    pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
         });
@@ -51,15 +49,13 @@ impl LoginPlugin {
             e.event.on_success_error(LoginPlugin::complete, || {
                 OperationsPlugin::add(|world| {
                     world.resource_mut::<LoginData>().login_requested = false;
-                    let mut cs = client_state().clone();
-                    cs.last_logged_in = None;
-                    cs.save_to_cache();
+                    pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
         });
         let co = ConnectOption::get(world);
         if currently_fulfilling() == GameOption::ForceLogin {
-            // if let Some((name, i)) = client_state().last_logged_in {
+            // if let Some((name, i)) = pd().client_state.last_logged_in {
             // Self::complete(Some(player.clone()), world);
             // }
         }
@@ -79,7 +75,7 @@ impl LoginPlugin {
             dbg!(&identity_node);
             if let Some(player) = Player::load(identity_node.parent.unwrap()) {
                 dbg!(&player);
-                let mut cs = client_state().clone();
+                let mut cs = pd().client_state.clone();
                 cs.last_logged_in = Some((player.name.clone(), identity));
                 cs.save();
                 LoginOption { player }.save(world);
@@ -119,7 +115,7 @@ impl LoginPlugin {
             let mut ld = world.resource_mut::<LoginData>();
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
-            let mut cs = client_state().clone();
+            let mut cs = pd().client_state.clone();
             if let Some((name, identity)) = &cs.last_logged_in {
                 format!("Login as {name}")
                     .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)
@@ -142,8 +138,7 @@ impl LoginPlugin {
                     .clicked()
                     || ConnectOption::get(world).identity != *identity
                 {
-                    cs.last_logged_in = None;
-                    cs.save_to_cache();
+                    pd_mut(|data| data.client_state.last_logged_in = None);
                 }
             } else {
                 let mut ld = world.resource_mut::<LoginData>();

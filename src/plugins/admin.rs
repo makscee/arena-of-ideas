@@ -9,82 +9,8 @@ impl Plugin for AdminPlugin {
 }
 
 impl AdminPlugin {
-    fn setup_battle(world: &mut World) {
-        let (left, right) = client_state().get_battle_test_teams();
-        dbg!(&left);
-        let mut left = Team::from_tnodes(left[0].id, &left).unwrap_or_default();
-        let mut right = Team::from_tnodes(right[0].id, &right).unwrap_or_default();
-        let mut battle_world = World::new();
-        left.houses = all(world).core.clone();
-        right.houses = all(world).core.clone();
-        let entity_left = battle_world.spawn_empty().id();
-        let entity_right = battle_world.spawn_empty().id();
-        left.unpack(entity_left, &mut battle_world);
-        right.unpack(entity_right, &mut battle_world);
-        let mut slot_entities: [Vec<Option<Entity>>; 2] = default();
-        slot_entities[0] = (0..global_settings().team_slots).map(|_| None).collect();
-        slot_entities[1] = slot_entities[0].clone();
-        for fusion in battle_world.query::<&Fusion>().iter(&battle_world) {
-            let team = fusion.find_up::<Team>(&battle_world).unwrap();
-            slot_entities[(team.entity() == entity_left) as usize][fusion.slot as usize] =
-                Some(fusion.entity());
-        }
-        let mut editing_entity = None;
-        Window::new("Edit Teams", move |ui, world| {
-            ui.horizontal(|ui| {
-                if "Save".cstr_s(CstrStyle::Heading2).button(ui).clicked() {
-                    let mut cs = client_state().clone();
-                    cs.battle_test_teams.0 = Team::pack(entity_left, &battle_world)
-                        .unwrap()
-                        .to_tnodes()
-                        .into_iter()
-                        .map(|n| n.to_ron())
-                        .collect();
-                    cs.battle_test_teams.1 = Team::pack(entity_right, &battle_world)
-                        .unwrap()
-                        .to_tnodes()
-                        .into_iter()
-                        .map(|n| n.to_ron())
-                        .collect();
-                    cs.save();
-                    WindowPlugin::close_current(world);
-                    return;
-                }
-            });
-            let slots = global_settings().team_slots as usize;
-            #[derive(Resource)]
-            struct EditedFusion {
-                fusion: Fusion,
-            }
-            if let Some(ef) = world.remove_resource::<EditedFusion>() {
-                ef.fusion.unpack(editing_entity.unwrap(), &mut battle_world);
-            }
-            for side in [true, false] {
-                for i in 0..slots {
-                    let entity = slot_entities[side as usize][i];
-                    let r = show_battle_slot(i + 1, slots, side, ui);
-                    if r.clicked() {
-                        todo!();
-                    }
-                    if let Some(entity) = entity {
-                        let rect = r.rect;
-                        let fusion = battle_world.get::<Fusion>(entity).unwrap();
-                        fusion
-                            .paint(rect, &Context::new_world(&battle_world), ui)
-                            .log();
-                        let context = &Context::new_world(&battle_world).set_owner(entity).take();
-                        let rep = battle_world.get::<Representation>(entity).unwrap();
-                        rep.paint(rect, context, ui).log();
-                    }
-                }
-            }
-        })
-        .default_width(800.0)
-        .default_height(200.0)
-        .push(world);
-    }
     fn show_anim_editor(w: &mut World) {
-        let mut cs = client_state().clone();
+        let mut cs = pd().client_state.clone();
         if cs.edit_anim.is_none() {
             let mut anim = Anim::default();
             anim.push(AnimAction::Spawn(Box::new(Material(
@@ -165,7 +91,7 @@ impl AdminPlugin {
                         ui.vertical(|ui| {
                             if anim.show_mut(None, ui) {
                                 reload = true;
-                                let mut cs = client_state().clone();
+                                let mut cs = pd().client_state.clone();
                                 cs.edit_anim = Some(anim.clone());
                                 cs.save();
                             }
@@ -183,9 +109,6 @@ impl AdminPlugin {
         .push(w);
     }
     pub fn pane(ui: &mut Ui, world: &mut World) {
-        if "Setup Battle".cstr().button(ui).clicked() {
-            Self::setup_battle(world);
-        }
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);
         }

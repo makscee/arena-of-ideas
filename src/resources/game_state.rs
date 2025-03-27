@@ -21,6 +21,7 @@ pub enum GameState {
     MigrationUpload,
     Error,
     Query,
+    BattleTesting,
 }
 
 const TREE_ID: &str = "tree";
@@ -80,6 +81,7 @@ pub enum IncubatorPane {
 pub enum BattlePane {
     View,
     Controls,
+    Edit,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum TeamPane {
@@ -122,7 +124,7 @@ impl Pane {
             Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
             Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
             Pane::FusionResult => FusionEditorPlugin::pane_fusion_result(ui, world)?,
-            Pane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
+            Pane::BattleEditor => BattleTestingPlugin::pane(ui, world)?,
 
             Pane::Incubator(pane) => match pane {
                 IncubatorPane::NewNode => IncubatorPlugin::pane_new_node(ui, world)?,
@@ -133,6 +135,7 @@ impl Pane {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
+                BattlePane::Edit => BattlePlugin::pane_edit(ui, world)?,
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),

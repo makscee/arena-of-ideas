@@ -2,6 +2,22 @@ use super::*;
 
 pub struct BattlePlugin;
 
+impl Plugin for BattlePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Loaded), |world: &mut World| {
+            if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
+                let battle = Battle { left, right };
+                world.insert_resource(BattleData {
+                    simulation: BattleSimulation::new(battle.clone()).start(),
+                    battle,
+                    t: 0.0,
+                    playing: false,
+                });
+            }
+        });
+    }
+}
+
 #[derive(Resource)]
 struct BattleData {
     battle: Battle,
@@ -10,8 +26,10 @@ struct BattleData {
     playing: bool,
 }
 
-fn rm(world: &mut World) -> Mut<BattleData> {
-    world.resource_mut::<BattleData>()
+fn rm(world: &mut World) -> Result<Mut<BattleData>, ExpressionError> {
+    world
+        .get_resource_mut::<BattleData>()
+        .to_e("No battle loaded")
 }
 
 impl Default for BattleData {
@@ -23,6 +41,12 @@ impl Default for BattleData {
             t: 0.0,
             playing: false,
         }
+    }
+}
+
+impl BattleData {
+    fn reload_simulation(&mut self) {
+        self.simulation = BattleSimulation::new(self.battle.clone()).start();
     }
 }
 
@@ -44,10 +68,6 @@ impl BattlePlugin {
             playing: false,
         });
     }
-    fn reload_simulation(world: &mut World) {
-        let mut data = rm(world);
-        data.simulation = BattleSimulation::new(data.battle.clone()).start();
-    }
     pub fn add_panes() {
         TilePlugin::add_to_current(|tree| {
             if let Some(id) = tree.tiles.find_pane(&Pane::Battle(BattlePane::View)) {
@@ -58,14 +78,15 @@ impl BattlePlugin {
             }
             let view = tree.tiles.insert_pane(Pane::Battle(BattlePane::View));
             let controls = tree.tiles.insert_pane(Pane::Battle(BattlePane::Controls));
-            tree.tiles.insert_vertical_tile([view, controls].into())
+            let edit = tree.tiles.insert_pane(Pane::Battle(BattlePane::Edit));
+            let vertical = tree.tiles.insert_vertical_tile([view, controls].into());
+            tree.tiles.insert_horizontal_tile([edit, vertical].into())
         });
     }
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some(mut data) = world.remove_resource::<BattleData>() else {
-            "[red No battle loaded]".cstr().label(ui);
-            return Ok(());
-        };
+        let mut data = world
+            .remove_resource::<BattleData>()
+            .to_e("No battle loaded")?;
 
         let t = data.t;
         data.simulation.show_at(t, ui);
@@ -77,12 +98,17 @@ impl BattlePlugin {
         TeamEditorPlugin::load_team(team, world);
         TeamEditorPlugin::on_save_fn(
             move |team, world| {
-                if left {
-                    rm(world).battle.left = team;
-                } else {
-                    rm(world).battle.right = team;
+                match rm(world) {
+                    Ok(mut data) => {
+                        if left {
+                            data.battle.left = team;
+                        } else {
+                            data.battle.right = team;
+                        }
+                        data.reload_simulation();
+                    }
+                    Err(e) => format!("Failed to save: {e}").notify(world),
                 }
-                Self::reload_simulation(world);
                 TilePlugin::close_match(|p| matches!(p, Pane::Team(..)));
             },
             world,
@@ -92,10 +118,9 @@ impl BattlePlugin {
         TeamEditorPlugin::add_panes();
     }
     pub fn pane_controls(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let Some(mut data) = world.remove_resource::<BattleData>() else {
-            "[red No battle loaded]".cstr().label(ui);
-            return Ok(());
-        };
+        let mut data = world
+            .remove_resource::<BattleData>()
+            .to_e("No battle loaded")?;
         if "edit left team".cstr().button(ui).clicked() {
             Self::open_team_editor(true, data.battle.left.clone(), world);
         }
@@ -137,6 +162,20 @@ impl BattlePlugin {
             simulation.run();
         }
         world.insert_resource(data);
+        Ok(())
+    }
+    pub fn pane_edit(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = rm(world)?;
+        let changed = data.battle.left.show_mut(None, ui);
+        if data.battle.right.show_mut(None, ui) || changed {
+            data.reload_simulation();
+            data.battle.left.reassign_ids(&mut 0);
+            data.battle.right.reassign_ids(&mut 0);
+            pd_mut(|pd| {
+                pd.client_state
+                    .set_battle_test_teams(&data.battle.left, &data.battle.right);
+            });
+        }
         Ok(())
     }
 }
