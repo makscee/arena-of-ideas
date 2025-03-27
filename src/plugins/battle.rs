@@ -14,7 +14,23 @@ fn rm(world: &mut World) -> Mut<BattleData> {
     world.resource_mut::<BattleData>()
 }
 
+impl Default for BattleData {
+    fn default() -> Self {
+        let battle = Battle::default();
+        Self {
+            simulation: BattleSimulation::new(battle.clone()),
+            battle,
+            t: 0.0,
+            playing: false,
+        }
+    }
+}
+
 impl BattlePlugin {
+    pub fn edit_battle(f: impl FnOnce(&mut Battle), world: &mut World) {
+        let mut r = world.get_resource_or_insert_with(|| BattleData::default());
+        f(&mut r.battle);
+    }
     pub fn load_empty(world: &mut World) {
         let team = Team::default();
         let battle = Battle {

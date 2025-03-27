@@ -65,7 +65,9 @@ impl PersistentDataPlugin {
                 "Failed to load data from file {}",
                 T::path().to_string_lossy()
             );
-            default()
+            let data = T::default();
+            data.save();
+            data
         }
     }
     pub fn load() {

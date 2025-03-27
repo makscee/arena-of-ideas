@@ -149,9 +149,9 @@ impl IncubatorPlugin {
         .inner
     }
     pub fn pane_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        world.resource_scope(|_, mut d: Mut<IncubatorData>| {
-            let (kind, datas) = if let Some((kind, datas)) = &mut d.new_node {
-                (kind, datas)
+        world.resource_scope(|world, mut d: Mut<IncubatorData>| {
+            let (kind, nodes) = if let Some((kind, nodes)) = &mut d.new_node {
+                (kind, nodes)
             } else {
                 let kind = NodeKind::Unit;
                 d.new_node = Some((kind, [kind.default_tnode()].into()));
@@ -159,7 +159,7 @@ impl IncubatorPlugin {
                 (&mut node.0, &mut node.1)
             };
             if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
-                *datas = [TNode {
+                *nodes = [TNode {
                     id: 0,
                     parent: 0,
                     kind: kind.to_string(),
@@ -167,11 +167,29 @@ impl IncubatorPlugin {
                 }]
                 .into();
             }
+            match kind {
+                NodeKind::House => {
+                    if "Add to battle test".cstr().button(ui).clicked() {
+                        BattlePlugin::edit_battle(
+                            |battle| {
+                                if let Some(house) = House::from_tnodes(nodes[0].id, nodes) {
+                                    battle.left.houses.retain(|h| h.name != house.name);
+                                    battle.left.houses.push(house);
+                                }
+                            },
+                            world,
+                        );
+                        BattlePlugin::add_panes();
+                    }
+                }
+                NodeKind::Unit => {}
+                _ => {}
+            }
             ui.data_frame_force_open();
-            kind.show_tnodes_mut(datas, ui);
+            kind.show_tnodes_mut(nodes, ui);
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
-                    .incubator_push(datas.clone(), d.new_node_link)
+                    .incubator_push(nodes.clone(), d.new_node_link)
                     .unwrap();
             }
         });

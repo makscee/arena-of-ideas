@@ -350,19 +350,15 @@ impl Show for Event {
     }
 }
 impl Show for UnitTriggerRef {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        todo!()
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        todo!()
+    fn show(&self, _prefix: Option<&str>, _context: &Context, _ui: &mut Ui) {}
+    fn show_mut(&mut self, _prefix: Option<&str>, _ui: &mut Ui) -> bool {
+        false
     }
 }
 impl Show for Vec<UnitActionRef> {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        todo!()
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        todo!()
+    fn show(&self, _prefix: Option<&str>, _context: &Context, _ui: &mut Ui) {}
+    fn show_mut(&mut self, _prefix: Option<&str>, _ui: &mut Ui) -> bool {
+        false
     }
 }
 impl Show for Reaction {

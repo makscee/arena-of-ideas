@@ -96,7 +96,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
-        view.to_string().into()
+        format!("{view:?}").to_string().into()
     }
 
     fn is_tab_closable(&self, _tiles: &Tiles<Pane>, _tile_id: TileId) -> bool {

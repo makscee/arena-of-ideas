@@ -32,7 +32,7 @@ impl Default for ClientSettings {
                 ("prod", ("http://89.19.217.60:3000", "aoiprod")),
                 ("dev", ("http://89.19.217.60:3000", "aoidev")),
             ]),
-            active_server: "",
+            active_server: "dev",
             dev_mode: false,
             auto_login: false,
             window_mode: default(),

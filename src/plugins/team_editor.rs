@@ -5,7 +5,8 @@ pub struct TeamEditorPlugin;
 #[derive(Resource)]
 struct TeamEditorData {
     world: World,
-    add_unit: Option<Box<dyn Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync>>,
+    add_unit:
+        HashMap<String, Box<dyn Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync>>,
     on_save: Option<Box<dyn Fn(Team, &mut World) + 'static + Send + Sync>>,
 }
 
@@ -16,14 +17,16 @@ fn rm(world: &mut World) -> Result<Mut<TeamEditorData>, ExpressionError> {
 }
 impl TeamEditorPlugin {
     pub fn unit_add_fn(
+        name: String,
         f: impl Fn(&mut Ui, &mut World) -> Option<House> + 'static + Send + Sync,
         world: &mut World,
     ) -> Result<(), ExpressionError> {
-        rm(world)?.add_unit = Some(Box::new(f));
+        rm(world)?.add_unit.insert(name, Box::new(f));
         Ok(())
     }
     pub fn unit_add_from_core(world: &mut World) -> Result<(), ExpressionError> {
         Self::unit_add_fn(
+            "from core".into(),
             |ui, world| {
                 let context = Context::new_world(world);
                 for unit in context.children_components_recursive::<Unit>(all(world).entity()) {
@@ -66,7 +69,7 @@ impl TeamEditorPlugin {
         team.unpack(team_world.spawn_empty().id(), &mut team_world);
         world.insert_resource(TeamEditorData {
             world: team_world,
-            add_unit: None,
+            add_unit: default(),
             on_save: None,
         });
     }
@@ -125,13 +128,17 @@ impl TeamEditorPlugin {
 
         let team_world = &mut ed.world;
         let team = team_world.query::<&Team>().single(team_world).entity();
-        if let Some(f) = &ed.add_unit {
+        if !ed.add_unit.is_empty() {
             ui.menu_button("add unit", |ui| {
-                if let Some(house) = f(ui, world) {
-                    op(move |world| {
-                        Self::add_roster_unit(house, world).notify(world);
+                for (btn, f) in &ed.add_unit {
+                    ui.menu_button(btn, |ui| {
+                        if let Some(house) = f(ui, world) {
+                            op(move |world| {
+                                Self::add_roster_unit(house, world).notify(world);
+                            });
+                            ui.close_menu();
+                        }
                     });
-                    ui.close_menu();
                 }
             });
         }
