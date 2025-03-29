@@ -153,7 +153,11 @@ impl TeamEditorPlugin {
             .show(None, &Context::new_world(team_world), ui);
         let context = Context::new_world(team_world);
         for house in context.children_components::<House>(team) {
-            let color = house.color_load(team_world)?.color.c32();
+            let color = house
+                .color_load(&context)
+                .to_e("House color not found")?
+                .color
+                .c32();
             ui.collapsing(
                 house
                     .name

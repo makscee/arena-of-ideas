@@ -6,10 +6,11 @@ macro_schema::nodes!();
 
 #[bevy_trait_query::queryable]
 pub trait GetVar: GetNodeKind + Debug {
-    fn get_var(&self, var: VarName) -> Option<VarValue>;
+    fn get_own_var(&self, var: VarName) -> Option<VarValue>;
+    fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
+    fn get_own_vars(&self) -> Vec<(VarName, VarValue)>;
+    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)>;
     fn set_var(&mut self, var: VarName, value: VarValue);
-    fn get_vars(&self) -> Vec<(VarName, VarValue)>;
-    fn get_all_vars(&self) -> Vec<(VarName, VarValue)>;
 }
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
@@ -279,18 +280,11 @@ impl NodeKind {
 }
 
 impl Team {
-    pub fn roster_units_load<'a>(&self, world: &'a World) -> Vec<&'a Unit> {
-        self.houses_load(world)
+    pub fn roster_units_load<'a>(&'a self, context: &'a Context) -> Vec<&'a Unit> {
+        self.houses_load(context)
             .into_iter()
-            .flat_map(|h| h.units_load(world))
+            .flat_map(|h| h.units_load(context))
             .collect_vec()
-    }
-}
-
-impl Fusion {
-    pub fn team_load<'a>(&self, world: &'a World) -> Result<&'a Team, ExpressionError> {
-        self.find_up::<Team>(world)
-            .to_e("Failed to find parent Team of Fusion")
     }
 }
 

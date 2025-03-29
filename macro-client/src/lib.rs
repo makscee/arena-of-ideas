@@ -189,15 +189,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 #common
                 impl #struct_ident {
                     #(
-                        pub fn #component_link_fields_load<'a>(&self, world: &'a World) -> Result<&'a #component_types, ExpressionError> {
-                            let entity = self.entity();
-                            #component_types::get(entity, world)
-                                .to_e_fn(|| format!("{} not found for {}", #component_types::kind_s(), entity))
+                        pub fn #component_link_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #component_types> {
+                            self.#component_fields.as_ref().or_else(|| {
+                                self.entity
+                                    .and_then(|e| context.get_component::<#component_types>(e))
+                            })
                         }
                     )*
                     #(
-                        pub fn #child_link_fields_load<'a>(&self, world: &'a World) -> Vec<&'a #child_types> {
-                            self.collect_children::<#child_types>(world)
+                        pub fn #child_link_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #child_types> {
+                            if !self.#child_fields.is_empty() {
+                                self.#child_fields.iter().collect()
+                            } else if let Some(entity) = self.entity {
+                                context.children_components::<#child_types>(entity)
+                            } else {
+                                default()
+                            }
                         }
                     )*
                     pub fn find_by_data(
@@ -231,19 +238,28 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl GetVar for #struct_ident {
-                    fn get_var(&self, var: VarName) -> Option<VarValue> {
+                    fn get_own_var(&self, var: VarName) -> Option<VarValue> {
                         match var {
                             #(
-                                VarName::#var_fields => return Some(self.#var_fields.clone().into()),
+                                VarName::#var_fields => Some(self.#var_fields.clone().into()),
                             )*
-                            _ => {
-                                #(
-                                    if let Some(v) = self.#component_fields.as_ref().and_then(|l| l.get_var(var)).clone() {
-                                        return Some(v);
-                                    }
-                                )*
+                            _ => None
+                        }
+                    }
+                    fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue> {
+                        if let Some(value) = self.get_own_var(var) {
+                            return Some(value);
+                        }
+                        #(
+                            if let Some(v) = self.#component_fields.as_ref()
+                                .or_else(|| {
+                                    self.entity
+                                        .and_then(|e| context.get_component::<#component_types>(e))
+                                })
+                                .and_then(|l| l.get_var(var, context)).clone() {
+                                return Some(v);
                             }
-                        };
+                        )*
                         None
                     }
                     fn set_var(&mut self, var: VarName, value: VarValue) {
@@ -262,23 +278,21 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         }
                     }
-                    fn get_vars(&self) -> Vec<(VarName, VarValue)> {
+                    fn get_own_vars(&self) -> Vec<(VarName, VarValue)> {
                         vec![
                         #(
                             (VarName::#var_fields, self.#var_fields.clone().into())
                         ),*
                         ]
                     }
-                    fn get_all_vars(&self) -> Vec<(VarName, VarValue)> {
-                        let mut vars = self.get_vars();
+                    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)> {
+                        let mut vars = self.get_own_vars();
                         #(
-                            if let Some(d) = &self.#component_fields {
-                                vars.extend(d.get_all_vars());
-                            }
-                        )*
-                        #(
-                            for d in &self.#child_fields {
-                                vars.extend(d.get_all_vars());
+                            if let Some(d) = self.#component_fields.as_ref().or_else(|| {
+                                self.entity
+                                    .and_then(|e| context.get_component::<#component_types>(e))
+                            }) {
+                                vars.extend(d.get_vars(context));
                             }
                         )*
                         vars
@@ -325,7 +339,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn show_header(&self, context: &Context, ui: &mut Ui) {
                         if !#has_body {
                             ui.horizontal(|ui| {
-                                for (var, value) in self.get_vars() {
+                                for (var, value) in self.get_own_vars() {
                                     value.show(Some(&var.cstr()), context, ui);
                                 }
                             });
@@ -343,7 +357,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         changed
                     }
                     fn show_body(&self, context: &Context, ui: &mut Ui) {
-                        for (var, value) in self.get_vars() {
+                        for (var, value) in self.get_own_vars() {
                             ui.horizontal(|ui| {
                                 value.show(Some(&var.cstr()), context, ui);
                             });
@@ -634,7 +648,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         match self {
                             Self::None => default(),
                             #(#struct_ident::#variants => {
-                                world.get::<#variants>(entity).unwrap().get_vars()
+                                world.get::<#variants>(entity).unwrap().get_own_vars()
                             })*
                         }
                     }

@@ -109,6 +109,12 @@ impl AdminPlugin {
         .push(w);
     }
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        if let Some(all) = All::get_by_id(1, world) {
+            let context = Context::new_world(world);
+            for house in all.core_load(&context) {
+                house.compact(ui, &context);
+            }
+        }
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);
         }
@@ -146,7 +152,7 @@ impl AdminPlugin {
             })
             .ui(ui, world);
         if "Add Battle Panes".cstr().button(ui).clicked() {
-            BattlePlugin::add_panes();
+            BattlePlugin::add_editor_panes();
             BattlePlugin::load_empty(world);
         }
         if "Add Node Graph Pane".cstr().button(ui).clicked() {

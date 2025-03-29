@@ -68,7 +68,7 @@ impl BattlePlugin {
             playing: false,
         });
     }
-    pub fn add_panes() {
+    pub fn add_editor_panes() {
         TilePlugin::add_to_current(|tree| {
             if let Some(id) = tree.tiles.find_pane(&Pane::Battle(BattlePane::View)) {
                 tree.tiles.remove(id);

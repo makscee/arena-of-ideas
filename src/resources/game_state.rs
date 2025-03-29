@@ -21,7 +21,7 @@ pub enum GameState {
     MigrationUpload,
     Error,
     Query,
-    BattleTesting,
+    Editor,
 }
 
 const TREE_ID: &str = "tree";
@@ -42,6 +42,15 @@ impl GameState {
                 let left = tiles.insert_tab_tile(left);
                 let right = tiles.insert_pane(Pane::Incubator(IncubatorPane::Nodes));
                 let root = tiles.insert_horizontal_tile([left, right].into());
+                Tree::new(TREE_ID, root, tiles)
+            }
+            GameState::Editor => {
+                let mut tiles = Tiles::default();
+                let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
+                let controls = tiles.insert_pane(Pane::Battle(BattlePane::Controls));
+                let edit = tiles.insert_pane(Pane::Battle(BattlePane::Edit));
+                let vertical = tiles.insert_vertical_tile([view, controls].into());
+                let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
             }
             _ => Tree::empty(TREE_ID),

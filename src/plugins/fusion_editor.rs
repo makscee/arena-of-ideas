@@ -27,42 +27,7 @@ impl FusionEditorPlugin {
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        world.resource_scope(|world, mut r: Mut<FusionEditorData>| {
-            let FusionEditorData { fusion, on_save: _ } = r.as_mut();
-            let mut changed = false;
-            for unit in fusion.team_load(world)?.roster_units_load(world) {
-                let selected = fusion.units.contains(&unit.name);
-                let stats = unit.description_load(world)?.stats_load(world)?;
-                dark_frame()
-                    .stroke(if selected {
-                        Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings())
-                    } else {
-                        Stroke::new(1.0, tokens_global().subtle_borders_and_separators())
-                    })
-                    .show(ui, |ui| {
-                        // show_unit_tag(
-                        //     unit,
-                        //     stats,
-                        //     Context::new_world(world).set_owner(unit.entity()),
-                        //     ui,
-                        // );
-                        if "select".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                            changed = true;
-                            if selected {
-                                let i = fusion.units.iter().position(|u| unit.name.eq(u)).unwrap();
-                                fusion.remove_unit(i as u8);
-                            } else {
-                                fusion.units.push(unit.name.clone());
-                            }
-                        }
-                    });
-            }
-            if changed {
-                world.entity_mut(fusion.entity()).insert(fusion.clone());
-                Fusion::init(fusion.entity(), world).log();
-            }
-            Ok(())
-        })
+        Ok(())
     }
     pub fn pane_triggers(ui: &mut Ui, world: &mut World) {
         // world.resource_scope(|world, mut r: Mut<FusionEditorData>| {

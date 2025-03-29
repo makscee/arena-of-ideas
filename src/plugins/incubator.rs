@@ -179,7 +179,7 @@ impl IncubatorPlugin {
                             },
                             world,
                         );
-                        BattlePlugin::add_panes();
+                        BattlePlugin::add_editor_panes();
                     }
                 }
                 NodeKind::Unit => {}

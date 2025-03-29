@@ -63,9 +63,9 @@ impl TilePlugin {
         });
     }
     fn save_tree(state: GameState, tree: Tree<Pane>) {
-        let mut cs = pd().client_state.clone();
-        cs.tile_states.insert(state, tree);
-        cs.save();
+        pd_mut(|data| {
+            data.client_state.tile_states.insert(state, tree);
+        });
     }
     pub fn load_state_tree(state: GameState, world: &mut World) {
         info!("Load state tree for {}", state.cstr().to_colored());

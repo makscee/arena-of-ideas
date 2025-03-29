@@ -92,8 +92,8 @@ impl Button {
             let stroke = Stroke::new(1.0, YELLOW);
             ui.style_mut().visuals.widgets.inactive.fg_stroke = stroke;
             ui.style_mut().visuals.widgets.hovered.fg_stroke = stroke;
-            ui.style_mut().visuals.widgets.inactive.bg_stroke = stroke;
-            ui.style_mut().visuals.widgets.hovered.bg_stroke = stroke;
+            // ui.style_mut().visuals.widgets.inactive.bg_stroke = stroke;
+            // ui.style_mut().visuals.widgets.hovered.bg_stroke = stroke;
         }
         self
     }

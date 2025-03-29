@@ -42,6 +42,28 @@ pub fn dark_frame() -> Frame {
         corner_radius: ROUNDING,
         shadow: Shadow::NONE,
         fill: tokens_global().subtle_background(),
-        stroke: Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+        stroke: tokens_global().subtle_borders_and_separators().stroke(),
+    }
+}
+
+pub trait ToStroke {
+    fn stroke(self) -> Stroke;
+}
+
+impl ToStroke for Color32 {
+    fn stroke(self) -> Stroke {
+        Stroke::new(1.0, self)
+    }
+}
+
+pub trait ErrorExt {
+    fn ui(self, ui: &mut Ui);
+}
+
+impl<T> ErrorExt for Result<T, ExpressionError> {
+    fn ui(self, ui: &mut Ui) {
+        if let Err(e) = self {
+            e.cstr().label(ui);
+        }
     }
 }

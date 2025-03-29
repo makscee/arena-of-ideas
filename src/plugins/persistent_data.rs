@@ -22,7 +22,7 @@ pub struct Data {
 pub fn pd() -> RwLockReadGuard<'static, RawRwLock, Data> {
     DATA.get().unwrap().read()
 }
-pub fn pd_mut(f: impl Fn(&mut Data)) {
+pub fn pd_mut(f: impl FnOnce(&mut Data)) {
     let mut new_data = pd().clone();
     f(&mut new_data);
     if !pd().eq(&new_data) {

@@ -3,16 +3,23 @@ use super::*;
 pub struct TopBar;
 
 impl TopBar {
+    fn state_btn(state: GameState, ui: &mut Ui, world: &mut World) {
+        if state
+            .to_string()
+            .to_lowercase()
+            .as_button()
+            .active(cur_state(world) == state, ui)
+            .ui(ui)
+            .clicked()
+        {
+            state.set_next(world);
+        }
+    }
     pub fn ui(ui: &mut Ui, world: &mut World) {
         egui::menu::bar(ui, |ui| {
-            match cur_state(world) {
-                GameState::Incubator => {
-                    if ui.button("back").clicked() {
-                        GameState::Title.set_next(world);
-                    }
-                }
-                _ => {}
-            }
+            Self::state_btn(GameState::Title, ui, world);
+            Self::state_btn(GameState::Incubator, ui, world);
+            Self::state_btn(GameState::Editor, ui, world);
             ui.menu_button("settings", |ui| {
                 if "theme".cstr().button(ui).clicked() {
                     Window::new("theme Editor", |ui, _| {

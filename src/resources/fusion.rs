@@ -14,7 +14,7 @@ impl Fusion {
         }
         NodeState::from_world_mut(entity, world)
             .unwrap()
-            .init_vars(fusion_stats.get_vars());
+            .init_vars(fusion_stats.get_own_vars());
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }

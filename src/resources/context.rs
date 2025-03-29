@@ -392,7 +392,7 @@ impl ContextLayer<'_> {
                     None
                 }
             }
-            ContextLayer::OwnerNode(node) => node.get_var(var),
+            ContextLayer::OwnerNode(node) => node.get_own_var(var),
             ContextLayer::Caster(..) => None,
             ContextLayer::Target(..) => None,
         }
