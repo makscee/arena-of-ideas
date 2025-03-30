@@ -114,6 +114,7 @@ impl AdminPlugin {
             for house in all.core_load(&context) {
                 house.view(ui, &context).ui(ui);
             }
+            all.graph_view(ui, &context);
         }
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);

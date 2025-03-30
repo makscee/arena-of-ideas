@@ -38,6 +38,22 @@ pub trait NodeView: NodeExt {
     }
 }
 
+pub trait NodeGraphView: NodeExt {
+    fn graph_view_self(&self, ui: &mut Ui, context: &Context) {
+        show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
+            ui.vertical(|ui| {
+                for (var, value) in self.get_own_vars() {
+                    ui.horizontal(|ui| {
+                        var.cstr().label(ui);
+                        value.cstr().label(ui);
+                    });
+                }
+            });
+        });
+    }
+    fn graph_view(&self, ui: &mut Ui, context: &Context);
+}
+
 fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) -> Response {
     Frame {
         inner_margin: Margin::ZERO,
@@ -50,39 +66,42 @@ fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mu
     .show(ui, |ui| {
         const R: u8 = ROUNDING.ne;
         const M: i8 = 6;
-        let response = Frame::new()
-            .corner_radius(CornerRadius {
-                nw: R,
-                ne: 0,
-                sw: 0,
-                se: R,
-            })
-            .fill(color)
-            .inner_margin(Margin {
-                left: M,
-                right: M,
-                top: 0,
-                bottom: 0,
-            })
-            .show(ui, |ui| {
-                title
-                    .cstr_cs(ui.visuals().faint_bg_color, CstrStyle::Bold)
-                    .as_label(ui.style())
-                    .sense(Sense::click())
-                    .ui(ui)
-            })
-            .inner;
-        ui.push_id(title, |ui| {
-            Frame::new()
+        ui.vertical(|ui| {
+            let response = Frame::new()
+                .corner_radius(CornerRadius {
+                    nw: R,
+                    ne: 0,
+                    sw: 0,
+                    se: R,
+                })
+                .fill(color)
                 .inner_margin(Margin {
                     left: M,
                     right: M,
                     top: 0,
-                    bottom: M,
+                    bottom: 0,
                 })
-                .show(ui, content);
-        });
-        response
+                .show(ui, |ui| {
+                    title
+                        .cstr_cs(ui.visuals().faint_bg_color, CstrStyle::Bold)
+                        .as_label(ui.style())
+                        .sense(Sense::click())
+                        .ui(ui)
+                })
+                .inner;
+            ui.push_id(title, |ui| {
+                Frame::new()
+                    .inner_margin(Margin {
+                        left: M,
+                        right: M,
+                        top: 0,
+                        bottom: M,
+                    })
+                    .show(ui, content);
+            });
+            response
+        })
+        .inner
     })
     .inner
 }

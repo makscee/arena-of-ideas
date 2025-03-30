@@ -591,6 +591,25 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         self
                     }
                 }
+                impl NodeGraphView for #struct_ident {
+                    fn graph_view(&self, ui: &mut Ui, context: &Context) {
+                        ui.horizontal(|ui| {
+                            self.graph_view_self(ui, context);
+                            ui.vertical(|ui| {
+                                #(
+                                    if let Some(d) = self.#component_link_fields_load(context) {
+                                        d.graph_view(ui, context);
+                                    }
+                                )*
+                                #(
+                                    for d in self.#child_link_fields_load(context) {
+                                        d.graph_view(ui, context);
+                                    }
+                                )*
+                            });
+                        });
+                    }
+                }
                 impl From<&str> for #struct_ident {
                     fn from(value: &str) -> Self {
                         let mut d = Self::default();
