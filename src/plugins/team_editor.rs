@@ -33,7 +33,7 @@ impl TeamEditorPlugin {
                     let color = context
                         .clone()
                         .set_owner(unit.entity())
-                        .get_color(VarName::color)
+                        .get_color_any(VarName::color)
                         .ok_log()?;
                     if unit.name.cstr_c(color).button(ui).clicked() {
                         return unit.clone().to_house(world).ok_log();

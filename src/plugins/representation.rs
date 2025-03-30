@@ -69,9 +69,9 @@ impl RepresentationPlugin {
         ctx: &egui::Context,
         cam: (&Camera, &GlobalTransform),
     ) -> Result<(), ExpressionError> {
-        let pos = context.get_var(VarName::position)?.get_vec2()?
+        let pos = context.get_var_any(VarName::position)?.get_vec2()?
             + context
-                .get_var(VarName::offset)
+                .get_var_any(VarName::offset)
                 .and_then(|v| v.get_vec2())
                 .unwrap_or_default();
         let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1).to_pos2();
@@ -97,7 +97,7 @@ impl RepresentationPlugin {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let mut p = Painter::new(rect, ui.ctx());
-        if let Ok(color) = context.get_color(VarName::color) {
+        if let Ok(color) = context.get_color_any(VarName::color) {
             p.color = color;
         }
         for a in &m.0 {

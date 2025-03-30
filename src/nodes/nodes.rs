@@ -9,7 +9,7 @@ pub trait GetVar: GetNodeKind + Debug {
     fn get_own_var(&self, var: VarName) -> Option<VarValue>;
     fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
     fn get_own_vars(&self) -> Vec<(VarName, VarValue)>;
-    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)>;
+    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue, NodeKind)>;
     fn set_var(&mut self, var: VarName, value: VarValue);
 }
 

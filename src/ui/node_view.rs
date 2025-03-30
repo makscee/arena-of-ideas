@@ -2,12 +2,16 @@ use super::*;
 
 pub trait NodeView: NodeExt {
     fn view(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let is_compact_id = ui.next_auto_id();
+        let is_compact_id = ui.id();
         let is_compact = get_ctx_bool_id_default(ui.ctx(), is_compact_id, true);
+        let mut context = context.clone();
+        for (var, value, kind) in self.get_vars(&context) {
+            context.set_var(var, value, kind);
+        }
         if if is_compact {
-            self.compact(ui, context)
+            self.compact(ui, &context)
         } else {
-            self.full(ui, context)
+            self.full(ui, &context)
         }?
         .clicked()
         {
@@ -16,17 +20,12 @@ pub trait NodeView: NodeExt {
         Ok(())
     }
     fn compact(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        let mut context = context.clone();
-        let vars: HashMap<VarName, VarValue> = HashMap::from_iter(self.get_own_vars());
-        for (var, value) in &vars {
-            context.set_var(*var, value.clone());
-        }
         let title = self.kind().to_string();
         let color = context
-            .get_color(VarName::color)
-            .unwrap_or(tokens_global().ui_element_border_and_focus_rings());
+            .get_color_any(VarName::color)
+            .unwrap_or(ui.visuals().weak_text_color());
         Ok(show_frame(&title, color, ui, |ui| {
-            for (var, value) in vars {
+            for (var, value) in self.get_own_vars() {
                 ui.horizontal(|ui| {
                     var.cstr().label(ui);
                     value.cstr().label(ui);
@@ -35,23 +34,7 @@ pub trait NodeView: NodeExt {
         }))
     }
     fn full(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        let mut context = context.clone();
-        let vars: HashMap<VarName, VarValue> = HashMap::from_iter(self.get_own_vars());
-        for (var, value) in &vars {
-            context.set_var(*var, value.clone());
-        }
-        let title = self.kind().to_string();
-        let color = context
-            .get_color(VarName::color)
-            .unwrap_or(tokens_global().ui_element_border_and_focus_rings());
-        Ok(show_frame(&title, color, ui, |ui| {
-            for (var, value) in vars {
-                ui.horizontal(|ui| {
-                    var.cstr().label(ui);
-                    value.cstr().label(ui);
-                });
-            }
-        }))
+        self.compact(ui, context)
     }
 }
 
@@ -89,14 +72,16 @@ fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mu
                     .ui(ui)
             })
             .inner;
-        Frame::new()
-            .inner_margin(Margin {
-                left: M,
-                right: M,
-                top: 0,
-                bottom: M,
-            })
-            .show(ui, content);
+        ui.push_id(title, |ui| {
+            Frame::new()
+                .inner_margin(Margin {
+                    left: M,
+                    right: M,
+                    top: 0,
+                    bottom: M,
+                })
+                .show(ui, content);
+        });
         response
     })
     .inner
@@ -109,27 +94,32 @@ impl NodeView for PlayerData {}
 impl NodeView for PlayerIdentity {}
 impl NodeView for House {
     fn compact(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        let name = self
-            .get_var(VarName::name, &context)
-            .to_e("Name not found")?
-            .get_string()?;
-        let color = self
-            .get_var(VarName::color, context)
-            .to_e("Failed to get color")?
-            .get_color()?;
-        let context = &context.clone().set_var(VarName::color, color.into()).take();
+        let name = context.get_string(VarName::name, NodeKind::House)?;
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
         Ok(show_frame(&name, color, ui, |ui| {
             ui.horizontal(|ui| {
                 "ability:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                 if let Some(ability) = self.action_ability_load(context) {
-                    ability.view(ui, context).ui(ui);
+                    ui.vertical(|ui| {
+                        ability.view(ui, context).ui(ui);
+                    });
+                }
+            });
+            ui.horizontal(|ui| {
+                "status:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                if let Some(status) = self.status_ability_load(context) {
+                    ui.vertical(|ui| {
+                        status.view(ui, context).ui(ui);
+                    });
                 }
             });
             ui.horizontal(|ui| {
                 "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                 ui.vertical(|ui| {
-                    for unit in self.units_load(context) {
-                        unit.view(ui, context).ui(ui);
+                    for (i, unit) in self.units_load(context).into_iter().enumerate() {
+                        ui.push_id(ui.id().with(i), |ui| {
+                            unit.view(ui, context).ui(ui);
+                        });
                     }
                 })
             });
@@ -139,17 +129,77 @@ impl NodeView for House {
 impl NodeView for HouseColor {}
 impl NodeView for ActionAbility {
     fn compact(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        let name = self
-            .get_var(VarName::name, context)
-            .to_e("Failed to get unit name")?
-            .get_string()?;
-        let color = context.get_color(VarName::color)?;
+        let name = context.get_string(VarName::name, self.kind())?;
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
         Ok(TagWidget::new_name(name, color).ui(ui))
+    }
+    fn full(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+        let house = context.get_string(VarName::name, NodeKind::House)?;
+        Ok(show_frame(
+            &context.get_string(VarName::name, self.kind())?,
+            color,
+            ui,
+            |ui| {
+                let mut tags = TagsWidget::new();
+                tags.add_name(house, color);
+                tags.ui(ui);
+                if let Some(description) = self.description_load(context) {
+                    description
+                        .description
+                        .cstr_c(ui.visuals().weak_text_color())
+                        .label_w(ui);
+                    if let Some(effect) = description.effect_load(context) {
+                        ui.vertical(|ui| {
+                            for action in &effect.actions.0 {
+                                action.cstr().label(ui);
+                            }
+                        });
+                    }
+                }
+            },
+        ))
     }
 }
 impl NodeView for ActionAbilityDescription {}
 impl NodeView for AbilityEffect {}
-impl NodeView for StatusAbility {}
+impl NodeView for StatusAbility {
+    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
+        let name = context.get_string(VarName::name, self.kind())?;
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+        Ok(TagWidget::new_name(name, color).ui(ui))
+    }
+    fn full(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+        let house = context.get_string(VarName::name, NodeKind::House)?;
+        Ok(show_frame(
+            &context.get_string(VarName::name, self.kind())?,
+            color,
+            ui,
+            |ui| {
+                let mut tags = TagsWidget::new();
+                tags.add_name(house, color);
+                tags.ui(ui);
+                if let Some(description) = self.description_load(context) {
+                    description
+                        .description
+                        .cstr_c(ui.visuals().weak_text_color())
+                        .label_w(ui);
+                    if let Some(behavior) = description.reaction_load(context) {
+                        for reaction in &behavior.reactions {
+                            ui.vertical(|ui| {
+                                reaction.trigger.cstr().label(ui);
+                                for action in &reaction.actions.0 {
+                                    action.cstr().label(ui);
+                                }
+                            });
+                        }
+                    }
+                }
+            },
+        ))
+    }
+}
 impl NodeView for StatusAbilityDescription {}
 impl NodeView for Team {}
 impl NodeView for Match {}
@@ -157,34 +207,46 @@ impl NodeView for ShopCaseUnit {}
 impl NodeView for Fusion {}
 impl NodeView for Unit {
     fn compact(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        let name = self
-            .get_var(VarName::name, context)
-            .to_e("Failed to get unit name")?
-            .get_string()?;
-        let color = context.get_color(VarName::color)?;
-        let pwr = self
-            .get_var(VarName::pwr, context)
-            .to_e("Failed to get pwr")?
-            .cstr_c(VarName::pwr.color());
-        let hp = self
-            .get_var(VarName::hp, context)
-            .to_e("Failed to get hp")?
-            .cstr_c(VarName::hp.color());
-        let stats = format!("{}/{}", pwr, hp);
+        let name = context.get_string(VarName::name, self.kind())?;
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+        let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
+        let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
+        let stats = format!("[yellow {}]/[red {}]", pwr, hp);
         Ok(TagWidget::new_name_value(name, color, stats).ui(ui))
     }
     fn full(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
-        Ok(UnitCard {
-            name: self.name.clone(),
-            description: String::new(),
-            house: String::new(),
-            house_color: Color32::default(),
-            rarity: Rarity::default(),
-            behavior: Behavior::default(),
-            vars: HashMap::new(),
-            expanded: false,
-        }
-        .show(context, ui))
+        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+        let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
+        let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
+        let house = context.get_string(VarName::name, NodeKind::House)?;
+        Ok(show_frame(
+            &context.get_string(VarName::name, NodeKind::Unit)?,
+            color,
+            ui,
+            |ui| {
+                let mut tags = TagsWidget::new();
+                tags.add_name_value(VarName::pwr, VarName::pwr.color(), pwr.cstr());
+                tags.add_name_value(VarName::hp, VarName::hp.color(), hp.cstr());
+                tags.add_name(house, color);
+                tags.ui(ui);
+                if let Some(description) = self.description_load(context) {
+                    description
+                        .description
+                        .cstr_c(ui.visuals().weak_text_color())
+                        .label_w(ui);
+                    if let Some(behavior) = description.reaction_load(context) {
+                        for reaction in &behavior.reactions {
+                            ui.vertical(|ui| {
+                                reaction.trigger.cstr().label(ui);
+                                for action in &reaction.actions.0 {
+                                    action.cstr().label(ui);
+                                }
+                            });
+                        }
+                    }
+                }
+            },
+        ))
     }
 }
 impl NodeView for UnitDescription {}

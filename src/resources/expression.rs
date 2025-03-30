@@ -26,7 +26,7 @@ impl ExpressionImpl for Expression {
             Expression::Owner => Ok(context.get_owner()?.to_value()),
             Expression::Target => Ok(context.get_target()?.to_value()),
             Expression::Var(var) => {
-                let v = context.get_var(*var);
+                let v = context.get_var_any(*var);
                 if v.is_err() && *var == VarName::index {
                     Ok(1.into())
                 } else {

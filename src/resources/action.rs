@@ -83,7 +83,7 @@ impl ActionImpl for Action {
                         HashMap::from_iter([
                             (VarName::text, text.into()),
                             (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var(VarName::position)?),
+                            (VarName::position, context.get_var_any(VarName::position)?),
                         ]),
                         "text".into(),
                     ));
@@ -111,7 +111,7 @@ impl ActionImpl for Action {
                         HashMap::from_iter([
                             (VarName::text, text.into()),
                             (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var(VarName::position)?),
+                            (VarName::position, context.get_var_any(VarName::position)?),
                         ]),
                         "text".into(),
                     ));

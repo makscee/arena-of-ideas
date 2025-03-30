@@ -199,18 +199,9 @@ pub fn init_style_map(colorix: &Colorix) {
         ("s", CstrStyle::Small),
         ("h", CstrStyle::Heading),
         ("h2", CstrStyle::Heading2),
-        (
-            "red",
-            CstrStyle::Color(colorix.tokens_error().low_contrast_text()),
-        ),
-        (
-            "green",
-            CstrStyle::Color(colorix.tokens_success().low_contrast_text()),
-        ),
-        (
-            "yellow",
-            CstrStyle::Color(colorix.tokens_warning().high_contrast_text()),
-        ),
+        ("red", CstrStyle::Color(RED)),
+        ("green", CstrStyle::Color(GREEN)),
+        ("yellow", CstrStyle::Color(YELLOW)),
         (
             "tl",
             CstrStyle::Color(colorix.tokens_global().low_contrast_text()),

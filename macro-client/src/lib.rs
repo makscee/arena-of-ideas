@@ -285,8 +285,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         ),*
                         ]
                     }
-                    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)> {
-                        let mut vars = self.get_own_vars();
+                    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue, NodeKind)> {
+                        let kind = self.kind();
+                        let mut vars = self.get_own_vars().into_iter().map(|(var, value)| (var, value, kind)).collect_vec();
                         #(
                             if let Some(d) = self.#component_fields.as_ref().or_else(|| {
                                 self.entity

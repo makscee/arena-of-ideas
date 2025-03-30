@@ -134,22 +134,25 @@ impl TagsWidget {
         self.tags
             .push(TagWidget::new_name_value(text, color, number));
     }
-    pub fn ui(mut self, ui: &mut Ui) {
-        let mut size = egui::Vec2::ZERO;
-        for tag in &mut self.tags {
-            let tag_size = tag.size(ui);
-            size.y = size.y.max(tag_size.y);
-            size.x += tag_size.x;
-        }
-        let right_bottom = ui.cursor().center_top() + egui::vec2(size.x * 0.5, size.y);
-        let rect = Rect::from_min_max(right_bottom - size, right_bottom);
-        ui.allocate_new_ui(UiBuilder::new().max_rect(rect), |ui| {
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-                for tag in self.tags {
-                    tag.ui(ui);
-                }
-            })
+    pub fn ui(self, ui: &mut Ui) {
+        ui.horizontal_wrapped(|ui| {
+            for tag in self.tags {
+                tag.ui(ui);
+            }
         });
+        // let mut size = egui::Vec2::ZERO;
+        // for tag in &mut self.tags {
+        //     let tag_size = tag.size(ui);
+        //     size.y = size.y.max(tag_size.y);
+        //     size.x += tag_size.x;
+        // }
+        // let right_bottom = ui.cursor().center_top() + egui::vec2(size.x * 0.5, size.y);
+        // let rect = Rect::from_min_max(right_bottom - size, right_bottom);
+        // ui.allocate_new_ui(UiBuilder::new().max_rect(rect), |ui| {
+        //     ui.horizontal(|ui| {
+        //         ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
+
+        //     })
+        // });
     }
 }

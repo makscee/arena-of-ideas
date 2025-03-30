@@ -49,11 +49,11 @@ impl AdminPlugin {
             let mut query = world.query::<(Entity, &Representation)>();
             let mut context = Context::new_world(&world)
                 .set_t(t)
-                .set_var(VarName::position, default())
-                .set_var(VarName::extra_position, vec2(1.0, 0.0).into())
+                .set_var_any(VarName::position, default())
+                .set_var_any(VarName::extra_position, vec2(1.0, 0.0).into())
                 .take();
             for (var, value) in &vars {
-                context.set_var(*var, value.get_value(&context).unwrap_or_default());
+                context.set_var_any(*var, value.get_value(&context).unwrap_or_default());
             }
             ui.horizontal_centered(|ui| {
                 let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());
@@ -162,13 +162,6 @@ impl AdminPlugin {
             TeamEditorPlugin::load_team(default(), world);
             TeamEditorPlugin::add_panes();
             TeamEditorPlugin::unit_add_from_core(world).notify(world);
-        }
-        if "Add Unit".cstr().button(ui).clicked() {
-            let unit = Context::new_world(world)
-                .children_components_recursive::<Unit>(all(world).entity())
-                .choose(&mut thread_rng())
-                .unwrap()
-                .entity();
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);

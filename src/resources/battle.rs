@@ -68,7 +68,7 @@ impl BattleAction {
                     Context::default()
                         .set_owner(*a)
                         .add_target(*b)
-                        .set_var(VarName::position, vec2(0.0, 0.0).into())
+                        .set_var_any(VarName::position, vec2(0.0, 0.0).into())
                         .take(),
                     strike_anim,
                 );
@@ -83,7 +83,7 @@ impl BattleAction {
             BattleAction::Death(a) => {
                 let position = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap();
                 add_actions.extend(battle.die(*a));
                 add_actions.push(BattleAction::Vfx(
@@ -95,17 +95,17 @@ impl BattleAction {
             BattleAction::Damage(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap();
                 let target_pos = Context::new_battle_simulation(battle)
                     .set_owner(*b)
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap();
                 let curve = animations().get("range_effect_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var(VarName::position, owner_pos)
-                        .set_var(VarName::extra_position, target_pos.clone())
+                        .set_var_any(VarName::position, owner_pos)
+                        .set_var_any(VarName::extra_position, target_pos.clone())
                         .take(),
                     curve,
                 );
@@ -113,7 +113,7 @@ impl BattleAction {
                     let pain = animations().get("pain_vfx").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var(VarName::position, target_pos.clone())
+                            .set_var_any(VarName::position, target_pos.clone())
                             .take(),
                         pain,
                     );
@@ -128,9 +128,9 @@ impl BattleAction {
                 let text = animations().get("text").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var(VarName::text, (-*x).to_string().into())
-                        .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, target_pos)
+                        .set_var_any(VarName::text, (-*x).to_string().into())
+                        .set_var_any(VarName::color, RED.into())
+                        .set_var_any(VarName::position, target_pos)
                         .take(),
                     text,
                 );
@@ -140,17 +140,17 @@ impl BattleAction {
             BattleAction::Heal(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap();
                 let target_pos = Context::new_battle_simulation(battle)
                     .set_owner(*b)
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap();
                 let curve = animations().get("range_effect_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var(VarName::position, owner_pos)
-                        .set_var(VarName::extra_position, target_pos.clone())
+                        .set_var_any(VarName::position, owner_pos)
+                        .set_var_any(VarName::extra_position, target_pos.clone())
                         .take(),
                     curve,
                 );
@@ -158,7 +158,7 @@ impl BattleAction {
                     let pain = animations().get("pleasure_vfx").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var(VarName::position, target_pos.clone())
+                            .set_var_any(VarName::position, target_pos.clone())
                             .take(),
                         pain,
                     );
@@ -172,9 +172,9 @@ impl BattleAction {
                     let text = animations().get("text").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var(VarName::text, format!("+{x}").into())
-                            .set_var(VarName::color, GREEN.into())
-                            .set_var(VarName::position, target_pos)
+                            .set_var_any(VarName::text, format!("+{x}").into())
+                            .set_var_any(VarName::color, GREEN.into())
+                            .set_var_any(VarName::position, target_pos)
                             .take(),
                         text,
                     );
@@ -225,7 +225,7 @@ impl BattleAction {
                 if let Some(vfx) = animations().get(vfx) {
                     let mut context = Context::default();
                     for (var, value) in vars {
-                        context.set_var(*var, value.clone());
+                        context.set_var_any(*var, value.clone());
                     }
                     battle.apply_animation(context, vfx);
                 }
@@ -590,10 +590,10 @@ impl BattleSimulation {
         let context = Context::new_world(&self.world).set_t(t).take();
         while let Some(entity) = entities.pop_front() {
             let context = context.clone().set_owner(entity).take();
-            if context.get_bool(VarName::visible).unwrap_or(true) {
+            if context.get_bool_any(VarName::visible).unwrap_or(true) {
                 entities.extend(context.get_children(entity));
                 let position = context
-                    .get_var(VarName::position)
+                    .get_var_any(VarName::position)
                     .unwrap_or_default()
                     .get_vec2()
                     .unwrap()

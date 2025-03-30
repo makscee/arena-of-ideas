@@ -26,8 +26,8 @@ impl UnitCard {
         let entity = context.get_owner()?;
         let vars = context.get_vars(VARS.iter().copied());
         Ok(Self {
-            name: context.get_string(VarName::name)?,
-            description: context.get_string(VarName::description)?,
+            name: context.get_string_any(VarName::name)?,
+            description: context.get_string_any(VarName::description)?,
             house: context
                 .find_parent_component::<House>(entity)
                 .to_e("House not found")?
@@ -48,6 +48,7 @@ impl UnitCard {
         })
     }
     pub fn show(&self, context: &Context, ui: &mut Ui) -> Response {
+        ui.set_max_width(300.0);
         ui.spacing_mut().item_spacing.y = 1.0;
         let response = Frame::new()
             .fill(tokens_global().subtle_background())
@@ -78,8 +79,8 @@ impl UnitCard {
             .corner_radius(CornerRadius {
                 nw: 0,
                 ne: 0,
-                sw: 13,
-                se: 13,
+                sw: 6,
+                se: 6,
             })
             .stroke(Stroke::new(
                 1.0,
@@ -158,12 +159,16 @@ impl UnitCard {
 
 pub fn show_unit_tag(context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
     TagWidget::new_name_value(
-        context.get_string(VarName::name)?,
-        context.get_color(VarName::color)?,
+        context.get_string_any(VarName::name)?,
+        context.get_color_any(VarName::color)?,
         format!(
             "[b {} {}]",
-            context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
-            context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color())
+            context
+                .get_i32_any(VarName::pwr)?
+                .cstr_c(VarName::pwr.color()),
+            context
+                .get_i32_any(VarName::hp)?
+                .cstr_c(VarName::hp.color())
         ),
     )
     .ui(ui);

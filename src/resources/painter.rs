@@ -93,9 +93,13 @@ impl Paint for PainterAction {
                 thickness,
                 curvature,
             } => {
-                let start = context.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
+                let start = context
+                    .get_var_any(VarName::position)?
+                    .get_vec2()?
+                    .to_evec2()
+                    * up;
                 let end = context
-                    .get_var(VarName::extra_position)?
+                    .get_var_any(VarName::extra_position)?
                     .get_vec2()?
                     .to_pos2()
                     * up
@@ -169,8 +173,8 @@ impl Paint for PainterAction {
                     action.paint(
                         context
                             .clone()
-                            .set_var(VarName::index, i.into())
-                            .set_var(VarName::max_index, max_index.into()),
+                            .set_var_any(VarName::index, i.into())
+                            .set_var_any(VarName::max_index, max_index.into()),
                         p,
                         ui,
                     )?;
