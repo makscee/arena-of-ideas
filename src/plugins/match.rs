@@ -52,7 +52,7 @@ impl MatchPlugin {
                 let context = &Context::new_world(&world).set_owner(entity).take();
                 let name = context.get_string(VarName::name).unwrap();
                 let color = context.get_color(VarName::color).unwrap();
-                TagWidget::new_text(
+                TagWidget::new_name(
                     name,
                     if sc.sold {
                         tokens_global().low_contrast_text()

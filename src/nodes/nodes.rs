@@ -260,7 +260,7 @@ impl NodeKind {
                 if let Some(entity) = entity {
                     if let Some(house) = context.get_component::<House>(entity) {
                         if let Some(color) = context.get_component::<HouseColor>(entity) {
-                            TagWidget::new_text(&house.name, color.color.c32()).ui(ui);
+                            TagWidget::new_name(&house.name, color.color.c32()).ui(ui);
                             response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
                         }
                     }

@@ -112,7 +112,7 @@ impl AdminPlugin {
         if let Some(all) = All::get_by_id(1, world) {
             let context = Context::new_world(world);
             for house in all.core_load(&context) {
-                house.compact(ui, &context);
+                house.view(ui, &context).ui(ui);
             }
         }
         if "Anim Editor".cstr().button(ui).clicked() {

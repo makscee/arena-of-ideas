@@ -47,9 +47,9 @@ impl UnitCard {
             expanded: true,
         })
     }
-    pub fn show(&self, context: &Context, ui: &mut Ui) {
+    pub fn show(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.spacing_mut().item_spacing.y = 1.0;
-        Frame::new()
+        let response = Frame::new()
             .fill(tokens_global().subtle_background())
             .stroke(Stroke::new(2.0, self.rarity.color()))
             .corner_radius(CornerRadius {
@@ -60,12 +60,18 @@ impl UnitCard {
             })
             .show(ui, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    self.name
+                    let response = self
+                        .name
                         .cstr_cs(self.house_color, CstrStyle::Heading)
-                        .label(ui);
+                        .as_label(ui.style())
+                        .sense(Sense::click())
+                        .ui(ui);
                     self.show_tags(ui);
-                });
-            });
+                    response
+                })
+                .inner
+            })
+            .inner;
         Frame::new()
             .fill(tokens_global().subtle_background())
             .inner_margin(Margin::same(4))
@@ -96,6 +102,7 @@ impl UnitCard {
                     self.show_description(ui);
                 }
             });
+        response
     }
     fn show_tags(&self, ui: &mut Ui) {
         if let Some(hp) = self.vars.get(&VarName::hp).and_then(|v| v.get_i32().ok()) {
@@ -107,7 +114,7 @@ impl UnitCard {
                     .unwrap_or_default();
                 let mut tags = TagsWidget::new();
                 tags.add_number("pwr", YELLOW, pwr);
-                tags.add_number_cstr(
+                tags.add_name_value(
                     "hp",
                     RED,
                     format!(
@@ -122,8 +129,8 @@ impl UnitCard {
             }
         }
         let mut tags = TagsWidget::new();
-        tags.add_text(self.house.to_owned(), self.house_color);
-        tags.add_text(self.rarity.to_string(), self.rarity.color());
+        tags.add_name(self.house.to_owned(), self.house_color);
+        tags.add_name(self.rarity.to_string(), self.rarity.color());
         if let Some(lvl) = self.vars.get(&VarName::lvl).and_then(|v| v.get_i32().ok()) {
             tags.add_number("lvl", PURPLE, lvl);
         }
@@ -150,7 +157,7 @@ impl UnitCard {
 }
 
 pub fn show_unit_tag(context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
-    TagWidget::new_number(
+    TagWidget::new_name_value(
         context.get_string(VarName::name)?,
         context.get_color(VarName::color)?,
         format!(

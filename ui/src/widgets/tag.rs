@@ -4,9 +4,9 @@ use super::*;
 
 #[derive(Clone)]
 pub struct TagWidget {
-    text: String,
+    name: String,
     color: Color32,
-    number: Option<Cstr>,
+    value: Option<Cstr>,
     text_galley: Option<Arc<egui::Galley>>,
     number_galley: Option<Arc<egui::Galley>>,
 }
@@ -20,35 +20,35 @@ const NUMBER_MARGIN: Margin = Margin {
     bottom: 0,
 };
 impl TagWidget {
-    pub fn new_text(text: impl ToString, color: Color32) -> Self {
+    pub fn new_name(name: impl ToString, color: Color32) -> Self {
         Self {
-            text: text.to_string(),
+            name: name.to_string(),
             color,
             text_galley: None,
             number_galley: None,
-            number: None,
+            value: None,
         }
     }
-    pub fn new_number(text: impl ToString, color: Color32, number: Cstr) -> Self {
+    pub fn new_name_value(name: impl ToString, color: Color32, value: Cstr) -> Self {
         Self {
-            text: text.to_string(),
+            name: name.to_string(),
             color,
-            number: Some(number),
+            value: Some(value),
             text_galley: None,
             number_galley: None,
         }
     }
-    fn text_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
+    fn name_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
         let galley = self
-            .text
+            .name
             .cstr_cs(tokens_global().app_background(), CstrStyle::Bold)
             .galley(1.0, ui);
         let size = galley.size();
         self.text_galley = Some(galley);
         size
     }
-    fn number_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
-        let Some(number) = &self.number else {
+    fn value_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
+        let Some(number) = &self.value else {
             return default();
         };
         let galley = number
@@ -64,9 +64,9 @@ impl TagWidget {
         INNER_MARGIN.sum() + OUTER_MARGIN.sum()
     }
     pub fn size(&mut self, ui: &mut Ui) -> egui::Vec2 {
-        self.text_size(ui) + self.number_size(ui) + Self::margin_size()
+        self.name_size(ui) + self.value_size(ui) + Self::margin_size()
     }
-    pub fn ui(mut self, ui: &mut Ui) {
+    pub fn ui(mut self, ui: &mut Ui) -> Response {
         let frame = Frame {
             corner_radius: CornerRadius::same(13),
             shadow: Shadow::NONE,
@@ -74,12 +74,12 @@ impl TagWidget {
             stroke: Stroke::new(1.0, self.color),
             ..default()
         };
-        let text_size = self.text_size(ui);
-        let number_size = self.number_size(ui);
+        let text_size = self.name_size(ui);
+        let number_size = self.value_size(ui);
         let margin_size = Self::margin_size();
-        let (rect, _) =
-            ui.allocate_exact_size(text_size + number_size + margin_size, Sense::hover());
-        if self.number.is_some() {
+        let (rect, response) =
+            ui.allocate_exact_size(text_size + number_size + margin_size, Sense::click());
+        if self.value.is_some() {
             ui.painter().add(
                 frame
                     .fill(tokens_global().app_background())
@@ -105,6 +105,7 @@ impl TagWidget {
                 tokens_global().high_contrast_text(),
             );
         }
+        response
     }
 }
 
@@ -117,11 +118,11 @@ impl TagsWidget {
     pub fn new() -> Self {
         Self { tags: default() }
     }
-    pub fn add_text(&mut self, text: impl ToString, color: Color32) {
-        self.tags.push(TagWidget::new_text(text, color));
+    pub fn add_name(&mut self, text: impl ToString, color: Color32) {
+        self.tags.push(TagWidget::new_name(text, color));
     }
     pub fn add_number(&mut self, text: impl ToString, color: Color32, number: i32) {
-        self.tags.push(TagWidget::new_number(
+        self.tags.push(TagWidget::new_name_value(
             text,
             color,
             number
@@ -129,8 +130,9 @@ impl TagsWidget {
                 .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold),
         ));
     }
-    pub fn add_number_cstr(&mut self, text: impl ToString, color: Color32, number: Cstr) {
-        self.tags.push(TagWidget::new_number(text, color, number));
+    pub fn add_name_value(&mut self, text: impl ToString, color: Color32, number: Cstr) {
+        self.tags
+            .push(TagWidget::new_name_value(text, color, number));
     }
     pub fn ui(mut self, ui: &mut Ui) {
         let mut size = egui::Vec2::ZERO;
