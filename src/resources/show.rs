@@ -6,7 +6,7 @@ pub trait ShowPrefix {
 impl ShowPrefix for Option<&str> {
     fn show(&self, ui: &mut Ui) {
         if let Some(s) = self {
-            s.cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Small)
+            s.cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
                 .label(ui);
         }
     }

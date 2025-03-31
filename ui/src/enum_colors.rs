@@ -12,7 +12,7 @@ impl EnumColor for VarName {
             VarName::lvl => PURPLE,
             VarName::xp => LIGHT_PURPLE,
             VarName::tier => YELLOW,
-            _ => tokens_global().high_contrast_text(),
+            _ => tokens_global().low_contrast_text(),
         }
     }
 }

@@ -500,53 +500,54 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl NodeGraphView for #struct_ident {
-                    fn graph_view(&self, context: &Context, ui: &mut Ui) {
+                    fn graph_view(&self, parent: Rect, context: &Context, ui: &mut Ui) {
                         ui.horizontal(|ui| {
-                            self.graph_view_self(context, ui);
+                            let rect = self.graph_view_self(parent, context, ui);
                             ui.vertical(|ui| {
                                 #(
                                     if let Some(d) = self.#component_fields_load(context) {
-                                        d.graph_view(context, ui);
+                                        d.graph_view(rect, context, ui);
                                     }
                                 )*
                                 #(
                                     for d in self.#child_fields_load(context) {
-                                        d.graph_view(context, ui);
+                                        d.graph_view(rect, context, ui);
                                     }
                                 )*
                             });
                         });
                     }
-                    fn graph_view_mut(&mut self, ui: &mut Ui) -> bool {
+                    fn graph_view_mut(&mut self, parent: Rect, ui: &mut Ui) -> bool {
                         ui.horizontal(|ui| {
-                            let mut changed = self.graph_view_self_mut(ui);
+                            let (mut changed, rect) = self.graph_view_self_mut(parent, ui);
                             ui.vertical(|ui| {
                                 #(
                                     if let Some(d) = &mut self.#component_fields {
-                                        changed |= d.graph_view_mut(ui);
+                                        changed |= d.graph_view_mut(rect, ui);
                                     }
                                 )*
                                 #(
                                     for d in &mut self.#child_fields {
-                                        changed |= d.graph_view_mut(ui);
+                                        changed |= d.graph_view_mut(rect, ui);
                                     }
                                 )*
                             });
                             changed
                         }).inner
                     }
-                    fn graph_view_mut_world(entity: Entity, ui: &mut Ui, world: &mut World) -> bool {
+                    fn graph_view_mut_world(entity: Entity, parent: Rect, ui: &mut Ui, world: &mut World) -> bool {
                         let mut changed = false;
                         ui.horizontal(|ui| {
                             if let Some(mut s) = world.get_mut::<Self>(entity) {
-                                changed |= s.graph_view_mut(ui);
+                                let (c, rect) = s.graph_view_self_mut(parent, ui);
+                                changed |= c;
                                 ui.vertical(|ui| {
                                     #(
-                                        changed |= #component_types::graph_view_mut_world(entity, ui, world);
+                                        changed |= #component_types::graph_view_mut_world(entity, rect, ui, world);
                                     )*
                                     #(
                                         for child in get_children(entity, world) {
-                                            changed |= #child_types::graph_view_mut_world(child, ui, world);
+                                            changed |= #child_types::graph_view_mut_world(child, rect, ui, world);
                                         }
                                     )*
                                 });

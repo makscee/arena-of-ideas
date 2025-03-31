@@ -31,7 +31,8 @@ pub trait NodeView: NodeExt {
                     value.cstr().label(ui);
                 });
             }
-        }))
+        })
+        .1)
     }
     fn full(&self, ui: &mut Ui, context: &Context) -> Result<Response, ExpressionError> {
         self.compact(ui, context)
@@ -39,31 +40,46 @@ pub trait NodeView: NodeExt {
 }
 
 pub trait NodeGraphView: NodeExt {
-    fn graph_view_self(&self, context: &Context, ui: &mut Ui) {
-        show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
+    fn graph_view_self(&self, parent: Rect, context: &Context, ui: &mut Ui) -> Rect {
+        let (rect, _) = show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
             ui.vertical(|ui| {
                 self.show(None, context, ui);
             });
         });
+        ui.painter().line(
+            [parent.right_center(), rect.left_center()].into(),
+            ui.visuals().weak_text_color().stroke(),
+        );
+        rect
     }
-    fn graph_view_self_mut(&mut self, ui: &mut Ui) -> bool {
+    fn graph_view_self_mut(&mut self, parent: Rect, ui: &mut Ui) -> (bool, Rect) {
         let mut changed = false;
-        show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
+        let (rect, _) = show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
             ui.vertical(|ui| {
                 changed = self.show_mut(None, ui);
             });
         });
-        changed
+        ui.painter().line(
+            [parent.right_center(), rect.left_center()].into(),
+            ui.visuals().weak_text_color().stroke(),
+        );
+        (changed, rect)
     }
-    fn graph_view(&self, context: &Context, ui: &mut Ui);
-    fn graph_view_mut(&mut self, ui: &mut Ui) -> bool;
-    fn graph_view_mut_world(entity: Entity, ui: &mut Ui, world: &mut World) -> bool;
+    fn graph_view(&self, parent: Rect, context: &Context, ui: &mut Ui);
+    fn graph_view_mut(&mut self, parent: Rect, ui: &mut Ui) -> bool;
+    fn graph_view_mut_world(entity: Entity, parent: Rect, ui: &mut Ui, world: &mut World) -> bool;
 }
 
-fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) -> Response {
-    Frame {
+fn show_frame(
+    title: &str,
+    color: Color32,
+    ui: &mut Ui,
+    content: impl FnOnce(&mut Ui),
+) -> (Rect, Response) {
+    let outer_margin = Margin::same(4);
+    let response = Frame {
         inner_margin: Margin::ZERO,
-        outer_margin: MARGIN,
+        outer_margin,
         fill: ui.visuals().faint_bg_color,
         stroke: color.stroke(),
         corner_radius: ROUNDING,
@@ -108,8 +124,8 @@ fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mu
             response
         })
         .inner
-    })
-    .inner
+    });
+    (response.response.rect - outer_margin, response.inner)
 }
 
 impl NodeView for All {}
@@ -148,7 +164,8 @@ impl NodeView for House {
                     }
                 })
             });
-        }))
+        })
+        .1)
     }
 }
 impl NodeView for HouseColor {}
@@ -183,7 +200,8 @@ impl NodeView for ActionAbility {
                     }
                 }
             },
-        ))
+        )
+        .1)
     }
 }
 impl NodeView for ActionAbilityDescription {}
@@ -222,7 +240,8 @@ impl NodeView for StatusAbility {
                     }
                 }
             },
-        ))
+        )
+        .1)
     }
 }
 impl NodeView for StatusAbilityDescription {}
@@ -271,7 +290,8 @@ impl NodeView for Unit {
                     }
                 }
             },
-        ))
+        )
+        .1)
     }
 }
 impl NodeView for UnitDescription {}
