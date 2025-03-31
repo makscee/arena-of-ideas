@@ -1,3 +1,5 @@
+use bevy::app::FixedUpdate;
+
 use super::*;
 
 pub struct BattlePlugin;
@@ -14,7 +16,12 @@ impl Plugin for BattlePlugin {
                     playing: false,
                 });
             }
-        });
+        })
+        .init_resource::<ReloadData>()
+        .add_systems(
+            FixedUpdate,
+            Self::reload.run_if(in_state(GameState::Editor)),
+        );
     }
 }
 
@@ -24,6 +31,12 @@ struct BattleData {
     simulation: BattleSimulation,
     t: f32,
     playing: bool,
+}
+
+#[derive(Resource, Default)]
+struct ReloadData {
+    reload_requested: bool,
+    last_reload: f64,
 }
 
 fn rm(world: &mut World) -> Result<Mut<BattleData>, ExpressionError> {
@@ -51,6 +64,19 @@ impl BattleData {
 }
 
 impl BattlePlugin {
+    fn reload(mut data: ResMut<BattleData>, mut reload: ResMut<ReloadData>) {
+        if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
+            reload.reload_requested = false;
+            reload.last_reload = gt().elapsed();
+            data.reload_simulation();
+            data.battle.left.reassign_ids(&mut 0);
+            data.battle.right.reassign_ids(&mut 0);
+            pd_mut(|pd| {
+                pd.client_state
+                    .set_battle_test_teams(&data.battle.left, &data.battle.right);
+            });
+        }
+    }
     pub fn edit_battle(f: impl FnOnce(&mut Battle), world: &mut World) {
         let mut r = world.get_resource_or_insert_with(|| BattleData::default());
         f(&mut r.battle);
@@ -90,7 +116,6 @@ impl BattlePlugin {
 
         let t = data.t;
         data.simulation.show_at(t, ui);
-
         world.insert_resource(data);
         Ok(())
     }
@@ -166,15 +191,9 @@ impl BattlePlugin {
     }
     pub fn pane_edit(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = rm(world)?;
-        let changed = data.battle.left.show_mut(None, ui);
-        if data.battle.right.show_mut(None, ui) || changed {
-            data.reload_simulation();
-            data.battle.left.reassign_ids(&mut 0);
-            data.battle.right.reassign_ids(&mut 0);
-            pd_mut(|pd| {
-                pd.client_state
-                    .set_battle_test_teams(&data.battle.left, &data.battle.right);
-            });
+        let changed = data.battle.left.graph_view_mut(Rect::ZERO, ui);
+        if data.battle.right.graph_view_mut(Rect::ZERO, ui) || changed {
+            world.resource_mut::<ReloadData>().reload_requested = true;
         }
         Ok(())
     }
