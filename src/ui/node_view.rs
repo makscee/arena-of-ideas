@@ -39,19 +39,25 @@ pub trait NodeView: NodeExt {
 }
 
 pub trait NodeGraphView: NodeExt {
-    fn graph_view_self(&self, ui: &mut Ui, context: &Context) {
+    fn graph_view_self(&self, context: &Context, ui: &mut Ui) {
         show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
             ui.vertical(|ui| {
-                for (var, value) in self.get_own_vars() {
-                    ui.horizontal(|ui| {
-                        var.cstr().label(ui);
-                        value.cstr().label(ui);
-                    });
-                }
+                self.show(None, context, ui);
             });
         });
     }
-    fn graph_view(&self, ui: &mut Ui, context: &Context);
+    fn graph_view_self_mut(&mut self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        show_frame(&self.kind().cstr(), ui.visuals().text_color(), ui, |ui| {
+            ui.vertical(|ui| {
+                changed = self.show_mut(None, ui);
+            });
+        });
+        changed
+    }
+    fn graph_view(&self, context: &Context, ui: &mut Ui);
+    fn graph_view_mut(&mut self, ui: &mut Ui) -> bool;
+    fn graph_view_mut_world(entity: Entity, ui: &mut Ui, world: &mut World) -> bool;
 }
 
 fn show_frame(title: &str, color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) -> Response {

@@ -175,11 +175,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &component_types,
             );
             let common_trait = common_node_trait_fns(struct_ident, &component_types, &child_types);
-            let component_link_fields_load = component_fields
+            let component_fields_load = component_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
-            let child_link_fields_load = child_fields
+            let child_fields_load = child_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
@@ -189,7 +189,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 #common
                 impl #struct_ident {
                     #(
-                        pub fn #component_link_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #component_types> {
+                        pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #component_types> {
                             self.#component_fields.as_ref().or_else(|| {
                                 self.entity
                                     .and_then(|e| context.get_component::<#component_types>(e))
@@ -197,7 +197,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     )*
                     #(
-                        pub fn #child_link_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #child_types> {
+                        pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #child_types> {
                             if !self.#child_fields.is_empty() {
                                 self.#child_fields.iter().collect()
                             } else if let Some(entity) = self.entity {
@@ -592,22 +592,59 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl NodeGraphView for #struct_ident {
-                    fn graph_view(&self, ui: &mut Ui, context: &Context) {
+                    fn graph_view(&self, context: &Context, ui: &mut Ui) {
                         ui.horizontal(|ui| {
-                            self.graph_view_self(ui, context);
+                            self.graph_view_self(context, ui);
                             ui.vertical(|ui| {
                                 #(
-                                    if let Some(d) = self.#component_link_fields_load(context) {
-                                        d.graph_view(ui, context);
+                                    if let Some(d) = self.#component_fields_load(context) {
+                                        d.graph_view(context, ui);
                                     }
                                 )*
                                 #(
-                                    for d in self.#child_link_fields_load(context) {
-                                        d.graph_view(ui, context);
+                                    for d in self.#child_fields_load(context) {
+                                        d.graph_view(context, ui);
                                     }
                                 )*
                             });
                         });
+                    }
+                    fn graph_view_mut(&mut self, ui: &mut Ui) -> bool {
+                        ui.horizontal(|ui| {
+                            let mut changed = self.graph_view_self_mut(ui);
+                            ui.vertical(|ui| {
+                                #(
+                                    if let Some(d) = &mut self.#component_fields {
+                                        changed |= d.graph_view_mut(ui);
+                                    }
+                                )*
+                                #(
+                                    for d in &mut self.#child_fields {
+                                        changed |= d.graph_view_mut(ui);
+                                    }
+                                )*
+                            });
+                            changed
+                        }).inner
+                    }
+                    fn graph_view_mut_world(entity: Entity, ui: &mut Ui, world: &mut World) -> bool {
+                        let mut changed = false;
+                        ui.horizontal(|ui| {
+                            if let Some(mut s) = world.get_mut::<Self>(entity) {
+                                changed |= s.graph_view_mut(ui);
+                                ui.vertical(|ui| {
+                                    #(
+                                        changed |= #component_types::graph_view_mut_world(entity, ui, world);
+                                    )*
+                                    #(
+                                        for child in get_children(entity, world) {
+                                            changed |= #child_types::graph_view_mut_world(child, ui, world);
+                                        }
+                                    )*
+                                });
+                            }
+                        });
+                        changed
                     }
                 }
                 impl From<&str> for #struct_ident {
