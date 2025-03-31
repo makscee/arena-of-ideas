@@ -15,6 +15,13 @@ impl Plugin for BattlePlugin {
                     t: 0.0,
                     playing: false,
                 });
+            } else {
+                world.insert_resource(BattleData {
+                    battle: Battle::default(),
+                    simulation: BattleSimulation::new(default()).start(),
+                    t: 0.0,
+                    playing: false,
+                });
             }
         })
         .init_resource::<ReloadData>()
@@ -92,21 +99,6 @@ impl BattlePlugin {
             battle,
             t: 0.0,
             playing: false,
-        });
-    }
-    pub fn add_editor_panes() {
-        TilePlugin::add_to_current(|tree| {
-            if let Some(id) = tree.tiles.find_pane(&Pane::Battle(BattlePane::View)) {
-                tree.tiles.remove(id);
-            }
-            if let Some(id) = tree.tiles.find_pane(&Pane::Battle(BattlePane::Controls)) {
-                tree.tiles.remove(id);
-            }
-            let view = tree.tiles.insert_pane(Pane::Battle(BattlePane::View));
-            let controls = tree.tiles.insert_pane(Pane::Battle(BattlePane::Controls));
-            let edit = tree.tiles.insert_pane(Pane::Battle(BattlePane::Edit));
-            let vertical = tree.tiles.insert_vertical_tile([view, controls].into());
-            tree.tiles.insert_horizontal_tile([edit, vertical].into())
         });
     }
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
@@ -189,10 +181,15 @@ impl BattlePlugin {
         world.insert_resource(data);
         Ok(())
     }
-    pub fn pane_edit(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_edit(left: bool, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = rm(world)?;
-        let changed = data.battle.left.graph_view_mut(Rect::ZERO, ui);
-        if data.battle.right.graph_view_mut(Rect::ZERO, ui) || changed {
+        let changed = if left {
+            &mut data.battle.left
+        } else {
+            &mut data.battle.right
+        }
+        .graph_view_mut(Rect::ZERO, ui);
+        if changed {
             world.resource_mut::<ReloadData>().reload_requested = true;
         }
         Ok(())

@@ -1,5 +1,3 @@
-use rand::seq::SliceRandom;
-
 use super::*;
 
 pub struct AdminPlugin;
@@ -9,6 +7,65 @@ impl Plugin for AdminPlugin {
 }
 
 impl AdminPlugin {
+    pub fn pane(ui: &mut Ui, world: &mut World) {
+        if let Some(all) = All::get_by_id(1, world) {
+            let context = &Context::new_world(world);
+            for house in all.core_load(context) {
+                house.view(ui, context).ui(ui);
+            }
+        }
+        if "Anim Editor".cstr().button(ui).clicked() {
+            Self::show_anim_editor(world);
+        }
+        if "Insert Match".cstr().button(ui).clicked() {
+            cn().reducers.match_insert().unwrap();
+        }
+        if "Houses Editor".cstr().button(ui).clicked() {
+            GameAssetsEditor::open_houses_window(world);
+        }
+        if "Incubator Merge".cstr().button(ui).clicked() {
+            cn().reducers.incubator_merge().unwrap();
+        }
+        if "Export All".cstr().button(ui).clicked() {
+            let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();
+            dbg!(&all);
+            let path = "./assets/";
+            let dir = all.to_dir("ron".into());
+            let dir = dir.as_dir().unwrap();
+            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+            dir.extract(path).unwrap();
+        }
+        if "Export Incubator Data".cstr().button(ui).clicked() {
+            GameAssets::update_files();
+        }
+        let r = "Context Test".cstr().button(ui);
+        ContextMenu::new(r)
+            .add("test1", |ui, _| {
+                debug!("test1");
+            })
+            .add("test2", |ui, _| {
+                debug!("test2");
+            })
+            .add("test3", |ui, _| {
+                debug!("test3");
+            })
+            .ui(ui, world);
+        if "Add Node Graph Pane".cstr().button(ui).clicked() {
+            TilePlugin::add_to_current(|tree| tree.tiles.insert_pane(Pane::NodeGraph));
+        }
+        if "Add Team Editor Panes".cstr().button(ui).clicked() {
+            TeamEditorPlugin::load_team(default(), world);
+            TeamEditorPlugin::add_panes();
+            TeamEditorPlugin::unit_add_from_core(world).notify(world);
+        }
+        if "Notification Test".cstr().button(ui).clicked() {
+            "notify test".notify(world);
+            "notify error test".notify_error(world);
+        }
+        if "Incubator".cstr().button(ui).clicked() {
+            GameState::Incubator.set_next(world);
+        }
+    }
     fn show_anim_editor(w: &mut World) {
         let mut cs = pd().client_state.clone();
         if cs.edit_anim.is_none() {
@@ -107,62 +164,5 @@ impl AdminPlugin {
             }
         })
         .push(w);
-    }
-    pub fn pane(ui: &mut Ui, world: &mut World) {
-        if "Anim Editor".cstr().button(ui).clicked() {
-            Self::show_anim_editor(world);
-        }
-        if "Insert Match".cstr().button(ui).clicked() {
-            cn().reducers.match_insert().unwrap();
-        }
-        if "Houses Editor".cstr().button(ui).clicked() {
-            GameAssetsEditor::open_houses_window(world);
-        }
-        if "Incubator Merge".cstr().button(ui).clicked() {
-            cn().reducers.incubator_merge().unwrap();
-        }
-        if "Export All".cstr().button(ui).clicked() {
-            let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();
-            dbg!(&all);
-            let path = "./assets/";
-            let dir = all.to_dir("ron".into());
-            let dir = dir.as_dir().unwrap();
-            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
-            dir.extract(path).unwrap();
-        }
-        if "Export Incubator Data".cstr().button(ui).clicked() {
-            GameAssets::update_files();
-        }
-        let r = "Context Test".cstr().button(ui);
-        ContextMenu::new(r)
-            .add("test1", |ui, _| {
-                debug!("test1");
-            })
-            .add("test2", |ui, _| {
-                debug!("test2");
-            })
-            .add("test3", |ui, _| {
-                debug!("test3");
-            })
-            .ui(ui, world);
-        if "Add Battle Panes".cstr().button(ui).clicked() {
-            BattlePlugin::add_editor_panes();
-            BattlePlugin::load_empty(world);
-        }
-        if "Add Node Graph Pane".cstr().button(ui).clicked() {
-            TilePlugin::add_to_current(|tree| tree.tiles.insert_pane(Pane::NodeGraph));
-        }
-        if "Add Team Editor Panes".cstr().button(ui).clicked() {
-            TeamEditorPlugin::load_team(default(), world);
-            TeamEditorPlugin::add_panes();
-            TeamEditorPlugin::unit_add_from_core(world).notify(world);
-        }
-        if "Notification Test".cstr().button(ui).clicked() {
-            "notify test".notify(world);
-            "notify error test".notify_error(world);
-        }
-        if "Incubator".cstr().button(ui).clicked() {
-            GameState::Incubator.set_next(world);
-        }
     }
 }

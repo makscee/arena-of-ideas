@@ -314,9 +314,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
                         prefix.show(ui);
                         for (var, value) in self.get_own_vars() {
-                            ui.horizontal(|ui| {
-                                value.show(Some(&var.cstr()), context, ui);
-                            });
+                            value.show(Some(&var.cstr()), context, ui);
                         }
                         #(
                             self.#data_fields.show(Some(#data_fields_str), context, ui);
@@ -326,10 +324,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         prefix.show(ui);
                         let mut changed = false;
                         #(
-                            ui.horizontal(|ui| {
-                                VarName::#var_fields.cstr().label(ui);
-                                changed |= self.#var_fields.show_mut(None, ui);
-                            });
+                            VarName::#var_fields.cstr().label(ui);
+                            changed |= self.#var_fields.show_mut(None, ui);
                         )*
                         #(
                             changed |= self.#data_fields.show_mut(Some(#data_fields_str), ui);
@@ -524,11 +520,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 #(
                                     if let Some(d) = &mut self.#component_fields {
                                         changed |= d.graph_view_mut(rect, ui);
+                                    } else if format!("add {}", #component_fields_str).button(ui).clicked() {
+                                        self.#component_fields = Some(default());
+                                        changed = true;
                                     }
+
                                 )*
                                 #(
                                     for d in &mut self.#child_fields {
                                         changed |= d.graph_view_mut(rect, ui);
+                                    }
+                                    if format!("+ to [b {}]", #child_fields_str).button(ui).clicked() {
+                                        self.#child_fields.push(default());
+                                        changed = true;
                                     }
                                 )*
                             });

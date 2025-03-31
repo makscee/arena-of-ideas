@@ -173,7 +173,7 @@ impl Show for String {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Input::new(prefix.unwrap_or_default())
-            .desired_width(150.0)
+            .desired_width(100.0)
             .ui_string(self, ui)
             .changed()
     }
@@ -304,7 +304,7 @@ impl Show for Entity {
 
 fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     let size_id = ui.id().with("view size");
-    let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 150.0));
+    let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
     if DragValue::new(&mut size).ui(ui).changed() {
         ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
     }

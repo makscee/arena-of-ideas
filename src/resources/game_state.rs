@@ -48,7 +48,9 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
                 let controls = tiles.insert_pane(Pane::Battle(BattlePane::Controls));
-                let edit = tiles.insert_pane(Pane::Battle(BattlePane::Edit));
+                let edit_left = tiles.insert_pane(Pane::Battle(BattlePane::EditLeft));
+                let edit_right = tiles.insert_pane(Pane::Battle(BattlePane::EditRight));
+                let edit = tiles.insert_tab_tile([edit_left, edit_right].into());
                 let vertical = tiles.insert_vertical_tile([view, controls].into());
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
@@ -90,7 +92,8 @@ pub enum IncubatorPane {
 pub enum BattlePane {
     View,
     Controls,
-    Edit,
+    EditLeft,
+    EditRight,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum TeamPane {
@@ -144,7 +147,8 @@ impl Pane {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
-                BattlePane::Edit => BattlePlugin::pane_edit(ui, world)?,
+                BattlePane::EditLeft => BattlePlugin::pane_edit(true, ui, world)?,
+                BattlePane::EditRight => BattlePlugin::pane_edit(false, ui, world)?,
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),

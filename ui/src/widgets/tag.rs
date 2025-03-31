@@ -41,7 +41,7 @@ impl TagWidget {
     fn name_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
         let galley = self
             .name
-            .cstr_cs(tokens_global().app_background(), CstrStyle::Bold)
+            .cstr_c(tokens_global().app_background())
             .galley(1.0, ui);
         let size = galley.size();
         self.text_galley = Some(galley);
@@ -52,7 +52,7 @@ impl TagWidget {
             return default();
         };
         let galley = number
-            .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
+            .cstr_c(tokens_global().high_contrast_text())
             .galley(1.0, ui);
         let mut size = galley.size();
         size += NUMBER_MARGIN.sum();

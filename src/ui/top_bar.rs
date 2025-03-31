@@ -31,6 +31,11 @@ impl TopBar {
                     .push(world);
                     ui.close_menu();
                 }
+                if "reset tiles".cstr().button(ui).clicked() {
+                    pd_mut(|d| {
+                        d.client_state.tile_states.clear();
+                    });
+                }
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if let Some(fps) = world
