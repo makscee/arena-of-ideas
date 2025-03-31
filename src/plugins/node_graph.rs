@@ -20,21 +20,21 @@ impl NodeGraphPlugin {
         };
         let selected_id = world.resource::<GraphData>().selected_node;
         ui.horizontal(|ui| {
-            if node
-                .kind()
-                .data_frame_ui(
-                    entity,
-                    selected_id.is_some_and(|id| id == node.id),
-                    ui,
-                    world,
-                )
-                .name_clicked()
-            {
-                let id = node.id;
-                op(move |world| {
-                    world.resource_mut::<GraphData>().selected_node = Some(id);
-                });
-            }
+            // if node
+            //     .kind()
+            //     .data_frame_ui(
+            //         entity,
+            //         selected_id.is_some_and(|id| id == node.id),
+            //         ui,
+            //         world,
+            //     )
+            //     .name_clicked()
+            // {
+            //     let id = node.id;
+            //     op(move |world| {
+            //         world.resource_mut::<GraphData>().selected_node = Some(id);
+            //     });
+            // }
             let rect = ui.min_rect();
             ui.add_space(4.0);
             ui.painter().line(

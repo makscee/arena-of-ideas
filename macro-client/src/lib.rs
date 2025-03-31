@@ -310,54 +310,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         }
                     }
                 }
-                impl Inject for #struct_ident {
-                    fn move_inner(&mut self, source: &mut Self) {}
-                    fn wrapper() -> Self {
-                        Self::default()
-                    }
-                }
-                impl Injector<Self> for #struct_ident {
-                    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-                        default()
-                    }
-                    fn get_inner(&self) -> Vec<&Box<Self>> {
-                        default()
-                    }
-                }
-                impl DataFramed for #struct_ident {
-                    fn default_open(&self) -> bool {
-                        #default_open
-                    }
-                    fn has_header(&self) -> bool {
-                        true
-                    }
-                    fn has_body(&self) -> bool {
-                        #has_body
-                    }
-                    fn show_name(&self, context: &Context, ui: &mut Ui) -> DataFrameResponse {
-                        self.kind().show_df_name(self.entity, context, ui)
-                    }
-                    fn show_header(&self, context: &Context, ui: &mut Ui) {
-                        if !#has_body {
-                            ui.horizontal(|ui| {
-                                for (var, value) in self.get_own_vars() {
-                                    value.show(Some(&var.cstr()), context, ui);
-                                }
-                            });
-                        }
-                    }
-                    fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
-                        if #has_body {
-                            return false;
-                        }
-                        let mut changed = false;
-                        #(
-                            VarName::#var_fields.cstr().label(ui);
-                            changed |= self.#var_fields.show_mut(None, ui);
-                        )*
-                        changed
-                    }
-                    fn show_body(&self, context: &Context, ui: &mut Ui) {
+                impl Show for #struct_ident {
+                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
+                        prefix.show(ui);
                         for (var, value) in self.get_own_vars() {
                             ui.horizontal(|ui| {
                                 value.show(Some(&var.cstr()), context, ui);
@@ -366,65 +321,18 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             self.#data_fields.show(Some(#data_fields_str), context, ui);
                         )*
-                        #(
-                            if let Some(d) = &self.#component_fields {
-                                d.show(None, context, ui);
-                            } else if let Some(d) = self.entity.and_then(|e| context.get_component::<#component_types>(e)) {
-                                d.show(None, context, ui);
-                            }
-                        )*
-                        #(
-                            if !self.#child_fields.is_empty() {
-                                for d in &self.#child_fields {
-                                    d.show(None, context, ui);
-                                }
-                            } else if let Some(e) = self.entity {
-                                for d in context.children_components::<#child_types>(e) {
-                                    d.show(None, context, ui);
-                                }
-                            }
-                        )*
                     }
-                    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
+                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+                        prefix.show(ui);
                         let mut changed = false;
                         #(
-                            VarName::#var_fields.cstr().label(ui);
-                            changed |= self.#var_fields.show_mut(None, ui);
+                            ui.horizontal(|ui| {
+                                VarName::#var_fields.cstr().label(ui);
+                                changed |= self.#var_fields.show_mut(None, ui);
+                            });
                         )*
                         #(
                             changed |= self.#data_fields.show_mut(Some(#data_fields_str), ui);
-                        )*
-                        #(
-                            if let Some(d) = &mut self.#component_fields {
-                                changed |= d.show_mut(None, ui);
-                                if "-".cstr().as_button().red(ui).ui(ui).clicked() {
-                                    self.#component_fields = None;
-                                    changed = true;
-                                }
-                            } else if format!("add [b {}]", #component_fields_str).button(ui).clicked() {
-                                self.#component_fields = Some(default());
-                                changed = true;
-                            }
-                        )*
-                        #(
-                            #child_fields_str.cstr_c(tokens_global().low_contrast_text()).label(ui);
-                            let mut delete = None;
-                            for (i, d) in self.#child_fields.iter_mut().enumerate() {
-                                ui.horizontal(|ui| {
-                                    if "-".cstr_cs(RED, CstrStyle::Bold).button(ui).clicked() {
-                                        delete = Some(i);
-                                    }
-                                    changed |= d.show_mut(None, ui);
-                                });
-                            }
-                            if let Some(delete) = delete {
-                                self.#child_fields.remove(delete);
-                                changed = true;
-                            }
-                            if "+".cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold).button(ui).clicked() {
-                                self.#child_fields.push(default());
-                                changed = true;
-                            }
                         )*
                         changed
                     }
@@ -706,15 +614,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             Self::None => default(),
                             #(#struct_ident::#variants => {
                                 world.get::<#variants>(entity).unwrap().get_own_vars()
-                            })*
-                        }
-                    }
-                    pub fn data_frame_ui(self, entity: Entity, highlighted: bool, ui: &mut Ui, world: &World) -> DataFrameResponse {
-                        let context = Context::new_world(world).set_owner(entity).take();
-                        match self {
-                            Self::None => DataFrameResponse::None,
-                            #(#struct_ident::#variants => {
-                                context.get_component::<#variants>(entity).unwrap().df(&context).highlighted(highlighted).ui(ui)
                             })*
                         }
                     }

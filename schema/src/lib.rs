@@ -94,6 +94,6 @@ impl From<Color32> for HexColor {
 }
 impl Into<Color32> for &HexColor {
     fn into(self) -> Color32 {
-        Color32::from_hex(&self.0).unwrap()
+        Color32::from_hex(&self.0).unwrap_or_default()
     }
 }

@@ -63,9 +63,7 @@ impl Input {
             if self.char_limit > 0 {
                 te = te.char_limit(self.char_limit);
             }
-            let r = te.ui(ui);
-            ui.reset_style();
-            r
+            te.ui(ui)
         })
         .inner
     }

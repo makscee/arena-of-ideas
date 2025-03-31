@@ -173,6 +173,7 @@ impl Show for String {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         Input::new(prefix.unwrap_or_default())
+            .desired_width(150.0)
             .ui_string(self, ui)
             .changed()
     }
@@ -253,30 +254,33 @@ impl Show for HexColor {
         prefix.show(ui);
         let mut changed = false;
         let mut err = None;
-        let c = match self.try_c32() {
-            Ok(c) => {
-                let mut rgb = [c.r(), c.g(), c.b()];
-                if ui.color_edit_button_srgb(&mut rgb).changed() {
-                    *self = Color32::from_rgb(rgb[0], rgb[1], rgb[2]).into();
-                    changed = true;
+        ui.horizontal(|ui| {
+            let input_id = ui.next_auto_id().with("input");
+            let c = match self.try_c32() {
+                Ok(c) => {
+                    let mut rgb = [c.r(), c.g(), c.b()];
+                    if ui.color_edit_button_srgb(&mut rgb).changed() {
+                        *self = Color32::from_rgb(rgb[0], rgb[1], rgb[2]).into();
+                        changed = true;
+                    }
+                    Some(c)
                 }
-                Some(c)
+                Err(e) => {
+                    err = Some(format!("[red Hex parse err:] {e:?}"));
+                    None
+                }
+            };
+            if Input::new("")
+                .char_limit(7)
+                .desired_width(60.0)
+                .color_opt(c)
+                .id(input_id)
+                .ui_string(&mut self.0, ui)
+                .changed()
+            {
+                changed = true;
             }
-            Err(e) => {
-                err = Some(format!("[red Hex parse err:] {e:?}"));
-                None
-            }
-        };
-        if Input::new("")
-            .char_limit(7)
-            .desired_width(60.0)
-            .color_opt(c)
-            .id("hex input")
-            .ui_string(&mut self.0, ui)
-            .changed()
-        {
-            changed = true;
-        }
+        });
         if let Some(err) = err {
             if "reset".cstr().button(ui).clicked() {
                 *self = default();
