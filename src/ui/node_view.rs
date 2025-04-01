@@ -1,220 +1,240 @@
 use super::*;
 
-fn show_frame(
-    id: Id,
-    title: &str,
-    color: Color32,
-    ui: &mut Ui,
-    content: impl FnOnce(&mut Ui),
-) -> (Rect, Response) {
-    let outer_margin = Margin::same(4);
-    let response = Frame {
-        inner_margin: Margin::ZERO,
-        outer_margin,
-        fill: ui.visuals().faint_bg_color,
-        stroke: color.stroke(),
-        corner_radius: ROUNDING,
-        shadow: Shadow::NONE,
-    }
-    .show(ui, |ui| {
-        const R: u8 = ROUNDING.ne;
-        const M: i8 = 2;
-        ui.vertical(|ui| {
-            let response = ui
-                .horizontal(|ui| {
-                    let response = Frame::new()
-                        .corner_radius(CornerRadius {
-                            nw: R,
-                            ne: 0,
-                            sw: 0,
-                            se: R,
-                        })
-                        .fill(color)
-                        .inner_margin(Margin {
-                            left: M,
-                            right: M,
-                            top: 0,
-                            bottom: 0,
-                        })
-                        .show(ui, |ui| {
-                            title
-                                .cstr_c(ui.visuals().faint_bg_color)
-                                .as_label(ui.style())
-                                .sense(Sense::click())
-                                .ui(ui)
-                        })
-                        .inner;
-                    show_state_btns(id, ui);
-                    response
-                })
-                .inner;
-            ui.push_id(title, |ui| {
-                Frame::new()
-                    .inner_margin(Margin {
-                        left: M,
-                        right: M,
-                        top: 0,
-                        bottom: M,
-                    })
-                    .show(ui, content);
-            });
-            response
-        })
-        .inner
-    });
-    (response.response.rect - outer_margin, response.inner)
-}
-
-fn show_state_btns(id: Id, ui: &mut Ui) {
-    let mut state = get_state(id, ui);
-    let mut changed = false;
-    let size = 6.0;
-    let size = egui::vec2(size, size);
-    if RectButton::new(size)
-        .active(matches!(state.mode, NodeViewMode::Compact))
-        .ui(ui, |color, rect, ui| {
-            ui.painter()
-                .line_segment([rect.left_bottom(), rect.right_bottom()], color.stroke());
-        })
-        .clicked()
-    {
-        state.mode = NodeViewMode::Compact;
-        changed = true;
-    }
-    if RectButton::new(size)
-        .active(matches!(state.mode, NodeViewMode::Full))
-        .ui(ui, |color, rect, ui| {
-            ui.painter()
-                .line_segment([rect.left_center(), rect.right_center()], color.stroke());
-            ui.painter()
-                .line_segment([rect.center_top(), rect.center_bottom()], color.stroke());
-        })
-        .clicked()
-    {
-        state.mode = NodeViewMode::Full;
-        changed = true;
-    }
-    if RectButton::new(size)
-        .active(matches!(state.mode, NodeViewMode::Graph))
-        .ui(ui, |color, rect, ui| {
-            let rect = rect.shrink(1.0);
-            ui.painter()
-                .circle_stroke(rect.left_center(), 1.0, color.stroke());
-            ui.painter()
-                .circle_stroke(rect.right_top(), 1.0, color.stroke());
-            ui.painter()
-                .circle_stroke(rect.right_bottom(), 1.0, color.stroke());
-        })
-        .clicked()
-    {
-        state.mode = NodeViewMode::Graph;
-        changed = true;
-    }
-    ui.add_space(1.0);
-    if changed {
-        set_state(id, state, ui);
-    }
-}
-
-fn get_state(id: Id, ui: &mut Ui) -> NodeViewState {
-    ui.ctx()
-        .data(|r| r.get_temp::<NodeViewState>(id))
-        .unwrap_or_default()
-}
-fn set_state(id: Id, state: NodeViewState, ui: &mut Ui) {
-    ui.ctx().data_mut(|w| w.insert_temp(id, state))
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub enum NodeViewMode {
+#[derive(Clone, Copy, Default)]
+pub enum ViewMode {
     #[default]
     Compact,
     Full,
     Graph,
 }
-#[derive(Clone, Copy, Debug, Default)]
-pub struct NodeViewState {
-    mode: NodeViewMode,
+#[derive(Clone, Copy)]
+pub struct ViewContext {
+    mode: ViewMode,
+    parent_rect: Option<Rect>,
+    color: Color32,
 }
-pub trait NodeView: NodeExt {
-    fn view_id(&self) -> Id {
-        Id::new(self.get_entity())
-            .with(self.get_id())
-            .with(self.kind())
-    }
-    fn view(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let mut context = context.clone();
-        for (var, value, kind) in self.get_vars(&context) {
-            context.set_var(var, value, kind);
+
+impl Default for ViewContext {
+    fn default() -> Self {
+        Self {
+            color: tokens_global().solid_backgrounds(),
+            mode: default(),
+            parent_rect: None,
         }
-        let state = get_state(self.view_id(), ui);
-        match state.mode {
-            NodeViewMode::Compact => self.compact(ui, &context),
-            NodeViewMode::Full => self.full(ui, &context),
-            NodeViewMode::Graph => self.full(ui, &context),
-        }
-    }
-    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let title = self.kind().to_string();
-        let color = context
-            .get_color_any(VarName::color)
-            .unwrap_or(ui.visuals().weak_text_color());
-        show_frame(self.view_id(), &title, color, ui, |ui| {
-            for (var, value) in self.get_own_vars() {
-                ui.horizontal(|ui| {
-                    var.cstr().label(ui);
-                    value.cstr().label(ui);
-                });
-            }
-        });
-        Ok(())
-    }
-    fn full(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        self.compact(ui, context)
     }
 }
 
-pub trait NodeGraphView: NodeExt + NodeView {
-    fn graph_view_self(&self, parent: Rect, context: &Context, ui: &mut Ui) -> Rect {
-        let (rect, _) = show_frame(
-            self.view_id(),
-            &self.kind().cstr(),
-            ui.visuals().text_color(),
-            ui,
-            |ui| {
-                ui.vertical(|ui| {
-                    self.show(None, context, ui);
-                });
-            },
-        );
-        ui.painter().line(
-            [parent.right_center(), rect.left_center()].into(),
-            ui.visuals().weak_text_color().stroke(),
-        );
-        rect
+#[derive(Clone, Copy, Default)]
+pub struct ViewState {
+    mode: ViewMode,
+}
+
+impl ViewContext {
+    fn merge_state(mut self, node: &impl NodeView, context: &Context, ui: &mut Ui) -> Self {
+        if let Some(state) = node.get_state(ui) {
+            self.mode = state.mode;
+        }
+        if let Some(color) = node
+            .get_var(VarName::color, context)
+            .and_then(|v| v.get_color().ok())
+        {
+            self.color = color;
+        }
+        self
     }
-    fn graph_view_self_mut(&mut self, parent: Rect, ui: &mut Ui) -> (bool, Rect) {
+    pub fn show_parent_line(&self, ui: &mut Ui) {
+        let Some(rect) = self.parent_rect else {
+            return;
+        };
+        const OFFSET: egui::Vec2 = egui::vec2(0.0, 10.0);
+        ui.painter().line_segment(
+            [rect.right_top() + OFFSET, ui.cursor().left_top() + OFFSET],
+            self.color.stroke(),
+        );
+    }
+}
+
+pub trait NodeView: NodeExt + NodeGraphViewNew {
+    fn get_state(&self, ui: &mut Ui) -> Option<ViewState> {
+        ui.ctx().data(|r| r.get_temp::<ViewState>(self.view_id()))
+    }
+    fn set_state(&self, state: ViewState, ui: &mut Ui) {
+        ui.ctx().data_mut(|w| w.insert_temp(self.view_id(), state));
+    }
+    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+        let mut view_ctx = view_ctx.merge_state(self, context, ui);
+        let context = &mut context.clone();
+        for (var, value, kind) in self.get_vars(context) {
+            context.set_var(var, value, kind);
+        }
+        match view_ctx.mode {
+            ViewMode::Compact => self.compact_self(view_ctx, context, ui).ui(ui),
+            ViewMode::Full => self.full_self(view_ctx, context, ui).ui(ui),
+            ViewMode::Graph => {
+                ui.horizontal(|ui| {
+                    self.data_self(view_ctx, context, ui).ui(ui);
+                    view_ctx.parent_rect = Some(ui.min_rect());
+                    ui.vertical(|ui| self.view_children(view_ctx, context, ui));
+                });
+            }
+        }
+    }
+    fn view_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
+        let mut view_ctx = view_ctx.merge_state(self, &default(), ui);
+        match view_ctx.mode {
+            ViewMode::Compact | ViewMode::Full => self.data_self_mut(view_ctx, ui),
+            ViewMode::Graph => {
+                ui.horizontal(|ui| {
+                    let changed = self.data_self_mut(view_ctx, ui);
+                    view_ctx.parent_rect = Some(ui.min_rect());
+                    ui.vertical(|ui| self.view_children_mut(view_ctx, ui)).inner || changed
+                })
+                .inner
+            }
+        }
+    }
+    fn data_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        show_frame(view_ctx.color, ui, |ui| {
+            show_header(self, None, view_ctx, ui, |_| {});
+            show_body(ui, |ui| self.show(None, context, ui));
+        });
+        Ok(())
+    }
+    fn compact_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        self.data_self(view_ctx, context, ui)
+    }
+    fn full_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        self.data_self(view_ctx, context, ui)
+    }
+    fn data_self_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
         let mut changed = false;
-        let (rect, _) = show_frame(
-            self.view_id(),
-            &self.kind().cstr(),
-            ui.visuals().text_color(),
-            ui,
-            |ui| {
-                ui.vertical(|ui| {
-                    changed = self.show_mut(None, ui);
-                });
-            },
-        );
-        ui.painter().line(
-            [parent.right_center(), rect.left_center()].into(),
-            ui.visuals().weak_text_color().stroke(),
-        );
-        (changed, rect)
+        show_frame(view_ctx.color, ui, |ui| {
+            show_header(self, None, view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
+                changed = self.show_mut(None, ui);
+            });
+        });
+        changed
     }
-    fn graph_view(&self, parent: Rect, context: &Context, ui: &mut Ui);
-    fn graph_view_mut(&mut self, parent: Rect, ui: &mut Ui) -> bool;
-    fn graph_view_mut_world(entity: Entity, parent: Rect, ui: &mut Ui, world: &mut World) -> bool;
+    fn show_state_buttons(&self, view_ctx: ViewContext, ui: &mut Ui) {
+        let state = self.get_state(ui);
+        let mode = if let Some(state) = state {
+            state.mode
+        } else {
+            view_ctx.mode
+        };
+        let mut state = state.unwrap_or_default();
+        let mut changed = false;
+        let size = 6.0;
+        let size = egui::vec2(size, size);
+        if RectButton::new(size)
+            .active(matches!(mode, ViewMode::Compact))
+            .ui(ui, |color, rect, ui| {
+                ui.painter()
+                    .line_segment([rect.left_bottom(), rect.right_bottom()], color.stroke());
+            })
+            .clicked()
+        {
+            state.mode = ViewMode::Compact;
+            changed = true;
+        }
+        if RectButton::new(size)
+            .active(matches!(mode, ViewMode::Full))
+            .ui(ui, |color, rect, ui| {
+                ui.painter()
+                    .rect_stroke(rect, 0, color.stroke(), egui::StrokeKind::Middle);
+            })
+            .clicked()
+        {
+            state.mode = ViewMode::Full;
+            changed = true;
+        }
+        if RectButton::new(size)
+            .active(matches!(mode, ViewMode::Graph))
+            .ui(ui, |color, rect, ui| {
+                let rect = rect.shrink(1.0);
+                ui.painter()
+                    .circle_stroke(rect.left_center(), 1.0, color.stroke());
+                ui.painter()
+                    .circle_stroke(rect.right_top(), 1.0, color.stroke());
+                ui.painter()
+                    .circle_stroke(rect.right_bottom(), 1.0, color.stroke());
+            })
+            .clicked()
+        {
+            state.mode = ViewMode::Graph;
+            changed = true;
+        }
+        ui.add_space(1.0);
+        if changed {
+            self.set_state(state, ui);
+        }
+    }
+}
+
+pub trait NodeGraphViewNew: NodeExt {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui);
+    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool;
+}
+
+fn show_frame(color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
+    Frame {
+        inner_margin: Margin::ZERO,
+        outer_margin: Margin::ZERO,
+        fill: ui.visuals().faint_bg_color,
+        stroke: color.stroke(),
+        corner_radius: ROUNDING,
+        shadow: Shadow::NONE,
+    }
+    .show(ui, |ui| ui.vertical(content));
+}
+fn show_header(
+    node: &impl NodeView,
+    title: Option<String>,
+    view_ctx: ViewContext,
+    ui: &mut Ui,
+    content: impl FnOnce(&mut Ui),
+) {
+    const R: u8 = ROUNDING.ne;
+    const M: i8 = 2;
+    let title = title.unwrap_or_else(|| node.kind().to_string());
+
+    ui.horizontal(|ui| {
+        Frame::new()
+            .corner_radius(CornerRadius {
+                nw: R,
+                ne: 0,
+                sw: 0,
+                se: R,
+            })
+            .fill(view_ctx.color)
+            .inner_margin(Margin::symmetric(M, 0))
+            .show(ui, |ui| {
+                title
+                    .cstr_cs(ui.visuals().faint_bg_color, CstrStyle::Bold)
+                    .label(ui);
+            });
+        node.show_state_buttons(view_ctx, ui);
+        content(ui);
+    });
+}
+fn show_body(ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
+    Frame::new().inner_margin(4).show(ui, content);
 }
 
 impl NodeView for All {}
@@ -223,35 +243,51 @@ impl NodeView for Player {}
 impl NodeView for PlayerData {}
 impl NodeView for PlayerIdentity {}
 impl NodeView for House {
-    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
+    fn compact_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        self.full_self(view_ctx, context, ui)
+    }
+    fn full_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let name = context.get_string(VarName::name, NodeKind::House)?;
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
-        show_frame(self.view_id(), &name, color, ui, |ui| {
-            ui.horizontal(|ui| {
-                "ability:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                if let Some(ability) = self.action_ability_load(context) {
-                    ui.vertical(|ui| {
-                        ability.view(ui, context).ui(ui);
-                    });
-                }
-            });
-            ui.horizontal(|ui| {
-                "status:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                if let Some(status) = self.status_ability_load(context) {
-                    ui.vertical(|ui| {
-                        status.view(ui, context).ui(ui);
-                    });
-                }
-            });
-            ui.horizontal(|ui| {
-                "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                ui.vertical(|ui| {
-                    for (i, unit) in self.units_load(context).into_iter().enumerate() {
-                        ui.push_id(ui.id().with(i), |ui| {
-                            unit.view(ui, context).ui(ui);
+        show_frame(color, ui, |ui| {
+            show_header(self, Some(name), view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
+                ui.horizontal(|ui| {
+                    "ability:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    if let Some(ability) = self.action_ability_load(context) {
+                        ui.vertical(|ui| {
+                            ability.view(view_ctx, context, ui);
                         });
                     }
-                })
+                });
+                ui.horizontal(|ui| {
+                    "status:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    if let Some(status) = self.status_ability_load(context) {
+                        ui.vertical(|ui| {
+                            status.view(view_ctx, context, ui);
+                        });
+                    }
+                });
+                ui.horizontal(|ui| {
+                    "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    ui.vertical(|ui| {
+                        for (i, unit) in self.units_load(context).into_iter().enumerate() {
+                            ui.push_id(ui.id().with(i), |ui| {
+                                unit.view(view_ctx, context, ui);
+                            });
+                        }
+                    })
+                });
             });
         });
         Ok(())
@@ -259,24 +295,32 @@ impl NodeView for House {
 }
 impl NodeView for HouseColor {}
 impl NodeView for ActionAbility {
-    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
+    fn compact_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let name = context.get_string(VarName::name, self.kind())?;
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
         ui.horizontal(|ui| {
             TagWidget::new_name(name, color).ui(ui);
-            show_state_btns(self.view_id(), ui);
+            self.show_state_buttons(view_ctx, ui);
         });
         Ok(())
     }
-    fn full(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+    fn full_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let house = context.get_string(VarName::name, NodeKind::House)?;
-        show_frame(
-            self.view_id(),
-            &context.get_string(VarName::name, self.kind())?,
-            color,
-            ui,
-            |ui| {
+        let name = context.get_string(VarName::name, self.kind())?;
+        show_frame(color, ui, |ui| {
+            show_header(self, Some(name), view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
                 let mut tags = TagsWidget::new();
                 tags.add_name(house, color);
                 tags.ui(ui);
@@ -293,32 +337,40 @@ impl NodeView for ActionAbility {
                         });
                     }
                 }
-            },
-        );
+            });
+        });
         Ok(())
     }
 }
 impl NodeView for ActionAbilityDescription {}
 impl NodeView for AbilityEffect {}
 impl NodeView for StatusAbility {
-    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
+    fn compact_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let name = context.get_string(VarName::name, self.kind())?;
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
         ui.horizontal(|ui| {
             TagWidget::new_name(name, color).ui(ui);
-            show_state_btns(self.view_id(), ui);
+            self.show_state_buttons(view_ctx, ui);
         });
         Ok(())
     }
-    fn full(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+    fn full_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let house = context.get_string(VarName::name, NodeKind::House)?;
-        show_frame(
-            self.view_id(),
-            &context.get_string(VarName::name, self.kind())?,
-            color,
-            ui,
-            |ui| {
+        let name = context.get_string(VarName::name, self.kind())?;
+        show_frame(color, ui, |ui| {
+            show_header(self, Some(name), view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
                 let mut tags = TagsWidget::new();
                 tags.add_name(house, color);
                 tags.ui(ui);
@@ -338,8 +390,8 @@ impl NodeView for StatusAbility {
                         }
                     }
                 }
-            },
-        );
+            });
+        });
         Ok(())
     }
 }
@@ -349,29 +401,37 @@ impl NodeView for Match {}
 impl NodeView for ShopCaseUnit {}
 impl NodeView for Fusion {}
 impl NodeView for Unit {
-    fn compact(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
+    fn compact_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let name = context.get_string(VarName::name, self.kind())?;
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
         let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
         let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
         let stats = format!("[yellow {}]/[red {}]", pwr, hp);
         ui.horizontal(|ui| {
             TagWidget::new_name_value(name, color, stats).ui(ui);
-            show_state_btns(self.view_id(), ui);
+            self.show_state_buttons(view_ctx, ui);
         });
         Ok(())
     }
-    fn full(&self, ui: &mut Ui, context: &Context) -> Result<(), ExpressionError> {
-        let color = context.get_color(VarName::color, NodeKind::HouseColor)?;
+    fn full_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let color = view_ctx.color;
         let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
         let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
         let house = context.get_string(VarName::name, NodeKind::House)?;
-        show_frame(
-            self.view_id(),
-            &context.get_string(VarName::name, NodeKind::Unit)?,
-            color,
-            ui,
-            |ui| {
+        let name = context.get_string(VarName::name, NodeKind::Unit)?;
+        show_frame(color, ui, |ui| {
+            show_header(self, Some(name), view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
                 let mut tags = TagsWidget::new();
                 tags.add_name_value(VarName::pwr, VarName::pwr.color(), pwr.cstr());
                 tags.add_name_value(VarName::hp, VarName::hp.color(), hp.cstr());
@@ -393,8 +453,8 @@ impl NodeView for Unit {
                         }
                     }
                 }
-            },
-        );
+            });
+        });
         Ok(())
     }
 }

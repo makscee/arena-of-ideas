@@ -256,7 +256,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.entity
                                         .and_then(|e| context.get_component::<#component_types>(e))
                                 })
-                                .and_then(|l| l.get_var(var, context)).clone() {
+                                .and_then(|d| d.get_var(var, context)).clone() {
                                 return Some(v);
                             }
                         )*
@@ -495,68 +495,48 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         self
                     }
                 }
-                impl NodeGraphView for #struct_ident {
-                    fn graph_view(&self, parent: Rect, context: &Context, ui: &mut Ui) {
-                        ui.horizontal(|ui| {
-                            let rect = self.graph_view_self(parent, context, ui);
-                            ui.vertical(|ui| {
-                                #(
-                                    if let Some(d) = self.#component_fields_load(context) {
-                                        d.graph_view(rect, context, ui);
-                                    }
-                                )*
-                                #(
-                                    for d in self.#child_fields_load(context) {
-                                        d.graph_view(rect, context, ui);
-                                    }
-                                )*
-                            });
-                        });
-                    }
-                    fn graph_view_mut(&mut self, parent: Rect, ui: &mut Ui) -> bool {
-                        ui.horizontal(|ui| {
-                            let (mut changed, rect) = self.graph_view_self_mut(parent, ui);
-                            ui.vertical(|ui| {
-                                #(
-                                    if let Some(d) = &mut self.#component_fields {
-                                        changed |= d.graph_view_mut(rect, ui);
-                                    } else if format!("add {}", #component_fields_str).button(ui).clicked() {
-                                        self.#component_fields = Some(default());
-                                        changed = true;
-                                    }
-
-                                )*
-                                #(
-                                    for d in &mut self.#child_fields {
-                                        changed |= d.graph_view_mut(rect, ui);
-                                    }
-                                    if format!("+ to [b {}]", #child_fields_str).button(ui).clicked() {
-                                        self.#child_fields.push(default());
-                                        changed = true;
-                                    }
-                                )*
-                            });
-                            changed
-                        }).inner
-                    }
-                    fn graph_view_mut_world(entity: Entity, parent: Rect, ui: &mut Ui, world: &mut World) -> bool {
-                        let mut changed = false;
-                        ui.horizontal(|ui| {
-                            if let Some(mut s) = world.get_mut::<Self>(entity) {
-                                let (c, rect) = s.graph_view_self_mut(parent, ui);
-                                changed |= c;
-                                ui.vertical(|ui| {
-                                    #(
-                                        changed |= #component_types::graph_view_mut_world(entity, rect, ui, world);
-                                    )*
-                                    #(
-                                        for child in get_children(entity, world) {
-                                            changed |= #child_types::graph_view_mut_world(child, rect, ui, world);
-                                        }
-                                    )*
-                                });
+                impl NodeGraphViewNew for #struct_ident {
+                    fn view_children(
+                        &self,
+                        view_ctx: ViewContext,
+                        context: &Context,
+                        ui: &mut Ui,
+                    ) {
+                        #(
+                            if let Some(d) = self.#component_fields_load(context) {
+                                view_ctx.show_parent_line(ui);
+                                d.view(view_ctx, context, ui);
                             }
-                        });
+                        )*
+                        #(
+                            for d in self.#child_fields_load(context) {
+                                view_ctx.show_parent_line(ui);
+                                d.view(view_ctx, context, ui);
+                            }
+                        )*
+                    }
+                    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
+                        let mut changed = false;
+                        #(
+                            view_ctx.show_parent_line(ui);
+                            if let Some(d) = &mut self.#component_fields {
+                                changed |= d.view_mut(view_ctx, ui);
+                            } else if format!("add {}", #component_fields_str).button(ui).clicked() {
+                                self.#component_fields = Some(default());
+                                changed = true;
+                            }
+                        )*
+                        #(
+                            for d in &mut self.#child_fields {
+                                view_ctx.show_parent_line(ui);
+                                changed |= d.view_mut(view_ctx, ui);
+                            }
+                            view_ctx.show_parent_line(ui);
+                            if format!("+ to [b {}]", #child_fields_str).button(ui).clicked() {
+                                self.#child_fields.push(default());
+                                changed = true;
+                            }
+                        )*
                         changed
                     }
                 }

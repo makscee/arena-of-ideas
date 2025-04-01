@@ -66,6 +66,11 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
+    fn view_id(&self) -> Id {
+        Id::new(self.get_entity())
+            .with(self.get_id())
+            .with(self.kind())
+    }
     fn to_tnode(&self) -> TNode;
     fn get(entity: Entity, world: &World) -> Option<&Self>;
     fn get_by_id(id: u64, world: &World) -> Option<&Self>;

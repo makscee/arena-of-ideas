@@ -188,7 +188,7 @@ impl BattlePlugin {
         } else {
             &mut data.battle.right
         }
-        .graph_view_mut(Rect::ZERO, ui);
+        .view_mut(default(), ui);
         if changed {
             world.resource_mut::<ReloadData>().reload_requested = true;
         }
