@@ -9,9 +9,17 @@ pub enum ViewMode {
 }
 #[derive(Clone, Copy)]
 pub struct ViewContext {
-    mode: ViewMode,
-    parent_rect: Option<Rect>,
-    color: Color32,
+    pub mode: ViewMode,
+    pub parent_rect: Option<Rect>,
+    pub color: Color32,
+    pub is_mut: bool,
+}
+
+impl ViewContext {
+    fn set_mut(mut self) -> Self {
+        self.is_mut = true;
+        self
+    }
 }
 
 impl Default for ViewContext {
@@ -20,6 +28,7 @@ impl Default for ViewContext {
             color: tokens_global().solid_backgrounds(),
             mode: default(),
             parent_rect: None,
+            is_mut: false,
         }
     }
 }
@@ -27,6 +36,7 @@ impl Default for ViewContext {
 #[derive(Clone, Copy, Default)]
 pub struct ViewState {
     mode: ViewMode,
+    pub delete_me: bool,
 }
 
 impl ViewContext {
@@ -61,6 +71,10 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
     fn set_state(&self, state: ViewState, ui: &mut Ui) {
         ui.ctx().data_mut(|w| w.insert_temp(self.view_id(), state));
     }
+    fn clear_state(&self, ui: &mut Ui) {
+        ui.ctx()
+            .data_mut(|w| w.remove_temp::<ViewState>(self.view_id()));
+    }
     fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         let mut view_ctx = view_ctx.merge_state(self, context, ui);
         let context = &mut context.clone();
@@ -80,7 +94,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
         }
     }
     fn view_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
-        let mut view_ctx = view_ctx.merge_state(self, &default(), ui);
+        let mut view_ctx = view_ctx.merge_state(self, &default(), ui).set_mut();
         match view_ctx.mode {
             ViewMode::Compact | ViewMode::Full => self.data_self_mut(view_ctx, ui),
             ViewMode::Graph => {
@@ -131,7 +145,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
         });
         changed
     }
-    fn show_state_buttons(&self, view_ctx: ViewContext, ui: &mut Ui) {
+    fn show_buttons(&self, view_ctx: ViewContext, ui: &mut Ui) {
         let state = self.get_state(ui);
         let mode = if let Some(state) = state {
             state.mode
@@ -140,11 +154,12 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
         };
         let mut state = state.unwrap_or_default();
         let mut changed = false;
-        let size = 6.0;
+        let size = 8.0;
         let size = egui::vec2(size, size);
         if RectButton::new(size)
             .active(matches!(mode, ViewMode::Compact))
             .ui(ui, |color, rect, ui| {
+                let rect = rect.shrink(1.0);
                 ui.painter()
                     .line_segment([rect.left_bottom(), rect.right_bottom()], color.stroke());
             })
@@ -156,6 +171,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
         if RectButton::new(size)
             .active(matches!(mode, ViewMode::Full))
             .ui(ui, |color, rect, ui| {
+                let rect = rect.shrink(1.0);
                 ui.painter()
                     .rect_stroke(rect, 0, color.stroke(), egui::StrokeKind::Middle);
             })
@@ -167,7 +183,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
         if RectButton::new(size)
             .active(matches!(mode, ViewMode::Graph))
             .ui(ui, |color, rect, ui| {
-                let rect = rect.shrink(1.0);
+                let rect = rect.shrink(2.0);
                 ui.painter()
                     .circle_stroke(rect.left_center(), 1.0, color.stroke());
                 ui.painter()
@@ -180,6 +196,42 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
             state.mode = ViewMode::Graph;
             changed = true;
         }
+        RectButton::new(size)
+            .ui(ui, |color, rect, ui| {
+                ui.painter().circle_filled(rect.center_top(), 1.0, color);
+                ui.painter().circle_filled(rect.center(), 1.0, color);
+                ui.painter().circle_filled(rect.center_bottom(), 1.0, color);
+            })
+            .bar_menu(|ui| {
+                ui.menu_button("publish to incubator", |ui| {
+                    if "self".cstr().button(ui).clicked() {
+                        let nodes = [self.to_tnode()].to_vec();
+                        ui.close_menu();
+                    }
+                    if "full".cstr().button(ui).clicked() {
+                        let entity = self.entity();
+                        op(move |world| {
+                            let Some(node) = Self::pack(entity, world) else {
+                                format!("Failed to pack #{}", entity).notify_error(world);
+                                return;
+                            };
+                            IncubatorPlugin::set_publish_nodes(node, world);
+                            Window::new("Incubator publish", |ui, world| {
+                                IncubatorPlugin::pane_new_node(ui, world).ui(ui);
+                            })
+                            .center_anchor()
+                            .expand()
+                            .push(world);
+                        });
+                        ui.close_menu();
+                    }
+                });
+                if view_ctx.is_mut && "delete".cstr_c(RED).button(ui).clicked() {
+                    state.delete_me = true;
+                    changed = true;
+                    ui.close_menu();
+                }
+            });
         ui.add_space(1.0);
         if changed {
             self.set_state(state, ui);
@@ -213,7 +265,6 @@ fn show_header(
     const R: u8 = ROUNDING.ne;
     const M: i8 = 2;
     let title = title.unwrap_or_else(|| node.kind().to_string());
-
     ui.horizontal(|ui| {
         Frame::new()
             .corner_radius(CornerRadius {
@@ -229,7 +280,7 @@ fn show_header(
                     .cstr_cs(ui.visuals().faint_bg_color, CstrStyle::Bold)
                     .label(ui);
             });
-        node.show_state_buttons(view_ctx, ui);
+        node.show_buttons(view_ctx, ui);
         content(ui);
     });
 }
@@ -305,7 +356,7 @@ impl NodeView for ActionAbility {
         let name = context.get_string(VarName::name, self.kind())?;
         ui.horizontal(|ui| {
             TagWidget::new_name(name, color).ui(ui);
-            self.show_state_buttons(view_ctx, ui);
+            self.show_buttons(view_ctx, ui);
         });
         Ok(())
     }
@@ -355,7 +406,7 @@ impl NodeView for StatusAbility {
         let name = context.get_string(VarName::name, self.kind())?;
         ui.horizontal(|ui| {
             TagWidget::new_name(name, color).ui(ui);
-            self.show_state_buttons(view_ctx, ui);
+            self.show_buttons(view_ctx, ui);
         });
         Ok(())
     }
@@ -414,7 +465,7 @@ impl NodeView for Unit {
         let stats = format!("[yellow {}]/[red {}]", pwr, hp);
         ui.horizontal(|ui| {
             TagWidget::new_name_value(name, color, stats).ui(ui);
-            self.show_state_buttons(view_ctx, ui);
+            self.show_buttons(view_ctx, ui);
         });
         Ok(())
     }

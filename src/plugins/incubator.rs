@@ -101,6 +101,12 @@ impl IncubatorPlugin {
         rm(world).composed_world = composed_world;
         Ok(())
     }
+    pub fn set_publish_nodes(mut node: impl Node, world: &mut World) {
+        node.reassign_ids(&mut 0);
+        let kind = node.kind();
+        let nodes = node.to_tnodes();
+        rm(world).new_node = Some((kind, nodes));
+    }
     fn new_node_btn(kind: NodeKind, ui: &mut Ui, world: &mut World) -> bool {
         br(ui);
         if format!("New {kind}")
@@ -167,25 +173,14 @@ impl IncubatorPlugin {
                 }]
                 .into();
             }
-            match kind {
-                NodeKind::House => {
-                    if "Add to battle test".cstr().button(ui).clicked() {
-                        BattlePlugin::edit_battle(
-                            |battle| {
-                                if let Some(house) = House::from_tnodes(nodes[0].id, nodes) {
-                                    battle.left.houses.retain(|h| h.name != house.name);
-                                    battle.left.houses.push(house);
-                                }
-                            },
-                            world,
-                        );
-                    }
-                }
-                NodeKind::Unit => {}
-                _ => {}
-            }
-            ui.data_frame_force_open();
-            kind.show_tnodes_mut(nodes, ui);
+            kind.show_tnodes_mut(
+                nodes,
+                ViewContext {
+                    mode: ViewMode::Graph,
+                    ..default()
+                },
+                ui,
+            );
             if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
                     .incubator_push(nodes.clone(), d.new_node_link)

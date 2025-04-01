@@ -1,4 +1,5 @@
 use bevy::log::debug;
+use bevy_egui::egui::ScrollArea;
 
 use super::*;
 
@@ -54,8 +55,8 @@ impl Window {
             transparent: false,
             expand: false,
             center_anchor: false,
-            default_width: 150.0,
-            default_height: 100.0,
+            default_width: 500.0,
+            default_height: 500.0,
         }
     }
     #[must_use]
@@ -86,6 +87,11 @@ impl Window {
     #[must_use]
     pub fn default_height(mut self, value: f32) -> Self {
         self.default_height = value;
+        self
+    }
+    #[must_use]
+    pub fn expand(mut self) -> Self {
+        self.expand = true;
         self
     }
     pub fn push(self, world: &mut World) {
@@ -127,7 +133,9 @@ impl Window {
             let rect = CollapsingHeader::new(&self.id)
                 .default_open(true)
                 .show_unindented(ui, |ui| {
-                    (self.content)(ui, world);
+                    ScrollArea::both().show(ui, |ui| {
+                        (self.content)(ui, world);
+                    });
                 })
                 .header_response
                 .rect;
@@ -135,14 +143,6 @@ impl Window {
             if close_btn(rect, ui).clicked() {
                 r = WindowResponse::Close;
             }
-            // let rect = {
-            //     let rect = rect.with_min_x(rect.max.x);
-            //     let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
-            //     if "x".cstr().button(ui).clicked() {
-            //         r = WindowResponse::Close;
-            //     }
-            //     ui.min_rect()
-            // };
             ui.expand_to_include_rect(rect);
         });
         r

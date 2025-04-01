@@ -162,8 +162,7 @@ impl TNode {
         Ok(d)
     }
     pub fn unpack(&self, entity: Entity, world: &mut World) {
-        let kind = NodeKind::from_str(&self.kind).unwrap();
-        kind.unpack(entity, &self.data, Some(self.id), world);
+        self.kind().unpack(entity, self, world);
     }
     pub fn to_ron(self) -> String {
         ron::to_string(&SerdeWrapper::new(self)).unwrap()

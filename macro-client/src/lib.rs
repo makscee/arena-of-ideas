@@ -521,15 +521,29 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             view_ctx.show_parent_line(ui);
                             if let Some(d) = &mut self.#component_fields {
                                 changed |= d.view_mut(view_ctx, ui);
+                                if d.get_state(ui).is_some_and(|s| s.delete_me) {
+                                    d.clear_state(ui);
+                                    self.#component_fields = None;
+                                    changed = true;
+                                }
                             } else if format!("add {}", #component_fields_str).button(ui).clicked() {
                                 self.#component_fields = Some(default());
                                 changed = true;
                             }
                         )*
                         #(
-                            for d in &mut self.#child_fields {
+                            let mut remove = None;
+                            for (i, d) in self.#child_fields.iter_mut().enumerate() {
                                 view_ctx.show_parent_line(ui);
                                 changed |= d.view_mut(view_ctx, ui);
+                                if d.get_state(ui).is_some_and(|s| s.delete_me) {
+                                    d.clear_state(ui);
+                                    remove = Some(i);
+                                }
+                            }
+                            if let Some(remove) = remove {
+                                self.#child_fields.remove(remove);
+                                changed = true;
                             }
                             view_ctx.show_parent_line(ui);
                             if format!("+ to [b {}]", #child_fields_str).button(ui).clicked() {
@@ -649,25 +663,26 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn show_tnodes_mut(self, nodes: &mut Vec<TNode>, ui: &mut Ui) {
+                    pub fn show_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.show_mut(None, ui) {
+                                if d.view_mut(view_ctx, ui) {
                                     d.reassign_ids(&mut 0);
                                     *nodes = d.to_tnodes();
                                 }
                             })*
                         }
                     }
-                    pub fn unpack(self, entity: Entity, data: &str, id: Option<u64>, world: &mut World) {
+                    pub fn unpack(self, entity: Entity, node: &TNode, world: &mut World) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut n = #variants::default();
-                                n.inject_data(data);
-                                n.id = id;
+                                n.inject_data(&node.data);
+                                n.id = Some(node.id);
+                                n.parent = Some(node.parent);
                                 n.unpack(entity, world);
                             })*
                         };
