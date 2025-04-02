@@ -35,6 +35,8 @@ impl TopBar {
                     pd_mut(|d| {
                         d.client_state.tile_states.clear();
                     });
+                    TilePlugin::load_state_tree(cur_state(world), world);
+                    ui.close_menu();
                 }
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {

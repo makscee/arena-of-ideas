@@ -12,6 +12,19 @@ fn incubator_push(
     GlobalData::set_next_id(ctx, next_id);
     let root_id = nodes[0].id;
     let nodes: HashMap<u64, TNode> = HashMap::from_iter(nodes.into_iter().map(|n| (n.id, n)));
+    let existing: HashMap<u64, u64> = HashMap::from_iter(nodes.values().filter_map(|node| {
+        if let Some(existing) = ctx
+            .db
+            .nodes_world()
+            .data()
+            .filter(&node.data)
+            .find(|n| n.kind == node.kind && n.parent == ID_INCUBATOR)
+        {
+            Some((node.id, existing.id))
+        } else {
+            None
+        }
+    }));
     let link_kinds = NodeKind::get_incubator_links();
     let mut new_links: Vec<(u64, u64)> = default();
     for (_, node) in nodes.iter() {
@@ -44,6 +57,9 @@ fn incubator_push(
         new_links.push((from_id, root_id));
     }
     for mut node in nodes.into_values() {
+        if existing.contains_key(&node.id) {
+            continue;
+        }
         node.parent = ID_INCUBATOR;
         ctx.db.incubator_nodes().insert(TIncubator {
             id: node.id,
@@ -52,6 +68,8 @@ fn incubator_push(
         ctx.db.nodes_world().insert(node);
     }
     for (from, to) in new_links {
+        let from = existing.get(&from).copied().unwrap_or(from);
+        let to = existing.get(&to).copied().unwrap_or(to);
         TIncubatorVotes::vote(ctx, &player, from, to)?;
     }
     Ok(())

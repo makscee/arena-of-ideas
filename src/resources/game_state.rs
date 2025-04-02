@@ -40,7 +40,12 @@ impl GameState {
                 ]
                 .into();
                 let left = tiles.insert_tab_tile(left);
-                let right = tiles.insert_pane(Pane::Incubator(IncubatorPane::Nodes));
+                let right = [
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::Nodes)),
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::GraphCore)),
+                ]
+                .into();
+                let right = tiles.insert_tab_tile(right);
                 let root = tiles.insert_horizontal_tile([left, right].into());
                 Tree::new(TREE_ID, root, tiles)
             }
@@ -87,6 +92,7 @@ pub enum IncubatorPane {
     Nodes,
     NewNode,
     Inspect,
+    GraphCore,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum BattlePane {
@@ -142,6 +148,7 @@ impl Pane {
                 IncubatorPane::NewNode => IncubatorPlugin::pane_new_node(ui, world)?,
                 IncubatorPane::Inspect => IncubatorPlugin::pane_inspect(ui, world)?,
                 IncubatorPane::Nodes => IncubatorPlugin::pane_nodes(ui, world)?,
+                IncubatorPane::GraphCore => IncubatorPlugin::pane_graph_core(ui, world)?,
             },
 
             Pane::Battle(pane) => match pane {

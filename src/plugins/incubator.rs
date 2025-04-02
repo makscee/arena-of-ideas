@@ -8,14 +8,18 @@ impl Plugin for IncubatorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<IncubatorData>()
             .add_systems(Startup, Self::startup)
-            .add_systems(OnEnter(GameState::Title), Self::init)
-            .add_systems(Update, Self::read_events);
+            .add_systems(OnEnter(GameState::Incubator), Self::init)
+            .add_systems(
+                Update,
+                (Self::update, Self::read_events).run_if(in_state(GameState::Incubator)),
+            );
     }
 }
 
 #[derive(Resource, Default)]
 struct IncubatorData {
     composed_world: World,
+    compose_requested: Option<f64>,
     table_kind: NodeKind,
     inspect_node: Option<(u64, NodeKind)>,
     new_node_link: Option<u64>,
@@ -31,13 +35,22 @@ impl IncubatorPlugin {
     pub fn world_op<T>(world: &mut World, f: impl FnOnce(&mut World) -> T) -> T {
         f(&mut rm(world).composed_world)
     }
+    fn update(world: &mut World) {
+        if rm(world)
+            .compose_requested
+            .is_some_and(|ts| ts + 0.5 < gt().elapsed())
+        {
+            Self::compose_nodes(world).log();
+            rm(world).compose_requested = None;
+        }
+    }
     fn read_events(mut events: EventReader<StdbEvent>) {
         if events.is_empty() {
             return;
         }
         if events.read().any(|e| e.node.parent == ID_INCUBATOR) {
             OperationsPlugin::add(|world| {
-                Self::compose_nodes(world).log();
+                Self::compose_request(world);
             });
         }
     }
@@ -51,7 +64,7 @@ impl IncubatorPlugin {
                 e.event.on_success_error(
                     move || {
                         OperationsPlugin::add(move |world| {
-                            Self::compose_nodes(world).log();
+                            Self::compose_request(world);
                             format!("New {kind} added").notify(world);
                             rm(world).new_node = Some((kind, [kind.default_tnode()].into()));
                         });
@@ -68,7 +81,7 @@ impl IncubatorPlugin {
                 e.event.on_success_error(
                     move || {
                         OperationsPlugin::add(move |world| {
-                            Self::compose_nodes(world).log();
+                            Self::compose_request(world);
                             TableState::reset_cache(&egui_context(world).unwrap());
                             TableState::reset_rows_cache::<(i32, TNode)>(world);
                         });
@@ -83,7 +96,13 @@ impl IncubatorPlugin {
     fn init(world: &mut World) {
         let mut r = rm(world);
         r.table_kind = NodeKind::House;
-        // Self::compose_nodes(world).log();
+        Self::compose_request(world);
+    }
+    fn compose_request(world: &mut World) {
+        let cr = &mut rm(world).compose_requested;
+        if cr.is_none() {
+            *cr = Some(gt().elapsed());
+        }
     }
     fn compose_nodes(world: &mut World) -> Result<(), ExpressionError> {
         let incubator = Incubator::load_recursive(ID_INCUBATOR).unwrap();
@@ -93,7 +112,6 @@ impl IncubatorPlugin {
             .map(|h| h.clone().fill_from_incubator())
             .collect_vec();
         let mut composed_world = World::new();
-        dbg!(&houses);
         for house in houses {
             house.unpack(composed_world.spawn_empty().id(), &mut composed_world);
         }
@@ -152,6 +170,13 @@ impl IncubatorPlugin {
             Ok(())
         })
         .inner
+    }
+    pub fn pane_graph_core(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let context = &Context::new_world(world);
+        for house in all(world).core_load(context) {
+            house.view(ViewContext::full(), context, ui);
+        }
+        Ok(())
     }
     pub fn pane_new_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         world.resource_scope(|world, mut d: Mut<IncubatorData>| {
