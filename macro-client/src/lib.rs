@@ -51,11 +51,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &child_types,
             );
             let no_children = component_fields.is_empty() && child_fields.is_empty();
-            let has_body = if no_children && data_fields.is_empty() {
-                quote! {false}
-            } else {
-                quote! {true}
-            };
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
             } else if !component_fields.is_empty() {
@@ -510,19 +505,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
-                    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
+                    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool {
                         let mut changed = false;
                         #(
                             view_ctx.show_parent_line(ui);
                             if let Some(d) = &mut self.#component_fields {
-                                changed |= d.view_mut(view_ctx, ui);
+                                changed |= d.view_mut(view_ctx, ui, world);
                                 if d.get_state(ui).is_some_and(|s| s.delete_me) {
                                     d.clear_state(ui);
                                     self.#component_fields = None;
                                     changed = true;
                                 }
-                            } else if format!("add {}", #component_fields_str).button(ui).clicked() {
-                                self.#component_fields = Some(default());
+                            } else if let Some(d) = node_selector::<#component_types>(ui, world) {
+                                self.#component_fields = Some(d);
                                 changed = true;
                             }
                         )*
@@ -530,7 +525,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             let mut remove = None;
                             for (i, d) in self.#child_fields.iter_mut().enumerate() {
                                 view_ctx.show_parent_line(ui);
-                                changed |= d.view_mut(view_ctx, ui);
+                                changed |= d.view_mut(view_ctx, ui, world);
                                 if d.get_state(ui).is_some_and(|s| s.delete_me) {
                                     d.clear_state(ui);
                                     remove = Some(i);
@@ -541,8 +536,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 changed = true;
                             }
                             view_ctx.show_parent_line(ui);
-                            if format!("+ to [b {}]", #child_fields_str).button(ui).clicked() {
-                                self.#child_fields.push(default());
+                            if let Some(d) = node_selector::<#child_types>(ui, world) {
+                                self.#child_fields.push(d);
                                 changed = true;
                             }
                         )*
@@ -637,12 +632,12 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui) {
+                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.view_mut(view_ctx, ui) {
+                                if d.view_mut(view_ctx, ui, world) {
                                     d.reassign_ids(&mut 0);
                                     *nodes = d.to_tnodes();
                                 }

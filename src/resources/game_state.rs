@@ -154,8 +154,8 @@ impl Pane {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
-                BattlePane::EditLeft => BattlePlugin::pane_edit(true, ui, world)?,
-                BattlePane::EditRight => BattlePlugin::pane_edit(false, ui, world)?,
+                BattlePane::EditLeft => BattlePlugin::pane_edit(true, ui, world),
+                BattlePane::EditRight => BattlePlugin::pane_edit(false, ui, world),
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),

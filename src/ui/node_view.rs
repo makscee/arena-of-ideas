@@ -107,7 +107,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
             }
         }
     }
-    fn view_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
+    fn view_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool {
         let mut view_ctx = view_ctx.merge_state(self, &default(), ui).set_mut();
         match view_ctx.mode {
             ViewMode::Compact | ViewMode::Full => self.data_self_mut(view_ctx, ui),
@@ -115,7 +115,9 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
                 ui.horizontal(|ui| {
                     let changed = self.data_self_mut(view_ctx, ui);
                     view_ctx.parent_rect = Some(ui.min_rect());
-                    ui.vertical(|ui| self.view_children_mut(view_ctx, ui)).inner || changed
+                    ui.vertical(|ui| self.view_children_mut(view_ctx, ui, world))
+                        .inner
+                        || changed
                 })
                 .inner
             }
@@ -255,7 +257,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
 
 pub trait NodeGraphViewNew: NodeExt {
     fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui);
-    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool;
+    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool;
 }
 
 fn show_frame(color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
@@ -301,6 +303,20 @@ fn show_header(
 fn show_body(ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
     Frame::new().inner_margin(4).show(ui, content);
 }
+fn name_tag(
+    node: &impl NodeView,
+    view_ctx: ViewContext,
+    context: &Context,
+    ui: &mut Ui,
+) -> Result<(), ExpressionError> {
+    let color = view_ctx.color;
+    let name = context.get_string(VarName::name, node.kind())?;
+    ui.horizontal(|ui| {
+        TagWidget::new_name(name, color).ui(ui);
+        node.show_buttons(view_ctx, ui);
+    });
+    Ok(())
+}
 
 impl NodeView for All {}
 impl NodeView for Incubator {}
@@ -314,16 +330,17 @@ impl NodeView for House {
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        self.full_self(view_ctx, context, ui)
+        name_tag(self, view_ctx, context, ui)
     }
     fn full_self(
         &self,
-        view_ctx: ViewContext,
+        mut view_ctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
         let name = context.get_string(VarName::name, NodeKind::House)?;
+        view_ctx.mode = ViewMode::Compact;
         show_frame(color, ui, |ui| {
             show_header(self, Some(name), view_ctx, ui, |_| {});
             show_body(ui, |ui| {
@@ -366,13 +383,7 @@ impl NodeView for ActionAbility {
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        let color = view_ctx.color;
-        let name = context.get_string(VarName::name, self.kind())?;
-        ui.horizontal(|ui| {
-            TagWidget::new_name(name, color).ui(ui);
-            self.show_buttons(view_ctx, ui);
-        });
-        Ok(())
+        name_tag(self, view_ctx, context, ui)
     }
     fn full_self(
         &self,
@@ -416,13 +427,7 @@ impl NodeView for StatusAbility {
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        let color = view_ctx.color;
-        let name = context.get_string(VarName::name, self.kind())?;
-        ui.horizontal(|ui| {
-            TagWidget::new_name(name, color).ui(ui);
-            self.show_buttons(view_ctx, ui);
-        });
-        Ok(())
+        name_tag(self, view_ctx, context, ui)
     }
     fn full_self(
         &self,

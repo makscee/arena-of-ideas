@@ -417,3 +417,52 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
 pub fn all(world: &World) -> &All {
     All::get_by_id(ID_ALL, world).unwrap()
 }
+
+pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Option<T> {
+    let resp = format!("add [b {}]", T::kind_s()).cstr().button(ui);
+    let mut result = None;
+    resp.bar_menu(|ui| {
+        if "empty".cstr().button(ui).clicked() {
+            result = Some(T::default());
+            ui.close_menu();
+        }
+        let mut show_node = |node: &T, view_ctx, ui: &mut Ui, world: &World| {
+            ui.horizontal(|ui| {
+                if "add".cstr().button(ui).clicked() {
+                    result = T::pack(node.entity(), world);
+                    ui.close_menu();
+                }
+                node.view(
+                    view_ctx,
+                    Context::new_world(world).set_owner(node.entity()),
+                    ui,
+                );
+            });
+        };
+        ui.menu_button("core", |ui| {
+            ScrollArea::vertical()
+                .min_scrolled_height(500.0)
+                .show(ui, |ui| {
+                    for n in world.query::<&T>().iter(world) {
+                        if n.parent() == ID_INCUBATOR {
+                            continue;
+                        }
+                        show_node(n, ViewContext::default(), ui, world);
+                    }
+                });
+        });
+        ui.menu_button("incubator", |ui| {
+            ScrollArea::vertical()
+                .min_scrolled_height(500.0)
+                .show(ui, |ui| {
+                    for n in world.query::<&T>().iter(world) {
+                        if n.parent() != ID_INCUBATOR {
+                            continue;
+                        }
+                        show_node(n, ViewContext::graph(), ui, world);
+                    }
+                });
+        });
+    });
+    result
+}

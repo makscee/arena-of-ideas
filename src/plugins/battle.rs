@@ -6,7 +6,7 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loaded), |world: &mut World| {
+        app.add_systems(OnEnter(GameState::Editor), |world: &mut World| {
             if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
                 let battle = Battle { left, right };
                 world.insert_resource(BattleData {
@@ -181,17 +181,17 @@ impl BattlePlugin {
         world.insert_resource(data);
         Ok(())
     }
-    pub fn pane_edit(left: bool, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = rm(world)?;
-        let changed = if left {
-            &mut data.battle.left
-        } else {
-            &mut data.battle.right
-        }
-        .view_mut(default(), ui);
-        if changed {
-            world.resource_mut::<ReloadData>().reload_requested = true;
-        }
-        Ok(())
+    pub fn pane_edit(left: bool, ui: &mut Ui, world: &mut World) {
+        world.resource_scope(|world, mut data: Mut<BattleData>| {
+            let changed = if left {
+                &mut data.battle.left
+            } else {
+                &mut data.battle.right
+            }
+            .view_mut(ViewContext::graph(), ui, world);
+            if changed {
+                world.resource_mut::<ReloadData>().reload_requested = true;
+            }
+        });
     }
 }

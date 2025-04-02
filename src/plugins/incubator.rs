@@ -204,6 +204,7 @@ impl IncubatorPlugin {
                     ..default()
                 },
                 ui,
+                world,
             );
             if "Publish".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers

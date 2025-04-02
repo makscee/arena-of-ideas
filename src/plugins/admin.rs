@@ -8,12 +8,6 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
-        if let Some(all) = All::get_by_id(1, world) {
-            let context = &Context::new_world(world);
-            for house in all.core_load(context) {
-                house.view(default(), context, ui);
-            }
-        }
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);
         }
