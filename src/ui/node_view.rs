@@ -20,6 +20,18 @@ impl ViewContext {
         self.is_mut = true;
         self
     }
+    pub fn graph() -> Self {
+        Self {
+            mode: ViewMode::Graph,
+            ..default()
+        }
+    }
+    pub fn full() -> Self {
+        Self {
+            mode: ViewMode::Full,
+            ..default()
+        }
+    }
 }
 
 impl Default for ViewContext {

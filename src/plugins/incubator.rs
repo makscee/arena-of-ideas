@@ -9,8 +9,7 @@ impl Plugin for IncubatorPlugin {
         app.init_resource::<IncubatorData>()
             .add_systems(Startup, Self::startup)
             .add_systems(OnEnter(GameState::Title), Self::init)
-            // .add_systems(Update, Self::read_events)
-            ;
+            .add_systems(Update, Self::read_events);
     }
 }
 
@@ -173,7 +172,7 @@ impl IncubatorPlugin {
                 }]
                 .into();
             }
-            kind.show_tnodes_mut(
+            kind.view_tnodes_mut(
                 nodes,
                 ViewContext {
                     mode: ViewMode::Graph,
@@ -181,10 +180,11 @@ impl IncubatorPlugin {
                 },
                 ui,
             );
-            if "Save".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+            if "Publish".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
                     .incubator_push(nodes.clone(), d.new_node_link)
                     .unwrap();
+                WindowPlugin::close_current(world);
             }
         });
         Ok(())
@@ -215,45 +215,10 @@ impl IncubatorPlugin {
                     .push(world);
             }
         }
-        let data = rm(world);
-        match data.composed_world.get_id_link(id) {
-            Some(entity) => {
-                ui.columns(2, |ui| match kind {
-                    NodeKind::Unit => {
-                        let context = Context::new_world(&data.composed_world)
-                            .set_owner(entity)
-                            .take();
-                        match UnitCard::from_context(&context) {
-                            Ok(c) => {
-                                c.show(&context, &mut ui[0]);
-                            }
-                            Err(e) => {
-                                e.cstr().label(&mut ui[0]);
-                            }
-                        }
-                        let ui = &mut ui[1];
-                        let size = ui.available_width();
-                        let rect = ui
-                            .allocate_exact_size(egui::vec2(size, size), Sense::hover())
-                            .0
-                            .shrink(30.0);
-                        if let Some(rep) = data.composed_world.get::<Representation>(entity) {
-                            rep.pain_or_show_err(rect, &context, ui);
-                        }
-                        unit_rep().pain_or_show_err(rect, &context, ui);
-                    }
-                    _ => {}
-                });
-                br(ui);
-                kind.show(entity, ui, &data.composed_world);
-            }
-            None => {
-                "Node absent in core"
-                    .cstr_cs(DARK_RED, CstrStyle::Small)
-                    .label(ui);
-            }
-        }
-        br(ui);
+        let Some(node) = cn().db.nodes_world().id().find(&id) else {
+            return Err(format!("Failed to find node {kind}#{id}").into());
+        };
+        kind.view_tnodes(&[node].to_vec(), ViewContext::graph(), &default(), ui);
         let mut r = rm(world);
         if r.link_types.is_empty() {
             return Ok(());

@@ -633,37 +633,16 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         };
                     }
-                    pub fn show_data(self, data: &str, context: &Context, ui: &mut Ui) {
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                let mut d = #variants::default();
-                                d.inject_data(data).log();
-                                d.show(None, context, ui);
-                            })*
-                        }
-                    }
-                    pub fn show_data_mut(self, data: &mut String, ui: &mut Ui) {
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                let mut d = #variants::default();
-                                d.inject_data(data).log();
-                                d.show_mut(None, ui);
-                                *data = d.get_data();
-                            })*
-                        }
-                    }
-                    pub fn show_tnodes(self, nodes: &Vec<TNode>, context: &Context, ui: &mut Ui) {
+                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                d.show(None, context, ui);
+                                d.view(view_ctx, context, ui);
                             })*
                         }
                     }
-                    pub fn show_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui) {
+                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {

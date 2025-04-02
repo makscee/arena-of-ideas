@@ -153,13 +153,13 @@ impl WindowPlugin {
     pub fn show_all(ctx: &egui::Context, world: &mut World) {
         let mut windows = mem::take(&mut rm(world).windows);
         let mut close = None;
+        world.remove_resource::<CloseCurrentWindow>();
         for (id, window) in windows.iter_mut() {
             match window.show(ctx, world) {
                 WindowResponse::None => {}
                 WindowResponse::Close => close = Some(id.clone()),
             }
             if world.remove_resource::<CloseCurrentWindow>().is_some() {
-                debug!("close window");
                 close = Some(id.clone());
             }
         }
