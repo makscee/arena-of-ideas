@@ -410,7 +410,7 @@ impl BattleSimulation {
                 if child_status.name == status.name {
                     let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
                     let charges = state
-                        .get(VarName::charges)
+                        .get_any(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
                         .unwrap()
                         + charges;

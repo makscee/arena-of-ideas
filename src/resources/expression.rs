@@ -35,7 +35,7 @@ impl ExpressionImpl for Expression {
             }
             Expression::StateVar(x, var) => context
                 .get_state(x.get_entity(context)?)?
-                .get(*var)
+                .get_any(*var)
                 .to_e_var(*var),
             Expression::V(v) => Ok(v.clone()),
             Expression::F(v) | Expression::FSlider(v) => Ok((*v).into()),

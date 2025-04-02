@@ -61,6 +61,8 @@ impl ViewContext {
             .and_then(|v| v.get_color().ok())
         {
             self.color = color;
+        } else if let Ok(color) = context.get_color_any(VarName::color) {
+            self.color = color;
         }
         self
     }

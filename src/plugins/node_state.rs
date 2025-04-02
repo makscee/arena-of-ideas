@@ -10,13 +10,31 @@ impl Plugin for NodeStatePlugin {
 
 #[derive(Component, Debug, Default)]
 pub struct NodeState {
-    vars: HashMap<VarName, VarValue>,
-    source: HashMap<VarName, NodeKind>,
-    pub history: HashMap<VarName, VarHistory>,
+    pub vars: HashMap<VarName, HashMap<NodeKind, VarState>>,
+}
+
+#[derive(Debug)]
+pub struct VarState {
+    pub value: VarValue,
+    pub history: VarHistory,
 }
 #[derive(Default, Debug)]
 pub struct VarHistory {
     changes: Vec<VarChange>,
+}
+
+impl VarHistory {
+    fn new(value: VarValue, t: f32, duration: f32, tween: Tween) -> Self {
+        Self {
+            changes: [VarChange {
+                value,
+                t,
+                duration,
+                tween,
+            }]
+            .into(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -98,14 +116,33 @@ impl NodeState {
     pub fn from_query<'a>(entity: Entity, query: &'a StateQuery) -> Option<&'a Self> {
         query.get_state(entity)
     }
-    pub fn get(&self, var: VarName) -> Option<VarValue> {
-        self.vars.get(&var).cloned()
+    fn get_state_any<'a>(&'a self, var: VarName) -> Option<&'a VarState> {
+        self.vars
+            .get(&var)
+            .and_then(|s| s.iter().sorted_by_key(|(k, _)| **k).next())
+            .map(|(_, s)| s)
     }
-    pub fn get_at(&self, t: f32, var: VarName) -> Option<VarValue> {
-        if let Some(c) = self.history.get(&var) {
+    fn get_state<'a>(&'a self, var: VarName, kind: NodeKind) -> Option<&'a VarState> {
+        self.vars.get(&var).and_then(|s| s.get(&kind))
+    }
+    pub fn get(&self, var: VarName, kind: NodeKind) -> Option<VarValue> {
+        self.get_state(var, kind).map(|s| s.value.clone())
+    }
+    pub fn get_at(&self, t: f32, var: VarName, kind: NodeKind) -> Option<VarValue> {
+        if let Some(c) = self.get_state(var, kind).map(|s| &s.history) {
             c.get_value_at(t).ok()
         } else {
-            self.vars.get(&var).cloned()
+            self.get(var, kind)
+        }
+    }
+    pub fn get_any(&self, var: VarName) -> Option<VarValue> {
+        self.get_state_any(var).map(|v| v.value.clone())
+    }
+    pub fn get_any_at(&self, t: f32, var: VarName) -> Option<VarValue> {
+        if let Some(c) = self.get_state_any(var).map(|s| &s.history) {
+            c.get_value_at(t).ok()
+        } else {
+            self.get_any(var)
         }
     }
     pub fn init(&mut self, var: VarName, value: VarValue) {
@@ -124,47 +161,64 @@ impl NodeState {
         value: VarValue,
         source: NodeKind,
     ) -> bool {
-        let mut updated = false;
-        if let Some(prev) = self.vars.insert(var, value.clone()) {
-            if prev != value {
-                updated = true;
-            }
-        } else {
-            updated = true;
+        if self
+            .vars
+            .get(&var)
+            .and_then(|v| v.get(&source))
+            .is_some_and(|v| v.value == value)
+        {
+            return false;
         }
-        if updated {
-            self.history
-                .entry(var)
-                .or_default()
-                .changes
-                .push(VarChange {
+        if !self.vars.contains_key(&var) {
+            self.vars.insert(var, default());
+        }
+        let kinds = self.vars.get_mut(&var).unwrap();
+        let Some(state) = kinds.get_mut(&source) else {
+            kinds.insert(
+                source,
+                VarState {
+                    history: VarHistory::new(value.clone(), t, duration, Tween::QuartOut),
                     value,
-                    t,
-                    duration,
-                    tween: Tween::QuartOut,
-                });
-            self.source.insert(var, source);
-        }
-        updated
+                },
+            );
+            return true;
+        };
+        state.value = value.clone();
+        state.history.changes.push(VarChange {
+            value,
+            t,
+            duration,
+            tween: Tween::QuartOut,
+        });
+        true
     }
     pub fn find_var(
         var: VarName,
+        kind: Option<NodeKind>,
         entity: Entity,
         t: Option<f32>,
         source: &ContextSource,
     ) -> Option<VarValue> {
         let v = source.get_state(entity).and_then(|s| {
             if let Some(t) = t {
-                s.get_at(t, var)
+                if let Some(kind) = kind {
+                    s.get_at(t, var, kind)
+                } else {
+                    s.get_any_at(t, var)
+                }
             } else {
-                s.get(var)
+                if let Some(kind) = kind {
+                    s.get(var, kind)
+                } else {
+                    s.get_any(var)
+                }
             }
         });
         if v.is_some() {
             v
         } else {
             if let Some(p) = source.get_parent(entity) {
-                Self::find_var(var, p, t, source)
+                Self::find_var(var, kind, p, t, source)
             } else {
                 None
             }

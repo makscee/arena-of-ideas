@@ -414,7 +414,7 @@ impl ContextLayer<'_> {
             ContextLayer::Owner(entity) => sources
                 .into_iter()
                 .rev()
-                .find_map(|s| NodeState::find_var(var, *entity, t, s)),
+                .find_map(|s| NodeState::find_var(var, kind, *entity, t, s)),
             ContextLayer::Var(v, value, var_kind) => {
                 if var.eq(v) && kind.is_some_and(|kind| kind == *var_kind) {
                     Some(value.clone())
