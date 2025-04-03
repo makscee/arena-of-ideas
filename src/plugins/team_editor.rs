@@ -212,11 +212,11 @@ impl TeamEditorPlugin {
                         let mut fusion = fusion.clone();
                         let entity = fusion.entity();
 
-                        if fusion.show_editor(&context, ui).unwrap_or_default() {
-                            op(move |world| {
-                                *world.get_mut::<Fusion>(entity).unwrap() = fusion;
-                            });
-                        }
+                        // if fusion.show_editor(&context, ui).unwrap_or_default() {
+                        //     op(move |world| {
+                        //         *world.get_mut::<Fusion>(entity).unwrap() = fusion;
+                        //     });
+                        // }
                     });
                 }
             });

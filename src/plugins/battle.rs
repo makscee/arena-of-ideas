@@ -7,22 +7,13 @@ pub struct BattlePlugin;
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Editor), |world: &mut World| {
-            if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
+            let bd = if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
                 let battle = Battle { left, right };
-                world.insert_resource(BattleData {
-                    simulation: BattleSimulation::new(battle.clone()).start(),
-                    battle,
-                    t: 0.0,
-                    playing: false,
-                });
+                BattleData::load(battle)
             } else {
-                world.insert_resource(BattleData {
-                    battle: Battle::default(),
-                    simulation: BattleSimulation::new(default()).start(),
-                    t: 0.0,
-                    playing: false,
-                });
-            }
+                BattleData::load(default())
+            };
+            world.insert_resource(bd);
         })
         .init_resource::<ReloadData>()
         .add_systems(
@@ -34,6 +25,9 @@ impl Plugin for BattlePlugin {
 
 #[derive(Resource)]
 struct BattleData {
+    teams_world: World,
+    team_left: Entity,
+    team_right: Entity,
     battle: Battle,
     simulation: BattleSimulation,
     t: f32,
@@ -52,21 +46,25 @@ fn rm(world: &mut World) -> Result<Mut<BattleData>, ExpressionError> {
         .to_e("No battle loaded")
 }
 
-impl Default for BattleData {
-    fn default() -> Self {
-        let battle = Battle::default();
+impl BattleData {
+    fn load(mut battle: Battle) -> Self {
+        battle.left.reassign_ids(&mut 0);
+        battle.right.reassign_ids(&mut 0);
+        let mut teams_world = World::new();
+        let team_left = teams_world.spawn_empty().id();
+        let team_right = teams_world.spawn_empty().id();
+        battle.left.clone().unpack(team_left, &mut teams_world);
+        battle.right.clone().unpack(team_right, &mut teams_world);
+        let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
-            simulation: BattleSimulation::new(battle.clone()),
+            teams_world,
+            team_left,
+            team_right,
             battle,
+            simulation,
             t: 0.0,
             playing: false,
         }
-    }
-}
-
-impl BattleData {
-    fn reload_simulation(&mut self) {
-        self.simulation = BattleSimulation::new(self.battle.clone()).start();
     }
 }
 
@@ -75,31 +73,12 @@ impl BattlePlugin {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
-            data.reload_simulation();
-            data.battle.left.reassign_ids(&mut 0);
-            data.battle.right.reassign_ids(&mut 0);
+            *data = BattleData::load(data.battle.clone());
             pd_mut(|pd| {
                 pd.client_state
                     .set_battle_test_teams(&data.battle.left, &data.battle.right);
             });
         }
-    }
-    pub fn edit_battle(f: impl FnOnce(&mut Battle), world: &mut World) {
-        let mut r = world.get_resource_or_insert_with(|| BattleData::default());
-        f(&mut r.battle);
-    }
-    pub fn load_empty(world: &mut World) {
-        let team = Team::default();
-        let battle = Battle {
-            left: team.clone(),
-            right: team.clone(),
-        };
-        world.insert_resource(BattleData {
-            simulation: BattleSimulation::new(battle.clone()),
-            battle,
-            t: 0.0,
-            playing: false,
-        });
     }
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = world
@@ -111,44 +90,18 @@ impl BattlePlugin {
         world.insert_resource(data);
         Ok(())
     }
-    fn open_team_editor(left: bool, team: Team, world: &mut World) {
-        TeamEditorPlugin::load_team(team, world);
-        TeamEditorPlugin::on_save_fn(
-            move |team, world| {
-                match rm(world) {
-                    Ok(mut data) => {
-                        if left {
-                            data.battle.left = team;
-                        } else {
-                            data.battle.right = team;
-                        }
-                        data.reload_simulation();
-                    }
-                    Err(e) => format!("Failed to save: {e}").notify(world),
-                }
-                TilePlugin::close_match(|p| matches!(p, Pane::Team(..)));
-            },
-            world,
-        )
-        .notify(world);
-        TeamEditorPlugin::unit_add_from_core(world).notify(world);
-        TeamEditorPlugin::add_panes();
-    }
     pub fn pane_controls(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = world
             .remove_resource::<BattleData>()
             .to_e("No battle loaded")?;
-        if "edit left team".cstr().button(ui).clicked() {
-            Self::open_team_editor(true, data.battle.left.clone(), world);
-        }
-        if "edit right team".cstr().button(ui).clicked() {
-            Self::open_team_editor(false, data.battle.right.clone(), world);
-        }
         let BattleData {
+            teams_world: _,
             battle: _,
             simulation,
             t,
             playing,
+            team_left: _,
+            team_right: _,
         } = &mut data;
         if simulation.duration > 0.0 {
             Slider::new("ts")
@@ -181,16 +134,46 @@ impl BattlePlugin {
         world.insert_resource(data);
         Ok(())
     }
-    pub fn pane_edit(left: bool, ui: &mut Ui, world: &mut World) {
+    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut data: Mut<BattleData>| {
-            let changed = if left {
+            let team = if left {
                 &mut data.battle.left
             } else {
                 &mut data.battle.right
-            }
-            .view_mut(ViewContext::graph(), ui, world);
+            };
+            let mut changed = false;
+            changed |= team.view_mut(ViewContext::graph(), ui, world);
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
+            }
+        });
+    }
+    pub fn pane_edit_slots(left: bool, ui: &mut Ui, world: &mut World) {
+        world.resource_scope(|world, mut data: Mut<BattleData>| {
+            let BattleData {
+                teams_world,
+                team_left,
+                team_right,
+                battle,
+                simulation: _,
+                t: _,
+                playing: _,
+            } = data.as_mut();
+            let mut changed = false;
+            let team = if left { *team_left } else { *team_right };
+            match Fusion::slots_editor(team, teams_world, ui) {
+                Ok(c) => changed |= c,
+                Err(e) => e.cstr().notify_error(world),
+            }
+            if changed {
+                world.resource_mut::<ReloadData>().reload_requested = true;
+                let updated_team = Team::pack(team, &teams_world).unwrap();
+                let team = if left {
+                    &mut battle.left
+                } else {
+                    &mut battle.right
+                };
+                *team = updated_team;
             }
         });
     }

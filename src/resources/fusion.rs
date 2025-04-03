@@ -18,7 +18,7 @@ impl Fusion {
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
-    pub fn units<'a>(&'a self, context: &'a Context) -> Result<Vec<&'a Unit>, ExpressionError> {
+    pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a Unit>, ExpressionError> {
         let team = context
             .get_parent(self.entity())
             .to_e("Fusion parent not found")
@@ -29,55 +29,26 @@ impl Fusion {
             .filter(|u| self.units.contains(&u.name))
             .collect())
     }
-    pub fn get_unit(&self, unit: u8, context: &Context) -> Result<Entity, ExpressionError> {
-        let unit = &self.units[unit as usize];
-        context.entity_by_name(unit)
-    }
-    pub fn remove_unit(&mut self, u: u8) {
-        // self.units.remove(u as usize);
-        // self.triggers
-        //     .retain_mut(|(UnitTriggerRef { unit, trigger: _ }, _)| {
-        //         if *unit == u {
-        //             return false;
-        //         } else if *unit > u {
-        //             *unit -= 1;
-        //         }
-        //         true
-        //     });
-        // for (_, actions) in self.triggers.iter_mut() {
-        //     actions.retain_mut(
-        //         |UnitActionRef {
-        //              unit,
-        //              trigger: _,
-        //              action: _,
-        //          }| {
-        //             if *unit == u {
-        //                 return false;
-        //             } else if *unit > u {
-        //                 *unit -= 1;
-        //             }
-        //             true
-        //         },
-        //     );
-        // }
-    }
-    pub fn remove_trigger(&mut self, r: UnitTriggerRef) {
-        // self.triggers.retain(|(t, _)| !r.eq(t));
-    }
-    pub fn remove_action(&mut self, r: UnitActionRef) {
-        // for (_, a) in self.triggers.iter_mut() {
-        //     a.retain(|a| !r.eq(a));
-        // }
+    pub fn get_unit<'a>(
+        &self,
+        unit: u8,
+        context: &'a Context,
+    ) -> Result<&'a Unit, ExpressionError> {
+        self.units(context)?
+            .get(unit as usize)
+            .copied()
+            .to_e_fn(|| format!("Failed to find Unit as index {unit}"))
     }
     pub fn get_behavior<'a>(
         &self,
         unit: u8,
         context: &'a Context,
     ) -> Result<&'a Behavior, ExpressionError> {
-        let unit = self.get_unit(unit, context)?;
-        context
-            .get_component::<Behavior>(unit)
-            .to_e("Behavior not found")
+        self.get_unit(unit, context)?
+            .description_load(context)
+            .to_e("Failed to load UnitDescription")?
+            .reaction_load(context)
+            .to_e("Failed to load Behavior")
     }
     pub fn get_trigger<'a>(
         &self,
@@ -148,11 +119,19 @@ impl Fusion {
         })
     }
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
-        let behaviors = (0..self.units.len())
-            .filter_map(|u| {
-                self.get_behavior(u as u8, context)
-                    .ok()
-                    .map(|b| (u as u8, b.clone()))
+        let units = self.units(context)?;
+        let behaviors = units
+            .iter()
+            .enumerate()
+            .filter_map(|(i, u)| {
+                if let Some(b) = u
+                    .description_load(context)
+                    .and_then(|d| d.reaction_load(context))
+                {
+                    Some((i as u8, b))
+                } else {
+                    None
+                }
             })
             .collect_vec();
         let mut changed = false;
@@ -224,5 +203,80 @@ impl Fusion {
             }
         });
         Ok(changed)
+    }
+    pub fn slots_editor(
+        team: Entity,
+        world: &mut World,
+        ui: &mut Ui,
+    ) -> Result<bool, ExpressionError> {
+        let mut changes: Vec<Fusion> = default();
+        {
+            let context = Context::new_world(world);
+            let team = Team::get(team, world).to_e("Team not found")?;
+            let fusions: HashMap<usize, &Fusion> = HashMap::from_iter(
+                team.fusions_load(&context)
+                    .into_iter()
+                    .map(|f| (f.slot as usize, f)),
+            );
+            let units = team.roster_units_load(&context);
+            let slots = global_settings().team_slots as usize;
+            for slot in 0..slots {
+                let resp = show_slot(slot, slots, false, ui);
+                if let Some(fusion) = fusions.get(&slot).copied() {
+                    fusion.paint(resp.rect, &context, ui).ui(ui);
+                    resp.bar_menu(|ui| {
+                        ui.menu_button("add unit", |ui| {
+                            for unit in &units {
+                                if "add".cstr().button(ui).clicked() {
+                                    let mut fusion = fusion.clone();
+                                    fusion.units.push(unit.name.clone());
+                                    changes.push(fusion);
+                                }
+                                unit.view(default(), &context, ui);
+                            }
+                        });
+                        if !fusion.units.is_empty() {
+                            ui.menu_button("remove unit", |ui| {
+
+                            });
+                            ui.menu_button("edit", |ui| {
+                                let mut fusion = fusion.clone();
+                                match fusion.show_editor(&context, ui) {
+                                    Ok(c) => {
+                                        if c {
+                                            changes.push(fusion);
+                                        }
+                                    }
+                                    Err(e) => e.cstr().notify_error_op(),
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    resp.bar_menu(|ui| {
+                        if "add fusion".cstr().button(ui).clicked() {
+                            changes.push(Fusion {
+                                slot: slot as i32,
+                                ..default()
+                            });
+                        }
+                    });
+                }
+            }
+        }
+        if !changes.is_empty() {
+            for mut fusion in changes {
+                if let Some(entity) = fusion.entity {
+                    *world.get_mut::<Fusion>(entity).unwrap() = fusion;
+                } else {
+                    let entity = world.spawn_empty().set_parent(team).id();
+                    fusion.entity = Some(entity);
+                    world.entity_mut(entity).insert(fusion);
+                }
+            }
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }
 }

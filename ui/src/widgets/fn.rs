@@ -137,7 +137,6 @@ pub fn cursor_window_frame(
 pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response {
     let full_rect = ui.available_rect_before_wrap();
     let rect = slot_rect(i.at_most(slots - 1), slots, full_rect, bottom);
-    ui.expand_to_include_rect(rect);
     let mut cui = ui.new_child(UiBuilder::new().max_rect(rect));
     let r = cui.allocate_rect(rect, Sense::click_and_drag());
     let mut stroke = Stroke::new(
@@ -148,7 +147,7 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
             tokens_global().ui_element_border_and_focus_rings()
         },
     );
-    let t = cui.ctx().animate_bool(r.id, r.hovered());
+    let t = ui.ctx().animate_bool(r.id, r.hovered());
     let length = egui::emath::lerp(15.0..=20.0, t);
     stroke.width += t;
     corners_rounded_rect(r.rect.shrink(3.0), length, stroke, ui);

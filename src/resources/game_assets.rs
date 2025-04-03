@@ -46,18 +46,18 @@ pub fn parse_content_tree() {
     descriptions.set();
 
     // let all = All::from_dir("all".into(), ASSETS.get_dir("all").unwrap());
-    let dir = ASSETS.get_dir("all").unwrap();
-    dbg!(dir);
+    // let dir = ASSETS.get_dir("all").unwrap();
+    // dbg!(dir);
     // dbg!(dir
     //     .get_dir("all/0/players/1741081733583167")
     //     .unwrap()
     //     .files()
     //     .next());
     // panic!();
-    let all = All::from_dir_new(0, "all/0".into(), dir);
-    dbg!(&all);
+    // let all = All::from_dir_new(0, "all/0".into(), dir);
+    // dbg!(&all);
     // panic!();
-    ALL.set(all.unwrap()).unwrap();
+    // ALL.set(all.unwrap()).unwrap();
 
     UNIT_REP
         .set(Representation::from_dir("unit_rep".to_owned(), &ASSETS).unwrap())

@@ -53,8 +53,14 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
                 let controls = tiles.insert_pane(Pane::Battle(BattlePane::Controls));
-                let edit_left = tiles.insert_pane(Pane::Battle(BattlePane::EditLeft));
-                let edit_right = tiles.insert_pane(Pane::Battle(BattlePane::EditRight));
+                let edit_left_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
+                let edit_left_slots = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftSlots));
+                let edit_right_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
+                let edit_right_slots = tiles.insert_pane(Pane::Battle(BattlePane::EditRightSlots));
+                let edit_left =
+                    tiles.insert_vertical_tile([edit_left_slots, edit_left_graph].into());
+                let edit_right =
+                    tiles.insert_vertical_tile([edit_right_slots, edit_right_graph].into());
                 let edit = tiles.insert_tab_tile([edit_left, edit_right].into());
                 let vertical = tiles.insert_vertical_tile([view, controls].into());
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
@@ -98,8 +104,10 @@ pub enum IncubatorPane {
 pub enum BattlePane {
     View,
     Controls,
-    EditLeft,
-    EditRight,
+    EditLeftGraph,
+    EditLeftSlots,
+    EditRightGraph,
+    EditRightSlots,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum TeamPane {
@@ -154,8 +162,10 @@ impl Pane {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
-                BattlePane::EditLeft => BattlePlugin::pane_edit(true, ui, world),
-                BattlePane::EditRight => BattlePlugin::pane_edit(false, ui, world),
+                BattlePane::EditLeftGraph => BattlePlugin::pane_edit_graph(true, ui, world),
+                BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
+                BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
+                BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
