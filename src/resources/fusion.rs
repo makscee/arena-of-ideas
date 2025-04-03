@@ -14,7 +14,7 @@ impl Fusion {
         }
         NodeState::from_world_mut(entity, world)
             .unwrap()
-            .init_vars(fusion_stats.get_own_vars());
+            .init_vars(fusion_stats.get_own_vars(), NodeKind::UnitStats);
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
@@ -236,9 +236,7 @@ impl Fusion {
                             }
                         });
                         if !fusion.units.is_empty() {
-                            ui.menu_button("remove unit", |ui| {
-
-                            });
+                            ui.menu_button("remove unit", |ui| {});
                             ui.menu_button("edit", |ui| {
                                 let mut fusion = fusion.clone();
                                 match fusion.show_editor(&context, ui) {

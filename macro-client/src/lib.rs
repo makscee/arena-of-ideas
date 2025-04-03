@@ -50,7 +50,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &child_fields_str,
                 &child_types,
             );
-            let no_children = component_fields.is_empty() && child_fields.is_empty();
             let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
                 NodeType::Name
             } else if !component_fields.is_empty() {

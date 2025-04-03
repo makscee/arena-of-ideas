@@ -145,12 +145,12 @@ impl NodeState {
             self.get_any(var)
         }
     }
-    pub fn init(&mut self, var: VarName, value: VarValue) {
-        self.insert(0.0, 0.0, var, value, default());
+    pub fn init(&mut self, var: VarName, value: VarValue, kind: NodeKind) {
+        self.insert(0.0, 0.0, var, value, kind);
     }
-    pub fn init_vars(&mut self, vars: Vec<(VarName, VarValue)>) {
+    pub fn init_vars(&mut self, vars: Vec<(VarName, VarValue)>, kind: NodeKind) {
         for (var, value) in vars {
-            self.init(var, value);
+            self.init(var, value, kind);
         }
     }
     pub fn insert(

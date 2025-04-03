@@ -226,10 +226,10 @@ impl NodeKind {
                 .get_mut::<NodeState>()
                 .unwrap()
         };
-        ns.init_vars(vars);
+        ns.init_vars(vars, self);
         match self {
             NodeKind::House => {
-                ns.init(VarName::visible, false.into());
+                ns.init(VarName::visible, false.into(), self);
             }
             _ => {}
         };

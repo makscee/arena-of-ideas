@@ -416,7 +416,7 @@ impl ContextLayer<'_> {
                 .rev()
                 .find_map(|s| NodeState::find_var(var, kind, *entity, t, s)),
             ContextLayer::Var(v, value, var_kind) => {
-                if var.eq(v) && kind.is_some_and(|kind| kind == *var_kind) {
+                if var.eq(v) && (kind.is_none() || kind.unwrap() == *var_kind) {
                     Some(value.clone())
                 } else {
                     None
