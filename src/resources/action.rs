@@ -65,8 +65,8 @@ impl ActionImpl for Action {
             }
             Action::UseAbility => {
                 let caster = context.get_caster()?;
-                if let Some(ability) = context.find_parent_component::<ActionAbility>(caster) {
-                    let name = &ability.name;
+                if let Some(ability) = context.find_parent_component::<AbilityMagic>(caster) {
+                    let name = &ability.ability_name;
                     let entity = ability.entity();
                     let ability_actions = context
                         .get_component::<AbilityEffect>(entity)
@@ -83,21 +83,20 @@ impl ActionImpl for Action {
                         HashMap::from_iter([
                             (VarName::text, text.into()),
                             (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var_any(VarName::position)?),
+                            (VarName::position, context.get_var(VarName::position)?),
                         ]),
                         "text".into(),
                     ));
                     actions.extend(ability_actions.process(context)?);
-                } else if let Some(status) = context.find_parent_component::<StatusAbility>(caster)
-                {
-                    let name = &status.name;
+                } else if let Some(status) = context.find_parent_component::<StatusMagic>(caster) {
+                    let name = &status.status_name;
                     let entity = status.entity();
                     let mut status = status.clone();
                     let mut description = context
-                        .get_component::<StatusAbilityDescription>(entity)
+                        .get_component::<StatusDescription>(entity)
                         .to_e("StatusDescription not found")?
                         .clone();
-                    let reaction = context
+                    let behavior = context
                         .get_component::<Behavior>(entity)
                         .to_e("Behavior not found")?
                         .clone();
@@ -111,12 +110,12 @@ impl ActionImpl for Action {
                         HashMap::from_iter([
                             (VarName::text, text.into()),
                             (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var_any(VarName::position)?),
+                            (VarName::position, context.get_var(VarName::position)?),
                         ]),
                         "text".into(),
                     ));
                     let representation = context.get_component::<Representation>(entity).cloned();
-                    description.reaction = Some(reaction);
+                    description.behavior = Some(behavior);
                     status.description = Some(description);
                     status.representation = representation;
                     actions.push(BattleAction::ApplyStatus(

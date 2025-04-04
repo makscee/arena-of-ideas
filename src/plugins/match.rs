@@ -50,8 +50,8 @@ impl MatchPlugin {
                 }
                 let entity = world.get_id_link(sc.unit).unwrap();
                 let context = &Context::new_world(&world).set_owner(entity).take();
-                let name = context.get_string(VarName::name, NodeKind::Unit).unwrap();
-                let color = context.get_color_any(VarName::color).unwrap();
+                let name = context.get_string(VarName::unit_name).unwrap();
+                let color = context.get_color(VarName::color).unwrap();
                 TagWidget::new_name(
                     name,
                     if sc.sold {

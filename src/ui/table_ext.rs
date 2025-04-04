@@ -14,7 +14,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableExt<T> for Table<'a, T> {
         self.column_cstr_dyn(name, move |d, world| {
             let id = f(d, world);
             match Player::get_by_id(id, world) {
-                Some(p) => p.name.cstr_c(tokens_global().high_contrast_text()),
+                Some(p) => p.player_name.cstr_c(tokens_global().high_contrast_text()),
                 None => format!("[red [s player#{id} not found]]"),
             }
         })

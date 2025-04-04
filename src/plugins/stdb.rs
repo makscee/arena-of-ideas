@@ -42,7 +42,7 @@ impl StdbPlugin {
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
-                if node.id == ID_ALL || node.id == ID_INCUBATOR {
+                if node.id == ID_CORE || node.id == ID_INCUBATOR || node.id == ID_PLAYERS {
                     let entity = world.spawn_empty().id();
                     Self::unpack_node(node, entity, world);
                     return false;

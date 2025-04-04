@@ -9,7 +9,7 @@ pub trait GetVar: GetNodeKind + Debug {
     fn get_own_var(&self, var: VarName) -> Option<VarValue>;
     fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
     fn get_own_vars(&self) -> Vec<(VarName, VarValue)>;
-    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue, NodeKind)>;
+    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)>;
     fn set_var(&mut self, var: VarName, value: VarValue);
 }
 
@@ -182,8 +182,6 @@ pub struct NameEntityLinks {
 pub trait WorldNodeExt {
     fn add_id_link(&mut self, id: u64, entity: Entity);
     fn get_id_link(&self, id: u64) -> Option<Entity>;
-    fn add_name_link(&mut self, name: String, entity: Entity);
-    fn get_name_link(&self, name: &str) -> Option<Entity>;
 }
 
 impl WorldNodeExt for World {
@@ -195,16 +193,6 @@ impl WorldNodeExt for World {
     fn get_id_link(&self, id: u64) -> Option<Entity> {
         self.get_resource::<IdEntityLinks>()
             .and_then(|r| r.map.get(&id))
-            .copied()
-    }
-    fn add_name_link(&mut self, name: String, entity: Entity) {
-        self.get_resource_or_insert_with::<NameEntityLinks>(|| default())
-            .map
-            .insert(name, entity);
-    }
-    fn get_name_link(&self, name: &str) -> Option<Entity> {
-        self.get_resource::<NameEntityLinks>()
-            .and_then(|r| r.map.get(name))
             .copied()
     }
 }
@@ -226,10 +214,10 @@ impl NodeKind {
                 .get_mut::<NodeState>()
                 .unwrap()
         };
-        ns.init_vars(vars, self);
+        ns.init_vars(vars);
         match self {
             NodeKind::House => {
-                ns.init(VarName::visible, false.into(), self);
+                ns.init(VarName::visible, false.into());
             }
             _ => {}
         };
@@ -241,7 +229,7 @@ impl NodeKind {
                 unit_rep().clone().unpack(entity, world);
                 Fusion::init(entity, world).log();
             }
-            NodeKind::StatusAbility => status_rep().clone().unpack(child(), world),
+            NodeKind::StatusMagic => status_rep().clone().unpack(child(), world),
             _ => {}
         }
     }
@@ -264,7 +252,7 @@ impl NodeKind {
                 if let Some(entity) = entity {
                     if let Some(house) = context.get_component::<House>(entity) {
                         if let Some(color) = context.get_component::<HouseColor>(entity) {
-                            TagWidget::new_name(&house.name, color.color.c32()).ui(ui);
+                            TagWidget::new_name(&house.house_name, color.color.c32()).ui(ui);
                             response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
                         }
                     }
@@ -312,7 +300,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
         match kind {
             NodeKind::House => self.column_cstr_opt_dyn("name", move |d, world| {
-                House::get_by_id(f(d), world).map(|n| n.name.cstr_s(CstrStyle::Bold))
+                House::get_by_id(f(d), world).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
             }),
             NodeKind::HouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
                 HouseColor::get_by_id(f(d), world).map(|n| {
@@ -320,13 +308,13 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                     format!("[{c} {c}]")
                 })
             }),
-            NodeKind::ActionAbility => self.column_cstr_opt_dyn("name", move |d, world| {
-                let n = ActionAbility::get_by_id(f(d), world)?;
-                Some(n.name.cstr_s(CstrStyle::Bold))
+            NodeKind::AbilityMagic => self.column_cstr_opt_dyn("name", move |d, world| {
+                let n = AbilityMagic::get_by_id(f(d), world)?;
+                Some(n.ability_name.cstr_s(CstrStyle::Bold))
             }),
-            NodeKind::ActionAbilityDescription => {
+            NodeKind::AbilityDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    let n = ActionAbilityDescription::get_by_id(f(d), world)?;
+                    let n = AbilityDescription::get_by_id(f(d), world)?;
                     Some(n.description.cstr_s(CstrStyle::Bold))
                 })
             }
@@ -338,19 +326,19 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                         }
                     })
             }
-            NodeKind::StatusAbility => self.column_cstr_opt_dyn("name", move |d, world| {
-                let n = StatusAbility::get_by_id(f(d), world)?;
-                Some(n.name.cstr_s(CstrStyle::Bold))
+            NodeKind::StatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
+                let n = StatusMagic::get_by_id(f(d), world)?;
+                Some(n.status_name.cstr_s(CstrStyle::Bold))
             }),
-            NodeKind::StatusAbilityDescription => {
+            NodeKind::StatusDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    let n = StatusAbilityDescription::get_by_id(f(d), world)?;
+                    let n = StatusDescription::get_by_id(f(d), world)?;
                     Some(n.description.cstr_s(CstrStyle::Bold))
                 })
             }
             NodeKind::Unit => self.column_cstr_opt_dyn("name", move |d, world| {
                 let n = Unit::get_by_id(f(d), world)?;
-                Some(n.name.cstr_s(CstrStyle::Bold))
+                Some(n.unit_name.cstr_s(CstrStyle::Bold))
             }),
             NodeKind::UnitDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
@@ -414,8 +402,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     }
 }
 
-pub fn all(world: &World) -> &All {
-    All::get_by_id(ID_ALL, world).unwrap()
+pub fn core(world: &World) -> &Core {
+    Core::get_by_id(ID_CORE, world).unwrap()
 }
 
 pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Option<T> {

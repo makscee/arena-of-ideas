@@ -112,7 +112,7 @@ impl OptionResource for LoginOption {
         GameState::Login.set_next(world);
     }
     fn save(self, world: &mut World) {
-        *PLAYER_NAME.lock() = self.player.name.clone().leak();
+        *PLAYER_NAME.lock() = self.player.player_name.clone().leak();
         *PLAYER_ID.lock() = self.player.id();
         world.insert_resource(self);
     }

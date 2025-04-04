@@ -9,7 +9,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = Player::validate_name(ctx, name)?;
     let pass_hash = Some(Player::hash_pass(ctx, pass)?);
     Player::clear_identity(ctx, &ctx.sender);
-    let mut player = Player::new(ctx, 0, name);
+    let mut player = Player::new(ctx, ID_PLAYERS, name);
     player.player_data = Some(PlayerData::new(ctx, player.id, pass_hash, false, 0));
     player.identity = Some(PlayerIdentity::new(
         ctx,

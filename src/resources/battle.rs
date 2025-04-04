@@ -30,7 +30,7 @@ pub enum BattleAction {
     Heal(Entity, Entity, i32),
     Death(Entity),
     Spawn(Entity),
-    ApplyStatus(Entity, StatusAbility, i32, Color32),
+    ApplyStatus(Entity, StatusMagic, i32, Color32),
     SendEvent(Event),
     Vfx(HashMap<VarName, VarValue>, String),
     Wait(f32),
@@ -45,7 +45,11 @@ impl ToCstr for BattleAction {
             BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::Spawn(a) => format!("*{a}"),
             BattleAction::ApplyStatus(a, status, charges, color) => {
-                format!("+[{} {}]>{a}({charges})", color.to_hex(), status.name)
+                format!(
+                    "+[{} {}]>{a}({charges})",
+                    color.to_hex(),
+                    status.status_name
+                )
             }
             BattleAction::Wait(t) => format!("~{t}"),
             BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
@@ -68,7 +72,7 @@ impl BattleAction {
                     Context::default()
                         .set_owner(*a)
                         .add_target(*b)
-                        .set_var_any(VarName::position, vec2(0.0, 0.0).into())
+                        .set_var(VarName::position, vec2(0.0, 0.0).into())
                         .take(),
                     strike_anim,
                 );
@@ -83,7 +87,7 @@ impl BattleAction {
             BattleAction::Death(a) => {
                 let position = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap();
                 add_actions.extend(battle.die(*a));
                 add_actions.push(BattleAction::Vfx(
@@ -95,17 +99,17 @@ impl BattleAction {
             BattleAction::Damage(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap();
                 let target_pos = Context::new_battle_simulation(battle)
                     .set_owner(*b)
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap();
                 let curve = animations().get("range_effect_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var_any(VarName::position, owner_pos)
-                        .set_var_any(VarName::extra_position, target_pos.clone())
+                        .set_var(VarName::position, owner_pos)
+                        .set_var(VarName::extra_position, target_pos.clone())
                         .take(),
                     curve,
                 );
@@ -113,7 +117,7 @@ impl BattleAction {
                     let pain = animations().get("pain_vfx").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var_any(VarName::position, target_pos.clone())
+                            .set_var(VarName::position, target_pos.clone())
                             .take(),
                         pain,
                     );
@@ -128,9 +132,9 @@ impl BattleAction {
                 let text = animations().get("text").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var_any(VarName::text, (-*x).to_string().into())
-                        .set_var_any(VarName::color, RED.into())
-                        .set_var_any(VarName::position, target_pos)
+                        .set_var(VarName::text, (-*x).to_string().into())
+                        .set_var(VarName::color, RED.into())
+                        .set_var(VarName::position, target_pos)
                         .take(),
                     text,
                 );
@@ -140,17 +144,17 @@ impl BattleAction {
             BattleAction::Heal(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap();
                 let target_pos = Context::new_battle_simulation(battle)
                     .set_owner(*b)
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap();
                 let curve = animations().get("range_effect_vfx").unwrap();
                 battle.apply_animation(
                     Context::default()
-                        .set_var_any(VarName::position, owner_pos)
-                        .set_var_any(VarName::extra_position, target_pos.clone())
+                        .set_var(VarName::position, owner_pos)
+                        .set_var(VarName::extra_position, target_pos.clone())
                         .take(),
                     curve,
                 );
@@ -158,7 +162,7 @@ impl BattleAction {
                     let pain = animations().get("pleasure_vfx").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var_any(VarName::position, target_pos.clone())
+                            .set_var(VarName::position, target_pos.clone())
                             .take(),
                         pain,
                     );
@@ -172,9 +176,9 @@ impl BattleAction {
                     let text = animations().get("text").unwrap();
                     battle.apply_animation(
                         Context::default()
-                            .set_var_any(VarName::text, format!("+{x}").into())
-                            .set_var_any(VarName::color, GREEN.into())
-                            .set_var_any(VarName::position, target_pos)
+                            .set_var(VarName::text, format!("+{x}").into())
+                            .set_var(VarName::color, GREEN.into())
+                            .set_var(VarName::position, target_pos)
                             .take(),
                         text,
                     );
@@ -188,7 +192,6 @@ impl BattleAction {
                     0.1,
                     *var,
                     value.clone(),
-                    *kind,
                 ) {
                     kind.set_var(*entity, *var, value.clone(), &mut battle.world);
                     true
@@ -225,7 +228,7 @@ impl BattleAction {
                 if let Some(vfx) = animations().get(vfx) {
                     let mut context = Context::default();
                     for (var, value) in vars {
-                        context.set_var_any(*var, value.clone());
+                        context.set_var(*var, value.clone());
                     }
                     battle.apply_animation(context, vfx);
                 }
@@ -324,7 +327,7 @@ impl BattleSimulation {
                 let value = self.send_update_event(entity, var, value);
                 NodeState::from_world_mut(entity, &mut self.world)
                     .unwrap()
-                    .insert(self.duration, 0.0, var, value, source);
+                    .insert(self.duration, 0.0, var, value);
             }
         }
         let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
@@ -383,7 +386,7 @@ impl BattleSimulation {
         }
         for (r, s) in self
             .world
-            .query::<(&Behavior, &StatusAbility)>()
+            .query::<(&Behavior, &StatusMagic)>()
             .iter(&self.world)
         {
             let context = Context::new_battle_simulation(self)
@@ -392,35 +395,23 @@ impl BattleSimulation {
             if let Some(actions) = r.react(&event, &context) {
                 match actions.process(Context::new_battle_simulation(self).set_owner(s.entity())) {
                     Ok(a) => battle_actions.extend(a),
-                    Err(e) => error!("StatusAbility {} event {event} failed: {e}", s.name),
+                    Err(e) => error!("StatusMagic {} event {event} failed: {e}", s.status_name),
                 };
             }
         }
         battle_actions
     }
-    fn apply_status(
-        &mut self,
-        target: Entity,
-        status: StatusAbility,
-        charges: i32,
-        color: Color32,
-    ) {
+    fn apply_status(&mut self, target: Entity, status: StatusMagic, charges: i32, color: Color32) {
         for child in target.get_children(&self.world) {
-            if let Some(child_status) = self.world.get::<StatusAbility>(child) {
-                if child_status.name == status.name {
+            if let Some(child_status) = self.world.get::<StatusMagic>(child) {
+                if child_status.status_name == status.status_name {
                     let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
                     let charges = state
-                        .get_any(VarName::charges)
+                        .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
                         .unwrap()
                         + charges;
-                    state.insert(
-                        self.duration,
-                        0.0,
-                        VarName::charges,
-                        charges.into(),
-                        default(),
-                    );
+                    state.insert(self.duration, 0.0, VarName::charges, charges.into());
                     return;
                 }
             }
@@ -429,16 +420,10 @@ impl BattleSimulation {
         status.unpack(entity, &mut self.world);
 
         let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
-        state.insert(0.0, 0.0, VarName::visible, false.into(), default());
-        state.insert(self.duration, 0.0, VarName::visible, true.into(), default());
-        state.insert(
-            self.duration,
-            0.0,
-            VarName::charges,
-            charges.into(),
-            default(),
-        );
-        state.insert(self.duration, 0.0, VarName::color, color.into(), default());
+        state.insert(0.0, 0.0, VarName::visible, false.into());
+        state.insert(self.duration, 0.0, VarName::visible, true.into());
+        state.insert(self.duration, 0.0, VarName::charges, charges.into());
+        state.insert(self.duration, 0.0, VarName::color, color.into());
     }
     fn apply_animation(&mut self, context: Context, anim: &Anim) {
         match anim.apply(&mut self.duration, context, &mut self.world) {
@@ -590,10 +575,10 @@ impl BattleSimulation {
         let context = Context::new_world(&self.world).set_t(t).take();
         while let Some(entity) = entities.pop_front() {
             let context = context.clone().set_owner(entity).take();
-            if context.get_bool_any(VarName::visible).unwrap_or(true) {
+            if context.get_bool(VarName::visible).unwrap_or(true) {
                 entities.extend(context.get_children(entity));
                 let position = context
-                    .get_var_any(VarName::position)
+                    .get_var(VarName::position)
                     .unwrap_or_default()
                     .get_vec2()
                     .unwrap()

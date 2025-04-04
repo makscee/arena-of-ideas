@@ -56,15 +56,13 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
-    All {
-        name: "all".into(),
-        id: ID_ALL,
+    Core {
+        id: ID_CORE,
         ..default()
     }
     .insert_self(ctx);
     Incubator {
         id: ID_INCUBATOR,
-        name: "incubator".into(),
         ..default()
     }
     .insert_self(ctx);

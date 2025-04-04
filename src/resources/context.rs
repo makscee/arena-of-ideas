@@ -20,7 +20,7 @@ enum ContextLayer<'w> {
     Owner(Entity),
     Caster(Entity),
     Target(Entity),
-    Var(VarName, VarValue, NodeKind),
+    Var(VarName, VarValue),
 }
 
 impl<'w, 's> Context<'w, 's> {
@@ -59,14 +59,12 @@ impl<'w, 's> Context<'w, 's> {
         self.t = Some(t);
         self
     }
+    pub fn get_t(&self) -> Option<f32> {
+        self.t
+    }
     pub fn set_owner(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(owner));
         self
-    }
-    pub fn set_owner_name(&mut self, owner: String) -> Result<&mut Self, ExpressionError> {
-        let owner = self.entity_by_name(&owner)?;
-        self.layers.push(ContextLayer::Owner(owner));
-        Ok(self)
     }
     pub fn set_caster(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Caster(owner));
@@ -76,17 +74,12 @@ impl<'w, 's> Context<'w, 's> {
         self.layers.push(ContextLayer::Target(target));
         self
     }
-    pub fn set_var_any(&mut self, var: VarName, value: VarValue) -> &mut Self {
-        self.layers
-            .push(ContextLayer::Var(var, value, NodeKind::None));
-        self
-    }
-    pub fn set_var(&mut self, var: VarName, value: VarValue, kind: NodeKind) -> &mut Self {
-        self.layers.push(ContextLayer::Var(var, value, kind));
+    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.layers.push(ContextLayer::Var(var, value));
         self
     }
     pub fn set_value(&mut self, value: VarValue) -> &mut Self {
-        self.set_var_any(VarName::value, value)
+        self.set_var(VarName::value, value)
     }
     pub fn set_owner_node(&mut self, node: &'w dyn GetVar) -> &mut Self {
         self.layers.push(ContextLayer::OwnerNode(node));
@@ -125,24 +118,15 @@ impl<'w, 's> Context<'w, 's> {
             false => Ok(targets),
         }
     }
-    pub fn get_var(&self, var: VarName, kind: NodeKind) -> Result<VarValue, ExpressionError> {
+    pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         self.layers
             .iter()
             .rev()
-            .find_map(|l| l.get_var(var, Some(kind), &self.sources, self.t))
-            .to_e_var(var)
-    }
-    pub fn get_var_any(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_var(var, None, &self.sources, self.t))
+            .find_map(|l| l.get_var(var, self))
             .to_e_var(var)
     }
     pub fn get_vars(&self, vars: impl Iterator<Item = VarName>) -> HashMap<VarName, VarValue> {
-        HashMap::from_iter(
-            vars.filter_map(|var| self.get_var_any(var).ok().map(|value| (var, value))),
-        )
+        HashMap::from_iter(vars.filter_map(|var| self.get_var(var).ok().map(|value| (var, value))))
     }
     pub fn get_state<'a>(&'a self, entity: Entity) -> Result<&'a NodeState, ExpressionError> {
         self.sources
@@ -151,41 +135,26 @@ impl<'w, 's> Context<'w, 's> {
             .to_e("State not found")
     }
     pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
-        self.get_var_any(VarName::value)
+        self.get_var(VarName::value)
     }
-    pub fn get_bool(&self, var: VarName, kind: NodeKind) -> Result<bool, ExpressionError> {
-        self.get_var(var, kind)?.get_bool()
+    pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
+        self.get_var(var)?.get_bool()
     }
-    pub fn get_i32(&self, var: VarName, kind: NodeKind) -> Result<i32, ExpressionError> {
-        self.get_var(var, kind)?.get_i32()
+    pub fn get_i32(&self, var: VarName) -> Result<i32, ExpressionError> {
+        self.get_var(var)?.get_i32()
     }
-    pub fn get_f32(&self, var: VarName, kind: NodeKind) -> Result<f32, ExpressionError> {
-        self.get_var(var, kind)?.get_f32()
+    pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
+        self.get_var(var)?.get_f32()
     }
-    pub fn get_string(&self, var: VarName, kind: NodeKind) -> Result<String, ExpressionError> {
-        self.get_var(var, kind)?.get_string()
+    pub fn get_string(&self, var: VarName) -> Result<String, ExpressionError> {
+        self.get_var(var)?.get_string()
     }
-    pub fn get_color(&self, var: VarName, kind: NodeKind) -> Result<Color32, ExpressionError> {
-        self.get_var(var, kind)?.get_color()
-    }
-    pub fn get_bool_any(&self, var: VarName) -> Result<bool, ExpressionError> {
-        self.get_var_any(var)?.get_bool()
-    }
-    pub fn get_i32_any(&self, var: VarName) -> Result<i32, ExpressionError> {
-        self.get_var_any(var)?.get_i32()
-    }
-    pub fn get_f32_any(&self, var: VarName) -> Result<f32, ExpressionError> {
-        self.get_var_any(var)?.get_f32()
-    }
-    pub fn get_string_any(&self, var: VarName) -> Result<String, ExpressionError> {
-        self.get_var_any(var)?.get_string()
-    }
-    pub fn get_color_any(&self, var: VarName) -> Result<Color32, ExpressionError> {
-        self.get_var_any(var)?.get_color()
+    pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
+        self.get_var(var)?.get_color()
     }
     pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
         HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
-            ContextLayer::Var(var, value, _) => Some((*var, value.clone())),
+            ContextLayer::Var(var, value) => Some((*var, value.clone())),
             _ => None,
         }))
     }
@@ -200,14 +169,6 @@ impl<'w, 's> Context<'w, 's> {
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         self.sources.iter().rev().find_map(|s| s.get_parent(entity))
-    }
-    pub fn entity_by_name(&self, name: &str) -> Result<Entity, ExpressionError> {
-        self.sources
-            .iter()
-            .find_map(|s| s.get_world())
-            .to_e("No world in context sources")?
-            .get_name_link(name)
-            .to_e_fn(|| format!("Name link not found for {name}"))
     }
     pub fn get_all_units(&self) -> Vec<VarValue> {
         self.sources
@@ -403,20 +364,11 @@ impl ContextLayer<'_> {
             _ => None,
         }
     }
-    fn get_var(
-        &self,
-        var: VarName,
-        kind: Option<NodeKind>,
-        sources: &Vec<ContextSource>,
-        t: Option<f32>,
-    ) -> Option<VarValue> {
+    fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner(entity) => sources
-                .into_iter()
-                .rev()
-                .find_map(|s| NodeState::find_var(var, kind, *entity, t, s)),
-            ContextLayer::Var(v, value, var_kind) => {
-                if var.eq(v) && (kind.is_none() || kind.unwrap() == *var_kind) {
+            ContextLayer::Owner(entity) => NodeState::find_var(var, *entity, context),
+            ContextLayer::Var(v, value) => {
+                if var.eq(v) {
                     Some(value.clone())
                 } else {
                     None

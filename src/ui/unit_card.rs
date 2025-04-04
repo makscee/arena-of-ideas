@@ -26,18 +26,10 @@ impl UnitCard {
         let entity = context.get_owner()?;
         let vars = context.get_vars(VARS.iter().copied());
         Ok(Self {
-            name: context.get_string_any(VarName::name)?,
-            description: context.get_string_any(VarName::description)?,
-            house: context
-                .find_parent_component::<House>(entity)
-                .to_e("House not found")?
-                .name
-                .clone(),
-            house_color: context
-                .find_parent_component::<HouseColor>(entity)
-                .to_e("HouseColor not found")?
-                .color
-                .c32(),
+            name: context.get_string(VarName::unit_name)?,
+            description: context.get_string(VarName::description)?,
+            house: context.get_string(VarName::house_name)?,
+            house_color: context.get_color(VarName::color)?,
             rarity: Rarity::default(),
             behavior: context
                 .get_component::<Behavior>(entity)
@@ -159,16 +151,12 @@ impl UnitCard {
 
 pub fn show_unit_tag(context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
     TagWidget::new_name_value(
-        context.get_string_any(VarName::name)?,
-        context.get_color_any(VarName::color)?,
+        context.get_string(VarName::unit_name)?,
+        context.get_color(VarName::color)?,
         format!(
             "[b {} {}]",
-            context
-                .get_i32_any(VarName::pwr)?
-                .cstr_c(VarName::pwr.color()),
-            context
-                .get_i32_any(VarName::hp)?
-                .cstr_c(VarName::hp.color())
+            context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
+            context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color())
         ),
     )
     .ui(ui);

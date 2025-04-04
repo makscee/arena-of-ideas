@@ -1038,12 +1038,12 @@ impl DataFramed for Action {
                     .map(|h| h.color.c32())
                 {
                     if let Some(name) = context
-                        .find_parent_component::<ActionAbility>(entity)
-                        .map(|a| a.name.clone())
+                        .find_parent_component::<AbilityMagic>(entity)
+                        .map(|a| a.ability_name.clone())
                         .or_else(|| {
                             context
-                                .find_parent_component::<StatusAbility>(entity)
-                                .map(|a| a.name.clone())
+                                .find_parent_component::<StatusMagic>(entity)
+                                .map(|a| a.status_name.clone())
                         })
                     {
                         name.cstr_c(color).label(ui);

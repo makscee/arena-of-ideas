@@ -69,7 +69,6 @@ impl AnimAction {
                         a.duration,
                         VarName::position,
                         pos.into(),
-                        NodeKind::None,
                     );
                     end_t = *t + a.duration;
                     *t += a.timeframe;
@@ -102,25 +101,13 @@ impl AnimAction {
                 .unpack(entity, world);
 
                 let mut state = NodeState::from_world_mut(entity, world).unwrap();
-                state.insert(0.0, 0.0, VarName::visible, false.into(), NodeKind::None);
-                state.insert(*t, 0.0, VarName::visible, true.into(), NodeKind::None);
-                state.insert(
-                    *t + a.duration,
-                    0.0,
-                    VarName::visible,
-                    false.into(),
-                    NodeKind::None,
-                );
-                state.insert(*t, 0.0, VarName::t, 0.0.into(), NodeKind::None);
-                state.insert(
-                    *t + 0.0001,
-                    a.duration,
-                    VarName::t,
-                    1.0.into(),
-                    NodeKind::None,
-                );
+                state.insert(0.0, 0.0, VarName::visible, false.into());
+                state.insert(*t, 0.0, VarName::visible, true.into());
+                state.insert(*t + a.duration, 0.0, VarName::visible, false.into());
+                state.insert(*t, 0.0, VarName::t, 0.0.into());
+                state.insert(*t + 0.0001, a.duration, VarName::t, 1.0.into());
                 for (var, value) in a.context.get_vars_layers() {
-                    state.insert(0.0, 0.0, var, value, NodeKind::None);
+                    state.insert(0.0, 0.0, var, value);
                 }
                 a.targets = vec![entity];
                 end_t = *t + a.duration;

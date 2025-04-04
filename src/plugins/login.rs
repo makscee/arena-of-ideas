@@ -76,7 +76,7 @@ impl LoginPlugin {
             if let Some(player) = Player::load(identity_node.parent.unwrap()) {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();
-                cs.last_logged_in = Some((player.name.clone(), identity));
+                cs.last_logged_in = Some((player.player_name.clone(), identity));
                 cs.save();
                 LoginOption { player }.save(world);
             } else {

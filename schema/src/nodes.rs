@@ -1,29 +1,30 @@
 use super::*;
 
-struct All {
-    pub name: String,
+struct Core {
+    pub houses: NodeChildren<House>,
+}
+
+struct Players {
     pub players: NodeChildren<Player>,
-    pub core: NodeChildren<House>,
 }
 
 struct Incubator {
-    pub name: String,
     pub houses: NodeChildren<House>,
     pub house_colors: NodeChildren<HouseColor>,
     pub units: NodeChildren<Unit>,
     pub unit_descriptions: NodeChildren<UnitDescription>,
     pub unit_stats: NodeChildren<UnitStats>,
-    pub action_abilities: NodeChildren<ActionAbility>,
-    pub action_ability_descriptions: NodeChildren<ActionAbilityDescription>,
+    pub abilities: NodeChildren<AbilityMagic>,
+    pub ability_descriptions: NodeChildren<AbilityDescription>,
     pub ability_effects: NodeChildren<AbilityEffect>,
-    pub status_abilities: NodeChildren<StatusAbility>,
-    pub status_ability_descriptions: NodeChildren<StatusAbilityDescription>,
+    pub statuses: NodeChildren<StatusMagic>,
+    pub status_descriptions: NodeChildren<StatusDescription>,
     pub representations: NodeChildren<Representation>,
     pub reactions: NodeChildren<Behavior>,
 }
 
 struct Player {
-    pub name: String,
+    pub player_name: String,
     pub player_data: NodeComponent<PlayerData>,
     pub identity: NodeComponent<PlayerIdentity>,
     pub active_match: NodeComponent<Match>,
@@ -40,10 +41,10 @@ struct PlayerIdentity {
 }
 
 struct House {
-    pub name: String,
+    pub house_name: String,
     pub color: NodeComponent<HouseColor>,
-    pub action_ability: NodeComponent<ActionAbility>,
-    pub status_ability: NodeComponent<StatusAbility>,
+    pub action_ability: NodeComponent<AbilityMagic>,
+    pub status_ability: NodeComponent<StatusMagic>,
     pub units: NodeChildren<Unit>,
 }
 
@@ -51,12 +52,12 @@ struct HouseColor {
     pub color: HexColor,
 }
 
-struct ActionAbility {
-    pub name: String,
-    pub description: NodeComponent<ActionAbilityDescription>,
+struct AbilityMagic {
+    pub ability_name: String,
+    pub description: NodeComponent<AbilityDescription>,
 }
 
-struct ActionAbilityDescription {
+struct AbilityDescription {
     pub description: String,
     pub effect: NodeComponent<AbilityEffect>,
 }
@@ -65,19 +66,19 @@ struct AbilityEffect {
     pub actions: Actions,
 }
 
-struct StatusAbility {
-    pub name: String,
-    pub description: NodeComponent<StatusAbilityDescription>,
+struct StatusMagic {
+    pub status_name: String,
+    pub description: NodeComponent<StatusDescription>,
     pub representation: NodeComponent<Representation>,
 }
 
-struct StatusAbilityDescription {
+struct StatusDescription {
     pub description: String,
-    pub reaction: NodeComponent<Behavior>,
+    pub behavior: NodeComponent<Behavior>,
 }
 
 struct Team {
-    pub name: String,
+    pub team_name: String,
     pub houses: NodeChildren<House>,
     pub fusions: NodeChildren<Fusion>,
 }
@@ -102,7 +103,7 @@ struct Fusion {
 }
 
 struct Unit {
-    pub name: String,
+    pub unit_name: String,
     pub description: NodeComponent<UnitDescription>,
 }
 
@@ -110,7 +111,7 @@ struct UnitDescription {
     pub description: String,
     pub representation: NodeComponent<Representation>,
     pub stats: NodeComponent<UnitStats>,
-    pub reaction: NodeComponent<Behavior>,
+    pub behavior: NodeComponent<Behavior>,
 }
 
 struct UnitStats {

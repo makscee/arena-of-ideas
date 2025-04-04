@@ -90,7 +90,6 @@ pub enum Pane {
 
     Admin,
     WorldInspector,
-    NodeGraph,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -169,7 +168,6 @@ impl Pane {
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
-            Pane::NodeGraph => NodeGraphPlugin::pane_ui(ui, world),
 
             Pane::Team(pane) => match pane {
                 TeamPane::Slots => TeamEditorPlugin::pane_slots(ui, world)?,

@@ -85,9 +85,6 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut all_data_types = var_types.clone();
     all_data_types.append(&mut data_types.clone());
 
-    if all_data_types.is_empty() {
-        panic!("No data fields found");
-    }
     let data_type_ident = quote! { (#(#all_data_types),*) };
     ParsedNodeFields {
         component_fields,

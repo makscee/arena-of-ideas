@@ -187,13 +187,13 @@ where
     }
 }
 
-impl All {
+impl Core {
     pub fn load(ctx: &ReducerContext) -> Self {
-        All::get(ctx, ID_ALL).unwrap()
+        Core::get(ctx, ID_CORE).unwrap()
     }
-    pub fn core_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut Unit>, String> {
+    pub fn all_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut Unit>, String> {
         Ok(self
-            .core_load(ctx)?
+            .houses_load(ctx)?
             .into_iter()
             .filter_map(|h| h.units_load(ctx).ok())
             .flatten()

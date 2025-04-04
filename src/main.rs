@@ -95,7 +95,6 @@ fn main() {
             StdbSyncPlugin,
             MatchPlugin,
             PersistentDataPlugin,
-            NodeGraphPlugin,
             BattlePlugin,
         ))
         .add_plugins((

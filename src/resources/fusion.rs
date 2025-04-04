@@ -14,7 +14,7 @@ impl Fusion {
         }
         NodeState::from_world_mut(entity, world)
             .unwrap()
-            .init_vars(fusion_stats.get_own_vars(), NodeKind::UnitStats);
+            .init_vars(fusion_stats.get_own_vars());
         world.entity_mut(entity).insert(fusion_stats);
         Ok(())
     }
@@ -26,7 +26,7 @@ impl Fusion {
         Ok(context
             .children_components_recursive::<Unit>(team)
             .into_iter()
-            .filter(|u| self.units.contains(&u.name))
+            .filter(|u| self.units.contains(&u.unit_name))
             .collect())
     }
     pub fn get_unit<'a>(
@@ -47,7 +47,7 @@ impl Fusion {
         self.get_unit(unit, context)?
             .description_load(context)
             .to_e("Failed to load UnitDescription")?
-            .reaction_load(context)
+            .behavior_load(context)
             .to_e("Failed to load Behavior")
     }
     pub fn get_trigger<'a>(
@@ -126,7 +126,7 @@ impl Fusion {
             .filter_map(|(i, u)| {
                 if let Some(b) = u
                     .description_load(context)
-                    .and_then(|d| d.reaction_load(context))
+                    .and_then(|d| d.behavior_load(context))
                 {
                     Some((i as u8, b))
                 } else {
@@ -229,7 +229,7 @@ impl Fusion {
                             for unit in &units {
                                 if "add".cstr().button(ui).clicked() {
                                     let mut fusion = fusion.clone();
-                                    fusion.units.push(unit.name.clone());
+                                    fusion.units.push(unit.unit_name.clone());
                                     changes.push(fusion);
                                 }
                                 unit.view(default(), &context, ui);

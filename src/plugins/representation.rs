@@ -39,10 +39,10 @@ impl RepresentationPlugin {
                 });
             }
             if resp.clicked() {
-                if WindowPlugin::is_open(&unit.name, world) {
-                    close_window = Some(unit.name.clone());
+                if WindowPlugin::is_open(&unit.unit_name, world) {
+                    close_window = Some(unit.unit_name.clone());
                 } else {
-                    open_window = Some((unit.entity.unwrap(), unit.name.clone()));
+                    open_window = Some((unit.entity.unwrap(), unit.unit_name.clone()));
                 }
             }
         }
@@ -69,9 +69,9 @@ impl RepresentationPlugin {
         ctx: &egui::Context,
         cam: (&Camera, &GlobalTransform),
     ) -> Result<(), ExpressionError> {
-        let pos = context.get_var_any(VarName::position)?.get_vec2()?
+        let pos = context.get_var(VarName::position)?.get_vec2()?
             + context
-                .get_var_any(VarName::offset)
+                .get_var(VarName::offset)
                 .and_then(|v| v.get_vec2())
                 .unwrap_or_default();
         let pos = world_to_screen_cam(pos.extend(0.0), &cam.0, &cam.1).to_pos2();
@@ -97,7 +97,7 @@ impl RepresentationPlugin {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let mut p = Painter::new(rect, ui.ctx());
-        if let Ok(color) = context.get_color_any(VarName::color) {
+        if let Ok(color) = context.get_color(VarName::color) {
             p.color = color;
         }
         for a in &m.0 {

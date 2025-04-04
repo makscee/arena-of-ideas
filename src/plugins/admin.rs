@@ -20,8 +20,8 @@ impl AdminPlugin {
         if "Incubator Merge".cstr().button(ui).clicked() {
             cn().reducers.incubator_merge().unwrap();
         }
-        if "Export All".cstr().button(ui).clicked() {
-            let all = All::pack(world.get_name_link("all").unwrap(), world).unwrap();
+        if "Export Core".cstr().button(ui).clicked() {
+            let all = Core::pack(world.get_id_link(ID_CORE).unwrap(), world).unwrap();
             dbg!(&all);
             let path = "./assets/";
             let dir = all.to_dir("ron".into());
@@ -44,9 +44,6 @@ impl AdminPlugin {
                 debug!("test3");
             })
             .ui(ui, world);
-        if "Add Node Graph Pane".cstr().button(ui).clicked() {
-            TilePlugin::add_to_current(|tree| tree.tiles.insert_pane(Pane::NodeGraph));
-        }
         if "Add Team Editor Panes".cstr().button(ui).clicked() {
             TeamEditorPlugin::load_team(default(), world);
             TeamEditorPlugin::add_panes();
@@ -100,11 +97,11 @@ impl AdminPlugin {
             let mut query = world.query::<(Entity, &Representation)>();
             let mut context = Context::new_world(&world)
                 .set_t(t)
-                .set_var_any(VarName::position, default())
-                .set_var_any(VarName::extra_position, vec2(1.0, 0.0).into())
+                .set_var(VarName::position, default())
+                .set_var(VarName::extra_position, vec2(1.0, 0.0).into())
                 .take();
             for (var, value) in &vars {
-                context.set_var_any(*var, value.get_value(&context).unwrap_or_default());
+                context.set_var(*var, value.get_value(&context).unwrap_or_default());
             }
             ui.horizontal_centered(|ui| {
                 let (rect, resp) = ui.allocate_exact_size(egui::Vec2::splat(size), Sense::hover());

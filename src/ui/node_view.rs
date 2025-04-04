@@ -61,7 +61,7 @@ impl ViewContext {
             .and_then(|v| v.get_color().ok())
         {
             self.color = color;
-        } else if let Ok(color) = context.get_color_any(VarName::color) {
+        } else if let Ok(color) = context.get_color(VarName::color) {
             self.color = color;
         }
         self
@@ -78,7 +78,7 @@ impl ViewContext {
     }
 }
 
-pub trait NodeView: NodeExt + NodeGraphViewNew {
+pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
     fn get_state(&self, ui: &mut Ui) -> Option<ViewState> {
         ui.ctx().data(|r| r.get_temp::<ViewState>(self.view_id()))
     }
@@ -92,8 +92,8 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
     fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         let mut view_ctx = view_ctx.merge_state(self, context, ui);
         let context = &mut context.clone();
-        for (var, value, kind) in self.get_vars(context) {
-            context.set_var(var, value, kind);
+        for (var, value) in self.get_vars(context) {
+            context.set_var(var, value);
         }
         match view_ctx.mode {
             ViewMode::Compact => self.compact_self(view_ctx, context, ui).ui(ui),
@@ -225,12 +225,8 @@ pub trait NodeView: NodeExt + NodeGraphViewNew {
                         ui.close_menu();
                     }
                     if "full".cstr().button(ui).clicked() {
-                        let entity = self.entity();
+                        let node = self.clone();
                         op(move |world| {
-                            let Some(node) = Self::pack(entity, world) else {
-                                format!("Failed to pack #{}", entity).notify_error(world);
-                                return;
-                            };
                             IncubatorPlugin::set_publish_nodes(node, world);
                             Window::new("Incubator publish", |ui, world| {
                                 IncubatorPlugin::pane_new_node(ui, world).ui(ui);
@@ -305,12 +301,13 @@ fn show_body(ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
 }
 fn name_tag(
     node: &impl NodeView,
+    var: VarName,
     view_ctx: ViewContext,
     context: &Context,
     ui: &mut Ui,
 ) -> Result<(), ExpressionError> {
     let color = view_ctx.color;
-    let name = context.get_string(VarName::name, node.kind())?;
+    let name = context.get_string(var)?;
     ui.horizontal(|ui| {
         TagWidget::new_name(name, color).ui(ui);
         node.show_buttons(view_ctx, ui);
@@ -318,8 +315,9 @@ fn name_tag(
     Ok(())
 }
 
-impl NodeView for All {}
+impl NodeView for Core {}
 impl NodeView for Incubator {}
+impl NodeView for Players {}
 impl NodeView for Player {}
 impl NodeView for PlayerData {}
 impl NodeView for PlayerIdentity {}
@@ -330,7 +328,7 @@ impl NodeView for House {
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        name_tag(self, view_ctx, context, ui)
+        name_tag(self, VarName::house_name, view_ctx, context, ui)
     }
     fn full_self(
         &self,
@@ -339,7 +337,7 @@ impl NodeView for House {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
-        let name = context.get_string(VarName::name, NodeKind::House)?;
+        let name = context.get_string(VarName::house_name)?;
         view_ctx.mode = ViewMode::Compact;
         show_frame(color, ui, |ui| {
             show_header(self, Some(name), view_ctx, ui, |_| {});
@@ -376,14 +374,14 @@ impl NodeView for House {
     }
 }
 impl NodeView for HouseColor {}
-impl NodeView for ActionAbility {
+impl NodeView for AbilityMagic {
     fn compact_self(
         &self,
         view_ctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        name_tag(self, view_ctx, context, ui)
+        name_tag(self, VarName::ability_name, view_ctx, context, ui)
     }
     fn full_self(
         &self,
@@ -392,8 +390,8 @@ impl NodeView for ActionAbility {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
-        let house = context.get_string(VarName::name, NodeKind::House)?;
-        let name = context.get_string(VarName::name, self.kind())?;
+        let house = context.get_string(VarName::house_name)?;
+        let name = context.get_string(VarName::ability_name)?;
         show_frame(color, ui, |ui| {
             show_header(self, Some(name), view_ctx, ui, |_| {});
             show_body(ui, |ui| {
@@ -418,16 +416,16 @@ impl NodeView for ActionAbility {
         Ok(())
     }
 }
-impl NodeView for ActionAbilityDescription {}
+impl NodeView for AbilityDescription {}
 impl NodeView for AbilityEffect {}
-impl NodeView for StatusAbility {
+impl NodeView for StatusMagic {
     fn compact_self(
         &self,
         view_ctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
-        name_tag(self, view_ctx, context, ui)
+        name_tag(self, VarName::status_name, view_ctx, context, ui)
     }
     fn full_self(
         &self,
@@ -436,8 +434,8 @@ impl NodeView for StatusAbility {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
-        let house = context.get_string(VarName::name, NodeKind::House)?;
-        let name = context.get_string(VarName::name, self.kind())?;
+        let house = context.get_string(VarName::house_name)?;
+        let name = context.get_string(VarName::status_name)?;
         show_frame(color, ui, |ui| {
             show_header(self, Some(name), view_ctx, ui, |_| {});
             show_body(ui, |ui| {
@@ -449,7 +447,7 @@ impl NodeView for StatusAbility {
                         .description
                         .cstr_c(ui.visuals().weak_text_color())
                         .label_w(ui);
-                    if let Some(behavior) = description.reaction_load(context) {
+                    if let Some(behavior) = description.behavior_load(context) {
                         for reaction in &behavior.reactions {
                             ui.vertical(|ui| {
                                 reaction.trigger.cstr().label(ui);
@@ -465,7 +463,7 @@ impl NodeView for StatusAbility {
         Ok(())
     }
 }
-impl NodeView for StatusAbilityDescription {}
+impl NodeView for StatusDescription {}
 impl NodeView for Team {}
 impl NodeView for Match {}
 impl NodeView for ShopCaseUnit {}
@@ -478,9 +476,9 @@ impl NodeView for Unit {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
-        let name = context.get_string(VarName::name, self.kind())?;
-        let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
-        let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
+        let name = context.get_string(VarName::unit_name)?;
+        let pwr = context.get_i32(VarName::pwr)?;
+        let hp = context.get_i32(VarName::hp)?;
         let stats = format!("[yellow {}]/[red {}]", pwr, hp);
         ui.horizontal(|ui| {
             TagWidget::new_name_value(name, color, stats).ui(ui);
@@ -495,10 +493,10 @@ impl NodeView for Unit {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let color = view_ctx.color;
-        let pwr = context.get_i32(VarName::pwr, NodeKind::UnitStats)?;
-        let hp = context.get_i32(VarName::hp, NodeKind::UnitStats)?;
-        let house = context.get_string(VarName::name, NodeKind::House)?;
-        let name = context.get_string(VarName::name, NodeKind::Unit)?;
+        let pwr = context.get_i32(VarName::pwr)?;
+        let hp = context.get_i32(VarName::hp)?;
+        let house = context.get_string(VarName::house_name)?;
+        let name = context.get_string(VarName::unit_name)?;
         show_frame(color, ui, |ui| {
             show_header(self, Some(name), view_ctx, ui, |_| {});
             show_body(ui, |ui| {
@@ -512,7 +510,7 @@ impl NodeView for Unit {
                         .description
                         .cstr_c(ui.visuals().weak_text_color())
                         .label_w(ui);
-                    if let Some(behavior) = description.reaction_load(context) {
+                    if let Some(behavior) = description.behavior_load(context) {
                         for reaction in &behavior.reactions {
                             ui.vertical(|ui| {
                                 reaction.trigger.cstr().label(ui);

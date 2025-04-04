@@ -29,13 +29,13 @@ impl TeamEditorPlugin {
             "from core".into(),
             |ui, world| {
                 let context = Context::new_world(world);
-                for unit in context.children_components_recursive::<Unit>(all(world).entity()) {
+                for unit in context.children_components_recursive::<Unit>(core(world).entity()) {
                     let color = context
                         .clone()
                         .set_owner(unit.entity())
-                        .get_color_any(VarName::color)
+                        .get_color(VarName::color)
                         .ok_log()?;
-                    if unit.name.cstr_c(color).button(ui).clicked() {
+                    if unit.unit_name.cstr_c(color).button(ui).clicked() {
                         return unit.clone().to_house(world).ok_log();
                     }
                 }
@@ -83,7 +83,7 @@ impl TeamEditorPlugin {
         if let Some(team_house) = context
             .children_components::<House>(team)
             .into_iter()
-            .find(|h| h.name == house.name)
+            .find(|h| h.house_name == house.house_name)
         {
             let entity = team_house.entity();
             let mut unit = house.units.remove(0);
@@ -102,7 +102,7 @@ impl TeamEditorPlugin {
         let unit = world
             .get::<Unit>(entity)
             .to_e("Failed to find Unit")?
-            .name
+            .unit_name
             .clone();
         let fusion = context
             .children_components::<Fusion>(team)
@@ -160,7 +160,7 @@ impl TeamEditorPlugin {
                 .c32();
             ui.collapsing(
                 house
-                    .name
+                    .house_name
                     .cstr_cs(color, CstrStyle::Bold)
                     .widget(1.0, ui.style()),
                 |ui| {

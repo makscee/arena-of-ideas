@@ -26,7 +26,7 @@ impl ExpressionImpl for Expression {
             Expression::Owner => Ok(context.get_owner()?.to_value()),
             Expression::Target => Ok(context.get_target()?.to_value()),
             Expression::Var(var) => {
-                let v = context.get_var_any(*var);
+                let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
                     Ok(1.into())
                 } else {
@@ -35,7 +35,7 @@ impl ExpressionImpl for Expression {
             }
             Expression::StateVar(x, var) => context
                 .get_state(x.get_entity(context)?)?
-                .get_any(*var)
+                .get(*var)
                 .to_e_var(*var),
             Expression::V(v) => Ok(v.clone()),
             Expression::F(v) | Expression::FSlider(v) => Ok((*v).into()),

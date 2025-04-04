@@ -10,7 +10,6 @@ static STATUS_REP: OnceCell<Representation> = OnceCell::new();
 static HERO_REP: OnceCell<Representation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
-static ALL: OnceCell<All> = OnceCell::new();
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
 pub fn unit_rep() -> &'static Representation {

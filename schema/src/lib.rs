@@ -34,8 +34,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use utils::*;
 
-pub const ID_ALL: u64 = 1;
+pub const ID_CORE: u64 = 1;
 pub const ID_INCUBATOR: u64 = 2;
+pub const ID_PLAYERS: u64 = 2;
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;

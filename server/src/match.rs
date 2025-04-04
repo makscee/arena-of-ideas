@@ -22,7 +22,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let unit = Unit::get(ctx, unit).to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?;
     let mut house = unit.find_parent::<House>(ctx)?;
     let houses = m.team_load(ctx)?.houses_load(ctx)?;
-    if let Some(h) = houses.iter_mut().find(|h| h.name == house.name) {
+    if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
         unit.clone(ctx, h.id);
     } else {
         house.color_load(ctx)?;
@@ -43,7 +43,7 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let unit = m
         .roster_units_load(ctx)?
         .into_iter()
-        .find(|u| u.name == name)
+        .find(|u| u.unit_name == name)
         .to_e_s_fn(|| format!("Failed to find unit {name}"))?;
     unit.delete_recursive(ctx);
     player.save(ctx);
@@ -60,8 +60,8 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     }
     m.g -= cost;
     let sc = m.shop_case_load(ctx)?;
-    let mut all = All::load(ctx);
-    let units = all.core_units(ctx)?;
+    let mut core = Core::load(ctx);
+    let units = core.all_units(ctx)?;
     for c in sc {
         c.sold = false;
         c.unit = units.choose(&mut ctx.rng()).unwrap().id;
@@ -133,8 +133,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     if let Ok(m) = player.active_match_load(ctx) {
         m.delete_recursive(ctx);
     }
-    let mut all = All::load(ctx);
-    let units = all.core_units(ctx)?;
+    let mut core = Core::load(ctx);
+    let units = core.all_units(ctx)?;
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = Match::new(ctx, player.id, gs.match_g.initial);

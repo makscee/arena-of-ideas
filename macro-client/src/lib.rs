@@ -1,4 +1,3 @@
-use darling::FromMeta;
 use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
@@ -15,7 +14,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
     let struct_ident = &input.ident;
 
     enum NodeType {
-        Name,
+        Name(Ident),
         Data,
         OnlyData,
     }
@@ -50,23 +49,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &child_fields_str,
                 &child_types,
             );
-            let nt = if all_data_fields.contains(&Ident::from_string("name").unwrap()) {
-                NodeType::Name
+            let nt = if let Some(name_ident) = all_data_fields
+                .iter()
+                .find(|ident| ident.to_string().contains("name"))
+            {
+                NodeType::Name(name_ident.clone())
             } else if !component_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
             };
-            let name_link = match nt {
-                NodeType::Name => quote! {world.add_name_link(self.name.clone(), entity);},
-                NodeType::Data | NodeType::OnlyData => quote! {},
-            };
-            let name_quote = match nt {
-                NodeType::Name => quote! {self.name},
+            let name_quote = match &nt {
+                NodeType::Name(ident) => quote! {self.#ident},
                 NodeType::Data | NodeType::OnlyData => quote! {""},
             };
-            let inner_data_to_dir = match nt {
-                NodeType::Name | NodeType::Data => quote! {
+            let inner_data_to_dir = match &nt {
+                NodeType::Name(..) | NodeType::Data => quote! {
                     let mut entries: Vec<DirEntry> = default();
                     #(
                         if let Some(d) = &self.#component_fields {
@@ -90,9 +88,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 },
                 NodeType::OnlyData => quote! {},
             };
-            let data_to_dir = match nt {
-                NodeType::Name => quote! {
-                    let path = format!("{path}/{}", self.name);
+            let data_to_dir = match &nt {
+                NodeType::Name(ident) => quote! {
+                    let path = format!("{path}/{}", self.#ident);
                     #inner_data_to_dir
                     DirEntry::Dir(Dir::new(path.leak(), entries.leak()))
                 },
@@ -111,7 +109,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 },
             };
             let data_from_dir = match nt {
-                NodeType::Name => quote! {
+                NodeType::Name(..) => quote! {
                     let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
                 },
                 NodeType::Data => quote! {
@@ -123,7 +121,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             }
             .into_token_stream();
             let inner_data_from_dir = match nt {
-                NodeType::Name |
+                NodeType::Name(..) |
                 NodeType::Data => quote! {
                     #(s.#component_fields = #component_types::from_dir(format!("{path}/{}", #component_fields_str), dir);)*
                     #(s.#child_fields = dir
@@ -274,9 +272,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         ),*
                         ]
                     }
-                    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue, NodeKind)> {
-                        let kind = self.kind();
-                        let mut vars = self.get_own_vars().into_iter().map(|(var, value)| (var, value, kind)).collect_vec();
+                    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)> {
+                        let mut vars = self.get_own_vars().into_iter().collect_vec();
                         #(
                             if let Some(d) = self.#component_fields.as_ref().or_else(|| {
                                 self.entity
@@ -430,7 +427,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         if let Some(id) = self.id {
                             world.add_id_link(id, entity);
                         }
-                        #name_link
                         let parent = entity;
                         #(
                             if let Some(d) = self.#component_fields.take() {
