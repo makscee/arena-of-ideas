@@ -29,6 +29,15 @@ impl TagWidget {
             value: None,
         }
     }
+    pub fn new_var_value(var: VarName, value: VarValue) -> Self {
+        Self {
+            name: var.to_string(),
+            color: var.color(),
+            value: Some(value.cstr()),
+            text_galley: None,
+            number_galley: None,
+        }
+    }
     pub fn new_name_value(name: impl ToString, color: Color32, value: Cstr) -> Self {
         Self {
             name: name.to_string(),

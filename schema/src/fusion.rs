@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct UnitActionRef {
     pub unit: u8,
     pub trigger: u8,

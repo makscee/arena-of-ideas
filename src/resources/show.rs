@@ -365,6 +365,12 @@ impl Show for Vec<UnitActionRef> {
         false
     }
 }
+impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
+    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {}
+    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
+        false
+    }
+}
 impl Show for Reaction {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         prefix.show(ui);

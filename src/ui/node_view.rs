@@ -13,12 +13,19 @@ pub struct ViewContext {
     pub parent_rect: Option<Rect>,
     pub color: Color32,
     pub is_mut: bool,
+    pub hide_buttons: bool,
 }
 
 impl ViewContext {
     fn set_mut(mut self) -> Self {
         self.is_mut = true;
         self
+    }
+    pub fn compact() -> Self {
+        Self {
+            mode: ViewMode::Compact,
+            ..default()
+        }
     }
     pub fn graph() -> Self {
         Self {
@@ -32,6 +39,14 @@ impl ViewContext {
             ..default()
         }
     }
+    pub fn color(mut self, color: Color32) -> Self {
+        self.color = color;
+        self
+    }
+    pub fn hide_buttons(mut self) -> Self {
+        self.hide_buttons = true;
+        self
+    }
 }
 
 impl Default for ViewContext {
@@ -41,6 +56,7 @@ impl Default for ViewContext {
             mode: default(),
             parent_rect: None,
             is_mut: false,
+            hide_buttons: false,
         }
     }
 }
@@ -292,7 +308,9 @@ fn show_header(
                     .cstr_cs(ui.visuals().faint_bg_color, CstrStyle::Bold)
                     .label(ui);
             });
-        node.show_buttons(view_ctx, ui);
+        if !view_ctx.hide_buttons {
+            node.show_buttons(view_ctx, ui);
+        }
         content(ui);
     });
 }
@@ -467,7 +485,71 @@ impl NodeView for StatusDescription {}
 impl NodeView for Team {}
 impl NodeView for Match {}
 impl NodeView for ShopCaseUnit {}
-impl NodeView for Fusion {}
+impl NodeView for Fusion {
+    fn data_self(
+        &self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
+        let units = self.units(context)?;
+        let name = units.iter().map(|u| &u.unit_name).join("").cstr();
+        let mut behavior: Vec<(String, Vec<String>)> = default();
+        let mut hp = 0;
+        let mut pwr = 0;
+        for unit in self.units(context)? {
+            if let Some(stats) = unit
+                .description_load(context)
+                .and_then(|d| d.stats_load(context))
+            {
+                hp += stats.hp;
+                pwr += stats.pwr;
+            }
+        }
+        for (tr, ars) in &self.behavior {
+            let trigger_str = self.get_trigger(tr, context)?.cstr();
+            let mut actions_str: Vec<String> = default();
+            for ar in ars {
+                actions_str.push(self.get_action(ar, context)?.1.cstr());
+            }
+            behavior.push((trigger_str, actions_str));
+        }
+        show_frame(tokens_global().solid_backgrounds(), ui, |ui| {
+            show_header(self, Some(name), view_ctx, ui, |_| {});
+            show_body(ui, |ui| {
+                ui.horizontal(|ui| {
+                    TagWidget::new_var_value(VarName::pwr, pwr.into()).ui(ui);
+                    TagWidget::new_var_value(VarName::hp, hp.into()).ui(ui);
+                });
+                for unit in units {
+                    let color = context
+                        .clone()
+                        .set_owner(unit.entity())
+                        .get_color(VarName::color)
+                        .unwrap_or_default();
+                    unit.view(view_ctx.color(color), context, ui);
+                }
+                for (trigger, actions) in behavior {
+                    trigger.label(ui);
+                    ui.horizontal(|ui| {
+                        ui.add_space(5.0);
+                        ui.vertical(|ui| {
+                            for action in actions {
+                                action.label(ui);
+                            }
+                        });
+                        let rect = ui.min_rect().translate(egui::vec2(1.0, 0.0));
+                        ui.painter().line_segment(
+                            [rect.left_top(), rect.left_bottom()],
+                            Stroke::new(2.0, YELLOW),
+                        );
+                    });
+                }
+            });
+        });
+        Ok(())
+    }
+}
 impl NodeView for Unit {
     fn compact_self(
         &self,
@@ -482,7 +564,9 @@ impl NodeView for Unit {
         let stats = format!("[yellow {}]/[red {}]", pwr, hp);
         ui.horizontal(|ui| {
             TagWidget::new_name_value(name, color, stats).ui(ui);
-            self.show_buttons(view_ctx, ui);
+            if !view_ctx.hide_buttons {
+                self.show_buttons(view_ctx, ui);
+            }
         });
         Ok(())
     }

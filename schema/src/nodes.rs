@@ -97,8 +97,7 @@ struct ShopCaseUnit {
 
 struct Fusion {
     pub units: Vec<String>,
-    pub trigger: UnitTriggerRef,
-    pub actions: Vec<UnitActionRef>,
+    pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: i32,
 }
 
