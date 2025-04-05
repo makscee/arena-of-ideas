@@ -603,37 +603,6 @@ where
     }
 }
 
-impl<T> DataFramed for Box<T>
-where
-    T: Show + Default + Serialize + DeserializeOwned + Debug + Clone + ToCstr,
-{
-    fn ui(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) -> DataFrameResponse {
-        self.deref().show(prefix, context, ui);
-        DataFrameResponse::None
-    }
-    fn ui_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> DataFrameResponse {
-        if self.deref_mut().show_mut(prefix, ui) {
-            DataFrameResponse::Changed
-        } else {
-            DataFrameResponse::None
-        }
-    }
-    fn has_header(&self) -> bool {
-        false
-    }
-    fn has_body(&self) -> bool {
-        false
-    }
-    fn show_header(&self, _: &Context, _: &mut Ui) {}
-    fn show_header_mut(&mut self, _: &mut Ui) -> bool {
-        false
-    }
-    fn show_body(&self, _: &Context, _: &mut Ui) {}
-    fn show_body_mut(&mut self, _: &mut Ui) -> bool {
-        false
-    }
-}
-
 impl DataFramed for Expression {
     fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
         if Selector::from_mut(self, ui) {
@@ -964,7 +933,7 @@ impl DataFramed for PainterAction {
                 x.show(Some("cnt"), context, ui);
                 painter_action.show(Some("action"), context, ui);
             }
-            PainterAction::List(vec) => vec.show(None, context, ui),
+            PainterAction::List(vec) => {}
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
@@ -992,14 +961,14 @@ impl DataFramed for PainterAction {
                 let thickness = thickness.show_mut(Some("thickness"), ui);
                 curvature.show_mut(Some("curvature"), ui) || thickness
             }
-            PainterAction::List(vec) => vec.show_mut(None, ui),
+            PainterAction::List(vec) => false,
         }
     }
 }
 impl DataFramed for Action {
     fn default_open(&self) -> bool {
         match self {
-            Action::UseAbility => true,
+            Action::ApplyStatus | Action::UseAbility => true,
             _ => false,
         }
     }
@@ -1012,13 +981,17 @@ impl DataFramed for Action {
     }
     fn has_header(&self) -> bool {
         match self {
-            Action::UseAbility => true,
+            Action::ApplyStatus | Action::UseAbility => true,
             _ => false,
         }
     }
     fn has_body(&self) -> bool {
         match self {
-            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => false,
+            Action::Noop
+            | Action::DealDamage
+            | Action::HealDamage
+            | Action::ApplyStatus
+            | Action::UseAbility => false,
             Action::Debug(..)
             | Action::SetValue(..)
             | Action::AddValue(..)
@@ -1030,24 +1003,21 @@ impl DataFramed for Action {
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
             Action::UseAbility => {
-                let Ok(entity) = context.get_caster().or_else(|_| context.get_owner()) else {
-                    return;
-                };
-                if let Some(color) = context
-                    .find_parent_component::<HouseColor>(entity)
-                    .map(|h| h.color.c32())
+                if let Some(ability) = context
+                    .get_owner()
+                    .ok()
+                    .and_then(|entity| context.find_parent_component::<AbilityMagic>(entity))
                 {
-                    if let Some(name) = context
-                        .find_parent_component::<AbilityMagic>(entity)
-                        .map(|a| a.ability_name.clone())
-                        .or_else(|| {
-                            context
-                                .find_parent_component::<StatusMagic>(entity)
-                                .map(|a| a.status_name.clone())
-                        })
-                    {
-                        name.cstr_c(color).label(ui);
-                    }
+                    ability.view(ViewContext::compact().hide_buttons(), context, ui);
+                }
+            }
+            Action::ApplyStatus => {
+                if let Some(status) = context
+                    .get_owner()
+                    .ok()
+                    .and_then(|entity| context.find_parent_component::<StatusMagic>(entity))
+                {
+                    status.view(ViewContext::compact().hide_buttons(), context, ui);
                 }
             }
             _ => {}
@@ -1058,7 +1028,11 @@ impl DataFramed for Action {
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Action::DealDamage | Action::HealDamage | Action::UseAbility | Action::Noop => {}
+            Action::DealDamage
+            | Action::HealDamage
+            | Action::ApplyStatus
+            | Action::UseAbility
+            | Action::Noop => {}
             Action::Debug(x)
             | Action::SetValue(x)
             | Action::AddValue(x)
@@ -1068,23 +1042,23 @@ impl DataFramed for Action {
             }
             Action::Repeat(x, vec) => {
                 x.show(Some("x"), context, ui);
-                vec.show(None, context, ui);
             }
         }
     }
 
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Action::DealDamage | Action::HealDamage | Action::UseAbility | Action::Noop => false,
+            Action::DealDamage
+            | Action::HealDamage
+            | Action::ApplyStatus
+            | Action::UseAbility
+            | Action::Noop => false,
             Action::Debug(x)
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
             | Action::AddTarget(x) => x.show_mut(Some("x"), ui),
-            Action::Repeat(x, vec) => {
-                let x = x.show_mut(Some("x"), ui);
-                vec.show_mut(None, ui) || x
-            }
+            Action::Repeat(x, vec) => x.show_mut(Some("x"), ui),
         }
     }
 }

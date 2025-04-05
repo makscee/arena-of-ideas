@@ -13,6 +13,7 @@ pub enum Action {
     DealDamage,
     HealDamage,
     UseAbility,
+    ApplyStatus,
     Repeat(Box<Expression>, Vec<Box<Action>>),
 }
 

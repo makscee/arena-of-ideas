@@ -8,6 +8,14 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        let id = ui.id();
+        let mut e = ui
+            .data(|r| r.get_temp::<Expression>(id))
+            .unwrap_or_default();
+        if e.view_mut(default(), &default(), ui) {
+            ui.data_mut(|w| w.insert_temp(id, e));
+        }
+
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);
         }

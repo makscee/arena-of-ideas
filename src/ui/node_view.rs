@@ -328,7 +328,9 @@ fn name_tag(
     let name = context.get_string(var)?;
     ui.horizontal(|ui| {
         TagWidget::new_name(name, color).ui(ui);
-        node.show_buttons(view_ctx, ui);
+        if !view_ctx.hide_buttons {
+            node.show_buttons(view_ctx, ui);
+        }
     });
     Ok(())
 }
@@ -494,7 +496,7 @@ impl NodeView for Fusion {
     ) -> Result<(), ExpressionError> {
         let units = self.units(context)?;
         let name = units.iter().map(|u| &u.unit_name).join("").cstr();
-        let mut behavior: Vec<(String, Vec<String>)> = default();
+        let mut behavior: Vec<(String, Vec<(usize, &Action)>)> = default();
         let mut hp = 0;
         let mut pwr = 0;
         for unit in self.units(context)? {
@@ -508,9 +510,9 @@ impl NodeView for Fusion {
         }
         for (tr, ars) in &self.behavior {
             let trigger_str = self.get_trigger(tr, context)?.cstr();
-            let mut actions_str: Vec<String> = default();
+            let mut actions_str: Vec<_> = default();
             for ar in ars {
-                actions_str.push(self.get_action(ar, context)?.1.cstr());
+                actions_str.push((ar.unit as usize, self.get_action(ar, context)?.1));
             }
             behavior.push((trigger_str, actions_str));
         }
@@ -521,7 +523,7 @@ impl NodeView for Fusion {
                     TagWidget::new_var_value(VarName::pwr, pwr.into()).ui(ui);
                     TagWidget::new_var_value(VarName::hp, hp.into()).ui(ui);
                 });
-                for unit in units {
+                for unit in &units {
                     let color = context
                         .clone()
                         .set_owner(unit.entity())
@@ -534,8 +536,8 @@ impl NodeView for Fusion {
                     ui.horizontal(|ui| {
                         ui.add_space(5.0);
                         ui.vertical(|ui| {
-                            for action in actions {
-                                action.label(ui);
+                            for (u, action) in actions {
+                                action.show(None, context.clone().set_owner(units[u].entity()), ui);
                             }
                         });
                         let rect = ui.min_rect().translate(egui::vec2(1.0, 0.0));

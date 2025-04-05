@@ -5,17 +5,21 @@ use itertools::Itertools;
 use super::*;
 
 pub trait Inject: Injector<Self> {
-    fn move_inner(&mut self, source: &mut Self);
-    fn wrapper() -> Self;
+    fn move_inner(&mut self, source: &mut Self) {}
+    fn wrapper() -> Option<Self> {
+        None
+    }
     fn wrap(&mut self) {
-        let mut wrapper = Self::wrapper();
-        mem::swap(wrapper.get_inner_mut()[0].as_mut(), self);
+        let Some(mut wrapper) = Self::wrapper() else {
+            return;
+        };
+        mem::swap(wrapper.get_inner_mut()[0], self);
         *self = wrapper;
     }
 }
 
 pub trait Injector<T>: Sized {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<T>>;
+    fn get_inner_mut<'a>(&'a mut self) -> Vec<&'a mut T>;
     fn get_inner(&self) -> Vec<&Box<T>>;
     fn resize_inner(&mut self, _size: usize) {}
     fn inject_inner(&mut self, source: &mut Self) {
@@ -29,36 +33,11 @@ pub trait Injector<T>: Sized {
     }
 }
 
-impl<T> Injector<Self> for Box<T>
-where
-    T: Default + Serialize + DeserializeOwned,
-{
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
-        todo!()
-    }
-
-    fn get_inner(&self) -> Vec<&Box<Self>> {
-        todo!()
-    }
-}
-impl<T> Inject for Box<T>
-where
-    T: Default + Serialize + DeserializeOwned,
-{
-    fn move_inner(&mut self, source: &mut Self) {
-        todo!()
-    }
-
-    fn wrapper() -> Self {
-        todo!()
-    }
-}
-
 impl<T> Injector<Self> for Vec<T>
 where
     T: Default + Serialize + DeserializeOwned,
 {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         default()
     }
 
@@ -72,17 +51,18 @@ where
 {
     fn move_inner(&mut self, _: &mut Self) {}
 
-    fn wrapper() -> Self {
-        [default()].into()
+    fn wrapper() -> Option<Self> {
+        Some([default()].into())
     }
 }
 
 impl Inject for Expression {
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);
+        <Expression as Injector<f32>>::inject_inner(self, source);
     }
-    fn wrapper() -> Self {
-        Self::Abs(default())
+    fn wrapper() -> Option<Self> {
+        Some(Self::Abs(default()))
     }
 }
 
@@ -91,8 +71,8 @@ impl Inject for PainterAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn wrapper() -> Self {
-        Self::Repeat(Box::new(Expression::I(1)), default())
+    fn wrapper() -> Option<Self> {
+        Some(Self::Repeat(Box::new(Expression::I(1)), default()))
     }
 }
 
@@ -101,13 +81,13 @@ impl Inject for Action {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn wrapper() -> Self {
-        Self::Repeat(Box::new(Expression::I(1)), default())
+    fn wrapper() -> Option<Self> {
+        Some(Self::Repeat(Box::new(Expression::I(1)), default()))
     }
 }
 
 impl Injector<Self> for Expression {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             Expression::One
             | Expression::Zero
@@ -145,7 +125,7 @@ impl Injector<Self> for Expression {
             | Expression::RandomUnit(x)
             | Expression::ToF(x)
             | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => [x].into(),
+            | Expression::Sqr(x) => [x.as_mut()].into(),
             Expression::Macro(a, b)
             | Expression::V2EE(a, b)
             | Expression::Sum(a, b)
@@ -160,8 +140,10 @@ impl Injector<Self> for Expression {
             | Expression::Equals(a, b)
             | Expression::GreaterThen(a, b)
             | Expression::LessThen(a, b)
-            | Expression::Fallback(a, b) => [a, b].into(),
-            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
+            | Expression::Fallback(a, b) => [a.as_mut(), b.as_mut()].into(),
+            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => {
+                [a.as_mut(), b.as_mut(), c.as_mut()].into()
+            }
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -223,8 +205,21 @@ impl Injector<Self> for Expression {
     }
 }
 
+impl Injector<f32> for Expression {
+    fn get_inner_mut(&mut self) -> Vec<&mut f32> {
+        match self {
+            Expression::FSlider(v) | Expression::F(v) => [v].into(),
+            _ => default(),
+        }
+    }
+
+    fn get_inner(&self) -> Vec<&Box<f32>> {
+        todo!()
+    }
+}
+
 impl Injector<Expression> for PainterAction {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
             PainterAction::List(..) | PainterAction::Paint => default(),
             PainterAction::Circle(x)
@@ -238,11 +233,11 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::Color(x)
             | PainterAction::Alpha(x)
             | PainterAction::Feathering(x)
-            | PainterAction::Repeat(x, ..) => [x].into(),
+            | PainterAction::Repeat(x, ..) => [x.as_mut()].into(),
             PainterAction::Curve {
                 thickness,
                 curvature,
-            } => [thickness, curvature].into(),
+            } => [thickness.as_mut(), curvature.as_mut()].into(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
@@ -274,7 +269,7 @@ impl Injector<Self> for PainterAction {
             _ => {}
         }
     }
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             PainterAction::Paint
             | PainterAction::Circle(..)
@@ -289,8 +284,8 @@ impl Injector<Self> for PainterAction {
             | PainterAction::Color(..)
             | PainterAction::Feathering(..)
             | PainterAction::Alpha(..) => default(),
-            PainterAction::Repeat(_x, p) => [p].into(),
-            PainterAction::List(vec) => vec.into_iter().collect_vec(),
+            PainterAction::Repeat(_x, p) => [p.as_mut()].into(),
+            PainterAction::List(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -315,7 +310,7 @@ impl Injector<Self> for PainterAction {
 }
 
 impl Injector<Self> for Action {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             Action::Noop
             | Action::Debug(..)
@@ -325,8 +320,9 @@ impl Injector<Self> for Action {
             | Action::AddTarget(..)
             | Action::DealDamage
             | Action::HealDamage
+            | Action::ApplyStatus
             | Action::UseAbility => default(),
-            Action::Repeat(_, vec) => vec.into_iter().collect_vec(),
+            Action::Repeat(_, vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -339,30 +335,35 @@ impl Injector<Self> for Action {
             | Action::AddTarget(..)
             | Action::DealDamage
             | Action::HealDamage
+            | Action::ApplyStatus
             | Action::UseAbility => default(),
             Action::Repeat(_, vec) => vec.into_iter().collect_vec(),
         }
     }
 }
 impl Injector<Expression> for Action {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
-            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => {
-                default()
-            }
+            Action::Noop
+            | Action::DealDamage
+            | Action::HealDamage
+            | Action::ApplyStatus
+            | Action::UseAbility => default(),
             Action::Debug(x)
             | Action::SetValue(x)
             | Action::AddValue(x)
             | Action::SubtractValue(x)
             | Action::AddTarget(x)
-            | Action::Repeat(x, _) => [x].into(),
+            | Action::Repeat(x, _) => [x.as_mut()].into(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
         match self {
-            Action::Noop | Action::DealDamage | Action::HealDamage | Action::UseAbility => {
-                default()
-            }
+            Action::Noop
+            | Action::DealDamage
+            | Action::HealDamage
+            | Action::ApplyStatus
+            | Action::UseAbility => default(),
             Action::Debug(x)
             | Action::SetValue(x)
             | Action::AddValue(x)
@@ -372,14 +373,9 @@ impl Injector<Expression> for Action {
         }
     }
 }
-impl Inject for Trigger {
-    fn move_inner(&mut self, _source: &mut Self) {}
-    fn wrapper() -> Self {
-        Self::default()
-    }
-}
+impl Inject for Trigger {}
 impl Injector<Self> for Trigger {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         default()
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {

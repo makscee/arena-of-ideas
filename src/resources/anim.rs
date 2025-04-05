@@ -142,12 +142,12 @@ impl Inject for AnimAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn wrapper() -> Self {
-        Self::List(vec![default()])
+    fn wrapper() -> Option<Self> {
+        Some(Self::List(vec![default()]))
     }
 }
 impl Injector<Self> for AnimAction {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Self>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             AnimAction::Translate(..)
             | AnimAction::SetTarget(..)
@@ -156,7 +156,7 @@ impl Injector<Self> for AnimAction {
             | AnimAction::Timeframe(..)
             | AnimAction::Wait(..)
             | AnimAction::Spawn(..) => default(),
-            AnimAction::List(vec) => vec.into_iter().collect_vec(),
+            AnimAction::List(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
@@ -173,14 +173,14 @@ impl Injector<Self> for AnimAction {
     }
 }
 impl Injector<Expression> for AnimAction {
-    fn get_inner_mut(&mut self) -> Vec<&mut Box<Expression>> {
+    fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
             AnimAction::Translate(x)
             | AnimAction::SetTarget(x)
             | AnimAction::AddTarget(x)
             | AnimAction::Duration(x)
             | AnimAction::Wait(x)
-            | AnimAction::Timeframe(x) => [x].into(),
+            | AnimAction::Timeframe(x) => [x.as_mut()].into(),
             AnimAction::List(..) | AnimAction::Spawn(..) => default(),
         }
     }
@@ -209,14 +209,9 @@ impl ToCstr for Anim {
 impl Show for Anim {
     fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
         prefix.show(ui);
-        self.actions.show(None, context, ui)
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        DataFrameMut::new(self)
-            .prefix(prefix)
-            .body(|d, ui| d.actions.show_mut(None, ui))
-            .ui(ui)
-            .changed()
+        false
     }
 }
 
@@ -265,7 +260,7 @@ impl DataFramed for AnimAction {
             | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => x.show(Some("x:"), context, ui),
             AnimAction::Spawn(m) => m.show(Some("material:"), context, ui),
-            AnimAction::List(vec) => vec.show(Some("list:"), context, ui),
+            AnimAction::List(vec) => {}
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
@@ -277,7 +272,7 @@ impl DataFramed for AnimAction {
             | AnimAction::Wait(x)
             | AnimAction::Timeframe(x) => x.show_mut(Some("x:"), ui),
             AnimAction::Spawn(m) => m.show_mut(Some("material:"), ui),
-            AnimAction::List(vec) => vec.show_mut(Some("list:"), ui),
+            AnimAction::List(vec) => false,
         }
     }
 }

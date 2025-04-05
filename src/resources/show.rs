@@ -36,7 +36,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show(prefix, context, ui),
             VarValue::Color32(v) => v.show(prefix, context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(prefix, context, ui),
-            VarValue::List(v) => v.show(prefix, context, ui),
+            VarValue::List(v) => {}
         })
         .inner
     }
@@ -50,7 +50,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show_mut(prefix, ui),
             VarValue::Color32(v) => v.show_mut(prefix, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(prefix, ui),
-            VarValue::List(v) => v.show_mut(prefix, ui),
+            VarValue::List(v) => false,
         })
         .inner
     }
@@ -327,7 +327,7 @@ impl Show for Material {
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
         material_view(self, &Context::default(), ui);
-        self.0.show_mut(prefix, ui)
+        false
     }
 }
 impl Show for Actions {
@@ -339,7 +339,7 @@ impl Show for Actions {
         r
     }
     fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        self.0.show_mut(prefix, ui)
+        false
     }
 }
 impl Show for Event {

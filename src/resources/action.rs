@@ -65,66 +65,64 @@ impl ActionImpl for Action {
             }
             Action::UseAbility => {
                 let caster = context.get_caster()?;
-                if let Some(ability) = context.find_parent_component::<AbilityMagic>(caster) {
-                    let name = &ability.ability_name;
-                    let entity = ability.entity();
-                    let ability_actions = context
-                        .get_component::<AbilityEffect>(entity)
-                        .to_e("AbilityEffect not found")?
-                        .actions
-                        .clone();
-                    let color = context
-                        .find_parent_component::<HouseColor>(entity)
-                        .to_e("House not found")?
-                        .color
-                        .clone();
-                    let text = format!("use ability [{color} [b {name}]]");
-                    actions.push(BattleAction::Vfx(
-                        HashMap::from_iter([
-                            (VarName::text, text.into()),
-                            (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var(VarName::position)?),
-                        ]),
-                        "text".into(),
-                    ));
-                    actions.extend(ability_actions.process(context)?);
-                } else if let Some(status) = context.find_parent_component::<StatusMagic>(caster) {
-                    let name = &status.status_name;
-                    let entity = status.entity();
-                    let mut status = status.clone();
-                    let mut description = context
-                        .get_component::<StatusDescription>(entity)
-                        .to_e("StatusDescription not found")?
-                        .clone();
-                    let behavior = context
-                        .get_component::<Behavior>(entity)
-                        .to_e("Behavior not found")?
-                        .clone();
-                    let color = context
-                        .find_parent_component::<HouseColor>(entity)
-                        .to_e("House not found")?
-                        .color
-                        .clone();
-                    let text = format!("gain [{color} [b {name}]]");
-                    actions.push(BattleAction::Vfx(
-                        HashMap::from_iter([
-                            (VarName::text, text.into()),
-                            (VarName::color, tokens_global().high_contrast_text().into()),
-                            (VarName::position, context.get_var(VarName::position)?),
-                        ]),
-                        "text".into(),
-                    ));
-                    let representation = context.get_component::<Representation>(entity).cloned();
-                    description.behavior = Some(behavior);
-                    status.description = Some(description);
-                    status.representation = representation;
-                    actions.push(BattleAction::ApplyStatus(
-                        context.get_owner()?,
-                        status,
-                        1,
-                        color.c32(),
-                    ));
-                }
+                let ability = context
+                    .find_parent_component::<AbilityMagic>(caster)
+                    .to_e_fn(|| format!("Failed to find AbilityMagic of {caster}"))?;
+                let name = &ability.ability_name;
+                let entity = ability.entity();
+                let ability_actions = context
+                    .get_component::<AbilityEffect>(entity)
+                    .to_e("AbilityEffect not found")?
+                    .actions
+                    .clone();
+                let color = context.get_color(VarName::color)?;
+                let text = format!("use ability [{} [b {name}]]", color.to_hex());
+                actions.push(BattleAction::Vfx(
+                    HashMap::from_iter([
+                        (VarName::text, text.into()),
+                        (VarName::color, tokens_global().high_contrast_text().into()),
+                        (VarName::position, context.get_var(VarName::position)?),
+                    ]),
+                    "text".into(),
+                ));
+                actions.extend(ability_actions.process(context)?);
+            }
+            Action::ApplyStatus => {
+                let caster = context.get_caster()?;
+                let status = context
+                    .find_parent_component::<StatusMagic>(caster)
+                    .to_e_fn(|| format!("Failed to find StatusMagic of {caster}"))?;
+                let name = &status.status_name;
+                let entity = status.entity();
+                let mut status = status.clone();
+                let mut description = context
+                    .get_component::<StatusDescription>(entity)
+                    .to_e("StatusDescription not found")?
+                    .clone();
+                let behavior = context
+                    .get_component::<Behavior>(entity)
+                    .to_e("Behavior not found")?
+                    .clone();
+                let color = context.get_color(VarName::color)?;
+                let text = format!("gain [{} [b {name}]]", color.to_hex());
+                actions.push(BattleAction::Vfx(
+                    HashMap::from_iter([
+                        (VarName::text, text.into()),
+                        (VarName::color, tokens_global().high_contrast_text().into()),
+                        (VarName::position, context.get_var(VarName::position)?),
+                    ]),
+                    "text".into(),
+                ));
+                let representation = context.get_component::<Representation>(entity).cloned();
+                description.behavior = Some(behavior);
+                status.description = Some(description);
+                status.representation = representation;
+                actions.push(BattleAction::ApplyStatus(
+                    context.get_owner()?,
+                    status,
+                    1,
+                    color,
+                ));
             }
             Action::Repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
