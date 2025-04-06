@@ -20,17 +20,17 @@ impl EnumColor for VarName {
 impl EnumColor for Action {
     fn color(&self) -> Color32 {
         match self {
-            Action::Noop => tokens_global().low_contrast_text(),
-            Action::DealDamage => RED,
-            Action::HealDamage => GREEN,
-            Action::ApplyStatus => ORANGE,
-            Action::UseAbility => ORANGE,
-            Action::Debug(..) => tokens_global().high_contrast_text(),
-            Action::SetValue(..)
-            | Action::AddValue(..)
-            | Action::SubtractValue(..)
-            | Action::AddTarget(..) => CYAN,
-            Action::Repeat(..) => PURPLE,
+            Action::noop => tokens_global().low_contrast_text(),
+            Action::deal_damage => RED,
+            Action::heal_damage => GREEN,
+            Action::apply_status => ORANGE,
+            Action::use_ability => ORANGE,
+            Action::debug(..) => tokens_global().high_contrast_text(),
+            Action::set_value(..)
+            | Action::add_value(..)
+            | Action::subtract_value(..)
+            | Action::add_target(..) => CYAN,
+            Action::repeat(..) => PURPLE,
         }
     }
 }
@@ -47,59 +47,59 @@ impl EnumColor for Trigger {
 impl EnumColor for Expression {
     fn color(&self) -> Color32 {
         match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::GT
-            | Expression::Owner
-            | Expression::Target
-            | Expression::UnitSize
-            | Expression::PI
-            | Expression::PI2
-            | Expression::AllUnits
-            | Expression::AllEnemyUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::S(..)
-            | Expression::F(..)
-            | Expression::FSlider(..)
-            | Expression::I(..)
-            | Expression::B(..)
-            | Expression::V2(..)
-            | Expression::V(..)
-            | Expression::C(..) => tokens_global().high_contrast_text(),
-            Expression::Var(var) => var.color(),
-            Expression::StateVar(_x, _)
-            | Expression::Sin(_x)
-            | Expression::Cos(_x)
-            | Expression::Even(_x)
-            | Expression::Abs(_x)
-            | Expression::Floor(_x)
-            | Expression::Ceil(_x)
-            | Expression::Fract(_x)
-            | Expression::Sqr(_x)
-            | Expression::UnitVec(_x)
-            | Expression::Rand(_x)
-            | Expression::RandomUnit(_x)
-            | Expression::ToF(_x) => YELLOW,
-            Expression::V2EE(_a, _b)
-            | Expression::Macro(_a, _b)
-            | Expression::Sum(_a, _b)
-            | Expression::Sub(_a, _b)
-            | Expression::Mul(_a, _b)
-            | Expression::Div(_a, _b)
-            | Expression::Max(_a, _b)
-            | Expression::Min(_a, _b)
-            | Expression::Mod(_a, _b)
-            | Expression::And(_a, _b)
-            | Expression::Or(_a, _b)
-            | Expression::Equals(_a, _b)
-            | Expression::GreaterThen(_a, _b)
-            | Expression::LessThen(_a, _b)
-            | Expression::Fallback(_a, _b) => RED,
-            Expression::If(_a, _b, _c) | Expression::Oklch(_a, _b, _c) => PURPLE,
+            Expression::one
+            | Expression::zero
+            | Expression::gt
+            | Expression::owner
+            | Expression::target
+            | Expression::unit_size
+            | Expression::pi
+            | Expression::pi2
+            | Expression::all_units
+            | Expression::all_enemy_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::string(..)
+            | Expression::f32(..)
+            | Expression::f32_slider(..)
+            | Expression::i32(..)
+            | Expression::bool(..)
+            | Expression::vec2(..)
+            | Expression::value(..)
+            | Expression::color(..) => tokens_global().high_contrast_text(),
+            Expression::var(var) => var.color(),
+            Expression::state_var(_x, _)
+            | Expression::sin(_x)
+            | Expression::cos(_x)
+            | Expression::even(_x)
+            | Expression::abs(_x)
+            | Expression::floor(_x)
+            | Expression::ceil(_x)
+            | Expression::fract(_x)
+            | Expression::sqr(_x)
+            | Expression::unit_vec(_x)
+            | Expression::rand(_x)
+            | Expression::random_unit(_x)
+            | Expression::to_f32(_x) => YELLOW,
+            Expression::vec2_ee(_a, _b)
+            | Expression::str_macro(_a, _b)
+            | Expression::sum(_a, _b)
+            | Expression::sub(_a, _b)
+            | Expression::mul(_a, _b)
+            | Expression::div(_a, _b)
+            | Expression::max(_a, _b)
+            | Expression::min(_a, _b)
+            | Expression::r#mod(_a, _b)
+            | Expression::and(_a, _b)
+            | Expression::or(_a, _b)
+            | Expression::equals(_a, _b)
+            | Expression::greater_then(_a, _b)
+            | Expression::less_then(_a, _b)
+            | Expression::fallback(_a, _b) => RED,
+            Expression::r#if(_a, _b, _c) | Expression::oklch(_a, _b, _c) => PURPLE,
         }
     }
 }

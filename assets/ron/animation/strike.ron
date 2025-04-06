@@ -1,7 +1,7 @@
 [
-    Duration(F(0.2)),
-    SetTarget(Owner),
-    Translate(Sum(Var(position), V2EE(Sub(Zero, UnitSize), Zero))),
-    SetTarget(Target),
-    Translate(Sum(Var(position), V2EE(UnitSize, Zero))),
+    duration(f32(0.2)),
+    set_target(owner),
+    translate(sum(var(position), vec2_ee(sub(zero, unit_size), zero))),
+    set_target(target),
+    translate(sum(var(position), vec2_ee(unit_size, zero))),
 ]

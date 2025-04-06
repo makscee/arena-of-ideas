@@ -58,7 +58,7 @@ impl Paint for PainterAction {
         let r = p.rect;
         let up = r.width().min(r.height()) * 0.5;
         match self {
-            PainterAction::Circle(x) => {
+            PainterAction::circle(x) => {
                 let radius = x.get_f32(context)? * up;
                 let shape = if let Some(width) = p.hollow {
                     CircleShape::stroke(default(), radius, Stroke::new(width, p.color))
@@ -67,7 +67,7 @@ impl Paint for PainterAction {
                 };
                 p.tesselator.tessellate_circle(shape, &mut p.mesh)
             }
-            PainterAction::Rectangle(x) => {
+            PainterAction::rectangle(x) => {
                 let size = x.get_vec2(context)? * 2.0;
                 let rect = Rect::from_center_size(default(), size.to_evec2() * up);
                 let shape = if let Some(width) = p.hollow {
@@ -89,7 +89,7 @@ impl Paint for PainterAction {
                 };
                 p.tesselator.tessellate_rect(&shape, &mut p.mesh)
             }
-            PainterAction::Curve {
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => {
@@ -116,7 +116,7 @@ impl Paint for PainterAction {
                 );
                 p.tesselator.tessellate_cubic_bezier(&curve, &mut p.mesh);
             }
-            PainterAction::Text(x) => {
+            PainterAction::text(x) => {
                 let text = x
                     .get_string(context)?
                     .cstr_c(p.color)
@@ -129,7 +129,7 @@ impl Paint for PainterAction {
                 mesh.transform(TSTransform::from_scaling(up / 40.0));
                 p.mesh.append(mesh);
             }
-            PainterAction::Hollow(x) => {
+            PainterAction::hollow(x) => {
                 let x = x.get_f32(context)?;
                 if x > 0.0 {
                     p.hollow = Some(x);
@@ -137,33 +137,33 @@ impl Paint for PainterAction {
                     p.hollow = None;
                 }
             }
-            PainterAction::Translate(x) => {
+            PainterAction::translate(x) => {
                 p.mesh.translate(x.get_vec2(context)?.to_evec2() * up);
             }
-            PainterAction::Rotate(x) => {
+            PainterAction::rotate(x) => {
                 p.mesh
                     .rotate(Rot2::from_angle(x.get_f32(context)?), default());
             }
-            PainterAction::ScaleMesh(x) => {
+            PainterAction::scale_mesh(x) => {
                 p.mesh
                     .transform(TSTransform::from_scaling(x.get_f32(context)?));
             }
-            PainterAction::ScaleRect(x) => {
+            PainterAction::scale_rect(x) => {
                 let size = p.rect.size() * x.get_f32(context)? - p.rect.size();
                 p.rect = p.rect.expand2(size * 0.5);
             }
-            PainterAction::Color(x) => {
+            PainterAction::color(x) => {
                 p.color = x.get_color(context)?;
             }
-            PainterAction::Alpha(x) => {
+            PainterAction::alpha(x) => {
                 p.color = p.color.gamma_multiply(x.get_f32(context)?.clamp(0.0, 1.0));
             }
-            PainterAction::Feathering(x) => {
-                Self::Paint.paint(context, p, ui)?;
+            PainterAction::feathering(x) => {
+                Self::paint.paint(context, p, ui)?;
                 let x = x.get_f32(context)?;
                 p.tesselator = new_tesselator(x, ui.ctx());
             }
-            PainterAction::Repeat(x, action) => {
+            PainterAction::repeat(x, action) => {
                 let max_index = x.get_i32(context)?;
                 for i in 0..max_index {
                     action.paint(
@@ -176,14 +176,14 @@ impl Paint for PainterAction {
                     )?;
                 }
             }
-            PainterAction::Paint => {
+            PainterAction::paint => {
                 if p.mesh.is_empty() {
                     return Ok(());
                 }
                 p.mesh.translate(r.center().to_vec2());
                 ui.painter().add(mem::take(&mut p.mesh));
             }
-            PainterAction::List(l) => {
+            PainterAction::list(l) => {
                 for a in l {
                     a.paint(context, p, ui)?;
                 }

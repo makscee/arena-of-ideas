@@ -19,13 +19,13 @@ pub trait ExpressionImpl {
 impl ExpressionImpl for Expression {
     fn get_value(&self, context: &Context) -> Result<VarValue, ExpressionError> {
         match self {
-            Expression::One => Ok(1.into()),
-            Expression::Zero => Ok(0.into()),
-            Expression::PI => Ok(PI.into()),
-            Expression::PI2 => Ok((PI * 2.0).into()),
-            Expression::Owner => Ok(context.get_owner()?.to_value()),
-            Expression::Target => Ok(context.get_target()?.to_value()),
-            Expression::Var(var) => {
+            Expression::one => Ok(1.into()),
+            Expression::zero => Ok(0.into()),
+            Expression::pi => Ok(PI.into()),
+            Expression::pi2 => Ok((PI * 2.0).into()),
+            Expression::owner => Ok(context.get_owner()?.to_value()),
+            Expression::target => Ok(context.get_target()?.to_value()),
+            Expression::var(var) => {
                 let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
                     Ok(1.into())
@@ -33,111 +33,111 @@ impl ExpressionImpl for Expression {
                     v
                 }
             }
-            Expression::StateVar(x, var) => context
+            Expression::state_var(x, var) => context
                 .get_state(x.get_entity(context)?)?
                 .get(*var)
                 .to_e_var(*var),
-            Expression::V(v) => Ok(v.clone()),
-            Expression::F(v) | Expression::FSlider(v) => Ok((*v).into()),
-            Expression::I(v) => Ok((*v).into()),
-            Expression::B(v) => Ok((*v).into()),
-            Expression::V2(x, y) => Ok(vec2(*x, *y).into()),
-            Expression::S(s) => Ok(s.clone().into()),
-            Expression::C(s) => Color32::from_hex(s)
+            Expression::value(v) => Ok(v.clone()),
+            Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),
+            Expression::i32(v) => Ok((*v).into()),
+            Expression::bool(v) => Ok((*v).into()),
+            Expression::vec2(x, y) => Ok(vec2(*x, *y).into()),
+            Expression::string(s) => Ok(s.clone().into()),
+            Expression::color(s) => Color32::from_hex(s)
                 .map_err(|e| ExpressionError::OperationNotSupported {
                     values: default(),
                     op: "Hex color parse",
                     msg: Some(format!("{e:?}")),
                 })
                 .map(|v| v.into()),
-            Expression::GT => Ok(gt().play_head().into()),
-            Expression::UnitSize => Ok(UNIT_SIZE.into()),
-            Expression::AllUnits => Ok(context.get_all_units().into()),
-            Expression::AllAllyUnits => Ok(context.all_allies(context.get_owner()?).into()),
-            Expression::AllOtherAllyUnits => Ok(context
+            Expression::gt => Ok(gt().play_head().into()),
+            Expression::unit_size => Ok(UNIT_SIZE.into()),
+            Expression::all_units => Ok(context.get_all_units().into()),
+            Expression::all_ally_units => Ok(context.all_allies(context.get_owner()?).into()),
+            Expression::all_other_ally_units => Ok(context
                 .all_allies(context.get_owner()?)
                 .into_iter()
                 .filter(|v| v.get_entity().unwrap() != context.get_owner().unwrap())
                 .collect_vec()
                 .into()),
-            Expression::AllEnemyUnits => Ok(context.all_enemies(context.get_owner()?).into()),
-            Expression::AdjacentAllyUnits => {
+            Expression::all_enemy_units => Ok(context.all_enemies(context.get_owner()?).into()),
+            Expression::adjacent_ally_units => {
                 Ok(context.adjacent_allies(context.get_owner()?).into())
             }
-            Expression::AdjacentFront => context
+            Expression::adjacent_front => context
                 .offset_unit(context.get_owner()?, 1)
                 .to_e("No front unit found"),
-            Expression::AdjacentBack => context
+            Expression::adjacent_back => context
                 .offset_unit(context.get_owner()?, -1)
                 .to_e("No back unit found"),
-            Expression::Sin(x) => Ok(x.get_f32(context)?.sin().into()),
-            Expression::Cos(x) => Ok(x.get_f32(context)?.cos().into()),
-            Expression::Even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),
-            Expression::Abs(x) => x.get_value(context)?.abs(),
-            Expression::Floor(x) => Ok(x.get_f32(context)?.floor().into()),
-            Expression::Ceil(x) => Ok(x.get_f32(context)?.ceil().into()),
-            Expression::Fract(x) => Ok(x.get_f32(context)?.fract().into()),
-            Expression::Sqr(x) => Ok({
+            Expression::sin(x) => Ok(x.get_f32(context)?.sin().into()),
+            Expression::cos(x) => Ok(x.get_f32(context)?.cos().into()),
+            Expression::even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),
+            Expression::abs(x) => x.get_value(context)?.abs(),
+            Expression::floor(x) => Ok(x.get_f32(context)?.floor().into()),
+            Expression::ceil(x) => Ok(x.get_f32(context)?.ceil().into()),
+            Expression::fract(x) => Ok(x.get_f32(context)?.fract().into()),
+            Expression::sqr(x) => Ok({
                 let x = x.get_f32(context)?;
                 (x * x).into()
             }),
-            Expression::UnitVec(x) => {
+            Expression::unit_vec(x) => {
                 let x = x.get_f32(context)?;
                 let x = vec2(x.cos(), x.sin());
                 Ok(x.into())
             }
-            Expression::ToF(x) => Ok(x.get_f32(context)?.into()),
-            Expression::Rand(x) => {
+            Expression::to_f32(x) => Ok(x.get_f32(context)?.into()),
+            Expression::rand(x) => {
                 let x = x.get_value(context)?;
                 let mut hasher = DefaultHasher::new();
                 x.hash(&mut hasher);
                 let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
                 Ok(rng.gen_range(0.0..1.0).into())
             }
-            Expression::RandomUnit(x) => x
+            Expression::random_unit(x) => x
                 .get_entity_list(context)?
                 .choose(&mut thread_rng())
                 .map(|e| e.to_value())
                 .to_e("No units found"),
-            Expression::Macro(s, v) => {
+            Expression::str_macro(s, v) => {
                 let s = s.get_string(context)?;
                 let v = v.get_string(context)?;
                 Ok(s.replace("%s", &v).into())
             }
-            Expression::V2EE(a, b) => Ok(vec2(a.get_f32(context)?, b.get_f32(context)?).into()),
-            Expression::Sum(a, b) => a.get_value(context)?.add(&b.get_value(context)?),
-            Expression::Sub(a, b) => a.get_value(context)?.sub(&b.get_value(context)?),
-            Expression::Mul(a, b) => a.get_value(context)?.mul(&b.get_value(context)?),
-            Expression::Div(a, b) => a.get_value(context)?.div(&b.get_value(context)?),
-            Expression::Max(a, b) => a.get_value(context)?.max(&b.get_value(context)?),
-            Expression::Min(a, b) => a.get_value(context)?.min(&b.get_value(context)?),
-            Expression::Mod(a, b) => Ok((a.get_i32(context)? % b.get_i32(context)?).into()),
-            Expression::And(a, b) => Ok((a.get_bool(context)? && b.get_bool(context)?).into()),
-            Expression::Or(a, b) => Ok((a.get_bool(context)? || b.get_bool(context)?).into()),
-            Expression::Equals(a, b) => Ok((a.get_value(context)? == b.get_value(context)?).into()),
-            Expression::GreaterThen(a, b) => Ok(VarValue::bool(matches!(
+            Expression::vec2_ee(a, b) => Ok(vec2(a.get_f32(context)?, b.get_f32(context)?).into()),
+            Expression::sum(a, b) => a.get_value(context)?.add(&b.get_value(context)?),
+            Expression::sub(a, b) => a.get_value(context)?.sub(&b.get_value(context)?),
+            Expression::mul(a, b) => a.get_value(context)?.mul(&b.get_value(context)?),
+            Expression::div(a, b) => a.get_value(context)?.div(&b.get_value(context)?),
+            Expression::max(a, b) => a.get_value(context)?.max(&b.get_value(context)?),
+            Expression::min(a, b) => a.get_value(context)?.min(&b.get_value(context)?),
+            Expression::r#mod(a, b) => Ok((a.get_i32(context)? % b.get_i32(context)?).into()),
+            Expression::and(a, b) => Ok((a.get_bool(context)? && b.get_bool(context)?).into()),
+            Expression::or(a, b) => Ok((a.get_bool(context)? || b.get_bool(context)?).into()),
+            Expression::equals(a, b) => Ok((a.get_value(context)? == b.get_value(context)?).into()),
+            Expression::greater_then(a, b) => Ok(VarValue::bool(matches!(
                 VarValue::compare(&a.get_value(context)?, &b.get_value(context)?)?,
                 std::cmp::Ordering::Greater
             ))),
-            Expression::LessThen(a, b) => Ok(VarValue::bool(matches!(
+            Expression::less_then(a, b) => Ok(VarValue::bool(matches!(
                 VarValue::compare(&a.get_value(context)?, &b.get_value(context)?)?,
                 std::cmp::Ordering::Less
             ))),
-            Expression::Fallback(v, fb) => {
+            Expression::fallback(v, fb) => {
                 if let Ok(v) = v.get_value(context) {
                     Ok(v)
                 } else {
                     fb.get_value(context)
                 }
             }
-            Expression::Oklch(l, c, h) => Ok(Color::lch(
+            Expression::oklch(l, c, h) => Ok(Color::lch(
                 l.get_f32(context)? * 1.5,
                 c.get_f32(context)? * 1.5,
                 h.get_f32(context)? * 360.0,
             )
             .c32()
             .into()),
-            Expression::If(i, t, el) => {
+            Expression::r#if(i, t, el) => {
                 if i.get_bool(context)? {
                     t.get_value(context)
                 } else {

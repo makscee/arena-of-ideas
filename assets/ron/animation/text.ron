@@ -1,12 +1,12 @@
 [
-    Duration(F(3.0)),
-    Spawn(
+    duration(f32(3.0)),
+    spawn(
         (
             [
-                Color(Var(color)),
-                Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
-                Text(Var(text)),
-                Translate(V2EE(Zero, Sub(Zero, Mul(Var(t), F(4.0))))),
+                color(var(color)),
+                alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
+                text(var(text)),
+                translate(vec2_ee(zero, sub(zero, mul(var(t), f32(4.0))))),
             ],
         ),
     ),

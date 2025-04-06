@@ -1,6 +1,6 @@
 [
     (
         BattleStart,
-        ([AddTarget(AdjacentFront), AddTarget(AdjacentBack), UseAbility]),
+        ([add_target(AdjacentFront), add_target(AdjacentBack), UseAbility]),
     ),
 ]

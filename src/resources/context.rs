@@ -91,7 +91,7 @@ impl<'w, 's> Context<'w, 's> {
             .iter()
             .rev()
             .find_map(|l| l.get_owner())
-            .to_e("Owner not found")
+            .to_e("owner not found")
     }
     pub fn get_caster(&self) -> Result<Entity, ExpressionError> {
         self.layers
@@ -105,7 +105,7 @@ impl<'w, 's> Context<'w, 's> {
             .iter()
             .rev()
             .find_map(|l| l.get_target())
-            .to_e("Target not found")
+            .to_e("target not found")
     }
     pub fn collect_targets(&self) -> Result<Vec<Entity>, ExpressionError> {
         let targets = self

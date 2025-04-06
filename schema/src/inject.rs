@@ -62,7 +62,7 @@ impl Inject for Expression {
         <Expression as Injector<f32>>::inject_inner(self, source);
     }
     fn wrapper() -> Option<Self> {
-        Some(Self::Abs(default()))
+        Some(Self::abs(default()))
     }
 }
 
@@ -72,7 +72,7 @@ impl Inject for PainterAction {
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
     fn wrapper() -> Option<Self> {
-        Some(Self::Repeat(Box::new(Expression::I(1)), default()))
+        Some(Self::repeat(Box::new(Expression::i32(1)), default()))
     }
 }
 
@@ -82,125 +82,125 @@ impl Inject for Action {
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
     fn wrapper() -> Option<Self> {
-        Some(Self::Repeat(Box::new(Expression::I(1)), default()))
+        Some(Self::repeat(Box::new(Expression::i32(1)), default()))
     }
 }
 
 impl Injector<Self> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::PI
-            | Expression::PI2
-            | Expression::GT
-            | Expression::UnitSize
-            | Expression::AllUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::AllEnemyUnits
-            | Expression::Owner
-            | Expression::Target
-            | Expression::Var(..)
-            | Expression::V(..)
-            | Expression::S(..)
-            | Expression::F(..)
-            | Expression::FSlider(..)
-            | Expression::I(..)
-            | Expression::B(..)
-            | Expression::V2(..)
-            | Expression::C(..) => default(),
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Floor(x)
-            | Expression::Ceil(x)
-            | Expression::Fract(x)
-            | Expression::UnitVec(x)
-            | Expression::Rand(x)
-            | Expression::RandomUnit(x)
-            | Expression::ToF(x)
-            | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => [x.as_mut()].into(),
-            Expression::Macro(a, b)
-            | Expression::V2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Fallback(a, b) => [a.as_mut(), b.as_mut()].into(),
-            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => {
+            Expression::one
+            | Expression::zero
+            | Expression::pi
+            | Expression::pi2
+            | Expression::gt
+            | Expression::unit_size
+            | Expression::all_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::all_enemy_units
+            | Expression::owner
+            | Expression::target
+            | Expression::var(..)
+            | Expression::value(..)
+            | Expression::string(..)
+            | Expression::f32(..)
+            | Expression::f32_slider(..)
+            | Expression::i32(..)
+            | Expression::bool(..)
+            | Expression::vec2(..)
+            | Expression::color(..) => default(),
+            Expression::sin(x)
+            | Expression::cos(x)
+            | Expression::even(x)
+            | Expression::abs(x)
+            | Expression::floor(x)
+            | Expression::ceil(x)
+            | Expression::fract(x)
+            | Expression::unit_vec(x)
+            | Expression::rand(x)
+            | Expression::random_unit(x)
+            | Expression::to_f32(x)
+            | Expression::state_var(x, _)
+            | Expression::sqr(x) => [x.as_mut()].into(),
+            Expression::str_macro(a, b)
+            | Expression::vec2_ee(a, b)
+            | Expression::sum(a, b)
+            | Expression::sub(a, b)
+            | Expression::mul(a, b)
+            | Expression::div(a, b)
+            | Expression::max(a, b)
+            | Expression::min(a, b)
+            | Expression::r#mod(a, b)
+            | Expression::and(a, b)
+            | Expression::or(a, b)
+            | Expression::equals(a, b)
+            | Expression::greater_then(a, b)
+            | Expression::less_then(a, b)
+            | Expression::fallback(a, b) => [a.as_mut(), b.as_mut()].into(),
+            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => {
                 [a.as_mut(), b.as_mut(), c.as_mut()].into()
             }
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
         match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::PI
-            | Expression::PI2
-            | Expression::GT
-            | Expression::UnitSize
-            | Expression::AllUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::AllEnemyUnits
-            | Expression::Owner
-            | Expression::Target
-            | Expression::Var(..)
-            | Expression::V(..)
-            | Expression::S(..)
-            | Expression::F(..)
-            | Expression::FSlider(..)
-            | Expression::I(..)
-            | Expression::B(..)
-            | Expression::V2(..)
-            | Expression::C(..) => default(),
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Floor(x)
-            | Expression::Ceil(x)
-            | Expression::Fract(x)
-            | Expression::UnitVec(x)
-            | Expression::Rand(x)
-            | Expression::RandomUnit(x)
-            | Expression::ToF(x)
-            | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => [x].into(),
-            Expression::Macro(a, b)
-            | Expression::V2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Fallback(a, b) => [a, b].into(),
-            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => [a, b, c].into(),
+            Expression::one
+            | Expression::zero
+            | Expression::pi
+            | Expression::pi2
+            | Expression::gt
+            | Expression::unit_size
+            | Expression::all_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::all_enemy_units
+            | Expression::owner
+            | Expression::target
+            | Expression::var(..)
+            | Expression::value(..)
+            | Expression::string(..)
+            | Expression::f32(..)
+            | Expression::f32_slider(..)
+            | Expression::i32(..)
+            | Expression::bool(..)
+            | Expression::vec2(..)
+            | Expression::color(..) => default(),
+            Expression::sin(x)
+            | Expression::cos(x)
+            | Expression::even(x)
+            | Expression::abs(x)
+            | Expression::floor(x)
+            | Expression::ceil(x)
+            | Expression::fract(x)
+            | Expression::unit_vec(x)
+            | Expression::rand(x)
+            | Expression::random_unit(x)
+            | Expression::to_f32(x)
+            | Expression::state_var(x, _)
+            | Expression::sqr(x) => [x].into(),
+            Expression::str_macro(a, b)
+            | Expression::vec2_ee(a, b)
+            | Expression::sum(a, b)
+            | Expression::sub(a, b)
+            | Expression::mul(a, b)
+            | Expression::div(a, b)
+            | Expression::max(a, b)
+            | Expression::min(a, b)
+            | Expression::r#mod(a, b)
+            | Expression::and(a, b)
+            | Expression::or(a, b)
+            | Expression::equals(a, b)
+            | Expression::greater_then(a, b)
+            | Expression::less_then(a, b)
+            | Expression::fallback(a, b) => [a, b].into(),
+            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => [a, b, c].into(),
         }
     }
 }
@@ -208,7 +208,7 @@ impl Injector<Self> for Expression {
 impl Injector<f32> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut f32> {
         match self {
-            Expression::FSlider(v) | Expression::F(v) => [v].into(),
+            Expression::f32_slider(v) | Expression::f32(v) => [v].into(),
             _ => default(),
         }
     }
@@ -221,20 +221,20 @@ impl Injector<f32> for Expression {
 impl Injector<Expression> for PainterAction {
     fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
-            PainterAction::List(..) | PainterAction::Paint => default(),
-            PainterAction::Circle(x)
-            | PainterAction::Rectangle(x)
-            | PainterAction::Text(x)
-            | PainterAction::Hollow(x)
-            | PainterAction::Translate(x)
-            | PainterAction::Rotate(x)
-            | PainterAction::ScaleMesh(x)
-            | PainterAction::ScaleRect(x)
-            | PainterAction::Color(x)
-            | PainterAction::Alpha(x)
-            | PainterAction::Feathering(x)
-            | PainterAction::Repeat(x, ..) => [x.as_mut()].into(),
-            PainterAction::Curve {
+            PainterAction::list(..) | PainterAction::paint => default(),
+            PainterAction::circle(x)
+            | PainterAction::rectangle(x)
+            | PainterAction::text(x)
+            | PainterAction::hollow(x)
+            | PainterAction::translate(x)
+            | PainterAction::rotate(x)
+            | PainterAction::scale_mesh(x)
+            | PainterAction::scale_rect(x)
+            | PainterAction::color(x)
+            | PainterAction::alpha(x)
+            | PainterAction::feathering(x)
+            | PainterAction::repeat(x, ..) => [x.as_mut()].into(),
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => [thickness.as_mut(), curvature.as_mut()].into(),
@@ -242,20 +242,20 @@ impl Injector<Expression> for PainterAction {
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
         match self {
-            PainterAction::List(..) | PainterAction::Paint => default(),
-            PainterAction::Circle(x)
-            | PainterAction::Rectangle(x)
-            | PainterAction::Text(x)
-            | PainterAction::Hollow(x)
-            | PainterAction::Translate(x)
-            | PainterAction::Rotate(x)
-            | PainterAction::ScaleMesh(x)
-            | PainterAction::ScaleRect(x)
-            | PainterAction::Color(x)
-            | PainterAction::Alpha(x)
-            | PainterAction::Feathering(x)
-            | PainterAction::Repeat(x, ..) => [x].into(),
-            PainterAction::Curve {
+            PainterAction::list(..) | PainterAction::paint => default(),
+            PainterAction::circle(x)
+            | PainterAction::rectangle(x)
+            | PainterAction::text(x)
+            | PainterAction::hollow(x)
+            | PainterAction::translate(x)
+            | PainterAction::rotate(x)
+            | PainterAction::scale_mesh(x)
+            | PainterAction::scale_rect(x)
+            | PainterAction::color(x)
+            | PainterAction::alpha(x)
+            | PainterAction::feathering(x)
+            | PainterAction::repeat(x, ..) => [x].into(),
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => [thickness, curvature].into(),
@@ -265,46 +265,46 @@ impl Injector<Expression> for PainterAction {
 impl Injector<Self> for PainterAction {
     fn resize_inner(&mut self, size: usize) {
         match self {
-            PainterAction::List(vec) => vec.resize(size, default()),
+            PainterAction::list(vec) => vec.resize(size, default()),
             _ => {}
         }
     }
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
-            PainterAction::Paint
-            | PainterAction::Circle(..)
-            | PainterAction::Rectangle(..)
-            | PainterAction::Curve { .. }
-            | PainterAction::Text(..)
-            | PainterAction::Hollow(..)
-            | PainterAction::Translate(..)
-            | PainterAction::Rotate(..)
-            | PainterAction::ScaleMesh(..)
-            | PainterAction::ScaleRect(..)
-            | PainterAction::Color(..)
-            | PainterAction::Feathering(..)
-            | PainterAction::Alpha(..) => default(),
-            PainterAction::Repeat(_x, p) => [p.as_mut()].into(),
-            PainterAction::List(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
+            PainterAction::paint
+            | PainterAction::circle(..)
+            | PainterAction::rectangle(..)
+            | PainterAction::curve { .. }
+            | PainterAction::text(..)
+            | PainterAction::hollow(..)
+            | PainterAction::translate(..)
+            | PainterAction::rotate(..)
+            | PainterAction::scale_mesh(..)
+            | PainterAction::scale_rect(..)
+            | PainterAction::color(..)
+            | PainterAction::feathering(..)
+            | PainterAction::alpha(..) => default(),
+            PainterAction::repeat(_x, p) => [p.as_mut()].into(),
+            PainterAction::list(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
         match self {
-            PainterAction::Paint
-            | PainterAction::Circle(..)
-            | PainterAction::Rectangle(..)
-            | PainterAction::Curve { .. }
-            | PainterAction::Text(..)
-            | PainterAction::Hollow(..)
-            | PainterAction::Translate(..)
-            | PainterAction::Rotate(..)
-            | PainterAction::ScaleMesh(..)
-            | PainterAction::ScaleRect(..)
-            | PainterAction::Color(..)
-            | PainterAction::Feathering(..)
-            | PainterAction::Alpha(..) => default(),
-            PainterAction::Repeat(_x, p) => [p].into(),
-            PainterAction::List(vec) => vec.into_iter().collect_vec(),
+            PainterAction::paint
+            | PainterAction::circle(..)
+            | PainterAction::rectangle(..)
+            | PainterAction::curve { .. }
+            | PainterAction::text(..)
+            | PainterAction::hollow(..)
+            | PainterAction::translate(..)
+            | PainterAction::rotate(..)
+            | PainterAction::scale_mesh(..)
+            | PainterAction::scale_rect(..)
+            | PainterAction::color(..)
+            | PainterAction::feathering(..)
+            | PainterAction::alpha(..) => default(),
+            PainterAction::repeat(_x, p) => [p].into(),
+            PainterAction::list(vec) => vec.into_iter().collect_vec(),
         }
     }
 }
@@ -312,64 +312,64 @@ impl Injector<Self> for PainterAction {
 impl Injector<Self> for Action {
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
-            Action::Noop
-            | Action::Debug(..)
-            | Action::SetValue(..)
-            | Action::AddValue(..)
-            | Action::SubtractValue(..)
-            | Action::AddTarget(..)
-            | Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility => default(),
-            Action::Repeat(_, vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
+            Action::noop
+            | Action::debug(..)
+            | Action::set_value(..)
+            | Action::add_value(..)
+            | Action::subtract_value(..)
+            | Action::add_target(..)
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability => default(),
+            Action::repeat(_, vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Self>> {
         match self {
-            Action::Noop
-            | Action::Debug(..)
-            | Action::SetValue(..)
-            | Action::AddValue(..)
-            | Action::SubtractValue(..)
-            | Action::AddTarget(..)
-            | Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility => default(),
-            Action::Repeat(_, vec) => vec.into_iter().collect_vec(),
+            Action::noop
+            | Action::debug(..)
+            | Action::set_value(..)
+            | Action::add_value(..)
+            | Action::subtract_value(..)
+            | Action::add_target(..)
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability => default(),
+            Action::repeat(_, vec) => vec.into_iter().collect_vec(),
         }
     }
 }
 impl Injector<Expression> for Action {
     fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
-            Action::Noop
-            | Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility => default(),
-            Action::Debug(x)
-            | Action::SetValue(x)
-            | Action::AddValue(x)
-            | Action::SubtractValue(x)
-            | Action::AddTarget(x)
-            | Action::Repeat(x, _) => [x.as_mut()].into(),
+            Action::noop
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability => default(),
+            Action::debug(x)
+            | Action::set_value(x)
+            | Action::add_value(x)
+            | Action::subtract_value(x)
+            | Action::add_target(x)
+            | Action::repeat(x, _) => [x.as_mut()].into(),
         }
     }
     fn get_inner(&self) -> Vec<&Box<Expression>> {
         match self {
-            Action::Noop
-            | Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility => default(),
-            Action::Debug(x)
-            | Action::SetValue(x)
-            | Action::AddValue(x)
-            | Action::SubtractValue(x)
-            | Action::AddTarget(x)
-            | Action::Repeat(x, _) => [x].into(),
+            Action::noop
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability => default(),
+            Action::debug(x)
+            | Action::set_value(x)
+            | Action::add_value(x)
+            | Action::subtract_value(x)
+            | Action::add_target(x)
+            | Action::repeat(x, _) => [x].into(),
         }
     }
 }

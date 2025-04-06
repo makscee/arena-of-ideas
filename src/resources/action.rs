@@ -27,43 +27,43 @@ impl ActionImpl for Action {
         );
         let mut actions = Vec::default();
         match self {
-            Action::Noop => {}
-            Action::Debug(x) => {
+            Action::noop => {}
+            Action::debug(x) => {
                 dbg!(x.get_value(context))?;
             }
-            Action::SetValue(x) => {
+            Action::set_value(x) => {
                 context.set_value(x.get_value(context)?);
             }
-            Action::AddValue(x) => {
+            Action::add_value(x) => {
                 context.set_value(context.get_value()?.add(&x.get_value(context)?)?);
             }
-            Action::SubtractValue(x) => {
+            Action::subtract_value(x) => {
                 context.set_value(context.get_value()?.sub(&x.get_value(context)?)?);
             }
-            Action::AddTarget(x) => {
+            Action::add_target(x) => {
                 for entity in x.get_entity_list(context)? {
                     context.add_target(entity);
                 }
             }
-            Action::DealDamage => {
+            Action::deal_damage => {
                 let owner = context.get_owner()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
                     for target in context.collect_targets()? {
-                        actions.push(BattleAction::Damage(owner, target, value));
+                        actions.push(BattleAction::damage(owner, target, value));
                     }
                 }
             }
-            Action::HealDamage => {
+            Action::heal_damage => {
                 let owner = context.get_owner()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
                     for target in context.collect_targets()? {
-                        actions.push(BattleAction::Heal(owner, target, value));
+                        actions.push(BattleAction::heal(owner, target, value));
                     }
                 }
             }
-            Action::UseAbility => {
+            Action::use_ability => {
                 let caster = context.get_caster()?;
                 let ability = context
                     .find_parent_component::<AbilityMagic>(caster)
@@ -77,7 +77,7 @@ impl ActionImpl for Action {
                     .clone();
                 let color = context.get_color(VarName::color)?;
                 let text = format!("use ability [{} [b {name}]]", color.to_hex());
-                actions.push(BattleAction::Vfx(
+                actions.push(BattleAction::vfx(
                     HashMap::from_iter([
                         (VarName::text, text.into()),
                         (VarName::color, tokens_global().high_contrast_text().into()),
@@ -87,7 +87,7 @@ impl ActionImpl for Action {
                 ));
                 actions.extend(ability_actions.process(context)?);
             }
-            Action::ApplyStatus => {
+            Action::apply_status => {
                 let caster = context.get_caster()?;
                 let status = context
                     .find_parent_component::<StatusMagic>(caster)
@@ -105,7 +105,7 @@ impl ActionImpl for Action {
                     .clone();
                 let color = context.get_color(VarName::color)?;
                 let text = format!("gain [{} [b {name}]]", color.to_hex());
-                actions.push(BattleAction::Vfx(
+                actions.push(BattleAction::vfx(
                     HashMap::from_iter([
                         (VarName::text, text.into()),
                         (VarName::color, tokens_global().high_contrast_text().into()),
@@ -117,14 +117,14 @@ impl ActionImpl for Action {
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;
-                actions.push(BattleAction::ApplyStatus(
+                actions.push(BattleAction::apply_status(
                     context.get_owner()?,
                     status,
                     1,
                     color,
                 ));
             }
-            Action::Repeat(x, vec) => {
+            Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
                     let context = &mut context.clone();
                     for a in vec {

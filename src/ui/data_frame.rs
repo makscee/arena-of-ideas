@@ -613,145 +613,145 @@ impl DataFramed for Expression {
     }
     fn has_header(&self) -> bool {
         match self {
-            Expression::Var(_)
-            | Expression::V(_)
-            | Expression::S(_)
-            | Expression::F(_)
-            | Expression::FSlider(_)
-            | Expression::I(_)
-            | Expression::B(_)
-            | Expression::V2(_, _)
-            | Expression::StateVar(_, _)
-            | Expression::C(_) => true,
-            Expression::One
-            | Expression::Zero
-            | Expression::PI
-            | Expression::PI2
-            | Expression::GT
-            | Expression::Owner
-            | Expression::Target
-            | Expression::UnitSize
-            | Expression::AllUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::AllEnemyUnits
-            | Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::UnitVec(..)
-            | Expression::Rand(..)
-            | Expression::RandomUnit(..)
-            | Expression::Sqr(..)
-            | Expression::V2EE(..)
-            | Expression::Macro(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::ToF(..)
-            | Expression::Oklch(..)
-            | Expression::Fallback(..)
-            | Expression::If(..) => false,
+            Expression::var(_)
+            | Expression::value(_)
+            | Expression::string(_)
+            | Expression::f32(_)
+            | Expression::f32_slider(_)
+            | Expression::i32(_)
+            | Expression::bool(_)
+            | Expression::vec2(_, _)
+            | Expression::state_var(_, _)
+            | Expression::color(_) => true,
+            Expression::one
+            | Expression::zero
+            | Expression::pi
+            | Expression::pi2
+            | Expression::gt
+            | Expression::owner
+            | Expression::target
+            | Expression::unit_size
+            | Expression::all_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::all_enemy_units
+            | Expression::sin(..)
+            | Expression::cos(..)
+            | Expression::even(..)
+            | Expression::abs(..)
+            | Expression::floor(..)
+            | Expression::ceil(..)
+            | Expression::fract(..)
+            | Expression::unit_vec(..)
+            | Expression::rand(..)
+            | Expression::random_unit(..)
+            | Expression::sqr(..)
+            | Expression::vec2_ee(..)
+            | Expression::str_macro(..)
+            | Expression::sum(..)
+            | Expression::sub(..)
+            | Expression::mul(..)
+            | Expression::div(..)
+            | Expression::max(..)
+            | Expression::min(..)
+            | Expression::r#mod(..)
+            | Expression::and(..)
+            | Expression::or(..)
+            | Expression::equals(..)
+            | Expression::greater_then(..)
+            | Expression::less_then(..)
+            | Expression::to_f32(..)
+            | Expression::oklch(..)
+            | Expression::fallback(..)
+            | Expression::r#if(..) => false,
         }
     }
     fn has_body(&self) -> bool {
         match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::PI
-            | Expression::PI2
-            | Expression::GT
-            | Expression::Owner
-            | Expression::Target
-            | Expression::UnitSize
-            | Expression::AllUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::AllEnemyUnits
-            | Expression::Var(..)
-            | Expression::V(..)
-            | Expression::S(..)
-            | Expression::F(..)
-            | Expression::I(..)
-            | Expression::B(..)
-            | Expression::V2(..)
-            | Expression::C(..) => false,
-            Expression::Sin(..)
-            | Expression::Cos(..)
-            | Expression::Even(..)
-            | Expression::Abs(..)
-            | Expression::Floor(..)
-            | Expression::Ceil(..)
-            | Expression::Fract(..)
-            | Expression::UnitVec(..)
-            | Expression::Rand(..)
-            | Expression::RandomUnit(..)
-            | Expression::Sqr(..)
-            | Expression::V2EE(..)
-            | Expression::Macro(..)
-            | Expression::Sum(..)
-            | Expression::Sub(..)
-            | Expression::Mul(..)
-            | Expression::Div(..)
-            | Expression::Max(..)
-            | Expression::Min(..)
-            | Expression::Mod(..)
-            | Expression::And(..)
-            | Expression::Or(..)
-            | Expression::Equals(..)
-            | Expression::GreaterThen(..)
-            | Expression::LessThen(..)
-            | Expression::FSlider(..)
-            | Expression::ToF(..)
-            | Expression::Oklch(..)
-            | Expression::StateVar(..)
-            | Expression::Fallback(..)
-            | Expression::If(..) => true,
+            Expression::one
+            | Expression::zero
+            | Expression::pi
+            | Expression::pi2
+            | Expression::gt
+            | Expression::owner
+            | Expression::target
+            | Expression::unit_size
+            | Expression::all_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::all_enemy_units
+            | Expression::var(..)
+            | Expression::value(..)
+            | Expression::string(..)
+            | Expression::f32(..)
+            | Expression::i32(..)
+            | Expression::bool(..)
+            | Expression::vec2(..)
+            | Expression::color(..) => false,
+            Expression::sin(..)
+            | Expression::cos(..)
+            | Expression::even(..)
+            | Expression::abs(..)
+            | Expression::floor(..)
+            | Expression::ceil(..)
+            | Expression::fract(..)
+            | Expression::unit_vec(..)
+            | Expression::rand(..)
+            | Expression::random_unit(..)
+            | Expression::sqr(..)
+            | Expression::vec2_ee(..)
+            | Expression::str_macro(..)
+            | Expression::sum(..)
+            | Expression::sub(..)
+            | Expression::mul(..)
+            | Expression::div(..)
+            | Expression::max(..)
+            | Expression::min(..)
+            | Expression::r#mod(..)
+            | Expression::and(..)
+            | Expression::or(..)
+            | Expression::equals(..)
+            | Expression::greater_then(..)
+            | Expression::less_then(..)
+            | Expression::f32_slider(..)
+            | Expression::to_f32(..)
+            | Expression::oklch(..)
+            | Expression::state_var(..)
+            | Expression::fallback(..)
+            | Expression::r#if(..) => true,
         }
     }
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Expression::Var(v) | Expression::StateVar(_, v) => v.show(Some("x"), &context, ui),
-            Expression::V(v) => v.show(Some("x"), &context, ui),
-            Expression::S(v) => v.show(Some("x"), &context, ui),
-            Expression::F(v) | Expression::FSlider(v) => v.show(Some("x"), &context, ui),
-            Expression::I(v) => v.show(Some("x"), &context, ui),
-            Expression::B(v) => v.show(Some("x"), &context, ui),
-            Expression::V2(x, y) => {
+            Expression::var(v) | Expression::state_var(_, v) => v.show(Some("x"), &context, ui),
+            Expression::value(v) => v.show(Some("x"), &context, ui),
+            Expression::string(v) => v.show(Some("x"), &context, ui),
+            Expression::f32(v) | Expression::f32_slider(v) => v.show(Some("x"), &context, ui),
+            Expression::i32(v) => v.show(Some("x"), &context, ui),
+            Expression::bool(v) => v.show(Some("x"), &context, ui),
+            Expression::vec2(x, y) => {
                 x.show(Some("x"), &context, ui);
                 y.show(Some("y"), &context, ui);
             }
-            Expression::C(v) => v.show(Some("c"), &context, ui),
+            Expression::color(v) => v.show(Some("c"), &context, ui),
             _ => {}
         }
     }
     fn show_header_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Expression::Var(v) | Expression::StateVar(_, v) => v.show_mut(Some("x"), ui),
-            Expression::V(v) => v.show_mut(Some("x"), ui),
-            Expression::S(v) => v.show_mut(Some("x"), ui),
-            Expression::F(v) => v.show_mut(Some("x"), ui),
-            Expression::I(v) => v.show_mut(Some("x"), ui),
-            Expression::B(v) => v.show_mut(Some("x"), ui),
-            Expression::C(v) => match Color32::from_hex(v) {
+            Expression::var(v) | Expression::state_var(_, v) => v.show_mut(Some("x"), ui),
+            Expression::value(v) => v.show_mut(Some("x"), ui),
+            Expression::string(v) => v.show_mut(Some("x"), ui),
+            Expression::f32(v) => v.show_mut(Some("x"), ui),
+            Expression::i32(v) => v.show_mut(Some("x"), ui),
+            Expression::bool(v) => v.show_mut(Some("x"), ui),
+            Expression::color(v) => match Color32::from_hex(v) {
                 Ok(mut c) => {
                     v.cstr_c(c).label(ui);
                     let changed = c.show_mut(None, ui);
@@ -766,7 +766,7 @@ impl DataFramed for Expression {
                     true
                 }
             },
-            Expression::V2(x, y) => {
+            Expression::vec2(x, y) => {
                 let x = x.show_mut(Some("x"), ui);
                 y.show_mut(Some("y"), ui) || x
             }
@@ -775,46 +775,46 @@ impl DataFramed for Expression {
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Floor(x)
-            | Expression::Ceil(x)
-            | Expression::Fract(x)
-            | Expression::UnitVec(x)
-            | Expression::Rand(x)
-            | Expression::RandomUnit(x)
-            | Expression::ToF(x)
-            | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => x.show(Some("x"), &context, ui),
-            Expression::V2EE(a, b)
-            | Expression::Macro(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => {
+            Expression::sin(x)
+            | Expression::cos(x)
+            | Expression::even(x)
+            | Expression::abs(x)
+            | Expression::floor(x)
+            | Expression::ceil(x)
+            | Expression::fract(x)
+            | Expression::unit_vec(x)
+            | Expression::rand(x)
+            | Expression::random_unit(x)
+            | Expression::to_f32(x)
+            | Expression::state_var(x, _)
+            | Expression::sqr(x) => x.show(Some("x"), &context, ui),
+            Expression::vec2_ee(a, b)
+            | Expression::str_macro(a, b)
+            | Expression::sum(a, b)
+            | Expression::sub(a, b)
+            | Expression::mul(a, b)
+            | Expression::div(a, b)
+            | Expression::max(a, b)
+            | Expression::min(a, b)
+            | Expression::r#mod(a, b)
+            | Expression::and(a, b)
+            | Expression::or(a, b)
+            | Expression::equals(a, b)
+            | Expression::greater_then(a, b)
+            | Expression::less_then(a, b) => {
                 a.show(Some("a"), &context, ui);
                 b.show(Some("b"), &context, ui);
             }
-            Expression::Fallback(v, e) => {
+            Expression::fallback(v, e) => {
                 v.show(Some("v"), &context, ui);
                 e.show(Some("on_err"), &context, ui);
             }
-            Expression::Oklch(a, b, c) => {
+            Expression::oklch(a, b, c) => {
                 a.show(Some("lightness"), &context, ui);
                 b.show(Some("chroma"), &context, ui);
                 c.show(Some("hue"), &context, ui);
             }
-            Expression::If(a, b, c) => {
+            Expression::r#if(a, b, c) => {
                 a.show(Some("if"), &context, ui);
                 b.show(Some("then"), &context, ui);
                 c.show(Some("else"), &context, ui);
@@ -824,51 +824,51 @@ impl DataFramed for Expression {
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Floor(x)
-            | Expression::Ceil(x)
-            | Expression::Fract(x)
-            | Expression::UnitVec(x)
-            | Expression::Rand(x)
-            | Expression::RandomUnit(x)
-            | Expression::ToF(x)
-            | Expression::StateVar(x, _)
-            | Expression::Sqr(x) => x.show_mut(Some("x"), ui),
-            Expression::V2EE(a, b)
-            | Expression::Macro(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b) => {
+            Expression::sin(x)
+            | Expression::cos(x)
+            | Expression::even(x)
+            | Expression::abs(x)
+            | Expression::floor(x)
+            | Expression::ceil(x)
+            | Expression::fract(x)
+            | Expression::unit_vec(x)
+            | Expression::rand(x)
+            | Expression::random_unit(x)
+            | Expression::to_f32(x)
+            | Expression::state_var(x, _)
+            | Expression::sqr(x) => x.show_mut(Some("x"), ui),
+            Expression::vec2_ee(a, b)
+            | Expression::str_macro(a, b)
+            | Expression::sum(a, b)
+            | Expression::sub(a, b)
+            | Expression::mul(a, b)
+            | Expression::div(a, b)
+            | Expression::max(a, b)
+            | Expression::min(a, b)
+            | Expression::r#mod(a, b)
+            | Expression::and(a, b)
+            | Expression::or(a, b)
+            | Expression::equals(a, b)
+            | Expression::greater_then(a, b)
+            | Expression::less_then(a, b) => {
                 let a = a.show_mut(Some("a"), ui);
                 b.show_mut(Some("b"), ui) || a
             }
-            Expression::Fallback(v, e) => {
+            Expression::fallback(v, e) => {
                 let v = v.show_mut(Some("v"), ui);
                 e.show_mut(Some("on_err"), ui) || v
             }
-            Expression::Oklch(a, b, c) => {
+            Expression::oklch(a, b, c) => {
                 let a = a.show_mut(Some("lightness"), ui);
                 let b = b.show_mut(Some("chroma"), ui);
                 c.show_mut(Some("hue"), ui) || a || b
             }
-            Expression::If(a, b, c) => {
+            Expression::r#if(a, b, c) => {
                 let a = a.show_mut(Some("if"), ui);
                 let b = b.show_mut(Some("then"), ui);
                 c.show_mut(Some("else"), ui) || a || b
             }
-            Expression::FSlider(x) => Slider::new("x").full_width().ui(x, 0.0..=1.0, ui),
+            Expression::f32_slider(x) => Slider::new("x").full_width().ui(x, 0.0..=1.0, ui),
             _ => false,
         }
     }
@@ -887,21 +887,21 @@ impl DataFramed for PainterAction {
     }
     fn has_body(&self) -> bool {
         match self {
-            PainterAction::Paint => false,
-            PainterAction::Circle(..)
-            | PainterAction::Rectangle(..)
-            | PainterAction::Curve { .. }
-            | PainterAction::Text(..)
-            | PainterAction::Hollow(..)
-            | PainterAction::Translate(..)
-            | PainterAction::Rotate(..)
-            | PainterAction::ScaleMesh(..)
-            | PainterAction::ScaleRect(..)
-            | PainterAction::Color(..)
-            | PainterAction::Feathering(..)
-            | PainterAction::Alpha(..)
-            | PainterAction::Repeat(..)
-            | PainterAction::List(..) => true,
+            PainterAction::paint => false,
+            PainterAction::circle(..)
+            | PainterAction::rectangle(..)
+            | PainterAction::curve { .. }
+            | PainterAction::text(..)
+            | PainterAction::hollow(..)
+            | PainterAction::translate(..)
+            | PainterAction::rotate(..)
+            | PainterAction::scale_mesh(..)
+            | PainterAction::scale_rect(..)
+            | PainterAction::color(..)
+            | PainterAction::feathering(..)
+            | PainterAction::alpha(..)
+            | PainterAction::repeat(..)
+            | PainterAction::list(..) => true,
         }
     }
     fn show_header(&self, _: &Context, _: &mut Ui) {}
@@ -910,65 +910,65 @@ impl DataFramed for PainterAction {
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {
         match self {
-            PainterAction::Paint => {}
-            PainterAction::Circle(x)
-            | PainterAction::Rectangle(x)
-            | PainterAction::Text(x)
-            | PainterAction::Hollow(x)
-            | PainterAction::Translate(x)
-            | PainterAction::Rotate(x)
-            | PainterAction::ScaleMesh(x)
-            | PainterAction::ScaleRect(x)
-            | PainterAction::Color(x)
-            | PainterAction::Feathering(x)
-            | PainterAction::Alpha(x) => x.show(Some("x"), context, ui),
-            PainterAction::Curve {
+            PainterAction::paint => {}
+            PainterAction::circle(x)
+            | PainterAction::rectangle(x)
+            | PainterAction::text(x)
+            | PainterAction::hollow(x)
+            | PainterAction::translate(x)
+            | PainterAction::rotate(x)
+            | PainterAction::scale_mesh(x)
+            | PainterAction::scale_rect(x)
+            | PainterAction::color(x)
+            | PainterAction::feathering(x)
+            | PainterAction::alpha(x) => x.show(Some("x"), context, ui),
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => {
                 thickness.show(Some("thickness"), context, ui);
                 curvature.show(Some("curvature"), context, ui);
             }
-            PainterAction::Repeat(x, painter_action) => {
+            PainterAction::repeat(x, painter_action) => {
                 x.show(Some("cnt"), context, ui);
                 painter_action.show(Some("action"), context, ui);
             }
-            PainterAction::List(vec) => {}
+            PainterAction::list(vec) => {}
         }
     }
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            PainterAction::Paint => false,
-            PainterAction::Circle(x)
-            | PainterAction::Rectangle(x)
-            | PainterAction::Text(x)
-            | PainterAction::Hollow(x)
-            | PainterAction::Translate(x)
-            | PainterAction::Rotate(x)
-            | PainterAction::ScaleMesh(x)
-            | PainterAction::ScaleRect(x)
-            | PainterAction::Color(x)
-            | PainterAction::Feathering(x)
-            | PainterAction::Alpha(x) => x.show_mut(Some("x"), ui),
-            PainterAction::Repeat(x, painter_action) => {
+            PainterAction::paint => false,
+            PainterAction::circle(x)
+            | PainterAction::rectangle(x)
+            | PainterAction::text(x)
+            | PainterAction::hollow(x)
+            | PainterAction::translate(x)
+            | PainterAction::rotate(x)
+            | PainterAction::scale_mesh(x)
+            | PainterAction::scale_rect(x)
+            | PainterAction::color(x)
+            | PainterAction::feathering(x)
+            | PainterAction::alpha(x) => x.show_mut(Some("x"), ui),
+            PainterAction::repeat(x, painter_action) => {
                 let x = x.show_mut(Some("cnt"), ui);
                 painter_action.show_mut(Some("action"), ui) || x
             }
-            PainterAction::Curve {
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => {
                 let thickness = thickness.show_mut(Some("thickness"), ui);
                 curvature.show_mut(Some("curvature"), ui) || thickness
             }
-            PainterAction::List(vec) => false,
+            PainterAction::list(vec) => false,
         }
     }
 }
 impl DataFramed for Action {
     fn default_open(&self) -> bool {
         match self {
-            Action::ApplyStatus | Action::UseAbility => true,
+            Action::apply_status | Action::use_ability => true,
             _ => false,
         }
     }
@@ -981,28 +981,28 @@ impl DataFramed for Action {
     }
     fn has_header(&self) -> bool {
         match self {
-            Action::ApplyStatus | Action::UseAbility => true,
+            Action::apply_status | Action::use_ability => true,
             _ => false,
         }
     }
     fn has_body(&self) -> bool {
         match self {
-            Action::Noop
-            | Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility => false,
-            Action::Debug(..)
-            | Action::SetValue(..)
-            | Action::AddValue(..)
-            | Action::SubtractValue(..)
-            | Action::AddTarget(..)
-            | Action::Repeat(..) => true,
+            Action::noop
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability => false,
+            Action::debug(..)
+            | Action::set_value(..)
+            | Action::add_value(..)
+            | Action::subtract_value(..)
+            | Action::add_target(..)
+            | Action::repeat(..) => true,
         }
     }
     fn show_header(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Action::UseAbility => {
+            Action::use_ability => {
                 if let Some(ability) = context
                     .get_owner()
                     .ok()
@@ -1011,7 +1011,7 @@ impl DataFramed for Action {
                     ability.view(ViewContext::compact().hide_buttons(), context, ui);
                 }
             }
-            Action::ApplyStatus => {
+            Action::apply_status => {
                 if let Some(status) = context
                     .get_owner()
                     .ok()
@@ -1028,19 +1028,19 @@ impl DataFramed for Action {
     }
     fn show_body(&self, context: &Context, ui: &mut Ui) {
         match self {
-            Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility
-            | Action::Noop => {}
-            Action::Debug(x)
-            | Action::SetValue(x)
-            | Action::AddValue(x)
-            | Action::SubtractValue(x)
-            | Action::AddTarget(x) => {
+            Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability
+            | Action::noop => {}
+            Action::debug(x)
+            | Action::set_value(x)
+            | Action::add_value(x)
+            | Action::subtract_value(x)
+            | Action::add_target(x) => {
                 x.show(Some("x"), context, ui);
             }
-            Action::Repeat(x, vec) => {
+            Action::repeat(x, vec) => {
                 x.show(Some("x"), context, ui);
             }
         }
@@ -1048,17 +1048,17 @@ impl DataFramed for Action {
 
     fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
         match self {
-            Action::DealDamage
-            | Action::HealDamage
-            | Action::ApplyStatus
-            | Action::UseAbility
-            | Action::Noop => false,
-            Action::Debug(x)
-            | Action::SetValue(x)
-            | Action::AddValue(x)
-            | Action::SubtractValue(x)
-            | Action::AddTarget(x) => x.show_mut(Some("x"), ui),
-            Action::Repeat(x, vec) => x.show_mut(Some("x"), ui),
+            Action::deal_damage
+            | Action::heal_damage
+            | Action::apply_status
+            | Action::use_ability
+            | Action::noop => false,
+            Action::debug(x)
+            | Action::set_value(x)
+            | Action::add_value(x)
+            | Action::subtract_value(x)
+            | Action::add_target(x) => x.show_mut(Some("x"), ui),
+            Action::repeat(x, vec) => x.show_mut(Some("x"), ui),
         }
     }
 }

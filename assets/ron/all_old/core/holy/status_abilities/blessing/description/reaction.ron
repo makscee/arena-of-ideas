@@ -1,1 +1,1 @@
-[(ChangeStat(hp), ([AddValue(Var(charges))]))]
+[(ChangeStat(hp), ([AddValue(var(charges))]))]

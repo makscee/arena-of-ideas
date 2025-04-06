@@ -1,1 +1,1 @@
-([ScaleRect(F(1.2)), Color(Var(color)), Hollow(F(1.5)), Circle(One)])
+([scale_rect(f32(1.2)), color(var(color)), hollow(f32(1.5)), circle(one)])

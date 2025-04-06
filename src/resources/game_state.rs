@@ -82,7 +82,6 @@ pub enum Pane {
     Triggers,
     Actions,
     FusionResult,
-    BattleEditor,
 
     Incubator(IncubatorPane),
     Battle(BattlePane),
@@ -149,7 +148,6 @@ impl Pane {
             Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
             Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
             Pane::FusionResult => FusionEditorPlugin::pane_fusion_result(ui, world)?,
-            Pane::BattleEditor => BattleTestingPlugin::pane(ui, world)?,
 
             Pane::Incubator(pane) => match pane {
                 IncubatorPane::NewNode => IncubatorPlugin::pane_new_node(ui, world)?,

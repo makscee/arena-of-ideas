@@ -1,16 +1,16 @@
 (
     [
-        Hollow(F(2.0)),
-        Color(Fallback(Var(color), C("#ECEFF1"))),
-        Alpha(F(0.6)),
-        Repeat(
-            I(10),
-            List(
+        hollow(f32(2.0)),
+        color(fallback(var(color), color("#ECEFF1"))),
+        alpha(f32(0.6)),
+        repeat(
+            i32(10),
+            list(
                 [
-                    Rectangle(F(0.35)),
-                    Rotate(Sum(GT, Var(index))),
-                    Translate(Mul(F(0.2), Cos(Sum(GT, Var(index))))),
-                    Paint,
+                    rectangle(f32(0.35)),
+                    rotate(sum(GT, var(index))),
+                    translate(mul(f32(0.2), Cos(sum(GT, var(index))))),
+                    paint,
                 ],
             ),
         ),

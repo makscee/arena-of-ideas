@@ -1,37 +1,37 @@
 [
-    Spawn(
+    spawn(
         (
             [
-                ScaleRect(F(2.0)),
-                Color(C("#a70101ab")),
-                Alpha(Sub(F(4.0), Mul(Var(t), F(4.0)))),
-                Repeat(
-                    I(30),
-                    List(
+                scale_rect(f32(2.0)),
+                color(color("#a70101ab")),
+                alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
+                repeat(
+                    i32(30),
+                    list(
                         [
-                            Circle(F(0.2)),
-                            ScaleMesh(Mul(Var(t), F(1.0))),
-                            Translate(
-                                Mul(
-                                    UnitVec(Mul(Rand(Var(index)), PI2)),
-                                    Min(
-                                        Mul(
-                                            Var(t),
-                                            Sum(
-                                                Rand(Sub(Var(index), F(10.0))),
-                                                One,
+                            circle(f32(0.2)),
+                            scale_mesh(mul(var(t), f32(1.0))),
+                            translate(
+                                mul(
+                                    unit_vec(mul(rand(var(index)), pi2)),
+                                    min(
+                                        mul(
+                                            var(t),
+                                            sum(
+                                                rand(sub(var(index), f32(10.0))),
+                                                one,
                                             ),
                                         ),
-                                        F(0.9),
+                                        f32(0.9),
                                     ),
                                 ),
                             ),
-                            Paint,
+                            paint,
                         ],
                     ),
                 ),
             ],
         ),
     ),
-    Wait(F(0.5)),
+    wait(f32(0.5)),
 ]

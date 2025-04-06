@@ -2,32 +2,33 @@ use expression::Expression;
 
 use super::*;
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub enum PainterAction {
-    Paint,
-    Circle(Box<Expression>),
-    Rectangle(Box<Expression>),
-    Curve {
+    paint,
+    circle(Box<Expression>),
+    rectangle(Box<Expression>),
+    curve {
         thickness: Box<Expression>,
         curvature: Box<Expression>,
     },
-    Text(Box<Expression>),
-    Hollow(Box<Expression>),
-    Translate(Box<Expression>),
-    Rotate(Box<Expression>),
-    ScaleMesh(Box<Expression>),
-    ScaleRect(Box<Expression>),
-    Color(Box<Expression>),
-    Alpha(Box<Expression>),
-    Feathering(Box<Expression>),
-    Repeat(Box<Expression>, Box<PainterAction>),
-    List(Vec<Box<PainterAction>>),
+    text(Box<Expression>),
+    hollow(Box<Expression>),
+    translate(Box<Expression>),
+    rotate(Box<Expression>),
+    scale_mesh(Box<Expression>),
+    scale_rect(Box<Expression>),
+    color(Box<Expression>),
+    alpha(Box<Expression>),
+    feathering(Box<Expression>),
+    repeat(Box<Expression>, Box<PainterAction>),
+    list(Vec<Box<PainterAction>>),
 }
 
 impl Default for PainterAction {
     fn default() -> Self {
-        Self::Circle(Box::new(Expression::F(1.0)))
+        Self::circle(Box::new(Expression::f32(1.0)))
     }
 }
 

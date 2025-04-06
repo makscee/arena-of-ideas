@@ -1,1 +1,1 @@
-([SetValue(I(1)), DealDamage])
+([SetValue(i32(1)), DealDamage])

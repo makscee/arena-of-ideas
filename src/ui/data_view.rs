@@ -5,7 +5,7 @@ pub struct DataViewContext {
     collapsed: bool,
 }
 
-pub trait DataView: Sized + Clone + Default + StringData + ToCstr {
+pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
     fn wrap(value: Self) -> Option<Self> {
         None
     }
@@ -18,13 +18,15 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr {
         let mut changed = false;
         ui.horizontal(|ui| {
             Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
+                self.show_value(context, ui);
                 changed |= self.context_menu_mut(ui);
-                self.context_menu(ui);
+                self.context_menu(context, ui);
             });
             changed |= self.show_body_mut(view_ctx, context, ui);
         });
         changed
     }
+    fn show_value(&self, context: &Context, ui: &mut Ui) {}
     fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         ui.vertical(|ui| self.view_children_mut(view_ctx, context, ui))
             .inner
@@ -40,7 +42,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr {
     fn show_title(text: impl Into<WidgetText>, ui: &mut Ui, context_menu: impl FnOnce(&mut Ui)) {
         ui.button(text).bar_menu(context_menu);
     }
-    fn context_menu(&self, ui: &mut Ui) {
+    fn context_menu(&self, context: &Context, ui: &mut Ui) {
         if ui.button("copy").clicked() {
             self.copy();
         }
@@ -121,7 +123,7 @@ impl DataView for Expression {
         Self::iter().collect_vec()
     }
     fn wrap(value: Self) -> Option<Self> {
-        Some(Self::Abs(Box::new(value)))
+        Some(Self::abs(Box::new(value)))
     }
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);
@@ -141,6 +143,13 @@ impl DataView for Expression {
             changed |= i.show_mut(None, ui);
         }
         changed
+    }
+    fn show_value(&self, context: &Context, ui: &mut Ui) {
+        match self.get_value(context) {
+            Ok(v) => v.cstr_expanded(),
+            Err(e) => e.cstr(),
+        }
+        .label(ui);
     }
 }
 

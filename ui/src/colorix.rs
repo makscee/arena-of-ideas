@@ -66,7 +66,7 @@ impl Colorix {
         let theme = self.global().theme().clone();
         self.semantics[0].update_theme(ctx, theme.clone());
         ctx.style_mut(|style| override_style(style));
-        init_style_map(self);
+        init_style_map(self, &ctx.style());
     }
     pub fn save(self) {
         *COLORIX.lock() = self;

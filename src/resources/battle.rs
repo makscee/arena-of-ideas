@@ -23,37 +23,38 @@ pub struct BattleLog {
 #[derive(Component)]
 pub struct Corpse;
 #[derive(Clone, Debug)]
+#[allow(non_camel_case_types)]
 pub enum BattleAction {
-    VarSet(Entity, NodeKind, VarName, VarValue),
-    Strike(Entity, Entity),
-    Damage(Entity, Entity, i32),
-    Heal(Entity, Entity, i32),
-    Death(Entity),
-    Spawn(Entity),
-    ApplyStatus(Entity, StatusMagic, i32, Color32),
-    SendEvent(Event),
-    Vfx(HashMap<VarName, VarValue>, String),
-    Wait(f32),
+    var_set(Entity, NodeKind, VarName, VarValue),
+    strike(Entity, Entity),
+    damage(Entity, Entity, i32),
+    heal(Entity, Entity, i32),
+    death(Entity),
+    spawn(Entity),
+    apply_status(Entity, StatusMagic, i32, Color32),
+    send_event(Event),
+    vfx(HashMap<VarName, VarValue>, String),
+    wait(f32),
 }
 impl ToCstr for BattleAction {
     fn cstr(&self) -> Cstr {
         match self {
-            BattleAction::Strike(a, b) => format!("{a}|{b}"),
-            BattleAction::Damage(a, b, x) => format!("{a}>{b}-{x}"),
-            BattleAction::Heal(a, b, x) => format!("{a}>{b}+{x}"),
-            BattleAction::Death(a) => format!("x{a}"),
-            BattleAction::VarSet(a, _, var, value) => format!("{a}>${var}>{value}"),
-            BattleAction::Spawn(a) => format!("*{a}"),
-            BattleAction::ApplyStatus(a, status, charges, color) => {
+            BattleAction::strike(a, b) => format!("{a}|{b}"),
+            BattleAction::damage(a, b, x) => format!("{a}>{b}-{x}"),
+            BattleAction::heal(a, b, x) => format!("{a}>{b}+{x}"),
+            BattleAction::death(a) => format!("x{a}"),
+            BattleAction::var_set(a, _, var, value) => format!("{a}>${var}>{value}"),
+            BattleAction::spawn(a) => format!("*{a}"),
+            BattleAction::apply_status(a, status, charges, color) => {
                 format!(
                     "+[{} {}]>{a}({charges})",
                     color.to_hex(),
                     status.status_name
                 )
             }
-            BattleAction::Wait(t) => format!("~{t}"),
-            BattleAction::Vfx(_, vfx) => format!("vfx({vfx})"),
-            BattleAction::SendEvent(e) => format!("event({e})"),
+            BattleAction::wait(t) => format!("~{t}"),
+            BattleAction::vfx(_, vfx) => format!("vfx({vfx})"),
+            BattleAction::send_event(e) => format!("event({e})"),
         }
     }
 }
@@ -66,7 +67,7 @@ impl BattleAction {
     pub fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
         let applied = match self {
-            BattleAction::Strike(a, b) => {
+            BattleAction::strike(a, b) => {
                 let strike_anim = animations().get("strike").unwrap();
                 battle.apply_animation(
                     Context::default()
@@ -77,26 +78,26 @@ impl BattleAction {
                     strike_anim,
                 );
                 let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
-                let action_a = Self::Damage(*a, *b, pwr);
+                let action_a = Self::damage(*a, *b, pwr);
                 let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
-                let action_b = Self::Damage(*b, *a, pwr);
+                let action_b = Self::damage(*b, *a, pwr);
                 add_actions.extend_from_slice(&[action_a, action_b]);
                 add_actions.extend(battle.slots_sync());
                 true
             }
-            BattleAction::Death(a) => {
+            BattleAction::death(a) => {
                 let position = Context::new_battle_simulation(battle)
                     .set_owner(*a)
                     .get_var(VarName::position)
                     .unwrap();
                 add_actions.extend(battle.die(*a));
-                add_actions.push(BattleAction::Vfx(
+                add_actions.push(BattleAction::vfx(
                     HashMap::from_iter([(VarName::position, position)]),
                     "death_vfx".into(),
                 ));
                 true
             }
-            BattleAction::Damage(a, b, x) => {
+            BattleAction::damage(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
                     .get_var(VarName::position)
@@ -122,7 +123,7 @@ impl BattleAction {
                         pain,
                     );
                     let dmg = battle.world.get::<UnitStats>(*b).unwrap().dmg + x;
-                    add_actions.push(Self::VarSet(
+                    add_actions.push(Self::var_set(
                         *b,
                         NodeKind::UnitStats,
                         VarName::dmg,
@@ -141,7 +142,7 @@ impl BattleAction {
                 battle.duration += ANIMATION;
                 true
             }
-            BattleAction::Heal(a, b, x) => {
+            BattleAction::heal(a, b, x) => {
                 let owner_pos = Context::new_battle_simulation(battle)
                     .set_owner(*a)
                     .get_var(VarName::position)
@@ -167,7 +168,7 @@ impl BattleAction {
                         pain,
                     );
                     let dmg = (battle.world.get::<UnitStats>(*b).unwrap().dmg - x).at_least(0);
-                    add_actions.push(Self::VarSet(
+                    add_actions.push(Self::var_set(
                         *b,
                         NodeKind::UnitStats,
                         VarName::dmg,
@@ -186,7 +187,7 @@ impl BattleAction {
                 battle.duration += ANIMATION;
                 true
             }
-            BattleAction::VarSet(entity, kind, var, value) => {
+            BattleAction::var_set(entity, kind, var, value) => {
                 if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
                     battle.duration,
                     0.1,
@@ -199,7 +200,7 @@ impl BattleAction {
                     false
                 }
             }
-            BattleAction::Spawn(entity) => {
+            BattleAction::spawn(entity) => {
                 battle
                     .world
                     .run_system_once_with(
@@ -207,7 +208,7 @@ impl BattleAction {
                         NodeStatePlugin::inject_entity_vars,
                     )
                     .unwrap();
-                add_actions.extend_from_slice(&[BattleAction::VarSet(
+                add_actions.extend_from_slice(&[BattleAction::var_set(
                     *entity,
                     NodeKind::None,
                     VarName::visible,
@@ -215,16 +216,16 @@ impl BattleAction {
                 )]);
                 true
             }
-            BattleAction::ApplyStatus(target, status, charges, color) => {
+            BattleAction::apply_status(target, status, charges, color) => {
                 battle.apply_status(*target, status.clone(), *charges, *color);
                 battle.duration += ANIMATION;
                 true
             }
-            BattleAction::Wait(t) => {
+            BattleAction::wait(t) => {
                 battle.duration += *t;
                 false
             }
-            BattleAction::Vfx(vars, vfx) => {
+            BattleAction::vfx(vars, vfx) => {
                 if let Some(vfx) = animations().get(vfx) {
                     let mut context = Context::default();
                     for (var, value) in vars {
@@ -234,7 +235,7 @@ impl BattleAction {
                 }
                 false
             }
-            BattleAction::SendEvent(event) => {
+            BattleAction::send_event(event) => {
                 add_actions.extend(battle.send_event(*event));
                 true
             }
@@ -296,10 +297,10 @@ impl BattleSimulation {
             .zip_longest(self.fusions_right.iter())
             .flat_map(|e| match e {
                 EitherOrBoth::Both(a, b) => {
-                    vec![BattleAction::Spawn(*a), BattleAction::Spawn(*b)]
+                    vec![BattleAction::spawn(*a), BattleAction::spawn(*b)]
                 }
                 EitherOrBoth::Left(e) | EitherOrBoth::Right(e) => {
-                    vec![BattleAction::Spawn(*e)]
+                    vec![BattleAction::spawn(*e)]
                 }
             })
             .collect_vec();
@@ -330,7 +331,7 @@ impl BattleSimulation {
                     .insert(self.duration, 0.0, var, value);
             }
         }
-        let a = BattleAction::Strike(self.fusions_left[0], self.fusions_right[0]);
+        let a = BattleAction::strike(self.fusions_left[0], self.fusions_right[0]);
         self.process_actions([a]);
         let a = self.death_check();
         self.process_actions(a);
@@ -448,8 +449,8 @@ impl BattleSimulation {
             .iter(&self.world)
         {
             if stats.dmg >= stats.hp {
-                actions.push_back(BattleAction::SendEvent(Event::Death(entity.to_bits())));
-                actions.push_back(BattleAction::Death(entity));
+                actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
+                actions.push_back(BattleAction::death(entity));
             }
         }
         actions
@@ -471,8 +472,8 @@ impl BattleSimulation {
                 self.duration += 1.0;
             }
             [
-                BattleAction::VarSet(entity, NodeKind::None, VarName::visible, false.into()),
-                BattleAction::Wait(ANIMATION),
+                BattleAction::var_set(entity, NodeKind::None, VarName::visible, false.into()),
+                BattleAction::wait(ANIMATION),
             ]
             .into()
         } else {
@@ -489,27 +490,27 @@ impl BattleSimulation {
             .enumerate()
             .chain(self.fusions_right.iter().map(|e| (e, false)).enumerate())
         {
-            actions.push_back(BattleAction::VarSet(
+            actions.push_back(BattleAction::var_set(
                 *e,
                 NodeKind::None,
                 VarName::slot,
                 i.into(),
             ));
-            actions.push_back(BattleAction::VarSet(
+            actions.push_back(BattleAction::var_set(
                 *e,
                 NodeKind::None,
                 VarName::side,
                 side.into(),
             ));
             let position = vec2((i + 1) as f32 * if side { -1.0 } else { 1.0 } * 2.0, 0.0);
-            actions.push_back(BattleAction::VarSet(
+            actions.push_back(BattleAction::var_set(
                 *e,
                 NodeKind::None,
                 VarName::position,
                 position.into(),
             ));
         }
-        actions.push_back(BattleAction::Wait(ANIMATION * 3.0));
+        actions.push_back(BattleAction::wait(ANIMATION * 3.0));
         actions
     }
     fn fusion_by_slot<'a>(&'a self, slot: usize, side: bool) -> Option<&'a Fusion> {

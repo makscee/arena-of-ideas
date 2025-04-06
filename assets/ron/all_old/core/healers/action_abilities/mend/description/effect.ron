@@ -1,1 +1,1 @@
-([SetValue(I(1)), HealDamage])
+([SetValue(i32(1)), HealDamage])

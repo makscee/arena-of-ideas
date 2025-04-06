@@ -36,7 +36,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show(prefix, context, ui),
             VarValue::Color32(v) => v.show(prefix, context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(prefix, context, ui),
-            VarValue::List(v) => {}
+            VarValue::list(v) => {}
         })
         .inner
     }
@@ -50,7 +50,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show_mut(prefix, ui),
             VarValue::Color32(v) => v.show_mut(prefix, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(prefix, ui),
-            VarValue::List(v) => false,
+            VarValue::list(v) => false,
         })
         .inner
     }

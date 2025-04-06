@@ -1,20 +1,21 @@
 use super::*;
 
+#[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq, Default)]
 #[serde(deny_unknown_fields)]
 pub enum Action {
     #[default]
-    Noop,
-    Debug(Box<Expression>),
-    SetValue(Box<Expression>),
-    AddValue(Box<Expression>),
-    SubtractValue(Box<Expression>),
-    AddTarget(Box<Expression>),
-    DealDamage,
-    HealDamage,
-    UseAbility,
-    ApplyStatus,
-    Repeat(Box<Expression>, Vec<Box<Action>>),
+    noop,
+    debug(Box<Expression>),
+    set_value(Box<Expression>),
+    add_value(Box<Expression>),
+    subtract_value(Box<Expression>),
+    add_target(Box<Expression>),
+    deal_damage,
+    heal_damage,
+    use_ability,
+    apply_status,
+    repeat(Box<Expression>, Vec<Box<Action>>),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]

@@ -103,7 +103,7 @@ impl RepresentationPlugin {
         for a in &m.0 {
             a.paint(context, &mut p, ui)?
         }
-        PainterAction::Paint.paint(context, &mut p, ui)?;
+        PainterAction::paint.paint(context, &mut p, ui)?;
         Ok(())
     }
 }

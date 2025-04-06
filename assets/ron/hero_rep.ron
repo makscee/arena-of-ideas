@@ -1,1 +1,1 @@
-([Color(C("#ffffff")), Hollow(F(3.0)), Circle(One)])
+([color(color("#ffffff")), hollow(f32(3.0)), circle(one)])

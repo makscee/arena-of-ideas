@@ -69,10 +69,12 @@ impl AdminPlugin {
         let mut cs = pd().client_state.clone();
         if cs.edit_anim.is_none() {
             let mut anim = Anim::default();
-            anim.push(AnimAction::Spawn(Box::new(Material(
+            anim.push(AnimAction::spawn(Box::new(Material(
                 [
-                    Box::new(PainterAction::Rectangle(Box::new(Expression::V2(0.5, 0.3)))),
-                    Box::new(PainterAction::Rotate(Box::new(Expression::Var(VarName::t)))),
+                    Box::new(PainterAction::rectangle(Box::new(Expression::vec2(
+                        0.5, 0.3,
+                    )))),
+                    Box::new(PainterAction::rotate(Box::new(Expression::var(VarName::t)))),
                 ]
                 .into(),
             ))));

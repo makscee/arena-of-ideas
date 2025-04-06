@@ -17,7 +17,7 @@ pub enum VarValue {
     Vec2(Vec2),
     Color32(Color32),
     Entity(u64),
-    List(Vec<Box<VarValue>>),
+    list(Vec<Box<VarValue>>),
 }
 
 impl VarValue {
@@ -31,7 +31,7 @@ impl VarValue {
             VarValue::Vec2(v) => Ok(v.to_string()),
             VarValue::Color32(v) => Ok(v.to_hex()),
             VarValue::Entity(v) => Ok(v.to_string()),
-            VarValue::List(v) => Ok(v
+            VarValue::list(v) => Ok(v
                 .iter()
                 .map(|v| v.get_string().unwrap_or("_".to_owned()))
                 .join(", ")),
@@ -145,7 +145,7 @@ impl VarValue {
             (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32(*a as f32 - b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a - *b)),
             _ => Err(ExpressionError::not_supported_multiple(
-                "Sub",
+                "sub",
                 vec![a.clone(), b.clone()],
             )),
         }
@@ -161,7 +161,7 @@ impl VarValue {
             (VarValue::Vec2(a), VarValue::f32(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::f32(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
             _ => Err(ExpressionError::not_supported_multiple(
-                "Mul",
+                "mul",
                 vec![a.clone(), b.clone()],
             )),
         }
@@ -194,7 +194,7 @@ impl VarValue {
             (VarValue::i32(a), VarValue::i32(b)) => Ok(VarValue::i32(*(a.min(b)))),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(VarValue::bool(*a && *b)),
             _ => Err(ExpressionError::not_supported_multiple(
-                "Min",
+                "min",
                 vec![a.clone(), b.clone()],
             )),
         }
@@ -241,7 +241,7 @@ impl std::hash::Hash for VarValue {
             }
             VarValue::Color32(v) => v.hash(state),
             VarValue::Entity(v) => v.hash(state),
-            VarValue::List(v) => v.iter().for_each(|v| v.hash(state)),
+            VarValue::list(v) => v.iter().for_each(|v| v.hash(state)),
         };
     }
 }
@@ -270,7 +270,7 @@ impl std::fmt::Display for VarValue {
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::Color32(v) => write!(f, "{}", v.to_hex()),
             VarValue::Entity(v) => write!(f, "{v}"),
-            VarValue::List(v) => write!(f, "{}", v.iter().join(", ")),
+            VarValue::list(v) => write!(f, "({})", v.iter().join(", ")),
         }
     }
 }
@@ -370,6 +370,6 @@ where
     T: Into<VarValue>,
 {
     fn from(value: Vec<T>) -> Self {
-        VarValue::List(value.into_iter().map(|v| Box::new(v.into())).collect())
+        VarValue::list(value.into_iter().map(|v| Box::new(v.into())).collect())
     }
 }

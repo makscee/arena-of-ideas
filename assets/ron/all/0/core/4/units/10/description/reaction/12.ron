@@ -1,1 +1,1 @@
-[(BeforeDeath, ([AddTarget(AllOtherAllyUnits), UseAbility]))]
+[(BeforeDeath, ([add_target(AllOtherAllyUnits), UseAbility]))]

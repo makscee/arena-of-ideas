@@ -193,7 +193,7 @@ impl CstrStyle {
 
 static STRING_STYLE_MAP: OnceCell<Mutex<HashMap<&'static str, CstrStyle>>> = OnceCell::new();
 static STYLE_STRING_MAP: OnceCell<Mutex<HashMap<CstrStyle, &'static str>>> = OnceCell::new();
-pub fn init_style_map(colorix: &Colorix) {
+pub fn init_style_map(colorix: &Colorix, style: &Style) {
     let pairs = [
         ("b", CstrStyle::Bold),
         ("s", CstrStyle::Small),
@@ -202,6 +202,7 @@ pub fn init_style_map(colorix: &Colorix) {
         ("red", CstrStyle::Color(RED)),
         ("green", CstrStyle::Color(GREEN)),
         ("yellow", CstrStyle::Color(YELLOW)),
+        ("tw", CstrStyle::Color(style.visuals.weak_text_color())),
         (
             "tl",
             CstrStyle::Color(colorix.tokens_global().low_contrast_text()),
@@ -428,6 +429,9 @@ impl ToCstr for VarValue {
             _ => self.to_string().cstr(),
         }
     }
+    fn cstr_expanded(&self) -> Cstr {
+        format!("[tw [s {}]] [th {}]", self.as_ref().cstr(), self.cstr())
+    }
 }
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
@@ -438,66 +442,66 @@ impl ToCstr for Expression {
             return description.clone();
         }
         let inner = match self {
-            Expression::One
-            | Expression::Zero
-            | Expression::PI
-            | Expression::PI2
-            | Expression::GT
-            | Expression::UnitSize
-            | Expression::AllUnits
-            | Expression::AllAllyUnits
-            | Expression::AllOtherAllyUnits
-            | Expression::AdjacentAllyUnits
-            | Expression::AdjacentBack
-            | Expression::AdjacentFront
-            | Expression::AllEnemyUnits
-            | Expression::Owner
-            | Expression::Target => String::default(),
-            Expression::Var(v) => v.cstr(),
-            Expression::V(v) => v.cstr(),
-            Expression::S(v) => v.to_owned(),
-            Expression::F(v) | Expression::FSlider(v) => v.cstr(),
-            Expression::I(v) => v.cstr(),
-            Expression::B(v) => v.cstr(),
-            Expression::V2(x, y) => vec2(*x, *y).cstr(),
-            Expression::C(c) => match Color32::from_hex(c) {
+            Expression::one
+            | Expression::zero
+            | Expression::pi
+            | Expression::pi2
+            | Expression::gt
+            | Expression::unit_size
+            | Expression::all_units
+            | Expression::all_ally_units
+            | Expression::all_other_ally_units
+            | Expression::adjacent_ally_units
+            | Expression::adjacent_back
+            | Expression::adjacent_front
+            | Expression::all_enemy_units
+            | Expression::owner
+            | Expression::target => String::default(),
+            Expression::var(v) => v.cstr(),
+            Expression::value(v) => v.cstr(),
+            Expression::string(v) => v.to_owned(),
+            Expression::f32(v) | Expression::f32_slider(v) => v.cstr(),
+            Expression::i32(v) => v.cstr(),
+            Expression::bool(v) => v.cstr(),
+            Expression::vec2(x, y) => vec2(*x, *y).cstr(),
+            Expression::color(c) => match Color32::from_hex(c) {
                 Ok(color) => c.cstr_c(color),
                 Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
             },
-            Expression::Sin(x)
-            | Expression::Cos(x)
-            | Expression::Even(x)
-            | Expression::Abs(x)
-            | Expression::Floor(x)
-            | Expression::Ceil(x)
-            | Expression::Fract(x)
-            | Expression::UnitVec(x)
-            | Expression::Rand(x)
-            | Expression::RandomUnit(x)
-            | Expression::ToF(x)
-            | Expression::Sqr(x) => x.cstr_expanded(),
-            Expression::Macro(a, b)
-            | Expression::V2EE(a, b)
-            | Expression::Sum(a, b)
-            | Expression::Sub(a, b)
-            | Expression::Mul(a, b)
-            | Expression::Div(a, b)
-            | Expression::Max(a, b)
-            | Expression::Min(a, b)
-            | Expression::Mod(a, b)
-            | Expression::And(a, b)
-            | Expression::Or(a, b)
-            | Expression::Equals(a, b)
-            | Expression::GreaterThen(a, b)
-            | Expression::LessThen(a, b)
-            | Expression::Fallback(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
-            Expression::Oklch(a, b, c) | Expression::If(a, b, c) => format!(
+            Expression::sin(x)
+            | Expression::cos(x)
+            | Expression::even(x)
+            | Expression::abs(x)
+            | Expression::floor(x)
+            | Expression::ceil(x)
+            | Expression::fract(x)
+            | Expression::unit_vec(x)
+            | Expression::rand(x)
+            | Expression::random_unit(x)
+            | Expression::to_f32(x)
+            | Expression::sqr(x) => x.cstr_expanded(),
+            Expression::str_macro(a, b)
+            | Expression::vec2_ee(a, b)
+            | Expression::sum(a, b)
+            | Expression::sub(a, b)
+            | Expression::mul(a, b)
+            | Expression::div(a, b)
+            | Expression::max(a, b)
+            | Expression::min(a, b)
+            | Expression::r#mod(a, b)
+            | Expression::and(a, b)
+            | Expression::or(a, b)
+            | Expression::equals(a, b)
+            | Expression::greater_then(a, b)
+            | Expression::less_then(a, b)
+            | Expression::fallback(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
+            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => format!(
                 "{}, {}, {}",
                 a.cstr_expanded(),
                 b.cstr_expanded(),
                 c.cstr_expanded()
             ),
-            Expression::StateVar(x, v) => format!("{}({})", x.cstr_expanded(), v.cstr_expanded()),
+            Expression::state_var(x, v) => format!("{}({})", x.cstr_expanded(), v.cstr_expanded()),
         };
         if inner.is_empty() {
             self.cstr()
@@ -513,18 +517,18 @@ impl ToCstr for PainterAction {
     }
     fn cstr_expanded(&self) -> Cstr {
         let inner = match self {
-            PainterAction::Circle(x)
-            | PainterAction::Rectangle(x)
-            | PainterAction::Text(x)
-            | PainterAction::Hollow(x)
-            | PainterAction::Translate(x)
-            | PainterAction::Rotate(x)
-            | PainterAction::ScaleMesh(x)
-            | PainterAction::ScaleRect(x)
-            | PainterAction::Alpha(x)
-            | PainterAction::Feathering(x)
-            | PainterAction::Color(x) => x.cstr_expanded(),
-            PainterAction::Curve {
+            PainterAction::circle(x)
+            | PainterAction::rectangle(x)
+            | PainterAction::text(x)
+            | PainterAction::hollow(x)
+            | PainterAction::translate(x)
+            | PainterAction::rotate(x)
+            | PainterAction::scale_mesh(x)
+            | PainterAction::scale_rect(x)
+            | PainterAction::alpha(x)
+            | PainterAction::feathering(x)
+            | PainterAction::color(x) => x.cstr_expanded(),
+            PainterAction::curve {
                 thickness,
                 curvature,
             } => format!(
@@ -532,9 +536,9 @@ impl ToCstr for PainterAction {
                 thickness.cstr_expanded(),
                 curvature.cstr_expanded()
             ),
-            PainterAction::Repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
-            PainterAction::List(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
-            PainterAction::Paint => default(),
+            PainterAction::repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
+            PainterAction::list(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
+            PainterAction::paint => default(),
         };
         format!("{}({inner})", self.cstr())
     }
