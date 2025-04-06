@@ -12,7 +12,7 @@ impl AdminPlugin {
         let mut e = ui
             .data(|r| r.get_temp::<Expression>(id))
             .unwrap_or_default();
-        if e.view_mut(default(), &default(), ui) {
+        if e.view_mut(DataViewContext::new(ui), &default(), ui) {
             ui.data_mut(|w| w.insert_temp(id, e));
         }
 

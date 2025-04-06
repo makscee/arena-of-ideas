@@ -1,8 +1,36 @@
 use super::*;
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct DataViewContext {
+    id: Id,
     collapsed: bool,
+}
+
+impl DataViewContext {
+    pub fn new(ui: &mut Ui) -> Self {
+        Self {
+            id: ui.id(),
+            collapsed: false,
+        }
+    }
+    fn with_id(mut self, h: impl Hash) -> Self {
+        self.id = self.id.with(h);
+        self
+    }
+    fn collapsed(mut self, value: bool) -> Self {
+        self.collapsed = value;
+        self
+    }
+    fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
+        self.id = self.id.with(view);
+        if let Some(state) = ui.data(|r| r.get_temp::<DataViewContext>(self.id)) {
+            self.collapsed = state.collapsed;
+        }
+        self
+    }
+    fn save_state(self, ui: &mut Ui) {
+        ui.data_mut(|w| w.insert_temp(self.id, self));
+    }
 }
 
 pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
@@ -15,15 +43,38 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
     fn move_inner(&mut self, source: &mut Self) {}
     fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
     fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        let view_ctx = view_ctx.merge_state(self, ui);
         let mut changed = false;
-        ui.horizontal(|ui| {
-            Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
-                self.show_value(context, ui);
-                changed |= self.context_menu_mut(ui);
-                self.context_menu(context, ui);
+        let mut show = |view_ctx, ui: &mut Ui| {
+            ui.horizontal(|ui| {
+                Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
+                    self.show_value(context, ui);
+                    changed |= self.context_menu_mut(ui);
+                    self.context_menu(view_ctx, ui);
+                });
+                changed |= self.show_body_mut(view_ctx, context, ui);
             });
-            changed |= self.show_body_mut(view_ctx, context, ui);
-        });
+        };
+        if view_ctx.collapsed {
+            let b = "[tw (...)]".cstr().button(ui);
+            if b.clicked() {
+                view_ctx.collapsed(false).save_state(ui);
+            }
+            if b.hovered() {
+                cursor_window(ui.ctx(), |ui| {
+                    Frame::new()
+                        .fill(ui.visuals().faint_bg_color)
+                        .stroke(ui.visuals().window_stroke)
+                        .inner_margin(8)
+                        .corner_radius(6)
+                        .show(ui, |ui| {
+                            show(view_ctx.collapsed(false), ui);
+                        });
+                });
+            }
+        } else {
+            show(view_ctx, ui);
+        }
         changed
     }
     fn show_value(&self, context: &Context, ui: &mut Ui) {}
@@ -42,9 +93,21 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
     fn show_title(text: impl Into<WidgetText>, ui: &mut Ui, context_menu: impl FnOnce(&mut Ui)) {
         ui.button(text).bar_menu(context_menu);
     }
-    fn context_menu(&self, context: &Context, ui: &mut Ui) {
+    fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
+        if view_ctx.collapsed {
+            if ui.button("expand").clicked() {
+                view_ctx.collapsed(false).save_state(ui);
+                ui.close_menu();
+            }
+        } else {
+            if ui.button("collapse").clicked() {
+                view_ctx.collapsed(true).save_state(ui);
+                ui.close_menu();
+            }
+        }
         if ui.button("copy").clicked() {
             self.copy();
+            ui.close_menu();
         }
     }
     fn context_menu_mut(&mut self, ui: &mut Ui) -> bool {
@@ -136,8 +199,11 @@ impl DataView for Expression {
         ui: &mut Ui,
     ) -> bool {
         let mut changed = false;
-        for i in <Self as Injector<Expression>>::get_inner_mut(self) {
-            changed |= i.view_mut(view_ctx, context, ui);
+        for (i, e) in <Self as Injector<Expression>>::get_inner_mut(self)
+            .into_iter()
+            .enumerate()
+        {
+            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
         }
         for i in <Self as Injector<f32>>::get_inner_mut(self) {
             changed |= i.show_mut(None, ui);

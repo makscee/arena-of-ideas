@@ -435,7 +435,12 @@ impl ToCstr for VarValue {
 }
 impl ToCstr for Expression {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(self.color())
+        match self {
+            Self::r#if(..) => "if",
+            Self::r#mod(..) => "mod",
+            _ => self.as_ref(),
+        }
+        .cstr_c(self.color())
     }
     fn cstr_expanded(&self) -> Cstr {
         if let Some(description) = Descriptions::get(self) {

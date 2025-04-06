@@ -6,7 +6,7 @@ use var_value::VarValue;
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, EnumIter, AsRefStr, Display)]
 pub enum Expression {
     #[default]
     one,
