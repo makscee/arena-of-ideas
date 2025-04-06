@@ -209,6 +209,7 @@ impl Injector<f32> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut f32> {
         match self {
             Expression::f32_slider(v) | Expression::f32(v) => [v].into(),
+            Expression::vec2(x, y) => [x, y].into(),
             _ => default(),
         }
     }

@@ -432,7 +432,7 @@ pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Opti
                 .min_scrolled_height(500.0)
                 .show(ui, |ui| {
                     for n in world.query::<&T>().iter(world) {
-                        if n.parent() == ID_INCUBATOR {
+                        if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
                             continue;
                         }
                         show_node(n, ViewContext::default(), ui, world);

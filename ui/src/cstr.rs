@@ -550,7 +550,7 @@ impl ToCstr for PainterAction {
 }
 impl ToCstr for Material {
     fn cstr(&self) -> Cstr {
-        format!("({})", self.0.iter().map(|a| a.cstr()).join(", "))
+        format!("Material([th {}])", self.0.len())
     }
     fn cstr_expanded(&self) -> Cstr {
         format!("({})", self.0.iter().map(|a| a.cstr_expanded()).join(", "))

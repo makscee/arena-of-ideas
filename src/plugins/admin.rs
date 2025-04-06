@@ -15,6 +15,10 @@ impl AdminPlugin {
         if e.view_mut(DataViewContext::new(ui), &default(), ui) {
             ui.data_mut(|w| w.insert_temp(id, e));
         }
+        let mut e = ui.data(|r| r.get_temp::<Material>(id)).unwrap_or_default();
+        if e.view_mut(DataViewContext::new(ui), &default(), ui) {
+            ui.data_mut(|w| w.insert_temp(id, e));
+        }
 
         if "Anim Editor".cstr().button(ui).clicked() {
             Self::show_anim_editor(world);

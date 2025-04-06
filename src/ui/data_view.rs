@@ -1,3 +1,5 @@
+use serde::de::DeserializeOwned;
+
 use super::*;
 
 #[derive(Clone, Copy)]
@@ -49,7 +51,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
             ui.horizontal(|ui| {
                 Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
                     self.show_value(context, ui);
-                    changed |= self.context_menu_mut(ui);
+                    changed |= self.context_menu_mut(view_ctx, context, ui);
                     self.context_menu(view_ctx, ui);
                 });
                 changed |= self.show_body_mut(view_ctx, context, ui);
@@ -110,7 +112,12 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
             ui.close_menu();
         }
     }
-    fn context_menu_mut(&mut self, ui: &mut Ui) -> bool {
+    fn context_menu_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
         let mut changed = false;
         let options = Self::replace_options();
         let lookup_id = Id::new("lookup text");
@@ -159,9 +166,26 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
                 *self = Self::wrap(self.clone()).unwrap();
             }
         }
-        if ui.button("paste").clicked() {
-            changed = true;
-            self.paste();
+        if let Some(data) = clipboard_get() {
+            if ui
+                .menu_button("paste", |ui| {
+                    let mut d = Self::default();
+                    if let Err(e) = d.inject_data(&data) {
+                        ui.set_max_width(300.0);
+                        Label::new(&data).wrap().ui(ui);
+                        e.cstr().label_w(ui);
+                    } else {
+                        if d.view_mut(view_ctx, context, ui) {
+                            clipboard_set(d.get_data());
+                        }
+                    }
+                })
+                .response
+                .clicked()
+            {
+                changed = true;
+                self.paste();
+            }
         }
         if changed {
             ui.close_menu();
@@ -178,6 +202,18 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
         } else {
             "Clipboard is empty".notify_error_op();
         }
+    }
+}
+
+impl DataView for VarName {
+    fn replace_options() -> Vec<Self> {
+        Self::iter().collect_vec()
+    }
+}
+
+impl DataView for VarValue {
+    fn replace_options() -> Vec<Self> {
+        Self::iter().collect_vec()
     }
 }
 
@@ -199,7 +235,40 @@ impl DataView for Expression {
         ui: &mut Ui,
     ) -> bool {
         let mut changed = false;
-        for (i, e) in <Self as Injector<Expression>>::get_inner_mut(self)
+        match self {
+            Expression::r#if(i, t, e) => {
+                ui.horizontal(|ui| {
+                    "[tw if]".cstr().label(ui);
+                    changed |= i.view_mut(view_ctx.with_id("if"), context, ui);
+                });
+                ui.horizontal(|ui| {
+                    "[tw then]".cstr().label(ui);
+                    changed |= t.view_mut(view_ctx.with_id("then"), context, ui);
+                });
+                ui.horizontal(|ui| {
+                    "[tw else]".cstr().label(ui);
+                    changed |= e.view_mut(view_ctx.with_id("else"), context, ui);
+                });
+                return changed;
+            }
+            Expression::oklch(l, c, h) => {
+                ui.horizontal(|ui| {
+                    "[tw lightness]".cstr().label(ui);
+                    changed |= l.view_mut(view_ctx.with_id("lightness"), context, ui);
+                });
+                ui.horizontal(|ui| {
+                    "[tw chroma]".cstr().label(ui);
+                    changed |= c.view_mut(view_ctx.with_id("chroma"), context, ui);
+                });
+                ui.horizontal(|ui| {
+                    "[tw hue]".cstr().label(ui);
+                    changed |= h.view_mut(view_ctx.with_id("hue"), context, ui);
+                });
+                return changed;
+            }
+            _ => {}
+        }
+        for (i, e) in <Self as Injector<Self>>::get_inner_mut(self)
             .into_iter()
             .enumerate()
         {
@@ -218,15 +287,122 @@ impl DataView for Expression {
         .label(ui);
     }
 }
-
-impl DataView for VarName {
-    fn replace_options() -> Vec<Self> {
-        Self::iter().collect_vec()
+fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
+    let size_id = ui.id().with("view size");
+    let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
+    if DragValue::new(&mut size).ui(ui).changed() {
+        ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
+    }
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+    RepresentationPlugin::paint_rect(rect, context, m, ui).log();
+    ui.painter().rect_stroke(
+        rect,
+        0,
+        Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+        egui::StrokeKind::Middle,
+    );
+}
+impl DataView for Material {
+    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        ui.vertical(|ui| {
+            material_view(self, context, ui);
+            self.0.view_mut(view_ctx, context, ui)
+        })
+        .inner
     }
 }
 
-impl DataView for VarValue {
+impl DataView for PainterAction {
     fn replace_options() -> Vec<Self> {
-        Self::iter().collect_vec()
+        Self::iter().collect()
+    }
+    fn wrap(value: Self) -> Option<Self> {
+        Some(Self::list([Box::new(value)].to_vec()))
+    }
+    fn move_inner(&mut self, source: &mut Self) {
+        <Self as Injector<Self>>::inject_inner(self, source);
+        <Self as Injector<Expression>>::inject_inner(self, source);
+    }
+    fn view_children_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+        match self {
+            PainterAction::list(vec) => {
+                return vec.view_mut(view_ctx, context, ui);
+            }
+            _ => {}
+        }
+        for (i, e) in <Self as Injector<Self>>::get_inner_mut(self)
+            .into_iter()
+            .enumerate()
+        {
+            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
+        }
+        for (i, e) in <Self as Injector<Expression>>::get_inner_mut(self)
+            .into_iter()
+            .enumerate()
+        {
+            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
+        }
+        changed
+    }
+}
+
+impl<T> DataView for Vec<Box<T>>
+where
+    T: DataView
+        + Sized
+        + Clone
+        + Default
+        + StringData
+        + ToCstr
+        + Hash
+        + Serialize
+        + DeserializeOwned,
+{
+    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        let mut to_remove = None;
+        let mut swap = None;
+        let len = self.len();
+
+        for (i, v) in self.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                if "[b -]".cstr().as_button().red(ui).ui(ui).clicked() {
+                    to_remove = Some(i);
+                }
+                if "🔽"
+                    .cstr()
+                    .as_button()
+                    .enabled(i + 1 < len)
+                    .ui(ui)
+                    .clicked()
+                {
+                    swap = Some((i, i + 1));
+                }
+                if "🔼".cstr().as_button().enabled(i > 0).ui(ui).clicked() {
+                    swap = Some((i, i - 1));
+                }
+                changed |= v.view_mut(view_ctx, context, ui);
+            });
+        }
+
+        if let Some(i) = to_remove {
+            self.remove(i);
+            changed = true;
+        }
+        if let Some((a, b)) = swap {
+            self.swap(a, b);
+            changed = true;
+        }
+        if "[b +]".cstr().button(ui).clicked() {
+            self.push(Box::new(default()));
+            changed = true;
+        }
+        changed
     }
 }

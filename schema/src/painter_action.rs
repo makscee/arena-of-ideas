@@ -3,7 +3,7 @@ use expression::Expression;
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum PainterAction {
     paint,
@@ -32,6 +32,6 @@ impl Default for PainterAction {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
 #[serde(deny_unknown_fields)]
 pub struct Material(pub Vec<Box<PainterAction>>);
