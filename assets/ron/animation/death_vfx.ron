@@ -3,7 +3,7 @@
         (
             [
                 scale_rect(f32(2.0)),
-                color(color("#a70101ab")),
+                color(color(HexColor("#a70101ab"))),
                 alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
                 repeat(
                     i32(30),

@@ -35,7 +35,7 @@ pub enum Expression {
     i32(i32),
     bool(bool),
     vec2(f32, f32),
-    color(String),
+    color(HexColor),
 
     state_var(Box<Expression>, VarName),
 
@@ -94,7 +94,8 @@ impl std::hash::Hash for Expression {
             | Expression::target => {}
             Expression::var(v) => v.hash(state),
             Expression::value(v) => v.hash(state),
-            Expression::string(v) | Expression::color(v) => v.hash(state),
+            Expression::string(v) => v.hash(state),
+            Expression::color(v) => v.hash(state),
             Expression::f32(v) => v.to_bits().hash(state),
             Expression::f32_slider(v) => v.to_bits().hash(state),
             Expression::i32(v) => v.hash(state),

@@ -19,8 +19,11 @@ pub trait Inject: Injector<Self> {
 }
 
 pub trait Injector<T>: Sized {
+    fn get_inner_names(&self) -> &'static [&'static str] {
+        default()
+    }
     fn get_inner_mut<'a>(&'a mut self) -> Vec<&'a mut T>;
-    fn get_inner(&self) -> Vec<&Box<T>>;
+    fn get_inner(&self) -> Vec<&T>;
     fn resize_inner(&mut self, _size: usize) {}
     fn inject_inner(&mut self, source: &mut Self) {
         let mut source_inner = source.get_inner_mut();
@@ -41,7 +44,7 @@ where
         default()
     }
 
-    fn get_inner(&self) -> Vec<&Box<Self>> {
+    fn get_inner(&self) -> Vec<&Self> {
         default()
     }
 }
@@ -87,6 +90,13 @@ impl Inject for Action {
 }
 
 impl Injector<Self> for Expression {
+    fn get_inner_names(&self) -> &'static [&'static str] {
+        match self {
+            Expression::r#if(..) => &["if", "then", "else"],
+            Expression::oklch(..) => &["lightness", "chroma", "hue"],
+            _ => default(),
+        }
+    }
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         match self {
             Expression::one
@@ -146,7 +156,7 @@ impl Injector<Self> for Expression {
             }
         }
     }
-    fn get_inner(&self) -> Vec<&Box<Self>> {
+    fn get_inner(&self) -> Vec<&Self> {
         match self {
             Expression::one
             | Expression::zero
@@ -184,7 +194,7 @@ impl Injector<Self> for Expression {
             | Expression::random_unit(x)
             | Expression::to_f32(x)
             | Expression::state_var(x, _)
-            | Expression::sqr(x) => [x].into(),
+            | Expression::sqr(x) => [x.as_ref()].into(),
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)
             | Expression::sum(a, b)
@@ -199,8 +209,10 @@ impl Injector<Self> for Expression {
             | Expression::equals(a, b)
             | Expression::greater_then(a, b)
             | Expression::less_then(a, b)
-            | Expression::fallback(a, b) => [a, b].into(),
-            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => [a, b, c].into(),
+            | Expression::fallback(a, b) => [a.as_ref(), b.as_ref()].into(),
+            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => {
+                [a.as_ref(), b.as_ref(), c.as_ref()].into()
+            }
         }
     }
 }
@@ -213,9 +225,27 @@ impl Injector<f32> for Expression {
             _ => default(),
         }
     }
+    fn get_inner(&self) -> Vec<&f32> {
+        match self {
+            Expression::f32_slider(v) | Expression::f32(v) => [v].into(),
+            Expression::vec2(x, y) => [x, y].into(),
+            _ => default(),
+        }
+    }
+}
 
-    fn get_inner(&self) -> Vec<&Box<f32>> {
-        todo!()
+impl Injector<HexColor> for Expression {
+    fn get_inner_mut<'a>(&'a mut self) -> Vec<&'a mut HexColor> {
+        match self {
+            Self::color(v) => [v].into(),
+            _ => default(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&HexColor> {
+        match self {
+            Self::color(v) => [v].into(),
+            _ => default(),
+        }
     }
 }
 
@@ -241,7 +271,7 @@ impl Injector<Expression> for PainterAction {
             } => [thickness.as_mut(), curvature.as_mut()].into(),
         }
     }
-    fn get_inner(&self) -> Vec<&Box<Expression>> {
+    fn get_inner(&self) -> Vec<&Expression> {
         match self {
             PainterAction::list(..) | PainterAction::paint => default(),
             PainterAction::circle(x)
@@ -255,11 +285,11 @@ impl Injector<Expression> for PainterAction {
             | PainterAction::color(x)
             | PainterAction::alpha(x)
             | PainterAction::feathering(x)
-            | PainterAction::repeat(x, ..) => [x].into(),
+            | PainterAction::repeat(x, ..) => [x.as_ref()].into(),
             PainterAction::curve {
                 thickness,
                 curvature,
-            } => [thickness, curvature].into(),
+            } => [thickness.as_ref(), curvature.as_ref()].into(),
         }
     }
 }
@@ -289,7 +319,7 @@ impl Injector<Self> for PainterAction {
             PainterAction::list(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
-    fn get_inner(&self) -> Vec<&Box<Self>> {
+    fn get_inner(&self) -> Vec<&Self> {
         match self {
             PainterAction::paint
             | PainterAction::circle(..)
@@ -304,8 +334,8 @@ impl Injector<Self> for PainterAction {
             | PainterAction::color(..)
             | PainterAction::feathering(..)
             | PainterAction::alpha(..) => default(),
-            PainterAction::repeat(_x, p) => [p].into(),
-            PainterAction::list(vec) => vec.into_iter().collect_vec(),
+            PainterAction::repeat(_x, p) => [p.as_ref()].into(),
+            PainterAction::list(vec) => vec.into_iter().map(|v| v.as_ref()).collect_vec(),
         }
     }
 }
@@ -326,7 +356,7 @@ impl Injector<Self> for Action {
             Action::repeat(_, vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
-    fn get_inner(&self) -> Vec<&Box<Self>> {
+    fn get_inner(&self) -> Vec<&Self> {
         match self {
             Action::noop
             | Action::debug(..)
@@ -338,7 +368,7 @@ impl Injector<Self> for Action {
             | Action::heal_damage
             | Action::apply_status
             | Action::use_ability => default(),
-            Action::repeat(_, vec) => vec.into_iter().collect_vec(),
+            Action::repeat(_, vec) => vec.into_iter().map(|v| v.as_ref()).collect_vec(),
         }
     }
 }
@@ -358,7 +388,7 @@ impl Injector<Expression> for Action {
             | Action::repeat(x, _) => [x.as_mut()].into(),
         }
     }
-    fn get_inner(&self) -> Vec<&Box<Expression>> {
+    fn get_inner(&self) -> Vec<&Expression> {
         match self {
             Action::noop
             | Action::deal_damage
@@ -370,7 +400,7 @@ impl Injector<Expression> for Action {
             | Action::add_value(x)
             | Action::subtract_value(x)
             | Action::add_target(x)
-            | Action::repeat(x, _) => [x].into(),
+            | Action::repeat(x, _) => [x.as_ref()].into(),
         }
     }
 }
@@ -379,7 +409,7 @@ impl Injector<Self> for Trigger {
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
         default()
     }
-    fn get_inner(&self) -> Vec<&Box<Self>> {
+    fn get_inner(&self) -> Vec<&Self> {
         default()
     }
 }

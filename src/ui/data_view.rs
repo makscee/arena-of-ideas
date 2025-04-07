@@ -33,6 +33,28 @@ impl DataViewContext {
     fn save_state(self, ui: &mut Ui) {
         ui.data_mut(|w| w.insert_temp(self.id, self));
     }
+    fn show_content(self, ui: &mut Ui, content: impl FnOnce(DataViewContext, &mut Ui)) {
+        if self.collapsed {
+            let b = "[tw (...)]".cstr().button(ui);
+            if b.clicked() {
+                self.collapsed(false).save_state(ui);
+            }
+            if b.hovered() {
+                cursor_window(ui.ctx(), |ui| {
+                    Frame::new()
+                        .fill(ui.visuals().faint_bg_color)
+                        .stroke(ui.visuals().window_stroke)
+                        .inner_margin(8)
+                        .corner_radius(6)
+                        .show(ui, |ui| {
+                            content(self.collapsed(false), ui);
+                        });
+                });
+            }
+        } else {
+            content(self, ui);
+        }
+    }
 }
 
 pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
@@ -43,11 +65,23 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
         default()
     }
     fn move_inner(&mut self, source: &mut Self) {}
-    fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
+    fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        view_ctx
+            .merge_state(self, ui)
+            .show_content(ui, |view_ctx, ui| {
+                ui.horizontal(|ui| {
+                    Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
+                        self.show_value(context, ui);
+                        self.context_menu(view_ctx, ui);
+                    });
+                    self.show_body(view_ctx, context, ui);
+                });
+            });
+    }
     fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         let view_ctx = view_ctx.merge_state(self, ui);
         let mut changed = false;
-        let mut show = |view_ctx, ui: &mut Ui| {
+        view_ctx.show_content(ui, |view_ctx, ui| {
             ui.horizontal(|ui| {
                 Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
                     self.show_value(context, ui);
@@ -56,34 +90,19 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
                 });
                 changed |= self.show_body_mut(view_ctx, context, ui);
             });
-        };
-        if view_ctx.collapsed {
-            let b = "[tw (...)]".cstr().button(ui);
-            if b.clicked() {
-                view_ctx.collapsed(false).save_state(ui);
-            }
-            if b.hovered() {
-                cursor_window(ui.ctx(), |ui| {
-                    Frame::new()
-                        .fill(ui.visuals().faint_bg_color)
-                        .stroke(ui.visuals().window_stroke)
-                        .inner_margin(8)
-                        .corner_radius(6)
-                        .show(ui, |ui| {
-                            show(view_ctx.collapsed(false), ui);
-                        });
-                });
-            }
-        } else {
-            show(view_ctx, ui);
-        }
+        });
         changed
     }
     fn show_value(&self, context: &Context, ui: &mut Ui) {}
+    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| self.view_children(view_ctx, context, ui))
+            .inner
+    }
     fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         ui.vertical(|ui| self.view_children_mut(view_ctx, context, ui))
             .inner
     }
+    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
     fn view_children_mut(
         &mut self,
         view_ctx: DataViewContext,
@@ -205,6 +224,73 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
     }
 }
 
+fn view_children_mut<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
+    s: &mut T,
+    view_ctx: DataViewContext,
+    context: &Context,
+    ui: &mut Ui,
+) -> bool {
+    let mut changed = false;
+    let names = <T as Injector<I>>::get_inner_names(s);
+    for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            if let Some(name) = names.get(i) {
+                format!("[tw {name}]").cstr().label(ui);
+            }
+            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
+        });
+    }
+    changed
+}
+fn view_children<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
+    s: &T,
+    view_ctx: DataViewContext,
+    context: &Context,
+    ui: &mut Ui,
+) {
+    let names = <T as Injector<I>>::get_inner_names(s);
+    for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            if let Some(name) = names.get(i) {
+                format!("[tw {name}]").cstr().label(ui);
+            }
+            e.view(view_ctx.with_id(i), context, ui);
+        });
+    }
+}
+fn show_children_mut<T: DataView + Inject + Injector<I>, I: Show>(
+    s: &mut T,
+    context: &Context,
+    ui: &mut Ui,
+) -> bool {
+    let mut changed = false;
+    let names = <T as Injector<I>>::get_inner_names(s);
+    for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            if let Some(name) = names.get(i) {
+                format!("[tw {name}]").cstr().label(ui);
+            }
+            changed |= e.show_mut(None, ui);
+        });
+    }
+    changed
+}
+fn show_children<T: DataView + Inject + Injector<I>, I: Show>(
+    s: &T,
+    context: &Context,
+    ui: &mut Ui,
+) {
+    let names = <T as Injector<I>>::get_inner_names(s);
+    for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            if let Some(name) = names.get(i) {
+                format!("[tw {name}]").cstr().label(ui);
+            }
+            e.show(None, context, ui);
+        });
+    }
+}
+
 impl DataView for VarName {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect_vec()
@@ -235,49 +321,15 @@ impl DataView for Expression {
         ui: &mut Ui,
     ) -> bool {
         let mut changed = false;
-        match self {
-            Expression::r#if(i, t, e) => {
-                ui.horizontal(|ui| {
-                    "[tw if]".cstr().label(ui);
-                    changed |= i.view_mut(view_ctx.with_id("if"), context, ui);
-                });
-                ui.horizontal(|ui| {
-                    "[tw then]".cstr().label(ui);
-                    changed |= t.view_mut(view_ctx.with_id("then"), context, ui);
-                });
-                ui.horizontal(|ui| {
-                    "[tw else]".cstr().label(ui);
-                    changed |= e.view_mut(view_ctx.with_id("else"), context, ui);
-                });
-                return changed;
-            }
-            Expression::oklch(l, c, h) => {
-                ui.horizontal(|ui| {
-                    "[tw lightness]".cstr().label(ui);
-                    changed |= l.view_mut(view_ctx.with_id("lightness"), context, ui);
-                });
-                ui.horizontal(|ui| {
-                    "[tw chroma]".cstr().label(ui);
-                    changed |= c.view_mut(view_ctx.with_id("chroma"), context, ui);
-                });
-                ui.horizontal(|ui| {
-                    "[tw hue]".cstr().label(ui);
-                    changed |= h.view_mut(view_ctx.with_id("hue"), context, ui);
-                });
-                return changed;
-            }
-            _ => {}
-        }
-        for (i, e) in <Self as Injector<Self>>::get_inner_mut(self)
-            .into_iter()
-            .enumerate()
-        {
-            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
-        }
-        for i in <Self as Injector<f32>>::get_inner_mut(self) {
-            changed |= i.show_mut(None, ui);
-        }
+        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
+        changed |= show_children_mut::<_, f32>(self, context, ui);
+        changed |= show_children_mut::<_, HexColor>(self, context, ui);
         changed
+    }
+    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        view_children::<_, Self>(self, view_ctx, context, ui);
+        show_children::<_, f32>(self, context, ui);
+        show_children::<_, HexColor>(self, context, ui);
     }
     fn show_value(&self, context: &Context, ui: &mut Ui) {
         match self.get_value(context) {
@@ -294,7 +346,7 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
         ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
     }
     let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-    RepresentationPlugin::paint_rect(rect, context, m, ui).log();
+    RepresentationPlugin::paint_rect(rect, context, m, ui).ui(ui);
     ui.painter().rect_stroke(
         rect,
         0,
@@ -336,18 +388,8 @@ impl DataView for PainterAction {
             }
             _ => {}
         }
-        for (i, e) in <Self as Injector<Self>>::get_inner_mut(self)
-            .into_iter()
-            .enumerate()
-        {
-            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
-        }
-        for (i, e) in <Self as Injector<Expression>>::get_inner_mut(self)
-            .into_iter()
-            .enumerate()
-        {
-            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
-        }
+        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
+        changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
         changed
     }
 }

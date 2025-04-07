@@ -1,1 +1,1 @@
-([color(color("#ffffff")), hollow(f32(3.0)), circle(one)])
+([color(color(HexColor("#ffffff"))), hollow(f32(3.0)), circle(one)])

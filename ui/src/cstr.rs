@@ -469,7 +469,7 @@ impl ToCstr for Expression {
             Expression::i32(v) => v.cstr(),
             Expression::bool(v) => v.cstr(),
             Expression::vec2(x, y) => vec2(*x, *y).cstr(),
-            Expression::color(c) => match Color32::from_hex(c) {
+            Expression::color(c) => match c.try_c32() {
                 Ok(color) => c.cstr_c(color),
                 Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
             },

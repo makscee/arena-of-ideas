@@ -3,7 +3,7 @@
     spawn(
         (
             [
-                color(color("#00E676")),
+                color(color(HexColor("#00E676"))),
                 alpha(sub(one, var(t))),
                 scale_rect(sub(f32(1.3), var(t))),
                 circle(f32(1.0)),

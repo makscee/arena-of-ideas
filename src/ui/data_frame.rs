@@ -751,21 +751,7 @@ impl DataFramed for Expression {
             Expression::f32(v) => v.show_mut(Some("x"), ui),
             Expression::i32(v) => v.show_mut(Some("x"), ui),
             Expression::bool(v) => v.show_mut(Some("x"), ui),
-            Expression::color(v) => match Color32::from_hex(v) {
-                Ok(mut c) => {
-                    v.cstr_c(c).label(ui);
-                    let changed = c.show_mut(None, ui);
-                    if changed {
-                        *v = c.to_hex();
-                    }
-                    changed
-                }
-                Err(e) => {
-                    error!("Hex color parse error: {e:?}");
-                    *v = "#ffffff".into();
-                    true
-                }
-            },
+            Expression::color(v) => false,
             Expression::vec2(x, y) => {
                 let x = x.show_mut(Some("x"), ui);
                 y.show_mut(Some("y"), ui) || x

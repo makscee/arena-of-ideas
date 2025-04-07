@@ -60,7 +60,7 @@ impl<T: Serialize + DeserializeOwned> StringData for T {
 pub type NodeChildren<T> = Vec<T>;
 pub type NodeComponent<T> = Option<T>;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct HexColor(pub String);
 
 impl HexColor {

@@ -43,7 +43,8 @@ impl ExpressionImpl for Expression {
             Expression::bool(v) => Ok((*v).into()),
             Expression::vec2(x, y) => Ok(vec2(*x, *y).into()),
             Expression::string(s) => Ok(s.clone().into()),
-            Expression::color(s) => Color32::from_hex(s)
+            Expression::color(s) => s
+                .try_c32()
                 .map_err(|e| ExpressionError::OperationNotSupported {
                     values: default(),
                     op: "Hex color parse",
