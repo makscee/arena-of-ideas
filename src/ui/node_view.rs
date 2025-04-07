@@ -123,15 +123,21 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
             }
         }
     }
-    fn view_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool {
+    fn view_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    ) -> bool {
         let mut view_ctx = view_ctx.merge_state(self, &default(), ui).set_mut();
         match view_ctx.mode {
-            ViewMode::Compact | ViewMode::Full => self.data_self_mut(view_ctx, ui),
+            ViewMode::Compact | ViewMode::Full => self.data_self_mut(view_ctx, context, ui),
             ViewMode::Graph => {
                 ui.horizontal(|ui| {
-                    let changed = self.data_self_mut(view_ctx, ui);
+                    let changed = self.data_self_mut(view_ctx, context, ui);
                     view_ctx.parent_rect = Some(ui.min_rect());
-                    ui.vertical(|ui| self.view_children_mut(view_ctx, ui, world))
+                    ui.vertical(|ui| self.view_children_mut(view_ctx, context, ui, world))
                         .inner
                         || changed
                 })
@@ -147,7 +153,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
     ) -> Result<(), ExpressionError> {
         show_frame(view_ctx.color, ui, |ui| {
             show_header(self, None, view_ctx, ui, |_| {});
-            show_body(ui, |ui| self.show(None, context, ui));
+            show_body(ui, |ui| self.show(context, ui));
         });
         Ok(())
     }
@@ -167,12 +173,12 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
     ) -> Result<(), ExpressionError> {
         self.data_self(view_ctx, context, ui)
     }
-    fn data_self_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui) -> bool {
+    fn data_self_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         show_frame(view_ctx.color, ui, |ui| {
             show_header(self, None, view_ctx, ui, |_| {});
             show_body(ui, |ui| {
-                changed = self.show_mut(None, ui);
+                changed = self.show_mut(context, ui);
             });
         });
         changed
@@ -269,7 +275,13 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
 
 pub trait NodeGraphViewNew: NodeExt {
     fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui);
-    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool;
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+        world: &mut World,
+    ) -> bool;
 }
 
 fn show_frame(color: Color32, ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
@@ -537,7 +549,7 @@ impl NodeView for Fusion {
                         ui.add_space(5.0);
                         ui.vertical(|ui| {
                             for (u, action) in actions {
-                                action.show(None, context.clone().set_owner(units[u].entity()), ui);
+                                action.show(context.clone().set_owner(units[u].entity()), ui);
                             }
                         });
                         let rect = ui.min_rect().translate(egui::vec2(1.0, 0.0));

@@ -537,7 +537,11 @@ impl BattleSimulation {
         ui.horizontal(|ui| {
             for unit in units {
                 ui.vertical(|ui| {
-                    unit.show(None, Context::default().set_owner_node(unit), ui);
+                    unit.view(
+                        ViewContext::compact(),
+                        Context::default().set_owner_node(unit),
+                        ui,
+                    );
                 });
             }
         });

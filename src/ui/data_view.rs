@@ -57,7 +57,7 @@ impl DataViewContext {
     }
 }
 
-pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash {
+pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug {
     fn wrap(value: Self) -> Option<Self> {
         None
     }
@@ -270,7 +270,7 @@ fn show_children_mut<T: DataView + Inject + Injector<I>, I: Show>(
             if let Some(name) = names.get(i) {
                 format!("[tw {name}]").cstr().label(ui);
             }
-            changed |= e.show_mut(None, ui);
+            changed |= e.show_mut(context, ui);
         });
     }
     changed
@@ -286,7 +286,7 @@ fn show_children<T: DataView + Inject + Injector<I>, I: Show>(
             if let Some(name) = names.get(i) {
                 format!("[tw {name}]").cstr().label(ui);
             }
-            e.show(None, context, ui);
+            e.show(context, ui);
         });
     }
 }
@@ -297,9 +297,9 @@ impl DataView for VarName {
     }
 }
 
-impl DataView for VarValue {
+impl DataView for Trigger {
     fn replace_options() -> Vec<Self> {
-        Self::iter().collect_vec()
+        Self::iter().collect()
     }
 }
 
@@ -366,7 +366,7 @@ impl DataView for Material {
 
 impl DataView for PainterAction {
     fn replace_options() -> Vec<Self> {
-        Self::iter().collect()
+        Self::iter().collect_vec()
     }
     fn wrap(value: Self) -> Option<Self> {
         Some(Self::list([Box::new(value)].to_vec()))
@@ -394,7 +394,62 @@ impl DataView for PainterAction {
     }
 }
 
-impl<T> DataView for Vec<Box<T>>
+impl DataView for Action {
+    fn wrap(value: Self) -> Option<Self> {
+        Some(Self::repeat(
+            Box::new(Expression::i32(1)),
+            [Box::new(value)].to_vec(),
+        ))
+    }
+    fn replace_options() -> Vec<Self> {
+        Self::iter().collect()
+    }
+    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        view_children::<_, Self>(self, view_ctx, context, ui);
+        view_children::<_, Expression>(self, view_ctx, context, ui);
+    }
+    fn view_children_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
+        changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
+        changed
+    }
+}
+
+impl DataView for Reaction {
+    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.trigger.view(view_ctx, context, ui);
+        self.actions.0.view(view_ctx, context, ui);
+    }
+    fn view_children_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let changed = self.trigger.view_mut(view_ctx, context, ui);
+        self.actions.0.view_mut(view_ctx, context, ui) || changed
+    }
+}
+
+impl<T> Show for T
+where
+    T: DataView,
+{
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.view(DataViewContext::new(ui), context, ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.view_mut(DataViewContext::new(ui), context, ui)
+    }
+}
+
+impl<T> DataView for Vec<T>
 where
     T: DataView
         + Sized
@@ -442,9 +497,80 @@ where
             changed = true;
         }
         if "[b +]".cstr().button(ui).clicked() {
-            self.push(Box::new(default()));
+            self.push(default());
             changed = true;
         }
         changed
+    }
+}
+impl<T> DataView for Box<T>
+where
+    T: DataView
+        + Sized
+        + Clone
+        + Default
+        + StringData
+        + ToCstr
+        + Hash
+        + Serialize
+        + DeserializeOwned,
+{
+    fn wrap(value: Self) -> Option<Self> {
+        T::wrap(*value).map(|v| Box::new(v))
+    }
+    fn replace_options() -> Vec<Self> {
+        T::replace_options()
+            .into_iter()
+            .map(|v| Box::new(v))
+            .collect()
+    }
+    fn move_inner(&mut self, source: &mut Self) {
+        self.as_mut().move_inner(source.as_mut());
+    }
+    fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.as_ref().view(view_ctx, context, ui);
+    }
+    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        self.as_mut().view_mut(view_ctx, context, ui)
+    }
+    fn show_value(&self, context: &Context, ui: &mut Ui) {
+        self.as_ref().show_value(context, ui);
+    }
+    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.as_ref().show_body(view_ctx, context, ui);
+    }
+    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        self.as_mut().show_body_mut(view_ctx, context, ui)
+    }
+    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.as_ref().view_children(view_ctx, context, ui);
+    }
+    fn view_children_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        self.as_mut().view_children_mut(view_ctx, context, ui)
+    }
+    fn show_title(text: impl Into<WidgetText>, ui: &mut Ui, context_menu: impl FnOnce(&mut Ui)) {
+        T::show_title(text, ui, context_menu);
+    }
+    fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
+        self.as_ref().context_menu(view_ctx, ui);
+    }
+    fn context_menu_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        self.as_mut().context_menu_mut(view_ctx, context, ui)
+    }
+    fn copy(&self) {
+        self.as_ref().copy();
+    }
+    fn paste(&mut self) {
+        self.as_mut().paste();
     }
 }

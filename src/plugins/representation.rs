@@ -31,8 +31,8 @@ impl RepresentationPlugin {
                 .response;
             if resp.hovered() {
                 cursor_window(ctx, |ui| {
-                    unit.show(
-                        None,
+                    unit.view(
+                        ViewContext::full(),
                         Context::new_world(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );
@@ -52,8 +52,8 @@ impl RepresentationPlugin {
         if let Some((entity, name)) = open_window {
             Window::new(name, move |ui, world| {
                 if let Some(unit) = world.get::<Unit>(entity) {
-                    unit.show(
-                        None,
+                    unit.view(
+                        ViewContext::full(),
                         Context::new_world(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );

@@ -297,24 +297,22 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl Show for #struct_ident {
-                    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-                        prefix.show(ui);
+                    fn show(&self, context: &Context, ui: &mut Ui) {
                         for (var, value) in self.get_own_vars() {
-                            value.show(Some(&var.cstr()), context, ui);
+                            value.show(context, ui);
                         }
                         #(
-                            self.#data_fields.show(Some(#data_fields_str), context, ui);
+                            self.#data_fields.show(context, ui);
                         )*
                     }
-                    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-                        prefix.show(ui);
+                    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         #(
                             VarName::#var_fields.cstr().label(ui);
-                            changed |= self.#var_fields.show_mut(None, ui);
+                            changed |= self.#var_fields.show_mut(context, ui);
                         )*
                         #(
-                            changed |= self.#data_fields.show_mut(Some(#data_fields_str), ui);
+                            changed |= self.#data_fields.show_mut(context, ui);
                         )*
                         changed
                     }
@@ -500,12 +498,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
-                    fn view_children_mut(&mut self, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) -> bool {
+                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui, world: &mut World) -> bool {
                         let mut changed = false;
                         #(
                             view_ctx.show_parent_line(ui);
                             if let Some(d) = &mut self.#component_fields {
-                                changed |= d.view_mut(view_ctx, ui, world);
+                                changed |= d.view_mut(view_ctx, context, ui, world);
                                 if d.get_state(ui).is_some_and(|s| s.delete_me) {
                                     d.clear_state(ui);
                                     self.#component_fields = None;
@@ -520,7 +518,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             let mut remove = None;
                             for (i, d) in self.#child_fields.iter_mut().enumerate() {
                                 view_ctx.show_parent_line(ui);
-                                changed |= d.view_mut(view_ctx, ui, world);
+                                changed |= d.view_mut(view_ctx, context, ui, world);
                                 if d.get_state(ui).is_some_and(|s| s.delete_me) {
                                     d.clear_state(ui);
                                     remove = Some(i);
@@ -601,23 +599,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn show(self, entity: Entity, ui: &mut Ui, world: &World) {
-                        let context = Context::new_world(world).set_owner(entity).take();
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                context.get_component::<#variants>(entity).unwrap().show(None, &context, ui);
-                            })*
-                        };
-                    }
-                    pub fn show_mut(self, entity: Entity, ui: &mut Ui, world: &mut World) {
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                world.get_mut::<#variants>(entity).unwrap().show_mut(None, ui);
-                            })*
-                        };
-                    }
                     pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         match self {
                             Self::None => {}
@@ -632,7 +613,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.view_mut(view_ctx, ui, world) {
+                                if d.view_mut(view_ctx, &default(), ui, world) {
                                     d.reassign_ids(&mut 0);
                                     *nodes = d.to_tnodes();
                                 }

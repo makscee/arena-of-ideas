@@ -148,9 +148,11 @@ impl TeamEditorPlugin {
                 f(team, world);
             }
         }
-        Team::get(team, team_world)
-            .unwrap()
-            .show(None, &Context::new_world(team_world), ui);
+        Team::get(team, team_world).unwrap().view(
+            ViewContext::compact(),
+            &Context::new_world(team_world),
+            ui,
+        );
         let context = Context::new_world(team_world);
         for house in context.children_components::<House>(team) {
             let color = house
@@ -165,7 +167,7 @@ impl TeamEditorPlugin {
                     .widget(1.0, ui.style()),
                 |ui| {
                     for unit in context.children_components::<Unit>(house.entity()) {
-                        unit.show(None, &context, ui);
+                        unit.view(ViewContext::compact(), &context, ui);
                     }
                 },
             );

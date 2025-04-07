@@ -233,42 +233,6 @@ impl NodeKind {
             _ => {}
         }
     }
-    fn show_df_name(
-        &self,
-        entity: Option<Entity>,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> DataFrameResponse {
-        let mut response = None;
-        match self {
-            NodeKind::Unit => {
-                if let Some(entity) = entity {
-                    if show_unit_tag(context.clone().set_owner(entity), ui).is_ok() {
-                        response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
-                    }
-                }
-            }
-            NodeKind::House => {
-                if let Some(entity) = entity {
-                    if let Some(house) = context.get_component::<House>(entity) {
-                        if let Some(color) = context.get_component::<HouseColor>(entity) {
-                            TagWidget::new_name(&house.house_name, color.color.c32()).ui(ui);
-                            response = Some(ui.allocate_rect(ui.min_rect(), Sense::click()));
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-        if response.is_none() {
-            response = Some(self.cstr().button(ui));
-        }
-        if response.unwrap().clicked() {
-            DataFrameResponse::NameClicked
-        } else {
-            DataFrameResponse::None
-        }
-    }
 }
 
 impl Team {
@@ -322,7 +286,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
-                            n.show(None, &default(), ui);
+                            n.view(ViewContext::compact(), &default(), ui);
                         }
                     })
             }
@@ -378,7 +342,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = Behavior::get_by_id(f(d), world) {
-                            n.show(None, &default(), ui);
+                            n.view(ViewContext::compact(), &default(), ui);
                         }
                     })
             }

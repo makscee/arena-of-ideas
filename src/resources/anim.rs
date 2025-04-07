@@ -143,9 +143,6 @@ impl Inject for AnimAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn wrapper() -> Option<Self> {
-        Some(Self::list(vec![default()]))
-    }
 }
 impl Injector<Self> for AnimAction {
     fn get_inner_mut(&mut self) -> Vec<&mut Self> {
@@ -205,75 +202,5 @@ impl ToCstr for AnimAction {
 impl ToCstr for Anim {
     fn cstr(&self) -> Cstr {
         self.actions.iter().map(|a| a.cstr()).join(" ")
-    }
-}
-impl Show for Anim {
-    fn show(&self, prefix: Option<&str>, context: &Context, ui: &mut Ui) {
-        prefix.show(ui);
-    }
-    fn show_mut(&mut self, prefix: Option<&str>, ui: &mut Ui) -> bool {
-        false
-    }
-}
-
-impl DataFramed for AnimAction {
-    fn show_name_mut(&mut self, ui: &mut Ui) -> DataFrameResponse {
-        if Selector::from_mut(self, ui) {
-            DataFrameResponse::Changed
-        } else {
-            DataFrameResponse::None
-        }
-    }
-    fn has_header(&self) -> bool {
-        match self {
-            AnimAction::translate(..)
-            | AnimAction::set_target(..)
-            | AnimAction::add_target(..)
-            | AnimAction::duration(..)
-            | AnimAction::timeframe(..)
-            | AnimAction::wait(..)
-            | AnimAction::spawn(..)
-            | AnimAction::list(..) => false,
-        }
-    }
-    fn has_body(&self) -> bool {
-        match self {
-            AnimAction::translate(..)
-            | AnimAction::set_target(..)
-            | AnimAction::add_target(..)
-            | AnimAction::duration(..)
-            | AnimAction::timeframe(..)
-            | AnimAction::wait(..)
-            | AnimAction::spawn(..)
-            | AnimAction::list(..) => true,
-        }
-    }
-    fn show_header(&self, _: &Context, _: &mut Ui) {}
-    fn show_header_mut(&mut self, _: &mut Ui) -> bool {
-        false
-    }
-    fn show_body(&self, context: &Context, ui: &mut Ui) {
-        match self {
-            AnimAction::translate(x)
-            | AnimAction::set_target(x)
-            | AnimAction::add_target(x)
-            | AnimAction::duration(x)
-            | AnimAction::wait(x)
-            | AnimAction::timeframe(x) => x.show(Some("x:"), context, ui),
-            AnimAction::spawn(m) => m.show(Some("material:"), context, ui),
-            AnimAction::list(vec) => {}
-        }
-    }
-    fn show_body_mut(&mut self, ui: &mut Ui) -> bool {
-        match self {
-            AnimAction::translate(x)
-            | AnimAction::set_target(x)
-            | AnimAction::add_target(x)
-            | AnimAction::duration(x)
-            | AnimAction::wait(x)
-            | AnimAction::timeframe(x) => x.show_mut(Some("x:"), ui),
-            AnimAction::spawn(m) => m.show_mut(Some("material:"), ui),
-            AnimAction::list(vec) => false,
-        }
     }
 }

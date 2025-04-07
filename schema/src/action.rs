@@ -1,7 +1,7 @@
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq, Default, Hash)]
 #[serde(deny_unknown_fields)]
 pub enum Action {
     #[default]
@@ -18,7 +18,7 @@ pub enum Action {
     repeat(Box<Expression>, Vec<Box<Action>>),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
 #[serde(deny_unknown_fields)]
 pub struct Actions(pub Vec<Box<Action>>);
 

@@ -5,17 +5,7 @@ use itertools::Itertools;
 use super::*;
 
 pub trait Inject: Injector<Self> {
-    fn move_inner(&mut self, source: &mut Self) {}
-    fn wrapper() -> Option<Self> {
-        None
-    }
-    fn wrap(&mut self) {
-        let Some(mut wrapper) = Self::wrapper() else {
-            return;
-        };
-        mem::swap(wrapper.get_inner_mut()[0], self);
-        *self = wrapper;
-    }
+    fn move_inner(&mut self, source: &mut Self);
 }
 
 pub trait Injector<T>: Sized {
@@ -48,24 +38,11 @@ where
         default()
     }
 }
-impl<T> Inject for Vec<T>
-where
-    T: Default + Serialize + DeserializeOwned,
-{
-    fn move_inner(&mut self, _: &mut Self) {}
-
-    fn wrapper() -> Option<Self> {
-        Some([default()].into())
-    }
-}
 
 impl Inject for Expression {
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);
         <Expression as Injector<f32>>::inject_inner(self, source);
-    }
-    fn wrapper() -> Option<Self> {
-        Some(Self::abs(default()))
     }
 }
 
@@ -74,18 +51,12 @@ impl Inject for PainterAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn wrapper() -> Option<Self> {
-        Some(Self::repeat(Box::new(Expression::i32(1)), default()))
-    }
 }
 
 impl Inject for Action {
     fn move_inner(&mut self, source: &mut Self) {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
-    }
-    fn wrapper() -> Option<Self> {
-        Some(Self::repeat(Box::new(Expression::i32(1)), default()))
     }
 }
 
@@ -402,14 +373,5 @@ impl Injector<Expression> for Action {
             | Action::add_target(x)
             | Action::repeat(x, _) => [x.as_ref()].into(),
         }
-    }
-}
-impl Inject for Trigger {}
-impl Injector<Self> for Trigger {
-    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
-        default()
-    }
-    fn get_inner(&self) -> Vec<&Self> {
-        default()
     }
 }

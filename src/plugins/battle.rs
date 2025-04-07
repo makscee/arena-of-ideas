@@ -142,7 +142,7 @@ impl BattlePlugin {
                 &mut data.battle.right
             };
             let mut changed = false;
-            changed |= team.view_mut(ViewContext::graph(), ui, world);
+            changed |= team.view_mut(ViewContext::graph(), &default(), ui, world);
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
             }
