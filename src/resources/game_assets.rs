@@ -7,7 +7,6 @@ use super::*;
 
 static UNIT_REP: OnceCell<Representation> = OnceCell::new();
 static STATUS_REP: OnceCell<Representation> = OnceCell::new();
-static HERO_REP: OnceCell<Representation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
@@ -17,9 +16,6 @@ pub fn unit_rep() -> &'static Representation {
 }
 pub fn status_rep() -> &'static Representation {
     STATUS_REP.get().unwrap()
-}
-pub fn hero_rep() -> &'static Representation {
-    HERO_REP.get().unwrap()
 }
 pub fn animations() -> &'static HashMap<String, Anim> {
     ANIMATIONS.get().unwrap()
@@ -57,15 +53,11 @@ pub fn parse_content_tree() {
     // dbg!(&all);
     // panic!();
     // ALL.set(all.unwrap()).unwrap();
-
     UNIT_REP
-        .set(Representation::from_dir("unit_rep".to_owned(), &ASSETS).unwrap())
+        .set(Representation::from_dir(0, "unit_rep".to_owned(), &ASSETS).unwrap())
         .unwrap();
     STATUS_REP
-        .set(Representation::from_dir("status_rep".to_owned(), &ASSETS).unwrap())
-        .unwrap();
-    HERO_REP
-        .set(Representation::from_dir("hero_rep".to_owned(), &ASSETS).unwrap())
+        .set(Representation::from_dir(0, "status_rep".to_owned(), &ASSETS).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
     for f in ASSETS.get_dir("animation").unwrap().files() {

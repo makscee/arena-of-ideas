@@ -70,7 +70,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
             .merge_state(self, ui)
             .show_content(ui, |view_ctx, ui| {
                 ui.horizontal(|ui| {
-                    Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
+                    Self::show_title(self, context, ui).bar_menu(|ui| {
                         self.show_value(context, ui);
                         self.context_menu(view_ctx, ui);
                     });
@@ -83,7 +83,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         let mut changed = false;
         view_ctx.show_content(ui, |view_ctx, ui| {
             ui.horizontal(|ui| {
-                Self::show_title(self.cstr().widget(1.0, ui.style()), ui, |ui| {
+                Self::show_title(self, context, ui).bar_menu(|ui| {
                     self.show_value(context, ui);
                     changed |= self.context_menu_mut(view_ctx, context, ui);
                     self.context_menu(view_ctx, ui);
@@ -111,8 +111,8 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     ) -> bool {
         false
     }
-    fn show_title(text: impl Into<WidgetText>, ui: &mut Ui, context_menu: impl FnOnce(&mut Ui)) {
-        ui.button(text).bar_menu(context_menu);
+    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.cstr().button(ui)
     }
     fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
         if view_ctx.collapsed {
@@ -419,6 +419,35 @@ impl DataView for Action {
         changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
         changed
     }
+    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
+        match self {
+            Action::use_ability => {
+                ui.horizontal(|ui| {
+                    let r = self.cstr().button(ui);
+                    if let Ok(ability) = context.get_string(VarName::ability_name) {
+                        if let Ok(color) = context.get_color(VarName::color) {
+                            ability.cstr_c(color).label(ui);
+                        }
+                    }
+                    r
+                })
+                .inner
+            }
+            Action::apply_status => {
+                ui.horizontal(|ui| {
+                    let r = self.cstr().button(ui);
+                    if let Ok(status) = context.get_string(VarName::status_name) {
+                        if let Ok(color) = context.get_color(VarName::color) {
+                            status.cstr_c(color).label(ui);
+                        }
+                    }
+                    r
+                })
+                .inner
+            }
+            _ => self.cstr().button(ui),
+        }
+    }
 }
 
 impl DataView for Reaction {
@@ -553,8 +582,8 @@ where
     ) -> bool {
         self.as_mut().view_children_mut(view_ctx, context, ui)
     }
-    fn show_title(text: impl Into<WidgetText>, ui: &mut Ui, context_menu: impl FnOnce(&mut Ui)) {
-        T::show_title(text, ui, context_menu);
+    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
+        T::show_title(self.as_ref(), context, ui)
     }
     fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
         self.as_ref().context_menu(view_ctx, ui);

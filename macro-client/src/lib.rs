@@ -108,31 +108,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     DirEntry::File(File::new(format!("{path}.ron").leak(), data.leak().as_bytes()))
                 },
             };
-            let data_from_dir = match nt {
-                NodeType::Name(..) => quote! {
-                    let data = &format!("\"{}\"", dir.path().file_name()?.to_str()?);
-                },
-                NodeType::Data => quote! {
-                    let data = dir.get_file(format!("{path}/data.ron"))?.contents_utf8()?;
-                },
-                NodeType::OnlyData => quote! {
-                    let data = dir.get_file(format!("{path}.ron"))?.contents_utf8()?;
-                },
-            }
-            .into_token_stream();
-            let inner_data_from_dir = match nt {
-                NodeType::Name(..) |
-                NodeType::Data => quote! {
-                    #(s.#component_fields = #component_types::from_dir(format!("{path}/{}", #component_fields_str), dir);)*
-                    #(s.#child_fields = dir
-                        .get_dir(format!("{path}/{}", #child_fields_str))
-                        .into_iter()
-                        .flat_map(|d| d.dirs())
-                        .filter_map(|d| #child_types::from_dir(d.path().to_string_lossy().to_string(), d))
-                        .collect_vec();)*
-                },
-                NodeType::OnlyData => quote! {},
-            }.into_token_stream();
             let data_type_ident = quote! { (#(#all_data_types),*) };
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.insert(
@@ -344,32 +319,27 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity
                     }
-                    fn from_dir_new(parent: u64, path: String, dir: &Dir) -> Option<Self> {
+                    fn from_dir(parent: u64, path: String, dir: &Dir) -> Option<Self> {
                         let file = dir.get_dir(&path)?.files().next()?;
+                        dbg!(file.contents_utf8());
                         let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
                         let mut d = Self::default();
-                        d.inject_data(file.contents_utf8()?);
+                        d.inject_data(file.contents_utf8()?).unwrap();
+                        dbg!(&d);
                         d.id = Some(id);
                         d.parent = Some(parent);
                         #(
-                            d.#component_fields = #component_types::from_dir_new(id, format!("{path}/{}", #component_fields_str), dir);
+                            d.#component_fields = #component_types::from_dir(id, format!("{path}/{}", #component_fields_str), dir);
                         )*
                         #(
                             d.#child_fields = dir
                                 .get_dir(format!("{path}/{}", #child_fields_str))
                                 .into_iter()
                                 .flat_map(|d| d.dirs())
-                                .filter_map(|d| #child_types::from_dir_new(id, d.path().to_string_lossy().to_string(), dir))
+                                .filter_map(|d| #child_types::from_dir(id, d.path().to_string_lossy().to_string(), dir))
                                 .collect_vec();
                         )*
                         Some(d)
-                    }
-                    fn from_dir(path: String, dir: &Dir) -> Option<Self> {
-                        #data_from_dir
-                        let mut s = Self::default();
-                        s.inject_data(data);
-                        #inner_data_from_dir
-                        Some(s)
                     }
                     fn to_dir(&self, path: String) -> DirEntry {
                         #data_to_dir

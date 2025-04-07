@@ -212,7 +212,7 @@ impl Fusion {
                     new_behavior = Some(behavior);
                 }
                 for (ai, ar) in actions.iter().enumerate() {
-                    let (_, action) = self.get_action(ar, context)?;
+                    let (entity, action) = self.get_action(ar, context)?;
                     ui.horizontal(|ui| {
                         if ti + 1 < self.behavior.len() || ai + 1 < actions.len() {
                             if "🔽".cstr().button(ui).clicked() {
@@ -238,7 +238,12 @@ impl Fusion {
                                 new_behavior = Some(behavior);
                             }
                         }
-                        if action.cstr().button(ui).clicked() {
+                        action.view(
+                            DataViewContext::new(ui),
+                            context.clone().set_owner(entity),
+                            ui,
+                        );
+                        if "[red -]".cstr().button(ui).clicked() {
                             let mut behavior = self.behavior.clone();
                             behavior[ti].1.remove(ai);
                             new_behavior = Some(behavior);

@@ -11,7 +11,7 @@
         color(color(HexColor("#D50000"))),
         circle(f32(0.28)),
         color(
-            If(
+            if(
                 greater_then(var(dmg), zero),
                 color(HexColor("#D50000")),
                 color(HexColor("#ffffff")),
