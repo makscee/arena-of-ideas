@@ -2,7 +2,6 @@ use itertools::Itertools;
 use parse::Parser;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::ToTokens;
 use schema::*;
 use syn::*;
 #[macro_use]
@@ -146,7 +145,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
             quote! {
-                #[derive(Component, Clone, Default, Debug)]
+                #[derive(Component, Clone, Default, Debug, Hash)]
                 #input
                 #common
                 impl #struct_ident {
@@ -258,17 +257,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         vars
-                    }
-                }
-                impl StringData for #struct_ident {
-                    fn get_data(&self) -> String {
-                        ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
-                    }
-                    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
-                        match ron::from_str::<#data_type_ident>(data) {
-                            Ok(v) => {(#(self.#all_data_fields),*) = v; Ok(())}
-                            Err(e) => Err(format!("{} parsing error from {data}: {e}", self.kind()).into()),
-                        }
                     }
                 }
                 impl Show for #struct_ident {
@@ -449,61 +437,43 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
                 impl NodeGraphViewNew for #struct_ident {
+                    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+                    fn view_children_mut(
+                        &mut self,
+                        view_ctx: ViewContext,
+                        context: &Context,
+                        ui: &mut Ui,
+                        world: &mut World,
+                    ) -> bool {false}
+                }
+                impl #struct_ident {
                     fn view_children(
                         &self,
-                        view_ctx: ViewContext,
+                        view_ctx: DataViewContext,
                         context: &Context,
                         ui: &mut Ui,
                     ) {
                         #(
                             if let Some(d) = self.#component_fields_load(context) {
-                                view_ctx.show_parent_line(ui);
                                 d.view(view_ctx, context, ui);
                             }
                         )*
-                        #(
-                            for d in self.#child_fields_load(context) {
-                                view_ctx.show_parent_line(ui);
-                                d.view(view_ctx, context, ui);
-                            }
-                        )*
+                        // #(
+                        //     for d in self.#child_fields_load(context) {
+                        //         d.view(view_ctx, context, ui);
+                        //     }
+                        // )*
                     }
-                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui, world: &mut World) -> bool {
+                    fn view_children_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         #(
-                            view_ctx.show_parent_line(ui);
                             if let Some(d) = &mut self.#component_fields {
-                                changed |= d.view_mut(view_ctx, context, ui, world);
-                                if d.get_state(ui).is_some_and(|s| s.delete_me) {
-                                    d.clear_state(ui);
-                                    self.#component_fields = None;
-                                    changed = true;
-                                }
-                            } else if let Some(d) = node_selector::<#component_types>(ui, world) {
-                                self.#component_fields = Some(d);
-                                changed = true;
+                                changed |= d.view_mut(view_ctx, context, ui);
                             }
                         )*
-                        #(
-                            let mut remove = None;
-                            for (i, d) in self.#child_fields.iter_mut().enumerate() {
-                                view_ctx.show_parent_line(ui);
-                                changed |= d.view_mut(view_ctx, context, ui, world);
-                                if d.get_state(ui).is_some_and(|s| s.delete_me) {
-                                    d.clear_state(ui);
-                                    remove = Some(i);
-                                }
-                            }
-                            if let Some(remove) = remove {
-                                self.#child_fields.remove(remove);
-                                changed = true;
-                            }
-                            view_ctx.show_parent_line(ui);
-                            if let Some(d) = node_selector::<#child_types>(ui, world) {
-                                self.#child_fields.push(d);
-                                changed = true;
-                            }
-                        )*
+                        // #(
+                        //     changed |= self.#child_fields.view_mut(view_ctx, context, ui);
+                        // )*
                         changed
                     }
                 }
@@ -569,7 +539,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
@@ -578,12 +548,12 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) {
+                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: DataViewContext, ui: &mut Ui, world: &mut World) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.view_mut(view_ctx, &default(), ui, world) {
+                                if d.view_mut(view_ctx, &default(), ui) {
                                     d.reassign_ids(&mut 0);
                                     *nodes = d.to_tnodes();
                                 }

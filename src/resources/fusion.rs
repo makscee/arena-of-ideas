@@ -281,7 +281,7 @@ impl Fusion {
                 if let Some(fusion) = fusions.get(&slot).copied() {
                     if resp.hovered() {
                         cursor_window(ui.ctx(), |ui| {
-                            fusion.view(ViewContext::compact().hide_buttons(), &context, ui);
+                            fusion.view(DataViewContext::new(ui), &context, ui);
                         });
                     }
                     fusion.paint(resp.rect, &context, ui).ui(ui);
@@ -293,7 +293,7 @@ impl Fusion {
                                     fusion.units.push(unit.unit_name.clone());
                                     changes.push(fusion);
                                 }
-                                unit.view(default(), &context, ui);
+                                unit.view(DataViewContext::new(ui), &context, ui);
                             }
                         });
                         if !fusion.units.is_empty() {

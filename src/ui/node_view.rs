@@ -94,7 +94,7 @@ impl ViewContext {
     }
 }
 
-pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
+trait NodeView: NodeExt + NodeGraphViewNew + Clone {
     fn get_state(&self, ui: &mut Ui) -> Option<ViewState> {
         ui.ctx().data(|r| r.get_temp::<ViewState>(self.view_id()))
     }
@@ -105,7 +105,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
         ui.ctx()
             .data_mut(|w| w.remove_temp::<ViewState>(self.view_id()));
     }
-    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+    fn view_old(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         let mut view_ctx = view_ctx.merge_state(self, context, ui);
         let context = &mut context.clone();
         for (var, value) in self.get_vars(context) {
@@ -123,7 +123,7 @@ pub trait NodeView: NodeExt + NodeGraphViewNew + Clone {
             }
         }
     }
-    fn view_mut(
+    fn view_mut_old(
         &mut self,
         view_ctx: ViewContext,
         context: &Context,
@@ -378,7 +378,7 @@ impl NodeView for House {
                     "ability:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                     if let Some(ability) = self.action_ability_load(context) {
                         ui.vertical(|ui| {
-                            ability.view(view_ctx, context, ui);
+                            ability.view_old(view_ctx, context, ui);
                         });
                     }
                 });
@@ -386,7 +386,7 @@ impl NodeView for House {
                     "status:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                     if let Some(status) = self.status_ability_load(context) {
                         ui.vertical(|ui| {
-                            status.view(view_ctx, context, ui);
+                            status.view_old(view_ctx, context, ui);
                         });
                     }
                 });
@@ -395,7 +395,7 @@ impl NodeView for House {
                     ui.vertical(|ui| {
                         for (i, unit) in self.units_load(context).into_iter().enumerate() {
                             ui.push_id(ui.id().with(i), |ui| {
-                                unit.view(view_ctx, context, ui);
+                                unit.view_old(view_ctx, context, ui);
                             });
                         }
                     })
@@ -539,9 +539,13 @@ impl NodeView for Fusion {
                     let color = context
                         .clone()
                         .set_owner(unit.entity())
-                        .get_color(VarName::color)
+                        .get_var(VarName::color)
                         .unwrap_or_default();
-                    unit.view(view_ctx.color(color), context, ui);
+                    unit.view(
+                        DataViewContext::new(ui),
+                        context.clone().set_var(VarName::color, color),
+                        ui,
+                    );
                 }
                 for (trigger, actions) in behavior {
                     trigger.label(ui);
@@ -549,7 +553,11 @@ impl NodeView for Fusion {
                         ui.add_space(5.0);
                         ui.vertical(|ui| {
                             for (u, action) in actions {
-                                action.show(context.clone().set_owner(units[u].entity()), ui);
+                                action.view(
+                                    DataViewContext::new(ui),
+                                    context.clone().set_owner(units[u].entity()),
+                                    ui,
+                                );
                             }
                         });
                         let rect = ui.min_rect().translate(egui::vec2(1.0, 0.0));
@@ -628,3 +636,42 @@ impl NodeView for UnitDescription {}
 impl NodeView for UnitStats {}
 impl NodeView for Behavior {}
 impl NodeView for Representation {}
+
+trait NodeDataView: Node + NodeExt {
+    fn show_body(&self, context: &Context, ui: &mut Ui) {
+        self.show(context, ui);
+    }
+    fn show_body_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show_mut(context, ui)
+    }
+}
+
+impl DataView for Core {}
+impl DataView for Incubator {}
+impl DataView for Players {}
+impl DataView for Player {}
+impl DataView for PlayerData {}
+impl DataView for PlayerIdentity {}
+impl DataView for House {}
+impl DataView for HouseColor {}
+impl DataView for AbilityMagic {}
+impl DataView for AbilityDescription {}
+impl DataView for AbilityEffect {}
+impl DataView for StatusMagic {}
+impl DataView for StatusDescription {}
+impl DataView for Team {
+    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.show(context, ui);
+    }
+    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        self.show_mut(context, ui)
+    }
+}
+impl DataView for Match {}
+impl DataView for ShopCaseUnit {}
+impl DataView for Fusion {}
+impl DataView for Unit {}
+impl DataView for UnitDescription {}
+impl DataView for UnitStats {}
+impl DataView for Behavior {}
+impl DataView for Representation {}

@@ -9,12 +9,15 @@ impl Plugin for AdminPlugin {
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
         let id = ui.id();
-        let mut e = ui
-            .data(|r| r.get_temp::<Expression>(id))
-            .unwrap_or_default();
-        e.view(DataViewContext::new(ui), &default(), ui);
-        if e.view_mut(DataViewContext::new(ui), &default(), ui) {
-            ui.data_mut(|w| w.insert_temp(id, e));
+        if let Some(e) = world.get_id_link(ID_CORE) {
+            let houses = Context::new_world(world)
+                .children_components::<House>(e)
+                .into_iter()
+                .filter_map(|h| House::pack(e, world))
+                .collect_vec();
+            for h in houses {
+                h.view(DataViewContext::new(ui), &default(), ui);
+            }
         }
         let mut e = ui.data(|r| r.get_temp::<Material>(id)).unwrap_or_default();
         if e.view_mut(DataViewContext::new(ui), &default(), ui) {

@@ -1,5 +1,9 @@
 use include_dir::{DirEntry, File};
 use macro_client::*;
+use serde::{
+    de::{self, Visitor},
+    ser::SerializeTuple,
+};
 use std::fmt::Debug;
 
 macro_schema::nodes!();
@@ -173,11 +177,6 @@ pub struct IdEntityLinks {
     map: HashMap<u64, Entity>,
 }
 
-#[derive(Resource, Default)]
-pub struct NameEntityLinks {
-    map: HashMap<String, Entity>,
-}
-
 pub trait WorldNodeExt {
     fn add_id_link(&mut self, id: u64, entity: Entity);
     fn get_id_link(&self, id: u64) -> Option<Entity>;
@@ -285,7 +284,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
-                            n.view(ViewContext::compact(), &default(), ui);
+                            n.view(DataViewContext::new(ui), &default(), ui);
                         }
                     })
             }
@@ -341,7 +340,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = Behavior::get_by_id(f(d), world) {
-                            n.view(ViewContext::compact(), &default(), ui);
+                            n.view(DataViewContext::new(ui), &default(), ui);
                         }
                     })
             }
@@ -369,7 +368,7 @@ pub fn core(world: &World) -> &Core {
     Core::get_by_id(ID_CORE, world).unwrap()
 }
 
-pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Option<T> {
+pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, world: &mut World) -> Option<T> {
     let resp = format!("add [b {}]", T::kind_s()).cstr().button(ui);
     let mut result = None;
     resp.bar_menu(|ui| {
@@ -377,16 +376,15 @@ pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Opti
             result = Some(T::default());
             ui.close_menu();
         }
-        let mut show_node = |node: &T, view_ctx, ui: &mut Ui, world: &World| {
+        let mut show_node = |node: &T, view_ctx, context: &Context, ui: &mut Ui| {
             ui.horizontal(|ui| {
                 if "add".cstr().button(ui).clicked() {
                     result = T::pack(node.entity(), world);
                     ui.close_menu();
                 }
                 node.view(
-                    view_ctx,
-                    Context::new_world(world).set_owner(node.entity()),
-                    ui,
+                    view_ctx, // Context::new_world(world).set_owner(node.entity()),
+                    context, ui,
                 );
             });
         };
@@ -394,24 +392,26 @@ pub fn node_selector<T: Node + NodeView>(ui: &mut Ui, world: &mut World) -> Opti
             ScrollArea::vertical()
                 .min_scrolled_height(500.0)
                 .show(ui, |ui| {
-                    for n in world.query::<&T>().iter(world) {
-                        if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
-                            continue;
-                        }
-                        show_node(n, ViewContext::default(), ui, world);
-                    }
+                    todo!();
+                    // for n in world.query::<&T>().iter(world) {
+                    //     if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
+                    //         continue;
+                    //     }
+                    //     show_node(n, DataViewContext::new(ui), &default(), ui);
+                    // }
                 });
         });
         ui.menu_button("incubator", |ui| {
             ScrollArea::vertical()
                 .min_scrolled_height(500.0)
                 .show(ui, |ui| {
-                    for n in world.query::<&T>().iter(world) {
-                        if n.parent() != ID_INCUBATOR {
-                            continue;
-                        }
-                        show_node(n, ViewContext::graph(), ui, world);
-                    }
+                    todo!();
+                    // for n in world.query::<&T>().iter(world) {
+                    //     if n.parent() != ID_INCUBATOR {
+                    //         continue;
+                    //     }
+                    //     show_node(n, DataViewContext::new(ui), &default(), ui);
+                    // }
                 });
         });
     });

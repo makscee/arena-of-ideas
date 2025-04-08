@@ -42,7 +42,10 @@ pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
     fn get_data(&self) -> String;
 }
-impl<T: Serialize + DeserializeOwned> StringData for T {
+impl<T> StringData for T
+where
+    T: Serialize + DeserializeOwned,
+{
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
         match ron::from_str(data) {
             Ok(v) => {

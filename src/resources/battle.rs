@@ -538,7 +538,7 @@ impl BattleSimulation {
             for unit in units {
                 ui.vertical(|ui| {
                     unit.view(
-                        ViewContext::compact(),
+                        DataViewContext::new(ui),
                         Context::default().set_owner_node(unit),
                         ui,
                     );

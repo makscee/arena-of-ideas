@@ -218,8 +218,8 @@ pub fn table_conversions(
 }
 pub fn common_node_fns(
     struct_ident: &Ident,
-    _all_data_fields: &Vec<Ident>,
-    _all_data_types: &Vec<Type>,
+    all_data_fields: &Vec<Ident>,
+    all_data_types: &Vec<Type>,
     component_fields: &Vec<Ident>,
     component_types: &Vec<TokenStream>,
 ) -> TokenStream {
@@ -231,6 +231,7 @@ pub fn common_node_fns(
         .iter()
         .map(|i| format!("Failed to get field {i}").leak())
         .collect_vec();
+    let fields_len = all_data_fields.len();
     quote! {
         impl #struct_ident {
             #(
@@ -243,6 +244,54 @@ pub fn common_node_fns(
                     self.#component_fields.as_mut().expect(#component_link_fields_err)
                 }
             )*
+            fn from_data(#(#all_data_fields: #all_data_types),*) -> Self {
+                Self {
+                    #(
+                        #all_data_fields,
+                    )*
+                    ..default()
+                }
+            }
+        }
+        impl Serialize for #struct_ident {
+            fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+            where
+                S: serde::Serializer,
+            {
+                let mut tup = serializer.serialize_tuple(#fields_len)?;
+                #(
+                    tup.serialize_element(&self.#all_data_fields)?;
+                )*
+                tup.end()
+            }
+        }
+        impl<'de> Deserialize<'de> for #struct_ident {
+            fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+            where
+                D: serde::Deserializer<'de>,
+            {
+                struct TupleVisitor;
+                impl<'de> Visitor<'de> for TupleVisitor {
+                    type Value = (#(#all_data_types,)*);
+
+                    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                        formatter.write_str("type err")
+                    }
+                    fn visit_seq<A>(self, mut seq: A) -> std::result::Result<Self::Value, A::Error>
+                    where
+                        A: de::SeqAccess<'de>,
+                    {
+                        Ok((
+                            #(
+                                seq.next_element::<#all_data_types>()?
+                                    .ok_or_else(|| de::Error::invalid_length(0, &self))?,
+                            )*
+                        ))
+                    }
+                }
+                let (#(#all_data_fields,)*) = deserializer.deserialize_tuple(#fields_len, TupleVisitor)?;
+                Ok(Self::from_data(#(#all_data_fields),*))
+            }
         }
     }
 }

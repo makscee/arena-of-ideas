@@ -149,7 +149,7 @@ impl TeamEditorPlugin {
             }
         }
         Team::get(team, team_world).unwrap().view(
-            ViewContext::compact(),
+            DataViewContext::new(ui),
             &Context::new_world(team_world),
             ui,
         );
@@ -167,7 +167,7 @@ impl TeamEditorPlugin {
                     .widget(1.0, ui.style()),
                 |ui| {
                     for unit in context.children_components::<Unit>(house.entity()) {
-                        unit.view(ViewContext::compact(), &context, ui);
+                        unit.view(DataViewContext::new(ui), &context, ui);
                     }
                 },
             );

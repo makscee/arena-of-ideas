@@ -169,17 +169,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         n.map(|n| n.to_node().unwrap())
                     }
                 }
-                impl StringData for #struct_ident {
-                    fn get_data(&self) -> String {
-                        ron::to_string(&(#(&self.#all_data_fields),*)).unwrap()
-                    }
-                    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
-                        match ron::from_str::<#data_type_ident>(data) {
-                            Ok(v) => {(#(self.#all_data_fields),*) = v; Ok(())}
-                            Err(e) => Err(format!("{} parsing error from {data}: {e}", self.kind()).into()),
-                        }
-                    }
-                }
                 impl Node for #struct_ident {
                     #strings_conversions
                     #table_conversions

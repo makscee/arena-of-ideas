@@ -301,3 +301,29 @@ impl Show for Actions {
         self.0.view_mut(DataViewContext::new(ui), context, ui)
     }
 }
+impl Show for Reaction {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.view(DataViewContext::new(ui), context, ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.view_mut(DataViewContext::new(ui), context, ui)
+    }
+}
+
+impl Show for Vec<Reaction> {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.view(DataViewContext::new(ui), context, ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.view_mut(DataViewContext::new(ui), context, ui)
+    }
+}
+
+impl Show for Material {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.view(DataViewContext::new(ui), context, ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.view_mut(DataViewContext::new(ui), context, ui)
+    }
+}

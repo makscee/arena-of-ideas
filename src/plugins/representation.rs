@@ -32,7 +32,7 @@ impl RepresentationPlugin {
             if resp.hovered() {
                 cursor_window(ctx, |ui| {
                     unit.view(
-                        ViewContext::full(),
+                        DataViewContext::new(ui),
                         Context::new_world(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );
@@ -53,7 +53,7 @@ impl RepresentationPlugin {
             Window::new(name, move |ui, world| {
                 if let Some(unit) = world.get::<Unit>(entity) {
                     unit.view(
-                        ViewContext::full(),
+                        DataViewContext::new(ui),
                         Context::new_world(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );
