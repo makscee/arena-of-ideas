@@ -33,28 +33,6 @@ impl DataViewContext {
     fn save_state(self, ui: &mut Ui) {
         ui.data_mut(|w| w.insert_temp(self.id, self));
     }
-    fn show_content(self, ui: &mut Ui, content: impl FnOnce(DataViewContext, &mut Ui)) {
-        if self.collapsed {
-            let b = "[tw (...)]".cstr().button(ui);
-            if b.clicked() {
-                self.collapsed(false).save_state(ui);
-            }
-            if b.hovered() {
-                cursor_window(ui.ctx(), |ui| {
-                    Frame::new()
-                        .fill(ui.visuals().faint_bg_color)
-                        .stroke(ui.visuals().window_stroke)
-                        .inner_margin(8)
-                        .corner_radius(6)
-                        .show(ui, |ui| {
-                            content(self.collapsed(false), ui);
-                        });
-                });
-            }
-        } else {
-            content(self, ui);
-        }
-    }
 }
 
 pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug {
@@ -66,32 +44,56 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     }
     fn move_inner(&mut self, source: &mut Self) {}
     fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
-        view_ctx
-            .merge_state(self, ui)
-            .show_content(ui, |view_ctx, ui| {
-                ui.horizontal(|ui| {
-                    Self::show_title(self, context, ui).bar_menu(|ui| {
-                        self.show_value(context, ui);
-                        self.context_menu(view_ctx, ui);
-                    });
-                    self.show_body(view_ctx, context, ui);
-                });
-            });
-    }
-    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         let view_ctx = view_ctx.merge_state(self, ui);
-        let mut changed = false;
-        view_ctx.show_content(ui, |view_ctx, ui| {
+        let show = |ui: &mut Ui| {
             ui.horizontal(|ui| {
                 Self::show_title(self, context, ui).bar_menu(|ui| {
                     self.show_value(context, ui);
-                    changed |= self.context_menu_mut(view_ctx, context, ui);
                     self.context_menu(view_ctx, ui);
                 });
-                changed |= self.show_body_mut(view_ctx, context, ui);
+                self.show_body(view_ctx, context, ui);
             });
-        });
+        };
+        if view_ctx.collapsed {
+            if self
+                .show_collapsed(view_ctx, context, ui)
+                .on_hover_ui(show)
+                .clicked()
+            {
+                view_ctx.collapsed(false).save_state(ui);
+            }
+        } else {
+            show(ui);
+        }
+    }
+    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        let view_ctx = view_ctx.merge_state(self, ui);
+        let mut show = |s: &mut Self, ui: &mut Ui| {
+            s.show_title(context, ui).bar_menu(|ui| {
+                s.show_value(context, ui);
+                changed |= s.context_menu_mut(view_ctx, context, ui);
+                s.context_menu(view_ctx, ui);
+            });
+            changed |= s.show_body_mut(view_ctx, context, ui);
+        };
+        if view_ctx.collapsed {
+            let r = self.show_collapsed(view_ctx, context, ui);
+            if r.on_hover_ui(|ui| show(self, ui)).clicked() {
+                view_ctx.collapsed(false).save_state(ui);
+            }
+        } else {
+            show(self, ui);
+        }
         changed
+    }
+    fn show_collapsed(
+        &self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Response {
+        "([tw ...])".cstr().button(ui)
     }
     fn show_value(&self, context: &Context, ui: &mut Ui) {}
     fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
