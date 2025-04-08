@@ -527,7 +527,7 @@ impl BattleSimulation {
             if let Ok(units) = f.units(&Context::new_battle_simulation(self)) {
                 return units
                     .into_iter()
-                    .map(|u| Unit::pack(u.entity(), &self.world).unwrap())
+                    .map(|u| Unit::pack(u.entity(), &Context::new_world(&self.world)).unwrap())
                     .collect_vec();
             }
         }

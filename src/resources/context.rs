@@ -380,3 +380,15 @@ impl ContextLayer<'_> {
         }
     }
 }
+
+impl<'w> From<&'w World> for Context<'w, '_> {
+    fn from(value: &'w World) -> Self {
+        Context::new_world(value)
+    }
+}
+
+impl<'w> From<&'w mut World> for Context<'w, '_> {
+    fn from(value: &'w mut World) -> Self {
+        Context::new_world(value)
+    }
+}

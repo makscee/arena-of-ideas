@@ -118,7 +118,7 @@ trait NodeView: NodeExt + NodeGraphViewNew + Clone {
                 ui.horizontal(|ui| {
                     self.data_self(view_ctx, context, ui).ui(ui);
                     view_ctx.parent_rect = Some(ui.min_rect());
-                    ui.vertical(|ui| self.view_children(view_ctx, context, ui));
+                    ui.vertical(|ui| self.view_children_old(view_ctx, context, ui));
                 });
             }
         }
@@ -137,7 +137,7 @@ trait NodeView: NodeExt + NodeGraphViewNew + Clone {
                 ui.horizontal(|ui| {
                     let changed = self.data_self_mut(view_ctx, context, ui);
                     view_ctx.parent_rect = Some(ui.min_rect());
-                    ui.vertical(|ui| self.view_children_mut(view_ctx, context, ui, world))
+                    ui.vertical(|ui| self.view_children_mut_old(view_ctx, context, ui, world))
                         .inner
                         || changed
                 })
@@ -274,8 +274,8 @@ trait NodeView: NodeExt + NodeGraphViewNew + Clone {
 }
 
 pub trait NodeGraphViewNew: NodeExt {
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui);
-    fn view_children_mut(
+    fn view_children_old(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui);
+    fn view_children_mut_old(
         &mut self,
         view_ctx: ViewContext,
         context: &Context,
@@ -637,41 +637,3 @@ impl NodeView for UnitStats {}
 impl NodeView for Behavior {}
 impl NodeView for Representation {}
 
-trait NodeDataView: Node + NodeExt {
-    fn show_body(&self, context: &Context, ui: &mut Ui) {
-        self.show(context, ui);
-    }
-    fn show_body_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.show_mut(context, ui)
-    }
-}
-
-impl DataView for Core {}
-impl DataView for Incubator {}
-impl DataView for Players {}
-impl DataView for Player {}
-impl DataView for PlayerData {}
-impl DataView for PlayerIdentity {}
-impl DataView for House {}
-impl DataView for HouseColor {}
-impl DataView for AbilityMagic {}
-impl DataView for AbilityDescription {}
-impl DataView for AbilityEffect {}
-impl DataView for StatusMagic {}
-impl DataView for StatusDescription {}
-impl DataView for Team {
-    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
-        self.show(context, ui);
-    }
-    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
-        self.show_mut(context, ui)
-    }
-}
-impl DataView for Match {}
-impl DataView for ShopCaseUnit {}
-impl DataView for Fusion {}
-impl DataView for Unit {}
-impl DataView for UnitDescription {}
-impl DataView for UnitStats {}
-impl DataView for Behavior {}
-impl DataView for Representation {}

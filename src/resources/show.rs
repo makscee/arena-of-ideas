@@ -119,7 +119,6 @@ impl Show for String {
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Input::new("")
-            .desired_width(100.0)
             .ui_string(self, ui)
             .changed()
     }

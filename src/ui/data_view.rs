@@ -23,7 +23,7 @@ impl DataViewContext {
         self.collapsed = value;
         self
     }
-    fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
+    pub fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
         self.id = self.id.with(view);
         if let Some(state) = ui.data(|r| r.get_temp::<DataViewContext>(self.id)) {
             self.collapsed = state.collapsed;
@@ -43,20 +43,28 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         default()
     }
     fn move_inner(&mut self, source: &mut Self) {}
+    fn merge_state<'a>(
+        &self,
+        view_ctx: DataViewContext,
+        context: &Context<'a, 'a>,
+        ui: &mut Ui,
+    ) -> (DataViewContext, Context<'a, 'a>) {
+        (view_ctx.merge_state(self, ui), context.clone())
+    }
     fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
-        let view_ctx = view_ctx.merge_state(self, ui);
+        let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
         let show = |ui: &mut Ui| {
             ui.horizontal(|ui| {
-                Self::show_title(self, context, ui).bar_menu(|ui| {
-                    self.show_value(context, ui);
+                Self::show_title(self, &context, ui).bar_menu(|ui| {
+                    self.show_value(view_ctx, &context, ui);
                     self.context_menu(view_ctx, ui);
                 });
-                self.show_body(view_ctx, context, ui);
+                self.show_value(view_ctx, &context, ui);
             });
         };
         if view_ctx.collapsed {
             if self
-                .show_collapsed(view_ctx, context, ui)
+                .show_collapsed(view_ctx, &context, ui)
                 .on_hover_ui(show)
                 .clicked()
             {
@@ -68,17 +76,23 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     }
     fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
-        let view_ctx = view_ctx.merge_state(self, ui);
+        let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
         let mut show = |s: &mut Self, ui: &mut Ui| {
-            s.show_title(context, ui).bar_menu(|ui| {
-                s.show_value(context, ui);
-                changed |= s.context_menu_mut(view_ctx, context, ui);
-                s.context_menu(view_ctx, ui);
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    s.show_title(&context, ui).bar_menu(|ui| {
+                        changed |= s.context_menu_mut(view_ctx, &context, ui);
+                        s.context_menu(view_ctx, ui);
+                    });
+                    changed |= s.show_value_mut(view_ctx, &context, ui);
+                });
+                ui.vertical(|ui| {
+                    changed |= s.view_children_mut(view_ctx, &context, ui);
+                });
             });
-            changed |= s.show_body_mut(view_ctx, context, ui);
         };
         if view_ctx.collapsed {
-            let r = self.show_collapsed(view_ctx, context, ui);
+            let r = self.show_collapsed(view_ctx, &context, ui);
             if r.on_hover_ui(|ui| show(self, ui)).clicked() {
                 view_ctx.collapsed(false).save_state(ui);
             }
@@ -95,14 +109,14 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     ) -> Response {
         "([tw ...])".cstr().button(ui)
     }
-    fn show_value(&self, context: &Context, ui: &mut Ui) {}
-    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
-        ui.vertical(|ui| self.view_children(view_ctx, context, ui))
-            .inner
-    }
-    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
-        ui.vertical(|ui| self.view_children_mut(view_ctx, context, ui))
-            .inner
+    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
+    fn show_value_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        false
     }
     fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
     fn view_children_mut(
@@ -114,7 +128,12 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         false
     }
     fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
-        self.cstr().button(ui)
+        if let Ok(color) = context.get_color(VarName::color) {
+            self.cstr().get_text().cstr_c(color)
+        } else {
+            self.cstr()
+        }
+        .button(ui)
     }
     fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
         if view_ctx.collapsed {
@@ -333,7 +352,7 @@ impl DataView for Expression {
         show_children::<_, f32>(self, context, ui);
         show_children::<_, HexColor>(self, context, ui);
     }
-    fn show_value(&self, context: &Context, ui: &mut Ui) {
+    fn show_value(&self, _: DataViewContext, context: &Context, ui: &mut Ui) {
         match self.get_value(context) {
             Ok(v) => v.cstr_expanded(),
             Err(e) => e.cstr(),
@@ -357,7 +376,12 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     );
 }
 impl DataView for Material {
-    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn show_value_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
         ui.vertical(|ui| {
             material_view(self, context, ui);
             self.0.view_mut(view_ctx, context, ui)
@@ -552,14 +576,16 @@ where
     fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().view_mut(view_ctx, context, ui)
     }
-    fn show_value(&self, context: &Context, ui: &mut Ui) {
-        self.as_ref().show_value(context, ui);
+    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+        self.as_ref().show_value(view_ctx, context, ui);
     }
-    fn show_body(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
-        self.as_ref().show_body(view_ctx, context, ui);
-    }
-    fn show_body_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
-        self.as_mut().show_body_mut(view_ctx, context, ui)
+    fn show_value_mut(
+        &mut self,
+        view_ctx: DataViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        self.as_mut().show_value_mut(view_ctx, context, ui)
     }
     fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().view_children(view_ctx, context, ui);

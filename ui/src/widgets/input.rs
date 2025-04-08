@@ -46,10 +46,17 @@ impl Input {
         self
     }
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) -> Response {
+        let width = if self.desired_width == f32::INFINITY {
+            ui.min_rect().width() - 10.0
+        } else {
+            self.desired_width
+        };
         ui.horizontal(|ui| {
-            self.name.label(ui);
+            if !self.name.is_empty() {
+                self.name.label(ui);
+            }
             let mut te = TextEdit::singleline(value)
-                .desired_width(self.desired_width)
+                .desired_width(width)
                 .password(self.password);
             if let Some(color) = self.override_color {
                 te = te.text_color(color);

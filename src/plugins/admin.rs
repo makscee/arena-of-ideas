@@ -10,10 +10,11 @@ impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
         let id = ui.id();
         if let Some(e) = world.get_id_link(ID_CORE) {
-            let houses = Context::new_world(world)
+            let context = &Context::new_world(world);
+            let houses = context
                 .children_components::<House>(e)
                 .into_iter()
-                .filter_map(|h| House::pack(e, world))
+                .filter_map(|h| House::pack(e, context))
                 .collect_vec();
             for h in houses {
                 h.view(DataViewContext::new(ui), &default(), ui);
@@ -34,7 +35,8 @@ impl AdminPlugin {
             cn().reducers.incubator_merge().unwrap();
         }
         if "Export Core".cstr().button(ui).clicked() {
-            let all = Core::pack(world.get_id_link(ID_CORE).unwrap(), world).unwrap();
+            let context = &Context::new_world(world);
+            let all = Core::pack(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
             dbg!(&all);
             let path = "./assets/";
             let dir = all.to_dir("ron".into());

@@ -363,14 +363,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(d)
                     }
-                    fn pack(entity: Entity, world: &World) -> Option<Self> {
-                        let mut s = world.get::<Self>(entity)?.clone();
+                    fn pack(entity: Entity, context: &Context) -> Option<Self> {
+                        let mut s = context.get_component::<Self>(entity)?.clone();
                         #(
-                            s.#component_fields = #component_types::pack(entity, world);
+                            s.#component_fields = #component_types::pack(entity, context);
                         )*
                         #(
-                            for child in get_children(entity, world) {
-                                if let Some(d) = #child_types::pack(child, world) {
+                            for child in context.get_children(entity) {
+                                if let Some(d) = #child_types::pack(child, context) {
                                     s.#child_fields.push(d);
                                 }
                             }
@@ -429,16 +429,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
-                    fn with_components(mut self, world: &World) -> Self {
+                    fn with_components(mut self, context: &Context) -> Self {
                         #(
-                            self.#component_fields = #component_types::pack(self.entity(), world);
+                            self.#component_fields = #component_types::pack(self.entity(), context);
                         )*
                         self
                     }
                 }
                 impl NodeGraphViewNew for #struct_ident {
-                    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
-                    fn view_children_mut(
+                    fn view_children_old(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+                    fn view_children_mut_old(
                         &mut self,
                         view_ctx: ViewContext,
                         context: &Context,
@@ -446,7 +446,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         world: &mut World,
                     ) -> bool {false}
                 }
-                impl #struct_ident {
+
+                impl DataView for #struct_ident {
+                    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+                        self.show(context, ui);
+                    }
+                    fn show_value_mut(
+                        &mut self,
+                        view_ctx: DataViewContext,
+                        context: &Context,
+                        ui: &mut Ui,
+                    ) -> bool {
+                        self.show_mut(context, ui)
+                    }
                     fn view_children(
                         &self,
                         view_ctx: DataViewContext,
@@ -458,23 +470,39 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.view(view_ctx, context, ui);
                             }
                         )*
-                        // #(
-                        //     for d in self.#child_fields_load(context) {
-                        //         d.view(view_ctx, context, ui);
-                        //     }
-                        // )*
+                        #(
+                            for d in self.#child_fields_load(context){
+                                d.view(view_ctx, context, ui);
+                            }
+                        )*
                     }
                     fn view_children_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         #(
                             if let Some(d) = &mut self.#component_fields {
                                 changed |= d.view_mut(view_ctx, context, ui);
+                            } else if let Some(d) = node_selector(ui, context) {
+                                changed = true;
+                                self.#component_fields = Some(d);
                             }
+
                         )*
-                        // #(
-                        //     changed |= self.#child_fields.view_mut(view_ctx, context, ui);
-                        // )*
+                        #(
+                            changed |= self.#child_fields.view_mut(view_ctx, context, ui);
+                        )*
                         changed
+                    }
+                    fn merge_state<'a>(
+                        &self,
+                        view_ctx: DataViewContext,
+                        context: &Context<'a, 'a>,
+                        ui: &mut Ui,
+                    ) -> (DataViewContext, Context<'a, 'a>) {
+                        let mut context = context.clone();
+                        for (var, value) in self.get_vars(&context) {
+                            context.set_var(var, value);
+                        }
+                        (view_ctx.merge_state(self, ui), context)
                     }
                 }
                 impl From<&str> for #struct_ident {

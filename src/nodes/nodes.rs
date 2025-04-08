@@ -32,7 +32,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
     fn to_tnodes(&self) -> Vec<TNode>;
     fn load_recursive(id: u64) -> Option<Self>;
-    fn pack(entity: Entity, world: &World) -> Option<Self>;
+    fn pack(entity: Entity, context: &Context) -> Option<Self>;
     fn unpack(self, entity: Entity, world: &mut World);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);
@@ -46,9 +46,9 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
             }
         }
     }
-    fn find_up<'a, T: Component>(&self, world: &'a World) -> Option<&'a T> {
+    fn find_up<'a, T: Component>(&self, context: &'a Context) -> Option<&'a T> {
         let entity = self.get_entity().expect("Node not linked to world");
-        Self::find_up_entity::<T>(entity, world)
+        context.find_parent_component::<T>(entity)
     }
     fn collect_children_entity<'a, T: Component>(entity: Entity, world: &'a World) -> Vec<&'a T> {
         entity
@@ -65,7 +65,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn children_kinds() -> HashSet<NodeKind>;
     fn fill_from_incubator(self) -> Self;
     fn clear_ids(&mut self);
-    fn with_components(self, world: &World) -> Self;
+    fn with_components(self, context: &Context) -> Self;
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
@@ -243,13 +243,13 @@ impl Team {
 }
 
 impl Unit {
-    pub fn to_house(self, world: &World) -> Result<House, ExpressionError> {
+    pub fn to_house(self, context: &Context) -> Result<House, ExpressionError> {
         let mut house = self
-            .find_up::<House>(world)
+            .find_up::<House>(context)
             .cloned()
             .to_e("House not found")?
-            .with_components(world);
-        house.units.push(self.with_components(world));
+            .with_components(context);
+        house.units.push(self.with_components(context));
         Ok(house)
     }
 }
@@ -368,7 +368,7 @@ pub fn core(world: &World) -> &Core {
     Core::get_by_id(ID_CORE, world).unwrap()
 }
 
-pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, world: &mut World) -> Option<T> {
+pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
     let resp = format!("add [b {}]", T::kind_s()).cstr().button(ui);
     let mut result = None;
     resp.bar_menu(|ui| {
@@ -379,20 +379,16 @@ pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, world: &mut Worl
         let mut show_node = |node: &T, view_ctx, context: &Context, ui: &mut Ui| {
             ui.horizontal(|ui| {
                 if "add".cstr().button(ui).clicked() {
-                    result = T::pack(node.entity(), world);
+                    result = T::pack(node.entity(), context);
                     ui.close_menu();
                 }
-                node.view(
-                    view_ctx, // Context::new_world(world).set_owner(node.entity()),
-                    context, ui,
-                );
+                node.view(view_ctx, context, ui);
             });
         };
         ui.menu_button("core", |ui| {
             ScrollArea::vertical()
                 .min_scrolled_height(500.0)
                 .show(ui, |ui| {
-                    todo!();
                     // for n in world.query::<&T>().iter(world) {
                     //     if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
                     //         continue;
@@ -405,7 +401,6 @@ pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, world: &mut Worl
             ScrollArea::vertical()
                 .min_scrolled_height(500.0)
                 .show(ui, |ui| {
-                    todo!();
                     // for n in world.query::<&T>().iter(world) {
                     //     if n.parent() != ID_INCUBATOR {
                     //         continue;

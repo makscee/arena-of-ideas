@@ -18,7 +18,7 @@ impl FusionEditorPlugin {
         world: &mut World,
         on_save: impl Fn(Fusion, &mut World) -> Result<(), ExpressionError> + Send + Sync + 'static,
     ) -> Result<(), ExpressionError> {
-        let fusion = Fusion::pack(entity, world).to_e("Failed to pack Fusion")?;
+        let fusion = Fusion::pack(entity, &world.into()).to_e("Failed to pack Fusion")?;
         world.insert_resource(FusionEditorData {
             fusion,
             on_save: Box::new(on_save),

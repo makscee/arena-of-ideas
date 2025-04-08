@@ -167,7 +167,7 @@ impl BattlePlugin {
             }
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
-                let updated_team = Team::pack(team, &teams_world).unwrap();
+                let updated_team = Team::pack(team, &teams_world.into()).unwrap();
                 let team = if left {
                     &mut battle.left
                 } else {

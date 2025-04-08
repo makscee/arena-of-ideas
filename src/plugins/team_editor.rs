@@ -36,7 +36,7 @@ impl TeamEditorPlugin {
                         .get_color(VarName::color)
                         .ok_log()?;
                     if unit.unit_name.cstr_c(color).button(ui).clicked() {
-                        return unit.clone().to_house(world).ok_log();
+                        return unit.clone().to_house(&world.into()).ok_log();
                     }
                 }
                 None
@@ -144,7 +144,7 @@ impl TeamEditorPlugin {
         }
         if let Some(f) = &ed.on_save {
             if "save".cstr().button(ui).clicked() {
-                let team = Team::pack(team, team_world).to_e("Failed to pack team")?;
+                let team = Team::pack(team, &team_world.into()).to_e("Failed to pack team")?;
                 f(team, world);
             }
         }
