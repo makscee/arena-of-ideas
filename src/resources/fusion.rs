@@ -239,7 +239,7 @@ impl Fusion {
                             }
                         }
                         action.view(
-                            DataViewContext::new(ui),
+                            ViewContext::new(ui),
                             context.clone().set_owner(entity),
                             ui,
                         );
@@ -281,7 +281,7 @@ impl Fusion {
                 if let Some(fusion) = fusions.get(&slot).copied() {
                     if resp.hovered() {
                         cursor_window(ui.ctx(), |ui| {
-                            fusion.view(DataViewContext::new(ui), &context, ui);
+                            fusion.view(ViewContext::new(ui), &context, ui);
                         });
                     }
                     fusion.paint(resp.rect, &context, ui).ui(ui);
@@ -293,7 +293,7 @@ impl Fusion {
                                     fusion.units.push(unit.unit_name.clone());
                                     changes.push(fusion);
                                 }
-                                unit.view(DataViewContext::new(ui), &context, ui);
+                                unit.view(ViewContext::new(ui), &context, ui);
                             }
                         });
                         if !fusion.units.is_empty() {

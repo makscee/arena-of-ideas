@@ -3,12 +3,12 @@ use serde::de::DeserializeOwned;
 use super::*;
 
 #[derive(Clone, Copy)]
-pub struct DataViewContext {
+pub struct ViewContext {
     id: Id,
     collapsed: bool,
 }
 
-impl DataViewContext {
+impl ViewContext {
     pub fn new(ui: &mut Ui) -> Self {
         Self {
             id: ui.id(),
@@ -25,7 +25,7 @@ impl DataViewContext {
     }
     pub fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
         self.id = self.id.with(view);
-        if let Some(state) = ui.data(|r| r.get_temp::<DataViewContext>(self.id)) {
+        if let Some(state) = ui.data(|r| r.get_temp::<ViewContext>(self.id)) {
             self.collapsed = state.collapsed;
         }
         self
@@ -45,13 +45,13 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     fn move_inner(&mut self, source: &mut Self) {}
     fn merge_state<'a>(
         &self,
-        view_ctx: DataViewContext,
+        view_ctx: ViewContext,
         context: &Context<'a, 'a>,
         ui: &mut Ui,
-    ) -> (DataViewContext, Context<'a, 'a>) {
+    ) -> (ViewContext, Context<'a, 'a>) {
         (view_ctx.merge_state(self, ui), context.clone())
     }
-    fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
         let show = |ui: &mut Ui| {
             ui.horizontal(|ui| {
@@ -74,7 +74,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
             show(ui);
         }
     }
-    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
         let mut show = |s: &mut Self, ui: &mut Ui| {
@@ -101,41 +101,21 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         }
         changed
     }
-    fn show_collapsed(
-        &self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> Response {
+    fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         "([tw ...])".cstr().button(ui)
     }
-    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
-    fn show_value_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         false
     }
-    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {}
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         false
     }
     fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
-        if let Ok(color) = context.get_color(VarName::color) {
-            self.cstr().get_text().cstr_c(color)
-        } else {
-            self.cstr()
-        }
-        .button(ui)
+        self.cstr().button(ui)
     }
-    fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
+    fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
         if view_ctx.collapsed {
             if ui.button("expand").clicked() {
                 view_ctx.collapsed(false).save_state(ui);
@@ -152,12 +132,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
             ui.close_menu();
         }
     }
-    fn context_menu_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn context_menu_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let options = Self::replace_options();
         let lookup_id = Id::new("lookup text");
@@ -247,7 +222,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
 
 fn view_children_mut<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
     s: &mut T,
-    view_ctx: DataViewContext,
+    view_ctx: ViewContext,
     context: &Context,
     ui: &mut Ui,
 ) -> bool {
@@ -265,7 +240,7 @@ fn view_children_mut<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
 }
 fn view_children<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
     s: &T,
-    view_ctx: DataViewContext,
+    view_ctx: ViewContext,
     context: &Context,
     ui: &mut Ui,
 ) {
@@ -335,24 +310,19 @@ impl DataView for Expression {
         <Expression as Injector<Expression>>::inject_inner(self, source);
         <Expression as Injector<f32>>::inject_inner(self, source);
     }
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
         changed |= show_children_mut::<_, f32>(self, context, ui);
         changed |= show_children_mut::<_, HexColor>(self, context, ui);
         changed
     }
-    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         view_children::<_, Self>(self, view_ctx, context, ui);
         show_children::<_, f32>(self, context, ui);
         show_children::<_, HexColor>(self, context, ui);
     }
-    fn show_value(&self, _: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn show_value(&self, _: ViewContext, context: &Context, ui: &mut Ui) {
         match self.get_value(context) {
             Ok(v) => v.cstr_expanded(),
             Err(e) => e.cstr(),
@@ -376,12 +346,7 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     );
 }
 impl DataView for Material {
-    fn show_value_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         ui.vertical(|ui| {
             material_view(self, context, ui);
             self.0.view_mut(view_ctx, context, ui)
@@ -401,12 +366,7 @@ impl DataView for PainterAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         match self {
             PainterAction::list(vec) => {
@@ -430,16 +390,11 @@ impl DataView for Action {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect()
     }
-    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         view_children::<_, Self>(self, view_ctx, context, ui);
         view_children::<_, Expression>(self, view_ctx, context, ui);
     }
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
         changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
@@ -477,16 +432,11 @@ impl DataView for Action {
 }
 
 impl DataView for Reaction {
-    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.trigger.view(view_ctx, context, ui);
         self.actions.0.view(view_ctx, context, ui);
     }
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let changed = self.trigger.view_mut(view_ctx, context, ui);
         self.actions.0.view_mut(view_ctx, context, ui) || changed
     }
@@ -504,7 +454,7 @@ where
         + Serialize
         + DeserializeOwned,
 {
-    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut to_remove = None;
         let mut swap = None;
@@ -570,46 +520,31 @@ where
     fn move_inner(&mut self, source: &mut Self) {
         self.as_mut().move_inner(source.as_mut());
     }
-    fn view(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().view(view_ctx, context, ui);
     }
-    fn view_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().view_mut(view_ctx, context, ui)
     }
-    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().show_value(view_ctx, context, ui);
     }
-    fn show_value_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().show_value_mut(view_ctx, context, ui)
     }
-    fn view_children(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().view_children(view_ctx, context, ui);
     }
-    fn view_children_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().view_children_mut(view_ctx, context, ui)
     }
     fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
         T::show_title(self.as_ref(), context, ui)
     }
-    fn context_menu(&self, view_ctx: DataViewContext, ui: &mut Ui) {
+    fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
         self.as_ref().context_menu(view_ctx, ui);
     }
-    fn context_menu_mut(
-        &mut self,
-        view_ctx: DataViewContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> bool {
+    fn context_menu_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().context_menu_mut(view_ctx, context, ui)
     }
     fn copy(&self) {

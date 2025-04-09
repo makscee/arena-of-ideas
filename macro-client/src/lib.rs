@@ -107,7 +107,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     DirEntry::File(File::new(format!("{path}.ron").leak(), data.leak().as_bytes()))
                 },
             };
-            let data_type_ident = quote! { (#(#all_data_types),*) };
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.insert(
                     0,
@@ -436,24 +435,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         self
                     }
                 }
-                impl NodeGraphViewNew for #struct_ident {
-                    fn view_children_old(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
-                    fn view_children_mut_old(
-                        &mut self,
-                        view_ctx: ViewContext,
-                        context: &Context,
-                        ui: &mut Ui,
-                        world: &mut World,
-                    ) -> bool {false}
-                }
 
                 impl DataView for #struct_ident {
-                    fn show_value(&self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+                    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         self.show(context, ui);
                     }
                     fn show_value_mut(
                         &mut self,
-                        view_ctx: DataViewContext,
+                        view_ctx: ViewContext,
                         context: &Context,
                         ui: &mut Ui,
                     ) -> bool {
@@ -461,7 +450,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn view_children(
                         &self,
-                        view_ctx: DataViewContext,
+                        view_ctx: ViewContext,
                         context: &Context,
                         ui: &mut Ui,
                     ) {
@@ -476,7 +465,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
-                    fn view_children_mut(&mut self, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) -> bool {
+                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         #(
                             if let Some(d) = &mut self.#component_fields {
@@ -494,10 +483,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn merge_state<'a>(
                         &self,
-                        view_ctx: DataViewContext,
+                        view_ctx: ViewContext,
                         context: &Context<'a, 'a>,
                         ui: &mut Ui,
-                    ) -> (DataViewContext, Context<'a, 'a>) {
+                    ) -> (ViewContext, Context<'a, 'a>) {
                         let mut context = context.clone();
                         for (var, value) in self.get_vars(&context) {
                             context.set_var(var, value);
@@ -567,7 +556,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: DataViewContext, context: &Context, ui: &mut Ui) {
+                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
@@ -576,7 +565,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: DataViewContext, ui: &mut Ui, world: &mut World) {
+                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {

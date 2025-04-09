@@ -284,7 +284,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
-                            n.view(DataViewContext::new(ui), &default(), ui);
+                            n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
             }
@@ -340,7 +340,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
                         if let Some(n) = Behavior::get_by_id(f(d), world) {
-                            n.view(DataViewContext::new(ui), &default(), ui);
+                            n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
             }
@@ -393,7 +393,7 @@ pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Contex
                     //     if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
                     //         continue;
                     //     }
-                    //     show_node(n, DataViewContext::new(ui), &default(), ui);
+                    //     show_node(n, ViewContext::new(ui), &default(), ui);
                     // }
                 });
         });
@@ -405,7 +405,7 @@ pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Contex
                     //     if n.parent() != ID_INCUBATOR {
                     //         continue;
                     //     }
-                    //     show_node(n, DataViewContext::new(ui), &default(), ui);
+                    //     show_node(n, ViewContext::new(ui), &default(), ui);
                     // }
                 });
         });

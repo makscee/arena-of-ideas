@@ -17,11 +17,11 @@ impl AdminPlugin {
                 .filter_map(|h| House::pack(e, context))
                 .collect_vec();
             for h in houses {
-                h.view(DataViewContext::new(ui), &default(), ui);
+                h.view(ViewContext::new(ui), &default(), ui);
             }
         }
         let mut e = ui.data(|r| r.get_temp::<Material>(id)).unwrap_or_default();
-        if e.view_mut(DataViewContext::new(ui), &default(), ui) {
+        if e.view_mut(ViewContext::new(ui), &default(), ui) {
             ui.data_mut(|w| w.insert_temp(id, e));
         }
 

@@ -174,7 +174,7 @@ impl IncubatorPlugin {
     pub fn pane_graph_core(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let context = &Context::new_world(world);
         for house in core(world).houses_load(context) {
-            house.view(DataViewContext::new(ui), context, ui);
+            house.view(ViewContext::new(ui), context, ui);
         }
         Ok(())
     }
@@ -197,7 +197,7 @@ impl IncubatorPlugin {
                 }]
                 .into();
             }
-            kind.view_tnodes_mut(nodes, DataViewContext::new(ui), ui, world);
+            kind.view_tnodes_mut(nodes, ViewContext::new(ui), ui, world);
             if "Publish".cstr_s(CstrStyle::Bold).button(ui).clicked() {
                 cn().reducers
                     .incubator_push(nodes.clone(), d.new_node_link)
@@ -236,7 +236,7 @@ impl IncubatorPlugin {
         let Some(node) = cn().db.nodes_world().id().find(&id) else {
             return Err(format!("Failed to find node {kind}#{id}").into());
         };
-        kind.view_tnodes(&[node].to_vec(), DataViewContext::new(ui), &default(), ui);
+        kind.view_tnodes(&[node].to_vec(), ViewContext::new(ui), &default(), ui);
         let mut r = rm(world);
         if r.link_types.is_empty() {
             return Ok(());

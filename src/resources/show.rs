@@ -294,35 +294,35 @@ impl Show for Vec<String> {
 }
 impl Show for Actions {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.0.view(DataViewContext::new(ui), context, ui);
+        self.0.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.0.view_mut(DataViewContext::new(ui), context, ui)
+        self.0.view_mut(ViewContext::new(ui), context, ui)
     }
 }
 impl Show for Reaction {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(DataViewContext::new(ui), context, ui);
+        self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(DataViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui)
     }
 }
 
 impl Show for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(DataViewContext::new(ui), context, ui);
+        self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(DataViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui)
     }
 }
 
 impl Show for Material {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(DataViewContext::new(ui), context, ui);
+        self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(DataViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui)
     }
 }
