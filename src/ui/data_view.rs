@@ -1,3 +1,5 @@
+use std::any::{type_name, type_name_of_val};
+
 use serde::de::DeserializeOwned;
 
 use super::*;
@@ -19,23 +21,23 @@ impl ViewContext {
         self.id = self.id.with(h);
         self
     }
-    fn collapsed(mut self, value: bool) -> Self {
+    pub fn collapsed(mut self, value: bool) -> Self {
         self.collapsed = value;
         self
     }
     pub fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
-        self.id = self.id.with(view);
+        self.id = self.id.with(type_name_of_val(view));
         if let Some(state) = ui.data(|r| r.get_temp::<ViewContext>(self.id)) {
             self.collapsed = state.collapsed;
         }
         self
     }
-    fn save_state(self, ui: &mut Ui) {
+    pub fn save_state(self, ui: &mut Ui) {
         ui.data_mut(|w| w.insert_temp(self.id, self));
     }
 }
 
-pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug {
+pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     fn wrap(value: Self) -> Option<Self> {
         None
     }
@@ -55,8 +57,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
         let show = |ui: &mut Ui| {
             ui.horizontal(|ui| {
-                Self::show_title(self, &context, ui).bar_menu(|ui| {
-                    self.show_value(view_ctx, &context, ui);
+                Self::show_title(self, view_ctx, &context, ui).bar_menu(|ui| {
                     self.context_menu(view_ctx, ui);
                 });
                 self.show_value(view_ctx, &context, ui);
@@ -77,13 +78,41 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
-        let mut show = |s: &mut Self, ui: &mut Ui| {
+        let mut show = |s: &mut Self, view_ctx: ViewContext, ui: &mut Ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    s.show_title(&context, ui).bar_menu(|ui| {
+                    let title_response = s.show_title(view_ctx, &context, ui);
+                    title_response.bar_menu(|ui| {
                         changed |= s.context_menu_mut(view_ctx, &context, ui);
                         s.context_menu(view_ctx, ui);
                     });
+                    if ui
+                        .ctx()
+                        .rect_contains_pointer(ui.layer_id(), title_response.rect)
+                    {
+                        let size = 8.0;
+                        if RectButton::new_rect(Rect::from_center_size(
+                            title_response.rect.right_center() - egui::vec2(size, 0.0),
+                            egui::Vec2::splat(size),
+                        ))
+                        .color(ui.visuals().weak_text_color())
+                        .ui(ui, |color, rect, ui| {
+                            ui.painter().line(
+                                [
+                                    rect.left_bottom(),
+                                    rect.left_top(),
+                                    rect.right_center(),
+                                    rect.left_bottom(),
+                                ]
+                                .into(),
+                                color.stroke(),
+                            );
+                        })
+                        .clicked()
+                        {
+                            view_ctx.collapsed(true).save_state(ui);
+                        }
+                    }
                     changed |= s.show_value_mut(view_ctx, &context, ui);
                 });
                 ui.vertical(|ui| {
@@ -93,11 +122,13 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
         };
         if view_ctx.collapsed {
             let r = self.show_collapsed(view_ctx, &context, ui);
-            if r.on_hover_ui(|ui| show(self, ui)).clicked() {
+            if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
+                .clicked()
+            {
                 view_ctx.collapsed(false).save_state(ui);
             }
         } else {
-            show(self, ui);
+            show(self, view_ctx, ui);
         }
         changed
     }
@@ -112,7 +143,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
     fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         false
     }
-    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         self.cstr().button(ui)
     }
     fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
@@ -141,7 +172,9 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Hash + Debug
                 .menu_button("replace", |ui| {
                     let lookup =
                         if let Some(mut lookup) = ui.data(|r| r.get_temp::<String>(lookup_id)) {
-                            let resp = Input::new("").ui_string(&mut lookup, ui);
+                            let resp = Input::new("")
+                                .desired_width(ui.available_width())
+                                .ui_string(&mut lookup, ui);
                             if resp.changed() {
                                 ui.data_mut(|w| w.insert_temp(lookup_id, lookup.clone()));
                             }
@@ -346,7 +379,7 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     );
 }
 impl DataView for Material {
-    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         ui.vertical(|ui| {
             material_view(self, context, ui);
             self.0.view_mut(view_ctx, context, ui)
@@ -400,7 +433,7 @@ impl DataView for Action {
         changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
         changed
     }
-    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         match self {
             Action::use_ability => {
                 ui.horizontal(|ui| {
@@ -454,7 +487,21 @@ where
         + Serialize
         + DeserializeOwned,
 {
-    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+        let name = type_name::<T>();
+        let name = name.split("::").last().unwrap_or_default();
+        format!("[tw {name}] ({})", self.len()).button(ui)
+    }
+    fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+        ui.horizontal(|ui| {
+            ui.add_enabled_ui(false, |ui| {
+                self.show_title(view_ctx, context, ui);
+            });
+            "([tw ...])".cstr().button(ui)
+        })
+        .inner
+    }
+    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut to_remove = None;
         let mut swap = None;
@@ -477,7 +524,9 @@ where
                 if "🔼".cstr().as_button().enabled(i > 0).ui(ui).clicked() {
                     swap = Some((i, i - 1));
                 }
-                changed |= v.view_mut(view_ctx, context, ui);
+                ui.vertical(|ui| {
+                    changed |= v.view_mut(view_ctx.with_id(i), context, ui);
+                });
             });
         }
 
@@ -538,8 +587,8 @@ where
     fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().view_children_mut(view_ctx, context, ui)
     }
-    fn show_title(&self, context: &Context, ui: &mut Ui) -> Response {
-        T::show_title(self.as_ref(), context, ui)
+    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+        T::show_title(self.as_ref(), view_ctx, context, ui)
     }
     fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
         self.as_ref().context_menu(view_ctx, ui);

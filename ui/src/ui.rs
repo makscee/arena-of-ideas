@@ -48,11 +48,15 @@ pub fn dark_frame() -> Frame {
 
 pub trait ToStroke {
     fn stroke(self) -> Stroke;
+    fn stroke_w(self, width: f32) -> Stroke;
 }
 
 impl ToStroke for Color32 {
     fn stroke(self) -> Stroke {
         Stroke::new(1.0, self)
+    }
+    fn stroke_w(self, width: f32) -> Stroke {
+        Stroke::new(width, self)
     }
 }
 

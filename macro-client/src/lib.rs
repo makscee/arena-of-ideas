@@ -194,7 +194,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl ToCstr for #struct_ident {
                     fn cstr(&self) -> Cstr {
-                        format!("[tl {self} [th {}]]", #name_quote)
+                        format!("[tw {self}] [th {}]", #name_quote)
                     }
                 }
                 impl GetVar for #struct_ident {
@@ -440,6 +440,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         self.show(context, ui);
                     }
+                    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+                        self.node_title(context, ui)
+                    }
+                    fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+                        self.node_collapsed(context, ui)
+                    }
                     fn show_value_mut(
                         &mut self,
                         view_ctx: ViewContext,
@@ -469,15 +475,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let mut changed = false;
                         #(
                             if let Some(d) = &mut self.#component_fields {
-                                changed |= d.view_mut(view_ctx, context, ui);
+                                changed |= d.view_mut(view_ctx.collapsed(true), context, ui);
                             } else if let Some(d) = node_selector(ui, context) {
                                 changed = true;
                                 self.#component_fields = Some(d);
                             }
-
                         )*
                         #(
-                            changed |= self.#child_fields.view_mut(view_ctx, context, ui);
+                            changed |= self.#child_fields.view_mut(view_ctx.collapsed(true), context, ui);
                         )*
                         changed
                     }
