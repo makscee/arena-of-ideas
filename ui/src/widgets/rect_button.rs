@@ -4,6 +4,7 @@ pub struct RectButton {
     size: Option<egui::Vec2>,
     rect: Option<Rect>,
     active: bool,
+    enabled: bool,
     color_override: Option<Color32>,
 }
 
@@ -13,6 +14,7 @@ impl RectButton {
             size: Some(size),
             rect: None,
             active: false,
+            enabled: true,
             color_override: None,
         }
     }
@@ -21,6 +23,7 @@ impl RectButton {
             size: None,
             rect: Some(rect),
             active: false,
+            enabled: true,
             color_override: None,
         }
     }
@@ -32,22 +35,33 @@ impl RectButton {
         self.active = value;
         self
     }
+    pub fn enabled(mut self, value: bool) -> Self {
+        self.enabled = value;
+        self
+    }
     #[must_use]
     pub fn ui(self, ui: &mut Ui, content: impl FnOnce(Color32, Rect, &mut Ui)) -> Response {
+        let sense = if self.enabled {
+            Sense::click()
+        } else {
+            Sense::hover()
+        };
         let response = if let Some(size) = self.size {
-            ui.allocate_response(size, Sense::click())
+            ui.allocate_response(size, sense)
         } else if let Some(rect) = self.rect {
             ui.new_child(UiBuilder::new().max_rect(rect))
-                .allocate_rect(rect, Sense::click())
+                .allocate_rect(rect, sense)
         } else {
             unreachable!()
         };
         let mut rect = response.rect;
-        if response.hovered() {
+        if self.enabled && response.hovered() && !response.is_pointer_button_down_on() {
             rect = rect.expand(1.0);
         }
         let color = if self.active {
             YELLOW
+        } else if !self.enabled {
+            ui.visuals().weak_text_color()
         } else {
             if self.color_override.is_some() && !response.hovered() && response.enabled() {
                 self.color_override.unwrap()

@@ -285,7 +285,7 @@ impl CtxExt for egui::Context {
     }
     fn get_frame_flag(&self, id: impl Into<Id>) -> bool {
         let frame = self.cumulative_pass_nr();
-        self.data(|r| r.get_temp::<u64>(id.into()).unwrap_or_default() == frame)
+        self.data(|r| r.get_temp::<u64>(id.into()).unwrap_or_default() + 1 >= frame)
     }
 }
 

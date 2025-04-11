@@ -8,6 +8,7 @@ use super::*;
 pub struct ViewContext {
     id: Id,
     collapsed: bool,
+    parent_rect: Rect,
 }
 
 impl ViewContext {
@@ -15,6 +16,7 @@ impl ViewContext {
         Self {
             id: ui.id(),
             collapsed: false,
+            parent_rect: ui.min_rect(),
         }
     }
     fn with_id(mut self, h: impl Hash) -> Self {
@@ -34,6 +36,15 @@ impl ViewContext {
     }
     pub fn save_state(self, ui: &mut Ui) {
         ui.data_mut(|w| w.insert_temp(self.id, self));
+    }
+}
+
+fn show_parent_line(parent: Rect, child: Rect, ui: &mut Ui) {
+    if (child.left() - parent.right()).abs() < 30.0 {
+        ui.painter().line_segment(
+            [parent.right_center(), child.left_center()],
+            ui.visuals().weak_text_color().stroke(),
+        );
     }
 }
 
@@ -78,10 +89,13 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
-        let mut show = |s: &mut Self, view_ctx: ViewContext, ui: &mut Ui| {
+        let mut show = |s: &mut Self, mut view_ctx: ViewContext, ui: &mut Ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     let title_response = s.show_title(view_ctx, &context, ui);
+                    let rect = title_response.rect;
+                    show_parent_line(view_ctx.parent_rect, rect, ui);
+                    view_ctx.parent_rect = rect;
                     title_response.bar_menu(|ui| {
                         changed |= s.context_menu_mut(view_ctx, &context, ui);
                         s.context_menu(view_ctx, ui);
@@ -115,6 +129,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                     }
                     changed |= s.show_value_mut(view_ctx, &context, ui);
                 });
+                ui.add_space(8.0);
                 ui.vertical(|ui| {
                     changed |= s.view_children_mut(view_ctx, &context, ui);
                 });
@@ -122,6 +137,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         };
         if view_ctx.collapsed {
             let r = self.show_collapsed(view_ctx, &context, ui);
+            show_parent_line(view_ctx.parent_rect, r.rect, ui);
             if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
                 .clicked()
             {
@@ -184,7 +200,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                             String::new()
                         };
                     ScrollArea::vertical()
-                        .min_scrolled_height(500.0)
+                        .min_scrolled_height(300.0)
                         .show(ui, |ui| {
                             for mut opt in options {
                                 let text = opt.cstr();
@@ -506,23 +522,57 @@ where
         let mut to_remove = None;
         let mut swap = None;
         let len = self.len();
-
+        let size = egui::Vec2::splat(8.0);
         for (i, v) in self.iter_mut().enumerate() {
             ui.horizontal(|ui| {
-                if "[b -]".cstr().as_button().red(ui).ui(ui).clicked() {
-                    to_remove = Some(i);
+                if RectButton::new_size(size)
+                    .enabled(i > 0)
+                    .ui(ui, |color, rect, ui| {
+                        ui.painter().line(
+                            [
+                                rect.left_bottom(),
+                                rect.center_top(),
+                                rect.right_bottom(),
+                                rect.left_bottom(),
+                            ]
+                            .into(),
+                            color.stroke(),
+                        );
+                    })
+                    .clicked()
+                {
+                    swap = Some((i, i - 1));
                 }
-                if "🔽"
-                    .cstr()
-                    .as_button()
+                if RectButton::new_size(size)
                     .enabled(i + 1 < len)
-                    .ui(ui)
+                    .ui(ui, |color, rect, ui| {
+                        ui.painter().line(
+                            [
+                                rect.left_top(),
+                                rect.right_top(),
+                                rect.center_bottom(),
+                                rect.left_top(),
+                            ]
+                            .into(),
+                            color.stroke(),
+                        );
+                    })
                     .clicked()
                 {
                     swap = Some((i, i + 1));
                 }
-                if "🔼".cstr().as_button().enabled(i > 0).ui(ui).clicked() {
-                    swap = Some((i, i - 1));
+                if RectButton::new_size(size)
+                    .color(RED)
+                    .ui(ui, |color, rect, ui| {
+                        ui.painter().rect_filled(
+                            rect.shrink2(egui::vec2(0.0, size.y * 0.3)),
+                            0,
+                            color,
+                        );
+                    })
+                    .clicked()
+                {
+                    to_remove = Some(i);
                 }
                 ui.vertical(|ui| {
                     changed |= v.view_mut(view_ctx.with_id(i), context, ui);

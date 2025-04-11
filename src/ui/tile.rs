@@ -20,7 +20,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     ) -> egui_tiles::UiResponse {
         *CURRENT_TILE_ID.lock() = tile_id.0;
         dark_frame().show(ui, |ui| {
-            ScrollArea::both().show(ui, |ui| {
+            ScrollArea::both().stick_to_right(true).show(ui, |ui| {
                 ui.expand_to_include_rect(ui.available_rect_before_wrap());
                 if let Some(world) = self.world.as_mut() {
                     if let Err(e) = view.ui(ui, world) {
