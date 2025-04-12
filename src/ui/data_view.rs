@@ -24,8 +24,13 @@ impl ViewResponse {
         *self = Self {
             hovered: self.hovered || other.hovered,
             changed: self.changed || other.changed,
-            delete_me: self.delete_me,
+            delete_me: self.delete_me || other.delete_me,
         }
+    }
+    pub fn take_delete_me(&mut self) -> bool {
+        let v = self.delete_me;
+        self.delete_me = false;
+        v
     }
 }
 
@@ -96,7 +101,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         let show = |ui: &mut Ui| {
             ui.horizontal(|ui| {
                 Self::show_title(self, view_ctx, &context, ui).bar_menu(|ui| {
-                    self.context_menu(view_ctx, ui);
+                    self.context_menu(view_ctx, &context, ui);
                 });
                 self.show_value(view_ctx, &context, ui);
             });
@@ -134,7 +139,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                         view_resp.hovered = true;
                     }
                     title_response.bar_menu(|ui| {
-                        s.context_menu(view_ctx, ui);
+                        s.context_menu(view_ctx, &context, ui);
                         view_resp.merge(s.context_menu_mut(view_ctx, &context, ui));
                     });
                     if ui
@@ -207,7 +212,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         self.cstr().button(ui)
     }
-    fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
+    fn context_menu(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         if view_ctx.collapsed {
             if ui.button("expand").clicked() {
                 view_ctx.collapsed(false).save_state(ui);
@@ -223,7 +228,9 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
             self.copy();
             ui.close_menu();
         }
+        self.context_menu_extra(view_ctx, context, ui);
     }
+    fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
     fn context_menu_mut(
         &mut self,
         view_ctx: ViewContext,
@@ -250,7 +257,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                             String::new()
                         };
                     ScrollArea::vertical()
-                        .min_scrolled_height(300.0)
+                        .min_scrolled_height(200.0)
                         .show(ui, |ui| {
                             for mut opt in options {
                                 let text = opt.cstr();
@@ -729,8 +736,8 @@ where
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         T::show_title(self.as_ref(), view_ctx, context, ui)
     }
-    fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
-        self.as_ref().context_menu(view_ctx, ui);
+    fn context_menu(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+        self.as_ref().context_menu(view_ctx, context, ui);
     }
     fn context_menu_mut(
         &mut self,

@@ -454,6 +454,45 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     ) -> bool {
                         self.show_mut(context, ui)
                     }
+                    fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+                        ui.menu_button("publish to incubator", |ui| {
+                            if ui
+                                .menu_button("full", |ui| {
+                                    self.view(ViewContext::new(ui), context, ui);
+                                })
+                                .response
+                                .clicked()
+                            {
+                                let d = self.clone();
+                                op(move |world| {
+                                    IncubatorPlugin::set_publish_nodes(d, world);
+                                    Window::new("incubator publish", |ui, world| {
+                                        IncubatorPlugin::pane_new_node(ui, world).ui(ui);
+                                    })
+                                    .push(world);
+                                });
+                                ui.close_menu();
+                            }
+                            let mut d = Self::default();
+                            d.inject_data(&self.get_data()).ui(ui);
+                            if ui
+                                .menu_button("self", |ui| {
+                                    d.view(ViewContext::new(ui), context, ui);
+                                })
+                                .response
+                                .clicked()
+                            {
+                                op(move |world| {
+                                    IncubatorPlugin::set_publish_nodes(d, world);
+                                    Window::new("incubator publish", |ui, world| {
+                                        IncubatorPlugin::pane_new_node(ui, world).ui(ui);
+                                    })
+                                    .push(world);
+                                });
+                                ui.close_menu();
+                            }
+                        });
+                    }
                     fn view_children(
                         &self,
                         view_ctx: ViewContext,
@@ -475,8 +514,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let mut view_resp = ViewResponse::default();
                         #(
                             if let Some(d) = &mut self.#component_fields {
-                                let child_resp = d.view_mut(view_ctx.collapsed(true).can_delete(true), context, ui);
-                                if child_resp.delete_me {
+                                let mut child_resp = d.view_mut(view_ctx.collapsed(true).can_delete(true), context, ui);
+                                if child_resp.take_delete_me() {
                                     self.#component_fields = None;
                                 }
                                 view_resp.merge(child_resp);
