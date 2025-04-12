@@ -173,8 +173,8 @@ impl IncubatorPlugin {
     }
     pub fn pane_graph_core(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let context = &Context::new_world(world);
-        for house in core(world).houses_load(context) {
-            house.view(ViewContext::new(ui), context, ui);
+        for (i, house) in core(world).houses_load(context).into_iter().enumerate() {
+            house.view(ViewContext::new(ui).with_id(i), context, ui);
         }
         Ok(())
     }

@@ -43,7 +43,7 @@ impl ViewContext {
             can_delete: false,
         }
     }
-    fn with_id(mut self, h: impl Hash) -> Self {
+    pub fn with_id(mut self, h: impl Hash) -> Self {
         self.id = self.id.with(h);
         self
     }
@@ -96,27 +96,79 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     ) -> (ViewContext, Context<'a, 'a>) {
         (view_ctx.merge_state(self, ui), context.clone())
     }
-    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
-        let show = |ui: &mut Ui| {
+        let parent_rect = view_ctx.parent_rect;
+        let mut self_rect = Rect::ZERO;
+        let mut show = |s: &Self, mut view_ctx: ViewContext, ui: &mut Ui| {
             ui.horizontal(|ui| {
-                Self::show_title(self, view_ctx, &context, ui).bar_menu(|ui| {
-                    self.context_menu(view_ctx, &context, ui);
+                ui.vertical(|ui| {
+                    let title_response = s.show_title(view_ctx, &context, ui);
+                    self_rect = title_response.rect;
+                    show_parent_line(
+                        view_ctx.parent_rect,
+                        self_rect,
+                        title_response.hovered(),
+                        ui,
+                    );
+                    view_ctx.parent_rect = self_rect;
+                    if title_response.hovered() {
+                        view_resp.hovered = true;
+                    }
+                    title_response.bar_menu(|ui| {
+                        s.context_menu(view_ctx, &context, ui);
+                    });
+                    if ui
+                        .ctx()
+                        .rect_contains_pointer(ui.layer_id(), title_response.rect)
+                    {
+                        let size = 8.0;
+                        if RectButton::new_rect(Rect::from_center_size(
+                            title_response.rect.right_center() - egui::vec2(size, 0.0),
+                            egui::Vec2::splat(size),
+                        ))
+                        .color(ui.visuals().weak_text_color())
+                        .ui(ui, |color, rect, ui| {
+                            ui.painter().line(
+                                [
+                                    rect.left_bottom(),
+                                    rect.left_top(),
+                                    rect.right_center(),
+                                    rect.left_bottom(),
+                                ]
+                                .into(),
+                                color.stroke(),
+                            );
+                        })
+                        .clicked()
+                        {
+                            view_ctx.collapsed(true).save_state(ui);
+                        }
+                    }
+                    s.show_value(view_ctx, &context, ui);
                 });
-                self.show_value(view_ctx, &context, ui);
+                ui.add_space(8.0);
+                ui.vertical(|ui| {
+                    view_resp.merge(s.view_children(view_ctx, &context, ui));
+                });
             });
         };
         if view_ctx.collapsed {
-            if self
-                .show_collapsed(view_ctx, &context, ui)
-                .on_hover_ui(show)
+            let r = self.show_collapsed(view_ctx, &context, ui);
+            show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
+            if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
                 .clicked()
             {
                 view_ctx.collapsed(false).save_state(ui);
             }
         } else {
-            show(ui);
+            show(self, view_ctx, ui);
         }
+        if view_resp.hovered {
+            show_parent_line(parent_rect, self_rect, true, ui);
+        }
+        view_resp
     }
     fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut view_resp = ViewResponse::default();
@@ -200,7 +252,9 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         false
     }
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        default()
+    }
     fn view_children_mut(
         &mut self,
         view_ctx: ViewContext,
@@ -353,16 +407,18 @@ fn view_children<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
     view_ctx: ViewContext,
     context: &Context,
     ui: &mut Ui,
-) {
+) -> ViewResponse {
+    let mut view_resp = ViewResponse::default();
     let names = <T as Injector<I>>::get_inner_names(s);
     for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
             if let Some(name) = names.get(i) {
                 format!("[tw {name}]").cstr().label(ui);
             }
-            e.view(view_ctx.with_id(i), context, ui);
+            view_resp.merge(e.view(view_ctx.with_id(i), context, ui));
         });
     }
+    view_resp
 }
 fn show_children_mut<T: DataView + Inject + Injector<I>, I: Show>(
     s: &mut T,
@@ -432,10 +488,10 @@ impl DataView for Expression {
         view_resp.changed |= show_children_mut::<_, HexColor>(self, context, ui);
         view_resp
     }
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-        view_children::<_, Self>(self, view_ctx, context, ui);
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         show_children::<_, f32>(self, context, ui);
         show_children::<_, HexColor>(self, context, ui);
+        view_children::<_, Self>(self, view_ctx, context, ui)
     }
     fn show_value(&self, _: ViewContext, context: &Context, ui: &mut Ui) {
         match self.get_value(context) {
@@ -473,6 +529,13 @@ impl DataView for Material {
         })
         .inner
     }
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        ui.vertical(|ui| {
+            material_view(self, context, ui);
+            self.0.view(view_ctx, context, ui)
+        })
+        .inner
+    }
 }
 
 impl DataView for PainterAction {
@@ -505,6 +568,18 @@ impl DataView for PainterAction {
         ));
         view_resp
     }
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
+        match self {
+            PainterAction::list(vec) => {
+                return vec.view(view_ctx, context, ui);
+            }
+            _ => {}
+        }
+        view_resp.merge(view_children::<_, Self>(self, view_ctx, context, ui));
+        view_resp.merge(view_children::<_, Expression>(self, view_ctx, context, ui));
+        view_resp
+    }
 }
 
 impl DataView for Action {
@@ -517,9 +592,11 @@ impl DataView for Action {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect()
     }
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-        view_children::<_, Self>(self, view_ctx, context, ui);
-        view_children::<_, Expression>(self, view_ctx, context, ui);
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
+        view_resp.merge(view_children::<_, Self>(self, view_ctx, context, ui));
+        view_resp.merge(view_children::<_, Expression>(self, view_ctx, context, ui));
+        view_resp
     }
     fn view_children_mut(
         &mut self,
@@ -566,9 +643,11 @@ impl DataView for Action {
 }
 
 impl DataView for Reaction {
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-        self.trigger.view(view_ctx, context, ui);
-        self.actions.0.view(view_ctx, context, ui);
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
+        view_resp.merge(self.trigger.view(view_ctx, context, ui));
+        view_resp.merge(self.actions.0.view(view_ctx, context, ui));
+        view_resp
     }
     fn view_children_mut(
         &mut self,
@@ -607,6 +686,11 @@ where
             "([tw ...])".cstr().button(ui)
         })
         .inner
+    }
+    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
+        for (i, v) in self.into_iter().enumerate() {
+            v.view(view_ctx.with_id(i), context, ui);
+        }
     }
     fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
@@ -710,8 +794,8 @@ where
     fn move_inner(&mut self, source: &mut Self) {
         self.as_mut().move_inner(source.as_mut());
     }
-    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-        self.as_ref().view(view_ctx, context, ui);
+    fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        self.as_ref().view(view_ctx, context, ui)
     }
     fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         self.as_mut().view_mut(view_ctx, context, ui)
@@ -722,8 +806,8 @@ where
     fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
         self.as_mut().show_value_mut(view_ctx, context, ui)
     }
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-        self.as_ref().view_children(view_ctx, context, ui);
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        self.as_ref().view_children(view_ctx, context, ui)
     }
     fn view_children_mut(
         &mut self,

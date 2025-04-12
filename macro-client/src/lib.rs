@@ -498,17 +498,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         view_ctx: ViewContext,
                         context: &Context,
                         ui: &mut Ui,
-                    ) {
+                    ) -> ViewResponse {
+                        let mut view_resp = ViewResponse::default();
                         #(
                             if let Some(d) = self.#component_fields_load(context) {
-                                d.view(view_ctx, context, ui);
+                                view_resp.merge(d.view(view_ctx, context, ui));
                             }
                         )*
                         #(
-                            for d in self.#child_fields_load(context){
-                                d.view(view_ctx, context, ui);
+                            for (i, d) in self.#child_fields_load(context).into_iter().enumerate() {
+                                view_resp.merge(d.view(view_ctx.with_id(i), context, ui));
                             }
                         )*
+                        view_resp
                     }
                     fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
                         let mut view_resp = ViewResponse::default();
