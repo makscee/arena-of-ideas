@@ -471,20 +471,24 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                     }
-                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-                        let mut changed = false;
+                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+                        let mut view_resp = ViewResponse::default();
                         #(
                             if let Some(d) = &mut self.#component_fields {
-                                changed |= d.view_mut(view_ctx.collapsed(true), context, ui);
+                                let child_resp = d.view_mut(view_ctx.collapsed(true).can_delete(true), context, ui);
+                                if child_resp.delete_me {
+                                    self.#component_fields = None;
+                                }
+                                view_resp.merge(child_resp);
                             } else if let Some(d) = node_selector(ui, context) {
-                                changed = true;
+                                view_resp.changed = true;
                                 self.#component_fields = Some(d);
                             }
                         )*
                         #(
-                            changed |= self.#child_fields.view_mut(view_ctx.collapsed(true), context, ui);
+                            view_resp.merge(self.#child_fields.view_mut(view_ctx.collapsed(true), context, ui));
                         )*
-                        changed
+                        view_resp
                     }
                     fn merge_state<'a>(
                         &self,
@@ -575,7 +579,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             Self::None => {}
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.view_mut(view_ctx, &default(), ui) {
+                                if d.view_mut(view_ctx, &default(), ui).changed {
                                     d.reassign_ids(&mut 0);
                                     *nodes = d.to_tnodes();
                                 }

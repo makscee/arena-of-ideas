@@ -21,7 +21,7 @@ impl AdminPlugin {
             }
         }
         let mut e = ui.data(|r| r.get_temp::<Material>(id)).unwrap_or_default();
-        if e.view_mut(ViewContext::new(ui), &default(), ui) {
+        if e.view_mut(ViewContext::new(ui), &default(), ui).changed {
             ui.data_mut(|w| w.insert_temp(id, e));
         }
 

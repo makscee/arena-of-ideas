@@ -118,9 +118,7 @@ impl Show for String {
         self.cstr().label_w(ui);
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Input::new("")
-            .ui_string(self, ui)
-            .changed()
+        Input::new("").ui_string(self, ui).changed()
     }
 }
 impl Show for Option<String> {
@@ -297,7 +295,7 @@ impl Show for Actions {
         self.0.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.0.view_mut(ViewContext::new(ui), context, ui)
+        self.0.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }
 impl Show for Reaction {
@@ -305,7 +303,7 @@ impl Show for Reaction {
         self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }
 
@@ -314,7 +312,7 @@ impl Show for Vec<Reaction> {
         self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }
 
@@ -323,6 +321,6 @@ impl Show for Material {
         self.view(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui)
+        self.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }

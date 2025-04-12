@@ -9,14 +9,33 @@ pub struct ViewContext {
     id: Id,
     collapsed: bool,
     parent_rect: Rect,
+    can_delete: bool,
+}
+
+#[derive(Clone, Copy, Default)]
+pub struct ViewResponse {
+    pub hovered: bool,
+    pub changed: bool,
+    pub delete_me: bool,
+}
+
+impl ViewResponse {
+    pub fn merge(&mut self, other: Self) {
+        *self = Self {
+            hovered: self.hovered || other.hovered,
+            changed: self.changed || other.changed,
+            delete_me: self.delete_me,
+        }
+    }
 }
 
 impl ViewContext {
     pub fn new(ui: &mut Ui) -> Self {
         Self {
             id: ui.id(),
-            collapsed: false,
             parent_rect: ui.min_rect(),
+            collapsed: false,
+            can_delete: false,
         }
     }
     fn with_id(mut self, h: impl Hash) -> Self {
@@ -25,6 +44,10 @@ impl ViewContext {
     }
     pub fn collapsed(mut self, value: bool) -> Self {
         self.collapsed = value;
+        self
+    }
+    pub fn can_delete(mut self, value: bool) -> Self {
+        self.can_delete = value;
         self
     }
     pub fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
@@ -39,11 +62,15 @@ impl ViewContext {
     }
 }
 
-fn show_parent_line(parent: Rect, child: Rect, ui: &mut Ui) {
+fn show_parent_line(parent: Rect, child: Rect, hovered: bool, ui: &mut Ui) {
     if (child.left() - parent.right()).abs() < 30.0 {
         ui.painter().line_segment(
             [parent.right_center(), child.left_center()],
-            ui.visuals().weak_text_color().stroke(),
+            if hovered {
+                ui.visuals().widgets.hovered.fg_stroke
+            } else {
+                ui.visuals().weak_text_color().stroke()
+            },
         );
     }
 }
@@ -86,19 +113,29 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
             show(ui);
         }
     }
-    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
         let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
+        let parent_rect = view_ctx.parent_rect;
+        let mut self_rect = Rect::ZERO;
         let mut show = |s: &mut Self, mut view_ctx: ViewContext, ui: &mut Ui| {
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     let title_response = s.show_title(view_ctx, &context, ui);
-                    let rect = title_response.rect;
-                    show_parent_line(view_ctx.parent_rect, rect, ui);
-                    view_ctx.parent_rect = rect;
+                    self_rect = title_response.rect;
+                    show_parent_line(
+                        view_ctx.parent_rect,
+                        self_rect,
+                        title_response.hovered(),
+                        ui,
+                    );
+                    view_ctx.parent_rect = self_rect;
+                    if title_response.hovered() {
+                        view_resp.hovered = true;
+                    }
                     title_response.bar_menu(|ui| {
-                        changed |= s.context_menu_mut(view_ctx, &context, ui);
                         s.context_menu(view_ctx, ui);
+                        view_resp.merge(s.context_menu_mut(view_ctx, &context, ui));
                     });
                     if ui
                         .ctx()
@@ -127,17 +164,17 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                             view_ctx.collapsed(true).save_state(ui);
                         }
                     }
-                    changed |= s.show_value_mut(view_ctx, &context, ui);
+                    view_resp.changed |= s.show_value_mut(view_ctx, &context, ui);
                 });
                 ui.add_space(8.0);
                 ui.vertical(|ui| {
-                    changed |= s.view_children_mut(view_ctx, &context, ui);
+                    view_resp.merge(s.view_children_mut(view_ctx, &context, ui));
                 });
             });
         };
         if view_ctx.collapsed {
             let r = self.show_collapsed(view_ctx, &context, ui);
-            show_parent_line(view_ctx.parent_rect, r.rect, ui);
+            show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
             if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
                 .clicked()
             {
@@ -146,7 +183,10 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         } else {
             show(self, view_ctx, ui);
         }
-        changed
+        if view_resp.hovered {
+            show_parent_line(parent_rect, self_rect, true, ui);
+        }
+        view_resp
     }
     fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         "([tw ...])".cstr().button(ui)
@@ -156,8 +196,13 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         false
     }
     fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        false
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        default()
     }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         self.cstr().button(ui)
@@ -179,8 +224,13 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
             ui.close_menu();
         }
     }
-    fn context_menu_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn context_menu_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
         let options = Self::replace_options();
         let lookup_id = Id::new("lookup text");
         if !options.is_empty() {
@@ -213,7 +263,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                                 if resp.clicked() || resp.gained_focus() {
                                     self.move_inner(&mut opt);
                                     mem::swap(self, &mut opt);
-                                    changed = true;
+                                    view_resp.changed = true;
                                 }
                             }
                         });
@@ -226,7 +276,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         }
         if Self::wrap(default()).is_some() {
             if ui.button("wrap").clicked() {
-                changed = true;
+                view_resp.changed = true;
                 *self = Self::wrap(self.clone()).unwrap();
             }
         }
@@ -239,7 +289,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                         Label::new(&data).wrap().ui(ui);
                         e.cstr().label_w(ui);
                     } else {
-                        if d.view_mut(view_ctx, context, ui) {
+                        if d.view_mut(view_ctx, context, ui).changed {
                             clipboard_set(d.get_data());
                         }
                     }
@@ -247,15 +297,19 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                 .response
                 .clicked()
             {
-                changed = true;
+                view_resp.changed = true;
                 self.paste();
             }
         }
-        if changed {
+        if view_ctx.can_delete && "[red delete]".cstr().button(ui).clicked() {
+            view_resp.changed = true;
+            view_resp.delete_me = true;
+        }
+        if view_resp.changed {
             ui.close_menu();
             ui.data_mut(|w| w.remove_temp::<String>(lookup_id));
         }
-        changed
+        view_resp
     }
     fn copy(&self) {
         clipboard_set(self.get_data());
@@ -274,18 +328,18 @@ fn view_children_mut<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
     view_ctx: ViewContext,
     context: &Context,
     ui: &mut Ui,
-) -> bool {
-    let mut changed = false;
+) -> ViewResponse {
+    let mut view_resp = ViewResponse::default();
     let names = <T as Injector<I>>::get_inner_names(s);
     for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
             if let Some(name) = names.get(i) {
                 format!("[tw {name}]").cstr().label(ui);
             }
-            changed |= e.view_mut(view_ctx.with_id(i), context, ui);
+            view_resp.merge(e.view_mut(view_ctx.with_id(i), context, ui));
         });
     }
-    changed
+    view_resp
 }
 fn view_children<T: DataView + Inject + Injector<I>, I: DataView + Inject>(
     s: &T,
@@ -359,12 +413,17 @@ impl DataView for Expression {
         <Expression as Injector<Expression>>::inject_inner(self, source);
         <Expression as Injector<f32>>::inject_inner(self, source);
     }
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
-        changed |= show_children_mut::<_, f32>(self, context, ui);
-        changed |= show_children_mut::<_, HexColor>(self, context, ui);
-        changed
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
+        view_resp.merge(view_children_mut::<_, Self>(self, view_ctx, context, ui));
+        view_resp.changed |= show_children_mut::<_, f32>(self, context, ui);
+        view_resp.changed |= show_children_mut::<_, HexColor>(self, context, ui);
+        view_resp
     }
     fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         view_children::<_, Self>(self, view_ctx, context, ui);
@@ -395,7 +454,12 @@ fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
     );
 }
 impl DataView for Material {
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
         ui.vertical(|ui| {
             material_view(self, context, ui);
             self.0.view_mut(view_ctx, context, ui)
@@ -415,17 +479,24 @@ impl DataView for PainterAction {
         <Self as Injector<Self>>::inject_inner(self, source);
         <Self as Injector<Expression>>::inject_inner(self, source);
     }
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
         match self {
             PainterAction::list(vec) => {
                 return vec.view_mut(view_ctx, context, ui);
             }
             _ => {}
         }
-        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
-        changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
-        changed
+        view_resp.merge(view_children_mut::<_, Self>(self, view_ctx, context, ui));
+        view_resp.merge(view_children_mut::<_, Expression>(
+            self, view_ctx, context, ui,
+        ));
+        view_resp
     }
 }
 
@@ -443,11 +514,18 @@ impl DataView for Action {
         view_children::<_, Self>(self, view_ctx, context, ui);
         view_children::<_, Expression>(self, view_ctx, context, ui);
     }
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        changed |= view_children_mut::<_, Self>(self, view_ctx, context, ui);
-        changed |= view_children_mut::<_, Expression>(self, view_ctx, context, ui);
-        changed
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut view_resp = ViewResponse::default();
+        view_resp.merge(view_children_mut::<_, Self>(self, view_ctx, context, ui));
+        view_resp.merge(view_children_mut::<_, Expression>(
+            self, view_ctx, context, ui,
+        ));
+        view_resp
     }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         match self {
@@ -485,9 +563,15 @@ impl DataView for Reaction {
         self.trigger.view(view_ctx, context, ui);
         self.actions.0.view(view_ctx, context, ui);
     }
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
-        let changed = self.trigger.view_mut(view_ctx, context, ui);
-        self.actions.0.view_mut(view_ctx, context, ui) || changed
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut view_resp = self.trigger.view_mut(view_ctx, context, ui);
+        view_resp.merge(self.actions.0.view_mut(view_ctx, context, ui));
+        view_resp
     }
 }
 
@@ -575,7 +659,7 @@ where
                     to_remove = Some(i);
                 }
                 ui.vertical(|ui| {
-                    changed |= v.view_mut(view_ctx.with_id(i), context, ui);
+                    changed |= v.view_mut(view_ctx.with_id(i), context, ui).changed;
                 });
             });
         }
@@ -622,7 +706,7 @@ where
     fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().view(view_ctx, context, ui);
     }
-    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         self.as_mut().view_mut(view_ctx, context, ui)
     }
     fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
@@ -634,7 +718,12 @@ where
     fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.as_ref().view_children(view_ctx, context, ui);
     }
-    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
         self.as_mut().view_children_mut(view_ctx, context, ui)
     }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
@@ -643,7 +732,12 @@ where
     fn context_menu(&self, view_ctx: ViewContext, ui: &mut Ui) {
         self.as_ref().context_menu(view_ctx, ui);
     }
-    fn context_menu_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn context_menu_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
         self.as_mut().context_menu_mut(view_ctx, context, ui)
     }
     fn copy(&self) {
