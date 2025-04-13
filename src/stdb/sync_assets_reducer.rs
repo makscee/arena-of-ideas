@@ -5,20 +5,33 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 use super::global_settings_type::GlobalSettings;
+use super::t_incubator_links_type::TIncubatorLinks;
+use super::t_incubator_type::TIncubator;
+use super::t_incubator_votes_type::TIncubatorVotes;
 use super::t_node_type::TNode;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct SyncAssetsArgs {
     pub global_settings: GlobalSettings,
-    pub all: Vec<TNode>,
+    pub core: Vec<TNode>,
+    pub players: Vec<TNode>,
+    pub incubator: Vec<TNode>,
+    pub incubator_nodes: Vec<TIncubator>,
+    pub incubator_links: Vec<TIncubatorLinks>,
+    pub incubator_votes: Vec<TIncubatorVotes>,
 }
 
 impl From<SyncAssetsArgs> for super::Reducer {
     fn from(args: SyncAssetsArgs) -> Self {
         Self::SyncAssets {
             global_settings: args.global_settings,
-            all: args.all,
+            core: args.core,
+            players: args.players,
+            incubator: args.incubator,
+            incubator_nodes: args.incubator_nodes,
+            incubator_links: args.incubator_links,
+            incubator_votes: args.incubator_votes,
         }
     }
 }
@@ -39,7 +52,16 @@ pub trait sync_assets {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_sync_assets`] callbacks.
-    fn sync_assets(&self, global_settings: GlobalSettings, all: Vec<TNode>) -> __sdk::Result<()>;
+    fn sync_assets(
+        &self,
+        global_settings: GlobalSettings,
+        core: Vec<TNode>,
+        players: Vec<TNode>,
+        incubator: Vec<TNode>,
+        incubator_nodes: Vec<TIncubator>,
+        incubator_links: Vec<TIncubatorLinks>,
+        incubator_votes: Vec<TIncubatorVotes>,
+    ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `sync_assets`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -49,7 +71,17 @@ pub trait sync_assets {
     /// to cancel the callback.
     fn on_sync_assets(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &GlobalSettings, &Vec<TNode>) + Send + 'static,
+        callback: impl FnMut(
+                &super::ReducerEventContext,
+                &GlobalSettings,
+                &Vec<TNode>,
+                &Vec<TNode>,
+                &Vec<TNode>,
+                &Vec<TIncubator>,
+                &Vec<TIncubatorLinks>,
+                &Vec<TIncubatorVotes>,
+            ) + Send
+            + 'static,
     ) -> SyncAssetsCallbackId;
     /// Cancel a callback previously registered by [`Self::on_sync_assets`],
     /// causing it not to run in the future.
@@ -57,19 +89,41 @@ pub trait sync_assets {
 }
 
 impl sync_assets for super::RemoteReducers {
-    fn sync_assets(&self, global_settings: GlobalSettings, all: Vec<TNode>) -> __sdk::Result<()> {
+    fn sync_assets(
+        &self,
+        global_settings: GlobalSettings,
+        core: Vec<TNode>,
+        players: Vec<TNode>,
+        incubator: Vec<TNode>,
+        incubator_nodes: Vec<TIncubator>,
+        incubator_links: Vec<TIncubatorLinks>,
+        incubator_votes: Vec<TIncubatorVotes>,
+    ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "sync_assets",
             SyncAssetsArgs {
                 global_settings,
-                all,
+                core,
+                players,
+                incubator,
+                incubator_nodes,
+                incubator_links,
+                incubator_votes,
             },
         )
     }
     fn on_sync_assets(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &GlobalSettings, &Vec<TNode>)
-            + Send
+        mut callback: impl FnMut(
+                &super::ReducerEventContext,
+                &GlobalSettings,
+                &Vec<TNode>,
+                &Vec<TNode>,
+                &Vec<TNode>,
+                &Vec<TIncubator>,
+                &Vec<TIncubatorLinks>,
+                &Vec<TIncubatorVotes>,
+            ) + Send
             + 'static,
     ) -> SyncAssetsCallbackId {
         SyncAssetsCallbackId(self.imp.on_reducer(
@@ -81,7 +135,12 @@ impl sync_assets for super::RemoteReducers {
                             reducer:
                                 super::Reducer::SyncAssets {
                                     global_settings,
-                                    all,
+                                    core,
+                                    players,
+                                    incubator,
+                                    incubator_nodes,
+                                    incubator_links,
+                                    incubator_votes,
                                 },
                             ..
                         },
@@ -90,7 +149,16 @@ impl sync_assets for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, global_settings, all)
+                callback(
+                    ctx,
+                    global_settings,
+                    core,
+                    players,
+                    incubator,
+                    incubator_nodes,
+                    incubator_links,
+                    incubator_votes,
+                )
             }),
         ))
     }

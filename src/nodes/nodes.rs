@@ -28,7 +28,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
     fn from_dir(parent: u64, path: String, dir: &Dir) -> Option<Self>;
-    fn to_dir(&self, path: String) -> DirEntry;
+    fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>];
     fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
     fn to_tnodes(&self) -> Vec<TNode>;
     fn load_recursive(id: u64) -> Option<Self>;

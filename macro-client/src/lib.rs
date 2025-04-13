@@ -308,11 +308,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn from_dir(parent: u64, path: String, dir: &Dir) -> Option<Self> {
                         let file = dir.get_dir(&path)?.files().next()?;
-                        dbg!(file.contents_utf8());
                         let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
                         let mut d = Self::default();
                         d.inject_data(file.contents_utf8()?).unwrap();
-                        dbg!(&d);
                         d.id = Some(id);
                         d.parent = Some(parent);
                         #(
@@ -328,8 +326,42 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(d)
                     }
-                    fn to_dir(&self, path: String) -> DirEntry {
-                        #data_to_dir
+                    fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>] {
+                        let mut entries: Vec<DirEntry> = default();
+                        let file = DirEntry::File(File::new(
+                            format!("{path}/{}.ron", self.id()).leak(),
+                            self.get_data().leak().as_bytes(),
+                        ));
+                        entries.push(file);
+                        #(
+                            let child_path = format!("{path}/{}", #component_fields_str);
+                            let dir = Dir::new(
+                                child_path.clone().leak(),
+                                self.#component_fields
+                                    .as_ref()
+                                    .and_then(|c| Some(c.to_dir(child_path)))
+                                    .unwrap_or_default(),
+                            );
+                            let dir = DirEntry::Dir(dir);
+                            entries.push(dir);
+                        )*
+                        #(
+                            let child_path = format!("{path}/{}", #child_fields_str);
+                            let dir = Dir::new(
+                                child_path.clone().leak(),
+                                self.#child_fields
+                                    .iter()
+                                    .map(|d| {
+                                        let path = format!("{child_path}/{}", d.id());
+                                        DirEntry::Dir(Dir::new(path.clone().leak(), d.to_dir(path)))
+                                    })
+                                    .collect_vec()
+                                    .leak(),
+                            );
+                            let dir = DirEntry::Dir(dir);
+                            entries.push(dir);
+                        )*
+                        entries.leak()
                     }
                     fn load_recursive(id: u64) -> Option<Self> {
                         let mut d = Self::load(id)?;

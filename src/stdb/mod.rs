@@ -166,7 +166,12 @@ pub enum Reducer {
     },
     SyncAssets {
         global_settings: GlobalSettings,
-        all: Vec<TNode>,
+        core: Vec<TNode>,
+        players: Vec<TNode>,
+        incubator: Vec<TNode>,
+        incubator_nodes: Vec<TIncubator>,
+        incubator_links: Vec<TIncubatorLinks>,
+        incubator_votes: Vec<TIncubatorVotes>,
     },
 }
 

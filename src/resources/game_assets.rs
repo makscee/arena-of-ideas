@@ -1,5 +1,6 @@
-use std::fs::{create_dir_all, write};
+use std::fs::{create_dir_all, read, read_to_string, write};
 
+use include_dir::{DirEntry, File};
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 use spacetimedb_sats::serde::SerdeWrapper;
 
@@ -23,9 +24,12 @@ pub fn animations() -> &'static HashMap<String, Anim> {
 pub fn global_settings_local() -> &'static GlobalSettings {
     GLOBAL_SETTINGS.get().unwrap()
 }
+pub fn assets() -> &'static Dir<'static> {
+    const ASSETS: Dir = include_dir!("./assets/ron/");
+    &ASSETS
+}
 
 pub fn parse_content_tree() {
-    const ASSETS: Dir = include_dir!("./assets/ron/");
     const GLOBAL_SETTINGS_STR: &str = include_str!("../../assets/ron/_.global_settings.ron");
     const DESCRIPTIONS: &str = include_str!("../../assets/ron/descriptions.ron");
 
@@ -39,28 +43,43 @@ pub fn parse_content_tree() {
 
     let descriptions: Descriptions = ron::from_str(DESCRIPTIONS).unwrap();
     descriptions.set();
-
-    // let all = All::from_dir("all".into(), ASSETS.get_dir("all").unwrap());
-    // let dir = ASSETS.get_dir("all").unwrap();
-    // dbg!(dir);
-    // dbg!(dir
-    //     .get_dir("all/0/players/1741081733583167")
-    //     .unwrap()
-    //     .files()
-    //     .next());
-    // panic!();
-    // let all = All::from_dir_new(0, "all/0".into(), dir);
-    // dbg!(&all);
-    // panic!();
-    // ALL.set(all.unwrap()).unwrap();
+    // let house = House {
+    //     id: Some(10),
+    //     parent: None,
+    //     entity: None,
+    //     house_name: "Wizards".into(),
+    //     color: Some(HouseColor {
+    //         id: Some(11),
+    //         parent: Some(10),
+    //         entity: None,
+    //         color: "#ff000ff".to_owned().into(),
+    //     }),
+    //     action_ability: None,
+    //     status_ability: None,
+    //     units: Vec::new(),
+    // };
+    // let core = Core {
+    //     id: Some(1),
+    //     parent: None,
+    //     entity: None,
+    //     houses: [house].to_vec(),
+    // };
+    // let core = Core::from_dir(0, "core".into(), &ASSETS).unwrap();
+    // dbg!(&core);
+    // let dir = core.to_dir("core".into());
+    // let dir = Dir::new("core", dir);
+    // dbg!(&dir);
+    // let path = "./assets/ron/export_test/";
+    // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+    // dir.extract(path).unwrap();
     UNIT_REP
-        .set(Representation::from_dir(0, "unit_rep".to_owned(), &ASSETS).unwrap())
+        .set(Representation::from_dir(0, "unit_rep".to_owned(), assets()).unwrap())
         .unwrap();
     STATUS_REP
-        .set(Representation::from_dir(0, "status_rep".to_owned(), &ASSETS).unwrap())
+        .set(Representation::from_dir(0, "status_rep".to_owned(), assets()).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
-    for f in ASSETS.get_dir("animation").unwrap().files() {
+    for f in assets().get_dir("animation").unwrap().files() {
         let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
         animations.insert(
             f.path()
@@ -79,10 +98,10 @@ pub fn parse_content_tree() {
 pub struct GameAssets;
 
 #[derive(Serialize, Deserialize, Default)]
-struct IncubatorData {
-    nodes: Vec<SerdeWrapper<TIncubator>>,
-    links: Vec<SerdeWrapper<TIncubatorLinks>>,
-    votes: Vec<SerdeWrapper<TIncubatorVotes>>,
+pub struct IncubatorData {
+    pub nodes: Vec<SerdeWrapper<TIncubator>>,
+    pub links: Vec<SerdeWrapper<TIncubatorLinks>>,
+    pub votes: Vec<SerdeWrapper<TIncubatorVotes>>,
 }
 
 impl GameAssets {
@@ -130,6 +149,17 @@ impl IncubatorData {
         write(path.to_owned() + "nodes.ron", nodes).unwrap();
         write(path.to_owned() + "links.ron", links).unwrap();
         write(path.to_owned() + "votes.ron", votes).unwrap();
+    }
+    pub fn load() -> Self {
+        let path = "./assets/ron/links/";
+        let nodes = read_to_string(path.to_owned() + "nodes.ron").unwrap(); 
+        let links = read_to_string(path.to_owned() + "links.ron").unwrap();
+        let votes = read_to_string(path.to_owned() + "votes.ron").unwrap();
+        Self {
+            nodes: ron::from_str(&nodes).unwrap(),
+            links: ron::from_str(&links).unwrap(),
+            votes: ron::from_str(&votes).unwrap(),
+        }
     }
 }
 fn to_ron_string<T: Serialize>(value: &T) -> String {

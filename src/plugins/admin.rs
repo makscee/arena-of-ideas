@@ -34,35 +34,38 @@ impl AdminPlugin {
         if "Incubator Merge".cstr().button(ui).clicked() {
             cn().reducers.incubator_merge().unwrap();
         }
+        if "Export Players".cstr().button(ui).clicked() {
+            let context = &Context::new_world(world);
+            let players = Players::pack(world.get_id_link(ID_PLAYERS).unwrap(), context).unwrap();
+            dbg!(&players);
+            let dir = players.to_dir("players".into());
+            let dir = Dir::new("players", dir);
+            let path = "./assets/ron/";
+            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+            dir.extract(path).unwrap();
+        }
         if "Export Core".cstr().button(ui).clicked() {
             let context = &Context::new_world(world);
-            let all = Core::pack(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
-            dbg!(&all);
-            let path = "./assets/";
-            let dir = all.to_dir("ron".into());
-            let dir = dir.as_dir().unwrap();
+            let core = Core::pack(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
+            dbg!(&core);
+            let dir = core.to_dir("core".into());
+            let dir = Dir::new("core", dir);
+            let path = "./assets/ron/";
+            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+            dir.extract(path).unwrap();
+        }
+        if "Export Incubator".cstr().button(ui).clicked() {
+            let context = &Context::new_world(world);
+            let inc = Incubator::pack(world.get_id_link(ID_INCUBATOR).unwrap(), context).unwrap();
+            dbg!(&inc);
+            let dir = inc.to_dir("incubator".into());
+            let dir = Dir::new("incubator", dir);
+            let path = "./assets/ron/";
             std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
             dir.extract(path).unwrap();
         }
         if "Export Incubator Data".cstr().button(ui).clicked() {
             GameAssets::update_files();
-        }
-        let r = "Context Test".cstr().button(ui);
-        ContextMenu::new(r)
-            .add("test1", |ui, _| {
-                debug!("test1");
-            })
-            .add("test2", |ui, _| {
-                debug!("test2");
-            })
-            .add("test3", |ui, _| {
-                debug!("test3");
-            })
-            .ui(ui, world);
-        if "Add Team Editor Panes".cstr().button(ui).clicked() {
-            TeamEditorPlugin::load_team(default(), world);
-            TeamEditorPlugin::add_panes();
-            TeamEditorPlugin::unit_add_from_core(world).notify(world);
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);

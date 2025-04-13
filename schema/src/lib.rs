@@ -25,6 +25,7 @@ pub use inject::*;
 pub use macro_fn::*;
 pub use painter_action::*;
 pub use reaction::*;
+use ron::ser::{to_string_pretty, PrettyConfig};
 pub use trigger::*;
 pub use var_name::*;
 pub use var_value::*;
@@ -36,7 +37,7 @@ pub use utils::*;
 
 pub const ID_CORE: u64 = 1;
 pub const ID_INCUBATOR: u64 = 2;
-pub const ID_PLAYERS: u64 = 2;
+pub const ID_PLAYERS: u64 = 3;
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
@@ -56,7 +57,7 @@ where
         }
     }
     fn get_data(&self) -> String {
-        ron::to_string(self).unwrap()
+        to_string_pretty(self, PrettyConfig::new().depth_limit(1)).unwrap()
     }
 }
 

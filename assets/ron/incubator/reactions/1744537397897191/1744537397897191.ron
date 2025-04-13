@@ -1,0 +1,3 @@
+([
+    (trigger: BattleStart, actions: ([deal_damage])),
+])

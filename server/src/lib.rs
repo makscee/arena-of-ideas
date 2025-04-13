@@ -66,6 +66,11 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
         ..default()
     }
     .insert_self(ctx);
+    Players {
+        id: ID_PLAYERS,
+        ..default()
+    }
+    .insert_self(ctx);
     Ok(())
 }
 
