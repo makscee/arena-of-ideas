@@ -21,7 +21,9 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     m.g -= price;
     let unit = Unit::get(ctx, unit).to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?;
     let mut house = unit.find_parent::<House>(ctx)?;
-    let houses = m.team_load(ctx)?.houses_load(ctx)?;
+    let team = m.team_load(ctx)?;
+    let _ = team.houses_load(ctx);
+    let houses = &mut team.houses;
     if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
         unit.clone(ctx, h.id);
     } else {

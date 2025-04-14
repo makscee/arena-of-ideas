@@ -34,6 +34,9 @@ bevy = { version = "0.15.2", default-features = false, features = [
     "x11",
 ] }
 spacetimedb = { version = "1.0.0" }
+spacetimedb-sdk = "1.0.0"
+spacetimedb-sats = "1.0.0"
+spacetimedb-lib = "1.0.0"
 strum = "0.26.2"
 strum_macros = "0.26.2"
 itertools = "0.12.1"
@@ -85,6 +88,9 @@ macro-schema = { path = "macro-schema" }
 macro-client = { path = "macro-client" }
 utils-client = { path = "utils-client" }
 
+spacetimedb-sdk = { workspace = true }
+spacetimedb-sats = { workspace = true }
+spacetimedb-lib = { workspace = true }
 bevy = { workspace = true }
 bevy-trait-query = { workspace = true }
 bevy_egui = { workspace = true }
@@ -113,9 +119,6 @@ color-hex = { workspace = true }
 egui_tiles = { workspace = true }
 egui_colors = { workspace = true }
 
-spacetimedb-sdk = "1.0.0"
-spacetimedb-sats = "1.0.0"
-spacetimedb-lib = "1.0.0"
 
 bevy_asset_loader = { version = "0.22.0", features = [
     "standard_dynamic_assets",

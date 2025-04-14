@@ -110,3 +110,12 @@ impl<T> NotificationPusher for Result<T, ExpressionError> {
         }
     }
 }
+
+impl<T> NotificationPusher for Result<T, spacetimedb_sdk::error::Error> {
+    fn to_notification(&self) -> Option<Notification> {
+        match self {
+            Ok(_) => None,
+            Err(e) => e.to_string().to_notification(),
+        }
+    }
+}

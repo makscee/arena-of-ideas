@@ -180,6 +180,7 @@ pub struct IdEntityLinks {
 pub trait WorldNodeExt {
     fn add_id_link(&mut self, id: u64, entity: Entity);
     fn get_id_link(&self, id: u64) -> Option<Entity>;
+    fn clear_id_link(&mut self, id: u64);
 }
 
 impl WorldNodeExt for World {
@@ -192,6 +193,11 @@ impl WorldNodeExt for World {
         self.get_resource::<IdEntityLinks>()
             .and_then(|r| r.map.get(&id))
             .copied()
+    }
+    fn clear_id_link(&mut self, id: u64) {
+        if let Some(mut r) = self.get_resource_mut::<IdEntityLinks>() {
+            r.map.remove(&id);
+        }
     }
 }
 

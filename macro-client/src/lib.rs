@@ -681,6 +681,18 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
+                    pub fn remove_component(self, entity: Entity, world: &mut World) {
+                        match self {
+                            NodeKind::None => {}
+                            #(
+                                #struct_ident::#variants => {
+                                    if let Ok(mut e) = world.get_entity_mut(entity) {
+                                        e.remove::<#variants>();
+                                    }
+                                }
+                            )*
+                        }
+                    }
                     pub fn default_data(self) -> String {
                         match self {
                             NodeKind::None => unimplemented!(),

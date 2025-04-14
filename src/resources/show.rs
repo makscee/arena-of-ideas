@@ -234,21 +234,6 @@ impl Show for Entity {
     }
 }
 
-fn material_view(m: &Material, context: &Context, ui: &mut Ui) {
-    let size_id = ui.id().with("view size");
-    let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
-    if DragValue::new(&mut size).ui(ui).changed() {
-        ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
-    }
-    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-    RepresentationPlugin::paint_rect(rect, context, m, ui).log();
-    ui.painter().rect_stroke(
-        rect,
-        0,
-        Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
-        egui::StrokeKind::Middle,
-    );
-}
 impl Show for Event {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr_cs(tokens_info().low_contrast_text(), CstrStyle::Bold)

@@ -32,6 +32,7 @@ pub struct StdbEvent {
 
 impl StdbPlugin {
     fn unpack_node(node: &TNode, entity: Entity, world: &mut World) {
+        debug!("Unpack {}#{entity}", node.kind);
         node.unpack(entity, world);
         world.send_event(StdbEvent {
             entity,
@@ -114,21 +115,22 @@ fn on_insert(node: &TNode) {
 }
 
 fn on_delete(node: &TNode) {
-    info!("Node deleted {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
         let Some(entity) = world.get_id_link(node.id) else {
             error!("Failed to delete entity: id link not found");
             return;
         };
+        info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
+        let id = node.id;
+        let kind = node.kind();
         world.send_event(StdbEvent {
             entity,
             node,
             change: StdbChange::Delete,
         });
-        if let Ok(e) = world.get_entity_mut(entity) {
-            e.try_despawn_recursive();
-        }
+        kind.remove_component(entity, world);
+        world.clear_id_link(id);
     });
 }
 
@@ -154,6 +156,12 @@ pub fn subscribe_reducers() {
         e.event.notify_error();
     });
     cn().reducers.on_match_edit_fusions(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_buy(|e, _| {
         if !e.check_identity() {
             return;
         }
