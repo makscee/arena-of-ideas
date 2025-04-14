@@ -91,9 +91,9 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     fn merge_state<'a>(
         &self,
         view_ctx: ViewContext,
-        context: &Context<'a, 'a>,
+        context: &Context<'a>,
         ui: &mut Ui,
-    ) -> (ViewContext, Context<'a, 'a>) {
+    ) -> (ViewContext, Context<'a>) {
         (view_ctx.merge_state(self, ui), context.clone())
     }
     fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
@@ -129,7 +129,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                             egui::Vec2::splat(size),
                         ))
                         .color(ui.visuals().weak_text_color())
-                        .ui(ui, |color, rect, ui| {
+                        .ui(ui, |color, rect, _, ui| {
                             ui.painter().line(
                                 [
                                     rect.left_bottom(),
@@ -204,7 +204,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                             egui::Vec2::splat(size),
                         ))
                         .color(ui.visuals().weak_text_color())
-                        .ui(ui, |color, rect, ui| {
+                        .ui(ui, |color, rect, _, ui| {
                             ui.painter().line(
                                 [
                                     rect.left_bottom(),
@@ -702,7 +702,7 @@ where
             ui.horizontal(|ui| {
                 if RectButton::new_size(size)
                     .enabled(i > 0)
-                    .ui(ui, |color, rect, ui| {
+                    .ui(ui, |color, rect, _, ui| {
                         ui.painter().line(
                             [
                                 rect.left_bottom(),
@@ -720,7 +720,7 @@ where
                 }
                 if RectButton::new_size(size)
                     .enabled(i + 1 < len)
-                    .ui(ui, |color, rect, ui| {
+                    .ui(ui, |color, rect, _, ui| {
                         ui.painter().line(
                             [
                                 rect.left_top(),
@@ -738,7 +738,7 @@ where
                 }
                 if RectButton::new_size(size)
                     .color(RED)
-                    .ui(ui, |color, rect, ui| {
+                    .ui(ui, |color, rect, _, ui| {
                         ui.painter().rect_filled(
                             rect.shrink2(egui::vec2(0.0, size.y * 0.3)),
                             0,

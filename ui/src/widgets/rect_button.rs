@@ -40,7 +40,11 @@ impl RectButton {
         self
     }
     #[must_use]
-    pub fn ui(self, ui: &mut Ui, content: impl FnOnce(Color32, Rect, &mut Ui)) -> Response {
+    pub fn ui(
+        self,
+        ui: &mut Ui,
+        content: impl FnOnce(Color32, Rect, &Response, &mut Ui),
+    ) -> Response {
         let sense = if self.enabled {
             Sense::click()
         } else {
@@ -55,8 +59,12 @@ impl RectButton {
             unreachable!()
         };
         let mut rect = response.rect;
-        if self.enabled && response.hovered() && !response.is_pointer_button_down_on() {
-            rect = rect.expand(1.0);
+        if self.enabled {
+            let t = ui.ctx().animate_bool(
+                response.id,
+                response.hovered() && !response.is_pointer_button_down_on(),
+            );
+            rect = rect.expand(t * 1.5);
         }
         let color = if self.active {
             YELLOW
@@ -70,7 +78,7 @@ impl RectButton {
             }
         };
         let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
-        content(color, rect, ui);
+        content(color, rect, &response, ui);
         response
     }
 }

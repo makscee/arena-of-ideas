@@ -1,15 +1,14 @@
 use super::*;
 
 #[derive(Debug, Default, Clone)]
-pub struct Context<'w, 's> {
+pub struct Context<'w> {
     t: Option<f32>,
     layers: Vec<ContextLayer<'w>>,
-    sources: Vec<ContextSource<'w, 's>>,
+    sources: Vec<ContextSource<'w>>,
 }
 
 #[derive(Debug, Clone)]
-pub enum ContextSource<'w, 's> {
-    Query(&'w StateQuery<'w, 's>),
+pub enum ContextSource<'w> {
     World(&'w World),
     BattleSimulation(&'w BattleSimulation),
 }
@@ -23,15 +22,8 @@ enum ContextLayer<'w> {
     Var(VarName, VarValue),
 }
 
-impl<'w, 's> Context<'w, 's> {
-    pub fn new(state: &'w StateQuery<'w, 's>) -> Self {
-        Self {
-            layers: default(),
-            sources: vec![ContextSource::Query(state)],
-            t: None,
-        }
-    }
-    pub fn new_world(world: &'w World) -> Self {
+impl<'w> Context<'w> {
+    pub fn new(world: &'w World) -> Self {
         Self {
             layers: default(),
             sources: vec![ContextSource::World(world)],
@@ -178,12 +170,11 @@ impl<'w, 's> Context<'w, 's> {
             .collect()
     }
     pub fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
-        for s in self.sources.iter().rev() {
-            if let Some(c) = s.get_component::<T>(entity) {
-                return Some(c);
-            }
-        }
-        None
+        self.get_world()?.get::<T>(entity)
+    }
+    pub fn get_component_by_id<T: Component>(&self, id: u64) -> Option<&T> {
+        let world = self.get_world()?;
+        world.get::<T>(world.get_id_link(id)?)
     }
     pub fn find_parent_component<T: Component>(&self, mut entity: Entity) -> Option<&T> {
         while let Some(parent) = self.get_parent(entity) {
@@ -249,24 +240,21 @@ impl<'w, 's> Context<'w, 's> {
     }
 }
 
-impl ContextSource<'_, '_> {
+impl ContextSource<'_> {
     pub fn get_world(&self) -> Option<&World> {
         match self {
-            ContextSource::Query(..) => None,
             ContextSource::World(world) => Some(*world),
             ContextSource::BattleSimulation(bs) => Some(&bs.world),
         }
     }
     pub fn get_state(&self, entity: Entity) -> Option<&NodeState> {
         match self {
-            ContextSource::Query(q) => NodeState::from_query(entity, q),
             ContextSource::World(w) => NodeState::from_world(entity, w),
             ContextSource::BattleSimulation(bs) => NodeState::from_world(entity, &bs.world),
         }
     }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::Query(q) => q.get_children(entity),
             ContextSource::World(w) => get_children(entity, w),
             ContextSource::BattleSimulation(bs) => get_children(entity, &bs.world),
         }
@@ -275,12 +263,10 @@ impl ContextSource<'_, '_> {
         match self {
             ContextSource::World(w) => get_children_recursive(entity, w),
             ContextSource::BattleSimulation(bs) => get_children_recursive(entity, &bs.world),
-            ContextSource::Query(_) => todo!(),
         }
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         match self {
-            ContextSource::Query(q) => q.get_parent(entity),
             ContextSource::World(w) => get_parent(entity, w),
             ContextSource::BattleSimulation(bs) => get_parent(entity, &bs.world),
         }
@@ -317,7 +303,7 @@ impl ContextSource<'_, '_> {
     }
     pub fn collect_enemies(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::Query(..) | ContextSource::World(..) => default(),
+            ContextSource::World(..) => default(),
             ContextSource::BattleSimulation(bs) => {
                 if bs.fusions_left.contains(&entity) {
                     bs.fusions_right.clone()
@@ -331,7 +317,7 @@ impl ContextSource<'_, '_> {
     }
     pub fn collect_allies(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::Query(..) | ContextSource::World(..) => default(),
+            ContextSource::World(..) => default(),
             ContextSource::BattleSimulation(bs) => {
                 if bs.fusions_left.contains(&entity) {
                     bs.fusions_left.clone()
@@ -381,14 +367,14 @@ impl ContextLayer<'_> {
     }
 }
 
-impl<'w> From<&'w World> for Context<'w, '_> {
+impl<'w> From<&'w World> for Context<'w> {
     fn from(value: &'w World) -> Self {
-        Context::new_world(value)
+        Context::new(value)
     }
 }
 
-impl<'w> From<&'w mut World> for Context<'w, '_> {
+impl<'w> From<&'w mut World> for Context<'w> {
     fn from(value: &'w mut World) -> Self {
-        Context::new_world(value)
+        Context::new(value)
     }
 }

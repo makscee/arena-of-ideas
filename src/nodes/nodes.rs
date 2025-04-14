@@ -75,8 +75,8 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
             .with(self.kind())
     }
     fn to_tnode(&self) -> TNode;
-    fn get(entity: Entity, world: &World) -> Option<&Self>;
-    fn get_by_id(id: u64, world: &World) -> Option<&Self>;
+    fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self>;
+    fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self>;
     fn load(id: u64) -> Option<Self>;
     fn load_by_parent(parent: u64) -> Option<Self>;
     fn find_incubator_component<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<T>;
@@ -94,11 +94,11 @@ where
             data: self.get_data(),
         }
     }
-    fn get(entity: Entity, world: &World) -> Option<&Self> {
-        world.get::<Self>(entity)
+    fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self> {
+        context.get_component::<Self>(entity)
     }
-    fn get_by_id(id: u64, world: &World) -> Option<&Self> {
-        world.get::<Self>(world.get_id_link(id)?)
+    fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self> {
+        context.get_component_by_id::<Self>(id)
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
@@ -262,57 +262,75 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
         match kind {
             NodeKind::House => self.column_cstr_opt_dyn("name", move |d, world| {
-                House::get_by_id(f(d), world).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
+                House::get_by_id(f(d), &world.into()).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
             }),
             NodeKind::HouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
-                HouseColor::get_by_id(f(d), world).map(|n| {
+                HouseColor::get_by_id(f(d), &world.into()).map(|n| {
                     let c = &n.color;
                     format!("[{c} {c}]")
                 })
             }),
             NodeKind::AbilityMagic => self.column_cstr_opt_dyn("name", move |d, world| {
-                let n = AbilityMagic::get_by_id(f(d), world)?;
-                Some(n.ability_name.cstr_s(CstrStyle::Bold))
+                Some(
+                    AbilityMagic::get_by_id(f(d), &Context::new(world))?
+                        .ability_name
+                        .cstr_s(CstrStyle::Bold),
+                )
             }),
             NodeKind::AbilityDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    let n = AbilityDescription::get_by_id(f(d), world)?;
-                    Some(n.description.cstr_s(CstrStyle::Bold))
+                    Some(
+                        AbilityDescription::get_by_id(f(d), &world.into())?
+                            .description
+                            .cstr_s(CstrStyle::Bold),
+                    )
                 })
             }
             NodeKind::AbilityEffect => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = AbilityEffect::get_by_id(f(d), world) {
+                        if let Some(n) = AbilityEffect::get_by_id(f(d), &world.into()) {
                             n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
             }
             NodeKind::StatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
-                let n = StatusMagic::get_by_id(f(d), world)?;
-                Some(n.status_name.cstr_s(CstrStyle::Bold))
+                Some(
+                    StatusMagic::get_by_id(f(d), &world.into())?
+                        .status_name
+                        .cstr_s(CstrStyle::Bold),
+                )
             }),
             NodeKind::StatusDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    let n = StatusDescription::get_by_id(f(d), world)?;
-                    Some(n.description.cstr_s(CstrStyle::Bold))
+                    Some(
+                        StatusDescription::get_by_id(f(d), &world.into())?
+                            .description
+                            .cstr_s(CstrStyle::Bold),
+                    )
                 })
             }
             NodeKind::Unit => self.column_cstr_opt_dyn("name", move |d, world| {
-                let n = Unit::get_by_id(f(d), world)?;
-                Some(n.unit_name.cstr_s(CstrStyle::Bold))
+                Some(
+                    Unit::get_by_id(f(d), &world.into())?
+                        .unit_name
+                        .cstr_s(CstrStyle::Bold),
+                )
             }),
             NodeKind::UnitDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    let n = UnitDescription::get_by_id(f(d), world)?;
-                    Some(n.description.cstr_s(CstrStyle::Bold))
+                    Some(
+                        UnitDescription::get_by_id(f(d), &world.into())?
+                            .description
+                            .cstr_s(CstrStyle::Bold),
+                    )
                 })
             }
             NodeKind::UnitStats => self
                 .column_cstr_value_dyn(
                     "pwr",
                     move |d, world| {
-                        UnitStats::get_by_id(f(d), world)
+                        UnitStats::get_by_id(f(d), &world.into())
                             .map(|n| n.pwr.into())
                             .unwrap_or_default()
                     },
@@ -321,7 +339,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 .column_cstr_value_dyn(
                     "hp",
                     move |d, world| {
-                        UnitStats::get_by_id(f(d), world)
+                        UnitStats::get_by_id(f(d), &world.into())
                             .map(|n| n.hp.into())
                             .unwrap_or_default()
                     },
@@ -330,7 +348,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 .column_cstr_value_dyn(
                     "dmg",
                     move |d, world| {
-                        UnitStats::get_by_id(f(d), world)
+                        UnitStats::get_by_id(f(d), &world.into())
                             .map(|n| n.dmg.into())
                             .unwrap_or_default()
                     },
@@ -339,7 +357,7 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
             NodeKind::Behavior => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = Behavior::get_by_id(f(d), world) {
+                        if let Some(n) = Behavior::get_by_id(f(d), &world.into()) {
                             n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
@@ -348,12 +366,13 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 "view",
                 |_, _| default(),
                 move |d, _, ui, world| {
-                    if let Some(d) = Representation::get_by_id(f(d), world) {
+                    let context = &world.into();
+                    if let Some(d) = Representation::get_by_id(f(d), context) {
                         let size = ui.available_height();
                         let (rect, _) =
                             ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
                         ui.set_clip_rect(ui.clip_rect().intersect(rect));
-                        d.paint(rect, &Context::new_world(world).set_owner(d.entity()), ui)
+                        d.paint(rect, context.clone().set_owner(d.entity()), ui)
                             .log();
                     }
                 },
@@ -364,8 +383,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     }
 }
 
-pub fn core(world: &World) -> &Core {
-    Core::get_by_id(ID_CORE, world).unwrap()
+pub fn core<'a>(context: &'a Context) -> &'a Core {
+    Core::get_by_id(ID_CORE, context).unwrap()
 }
 
 pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {

@@ -165,7 +165,7 @@ pub fn slot_rect(i: usize, slots: usize, full_rect: Rect, bottom: bool) -> Rect 
     };
     rect.translate(egui::vec2(size * pos_i, 0.0))
 }
-fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui) {
+pub fn corners_rounded_rect(rect: Rect, length: f32, stroke: Stroke, ui: &mut Ui) {
     let line = CubicBezierShape::from_points_stroke(
         [
             rect.left_top() + egui::vec2(0.0, length),

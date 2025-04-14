@@ -138,10 +138,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = Match::new(ctx, player.id, gs.match_g.initial);
-    let mut team = Team::new(ctx, m.id, "Test Team".into());
-    team.fusions = (0..ctx.global_settings().team_slots)
-        .map(|i| Fusion::new(ctx, team.id, i as i32, default(), default()))
-        .collect();
+    let team = Team::new(ctx, m.id, "New Team".into());
     m.team = Some(team);
     m.shop_case = (0..3)
         .map(|_| {

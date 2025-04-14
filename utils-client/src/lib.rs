@@ -351,3 +351,13 @@ pub fn clipboard_set(text: String) {
 pub fn to_ron_string<T: Serialize>(value: &T) -> String {
     to_string_pretty(value, PrettyConfig::new().depth_limit(1)).unwrap()
 }
+
+pub trait F32toV2 {
+    fn v2(self) -> egui::Vec2;
+}
+
+impl F32toV2 for f32 {
+    fn v2(self) -> egui::Vec2 {
+        egui::Vec2::splat(self)
+    }
+}

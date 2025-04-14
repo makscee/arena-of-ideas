@@ -566,9 +566,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn merge_state<'a>(
                         &self,
                         view_ctx: ViewContext,
-                        context: &Context<'a, 'a>,
+                        context: &Context<'a>,
                         ui: &mut Ui,
-                    ) -> (ViewContext, Context<'a, 'a>) {
+                    ) -> (ViewContext, Context<'a>) {
                         let mut context = context.clone();
                         for (var, value) in self.get_vars(&context) {
                             context.set_var(var, value);

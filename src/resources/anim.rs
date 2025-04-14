@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 
-pub struct Animator<'w, 's> {
+pub struct Animator<'w> {
     targets: Vec<Entity>,
-    context: Context<'w, 's>,
+    context: Context<'w>,
     duration: f32,
     timeframe: f32,
 }
@@ -122,8 +122,8 @@ impl AnimAction {
     }
 }
 
-impl<'w, 's> Animator<'w, 's> {
-    pub fn new(context: Context<'w, 's>) -> Self {
+impl<'w> Animator<'w> {
+    pub fn new(context: Context<'w>) -> Self {
         Self {
             targets: Vec::new(),
             context,

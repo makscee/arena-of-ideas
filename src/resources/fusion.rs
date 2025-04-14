@@ -3,7 +3,7 @@ use super::*;
 impl Fusion {
     pub fn init(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
         let fusion = world.get::<Fusion>(entity).to_e("Fusion not found")?;
-        let context = Context::new_world(world);
+        let context = Context::new(world);
         let units = fusion.units(&context)?.into_iter().map(|u| u.entity());
         let mut fusion_stats = UnitStats::default();
         for u in units {
@@ -238,11 +238,7 @@ impl Fusion {
                                 new_behavior = Some(behavior);
                             }
                         }
-                        action.view(
-                            ViewContext::new(ui),
-                            context.clone().set_owner(entity),
-                            ui,
-                        );
+                        action.view(ViewContext::new(ui), context.clone().set_owner(entity), ui);
                         if "[red -]".cstr().button(ui).clicked() {
                             let mut behavior = self.behavior.clone();
                             behavior[ti].1.remove(ai);
@@ -267,24 +263,24 @@ impl Fusion {
     ) -> Result<bool, ExpressionError> {
         let mut changes: Vec<Fusion> = default();
         {
-            let context = Context::new_world(world);
-            let team = Team::get(team, world).to_e("Team not found")?;
+            let context = &Context::new(world);
+            let team = Team::get(team, context).to_e("Team not found")?;
             let fusions: HashMap<usize, &Fusion> = HashMap::from_iter(
-                team.fusions_load(&context)
+                team.fusions_load(context)
                     .into_iter()
                     .map(|f| (f.slot as usize, f)),
             );
-            let units = team.roster_units_load(&context);
+            let units = team.roster_units_load(context);
             let slots = global_settings().team_slots as usize;
             for slot in 0..slots {
                 let resp = show_slot(slot, slots, false, ui);
                 if let Some(fusion) = fusions.get(&slot).copied() {
                     if resp.hovered() {
                         cursor_window(ui.ctx(), |ui| {
-                            fusion.view(ViewContext::new(ui), &context, ui);
+                            fusion.view(ViewContext::new(ui), context, ui);
                         });
                     }
-                    fusion.paint(resp.rect, &context, ui).ui(ui);
+                    fusion.paint(resp.rect, context, ui).ui(ui);
                     resp.bar_menu(|ui| {
                         ui.menu_button("add unit", |ui| {
                             for unit in &units {
@@ -293,7 +289,7 @@ impl Fusion {
                                     fusion.units.push(unit.unit_name.clone());
                                     changes.push(fusion);
                                 }
-                                unit.view(ViewContext::new(ui), &context, ui);
+                                unit.view(ViewContext::new(ui), context, ui);
                             }
                         });
                         if !fusion.units.is_empty() {
@@ -308,7 +304,7 @@ impl Fusion {
                             });
                             ui.menu_button("edit", |ui| {
                                 let mut fusion = fusion.clone();
-                                match fusion.show_editor(&context, ui) {
+                                match fusion.show_editor(context, ui) {
                                     Ok(c) => {
                                         if c {
                                             changes.push(fusion);

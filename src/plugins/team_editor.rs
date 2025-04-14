@@ -28,15 +28,15 @@ impl TeamEditorPlugin {
         Self::unit_add_fn(
             "from core".into(),
             |ui, world| {
-                let context = Context::new_world(world);
-                for unit in context.children_components_recursive::<Unit>(core(world).entity()) {
+                let context = &Context::new(world);
+                for unit in context.children_components_recursive::<Unit>(core(context).entity()) {
                     let color = context
                         .clone()
                         .set_owner(unit.entity())
                         .get_color(VarName::color)
                         .ok_log()?;
                     if unit.unit_name.cstr_c(color).button(ui).clicked() {
-                        return unit.clone().to_house(&world.into()).ok_log();
+                        return unit.clone().to_house(context).ok_log();
                     }
                 }
                 None
@@ -79,7 +79,7 @@ impl TeamEditorPlugin {
         if house.units.is_empty() {
             return Err("No units in House".into());
         }
-        let context = Context::new_world(world);
+        let context = Context::new(world);
         if let Some(team_house) = context
             .children_components::<House>(team)
             .into_iter()
@@ -98,7 +98,7 @@ impl TeamEditorPlugin {
     fn add_slot_unit(entity: Entity, slot: i32, world: &mut World) -> Result<(), ExpressionError> {
         let world = &mut rm(world)?.world;
         let team = world.query::<&Team>().single(world).entity();
-        let context = Context::new_world(world);
+        let context = Context::new(world);
         let unit = world
             .get::<Unit>(entity)
             .to_e("Failed to find Unit")?
@@ -142,18 +142,16 @@ impl TeamEditorPlugin {
                 }
             });
         }
+        let context = &team_world.into();
         if let Some(f) = &ed.on_save {
             if "save".cstr().button(ui).clicked() {
-                let team = Team::pack(team, &team_world.into()).to_e("Failed to pack team")?;
+                let team = Team::pack(team, context).to_e("Failed to pack team")?;
                 f(team, world);
             }
         }
-        Team::get(team, team_world).unwrap().view(
-            ViewContext::new(ui),
-            &Context::new_world(team_world),
-            ui,
-        );
-        let context = Context::new_world(team_world);
+        Team::get(team, context)
+            .unwrap()
+            .view(ViewContext::new(ui), context, ui);
         for house in context.children_components::<House>(team) {
             let color = house
                 .color_load(&context)
@@ -189,7 +187,7 @@ impl TeamEditorPlugin {
             let resp = show_slot(slot, slots, false, ui);
             let slot = slot as i32;
             let fusion = Fusion::find_by_slot(slot, team_world);
-            let context = Context::new_world(team_world);
+            let context = Context::new(team_world);
             resp.bar_menu(|ui| {
                 ui.menu_button("add unit", |ui| {
                     let units = context.children_components_recursive::<Unit>(team);

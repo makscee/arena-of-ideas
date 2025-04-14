@@ -66,6 +66,9 @@ impl GameState {
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
             }
+            GameState::Match => {
+                Tree::new_vertical(TREE_ID, [Pane::Shop, Pane::Team(TeamPane::Slots)].into())
+            }
             _ => Tree::empty(TREE_ID),
         }
     }

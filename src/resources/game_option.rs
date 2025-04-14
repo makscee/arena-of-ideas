@@ -101,8 +101,8 @@ pub fn player_name() -> &'static str {
 pub fn player_identity() -> Identity {
     *PLAYER_IDENTITY.lock()
 }
-pub fn player(world: &World) -> Result<&Player, ExpressionError> {
-    Player::get_by_id(player_id(), world).to_e("Player not found")
+pub fn player<'a>(context: &'a Context) -> Result<&'a Player, ExpressionError> {
+    Player::get_by_id(player_id(), context).to_e("Player not found")
 }
 pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;

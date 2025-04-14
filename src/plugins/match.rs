@@ -1,5 +1,3 @@
-use bevy_egui::egui::{emath::GuiRounding, UiBuilder};
-
 use super::*;
 
 pub struct MatchPlugin;
@@ -10,18 +8,57 @@ impl Plugin for MatchPlugin {
     }
 }
 
-#[derive(Resource)]
-struct MatchData {
-    g: i32,
-    shop_case: Vec<ShopCaseUnit>,
-    team_world: World,
-    core_world: World,
-    editing_entity: Option<Entity>,
-}
-
 impl MatchPlugin {
     fn on_enter(world: &mut World) {}
+    fn show_unit(unit: &Unit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
+        let d = unit.description_load(context)?;
+        let context = &context.clone().set_owner(unit.entity()).take();
+        if let Some(r) = d.representation_load(context) {
+            r.paint(rect, context, ui).ui(ui);
+        }
+        unit_rep().paint(rect, context, ui).ui(ui);
+        Some(())
+    }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?
+            .active_match_load(context)
+            .to_e("Active match not found")?;
+        let slots = m.shop_case_load(context);
+        if slots.is_empty() {
+            return Err("Shop case slots are empty".into());
+        }
+        let slot_size = (ui.available_width() / (slots.len() as f32))
+            .at_most(ui.available_height())
+            .v2();
+        ui.columns(slots.len(), |ui| {
+            for i in 0..slots.len() {
+                let ui = &mut ui[i];
+                let slot = slots[i];
+                ui.with_layout(
+                    Layout::bottom_up(Align::Center).with_cross_justify(true),
+                    |ui| {
+                        "buy".cstr().button(ui);
+                        let _ = RectButton::new_size(ui.available_size()).ui(
+                            ui,
+                            |color, rect, _, ui| {
+                                let rect = rect.shrink(5.0);
+                                corners_rounded_rect(rect, slot_size.x * 0.1, color.stroke(), ui);
+                                if !slot.sold {
+                                    if let Some(unit) = Unit::get_by_id(slot.unit, context) {
+                                        if Self::show_unit(unit, rect, context, ui).is_none() {
+                                            "Failed to show unit".cstr_c(RED).label(ui);
+                                        }
+                                    } else {
+                                        "Core unit not found".cstr_c(RED).label(ui);
+                                    }
+                                }
+                            },
+                        );
+                    },
+                );
+            }
+        });
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
@@ -29,62 +66,5 @@ impl MatchPlugin {
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Ok(())
-    }
-
-    fn show_shop_slot(
-        sc: &ShopCaseUnit,
-        i: usize,
-        ui: &mut Ui,
-        world: &World,
-    ) -> Result<(), ExpressionError> {
-        ui.with_layout(
-            Layout::bottom_up(Align::Center).with_cross_justify(true),
-            |ui| {
-                if format!("[b buy [yellow {}g]]", sc.price)
-                    .as_button()
-                    .enabled(!sc.sold)
-                    .ui(ui)
-                    .clicked()
-                {
-                    cn().reducers.match_buy(sc.id()).unwrap();
-                }
-                let entity = world.get_id_link(sc.unit).unwrap();
-                let context = &Context::new_world(&world).set_owner(entity).take();
-                let name = context.get_string(VarName::unit_name).unwrap();
-                let color = context.get_color(VarName::color).unwrap();
-                TagWidget::new_name(
-                    name,
-                    if sc.sold {
-                        tokens_global().low_contrast_text()
-                    } else {
-                        color
-                    },
-                )
-                .ui(ui);
-                let size = ui.available_size();
-                let size = size.x.at_most(size.y);
-                let rect = ui
-                    .allocate_new_ui(
-                        UiBuilder::new().max_rect(
-                            Rect::from_center_size(
-                                ui.available_rect_before_wrap().center(),
-                                egui::vec2(size, size),
-                            )
-                            .round_ui(),
-                        ),
-                        |ui| show_slot(i, 1, false, ui).rect,
-                    )
-                    .inner
-                    .shrink(10.0);
-                if !sc.sold {
-                    RepresentationPlugin::paint_rect(rect, context, &unit_rep().material, ui).log();
-                    if let Some(rep) = world.get::<Representation>(entity) {
-                        RepresentationPlugin::paint_rect(rect, context, &rep.material, ui).log();
-                    }
-                }
-                Ok(())
-            },
-        )
-        .inner
     }
 }

@@ -33,7 +33,7 @@ impl RepresentationPlugin {
                 cursor_window(ctx, |ui| {
                     unit.view(
                         ViewContext::new(ui),
-                        Context::new_world(world).set_owner(unit.entity.unwrap()),
+                        Context::new(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );
                 });
@@ -54,7 +54,7 @@ impl RepresentationPlugin {
                 if let Some(unit) = world.get::<Unit>(entity) {
                     unit.view(
                         ViewContext::new(ui),
-                        Context::new_world(world).set_owner(unit.entity.unwrap()),
+                        Context::new(world).set_owner(unit.entity.unwrap()),
                         ui,
                     );
                 }

@@ -10,7 +10,7 @@ impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
         let id = ui.id();
         if let Some(e) = world.get_id_link(ID_CORE) {
-            let context = &Context::new_world(world);
+            let context = &Context::new(world);
             let houses = context
                 .children_components::<House>(e)
                 .into_iter()
@@ -28,14 +28,27 @@ impl AdminPlugin {
         if "Insert Match".cstr().button(ui).clicked() {
             cn().reducers.match_insert().unwrap();
         }
-        if "Houses Editor".cstr().button(ui).clicked() {
-            GameAssetsEditor::open_houses_window(world);
+        if "World Inspector".cstr().button(ui).clicked() {
+            Window::new("world Inspector", |ui, world| {
+                let context = &Context::new(world);
+                let view_ctx = ViewContext::new(ui).collapsed(true);
+                if let Some(core) = Core::get_by_id(ID_CORE, context) {
+                    core.view(view_ctx, context, ui);
+                }
+                if let Some(incubator) = Incubator::get_by_id(ID_INCUBATOR, context) {
+                    incubator.view(view_ctx, context, ui);
+                }
+                if let Some(players) = Players::get_by_id(ID_PLAYERS, context) {
+                    players.view(view_ctx, context, ui);
+                }
+            })
+            .push(world);
         }
         if "Incubator Merge".cstr().button(ui).clicked() {
             cn().reducers.incubator_merge().unwrap();
         }
         if "Export Players".cstr().button(ui).clicked() {
-            let context = &Context::new_world(world);
+            let context = &Context::new(world);
             let players = Players::pack(world.get_id_link(ID_PLAYERS).unwrap(), context).unwrap();
             dbg!(&players);
             let dir = players.to_dir("players".into());
@@ -45,7 +58,7 @@ impl AdminPlugin {
             dir.extract(path).unwrap();
         }
         if "Export Core".cstr().button(ui).clicked() {
-            let context = &Context::new_world(world);
+            let context = &Context::new(world);
             let core = Core::pack(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
             dbg!(&core);
             let dir = core.to_dir("core".into());
@@ -55,7 +68,7 @@ impl AdminPlugin {
             dir.extract(path).unwrap();
         }
         if "Export Incubator".cstr().button(ui).clicked() {
-            let context = &Context::new_world(world);
+            let context = &Context::new(world);
             let inc = Incubator::pack(world.get_id_link(ID_INCUBATOR).unwrap(), context).unwrap();
             dbg!(&inc);
             let dir = inc.to_dir("incubator".into());

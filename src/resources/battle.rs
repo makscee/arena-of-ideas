@@ -271,7 +271,7 @@ impl BattleSimulation {
                 .unwrap();
         }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
-            Context::new_world(&world)
+            Context::new(&world)
                 .children_components_recursive::<Fusion>(parent)
                 .into_iter()
                 .sorted_by_key(|s| s.slot)
@@ -527,7 +527,7 @@ impl BattleSimulation {
             if let Ok(units) = f.units(&Context::new_battle_simulation(self)) {
                 return units
                     .into_iter()
-                    .map(|u| Unit::pack(u.entity(), &Context::new_world(&self.world)).unwrap())
+                    .map(|u| Unit::pack(u.entity(), &Context::new(&self.world)).unwrap())
                     .collect_vec();
             }
         }
@@ -577,7 +577,7 @@ impl BattleSimulation {
             .query_filtered::<Entity, Without<Parent>>()
             .iter(&self.world)
             .collect();
-        let context = Context::new_world(&self.world).set_t(t).take();
+        let context = Context::new(&self.world).set_t(t).take();
         while let Some(entity) = entities.pop_front() {
             let context = context.clone().set_owner(entity).take();
             if context.get_bool(VarName::visible).unwrap_or(true) {
