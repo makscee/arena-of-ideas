@@ -275,21 +275,22 @@ impl Fusion {
             for slot in 0..slots {
                 let resp = show_slot(slot, slots, false, ui);
                 if let Some(fusion) = fusions.get(&slot).copied() {
-                    if resp.hovered() {
-                        cursor_window(ui.ctx(), |ui| {
-                            fusion.view(ViewContext::new(ui), context, ui);
-                        });
-                    }
                     fusion.paint(resp.rect, context, ui).ui(ui);
                     resp.bar_menu(|ui| {
                         ui.menu_button("add unit", |ui| {
                             for unit in &units {
-                                if "add".cstr().button(ui).clicked() {
-                                    let mut fusion = fusion.clone();
-                                    fusion.units.push(unit.unit_name.clone());
-                                    changes.push(fusion);
+                                match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
+                                    Ok(response) => {
+                                        if response.clicked() {
+                                            let mut fusion = fusion.clone();
+                                            fusion.units.push(unit.unit_name.clone());
+                                            changes.push(fusion);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        e.cstr().label(ui);
+                                    }
                                 }
-                                unit.view(ViewContext::new(ui), context, ui);
                             }
                         });
                         if !fusion.units.is_empty() {

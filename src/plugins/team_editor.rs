@@ -194,7 +194,7 @@ impl TeamEditorPlugin {
                     for unit in units {
                         let entity = unit.entity();
                         ui.horizontal(|ui| {
-                            if let Err(e) = show_unit_tag(context.clone().set_owner(entity), ui) {
+                            if let Err(e) = unit.show_tag(context.clone().set_owner(entity), ui) {
                                 e.cstr().label(ui);
                             } else {
                                 if "add".cstr().button(ui).clicked() {

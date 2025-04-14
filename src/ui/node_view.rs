@@ -1,7 +1,7 @@
 use super::*;
 
 pub trait NodeView: Node + NodeExt + ToCstr {
-    fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn node_title(&self, _context: &Context, ui: &mut Ui) -> Response {
         self.cstr().button(ui)
     }
     fn node_collapsed(&self, context: &Context, ui: &mut Ui) -> Response {
@@ -36,7 +36,7 @@ impl NodeView for House {
     }
 }
 impl NodeView for HouseColor {
-    fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn node_title(&self, _context: &Context, ui: &mut Ui) -> Response {
         format!("{}{}", self.cstr(), self.color.cstr()).button(ui)
     }
 }

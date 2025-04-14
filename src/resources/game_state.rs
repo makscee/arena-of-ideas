@@ -67,7 +67,13 @@ impl GameState {
                 Tree::new(TREE_ID, root, tiles)
             }
             GameState::Match => {
-                Tree::new_vertical(TREE_ID, [Pane::Shop, Pane::Team(TeamPane::Slots)].into())
+                let mut tiles = Tiles::default();
+                let shop = tiles.insert_pane(Pane::Match(MatchPane::Shop));
+                let roster = tiles.insert_pane(Pane::Match(MatchPane::Roster));
+                let team = tiles.insert_pane(Pane::Match(MatchPane::Team));
+                let horizontal = tiles.insert_horizontal_tile([roster, shop].into());
+                let root = tiles.insert_vertical_tile([horizontal, team].into());
+                Tree::new(TREE_ID, root, tiles)
             }
             _ => Tree::empty(TREE_ID),
         }
@@ -80,7 +86,6 @@ pub enum Pane {
     Login,
     Register,
     MainMenu,
-    Shop,
     Roster,
     Triggers,
     Actions,
@@ -89,6 +94,7 @@ pub enum Pane {
     Incubator(IncubatorPane),
     Battle(BattlePane),
     Team(TeamPane),
+    Match(MatchPane),
 
     Admin,
     WorldInspector,
@@ -114,6 +120,12 @@ pub enum BattlePane {
 pub enum TeamPane {
     Slots,
     Roster,
+}
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum MatchPane {
+    Shop,
+    Roster,
+    Team,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -142,7 +154,11 @@ impl Pane {
             Pane::Register => LoginPlugin::pane_register(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
-            Pane::Shop => MatchPlugin::pane_shop(ui, world)?,
+            Pane::Match(pane) => match pane {
+                MatchPane::Shop => MatchPlugin::pane_shop(ui, world)?,
+                MatchPane::Roster => MatchPlugin::pane_roster(ui, world)?,
+                MatchPane::Team => MatchPlugin::pane_team(ui, world)?,
+            },
             Pane::Roster => match cur_state(world) {
                 GameState::Match => MatchPlugin::pane_roster(ui, world)?,
                 GameState::FusionEditor => FusionEditorPlugin::pane_roster(ui, world)?,

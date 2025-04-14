@@ -138,6 +138,9 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     let full_rect = ui.available_rect_before_wrap();
     let rect = slot_rect(i.at_most(slots - 1), slots, full_rect, bottom);
     let mut cui = ui.new_child(UiBuilder::new().max_rect(rect));
+    if ui.any_bar_open() {
+        cui.disable();
+    }
     let r = cui.allocate_rect(rect, Sense::click_and_drag());
     let mut stroke = Stroke::new(
         1.0,

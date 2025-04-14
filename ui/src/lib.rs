@@ -33,6 +33,7 @@ use indexmap::IndexMap;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use schema::*;
+use std::cell::LazyCell;
 use std::{cmp::Ordering, mem, ops::RangeInclusive};
 use strum::IntoEnumIterator;
 use utils_client::*;
@@ -56,7 +57,21 @@ impl ResponseExt for Response {
     fn bar_menu(&self, add_contents: impl FnOnce(&mut Ui)) {
         let bar_id = self.id;
         let mut bar_state = BarState::load(&self.ctx, bar_id);
-        bar_state.bar_menu(self, add_contents);
+        bar_state.bar_menu(self, |ui| {
+            ui.ctx().set_frame_flag(*BAR_OPEN_FLAG_KEY);
+            add_contents(ui);
+        });
         bar_state.store(&self.ctx, bar_id);
+    }
+}
+
+const BAR_OPEN_FLAG_KEY: LazyCell<Id> = LazyCell::new(|| Id::new("bar open"));
+pub trait UiExt {
+    fn any_bar_open(&mut self) -> bool;
+}
+
+impl UiExt for Ui {
+    fn any_bar_open(&mut self) -> bool {
+        self.ctx().get_frame_flag(*BAR_OPEN_FLAG_KEY)
     }
 }

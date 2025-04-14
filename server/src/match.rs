@@ -19,7 +19,11 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let unit = sc.unit;
     let price = sc.price;
     m.g -= price;
-    let unit = Unit::get(ctx, unit).to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?;
+    let unit = Unit::get(ctx, unit)
+        .to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
+        .with_children(ctx)
+        .with_components(ctx)
+        .take();
     let mut house = unit.find_parent::<House>(ctx)?;
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);

@@ -28,6 +28,9 @@ pub trait Node: Default + Sized {
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn fill_from_incubator(self, ctx: &ReducerContext) -> Self;
+    fn take(&mut self) -> Self {
+        std::mem::take(self)
+    }
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {

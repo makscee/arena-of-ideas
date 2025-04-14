@@ -80,9 +80,23 @@ impl MatchPlugin {
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?
+            .active_match_load(context)
+            .to_e("Active match not found")?;
+        let team = m.team_load(context).to_e("Team not found")?;
+        for house in team.houses_load(context) {
+            house.show_frame(context, ui).ui(ui);
+        }
         Ok(())
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?
+            .active_match_load(context)
+            .to_e("Active match not found")?;
+        let team = m.team_load(context).to_e("Team not found")?;
+        Fusion::slots_editor(team.entity(), world, ui).ui(ui);
         Ok(())
     }
 }

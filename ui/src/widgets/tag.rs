@@ -72,11 +72,8 @@ impl TagWidget {
     fn margin_size() -> egui::Vec2 {
         INNER_MARGIN.sum() + OUTER_MARGIN.sum()
     }
-    pub fn size(&mut self, ui: &mut Ui) -> egui::Vec2 {
-        self.name_size(ui) + self.value_size(ui) + Self::margin_size()
-    }
     pub fn ui(mut self, ui: &mut Ui) -> Response {
-        let frame = Frame {
+        let mut frame = Frame {
             corner_radius: ROUNDING,
             shadow: Shadow::NONE,
             fill: self.color,
@@ -88,10 +85,18 @@ impl TagWidget {
         let margin_size = Self::margin_size();
         let (rect, response) =
             ui.allocate_exact_size(text_size + number_size + margin_size, Sense::click());
+        let hovered = response.hovered() && !response.is_pointer_button_down_on();
+        if hovered {
+            frame.stroke = ui.visuals().widgets.hovered.bg_stroke;
+        }
         if self.value.is_some() {
             ui.painter().add(
                 frame
-                    .fill(tokens_global().app_background())
+                    .fill(if hovered {
+                        ui.visuals().widgets.hovered.bg_fill
+                    } else {
+                        tokens_global().app_background()
+                    })
                     .paint(rect.shrink2(OUTER_MARGIN.sum() * 0.5)),
             );
         }
@@ -149,19 +154,5 @@ impl TagsWidget {
                 tag.ui(ui);
             }
         });
-        // let mut size = egui::Vec2::ZERO;
-        // for tag in &mut self.tags {
-        //     let tag_size = tag.size(ui);
-        //     size.y = size.y.max(tag_size.y);
-        //     size.x += tag_size.x;
-        // }
-        // let right_bottom = ui.cursor().center_top() + egui::vec2(size.x * 0.5, size.y);
-        // let rect = Rect::from_min_max(right_bottom - size, right_bottom);
-        // ui.allocate_new_ui(UiBuilder::new().max_rect(rect), |ui| {
-        //     ui.horizontal(|ui| {
-        //         ui.spacing_mut().item_spacing = egui::Vec2::ZERO;
-
-        //     })
-        // });
     }
 }

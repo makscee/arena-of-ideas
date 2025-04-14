@@ -17,7 +17,7 @@ pub trait GetVar: GetNodeKind + Debug {
     fn set_var(&mut self, var: VarName, value: VarValue);
 }
 
-pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
+pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn id(&self) -> u64;
     fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
@@ -66,6 +66,15 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug {
     fn fill_from_incubator(self) -> Self;
     fn clear_ids(&mut self);
     fn with_components(self, context: &Context) -> Self;
+    fn egui_id(&self) -> Id {
+        if let Some(id) = self.get_id() {
+            Id::new(id)
+        } else if let Some(entity) = self.get_entity() {
+            Id::new(entity)
+        } else {
+            Id::new(self)
+        }
+    }
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
