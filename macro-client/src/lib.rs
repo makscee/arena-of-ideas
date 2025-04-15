@@ -62,51 +62,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::Name(ident) => quote! {self.#ident},
                 NodeType::Data | NodeType::OnlyData => quote! {""},
             };
-            let inner_data_to_dir = match &nt {
-                NodeType::Name(..) | NodeType::Data => quote! {
-                    let mut entries: Vec<DirEntry> = default();
-                    #(
-                        if let Some(d) = &self.#component_fields {
-                            let path = format!("{path}/{}", #component_fields_str);
-                            entries.push(d.to_dir(path));
-                        }
-                    )*
-                    #(
-                        {
-                            let path = format!("{path}/{}", #child_fields_str);
-                            entries.push(DirEntry::Dir(Dir::new(
-                                path.clone().leak(),
-                                self.#child_fields
-                                    .iter()
-                                    .map(|a| a.to_dir(path.clone()))
-                                    .collect_vec()
-                                    .leak(),
-                            )));
-                        }
-                    )*
-                },
-                NodeType::OnlyData => quote! {},
-            };
-            let data_to_dir = match &nt {
-                NodeType::Name(ident) => quote! {
-                    let path = format!("{path}/{}", self.#ident);
-                    #inner_data_to_dir
-                    DirEntry::Dir(Dir::new(path.leak(), entries.leak()))
-                },
-                NodeType::Data => quote! {
-                    let data = self.get_data();
-                    #inner_data_to_dir
-                    entries.push(DirEntry::File(File::new(
-                        format!("{path}/data.ron").leak(),
-                        data.leak().as_bytes(),
-                    )));
-                    DirEntry::Dir(Dir::new(path.leak(), entries.leak()))
-                },
-                NodeType::OnlyData => quote! {
-                    let data = self.get_data();
-                    DirEntry::File(File::new(format!("{path}.ron").leak(), data.leak().as_bytes()))
-                },
-            };
             if let Fields::Named(ref mut fields) = fields {
                 fields.named.insert(
                     0,
@@ -139,6 +94,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
+            let component_fields_load_err = component_fields
+                .iter()
+                .map(|i| Ident::new(&format!("{i}_err"), Span::call_site()))
+                .collect_vec();
             let child_fields_load = child_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
@@ -154,6 +113,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 self.entity
                                     .and_then(|e| context.get_component::<#component_types>(e))
                             })
+                        }
+                        pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #component_types, ExpressionError> {
+                            self.#component_fields.as_ref().or_else(|| {
+                                self.entity
+                                    .and_then(|e| context.get_component::<#component_types>(e))
+                            }).to_e_fn(|| format!("Failed to load {} of {}", #component_fields_str, self.kind()))
                         }
                     )*
                     #(

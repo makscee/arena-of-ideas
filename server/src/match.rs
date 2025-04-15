@@ -77,28 +77,6 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), String> {
-    // let mut player = ctx.player()?;
-    // let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
-    // let slot = slot as usize;
-    // let target = target as usize;
-    // let fusions = m.team_load(ctx)?.fusions_load(ctx)?;
-    // fusions.sort_by_key(|f| f.slot);
-    // if slot >= fusions.len() {
-    //     return Err("Slot outside of team length".into());
-    // }
-    // let target = target.min(fusions.len() - 1);
-    // let f = fusions.remove(slot);
-    // fusions.insert(target, f);
-    // for (i, slot) in fusions.iter_mut().enumerate() {
-    //     slot.slot = i as i32;
-    // }
-    // debug!("{fusions:?}");
-    // player.save(ctx);
-    Ok(())
-}
-
-#[reducer]
 fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;

@@ -277,7 +277,9 @@ impl Show for Vec<String> {
 }
 impl Show for Actions {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.0.view(ViewContext::new(ui), context, ui);
+        for action in &self.0 {
+            action.show_title(ViewContext::new(ui), context, ui);
+        }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.0.view_mut(ViewContext::new(ui), context, ui).changed
@@ -285,7 +287,10 @@ impl Show for Actions {
 }
 impl Show for Reaction {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(ViewContext::new(ui), context, ui);
+        ui.vertical(|ui| {
+            self.trigger.cstr().label(ui);
+            self.actions.show(context, ui);
+        });
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_mut(ViewContext::new(ui), context, ui).changed

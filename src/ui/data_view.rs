@@ -10,6 +10,7 @@ pub struct ViewContext {
     collapsed: bool,
     parent_rect: Rect,
     can_delete: bool,
+    non_interactible: bool,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -41,6 +42,7 @@ impl ViewContext {
             parent_rect: ui.min_rect(),
             collapsed: false,
             can_delete: false,
+            non_interactible: false,
         }
     }
     pub fn with_id(mut self, h: impl Hash) -> Self {
@@ -53,6 +55,10 @@ impl ViewContext {
     }
     pub fn can_delete(mut self, value: bool) -> Self {
         self.can_delete = value;
+        self
+    }
+    pub fn non_interactible(mut self, value: bool) -> Self {
+        self.non_interactible = value;
         self
     }
     pub fn merge_state(mut self, view: &impl DataView, ui: &mut Ui) -> Self {
@@ -263,8 +269,15 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
     ) -> ViewResponse {
         default()
     }
+    fn title_cstr(&self, view_ctx: ViewContext, context: &Context) -> Cstr {
+        self.cstr()
+    }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
-        self.cstr().button(ui)
+        if view_ctx.non_interactible {
+            self.title_cstr(view_ctx, context).label(ui)
+        } else {
+            self.title_cstr(view_ctx, context).button(ui)
+        }
     }
     fn context_menu(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
         if view_ctx.collapsed {
@@ -611,33 +624,29 @@ impl DataView for Action {
         ));
         view_resp
     }
-    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+    fn title_cstr(&self, _: ViewContext, context: &Context) -> Cstr {
         match self {
             Action::use_ability => {
-                ui.horizontal(|ui| {
-                    let r = self.cstr().button(ui);
-                    if let Ok(ability) = context.get_string(VarName::ability_name) {
-                        if let Ok(color) = context.get_color(VarName::color) {
-                            ability.cstr_c(color).label(ui);
-                        }
+                let mut r = self.cstr();
+                if let Ok(ability) = context.get_string(VarName::ability_name) {
+                    if let Ok(color) = context.get_color(VarName::color) {
+                        r += " ";
+                        r += &ability.cstr_cs(color, CstrStyle::Bold);
                     }
-                    r
-                })
-                .inner
+                }
+                r
             }
             Action::apply_status => {
-                ui.horizontal(|ui| {
-                    let r = self.cstr().button(ui);
-                    if let Ok(status) = context.get_string(VarName::status_name) {
-                        if let Ok(color) = context.get_color(VarName::color) {
-                            status.cstr_c(color).label(ui);
-                        }
+                let mut r = self.cstr();
+                if let Ok(status) = context.get_string(VarName::status_name) {
+                    if let Ok(color) = context.get_color(VarName::color) {
+                        r += " ";
+                        r += &status.cstr_cs(color, CstrStyle::Bold);
                     }
-                    r
-                })
-                .inner
+                }
+                r
             }
-            _ => self.cstr().button(ui),
+            _ => self.cstr(),
         }
     }
 }
@@ -673,10 +682,10 @@ where
         + Serialize
         + DeserializeOwned,
 {
-    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+    fn title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         let name = type_name::<T>();
         let name = name.split("::").last().unwrap_or_default();
-        format!("[tw {name}] ({})", self.len()).button(ui)
+        format!("[tw {name}] ({})", self.len())
     }
     fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
@@ -816,6 +825,9 @@ where
         ui: &mut Ui,
     ) -> ViewResponse {
         self.as_mut().view_children_mut(view_ctx, context, ui)
+    }
+    fn title_cstr(&self, view_ctx: ViewContext, context: &Context) -> Cstr {
+        self.as_ref().title_cstr(view_ctx, context)
     }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         T::show_title(self.as_ref(), view_ctx, context, ui)

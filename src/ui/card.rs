@@ -89,7 +89,7 @@ impl Unit {
     }
 }
 impl House {
-    pub fn show_frame(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+    pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let color = self
             .color_load(context)
             .and_then(|c| c.color.try_c32().ok())
@@ -111,6 +111,53 @@ impl House {
                         .ui(ui);
                 }
             });
+        Ok(())
+    }
+}
+impl Fusion {
+    pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        let units = self.units(context)?;
+        let mut pwr = 0;
+        let mut hp = 0;
+        for unit in &units {
+            let stats = unit.description_err(context)?.stats_err(context)?;
+            pwr += stats.pwr;
+            hp += stats.hp;
+        }
+        Frame::new()
+            .fill(ui.visuals().window_fill)
+            .corner_radius(ROUNDING)
+            .inner_margin(MARGIN)
+            .show(ui, |ui| -> Result<(), ExpressionError> {
+                ui.horizontal_wrapped(|ui| {
+                    TagWidget::new_var_value(VarName::pwr, pwr.into()).ui(ui);
+                    TagWidget::new_var_value(VarName::hp, hp.into()).ui(ui);
+                });
+                ui.vertical(|ui| {
+                    for unit in &units {
+                        unit.tag_card(context.clone().set_owner(unit.entity()), ui)
+                            .ui(ui);
+                    }
+                });
+                for (tr, actions) in &self.behavior {
+                    if actions.is_empty() {
+                        continue;
+                    }
+                    let trigger = self.get_trigger(tr, context)?;
+                    let view_ctx = ViewContext::new(ui).non_interactible(true);
+                    ui.horizontal(|ui| {
+                        Icon::Lightning.show(ui);
+                        trigger.show_title(view_ctx, context, ui);
+                    });
+                    for ar in actions {
+                        let (entity, action) = self.get_action(ar, context)?;
+                        let action = action.clone();
+                        action.show_title(view_ctx, context.clone().set_owner(entity), ui);
+                    }
+                }
+                Ok(())
+            })
+            .inner?;
         Ok(())
     }
 }

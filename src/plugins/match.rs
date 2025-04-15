@@ -86,7 +86,7 @@ impl MatchPlugin {
             .to_e("Active match not found")?;
         let team = m.team_load(context).to_e("Team not found")?;
         for house in team.houses_load(context) {
-            house.show_frame(context, ui).ui(ui);
+            house.show_card(context, ui).ui(ui);
         }
         Ok(())
     }

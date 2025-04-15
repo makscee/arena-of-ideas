@@ -117,7 +117,6 @@ impl TeamEditorPlugin {
             });
         let mut fusion = world.get_mut::<Fusion>(fusion).unwrap();
         fusion.units.push(unit);
-        Fusion::init(fusion.entity(), world).notify(world);
         Ok(())
     }
     pub fn pane_roster(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {

@@ -40,12 +40,6 @@ struct ReloadData {
     last_reload: f64,
 }
 
-fn rm(world: &mut World) -> Result<Mut<BattleData>, ExpressionError> {
-    world
-        .get_resource_mut::<BattleData>()
-        .to_e("No battle loaded")
-}
-
 impl BattleData {
     fn load(mut battle: Battle) -> Self {
         battle.left.reassign_ids(&mut 0);

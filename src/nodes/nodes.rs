@@ -240,7 +240,14 @@ impl NodeKind {
         match self {
             NodeKind::Fusion => {
                 unit_rep().clone().unpack(entity, world);
-                Fusion::init(entity, world).log();
+                NodeState::from_world_mut(entity, world).unwrap().init_vars(
+                    [
+                        (VarName::pwr, 0.into()),
+                        (VarName::hp, 1.into()),
+                        (VarName::dmg, 0.into()),
+                    ]
+                    .into(),
+                );
             }
             NodeKind::StatusMagic => status_rep().clone().unpack(child(), world),
             _ => {}

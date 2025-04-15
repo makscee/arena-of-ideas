@@ -1,23 +1,6 @@
 use super::*;
 
 impl Fusion {
-    pub fn init(entity: Entity, world: &mut World) -> Result<(), ExpressionError> {
-        let fusion = world.get::<Fusion>(entity).to_e("Fusion not found")?;
-        let context = Context::new(world);
-        let units = fusion.units(&context)?.into_iter().map(|u| u.entity());
-        let mut fusion_stats = UnitStats::default();
-        for u in units {
-            let stats = world.get::<UnitStats>(u).to_e("Unit stats not found")?;
-            fusion_stats.hp += stats.hp;
-            fusion_stats.dmg += stats.dmg;
-            fusion_stats.pwr += stats.pwr;
-        }
-        NodeState::from_world_mut(entity, world)
-            .unwrap()
-            .init_vars(fusion_stats.get_own_vars());
-        world.entity_mut(entity).insert(fusion_stats);
-        Ok(())
-    }
     fn remove_unit(&mut self, name: &str) {
         let Some(ui) = self.units.iter().position(|u| u == name) else {
             return;
@@ -40,8 +23,7 @@ impl Fusion {
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a Unit>, ExpressionError> {
         let team = context
             .get_parent(self.entity())
-            .to_e("Fusion parent not found")
-            .unwrap();
+            .to_e("Fusion parent not found")?;
         Ok(context
             .children_components_recursive::<Unit>(team)
             .into_iter()
@@ -196,7 +178,12 @@ impl Fusion {
                     {
                         continue;
                     }
-                    if action.cstr().as_button().ui(ui).clicked() {
+                    let unit = units[*u as usize].entity();
+                    if action
+                        .title_cstr(ViewContext::new(ui), context.clone().set_owner(unit))
+                        .button(ui)
+                        .clicked()
+                    {
                         self.behavior.last_mut().unwrap().1.push(r);
                         changed = true;
                     }
@@ -238,8 +225,11 @@ impl Fusion {
                                 new_behavior = Some(behavior);
                             }
                         }
-                        action.view(ViewContext::new(ui), context.clone().set_owner(entity), ui);
-                        if "[red -]".cstr().button(ui).clicked() {
+                        if action
+                            .title_cstr(ViewContext::new(ui), context.clone().set_owner(entity))
+                            .button(ui)
+                            .clicked()
+                        {
                             let mut behavior = self.behavior.clone();
                             behavior[ti].1.remove(ai);
                             new_behavior = Some(behavior);
@@ -276,6 +266,10 @@ impl Fusion {
             let resp = show_slot(slot, slots, false, ui);
             if let Some(fusion) = fusions.get_mut(&slot) {
                 fusion.paint(resp.rect, context, ui).ui(ui);
+                if resp.hovered() {
+                    let ui = &mut ui.new_child(UiBuilder::new().max_rect(resp.rect));
+                    fusion.show_card(context, ui).ui(ui);
+                }
                 resp.bar_menu(|ui| {
                     ui.menu_button("add unit", |ui| {
                         for unit in &units {

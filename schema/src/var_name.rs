@@ -51,3 +51,12 @@ pub enum VarName {
     price,
     unit,
 }
+
+impl VarName {
+    pub fn is_stat(self) -> bool {
+        match self {
+            VarName::pwr | VarName::hp | VarName::dmg => true,
+            _ => false,
+        }
+    }
+}

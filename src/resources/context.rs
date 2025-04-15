@@ -352,7 +352,28 @@ impl ContextLayer<'_> {
     }
     fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue> {
         match self {
-            ContextLayer::Owner(entity) => NodeState::find_var(var, *entity, context),
+            ContextLayer::Owner(entity) => {
+                let mut value = NodeState::find_var(var, *entity, context);
+                if var.is_stat() {
+                    if let Some(mut new_value) = value {
+                        if let Some(units) = context
+                            .get_component::<Fusion>(*entity)
+                            .and_then(|f| f.units(context).ok())
+                        {
+                            for unit in units {
+                                if let Some(sum_value) =
+                                    NodeState::find_var(var, unit.entity(), context)
+                                        .and_then(|v| v.add(&new_value).ok())
+                                {
+                                    new_value = sum_value;
+                                }
+                            }
+                        }
+                        value = Some(new_value);
+                    }
+                }
+                value
+            }
             ContextLayer::Var(v, value) => {
                 if var.eq(v) {
                     Some(value.clone())
