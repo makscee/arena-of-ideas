@@ -228,7 +228,7 @@ impl Show for Entity {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.to_string().label(ui);
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         self.show(&Context::default(), ui);
         false
     }
@@ -278,7 +278,7 @@ impl Show for Vec<String> {
 impl Show for Actions {
     fn show(&self, context: &Context, ui: &mut Ui) {
         for action in &self.0 {
-            action.show_title(ViewContext::new(ui), context, ui);
+            action.show_title(ViewContext::new(ui).non_interactible(true), context, ui);
         }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
@@ -288,7 +288,11 @@ impl Show for Actions {
 impl Show for Reaction {
     fn show(&self, context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {
-            self.trigger.cstr().label(ui);
+            ui.horizontal(|ui| {
+                Icon::Lightning.show(ui);
+                self.trigger
+                    .show_title(ViewContext::new(ui).non_interactible(true), context, ui);
+            });
             self.actions.show(context, ui);
         });
     }
@@ -299,7 +303,9 @@ impl Show for Reaction {
 
 impl Show for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(ViewContext::new(ui), context, ui);
+        for reaction in self {
+            reaction.show(context, ui);
+        }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_mut(ViewContext::new(ui), context, ui).changed

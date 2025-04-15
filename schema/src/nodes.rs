@@ -43,8 +43,8 @@ struct PlayerIdentity {
 struct House {
     pub house_name: String,
     pub color: NodeComponent<HouseColor>,
-    pub action_ability: NodeComponent<AbilityMagic>,
-    pub status_ability: NodeComponent<StatusMagic>,
+    pub ability_magic: NodeComponent<AbilityMagic>,
+    pub status_magic: NodeComponent<StatusMagic>,
     pub units: NodeChildren<Unit>,
 }
 

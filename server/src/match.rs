@@ -33,10 +33,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
         unit.clone(ctx, h.id);
     } else {
-        house.color_load(ctx)?;
-        let _ = house.status_ability_load(ctx);
-        let _ = house.action_ability_load(ctx);
-        let house = house.clone(ctx, m.team_load(ctx)?.id);
+        let house = house.with_components(ctx).clone(ctx, team.id);
         unit.clone(ctx, house.id);
     }
     player.save(ctx);

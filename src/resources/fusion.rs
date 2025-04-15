@@ -259,10 +259,6 @@ impl Fusion {
         ui: &mut Ui,
     ) -> Result<Option<Fusion>, ExpressionError> {
         let mut edited: Option<Fusion> = None;
-        if response.hovered() {
-            let ui = &mut ui.new_child(UiBuilder::new().max_rect(response.rect));
-            self.show_card(context, ui).ui(ui);
-        }
         let team = Team::get(
             context
                 .get_parent(self.entity())
@@ -271,46 +267,50 @@ impl Fusion {
         )
         .to_e("Team not found")?;
         let units = team.roster_units_load(context);
-        response.bar_menu(|ui| {
-            ui.menu_button("add unit", |ui| {
-                for unit in &units {
-                    match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
-                        Ok(response) => {
-                            if response.clicked() {
+        response
+            .on_hover_ui(|ui| {
+                self.show_card(context, ui).ui(ui);
+            })
+            .bar_menu(|ui| {
+                ui.menu_button("add unit", |ui| {
+                    for unit in &units {
+                        match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
+                            Ok(response) => {
+                                if response.clicked() {
+                                    let mut fusion = self.clone();
+                                    fusion.units.push(unit.unit_name.clone());
+                                    edited = Some(fusion);
+                                }
+                            }
+                            Err(e) => {
+                                e.cstr().label(ui);
+                            }
+                        }
+                    }
+                });
+                if !self.units.is_empty() {
+                    ui.menu_button("remove unit", |ui| {
+                        for unit in self.units.clone() {
+                            if unit.cstr().button(ui).clicked() {
                                 let mut fusion = self.clone();
-                                fusion.units.push(unit.unit_name.clone());
+                                fusion.remove_unit(&unit);
                                 edited = Some(fusion);
                             }
                         }
-                        Err(e) => {
-                            e.cstr().label(ui);
+                    });
+                    ui.menu_button("edit", |ui| {
+                        let mut fusion = self.clone();
+                        match fusion.show_editor(context, ui) {
+                            Ok(c) => {
+                                if c {
+                                    edited = Some(fusion);
+                                }
+                            }
+                            Err(e) => e.cstr().notify_error_op(),
                         }
-                    }
+                    });
                 }
             });
-            if !self.units.is_empty() {
-                ui.menu_button("remove unit", |ui| {
-                    for unit in self.units.clone() {
-                        if unit.cstr().button(ui).clicked() {
-                            let mut fusion = self.clone();
-                            fusion.remove_unit(&unit);
-                            edited = Some(fusion);
-                        }
-                    }
-                });
-                ui.menu_button("edit", |ui| {
-                    let mut fusion = self.clone();
-                    match fusion.show_editor(context, ui) {
-                        Ok(c) => {
-                            if c {
-                                edited = Some(fusion);
-                            }
-                        }
-                        Err(e) => e.cstr().notify_error_op(),
-                    }
-                });
-            }
-        });
         Ok(edited)
     }
     pub fn slots_editor(

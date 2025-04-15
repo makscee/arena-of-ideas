@@ -231,6 +231,10 @@ impl<'w> Context<'w> {
             .chain(self.offset_unit(entity, -1))
             .collect()
     }
+    pub fn color(&self, ui: &mut Ui) -> Color32 {
+        self.get_color(VarName::color)
+            .unwrap_or(ui.visuals().text_color())
+    }
 
     pub fn clear(&mut self) {
         self.layers.clear();
