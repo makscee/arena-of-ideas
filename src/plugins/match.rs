@@ -96,7 +96,17 @@ impl MatchPlugin {
             .active_match_load(context)
             .to_e("Active match not found")?;
         let team = m.team_load(context).to_e("Team not found")?;
-        Fusion::slots_editor(team.entity(), world, ui).ui(ui);
+        match Fusion::slots_editor(team.entity(), world, ui) {
+            Ok(change) => {
+                if let Some(fusions) = change {
+                    let fusions = fusions.into_iter().map(|f| f.get_data()).collect();
+                    cn().reducers.match_edit_fusions(fusions).notify(world);
+                }
+            }
+            Err(e) => {
+                e.cstr().notify_error(world);
+            }
+        }
         Ok(())
     }
 }

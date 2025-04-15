@@ -145,7 +145,7 @@ pub enum Reducer {
         id: u64,
     },
     MatchEditFusions {
-        fusions: Vec<Vec<TNode>>,
+        fusions: Vec<String>,
     },
     MatchInsert,
     MatchReorder {

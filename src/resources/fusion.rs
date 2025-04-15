@@ -260,87 +260,76 @@ impl Fusion {
         team: Entity,
         world: &mut World,
         ui: &mut Ui,
-    ) -> Result<bool, ExpressionError> {
-        let mut changes: Vec<Fusion> = default();
-        {
-            let context = &Context::new(world);
-            let team = Team::get(team, context).to_e("Team not found")?;
-            let fusions: HashMap<usize, &Fusion> = HashMap::from_iter(
-                team.fusions_load(context)
-                    .into_iter()
-                    .map(|f| (f.slot as usize, f)),
-            );
-            let units = team.roster_units_load(context);
-            let slots = global_settings().team_slots as usize;
-            for slot in 0..slots {
-                let resp = show_slot(slot, slots, false, ui);
-                if let Some(fusion) = fusions.get(&slot).copied() {
-                    fusion.paint(resp.rect, context, ui).ui(ui);
-                    resp.bar_menu(|ui| {
-                        ui.menu_button("add unit", |ui| {
-                            for unit in &units {
-                                match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
-                                    Ok(response) => {
-                                        if response.clicked() {
-                                            let mut fusion = fusion.clone();
-                                            fusion.units.push(unit.unit_name.clone());
-                                            changes.push(fusion);
-                                        }
+    ) -> Result<Option<Vec<Fusion>>, ExpressionError> {
+        let mut changed = false;
+
+        let context = &Context::new(world);
+        let team = Team::get(team, context).to_e("Team not found")?;
+        let mut fusions: HashMap<usize, Fusion> = HashMap::from_iter(
+            team.fusions_load(context)
+                .into_iter()
+                .map(|f| (f.slot as usize, f.clone())),
+        );
+        let units = team.roster_units_load(context);
+        let slots = global_settings().team_slots as usize;
+        for slot in 0..slots {
+            let resp = show_slot(slot, slots, false, ui);
+            if let Some(fusion) = fusions.get_mut(&slot) {
+                fusion.paint(resp.rect, context, ui).ui(ui);
+                resp.bar_menu(|ui| {
+                    ui.menu_button("add unit", |ui| {
+                        for unit in &units {
+                            match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
+                                Ok(response) => {
+                                    if response.clicked() {
+                                        fusion.units.push(unit.unit_name.clone());
+                                        changed = true;
                                     }
-                                    Err(e) => {
-                                        e.cstr().label(ui);
-                                    }
+                                }
+                                Err(e) => {
+                                    e.cstr().label(ui);
+                                }
+                            }
+                        }
+                    });
+                    if !fusion.units.is_empty() {
+                        ui.menu_button("remove unit", |ui| {
+                            for unit in fusion.units.clone() {
+                                if unit.cstr().button(ui).clicked() {
+                                    fusion.remove_unit(&unit);
+                                    changed = true;
                                 }
                             }
                         });
-                        if !fusion.units.is_empty() {
-                            ui.menu_button("remove unit", |ui| {
-                                for unit in &fusion.units {
-                                    if unit.cstr().button(ui).clicked() {
-                                        let mut fusion = fusion.clone();
-                                        fusion.remove_unit(unit);
-                                        changes.push(fusion);
-                                    }
+                        ui.menu_button("edit", |ui| match fusion.show_editor(context, ui) {
+                            Ok(c) => {
+                                if c {
+                                    changed = true;
                                 }
-                            });
-                            ui.menu_button("edit", |ui| {
-                                let mut fusion = fusion.clone();
-                                match fusion.show_editor(context, ui) {
-                                    Ok(c) => {
-                                        if c {
-                                            changes.push(fusion);
-                                        }
-                                    }
-                                    Err(e) => e.cstr().notify_error_op(),
-                                }
-                            });
-                        }
-                    });
-                } else {
-                    resp.bar_menu(|ui| {
-                        if "add fusion".cstr().button(ui).clicked() {
-                            changes.push(Fusion {
+                            }
+                            Err(e) => e.cstr().notify_error_op(),
+                        });
+                    }
+                });
+            } else {
+                resp.bar_menu(|ui| {
+                    if "add fusion".cstr().button(ui).clicked() {
+                        fusions.insert(
+                            slot,
+                            Fusion {
                                 slot: slot as i32,
                                 ..default()
-                            });
-                        }
-                    });
-                }
+                            },
+                        );
+                        changed = true;
+                    }
+                });
             }
         }
-        if !changes.is_empty() {
-            for mut fusion in changes {
-                if let Some(entity) = fusion.entity {
-                    *world.get_mut::<Fusion>(entity).unwrap() = fusion;
-                } else {
-                    let entity = world.spawn_empty().set_parent(team).id();
-                    fusion.entity = Some(entity);
-                    world.entity_mut(entity).insert(fusion);
-                }
-            }
-            Ok(true)
+        if changed {
+            Ok(Some(fusions.into_values().collect_vec()))
         } else {
-            Ok(false)
+            Ok(None)
         }
     }
 }

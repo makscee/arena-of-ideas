@@ -99,37 +99,19 @@ fn match_reorder(ctx: &ReducerContext, slot: u8, target: u8) -> Result<(), Strin
 }
 
 #[reducer]
-fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<Vec<TNode>>) -> Result<(), String> {
-    // let mut player = ctx.player()?;
-    // let m = player.active_match_load(ctx)?.iter_mut().next().unwrap();
-    // let fusions = fusions
-    //     .into_iter()
-    //     .map(|fusion| Fusion::from_strings(0, &fusion).unwrap())
-    //     .collect_vec();
-    // debug!("{fusions:?}");
-    // if fusions
-    //     .iter()
-    //     .any(|f| f.units.is_empty() || f.triggers.is_empty())
-    // {
-    //     return Err("Fusion can't be empty".into());
-    // }
-    // let roster_units = m
-    //     .roster_units_load(ctx)?
-    //     .into_iter()
-    //     .map(|u| &u.name)
-    //     .collect_vec();
-    // if let Some(unit) = fusions
-    //     .iter()
-    //     .find_map(|f| f.units.iter().find(|u| !roster_units.contains(u)))
-    // {
-    //     return Err(format!("Fusion unit {} not contained in roseter", unit));
-    // }
-    // let _ = m.team_load(ctx)?.fusions_load(ctx);
-    // for f in &m.team().fusions {
-    //     f.delete_recursive(ctx);
-    // }
-    // m.team_mut().fusions = fusions;
-    // player.save(ctx);
+fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let team = m.team_load(ctx)?;
+    let _ = team.fusions_load(ctx);
+    for fusion in std::mem::take(&mut team.fusions) {
+        fusion.delete_recursive(ctx);
+    }
+    for s in fusions {
+        let fusion: Fusion = ron::from_str(&s).map_err(|e| e.to_string())?;
+        fusion.clone(ctx, team.id());
+    }
+    player.save(ctx);
     Ok(())
 }
 

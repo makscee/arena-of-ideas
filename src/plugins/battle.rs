@@ -162,7 +162,20 @@ impl BattlePlugin {
             let mut changed = false;
             let team = if left { *team_left } else { *team_right };
             match Fusion::slots_editor(team, teams_world, ui) {
-                Ok(c) => changed |= c,
+                Ok(changes) => {
+                    if let Some(fusions) = changes {
+                        changed = true;
+                        for mut fusion in fusions {
+                            if let Some(entity) = fusion.entity {
+                                *teams_world.get_mut::<Fusion>(entity).unwrap() = fusion;
+                            } else {
+                                let entity = teams_world.spawn_empty().set_parent(team).id();
+                                fusion.entity = Some(entity);
+                                teams_world.entity_mut(entity).insert(fusion);
+                            }
+                        }
+                    }
+                }
                 Err(e) => e.cstr().notify_error(world),
             }
             if changed {

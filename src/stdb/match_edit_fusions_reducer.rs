@@ -4,12 +4,10 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::t_node_type::TNode;
-
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchEditFusionsArgs {
-    pub fusions: Vec<Vec<TNode>>,
+    pub fusions: Vec<String>,
 }
 
 impl From<MatchEditFusionsArgs> for super::Reducer {
@@ -36,7 +34,7 @@ pub trait match_edit_fusions {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_edit_fusions`] callbacks.
-    fn match_edit_fusions(&self, fusions: Vec<Vec<TNode>>) -> __sdk::Result<()>;
+    fn match_edit_fusions(&self, fusions: Vec<String>) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_edit_fusions`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +44,7 @@ pub trait match_edit_fusions {
     /// to cancel the callback.
     fn on_match_edit_fusions(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &Vec<Vec<TNode>>) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &Vec<String>) + Send + 'static,
     ) -> MatchEditFusionsCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_edit_fusions`],
     /// causing it not to run in the future.
@@ -54,13 +52,13 @@ pub trait match_edit_fusions {
 }
 
 impl match_edit_fusions for super::RemoteReducers {
-    fn match_edit_fusions(&self, fusions: Vec<Vec<TNode>>) -> __sdk::Result<()> {
+    fn match_edit_fusions(&self, fusions: Vec<String>) -> __sdk::Result<()> {
         self.imp
             .call_reducer("match_edit_fusions", MatchEditFusionsArgs { fusions })
     }
     fn on_match_edit_fusions(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &Vec<Vec<TNode>>) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &Vec<String>) + Send + 'static,
     ) -> MatchEditFusionsCallbackId {
         MatchEditFusionsCallbackId(self.imp.on_reducer(
             "match_edit_fusions",
