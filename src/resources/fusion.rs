@@ -24,11 +24,17 @@ impl Fusion {
         let team = context
             .get_parent(self.entity())
             .to_e("Fusion parent not found")?;
-        Ok(context
-            .children_components_recursive::<Unit>(team)
-            .into_iter()
-            .filter(|u| self.units.contains(&u.unit_name))
-            .collect())
+        let roster = context.children_components_recursive::<Unit>(team);
+        let mut units: Vec<&Unit> = default();
+        for name in &self.units {
+            units.push(
+                roster
+                    .iter()
+                    .find(|u| u.unit_name.eq(name))
+                    .to_e_fn(|| format!("Failed to find {name} unit in fusion"))?,
+            );
+        }
+        Ok(units)
     }
     pub fn get_unit<'a>(&self, ui: u8, context: &'a Context) -> Result<&'a Unit, ExpressionError> {
         self.units(context)?
@@ -245,6 +251,67 @@ impl Fusion {
         })
         .inner?;
         Ok(changed)
+    }
+    pub fn editor(
+        &self,
+        response: Response,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<Option<Fusion>, ExpressionError> {
+        let mut edited: Option<Fusion> = None;
+        if response.hovered() {
+            let ui = &mut ui.new_child(UiBuilder::new().max_rect(response.rect));
+            self.show_card(context, ui).ui(ui);
+        }
+        let team = Team::get(
+            context
+                .get_parent(self.entity())
+                .to_e("Fusion parent not found")?,
+            context,
+        )
+        .to_e("Team not found")?;
+        let units = team.roster_units_load(context);
+        response.bar_menu(|ui| {
+            ui.menu_button("add unit", |ui| {
+                for unit in &units {
+                    match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
+                        Ok(response) => {
+                            if response.clicked() {
+                                let mut fusion = self.clone();
+                                fusion.units.push(unit.unit_name.clone());
+                                edited = Some(fusion);
+                            }
+                        }
+                        Err(e) => {
+                            e.cstr().label(ui);
+                        }
+                    }
+                }
+            });
+            if !self.units.is_empty() {
+                ui.menu_button("remove unit", |ui| {
+                    for unit in self.units.clone() {
+                        if unit.cstr().button(ui).clicked() {
+                            let mut fusion = self.clone();
+                            fusion.remove_unit(&unit);
+                            edited = Some(fusion);
+                        }
+                    }
+                });
+                ui.menu_button("edit", |ui| {
+                    let mut fusion = self.clone();
+                    match fusion.show_editor(context, ui) {
+                        Ok(c) => {
+                            if c {
+                                edited = Some(fusion);
+                            }
+                        }
+                        Err(e) => e.cstr().notify_error_op(),
+                    }
+                });
+            }
+        });
+        Ok(edited)
     }
     pub fn slots_editor(
         team: Entity,

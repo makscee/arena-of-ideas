@@ -50,28 +50,17 @@ impl MatchPlugin {
                             if "buy".cstr().button(ui).clicked() {
                                 cn().reducers.match_buy(slot.id()).notify_op();
                             }
-                            slot.id().cstr().label(ui);
-                            let _ = RectButton::new_size(ui.available_size()).ui(
-                                ui,
-                                |color, rect, _, ui| {
-                                    let rect = rect.shrink(5.0);
-                                    corners_rounded_rect(
-                                        rect,
-                                        slot_size.x * 0.1,
-                                        color.stroke(),
-                                        ui,
-                                    );
-                                    if !slot.sold {
-                                        if let Some(unit) = Unit::get_by_id(slot.unit, context) {
-                                            if Self::show_unit(unit, rect, context, ui).is_none() {
-                                                "Failed to show unit".cstr_c(RED).label(ui);
-                                            }
-                                        } else {
-                                            "Core unit not found".cstr_c(RED).label(ui);
+                            slot_rect_button(ui, |rect, ui| {
+                                if !slot.sold {
+                                    if let Some(unit) = Unit::get_by_id(slot.unit, context) {
+                                        if Self::show_unit(unit, rect, context, ui).is_none() {
+                                            "Failed to show unit".cstr_c(RED).label(ui);
                                         }
+                                    } else {
+                                        "Core unit not found".cstr_c(RED).label(ui);
                                     }
-                                },
-                            );
+                                }
+                            });
                         },
                     );
                 }
@@ -96,17 +85,52 @@ impl MatchPlugin {
             .active_match_load(context)
             .to_e("Active match not found")?;
         let team = m.team_load(context).to_e("Team not found")?;
-        match Fusion::slots_editor(team.entity(), world, ui) {
-            Ok(change) => {
-                if let Some(fusions) = change {
-                    let fusions = fusions.into_iter().map(|f| f.get_data()).collect();
-                    cn().reducers.match_edit_fusions(fusions).notify(world);
+        let fusions: HashMap<usize, &Fusion> = HashMap::from_iter(
+            team.fusions_load(context)
+                .into_iter()
+                .map(|f| (f.slot as usize, f)),
+        );
+        let team_slots = global_settings().team_slots as usize;
+        ui.columns(team_slots, |ui| {
+            for i in 0..team_slots {
+                let ui = &mut ui[i];
+                let i = team_slots - i - 1;
+                if let Some(fusion) = fusions.get(&i) {
+                    let response = slot_rect_button(ui, |rect, ui| {
+                        fusion.paint(rect, context, ui).ui(ui);
+                    });
+                    match fusion.editor(response, context, ui) {
+                        Ok(edited) => {
+                            if let Some(fusion) = edited {
+                                cn().reducers
+                                    .match_edit_fusion(fusion.to_tnode())
+                                    .notify_op();
+                            }
+                        }
+                        Err(e) => {
+                            e.cstr().label(ui);
+                        }
+                    }
+                } else {
+                    ui.vertical_centered_justified(|ui| {
+                        if "buy fusion".cstr().button(ui).clicked() {
+                            cn().reducers.match_buy_fusion().notify_op();
+                        }
+                    });
                 }
             }
-            Err(e) => {
-                e.cstr().notify_error(world);
-            }
-        }
+        });
+        // match Fusion::slots_editor(team.entity(), world, ui) {
+        //     Ok(change) => {
+        //         if let Some(fusions) = change {
+        //             let fusions = fusions.into_iter().map(|f| f.get_data()).collect();
+        //             cn().reducers.match_edit_fusions(fusions).notify(world);
+        //         }
+        //     }
+        //     Err(e) => {
+        //         e.cstr().notify_error(world);
+        //     }
+        // }
         Ok(())
     }
 }

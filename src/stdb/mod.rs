@@ -26,11 +26,11 @@ pub mod incubator_votes_table;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_buy_fusion_reducer;
 pub mod match_buy_reducer;
-pub mod match_edit_fusions_reducer;
+pub mod match_edit_fusion_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
-pub mod match_reorder_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
 pub mod nodes_world_table;
@@ -84,15 +84,15 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_buy_fusion_reducer::{
+    match_buy_fusion, set_flags_for_match_buy_fusion, MatchBuyFusionCallbackId,
+};
 pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
-pub use match_edit_fusions_reducer::{
-    match_edit_fusions, set_flags_for_match_edit_fusions, MatchEditFusionsCallbackId,
+pub use match_edit_fusion_reducer::{
+    match_edit_fusion, set_flags_for_match_edit_fusion, MatchEditFusionCallbackId,
 };
 pub use match_g_type::MatchG;
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
-pub use match_reorder_reducer::{
-    match_reorder, set_flags_for_match_reorder, MatchReorderCallbackId,
-};
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
 pub use nodes_world_table::*;
@@ -144,14 +144,11 @@ pub enum Reducer {
     MatchBuy {
         id: u64,
     },
-    MatchEditFusions {
-        fusions: Vec<String>,
+    MatchBuyFusion,
+    MatchEditFusion {
+        fusion: TNode,
     },
     MatchInsert,
-    MatchReorder {
-        slot: u8,
-        target: u8,
-    },
     MatchReroll,
     MatchSell {
         name: String,
@@ -194,9 +191,9 @@ impl __sdk::Reducer for Reducer {
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
             Reducer::MatchBuy { .. } => "match_buy",
-            Reducer::MatchEditFusions { .. } => "match_edit_fusions",
+            Reducer::MatchBuyFusion => "match_buy_fusion",
+            Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
-            Reducer::MatchReorder { .. } => "match_reorder",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
             Reducer::Register { .. } => "register",
@@ -262,9 +259,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "match_edit_fusions" => Ok(__sdk::parse_reducer_args::<
-                match_edit_fusions_reducer::MatchEditFusionsArgs,
-            >("match_edit_fusions", &value.args)?
+            "match_buy_fusion" => Ok(__sdk::parse_reducer_args::<
+                match_buy_fusion_reducer::MatchBuyFusionArgs,
+            >("match_buy_fusion", &value.args)?
+            .into()),
+            "match_edit_fusion" => Ok(__sdk::parse_reducer_args::<
+                match_edit_fusion_reducer::MatchEditFusionArgs,
+            >("match_edit_fusion", &value.args)?
             .into()),
             "match_insert" => Ok(
                 __sdk::parse_reducer_args::<match_insert_reducer::MatchInsertArgs>(
@@ -273,10 +274,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "match_reorder" => Ok(__sdk::parse_reducer_args::<
-                match_reorder_reducer::MatchReorderArgs,
-            >("match_reorder", &value.args)?
-            .into()),
             "match_reroll" => Ok(
                 __sdk::parse_reducer_args::<match_reroll_reducer::MatchRerollArgs>(
                     "match_reroll",

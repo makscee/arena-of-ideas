@@ -45,6 +45,9 @@ impl RectButton {
         ui: &mut Ui,
         content: impl FnOnce(Color32, Rect, &Response, &mut Ui),
     ) -> Response {
+        if ui.any_bar_open() {
+            ui.disable();
+        }
         let sense = if self.enabled {
             Sense::click()
         } else {

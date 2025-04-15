@@ -1,3 +1,5 @@
+use std::i32;
+
 use rand::seq::SliceRandom;
 
 use super::*;
@@ -77,17 +79,38 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_edit_fusions(ctx: &ReducerContext, fusions: Vec<String>) -> Result<(), String> {
+fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let team = player.active_match_load(ctx)?.team_load(ctx)?;
+    let _ = team.fusions_load(ctx);
+    if team.fusions.len() >= ctx.global_settings().team_slots as usize {
+        return Err("Team size limit reached".into());
+    }
+    let fusion = Fusion::new(ctx, team.id(), i32::MAX, default(), default());
+    team.fusions.push(fusion);
+    for (i, fusion) in team
+        .fusions
+        .iter_mut()
+        .sorted_by_key(|f| f.slot)
+        .enumerate()
+    {
+        fusion.slot = i as i32;
+    }
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_edit_fusion(ctx: &ReducerContext, fusion: TNode) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
+    let fusion: Fusion = fusion.to_node()?;
     let team = m.team_load(ctx)?;
-    let _ = team.fusions_load(ctx);
-    for fusion in std::mem::take(&mut team.fusions) {
-        fusion.delete_recursive(ctx);
-    }
-    for s in fusions {
-        let fusion: Fusion = ron::from_str(&s).map_err(|e| e.to_string())?;
-        fusion.clone(ctx, team.id());
+    for f in team.fusions_load(ctx)? {
+        if f.slot == fusion.slot {
+            *f = fusion;
+            break;
+        }
     }
     player.save(ctx);
     Ok(())

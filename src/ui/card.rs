@@ -117,21 +117,17 @@ impl House {
 impl Fusion {
     pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let units = self.units(context)?;
-        let mut pwr = 0;
-        let mut hp = 0;
-        for unit in &units {
-            let stats = unit.description_err(context)?.stats_err(context)?;
-            pwr += stats.pwr;
-            hp += stats.hp;
-        }
+        let context = &context.clone().set_owner(self.entity()).take();
+        let pwr = context.get_var(VarName::pwr)?;
+        let hp = context.get_var(VarName::hp)?;
         Frame::new()
             .fill(ui.visuals().window_fill)
             .corner_radius(ROUNDING)
             .inner_margin(MARGIN)
             .show(ui, |ui| -> Result<(), ExpressionError> {
                 ui.horizontal_wrapped(|ui| {
-                    TagWidget::new_var_value(VarName::pwr, pwr.into()).ui(ui);
-                    TagWidget::new_var_value(VarName::hp, hp.into()).ui(ui);
+                    TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
+                    TagWidget::new_var_value(VarName::hp, hp).ui(ui);
                 });
                 ui.vertical(|ui| {
                     for unit in &units {
