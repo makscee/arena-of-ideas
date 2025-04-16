@@ -96,9 +96,10 @@ struct ShopCaseUnit {
 }
 
 struct Fusion {
-    pub units: Vec<String>,
+    pub units: Vec<u64>,
     pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: i32,
+    pub stats: NodeComponent<FusionStats>,
 }
 
 struct Unit {
@@ -116,6 +117,9 @@ struct UnitDescription {
 struct UnitStats {
     pub pwr: i32,
     pub hp: i32,
+}
+
+struct FusionStats {
     pub dmg: i32,
 }
 

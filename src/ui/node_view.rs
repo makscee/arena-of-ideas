@@ -68,5 +68,6 @@ impl NodeView for Unit {
 }
 impl NodeView for UnitDescription {}
 impl NodeView for UnitStats {}
+impl NodeView for FusionStats {}
 impl NodeView for Behavior {}
 impl NodeView for Representation {}

@@ -68,7 +68,6 @@ impl NodeStatePlugin {
     ) {
         if let Ok((gv, mut state)) = nodes.get_mut(entity) {
             for v in gv {
-                let source = v.kind();
                 for (var, value) in v.get_own_vars() {
                     state.insert(t, 0.0, var, value);
                 }
@@ -78,15 +77,14 @@ impl NodeStatePlugin {
     pub fn collect_vars(
         In(entity): In<Entity>,
         nodes: Query<(&dyn GetVar, Option<&Parent>)>,
-    ) -> HashMap<VarName, (VarValue, NodeKind)> {
+    ) -> HashMap<VarName, VarValue> {
         let mut entity = Some(entity);
-        let mut result: HashMap<VarName, (VarValue, NodeKind)> = default();
+        let mut result: HashMap<VarName, VarValue> = default();
         while let Some((gv, p)) = entity.and_then(|e| nodes.get(e).ok()) {
             for v in gv {
-                let source = v.kind();
                 for (var, value) in v.get_own_vars() {
                     if !result.contains_key(&var) {
-                        result.insert(var, (value, source));
+                        result.insert(var, value);
                     }
                 }
             }
@@ -110,9 +108,6 @@ impl NodeState {
     }
     pub fn from_world_mut(entity: Entity, world: &mut World) -> Option<Mut<Self>> {
         world.get_mut::<Self>(entity)
-    }
-    pub fn from_query<'a>(entity: Entity, query: &'a StateQuery) -> Option<&'a Self> {
-        query.get_state(entity)
     }
     fn get_state<'a>(&'a self, var: VarName) -> Option<&'a VarState> {
         self.vars.get(&var)

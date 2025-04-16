@@ -1,4 +1,5 @@
 use chrono::Utc;
+use spacetimedb_lib::Timestamp;
 
 use super::*;
 
@@ -55,7 +56,21 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
     )
     .label(ui);
 }
-
+static NEXT_ID: Mutex<u64> = Mutex::new(0);
+pub fn next_id() -> u64 {
+    let ts = Timestamp::now().to_micros_since_unix_epoch() as u64;
+    let mut next_id = NEXT_ID.lock();
+    if *next_id >= ts {
+        *next_id += 1;
+        *next_id
+    } else {
+        *next_id = ts;
+        ts
+    }
+}
+pub fn set_next_id(id: u64) {
+    *NEXT_ID.lock() = id;
+}
 // pub trait CstrExt {
 //     fn print(&self);
 //     fn info(&self);

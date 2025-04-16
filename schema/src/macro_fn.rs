@@ -117,12 +117,20 @@ pub fn strings_conversions(
             let mut v = [self.to_tnode()].to_vec();
             #(
                 if let Some(d) = self.#component_fields.as_ref() {
-                    v.extend(d.to_tnodes());
+                    let mut nodes = d.to_tnodes();
+                    if let Some(mut node) = nodes.get_mut(0) {
+                        node.parent = self.id;
+                    }
+                    v.extend(nodes);
                 }
             )*
             #(
                 for d in &self.#child_fields {
-                    v.extend(d.to_tnodes());
+                    let mut nodes = d.to_tnodes();
+                    if let Some(mut node) = nodes.get_mut(0) {
+                        node.parent = self.id;
+                    }
+                    v.extend(nodes);
                 }
             )*
             v

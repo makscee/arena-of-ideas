@@ -275,6 +275,17 @@ impl Show for Vec<String> {
         changed
     }
 }
+impl Show for Vec<u64> {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        for i in self {
+            i.cstr().show(context, ui);
+        }
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}
 impl Show for Actions {
     fn show(&self, context: &Context, ui: &mut Ui) {
         for action in &self.0 {

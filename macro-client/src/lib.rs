@@ -72,14 +72,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 fields.named.insert(
                     0,
                     Field::parse_named
-                        .parse2(quote! { pub parent: Option<u64> })
+                        .parse2(quote! { pub parent: u64 })
                         .unwrap(),
                 );
                 fields.named.insert(
                     0,
-                    Field::parse_named
-                        .parse2(quote! { pub id: Option<u64> })
-                        .unwrap(),
+                    Field::parse_named.parse2(quote! { pub id: u64 }).unwrap(),
                 );
             }
             let common = common_node_fns(
@@ -103,9 +101,27 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
             quote! {
-                #[derive(Component, Clone, Default, Debug, Hash)]
+                #[derive(Component, Clone, Debug, Hash)]
                 #input
                 #common
+                impl Default for #struct_ident {
+                    fn default() -> Self {
+                        Self {
+                            id: next_id(),
+                            parent: 0,
+                            entity: None,
+                            #(
+                                #component_fields: None,
+                            )*
+                            #(
+                                #child_fields: default(),
+                            )*
+                            #(
+                                #all_data_fields: default(),
+                            )*
+                        }
+                    }
+                }
                 impl #struct_ident {
                     #(
                         pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #component_types> {
@@ -248,22 +264,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #strings_conversions
                     #common_trait
                     fn id(&self) -> u64 {
-                        self.id.expect("Id not set")
-                    }
-                    fn get_id(&self) -> Option<u64> {
                         self.id
                     }
                     fn set_id(&mut self, id: u64) {
-                        self.id = Some(id);
+                        self.id = id;
                     }
                     fn parent(&self) -> u64 {
-                        self.parent.expect("Parent not set")
-                    }
-                    fn get_parent(&self) -> Option<u64> {
                         self.parent
                     }
                     fn set_parent(&mut self, id: u64) {
-                        self.parent = Some(id);
+                        self.parent = id;
                     }
                     fn entity(&self) -> Entity {
                         self.entity.expect("Entity not set")
@@ -276,8 +286,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
                         let mut d = Self::default();
                         d.inject_data(file.contents_utf8()?).unwrap();
-                        d.id = Some(id);
-                        d.parent = Some(parent);
+                        d.id = id;
+                        d.parent = parent;
                         #(
                             d.#component_fields = #component_types::from_dir(id, format!("{path}/{}", #component_fields_str), dir);
                         )*
@@ -376,9 +386,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn unpack(mut self, entity: Entity, world: &mut World) {
                         //debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
-                        if let Some(id) = self.id {
-                            world.add_id_link(id, entity);
+                        if self.id == 0 {
+                            self.id = next_id();
                         }
+                        world.add_id_link(self.id, entity);
                         let parent = entity;
                         #(
                             if let Some(d) = self.#component_fields.take() {
@@ -411,19 +422,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .collect();
                         )*
                         self
-                    }
-                    fn clear_ids(&mut self) {
-                        self.id = None;
-                        #(
-                            if let Some(d) = self.#component_fields.as_mut() {
-                                d.clear_ids();
-                            }
-                        )*
-                        #(
-                            for d in &mut self.#child_fields {
-                                d.clear_ids();
-                            }
-                        )*
                     }
                     fn with_components(mut self, context: &Context) -> Self {
                         #(
@@ -526,7 +524,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.#component_fields = None;
                                 }
                                 view_resp.merge(child_resp);
-                            } else if let Some(d) = new_node_btn(ui, context) {
+                            } else if let Some(mut d) = new_node_btn::<#component_types>(ui, context) {
+                                d.parent = self.id();
                                 view_resp.changed = true;
                                 self.#component_fields = Some(d);
                             }
@@ -626,7 +625,9 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(#struct_ident::#variants => {
                                 let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
                                 if d.view_mut(view_ctx, &default(), ui).changed {
-                                    d.reassign_ids(&mut 0);
+                                    let mut id = next_id();
+                                    d.reassign_ids(&mut id);
+                                    set_next_id(id);
                                     *nodes = d.to_tnodes();
                                 }
                             })*
@@ -638,8 +639,8 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(#struct_ident::#variants => {
                                 let mut n = #variants::default();
                                 n.inject_data(&node.data);
-                                n.id = Some(node.id);
-                                n.parent = Some(node.parent);
+                                n.id = node.id;
+                                n.parent = node.parent;
                                 n.unpack(entity, world);
                             })*
                         };

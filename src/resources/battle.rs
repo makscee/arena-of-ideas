@@ -77,9 +77,20 @@ impl BattleAction {
                         .take(),
                     strike_anim,
                 );
-                let pwr = battle.world.get::<UnitStats>(*a).unwrap().pwr;
+                let context = &Context::new(&battle.world);
+                let pwr = context
+                    .get_component::<Fusion>(*a)
+                    .unwrap()
+                    .pwr_hp(context)
+                    .unwrap()
+                    .0;
                 let action_a = Self::damage(*a, *b, pwr);
-                let pwr = battle.world.get::<UnitStats>(*b).unwrap().pwr;
+                let pwr = context
+                    .get_component::<Fusion>(*b)
+                    .unwrap()
+                    .pwr_hp(context)
+                    .unwrap()
+                    .0;
                 let action_b = Self::damage(*b, *a, pwr);
                 add_actions.extend_from_slice(&[action_a, action_b]);
                 add_actions.extend(battle.slots_sync());
@@ -122,10 +133,10 @@ impl BattleAction {
                             .take(),
                         pain,
                     );
-                    let dmg = battle.world.get::<UnitStats>(*b).unwrap().dmg + x;
+                    let dmg = battle.world.get::<FusionStats>(*b).unwrap().dmg + x;
                     add_actions.push(Self::var_set(
                         *b,
-                        NodeKind::UnitStats,
+                        NodeKind::FusionStats,
                         VarName::dmg,
                         dmg.into(),
                     ));
@@ -167,10 +178,10 @@ impl BattleAction {
                             .take(),
                         pain,
                     );
-                    let dmg = (battle.world.get::<UnitStats>(*b).unwrap().dmg - x).at_least(0);
+                    let dmg = (battle.world.get::<FusionStats>(*b).unwrap().dmg - x).at_least(0);
                     add_actions.push(Self::var_set(
                         *b,
-                        NodeKind::UnitStats,
+                        NodeKind::FusionStats,
                         VarName::dmg,
                         dmg.into(),
                     ));
@@ -324,7 +335,7 @@ impl BattleSimulation {
                 .world
                 .run_system_once_with(entity, NodeStatePlugin::collect_vars)
                 .unwrap();
-            for (var, (value, source)) in vars {
+            for (var, value) in vars {
                 let value = self.send_update_event(entity, var, value);
                 NodeState::from_world_mut(entity, &mut self.world)
                     .unwrap()
@@ -443,12 +454,12 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
-        for (entity, stats) in self
+        for (entity, stats, fusion) in self
             .world
-            .query_filtered::<(Entity, &UnitStats), (Without<Corpse>, With<Fusion>)>()
+            .query_filtered::<(Entity, &FusionStats, &Fusion), Without<Corpse>>()
             .iter(&self.world)
         {
-            if stats.dmg >= stats.hp {
+            if stats.dmg >= fusion.pwr_hp(&Context::new(&self.world)).unwrap().1 {
                 actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
                 actions.push_back(BattleAction::death(entity));
             }

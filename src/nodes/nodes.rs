@@ -19,11 +19,9 @@ pub trait GetVar: GetNodeKind + Debug {
 
 pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn id(&self) -> u64;
-    fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);
     fn parent(&self) -> u64;
-    fn get_parent(&self) -> Option<u64>;
     fn set_parent(&mut self, id: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
@@ -64,24 +62,15 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn fill_from_incubator(self) -> Self;
-    fn clear_ids(&mut self);
     fn with_components(self, context: &Context) -> Self;
     fn egui_id(&self) -> Id {
-        if let Some(id) = self.get_id() {
-            Id::new(id)
-        } else if let Some(entity) = self.get_entity() {
-            Id::new(entity)
-        } else {
-            Id::new(self)
-        }
+        Id::new(self.id())
     }
 }
 
 pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn view_id(&self) -> Id {
-        Id::new(self.get_entity())
-            .with(self.get_id())
-            .with(self.kind())
+        Id::new(self.get_entity()).with(self.id()).with(self.kind())
     }
     fn to_tnode(&self) -> TNode;
     fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self>;
@@ -98,7 +87,7 @@ where
     fn to_tnode(&self) -> TNode {
         TNode {
             id: self.id(),
-            parent: self.get_parent().unwrap_or_default(),
+            parent: self.parent(),
             kind: self.kind().to_string(),
             data: self.get_data(),
         }
@@ -220,6 +209,12 @@ impl NodeKind {
     fn on_unpack(self, entity: Entity, world: &mut World) {
         let vars = self.get_vars(entity, world);
         let mut emut = world.entity_mut(entity);
+        match self {
+            NodeKind::Fusion => {
+                emut.insert(FusionStats::default());
+            }
+            _ => {}
+        }
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
             ns
         } else {
@@ -243,7 +238,7 @@ impl NodeKind {
                 NodeState::from_world_mut(entity, world).unwrap().init_vars(
                     [
                         (VarName::pwr, 0.into()),
-                        (VarName::hp, 1.into()),
+                        (VarName::hp, 0.into()),
                         (VarName::dmg, 0.into()),
                     ]
                     .into(),
@@ -366,15 +361,6 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                             .unwrap_or_default()
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(RED),
-                )
-                .column_cstr_value_dyn(
-                    "dmg",
-                    move |d, world| {
-                        UnitStats::get_by_id(f(d), &world.into())
-                            .map(|n| n.dmg.into())
-                            .unwrap_or_default()
-                    },
-                    move |_, value| value.get_i32().unwrap().cstr_c(DARK_RED),
                 ),
             NodeKind::Behavior => {
                 self.per_row_render()

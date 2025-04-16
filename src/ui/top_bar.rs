@@ -3,23 +3,35 @@ use super::*;
 pub struct TopBar;
 
 impl TopBar {
-    fn state_btn(state: GameState, ui: &mut Ui, world: &mut World) {
-        if state
-            .to_string()
-            .to_lowercase()
-            .as_button()
-            .active(cur_state(world) == state, ui)
-            .ui(ui)
-            .clicked()
-        {
-            state.set_next(world);
+    fn state_btn(
+        state: GameState,
+        ui: &mut Ui,
+        world: &mut World,
+        menu: impl FnOnce(&mut Ui, &mut World),
+    ) {
+        let active = cur_state(world) == state;
+        let text = state.to_string().to_lowercase();
+        if active {
+            ui.menu_button(text.cstr_c(YELLOW).widget(1.0, ui.style()), |ui| {
+                menu(ui, world)
+            });
+        } else {
+            if text.button(ui).clicked() {
+                state.set_next(world);
+            }
         }
     }
     pub fn ui(ui: &mut Ui, world: &mut World) {
         egui::menu::bar(ui, |ui| {
-            Self::state_btn(GameState::Title, ui, world);
-            Self::state_btn(GameState::Incubator, ui, world);
-            Self::state_btn(GameState::Editor, ui, world);
+            Self::state_btn(GameState::Title, ui, world, |_, _| {});
+            Self::state_btn(GameState::Incubator, ui, world, |_, _| {});
+            Self::state_btn(GameState::Editor, ui, world, |ui, world| {
+                if "reset state".cstr().button(ui).clicked() {
+                    pd_mut(|d| d.client_state.battle_test = default());
+                    BattlePlugin::load_from_client_state(world);
+                    ui.close_menu();
+                }
+            });
             ui.menu_button("settings", |ui| {
                 if "theme".cstr().button(ui).clicked() {
                     Window::new("theme Editor", |ui, _| {

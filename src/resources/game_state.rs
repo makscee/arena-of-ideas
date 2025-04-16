@@ -93,7 +93,6 @@ pub enum Pane {
 
     Incubator(IncubatorPane),
     Battle(BattlePane),
-    Team(TeamPane),
     Match(MatchPane),
 
     Admin,
@@ -115,11 +114,6 @@ pub enum BattlePane {
     EditLeftSlots,
     EditRightGraph,
     EditRightSlots,
-}
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum TeamPane {
-    Slots,
-    Roster,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum MatchPane {
@@ -185,11 +179,6 @@ impl Pane {
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
-
-            Pane::Team(pane) => match pane {
-                TeamPane::Slots => TeamEditorPlugin::pane_slots(ui, world)?,
-                TeamPane::Roster => TeamEditorPlugin::pane_roster(ui, world)?,
-            },
         };
         Ok(())
     }

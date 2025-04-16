@@ -73,7 +73,7 @@ impl LoginPlugin {
                 return;
             };
             dbg!(&identity_node);
-            if let Some(player) = Player::load(identity_node.parent.unwrap()) {
+            if let Some(player) = Player::load(identity_node.parent) {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();
                 cs.last_logged_in = Some((player.player_name.clone(), identity));

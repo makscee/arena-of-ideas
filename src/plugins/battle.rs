@@ -6,20 +6,12 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Editor), |world: &mut World| {
-            let bd = if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
-                let battle = Battle { left, right };
-                BattleData::load(battle)
-            } else {
-                BattleData::load(default())
-            };
-            world.insert_resource(bd);
-        })
-        .init_resource::<ReloadData>()
-        .add_systems(
-            FixedUpdate,
-            Self::reload.run_if(in_state(GameState::Editor)),
-        );
+        app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state)
+            .init_resource::<ReloadData>()
+            .add_systems(
+                FixedUpdate,
+                Self::reload.run_if(in_state(GameState::Editor)),
+            );
     }
 }
 
@@ -41,9 +33,7 @@ struct ReloadData {
 }
 
 impl BattleData {
-    fn load(mut battle: Battle) -> Self {
-        battle.left.reassign_ids(&mut 0);
-        battle.right.reassign_ids(&mut 0);
+    fn load(battle: Battle) -> Self {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
@@ -63,6 +53,15 @@ impl BattleData {
 }
 
 impl BattlePlugin {
+    pub fn load_from_client_state(world: &mut World) {
+        let bd = if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
+            let battle = Battle { left, right };
+            BattleData::load(battle)
+        } else {
+            BattleData::load(default())
+        };
+        world.insert_resource(bd);
+    }
     fn reload(mut data: ResMut<BattleData>, mut reload: ResMut<ReloadData>) {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
@@ -156,27 +155,52 @@ impl BattlePlugin {
                 playing: _,
             } = data.as_mut();
             let mut changed = false;
-            let team = if left { *team_left } else { *team_right };
-            match Fusion::slots_editor(team, teams_world, ui) {
-                Ok(changes) => {
-                    if let Some(fusions) = changes {
-                        changed = true;
-                        for mut fusion in fusions {
-                            if let Some(entity) = fusion.entity {
-                                *teams_world.get_mut::<Fusion>(entity).unwrap() = fusion;
-                            } else {
-                                let entity = teams_world.spawn_empty().set_parent(team).id();
-                                fusion.entity = Some(entity);
-                                teams_world.entity_mut(entity).insert(fusion);
-                            }
+            let team_entity = if left { *team_left } else { *team_right };
+            let mut edited = None;
+            let mut add_fusion = false;
+            let context = &teams_world.into();
+            Fusion::slots_editor(
+                team_entity,
+                context,
+                ui,
+                |ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        if "add fusion".cstr().button(ui).clicked() {
+                            add_fusion = true;
                         }
-                    }
+                    });
+                },
+                |fusion| {
+                    edited = Some(fusion);
+                },
+            )
+            .ui(ui);
+            if add_fusion {
+                let team = Team::get(team_entity, context).unwrap();
+                let slot = team.fusions_load(context).len() as i32;
+                let id = next_id();
+                Fusion {
+                    id,
+                    parent: team.id(),
+                    entity: None,
+                    units: Vec::new(),
+                    behavior: Vec::new(),
+                    slot,
+                    stats: None,
                 }
-                Err(e) => e.cstr().notify_error(world),
+                .unpack(
+                    teams_world.spawn_empty().set_parent(team_entity).id(),
+                    teams_world,
+                );
             }
+            if let Some(fusion) = edited {
+                teams_world.entity_mut(fusion.entity()).insert(fusion);
+                changed = true;
+            }
+
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
-                let updated_team = Team::pack(team, &teams_world.into()).unwrap();
+                let updated_team = Team::pack(team_entity, &teams_world.into()).unwrap();
                 let team = if left {
                     &mut battle.left
                 } else {
