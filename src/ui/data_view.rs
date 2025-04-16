@@ -339,12 +339,19 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                     ScrollArea::vertical()
                         .min_scrolled_height(200.0)
                         .show(ui, |ui| {
-                            for mut opt in options {
+                            'o: for mut opt in options {
                                 let text = opt.cstr();
-                                if !lookup.is_empty()
-                                    && !text.get_text().to_lowercase().starts_with(&lookup)
-                                {
-                                    continue;
+                                if !lookup.is_empty() {
+                                    let text = text.get_text().to_lowercase();
+                                    let mut text = text.chars();
+                                    'c: for c in lookup.chars() {
+                                        while let Some(text_c) = text.next() {
+                                            if text_c == c {
+                                                continue 'c;
+                                            }
+                                        }
+                                        continue 'o;
+                                    }
                                 }
                                 let resp = opt.cstr().button(ui);
                                 if resp.clicked() || resp.gained_focus() {
