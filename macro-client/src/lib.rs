@@ -490,6 +490,14 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         });
                     }
+                    fn context_menu_extra_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+                        let mut view_resp = ViewResponse::default();
+                        if let Some(d) = self.replace_context_menu(context, ui) {
+                            *self = d;
+                            view_resp.changed = true;
+                        }
+                        view_resp
+                    }
                     fn view_children(
                         &self,
                         view_ctx: ViewContext,
@@ -518,7 +526,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.#component_fields = None;
                                 }
                                 view_resp.merge(child_resp);
-                            } else if let Some(d) = node_selector(ui, context) {
+                            } else if let Some(d) = new_node_btn(ui, context) {
                                 view_resp.changed = true;
                                 self.#component_fields = Some(d);
                             }

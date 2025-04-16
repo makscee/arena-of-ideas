@@ -409,47 +409,46 @@ pub fn core<'a>(context: &'a Context) -> &'a Core {
     Core::get_by_id(ID_CORE, context).unwrap()
 }
 
-pub fn node_selector<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
+pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
+    let mut result = None;
+    ui.menu_button("core", |ui| {
+        ScrollArea::vertical()
+            .min_scrolled_height(500.0)
+            .show(ui, |ui| {
+                let Some(entity) = context.entity_by_id(ID_CORE) else {
+                    return;
+                };
+                let view_ctx = ViewContext::new(ui);
+                for d in context.children_components_recursive::<T>(entity) {
+                    let name = d.title_cstr(view_ctx, context);
+                    if ui
+                        .menu_button(name.widget(1.0, ui.style()), |ui| {
+                            ScrollArea::both().show(ui, |ui| {
+                                d.view(view_ctx, context, ui);
+                            });
+                        })
+                        .response
+                        .clicked()
+                    {
+                        result = T::pack(d.entity(), context);
+                        ui.close_menu();
+                    }
+                }
+            })
+    });
+    result
+}
+
+pub fn new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
     let resp = format!("add [b {}]", T::kind_s()).cstr().button(ui);
     let mut result = None;
     resp.bar_menu(|ui| {
         if "empty".cstr().button(ui).clicked() {
             result = Some(T::default());
             ui.close_menu();
+        } else {
+            result = node_menu(ui, context);
         }
-        let mut show_node = |node: &T, view_ctx, context: &Context, ui: &mut Ui| {
-            ui.horizontal(|ui| {
-                if "add".cstr().button(ui).clicked() {
-                    result = T::pack(node.entity(), context);
-                    ui.close_menu();
-                }
-                node.view(view_ctx, context, ui);
-            });
-        };
-        ui.menu_button("core", |ui| {
-            ScrollArea::vertical()
-                .min_scrolled_height(500.0)
-                .show(ui, |ui| {
-                    // for n in world.query::<&T>().iter(world) {
-                    //     if n.get_parent().is_none_or(|parent| parent == ID_INCUBATOR) {
-                    //         continue;
-                    //     }
-                    //     show_node(n, ViewContext::new(ui), &default(), ui);
-                    // }
-                });
-        });
-        ui.menu_button("incubator", |ui| {
-            ScrollArea::vertical()
-                .min_scrolled_height(500.0)
-                .show(ui, |ui| {
-                    // for n in world.query::<&T>().iter(world) {
-                    //     if n.parent() != ID_INCUBATOR {
-                    //         continue;
-                    //     }
-                    //     show_node(n, ViewContext::new(ui), &default(), ui);
-                    // }
-                });
-        });
     });
     result
 }

@@ -169,6 +169,9 @@ impl<'w> Context<'w> {
             .map(|e| e.to_value())
             .collect()
     }
+    pub fn entity_by_id(&self, id: u64) -> Option<Entity> {
+        self.get_world()?.get_id_link(id)
+    }
     pub fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
         self.get_world()?.get::<T>(entity)
     }

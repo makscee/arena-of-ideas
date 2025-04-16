@@ -87,13 +87,13 @@ fn show_parent_line(parent: Rect, child: Rect, hovered: bool, ui: &mut Ui) {
 }
 
 pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
-    fn wrap(value: Self) -> Option<Self> {
+    fn wrap(self) -> Option<Self> {
         None
     }
     fn replace_options() -> Vec<Self> {
         default()
     }
-    fn move_inner(&mut self, source: &mut Self) {}
+    fn move_inner(&mut self, _source: &mut Self) {}
     fn merge_state<'a>(
         &self,
         view_ctx: ViewContext,
@@ -251,25 +251,30 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         }
         view_resp
     }
-    fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+    fn show_collapsed(&self, _view_ctx: ViewContext, _context: &Context, ui: &mut Ui) -> Response {
         "([tw ...])".cstr().button(ui)
     }
-    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
-    fn show_value_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> bool {
+    fn show_value(&self, _view_ctx: ViewContext, _context: &Context, _ui: &mut Ui) {}
+    fn show_value_mut(&mut self, _view_ctx: ViewContext, _context: &Context, _ui: &mut Ui) -> bool {
         false
     }
-    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+    fn view_children(
+        &self,
+        _view_ctx: ViewContext,
+        _context: &Context,
+        _ui: &mut Ui,
+    ) -> ViewResponse {
         default()
     }
     fn view_children_mut(
         &mut self,
-        view_ctx: ViewContext,
-        context: &Context,
-        ui: &mut Ui,
+        _view_ctx: ViewContext,
+        _context: &Context,
+        _ui: &mut Ui,
     ) -> ViewResponse {
         default()
     }
-    fn title_cstr(&self, view_ctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _view_ctx: ViewContext, _context: &Context) -> Cstr {
         self.cstr()
     }
     fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
@@ -297,7 +302,15 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         }
         self.context_menu_extra(view_ctx, context, ui);
     }
-    fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {}
+    fn context_menu_extra(&self, _view_ctx: ViewContext, _context: &Context, _ui: &mut Ui) {}
+    fn context_menu_extra_mut(
+        &mut self,
+        _view_ctx: ViewContext,
+        _context: &Context,
+        _ui: &mut Ui,
+    ) -> ViewResponse {
+        ViewResponse::default()
+    }
     fn context_menu_mut(
         &mut self,
         view_ctx: ViewContext,
@@ -351,7 +364,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         if Self::wrap(default()).is_some() {
             if ui.button("wrap").clicked() {
                 view_resp.changed = true;
-                *self = Self::wrap(self.clone()).unwrap();
+                *self = self.clone().wrap().unwrap();
             }
         }
         if let Some(data) = clipboard_get() {
@@ -375,6 +388,7 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
                 self.paste();
             }
         }
+        view_resp.merge(self.context_menu_extra_mut(view_ctx, context, ui));
         if view_ctx.can_delete && "[red delete]".cstr().button(ui).clicked() {
             view_resp.changed = true;
             view_resp.delete_me = true;
@@ -482,8 +496,8 @@ impl DataView for Expression {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect_vec()
     }
-    fn wrap(value: Self) -> Option<Self> {
-        Some(Self::abs(Box::new(value)))
+    fn wrap(self) -> Option<Self> {
+        Some(Self::abs(Box::new(self)))
     }
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);
@@ -555,8 +569,8 @@ impl DataView for PainterAction {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect_vec()
     }
-    fn wrap(value: Self) -> Option<Self> {
-        Some(Self::list([Box::new(value)].to_vec()))
+    fn wrap(self) -> Option<Self> {
+        Some(Self::list([Box::new(self)].to_vec()))
     }
     fn move_inner(&mut self, source: &mut Self) {
         <Self as Injector<Self>>::inject_inner(self, source);
@@ -596,10 +610,10 @@ impl DataView for PainterAction {
 }
 
 impl DataView for Action {
-    fn wrap(value: Self) -> Option<Self> {
+    fn wrap(self) -> Option<Self> {
         Some(Self::repeat(
             Box::new(Expression::i32(1)),
-            [Box::new(value)].to_vec(),
+            [Box::new(self)].to_vec(),
         ))
     }
     fn replace_options() -> Vec<Self> {
@@ -791,8 +805,8 @@ where
         + Serialize
         + DeserializeOwned,
 {
-    fn wrap(value: Self) -> Option<Self> {
-        T::wrap(*value).map(|v| Box::new(v))
+    fn wrap(self) -> Option<Self> {
+        T::wrap(*self).map(|v| Box::new(v))
     }
     fn replace_options() -> Vec<Self> {
         T::replace_options()

@@ -1,6 +1,6 @@
 use super::*;
 
-pub trait NodeView: Node + NodeExt + ToCstr {
+pub trait NodeView: Node + NodeExt + ToCstr + DataView {
     fn node_title(&self, _context: &Context, ui: &mut Ui) -> Response {
         self.cstr().button(ui)
     }
@@ -12,6 +12,10 @@ pub trait NodeView: Node + NodeExt + ToCstr {
             "([tw ...])".cstr().button(ui)
         })
         .inner
+    }
+    fn replace_context_menu(&mut self, context: &Context, ui: &mut Ui) -> Option<Self> {
+        ui.menu_button("replace", |ui| node_menu(ui, context))
+            .inner?
     }
 }
 
