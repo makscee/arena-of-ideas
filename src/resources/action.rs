@@ -40,11 +40,14 @@ impl ActionImpl for Action {
             Action::subtract_value(x) => {
                 context.set_value(context.get_value()?.sub(&x.get_value(context)?)?);
             }
-            Action::add_target(x) => {
-                for entity in x.get_entity_list(context)? {
-                    context.add_target(entity);
+            Action::add_target(x) => match x.get_entity_list(context) {
+                Ok(entities) => {
+                    for entity in entities {
+                        context.add_target(entity);
+                    }
                 }
-            }
+                Err(e) => error!("add_target error: {e}"),
+            },
             Action::deal_damage => {
                 let owner = context.get_owner()?;
                 let value = context.get_value()?.get_i32()?;

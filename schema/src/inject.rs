@@ -204,6 +204,20 @@ impl Injector<f32> for Expression {
         }
     }
 }
+impl Injector<VarName> for Expression {
+    fn get_inner_mut(&mut self) -> Vec<&mut VarName> {
+        match self {
+            Expression::var(var) => [var].into(),
+            _ => default(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&VarName> {
+        match self {
+            Expression::var(var) => [var].into(),
+            _ => default(),
+        }
+    }
+}
 
 impl Injector<HexColor> for Expression {
     fn get_inner_mut<'a>(&'a mut self) -> Vec<&'a mut HexColor> {

@@ -497,6 +497,27 @@ impl DataView for Trigger {
     fn replace_options() -> Vec<Self> {
         Self::iter().collect()
     }
+    fn view_children(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        match self {
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {
+                ViewResponse::default()
+            }
+            Trigger::ChangeStat(var) => var.view(view_ctx, context, ui),
+        }
+    }
+    fn view_children_mut(
+        &mut self,
+        view_ctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        match self {
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {
+                ViewResponse::default()
+            }
+            Trigger::ChangeStat(var) => var.view_mut(view_ctx, context, ui),
+        }
+    }
 }
 
 impl DataView for Expression {
@@ -509,6 +530,7 @@ impl DataView for Expression {
     fn move_inner(&mut self, source: &mut Self) {
         <Expression as Injector<Expression>>::inject_inner(self, source);
         <Expression as Injector<f32>>::inject_inner(self, source);
+        <Expression as Injector<VarName>>::inject_inner(self, source);
     }
     fn view_children_mut(
         &mut self,
@@ -519,6 +541,7 @@ impl DataView for Expression {
         let mut view_resp = ViewResponse::default();
         view_resp.merge(view_children_mut::<_, Self>(self, view_ctx, context, ui));
         view_resp.changed |= show_children_mut::<_, f32>(self, context, ui);
+        view_resp.changed |= show_children_mut::<_, VarName>(self, context, ui);
         view_resp.changed |= show_children_mut::<_, HexColor>(self, context, ui);
         view_resp
     }

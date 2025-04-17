@@ -331,3 +331,12 @@ impl Show for Material {
         self.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }
+
+impl Show for VarName {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.view(ViewContext::new(ui), context, ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.view_mut(ViewContext::new(ui), context, ui).changed
+    }
+}

@@ -120,6 +120,8 @@ struct UnitStats {
 }
 
 struct FusionStats {
+    pub pwr: i32,
+    pub hp: i32,
     pub dmg: i32,
 }
 
