@@ -8,7 +8,6 @@ pub struct Button {
     icon: Option<Icon>,
     min_width: f32,
     enabled: bool,
-    active: bool,
     original_style: Option<egui::Style>,
 }
 
@@ -18,7 +17,6 @@ impl Default for Button {
             name: Default::default(),
             title: Default::default(),
             enabled: true,
-            active: false,
             icon: None,
             min_width: 0.0,
             original_style: None,

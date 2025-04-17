@@ -1,6 +1,6 @@
 use std::i32;
 
-use rand::seq::SliceRandom;
+use rand::seq::{IteratorRandom, SliceRandom};
 
 use super::*;
 
@@ -21,12 +21,12 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let unit = sc.unit;
     let price = sc.price;
     m.g -= price;
-    let unit = Unit::get(ctx, unit)
+    let unit = NUnit::get(ctx, unit)
         .to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
         .with_children(ctx)
         .with_components(ctx)
         .take();
-    let mut house = unit.find_parent::<House>(ctx)?;
+    let mut house = unit.find_parent::<NHouse>(ctx)?;
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);
     let houses = &mut team.houses;
@@ -65,7 +65,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     }
     m.g -= cost;
     let sc = m.shop_case_load(ctx)?;
-    let mut core = Core::load(ctx);
+    let mut core = NCore::load(ctx);
     let units = core.all_units(ctx)?;
     for c in sc {
         c.sold = false;
@@ -83,7 +83,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = Fusion::new(ctx, team.id(), i32::MAX, default(), default());
+    let fusion = NFusion::new(ctx, team.id(), i32::MAX, default(), default());
     team.fusions.push(fusion);
     for (i, fusion) in team
         .fusions
@@ -101,7 +101,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
 fn match_edit_fusion(ctx: &ReducerContext, fusion: TNode) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
-    let fusion: Fusion = fusion.to_node()?;
+    let fusion: NFusion = fusion.to_node()?;
     let team = m.team_load(ctx)?;
     for f in team.fusions_load(ctx)? {
         if f.slot == fusion.slot {
@@ -119,16 +119,18 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     if let Ok(m) = player.active_match_load(ctx) {
         m.delete_recursive(ctx);
     }
-    let mut core = Core::load(ctx);
+    let mut core = NCore::load(ctx);
     let units = core.all_units(ctx)?;
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
-    let mut m = Match::new(ctx, player.id, gs.match_g.initial);
-    let team = Team::new(ctx, m.id, "New Team".into());
+    let mut m = NMatch::default();
+    m.parent = player.id;
+    m.g = gs.match_g.initial;
+    let team = NTeam::new(ctx, m.id, player.id);
     m.team = Some(team);
     m.shop_case = (0..3)
         .map(|_| {
-            ShopCaseUnit::new(
+            NShopCaseUnit::new(
                 ctx,
                 m.id,
                 price,
@@ -138,6 +140,76 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         })
         .collect_vec();
     player.active_match = Some(m);
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    m.round += 1;
+    let mut arena = NArena::get(ctx, ID_ARENA).to_e_s("Failed to get Arena")?;
+    let _ = arena.floor_pools_load(ctx);
+    m.team_load(ctx)?;
+    let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == m.floor) {
+        pool.id
+    } else {
+        let new_pool = NFloorPool::new(ctx, arena.id, m.floor);
+        let id = new_pool.id;
+        arena.floor_pools.push(new_pool);
+        id
+    };
+    if let Some(team) = ctx
+        .db
+        .nodes_world()
+        .parent()
+        .filter(pool_id)
+        .choose(&mut ctx.rng())
+    {
+        NBattle::new(
+            ctx,
+            m.id,
+            m.team_load(ctx)?.id,
+            team.id,
+            ctx.timestamp.to_micros_since_unix_epoch() as u64,
+            default(),
+            None,
+        );
+    } else {
+        let _ = arena.floor_bosses_load(ctx);
+        arena
+            .floor_bosses
+            .push(NFloorBoss::new(ctx, arena.id, m.floor));
+    }
+    m.team_load(ctx)?.clone(ctx, pool_id);
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_submit_battle_result(
+    ctx: &ReducerContext,
+    result: bool,
+    log: Vec<String>,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let battle = m.battles_load(ctx)?.last_mut().unwrap();
+    if battle.result.is_some() {
+        return Err("Battle result already submitted".into());
+    }
+    battle.result = Some(result);
+    battle.log = log;
+    m.round += 1;
+    if result {
+        m.floor += 1;
+    } else {
+        m.lives -= 1;
+    }
+    if m.lives <= 0 {
+        m.active = false;
+    }
     player.save(ctx);
     Ok(())
 }

@@ -14,7 +14,7 @@ impl RepresentationPlugin {
         let mut open_window = None;
         let mut close_window = None;
         let up = unit_pixels();
-        for (unit, t) in world.query::<(&Unit, &GlobalTransform)>().iter(world) {
+        for (unit, t) in world.query::<(&NUnit, &GlobalTransform)>().iter(world) {
             let pos = world_to_screen(t.translation(), world).to_pos2();
             if !ctx.screen_rect().contains(pos) {
                 continue;
@@ -51,7 +51,7 @@ impl RepresentationPlugin {
         }
         if let Some((entity, name)) = open_window {
             Window::new(name, move |ui, world| {
-                if let Some(unit) = world.get::<Unit>(entity) {
+                if let Some(unit) = world.get::<NUnit>(entity) {
                     unit.view(
                         ViewContext::new(ui),
                         Context::new(world).set_owner(unit.entity.unwrap()),
@@ -108,7 +108,7 @@ impl RepresentationPlugin {
     }
 }
 
-impl Representation {
+impl NRepresentation {
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         RepresentationPlugin::paint_rect(rect, context, &self.material, ui)
     }

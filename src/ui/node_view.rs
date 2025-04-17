@@ -28,46 +28,50 @@ fn colored_name(node: &impl Node, name: &str, context: &Context, ui: &mut Ui) ->
         .button(ui)
 }
 
-impl NodeView for Core {}
-impl NodeView for Players {}
-impl NodeView for Incubator {}
-impl NodeView for Player {}
-impl NodeView for PlayerData {}
-impl NodeView for PlayerIdentity {}
-impl NodeView for House {
+impl NodeView for NCore {}
+impl NodeView for NPlayers {}
+impl NodeView for NIncubator {}
+impl NodeView for NPlayer {}
+impl NodeView for NPlayerData {}
+impl NodeView for NPlayerIdentity {}
+impl NodeView for NHouse {
     fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
         colored_name(self, &self.house_name, context, ui)
     }
 }
-impl NodeView for HouseColor {
+impl NodeView for NHouseColor {
     fn node_title(&self, _context: &Context, ui: &mut Ui) -> Response {
         format!("{}{}", self.cstr(), self.color.cstr()).button(ui)
     }
 }
-impl NodeView for AbilityMagic {
+impl NodeView for NAbilityMagic {
     fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
         colored_name(self, &self.ability_name, context, ui)
     }
 }
-impl NodeView for AbilityDescription {}
-impl NodeView for AbilityEffect {}
-impl NodeView for StatusMagic {
+impl NodeView for NAbilityDescription {}
+impl NodeView for NAbilityEffect {}
+impl NodeView for NStatusMagic {
     fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
         colored_name(self, &self.status_name, context, ui)
     }
 }
-impl NodeView for StatusDescription {}
-impl NodeView for Team {}
-impl NodeView for Match {}
-impl NodeView for ShopCaseUnit {}
-impl NodeView for Fusion {}
-impl NodeView for Unit {
+impl NodeView for NStatusDescription {}
+impl NodeView for NTeam {}
+impl NodeView for NMatch {}
+impl NodeView for NShopCaseUnit {}
+impl NodeView for NFusion {}
+impl NodeView for NUnit {
     fn node_title(&self, context: &Context, ui: &mut Ui) -> Response {
         colored_name(self, &self.unit_name, context, ui)
     }
 }
-impl NodeView for UnitDescription {}
-impl NodeView for UnitStats {}
-impl NodeView for FusionStats {}
-impl NodeView for Behavior {}
-impl NodeView for Representation {}
+impl NodeView for NUnitDescription {}
+impl NodeView for NUnitStats {}
+impl NodeView for NFusionStats {}
+impl NodeView for NBehavior {}
+impl NodeView for NRepresentation {}
+impl NodeView for NArena {}
+impl NodeView for NFloorPool {}
+impl NodeView for NFloorBoss {}
+impl NodeView for NBattle {}

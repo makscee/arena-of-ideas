@@ -453,7 +453,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         ui.menu_button("publish to incubator", |ui| {
                             if ui
                                 .menu_button("full", |ui| {
-                                    self.view(ViewContext::new(ui), context, ui);
+                                    ScrollArea::both().show(ui, |ui| {
+                                        self.view(ViewContext::new(ui), context, ui);
+                                    });
                                 })
                                 .response
                                 .clicked()

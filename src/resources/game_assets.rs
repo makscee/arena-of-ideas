@@ -6,16 +6,16 @@ use spacetimedb_sats::serde::SerdeWrapper;
 
 use super::*;
 
-static UNIT_REP: OnceCell<Representation> = OnceCell::new();
-static STATUS_REP: OnceCell<Representation> = OnceCell::new();
+static UNIT_REP: OnceCell<NRepresentation> = OnceCell::new();
+static STATUS_REP: OnceCell<NRepresentation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
-pub fn unit_rep() -> &'static Representation {
+pub fn unit_rep() -> &'static NRepresentation {
     UNIT_REP.get().unwrap()
 }
-pub fn status_rep() -> &'static Representation {
+pub fn status_rep() -> &'static NRepresentation {
     STATUS_REP.get().unwrap()
 }
 pub fn animations() -> &'static HashMap<String, Anim> {
@@ -43,12 +43,12 @@ pub fn parse_content_tree() {
 
     let descriptions: Descriptions = ron::from_str(DESCRIPTIONS).unwrap();
     descriptions.set();
-    // let house = House {
+    // let house = NHouse {
     //     id: Some(10),
     //     parent: None,
     //     entity: None,
     //     house_name: "Wizards".into(),
-    //     color: Some(HouseColor {
+    //     color: Some(NHouseColor {
     //         id: Some(11),
     //         parent: Some(10),
     //         entity: None,
@@ -58,13 +58,13 @@ pub fn parse_content_tree() {
     //     status_ability: None,
     //     units: Vec::new(),
     // };
-    // let core = Core {
+    // let core = NCore {
     //     id: Some(1),
     //     parent: None,
     //     entity: None,
     //     houses: [house].to_vec(),
     // };
-    // let core = Core::from_dir(0, "core".into(), &ASSETS).unwrap();
+    // let core = NCore::from_dir(0, "core".into(), &ASSETS).unwrap();
     // dbg!(&core);
     // let dir = core.to_dir("core".into());
     // let dir = Dir::new("core", dir);
@@ -73,10 +73,10 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     UNIT_REP
-        .set(Representation::from_dir(0, "unit_rep".to_owned(), assets()).unwrap())
+        .set(NRepresentation::from_dir(0, "unit_rep".to_owned(), assets()).unwrap())
         .unwrap();
     STATUS_REP
-        .set(Representation::from_dir(0, "status_rep".to_owned(), assets()).unwrap())
+        .set(NRepresentation::from_dir(0, "status_rep".to_owned(), assets()).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
     for f in assets().get_dir("animation").unwrap().files() {
@@ -152,7 +152,7 @@ impl IncubatorData {
     }
     pub fn load() -> Self {
         let path = "./assets/ron/links/";
-        let nodes = read_to_string(path.to_owned() + "nodes.ron").unwrap(); 
+        let nodes = read_to_string(path.to_owned() + "nodes.ron").unwrap();
         let links = read_to_string(path.to_owned() + "links.ron").unwrap();
         let votes = read_to_string(path.to_owned() + "votes.ron").unwrap();
         Self {

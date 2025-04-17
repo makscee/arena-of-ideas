@@ -176,9 +176,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn id(&self) -> u64 {
                         self.id
                     }
-                    fn get_id(&self) -> Option<u64> {
-                        Some(self.id)
-                    }
                     fn set_id(&mut self, id: u64) {
                         self.id = id;
                     }

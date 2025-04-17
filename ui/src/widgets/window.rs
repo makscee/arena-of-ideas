@@ -1,4 +1,3 @@
-use bevy::log::debug;
 use bevy_egui::egui::ScrollArea;
 
 use super::*;

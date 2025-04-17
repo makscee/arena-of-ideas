@@ -12,11 +12,11 @@ impl StdbSyncPlugin {
     fn sync_assets() {
         info!("{}", "Start assets sync".blue());
         let global_settings = global_settings_local().clone();
-        let core = Core::from_dir(0, "core".into(), assets()).unwrap();
+        let core = NCore::from_dir(0, "core".into(), assets()).unwrap();
         let core = core.to_tnodes();
-        let incubator = Incubator::from_dir(0, "incubator".into(), assets()).unwrap();
+        let incubator = NIncubator::from_dir(0, "incubator".into(), assets()).unwrap();
         let incubator = incubator.to_tnodes();
-        let players = Players::from_dir(0, "players".into(), assets()).unwrap();
+        let players = NPlayers::from_dir(0, "players".into(), assets()).unwrap();
         let players = players.to_tnodes();
         let inc = IncubatorData::load();
         cn().reducers.on_sync_assets(|e, _, _, _, _, _, _, _| {

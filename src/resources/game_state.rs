@@ -70,7 +70,7 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Match(MatchPane::Shop));
                 let roster = tiles.insert_pane(Pane::Match(MatchPane::Roster));
-                let team = tiles.insert_pane(Pane::Match(MatchPane::Team));
+                let team = tiles.insert_pane(Pane::Match(MatchPane::NTeam));
                 let horizontal = tiles.insert_horizontal_tile([roster, shop].into());
                 let root = tiles.insert_vertical_tile([horizontal, team].into());
                 Tree::new(TREE_ID, root, tiles)
@@ -119,7 +119,7 @@ pub enum BattlePane {
 pub enum MatchPane {
     Shop,
     Roster,
-    Team,
+    NTeam,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -151,7 +151,7 @@ impl Pane {
             Pane::Match(pane) => match pane {
                 MatchPane::Shop => MatchPlugin::pane_shop(ui, world)?,
                 MatchPane::Roster => MatchPlugin::pane_roster(ui, world)?,
-                MatchPane::Team => MatchPlugin::pane_team(ui, world)?,
+                MatchPane::NTeam => MatchPlugin::pane_team(ui, world)?,
             },
             Pane::Roster => match cur_state(world) {
                 GameState::Match => MatchPlugin::pane_roster(ui, world)?,

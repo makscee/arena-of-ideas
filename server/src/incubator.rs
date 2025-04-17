@@ -191,7 +191,7 @@ impl TIncubatorVotes {
     fn key(owner: u64, from: u64, kind: NodeKind) -> String {
         format!("{owner}_{from}_{kind}")
     }
-    fn new(player: &Player, from: u64, to: u64, to_kind: NodeKind) -> Self {
+    fn new(player: &NPlayer, from: u64, to: u64, to_kind: NodeKind) -> Self {
         Self {
             key: Self::key(player.id, from, to_kind),
             owner: player.id,
@@ -200,7 +200,7 @@ impl TIncubatorVotes {
             to_kind: to_kind.to_string(),
         }
     }
-    fn vote(ctx: &ReducerContext, player: &Player, from: u64, to: u64) -> Result<(), String> {
+    fn vote(ctx: &ReducerContext, player: &NPlayer, from: u64, to: u64) -> Result<(), String> {
         let kind = TNode::find(ctx, to)
             .to_e_s_fn(|| format!("Vote failed: node#{to} not found"))?
             .kind

@@ -14,7 +14,6 @@ macro_schema::nodes!();
 
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
-    fn get_id(&self) -> Option<u64>;
     fn set_id(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);
     fn parent(&self) -> u64;
@@ -194,11 +193,11 @@ where
     }
 }
 
-impl Core {
+impl NCore {
     pub fn load(ctx: &ReducerContext) -> Self {
-        Core::get(ctx, ID_CORE).unwrap()
+        NCore::get(ctx, ID_CORE).unwrap()
     }
-    pub fn all_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut Unit>, String> {
+    pub fn all_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut NUnit>, String> {
         Ok(self
             .houses_load(ctx)?
             .into_iter()
@@ -207,14 +206,14 @@ impl Core {
             .collect_vec())
     }
 }
-impl Incubator {
+impl NIncubator {
     pub fn load(ctx: &ReducerContext) -> Self {
-        Incubator::get(ctx, ID_INCUBATOR).unwrap()
+        NIncubator::get(ctx, ID_INCUBATOR).unwrap()
     }
 }
 
-impl Match {
-    pub fn roster_units_load(&mut self, ctx: &ReducerContext) -> Result<Vec<&mut Unit>, String> {
+impl NMatch {
+    pub fn roster_units_load(&mut self, ctx: &ReducerContext) -> Result<Vec<&mut NUnit>, String> {
         Ok(self
             .team_load(ctx)?
             .houses_load(ctx)?

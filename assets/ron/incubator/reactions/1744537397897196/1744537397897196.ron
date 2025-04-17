@@ -1,3 +1,0 @@
-([
-    (trigger: BattleStart, actions: ([add_target(owner), apply_status])),
-])

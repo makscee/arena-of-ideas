@@ -2,8 +2,8 @@ use super::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct Battle {
-    pub left: Team,
-    pub right: Team,
+    pub left: NTeam,
+    pub right: NTeam,
 }
 #[derive(Debug)]
 pub struct BattleSimulation {
@@ -31,7 +31,7 @@ pub enum BattleAction {
     heal(Entity, Entity, i32),
     death(Entity),
     spawn(Entity),
-    apply_status(Entity, StatusMagic, i32, Color32),
+    apply_status(Entity, NStatusMagic, i32, Color32),
     send_event(Event),
     vfx(HashMap<VarName, VarValue>, String),
     wait(f32),
@@ -79,14 +79,14 @@ impl BattleAction {
                 );
                 let context = &Context::new(&battle.world);
                 let pwr = context
-                    .get_component::<Fusion>(*a)
+                    .get_component::<NFusion>(*a)
                     .unwrap()
                     .pwr_hp(context)
                     .unwrap()
                     .0;
                 let action_a = Self::damage(*a, *b, pwr);
                 let pwr = context
-                    .get_component::<Fusion>(*b)
+                    .get_component::<NFusion>(*b)
                     .unwrap()
                     .pwr_hp(context)
                     .unwrap()
@@ -133,10 +133,10 @@ impl BattleAction {
                             .take(),
                         pain,
                     );
-                    let dmg = battle.world.get::<FusionStats>(*b).unwrap().dmg + x;
+                    let dmg = battle.world.get::<NFusionStats>(*b).unwrap().dmg + x;
                     add_actions.push(Self::var_set(
                         *b,
-                        NodeKind::FusionStats,
+                        NodeKind::NFusionStats,
                         VarName::dmg,
                         dmg.into(),
                     ));
@@ -178,10 +178,10 @@ impl BattleAction {
                             .take(),
                         pain,
                     );
-                    let dmg = (battle.world.get::<FusionStats>(*b).unwrap().dmg - x).at_least(0);
+                    let dmg = (battle.world.get::<NFusionStats>(*b).unwrap().dmg - x).at_least(0);
                     add_actions.push(Self::var_set(
                         *b,
-                        NodeKind::FusionStats,
+                        NodeKind::NFusionStats,
                         VarName::dmg,
                         dmg.into(),
                     ));
@@ -273,7 +273,7 @@ impl BattleSimulation {
         battle.right.unpack(team_right, &mut world);
 
         for entity in world
-            .query_filtered::<Entity, With<House>>()
+            .query_filtered::<Entity, With<NHouse>>()
             .iter(&world)
             .collect_vec()
         {
@@ -283,7 +283,7 @@ impl BattleSimulation {
         }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::new(&world)
-                .children_components_recursive::<Fusion>(parent)
+                .children_components_recursive::<NFusion>(parent)
                 .into_iter()
                 .sorted_by_key(|s| s.slot)
                 .map(|n| n.entity())
@@ -327,7 +327,7 @@ impl BattleSimulation {
         }
         for entity in self
             .world
-            .query_filtered::<Entity, (With<Fusion>, Without<Corpse>)>()
+            .query_filtered::<Entity, (With<NFusion>, Without<Corpse>)>()
             .iter(&self.world)
             .collect_vec()
         {
@@ -359,11 +359,11 @@ impl BattleSimulation {
             .set_value(value)
             .take();
         let event = &Event::UpdateStat(var);
-        if let Some(fusion) = self.world.get::<Fusion>(entity) {
+        if let Some(fusion) = self.world.get::<NFusion>(entity) {
             fusion.react(event, &mut context).log();
         }
         for child in entity.get_children(&self.world) {
-            if let Some(reaction) = self.world.get::<Behavior>(child) {
+            if let Some(reaction) = self.world.get::<NBehavior>(child) {
                 let mut status_context = context.clone().set_owner(child).take();
                 if let Some(actions) = reaction.react(event, &status_context) {
                     match actions.process(&mut status_context) {
@@ -385,7 +385,7 @@ impl BattleSimulation {
         let mut battle_actions: VecDeque<BattleAction> = default();
         for f in self
             .world
-            .query_filtered::<&Fusion, Without<Corpse>>()
+            .query_filtered::<&NFusion, Without<Corpse>>()
             .iter(&self.world)
         {
             let mut context = Context::new_battle_simulation(self)
@@ -393,12 +393,12 @@ impl BattleSimulation {
                 .take();
             match f.react(&event, &mut context) {
                 Ok(a) => battle_actions.extend(a),
-                Err(e) => error!("Fusion event {event} failed: {e}"),
+                Err(e) => error!("NFusion event {event} failed: {e}"),
             }
         }
         for (r, s) in self
             .world
-            .query::<(&Behavior, &StatusMagic)>()
+            .query::<(&NBehavior, &NStatusMagic)>()
             .iter(&self.world)
         {
             let context = Context::new_battle_simulation(self)
@@ -413,9 +413,9 @@ impl BattleSimulation {
         }
         battle_actions
     }
-    fn apply_status(&mut self, target: Entity, status: StatusMagic, charges: i32, color: Color32) {
+    fn apply_status(&mut self, target: Entity, status: NStatusMagic, charges: i32, color: Color32) {
         for child in target.get_children(&self.world) {
-            if let Some(child_status) = self.world.get::<StatusMagic>(child) {
+            if let Some(child_status) = self.world.get::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
                     let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
                     let charges = state
@@ -456,7 +456,7 @@ impl BattleSimulation {
         let mut actions: VecDeque<BattleAction> = default();
         for (entity, stats, fusion) in self
             .world
-            .query_filtered::<(Entity, &FusionStats, &Fusion), Without<Corpse>>()
+            .query_filtered::<(Entity, &NFusionStats, &NFusion), Without<Corpse>>()
             .iter(&self.world)
         {
             if stats.dmg >= fusion.pwr_hp(&Context::new(&self.world)).unwrap().1 {

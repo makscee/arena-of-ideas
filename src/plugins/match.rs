@@ -3,14 +3,11 @@ use super::*;
 pub struct MatchPlugin;
 
 impl Plugin for MatchPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Match), Self::on_enter);
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 impl MatchPlugin {
-    fn on_enter(world: &mut World) {}
-    fn show_unit(unit: &Unit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
+    fn show_unit(unit: &NUnit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
         let d = unit.description_load(context)?;
         let context = &context.clone().set_owner(unit.entity()).take();
         if let Some(r) = d.representation_load(context) {
@@ -52,7 +49,7 @@ impl MatchPlugin {
                             }
                             slot_rect_button(ui, |rect, ui| {
                                 if !slot.sold {
-                                    if let Some(unit) = Unit::get_by_id(slot.unit, context) {
+                                    if let Some(unit) = NUnit::get_by_id(slot.unit, context) {
                                         if Self::show_unit(unit, rect, context, ui).is_none() {
                                             "Failed to show unit".cstr_c(RED).label(ui);
                                         }
@@ -87,7 +84,7 @@ impl MatchPlugin {
             .active_match_load(context)
             .to_e("Active match not found")?;
         let team = m.team_load(context).to_e("Team not found")?.entity();
-        Fusion::slots_editor(
+        NFusion::slots_editor(
             team,
             context,
             ui,

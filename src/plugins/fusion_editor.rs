@@ -8,17 +8,17 @@ impl Plugin for FusionEditorPlugin {
 
 #[derive(Resource)]
 struct FusionEditorData {
-    fusion: Fusion,
-    on_save: Box<dyn Fn(Fusion, &mut World) -> Result<(), ExpressionError> + Send + Sync>,
+    fusion: NFusion,
+    on_save: Box<dyn Fn(NFusion, &mut World) -> Result<(), ExpressionError> + Send + Sync>,
 }
 
 impl FusionEditorPlugin {
     pub fn edit_entity(
         entity: Entity,
         world: &mut World,
-        on_save: impl Fn(Fusion, &mut World) -> Result<(), ExpressionError> + Send + Sync + 'static,
+        on_save: impl Fn(NFusion, &mut World) -> Result<(), ExpressionError> + Send + Sync + 'static,
     ) -> Result<(), ExpressionError> {
-        let fusion = Fusion::pack(entity, &world.into()).to_e("Failed to pack Fusion")?;
+        let fusion = NFusion::pack(entity, &world.into()).to_e("Failed to pack Fusion")?;
         world.insert_resource(FusionEditorData {
             fusion,
             on_save: Box::new(on_save),

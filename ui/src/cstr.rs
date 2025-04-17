@@ -1,4 +1,4 @@
-use std::{cell::LazyCell, ops::Deref, str::FromStr, sync::Arc};
+use std::{ops::Deref, str::FromStr, sync::Arc};
 
 use bevy::{
     color::Color,
@@ -358,6 +358,11 @@ impl ToCstr for String {
 impl ToCstr for str {
     fn cstr(&self) -> Cstr {
         self.to_owned()
+    }
+}
+impl ToCstr for u8 {
+    fn cstr(&self) -> Cstr {
+        self.to_string()
     }
 }
 impl ToCstr for u32 {

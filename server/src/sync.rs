@@ -15,10 +15,10 @@ fn sync_assets(
     ctx.is_admin()?;
     global_settings.replace(ctx);
 
-    let core = Core::from_tnodes(ID_CORE, &core).to_e_s("Failed to parse Core")?;
-    let players = Players::from_tnodes(ID_PLAYERS, &players).to_e_s("Failed to parse Players")?;
+    let core = NCore::from_tnodes(ID_CORE, &core).to_e_s("Failed to parse NCore")?;
+    let players = NPlayers::from_tnodes(ID_PLAYERS, &players).to_e_s("Failed to parse Players")?;
     let incubator =
-        Incubator::from_tnodes(ID_INCUBATOR, &incubator).to_e_s("Failed to parse Incubator")?;
+        NIncubator::from_tnodes(ID_INCUBATOR, &incubator).to_e_s("Failed to parse Incubator")?;
     for n in ctx.db.nodes_world().iter() {
         ctx.db.nodes_world().delete(n);
     }
@@ -57,7 +57,7 @@ fn sync_assets(
 #[reducer]
 fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    if let Ok(houses) = Core::load(ctx).houses_load(ctx) {
+    if let Ok(houses) = NCore::load(ctx).houses_load(ctx) {
         for house in houses {
             house.delete_recursive(ctx);
         }
@@ -65,7 +65,7 @@ fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     for row in ctx.db.incubator_source().iter() {
         ctx.db.incubator_source().delete(row);
     }
-    for house in House::collect_children_of_id(ctx, ID_INCUBATOR) {
+    for house in NHouse::collect_children_of_id(ctx, ID_INCUBATOR) {
         house.fill_from_incubator(ctx).clone(ctx, ID_CORE);
     }
     Ok(())

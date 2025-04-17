@@ -67,13 +67,13 @@ impl LoginPlugin {
     fn on_subscribed() {
         OperationsPlugin::add(|world| {
             let identity = ConnectOption::get(world).identity;
-            let Some(identity_node) = PlayerIdentity::find_by_data(Some(identity.to_string()))
+            let Some(identity_node) = NPlayerIdentity::find_by_data(Some(identity.to_string()))
             else {
                 "Failed to find Player after login".notify_error(world);
                 return;
             };
             dbg!(&identity_node);
-            if let Some(player) = Player::load(identity_node.parent) {
+            if let Some(player) = NPlayer::load(identity_node.parent) {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();
                 cs.last_logged_in = Some((player.player_name.clone(), identity));

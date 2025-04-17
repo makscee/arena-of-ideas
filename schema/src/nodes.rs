@@ -1,134 +1,162 @@
 use super::*;
 
-struct Core {
-    pub houses: NodeChildren<House>,
+struct NCore {
+    pub houses: NodeChildren<NHouse>,
 }
 
-struct Players {
-    pub players: NodeChildren<Player>,
+struct NPlayers {
+    pub players: NodeChildren<NPlayer>,
 }
 
-struct Incubator {
-    pub houses: NodeChildren<House>,
-    pub house_colors: NodeChildren<HouseColor>,
-    pub units: NodeChildren<Unit>,
-    pub unit_descriptions: NodeChildren<UnitDescription>,
-    pub unit_stats: NodeChildren<UnitStats>,
-    pub abilities: NodeChildren<AbilityMagic>,
-    pub ability_descriptions: NodeChildren<AbilityDescription>,
-    pub ability_effects: NodeChildren<AbilityEffect>,
-    pub statuses: NodeChildren<StatusMagic>,
-    pub status_descriptions: NodeChildren<StatusDescription>,
-    pub representations: NodeChildren<Representation>,
-    pub reactions: NodeChildren<Behavior>,
+struct NIncubator {
+    pub houses: NodeChildren<NHouse>,
+    pub house_colors: NodeChildren<NHouseColor>,
+    pub units: NodeChildren<NUnit>,
+    pub unit_descriptions: NodeChildren<NUnitDescription>,
+    pub unit_stats: NodeChildren<NUnitStats>,
+    pub abilities: NodeChildren<NAbilityMagic>,
+    pub ability_descriptions: NodeChildren<NAbilityDescription>,
+    pub ability_effects: NodeChildren<NAbilityEffect>,
+    pub statuses: NodeChildren<NStatusMagic>,
+    pub status_descriptions: NodeChildren<NStatusDescription>,
+    pub representations: NodeChildren<NRepresentation>,
+    pub reactions: NodeChildren<NBehavior>,
 }
 
-struct Player {
+struct NArena {
+    pub floor_pools: NodeChildren<NFloorPool>,
+    pub floor_bosses: NodeChildren<NFloorBoss>,
+}
+
+struct NFloorPool {
+    pub floor: i32,
+    pub teams: NodeChildren<NTeam>,
+}
+
+struct NFloorBoss {
+    pub floor: i32,
+    pub team: NodeComponent<NTeam>,
+}
+
+struct NPlayer {
     pub player_name: String,
-    pub player_data: NodeComponent<PlayerData>,
-    pub identity: NodeComponent<PlayerIdentity>,
-    pub active_match: NodeComponent<Match>,
+    pub player_data: NodeComponent<NPlayerData>,
+    pub identity: NodeComponent<NPlayerIdentity>,
+    pub active_match: NodeComponent<NMatch>,
 }
 
-struct PlayerData {
+struct NPlayerData {
     pub pass_hash: Option<String>,
     pub online: bool,
     pub last_login: u64,
 }
 
-struct PlayerIdentity {
+struct NPlayerIdentity {
     pub data: Option<String>,
 }
 
-struct House {
+struct NHouse {
     pub house_name: String,
-    pub color: NodeComponent<HouseColor>,
-    pub ability_magic: NodeComponent<AbilityMagic>,
-    pub status_magic: NodeComponent<StatusMagic>,
-    pub units: NodeChildren<Unit>,
+    pub color: NodeComponent<NHouseColor>,
+    pub ability_magic: NodeComponent<NAbilityMagic>,
+    pub status_magic: NodeComponent<NStatusMagic>,
+    pub units: NodeChildren<NUnit>,
 }
 
-struct HouseColor {
+struct NHouseColor {
     pub color: HexColor,
 }
 
-struct AbilityMagic {
+struct NAbilityMagic {
     pub ability_name: String,
-    pub description: NodeComponent<AbilityDescription>,
+    pub description: NodeComponent<NAbilityDescription>,
 }
 
-struct AbilityDescription {
+struct NAbilityDescription {
     pub description: String,
-    pub effect: NodeComponent<AbilityEffect>,
+    pub effect: NodeComponent<NAbilityEffect>,
 }
 
-struct AbilityEffect {
+struct NAbilityEffect {
     pub actions: Actions,
 }
 
-struct StatusMagic {
+struct NStatusMagic {
     pub status_name: String,
-    pub description: NodeComponent<StatusDescription>,
-    pub representation: NodeComponent<Representation>,
+    pub description: NodeComponent<NStatusDescription>,
+    pub representation: NodeComponent<NRepresentation>,
 }
 
-struct StatusDescription {
+struct NStatusDescription {
     pub description: String,
-    pub behavior: NodeComponent<Behavior>,
+    pub behavior: NodeComponent<NBehavior>,
 }
 
-struct Team {
-    pub team_name: String,
-    pub houses: NodeChildren<House>,
-    pub fusions: NodeChildren<Fusion>,
+struct NTeam {
+    pub owner: u64,
+    pub houses: NodeChildren<NHouse>,
+    pub fusions: NodeChildren<NFusion>,
 }
 
-struct Match {
+struct NBattle {
+    pub team_left: u64,
+    pub team_right: u64,
+    pub ts: u64,
+    pub log: Vec<String>,
+    pub result: Option<bool>,
+}
+
+struct NMatch {
     pub g: i32,
-    pub shop_case: NodeChildren<ShopCaseUnit>,
-    pub team: NodeComponent<Team>,
+    pub floor: i32,
+    pub round: i32,
+    pub lives: i32,
+    pub active: bool,
+    pub shop_case: NodeChildren<NShopCaseUnit>,
+    pub team: NodeComponent<NTeam>,
+    pub battles: NodeChildren<NBattle>,
 }
 
-struct ShopCaseUnit {
+struct NShopCaseUnit {
     pub unit: u64,
     pub price: i32,
     pub sold: bool,
 }
 
-struct Fusion {
+struct NFusion {
     pub units: Vec<u64>,
     pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: i32,
-    pub stats: NodeComponent<FusionStats>,
+    pub stats: NodeComponent<NFusionStats>,
 }
 
-struct Unit {
+struct NUnit {
     pub unit_name: String,
-    pub description: NodeComponent<UnitDescription>,
-    pub stats: NodeComponent<UnitStats>,
+    pub description: NodeComponent<NUnitDescription>,
+    pub stats: NodeComponent<NUnitStats>,
 }
 
-struct UnitDescription {
+struct NUnitDescription {
     pub description: String,
-    pub representation: NodeComponent<Representation>,
-    pub behavior: NodeComponent<Behavior>,
+    pub representation: NodeComponent<NRepresentation>,
+    pub behavior: NodeComponent<NBehavior>,
 }
 
-struct UnitStats {
+struct NUnitStats {
     pub pwr: i32,
     pub hp: i32,
 }
 
-struct FusionStats {
+struct NFusionStats {
     pub pwr: i32,
     pub hp: i32,
     pub dmg: i32,
 }
 
-struct Behavior {
+struct NBehavior {
     pub reactions: Vec<Reaction>,
 }
 
-struct Representation {
+struct NRepresentation {
     pub material: Material,
 }

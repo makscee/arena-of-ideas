@@ -95,7 +95,7 @@ impl IncubatorPlugin {
     }
     fn init(world: &mut World) {
         let mut r = rm(world);
-        r.table_kind = NodeKind::House;
+        r.table_kind = NodeKind::NHouse;
         Self::compose_request(world);
     }
     fn compose_request(world: &mut World) {
@@ -105,7 +105,7 @@ impl IncubatorPlugin {
         }
     }
     fn compose_nodes(world: &mut World) -> Result<(), ExpressionError> {
-        let incubator = Incubator::load_recursive(ID_INCUBATOR).unwrap();
+        let incubator = NIncubator::load_recursive(ID_INCUBATOR).unwrap();
         let houses = incubator
             .houses
             .into_iter()
@@ -152,7 +152,7 @@ impl IncubatorPlugin {
     pub fn pane_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = rm(world);
         let kind = data.table_kind;
-        NodeKind::House.show_graph(CYAN, &mut data, ui);
+        NodeKind::NHouse.show_graph(CYAN, &mut data, ui);
         ui.vertical(|ui| {
             Self::new_node_btn(kind, ui, world);
             Table::new(kind.to_string(), |_| {
@@ -183,12 +183,12 @@ impl IncubatorPlugin {
             let (kind, nodes) = if let Some((kind, nodes)) = &mut d.new_node {
                 (kind, nodes)
             } else {
-                let kind = NodeKind::Unit;
+                let kind = NodeKind::NUnit;
                 d.new_node = Some((kind, [kind.default_tnode()].into()));
                 let node = d.new_node.as_mut().unwrap();
                 (&mut node.0, &mut node.1)
             };
-            if Selector::new("Kind").ui_iter(kind, Incubator::children_kinds().iter(), ui) {
+            if Selector::new("Kind").ui_iter(kind, NIncubator::children_kinds().iter(), ui) {
                 *nodes = [TNode {
                     id: 0,
                     parent: 0,

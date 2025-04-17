@@ -95,7 +95,7 @@ impl AnimAction {
             }
             AnimAction::spawn(material) => {
                 let entity = world.spawn_empty().id();
-                Representation {
+                NRepresentation {
                     material: *material.clone(),
                     ..default()
                 }

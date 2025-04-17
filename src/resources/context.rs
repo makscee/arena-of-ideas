@@ -364,7 +364,7 @@ impl ContextLayer<'_> {
                 if var.is_stat() {
                     if let Some(mut new_value) = value {
                         if let Some(units) = context
-                            .get_component::<Fusion>(*entity)
+                            .get_component::<NFusion>(*entity)
                             .and_then(|f| f.units(context).ok())
                         {
                             for unit in units {

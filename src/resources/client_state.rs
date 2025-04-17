@@ -15,15 +15,15 @@ impl PersistentData for ClientState {
 }
 
 impl ClientState {
-    pub fn get_battle_test_teams(&self) -> Option<(Team, Team)> {
+    pub fn get_battle_test_teams(&self) -> Option<(NTeam, NTeam)> {
         let left: Vec<TNode> = self.battle_test.0.iter().map(|n| n.into()).collect_vec();
         let right: Vec<TNode> = self.battle_test.1.iter().map(|n| n.into()).collect_vec();
         Some((
-            Team::from_tnodes(left.get(0)?.id, &left)?,
-            Team::from_tnodes(right.get(0)?.id, &right)?,
+            NTeam::from_tnodes(left.get(0)?.id, &left)?,
+            NTeam::from_tnodes(right.get(0)?.id, &right)?,
         ))
     }
-    pub fn set_battle_test_teams(&mut self, left: &Team, right: &Team) {
+    pub fn set_battle_test_teams(&mut self, left: &NTeam, right: &NTeam) {
         self.battle_test.0 = left.to_tnodes().into_iter().map(|n| n.into()).collect();
         self.battle_test.1 = right.to_tnodes().into_iter().map(|n| n.into()).collect();
     }

@@ -1,6 +1,6 @@
 use super::*;
 
-impl Fusion {
+impl NFusion {
     fn remove_unit(&mut self, id: u64) {
         let Some(ui) = self.units.iter().position(|u| *u == id) else {
             return;
@@ -30,32 +30,32 @@ impl Fusion {
         }
         Ok((pwr, hp))
     }
-    pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a Unit>, ExpressionError> {
+    pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
         let mut units = Vec::new();
         for id in &self.units {
             let unit = context
-                .get_component_by_id::<Unit>(*id)
-                .to_e_fn(|| format!("Failed to get Unit#{id}"))?;
+                .get_component_by_id::<NUnit>(*id)
+                .to_e_fn(|| format!("Failed to get NUnit#{id}"))?;
             units.push(unit);
         }
         Ok(units)
     }
-    pub fn get_unit<'a>(&self, ui: u8, context: &'a Context) -> Result<&'a Unit, ExpressionError> {
+    pub fn get_unit<'a>(&self, ui: u8, context: &'a Context) -> Result<&'a NUnit, ExpressionError> {
         self.units(context)?
             .get(ui as usize)
             .copied()
-            .to_e_fn(|| format!("Failed to find Unit as index {ui}"))
+            .to_e_fn(|| format!("Failed to find NUnit as index {ui}"))
     }
     pub fn get_behavior<'a>(
         &self,
         ui: u8,
         context: &'a Context,
-    ) -> Result<&'a Behavior, ExpressionError> {
+    ) -> Result<&'a NBehavior, ExpressionError> {
         self.get_unit(ui, context)?
             .description_load(context)
             .to_e("Failed to load UnitDescription")?
             .behavior_load(context)
-            .to_e("Failed to load Behavior")
+            .to_e("Failed to load NBehavior")
     }
     pub fn get_trigger<'a>(
         &self,
@@ -99,13 +99,13 @@ impl Fusion {
         let units = self.units(context)?;
         for unit in units {
             let unit = unit.entity();
-            let Some(rep) = context.get_component::<Representation>(unit) else {
+            let Some(rep) = context.get_component::<NRepresentation>(unit) else {
                 continue;
             };
             let context = context.clone().set_owner(unit).set_owner(entity).take();
             RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)?;
         }
-        if let Some(rep) = context.get_component::<Representation>(entity) {
+        if let Some(rep) = context.get_component::<NRepresentation>(entity) {
             RepresentationPlugin::paint_rect(
                 rect,
                 context.clone().set_owner(entity),
@@ -116,7 +116,7 @@ impl Fusion {
         Ok(())
     }
     pub fn find_by_slot(slot: i32, world: &mut World) -> Option<Self> {
-        world.query::<&Fusion>().iter(&world).find_map(|f| {
+        world.query::<&NFusion>().iter(&world).find_map(|f| {
             if f.slot == slot {
                 Some(f.clone())
             } else {
@@ -260,9 +260,9 @@ impl Fusion {
         &self,
         response: Response,
         context: &Context,
-    ) -> Result<Option<Fusion>, ExpressionError> {
-        let mut edited: Option<Fusion> = None;
-        let team = Team::get(
+    ) -> Result<Option<NFusion>, ExpressionError> {
+        let mut edited: Option<NFusion> = None;
+        let team = NTeam::get(
             context
                 .get_parent(self.entity())
                 .to_e("Fusion parent not found")?,
@@ -324,12 +324,12 @@ impl Fusion {
         context: &Context,
         ui: &mut Ui,
         on_empty: impl FnOnce(&mut Ui),
-        on_edited: impl FnOnce(Fusion),
+        on_edited: impl FnOnce(NFusion),
     ) -> Result<(), ExpressionError> {
         let team = context
-            .get_component::<Team>(team)
+            .get_component::<NTeam>(team)
             .to_e("Failed to get Team component")?;
-        let fusions: HashMap<usize, &Fusion> = HashMap::from_iter(
+        let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
             team.fusions_load(context)
                 .into_iter()
                 .map(|f| (f.slot as usize, f)),

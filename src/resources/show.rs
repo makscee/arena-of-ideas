@@ -1,3 +1,5 @@
+use serde::de::DeserializeOwned;
+
 use super::*;
 
 pub trait ShowPrefix {
@@ -14,6 +16,36 @@ impl ShowPrefix for Option<&str> {
 pub trait Show: StringData {
     fn show(&self, context: &Context, ui: &mut Ui);
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool;
+}
+
+impl<T> Show for Option<T>
+where
+    T: Show + Default + Serialize + DeserializeOwned,
+{
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        if let Some(v) = self.as_ref() {
+            v.show(context, ui);
+        } else {
+            "[tw none]".cstr().label(ui);
+        }
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        let mut is_some = self.is_some();
+        if Checkbox::new(&mut is_some, "").ui(ui).changed() {
+            if is_some {
+                *self = Some(default());
+            } else {
+                *self = None;
+            }
+            return true;
+        }
+        if let Some(v) = self.as_mut() {
+            v.show_mut(context, ui)
+        } else {
+            "[tw none".cstr().label(ui);
+            false
+        }
+    }
 }
 
 impl Show for VarValue {
@@ -51,7 +83,7 @@ impl Show for i32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         DragValue::new(self).ui(ui).changed()
     }
 }
@@ -91,6 +123,16 @@ impl Show for u32 {
             .changed()
     }
 }
+impl Show for u8 {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| DragValue::new(self).ui(ui))
+            .inner
+            .changed()
+    }
+}
 impl Show for bool {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
@@ -119,33 +161,6 @@ impl Show for String {
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Input::new("").ui_string(self, ui).changed()
-    }
-}
-impl Show for Option<String> {
-    fn show(&self, _: &Context, ui: &mut Ui) {
-        if let Some(s) = self {
-            s.cstr().label_w(ui);
-        } else {
-            "none"
-                .cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Small)
-                .label_w(ui);
-        }
-    }
-    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let mut checked = self.is_some();
-        if Checkbox::new(&mut checked, "").ui(ui).changed() {
-            changed = true;
-            if checked {
-                *self = Some(default());
-            } else {
-                *self = None;
-            }
-        }
-        if let Some(s) = self {
-            changed |= Input::new("").ui_string(s, ui).changed();
-        }
-        changed
     }
 }
 impl Show for Color {

@@ -6,12 +6,12 @@ use super::*;
 
 #[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let name = Player::validate_name(ctx, name)?;
-    let pass_hash = Some(Player::hash_pass(ctx, pass)?);
-    Player::clear_identity(ctx, &ctx.sender);
-    let mut player = Player::new(ctx, ID_PLAYERS, name);
-    player.player_data = Some(PlayerData::new(ctx, player.id, pass_hash, false, 0));
-    player.identity = Some(PlayerIdentity::new(
+    let name = NPlayer::validate_name(ctx, name)?;
+    let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
+    NPlayer::clear_identity(ctx, &ctx.sender);
+    let mut player = NPlayer::new(ctx, ID_PLAYERS, name);
+    player.player_data = Some(NPlayerData::new(ctx, player.id, pass_hash, false, 0));
+    player.identity = Some(NPlayerIdentity::new(
         ctx,
         player.id,
         Some(ctx.sender.to_string()),
@@ -21,7 +21,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut player = Player::find_by_data(ctx, name.clone()).to_e_s("Player not found")?;
+    let mut player = NPlayer::find_by_data(ctx, name.clone()).to_e_s("Player not found")?;
     debug!("{player:?}");
     if player.player_data_load(ctx)?.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
@@ -29,8 +29,8 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
     if !player.check_pass(pass) {
         Err("Wrong name or password".to_owned())
     } else {
-        Player::clear_identity(ctx, &ctx.sender);
-        player.identity = Some(PlayerIdentity::new(
+        NPlayer::clear_identity(ctx, &ctx.sender);
+        player.identity = Some(NPlayerIdentity::new(
             ctx,
             player.id,
             Some(ctx.sender.to_string()),
@@ -60,7 +60,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if !player.check_pass(old_pass) {
         return Err("Old password did not match".to_owned());
     }
-    player.player_data_mut().pass_hash = Some(Player::hash_pass(ctx, new_pass)?);
+    player.player_data_mut().pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
     player.save(ctx);
     Ok(())
 }
@@ -72,14 +72,14 @@ fn identity_disconnected(ctx: &ReducerContext) {
     }
 }
 
-impl Player {
+impl NPlayer {
     fn validate_name(ctx: &ReducerContext, name: String) -> Result<String, String> {
         let name = name.to_lowercase();
         if name.is_empty() {
             Err("Names must not be empty".to_string())
         } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
             Err(format!("Wrong character: {c}"))
-        } else if Player::find_by_data(ctx, name.clone()).is_some() {
+        } else if NPlayer::find_by_data(ctx, name.clone()).is_some() {
             Err(format!("Name is taken"))
         } else {
             Ok(name)
@@ -106,8 +106,8 @@ impl Player {
             Err(e) => Err(e.to_string()),
         }
     }
-    pub fn find_identity(ctx: &ReducerContext, identity: &Identity) -> Option<PlayerIdentity> {
-        PlayerIdentity::find_by_data(ctx, Some(identity.to_string()))
+    pub fn find_identity(ctx: &ReducerContext, identity: &Identity) -> Option<NPlayerIdentity> {
+        NPlayerIdentity::find_by_data(ctx, Some(identity.to_string()))
     }
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
         let data = self.player_data_load(ctx)?;
@@ -129,14 +129,14 @@ impl Player {
 }
 
 pub trait GetPlayer {
-    fn player(&self) -> Result<Player, String>;
+    fn player(&self) -> Result<NPlayer, String>;
 }
 
 impl GetPlayer for ReducerContext {
-    fn player(&self) -> Result<Player, String> {
+    fn player(&self) -> Result<NPlayer, String> {
         let identity =
-            Player::find_identity(self, &self.sender).to_e_s("PlayerIdentity not found")?;
+            NPlayer::find_identity(self, &self.sender).to_e_s("NPlayerIdentity not found")?;
         let id = identity.parent();
-        Player::get(self, id).to_e_s("Identity exists but Player does not")
+        NPlayer::get(self, id).to_e_s("Identity exists but Player does not")
     }
 }

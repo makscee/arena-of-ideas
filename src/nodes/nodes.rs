@@ -210,8 +210,8 @@ impl NodeKind {
         let vars = self.get_vars(entity, world);
         let mut emut = world.entity_mut(entity);
         match self {
-            NodeKind::Fusion => {
-                emut.insert(FusionStats::default());
+            NodeKind::NFusion => {
+                emut.insert(NFusionStats::default());
             }
             _ => {}
         }
@@ -224,7 +224,7 @@ impl NodeKind {
         };
         ns.init_vars(vars);
         match self {
-            NodeKind::House => {
+            NodeKind::NHouse => {
                 ns.init(VarName::visible, false.into());
             }
             _ => {}
@@ -233,7 +233,7 @@ impl NodeKind {
 
         let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {
-            NodeKind::Fusion => {
+            NodeKind::NFusion => {
                 unit_rep().clone().unpack(entity, world);
                 NodeState::from_world_mut(entity, world).unwrap().init_vars(
                     [
@@ -244,14 +244,14 @@ impl NodeKind {
                     .into(),
                 );
             }
-            NodeKind::StatusMagic => status_rep().clone().unpack(child(), world),
+            NodeKind::NStatusMagic => status_rep().clone().unpack(child(), world),
             _ => {}
         }
     }
 }
 
-impl Team {
-    pub fn roster_units_load<'a>(&'a self, context: &'a Context) -> Vec<&'a Unit> {
+impl NTeam {
+    pub fn roster_units_load<'a>(&'a self, context: &'a Context) -> Vec<&'a NUnit> {
         self.houses_load(context)
             .into_iter()
             .flat_map(|h| h.units_load(context))
@@ -259,10 +259,10 @@ impl Team {
     }
 }
 
-impl Unit {
-    pub fn to_house(self, context: &Context) -> Result<House, ExpressionError> {
+impl NUnit {
+    pub fn to_house(self, context: &Context) -> Result<NHouse, ExpressionError> {
         let mut house = self
-            .find_up::<House>(context)
+            .find_up::<NHouse>(context)
             .cloned()
             .to_e("House not found")?
             .with_components(context);
@@ -278,76 +278,76 @@ pub trait TableNodeView<T> {
 impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
         match kind {
-            NodeKind::House => self.column_cstr_opt_dyn("name", move |d, world| {
-                House::get_by_id(f(d), &world.into()).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
+            NodeKind::NHouse => self.column_cstr_opt_dyn("name", move |d, world| {
+                NHouse::get_by_id(f(d), &world.into()).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
             }),
-            NodeKind::HouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
-                HouseColor::get_by_id(f(d), &world.into()).map(|n| {
+            NodeKind::NHouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
+                NHouseColor::get_by_id(f(d), &world.into()).map(|n| {
                     let c = &n.color;
                     format!("[{c} {c}]")
                 })
             }),
-            NodeKind::AbilityMagic => self.column_cstr_opt_dyn("name", move |d, world| {
+            NodeKind::NAbilityMagic => self.column_cstr_opt_dyn("name", move |d, world| {
                 Some(
-                    AbilityMagic::get_by_id(f(d), &Context::new(world))?
+                    NAbilityMagic::get_by_id(f(d), &Context::new(world))?
                         .ability_name
                         .cstr_s(CstrStyle::Bold),
                 )
             }),
-            NodeKind::AbilityDescription => {
+            NodeKind::NAbilityDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
                     Some(
-                        AbilityDescription::get_by_id(f(d), &world.into())?
+                        NAbilityDescription::get_by_id(f(d), &world.into())?
                             .description
                             .cstr_s(CstrStyle::Bold),
                     )
                 })
             }
-            NodeKind::AbilityEffect => {
+            NodeKind::NAbilityEffect => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = AbilityEffect::get_by_id(f(d), &world.into()) {
+                        if let Some(n) = NAbilityEffect::get_by_id(f(d), &world.into()) {
                             n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
             }
-            NodeKind::StatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
+            NodeKind::NStatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
                 Some(
-                    StatusMagic::get_by_id(f(d), &world.into())?
+                    NStatusMagic::get_by_id(f(d), &world.into())?
                         .status_name
                         .cstr_s(CstrStyle::Bold),
                 )
             }),
-            NodeKind::StatusDescription => {
+            NodeKind::NStatusDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
                     Some(
-                        StatusDescription::get_by_id(f(d), &world.into())?
+                        NStatusDescription::get_by_id(f(d), &world.into())?
                             .description
                             .cstr_s(CstrStyle::Bold),
                     )
                 })
             }
-            NodeKind::Unit => self.column_cstr_opt_dyn("name", move |d, world| {
+            NodeKind::NUnit => self.column_cstr_opt_dyn("name", move |d, world| {
                 Some(
-                    Unit::get_by_id(f(d), &world.into())?
+                    NUnit::get_by_id(f(d), &world.into())?
                         .unit_name
                         .cstr_s(CstrStyle::Bold),
                 )
             }),
-            NodeKind::UnitDescription => {
+            NodeKind::NUnitDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
                     Some(
-                        UnitDescription::get_by_id(f(d), &world.into())?
+                        NUnitDescription::get_by_id(f(d), &world.into())?
                             .description
                             .cstr_s(CstrStyle::Bold),
                     )
                 })
             }
-            NodeKind::UnitStats => self
+            NodeKind::NUnitStats => self
                 .column_cstr_value_dyn(
                     "pwr",
                     move |d, world| {
-                        UnitStats::get_by_id(f(d), &world.into())
+                        NUnitStats::get_by_id(f(d), &world.into())
                             .map(|n| n.pwr.into())
                             .unwrap_or_default()
                     },
@@ -356,26 +356,26 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                 .column_cstr_value_dyn(
                     "hp",
                     move |d, world| {
-                        UnitStats::get_by_id(f(d), &world.into())
+                        NUnitStats::get_by_id(f(d), &world.into())
                             .map(|n| n.hp.into())
                             .unwrap_or_default()
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(RED),
                 ),
-            NodeKind::Behavior => {
+            NodeKind::NBehavior => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = Behavior::get_by_id(f(d), &world.into()) {
+                        if let Some(n) = NBehavior::get_by_id(f(d), &world.into()) {
                             n.view(ViewContext::new(ui), &default(), ui);
                         }
                     })
             }
-            NodeKind::Representation => self.row_height(100.0).column_dyn(
+            NodeKind::NRepresentation => self.row_height(100.0).column_dyn(
                 "view",
                 |_, _| default(),
                 move |d, _, ui, world| {
                     let context = &world.into();
-                    if let Some(d) = Representation::get_by_id(f(d), context) {
+                    if let Some(d) = NRepresentation::get_by_id(f(d), context) {
                         let size = ui.available_height();
                         let (rect, _) =
                             ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
@@ -391,8 +391,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     }
 }
 
-pub fn core<'a>(context: &'a Context) -> &'a Core {
-    Core::get_by_id(ID_CORE, context).unwrap()
+pub fn core<'a>(context: &'a Context) -> &'a NCore {
+    NCore::get_by_id(ID_CORE, context).unwrap()
 }
 
 pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {

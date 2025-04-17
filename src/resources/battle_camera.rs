@@ -65,7 +65,7 @@ impl BattleCamera {
 
         let fusions: HashSet<Entity> = HashSet::from_iter(
             bs.world
-                .query_filtered::<Entity, With<Fusion>>()
+                .query_filtered::<Entity, With<NFusion>>()
                 .iter(&bs.world),
         );
         let mut entities: VecDeque<Entity> = bs
@@ -87,14 +87,14 @@ impl BattleCamera {
                 let pos = cam.rect_pos(pos);
                 let rect = Rect::from_center_size(pos, cam.u().v2() * 2.0);
                 if fusions.contains(&entity) {
-                    let fusion = context.get_component::<Fusion>(entity).unwrap();
+                    let fusion = context.get_component::<NFusion>(entity).unwrap();
                     fusion.paint(rect, &context, ui).ui(ui);
                     if ui.rect_contains_pointer(rect) {
                         cursor_window(ui.ctx(), |ui| {
                             fusion.show_card(&context, ui).ui(ui);
                         });
                     }
-                } else if let Some(rep) = context.get_component::<Representation>(entity) {
+                } else if let Some(rep) = context.get_component::<NRepresentation>(entity) {
                     rep.pain_or_show_err(rect, &context, ui);
                 }
             }

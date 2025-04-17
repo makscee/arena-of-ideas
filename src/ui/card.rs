@@ -86,7 +86,7 @@ pub trait TagCard: Node {
     fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;
 }
 
-impl TagCard for Unit {
+impl TagCard for NUnit {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         Ok(TagWidget::new_name_value(
             context.get_string(VarName::unit_name)?,
@@ -124,7 +124,7 @@ impl TagCard for Unit {
         ))
     }
 }
-impl TagCard for House {
+impl TagCard for NHouse {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(TagWidget::new_name(&self.house_name, color).ui(ui))
@@ -152,7 +152,7 @@ impl TagCard for House {
         ))
     }
 }
-impl TagCard for AbilityMagic {
+impl TagCard for NAbilityMagic {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(TagWidget::new_name(&self.ability_name, color).ui(ui))
@@ -176,7 +176,7 @@ impl TagCard for AbilityMagic {
         ))
     }
 }
-impl TagCard for StatusMagic {
+impl TagCard for NStatusMagic {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(TagWidget::new_name(&self.status_name, color).ui(ui))
@@ -200,13 +200,13 @@ impl TagCard for StatusMagic {
         ))
     }
 }
-impl Fusion {
+impl NFusion {
     pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let units = self.units(context)?;
         let context = &context.clone().set_owner(self.entity()).take();
         let pwr = context.get_var(VarName::pwr)?;
         let hp = context.get_var(VarName::hp)?;
-        let statuses = context.children_components::<StatusMagic>(self.entity());
+        let statuses = context.children_components::<NStatusMagic>(self.entity());
 
         ui.horizontal(|ui| {
             TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);

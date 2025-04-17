@@ -6,10 +6,7 @@ mod stdb;
 mod ui;
 mod utils;
 
-use bevy::{
-    diagnostic::FrameTimeDiagnosticsPlugin, ecs::schedule::Condition, render::camera::ClearColor,
-    state::app::AppExtStates,
-};
+use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, state::app::AppExtStates};
 use clap::{command, Parser, ValueEnum};
 use include_dir::include_dir;
 use noisy_bevy::NoisyShaderPlugin;

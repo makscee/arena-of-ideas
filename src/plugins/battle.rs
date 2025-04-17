@@ -159,7 +159,7 @@ impl BattlePlugin {
             let mut edited = None;
             let mut add_fusion = false;
             let context = &teams_world.into();
-            Fusion::slots_editor(
+            NFusion::slots_editor(
                 team_entity,
                 context,
                 ui,
@@ -176,10 +176,10 @@ impl BattlePlugin {
             )
             .ui(ui);
             if add_fusion {
-                let team = Team::get(team_entity, context).unwrap();
+                let team = NTeam::get(team_entity, context).unwrap();
                 let slot = team.fusions_load(context).len() as i32;
                 let id = next_id();
-                Fusion {
+                NFusion {
                     id,
                     parent: team.id(),
                     entity: None,
@@ -200,7 +200,7 @@ impl BattlePlugin {
 
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
-                let updated_team = Team::pack(team_entity, &teams_world.into()).unwrap();
+                let updated_team = NTeam::pack(team_entity, &teams_world.into()).unwrap();
                 let team = if left {
                     &mut battle.left
                 } else {

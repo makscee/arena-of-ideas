@@ -38,6 +38,7 @@ pub use utils::*;
 pub const ID_CORE: u64 = 1;
 pub const ID_INCUBATOR: u64 = 2;
 pub const ID_PLAYERS: u64 = 3;
+pub const ID_ARENA: u64 = 4;
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;

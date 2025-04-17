@@ -30,7 +30,6 @@ pub enum VarName {
     dmg,
     data,
     player_name,
-    team_name,
     unit_name,
     house_name,
     ability_name,
@@ -50,6 +49,8 @@ pub enum VarName {
     g,
     price,
     unit,
+    floor,
+    round,
 }
 
 impl VarName {
