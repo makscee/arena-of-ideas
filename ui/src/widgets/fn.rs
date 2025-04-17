@@ -102,7 +102,7 @@ pub fn title(text: &str, ui: &mut Ui) {
 
 pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
     const WIDTH: f32 = 350.0;
-    cursor_window_frame(ctx, Frame::new(), WIDTH, content);
+    cursor_window_frame(ctx, Frame::popup(&ctx.style()), WIDTH, content);
 }
 pub fn cursor_window_frame(
     ctx: &egui::Context,

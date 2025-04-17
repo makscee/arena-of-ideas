@@ -3,6 +3,10 @@
         [
             color(color(HexColor("#ffffff"))),
             hollow(f32(2.0)),
+            feathering(f32(20.0)),
+            circle(one),
+            hollow(f32(1.0)),
+            feathering(f32(0.0)),
             circle(one),
             paint,
             hollow(zero),

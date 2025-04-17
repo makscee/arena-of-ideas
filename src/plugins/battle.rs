@@ -79,7 +79,7 @@ impl BattlePlugin {
             .to_e("No battle loaded")?;
 
         let t = data.t;
-        data.simulation.show_at(t, ui);
+        BattleCamera::show(&mut data.simulation, t, ui);
         world.insert_resource(data);
         Ok(())
     }

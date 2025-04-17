@@ -96,6 +96,10 @@ impl ActionImpl for Action {
             }
             Action::apply_status => {
                 let caster = context.get_caster()?;
+                let targets = context.collect_targets()?;
+                if targets.is_empty() {
+                    return Err("No targets".into());
+                }
                 let status = context
                     .find_parent_component::<StatusMagic>(caster)
                     .to_e_fn(|| format!("Failed to find StatusMagic of {caster}"))?;
@@ -115,7 +119,7 @@ impl ActionImpl for Action {
                     .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
                     .color
                     .c32();
-                let text = format!("gain [{} [b {name}]]", color.to_hex());
+                let text = format!("apply [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
                         (VarName::text, text.into()),
@@ -128,12 +132,9 @@ impl ActionImpl for Action {
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;
-                actions.push(BattleAction::apply_status(
-                    context.get_owner()?,
-                    status,
-                    1,
-                    color,
-                ));
+                for target in targets {
+                    actions.push(BattleAction::apply_status(target, status.clone(), 1, color));
+                }
             }
             Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
