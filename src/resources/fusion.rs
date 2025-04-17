@@ -24,7 +24,7 @@ impl Fusion {
         let mut pwr = 0;
         let mut hp = 0;
         for unit in self.units(context)? {
-            let stats = unit.description_err(context)?.stats_err(context)?;
+            let stats = unit.stats_err(context)?;
             pwr += stats.pwr;
             hp += stats.hp;
         }

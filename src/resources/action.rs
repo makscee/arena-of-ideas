@@ -75,7 +75,11 @@ impl ActionImpl for Action {
                     .to_e("AbilityEffect not found")?
                     .actions
                     .clone();
-                let color = context.get_color(VarName::color)?;
+                let color = context
+                    .find_parent_component::<HouseColor>(caster)
+                    .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
+                    .color
+                    .c32();
                 let text = format!("use ability [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -103,7 +107,11 @@ impl ActionImpl for Action {
                     .get_component::<Behavior>(entity)
                     .to_e("Behavior not found")?
                     .clone();
-                let color = context.get_color(VarName::color)?;
+                let color = context
+                    .find_parent_component::<HouseColor>(caster)
+                    .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
+                    .color
+                    .c32();
                 let text = format!("gain [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([

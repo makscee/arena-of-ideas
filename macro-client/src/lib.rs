@@ -524,7 +524,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.#component_fields = None;
                                 }
                                 view_resp.merge(child_resp);
-                            } else if let Some(mut d) = new_node_btn::<#component_types>(ui, context) {
+                            } else if let Some(mut d) = new_node_btn::<#component_types>(ui, view_ctx) {
                                 d.parent = self.id();
                                 view_resp.changed = true;
                                 self.#component_fields = Some(d);

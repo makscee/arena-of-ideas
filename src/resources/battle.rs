@@ -606,7 +606,9 @@ impl BattleSimulation {
                 );
                 if fusions.contains(&entity) {
                     let fusion = context.get_component::<Fusion>(entity).unwrap();
-                    fusion.paint(rect, &context, ui).log();
+                    fusion.paint(rect, &context, ui).ui(ui);
+                } else if let Some(rep) = context.get_component::<Representation>(entity) {
+                    rep.pain_or_show_err(rect, &context, ui);
                 }
             }
         }

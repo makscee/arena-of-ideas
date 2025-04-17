@@ -105,12 +105,12 @@ struct Fusion {
 struct Unit {
     pub unit_name: String,
     pub description: NodeComponent<UnitDescription>,
+    pub stats: NodeComponent<UnitStats>,
 }
 
 struct UnitDescription {
     pub description: String,
     pub representation: NodeComponent<Representation>,
-    pub stats: NodeComponent<UnitStats>,
     pub behavior: NodeComponent<Behavior>,
 }
 

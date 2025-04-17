@@ -425,16 +425,16 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
     result
 }
 
-pub fn new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
-    let resp = format!("add [b {}]", T::kind_s()).cstr().button(ui);
-    let mut result = None;
-    resp.bar_menu(|ui| {
-        if "empty".cstr().button(ui).clicked() {
-            result = Some(T::default());
-            ui.close_menu();
-        } else {
-            result = node_menu(ui, context);
-        }
-    });
-    result
+pub fn new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui, view_ctx: ViewContext) -> Option<T> {
+    if format!("add [b {}]", T::kind_s())
+        .cstr()
+        .button(ui)
+        .clicked()
+    {
+        let n = T::default();
+        view_ctx.merge_state(&n, ui).collapsed(false).save_state(ui);
+        Some(n)
+    } else {
+        None
+    }
 }
