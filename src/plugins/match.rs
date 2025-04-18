@@ -18,22 +18,25 @@ impl MatchPlugin {
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let context = &world.into();
-        let m = player(context)?
-            .active_match_load(context)
-            .to_e("Active match not found")?;
+        let m = player(context)?.active_match_err(context)?;
         let slots = m.shop_case_load(context);
         if slots.is_empty() {
             return Err("Shop case slots are empty".into());
         }
-        let slot_size = (ui.available_width() / (slots.len() as f32))
-            .at_most(ui.available_height())
-            .v2();
         let available_rect = ui.available_rect_before_wrap();
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 format!("g: [yellow [b {}]]", m.g).label(ui);
                 if "reroll".cstr().button(ui).clicked() {
                     cn().reducers.match_reroll().notify_op();
+                }
+                ui.add_space(20.0);
+                if "Start Battle"
+                    .cstr_s(CstrStyle::Heading2)
+                    .button(ui)
+                    .clicked()
+                {
+                    cn().reducers.match_start_battle();
                 }
                 ui.expand_to_include_y(available_rect.max.y);
             });
@@ -67,10 +70,8 @@ impl MatchPlugin {
     }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let context = &world.into();
-        let m = player(context)?
-            .active_match_load(context)
-            .to_e("Active match not found")?;
-        let team = m.team_load(context).to_e("Team not found")?;
+        let m = player(context)?.active_match_err(context)?;
+        let team = m.team_err(context)?;
         for house in team.houses_load(context) {
             house
                 .tag_card(TagCardContext::new().expanded(true), context, ui)
@@ -80,10 +81,8 @@ impl MatchPlugin {
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let context = &world.into();
-        let m = player(context)?
-            .active_match_load(context)
-            .to_e("Active match not found")?;
-        let team = m.team_load(context).to_e("Team not found")?.entity();
+        let m = player(context)?.active_match_err(context)?;
+        let team = m.team_err(context)?.entity();
         NFusion::slots_editor(
             team,
             context,
@@ -102,6 +101,25 @@ impl MatchPlugin {
             },
         )
         .ui(ui);
+        Ok(())
+    }
+    pub fn load_battle(world: &mut World) -> Result<(), ExpressionError> {
+        GameState::Battle.set_next(world);
+        let context = &Context::new(world);
+        let battles = player(context)?
+            .active_match_err(context)?
+            .battles_load(context);
+        if battles.is_empty() {
+            return Err("No battles in current match".into());
+        }
+        let battle = *battles.last().unwrap();
+        BattlePlugin::load_teams(
+            NTeam::load(battle.team_left)
+                .to_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?,
+            NTeam::load(battle.team_right)
+                .to_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?,
+            world,
+        );
         Ok(())
     }
 }

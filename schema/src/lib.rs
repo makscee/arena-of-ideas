@@ -40,6 +40,8 @@ pub const ID_INCUBATOR: u64 = 2;
 pub const ID_PLAYERS: u64 = 3;
 pub const ID_ARENA: u64 = 4;
 
+pub const NODE_CONTAINERS: [u64; 4] = [ID_CORE, ID_INCUBATOR, ID_PLAYERS, ID_ARENA];
+
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
     fn get_data(&self) -> String;

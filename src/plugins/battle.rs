@@ -53,14 +53,15 @@ impl BattleData {
 }
 
 impl BattlePlugin {
+    pub fn load_teams(left: NTeam, right: NTeam, world: &mut World) {
+        world.insert_resource(BattleData::load(Battle { left, right }));
+    }
     pub fn load_from_client_state(world: &mut World) {
-        let bd = if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
-            let battle = Battle { left, right };
-            BattleData::load(battle)
+        if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
+            Self::load_teams(left, right, world);
         } else {
-            BattleData::load(default())
+            Self::load_teams(default(), default(), world);
         };
-        world.insert_resource(bd);
     }
     fn reload(mut data: ResMut<BattleData>, mut reload: ResMut<ReloadData>) {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {

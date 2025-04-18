@@ -102,7 +102,7 @@ struct NBattle {
     pub team_left: u64,
     pub team_right: u64,
     pub ts: u64,
-    pub log: Vec<String>,
+    pub hash: u64,
     pub result: Option<bool>,
 }
 

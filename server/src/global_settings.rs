@@ -6,9 +6,23 @@ use super::*;
 pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
-    pub hero_speed: f32,
     pub team_slots: u8,
     pub match_g: MatchG,
+}
+
+impl Default for GlobalSettings {
+    fn default() -> Self {
+        Self {
+            always_zero: 0,
+            team_slots: 5,
+            match_g: MatchG {
+                unit_buy: 3,
+                unit_sell: 1,
+                reroll: 1,
+                initial: 10,
+            },
+        }
+    }
 }
 
 #[derive(SpacetimeType)]

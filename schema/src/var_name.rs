@@ -47,6 +47,7 @@ pub enum VarName {
     text,
     charges,
     g,
+    lives,
     price,
     unit,
     floor,

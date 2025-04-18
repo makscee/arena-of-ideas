@@ -47,7 +47,7 @@ fn main() {
     }
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
-        RunMode::Shop => GameState::Match,
+        RunMode::Shop => GameState::Shop,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
         RunMode::MigrationDownload => GameState::MigrationDownload,

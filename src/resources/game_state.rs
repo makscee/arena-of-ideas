@@ -11,7 +11,8 @@ pub enum GameState {
     Connect,
     Login,
     Register,
-    Match,
+    Shop,
+    Battle,
     FusionEditor,
     Incubator,
     TestScenariosLoad,
@@ -66,15 +67,23 @@ impl GameState {
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
             }
-            GameState::Match => {
+            GameState::Shop => {
                 let mut tiles = Tiles::default();
-                let shop = tiles.insert_pane(Pane::Match(MatchPane::Shop));
-                let roster = tiles.insert_pane(Pane::Match(MatchPane::Roster));
-                let team = tiles.insert_pane(Pane::Match(MatchPane::NTeam));
+                let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
+                let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
+                let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
                 let horizontal = tiles.insert_horizontal_tile([roster, shop].into());
                 let root = tiles.insert_vertical_tile([horizontal, team].into());
                 Tree::new(TREE_ID, root, tiles)
             }
+            GameState::Battle => Tree::new_vertical(
+                TREE_ID,
+                [
+                    Pane::Battle(BattlePane::View),
+                    Pane::Battle(BattlePane::Controls),
+                ]
+                .into(),
+            ),
             _ => Tree::empty(TREE_ID),
         }
     }
@@ -86,14 +95,13 @@ pub enum Pane {
     Login,
     Register,
     MainMenu,
-    Roster,
     Triggers,
     Actions,
     FusionResult,
 
     Incubator(IncubatorPane),
     Battle(BattlePane),
-    Match(MatchPane),
+    Shop(ShopPane),
 
     Admin,
     WorldInspector,
@@ -116,10 +124,10 @@ pub enum BattlePane {
     EditRightSlots,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum MatchPane {
+pub enum ShopPane {
     Shop,
     Roster,
-    NTeam,
+    Team,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -140,7 +148,7 @@ impl Pane {
                         .button(ui)
                         .clicked()
                     {
-                        GameState::Match.set_next(world);
+                        GameState::Shop.set_next(world);
                     }
                 });
             }
@@ -148,15 +156,10 @@ impl Pane {
             Pane::Register => LoginPlugin::pane_register(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
-            Pane::Match(pane) => match pane {
-                MatchPane::Shop => MatchPlugin::pane_shop(ui, world)?,
-                MatchPane::Roster => MatchPlugin::pane_roster(ui, world)?,
-                MatchPane::NTeam => MatchPlugin::pane_team(ui, world)?,
-            },
-            Pane::Roster => match cur_state(world) {
-                GameState::Match => MatchPlugin::pane_roster(ui, world)?,
-                GameState::FusionEditor => FusionEditorPlugin::pane_roster(ui, world)?,
-                _ => unreachable!(),
+            Pane::Shop(pane) => match pane {
+                ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
+                ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
+                ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },
             Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
             Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
@@ -198,7 +201,7 @@ const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::n
         [GameOption::Connect, GameOption::Login].into(),
     );
     m.insert(
-        GameState::Match,
+        GameState::Shop,
         [
             GameOption::Connect,
             GameOption::ForceLogin,

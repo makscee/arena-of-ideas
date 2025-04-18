@@ -43,7 +43,7 @@ impl StdbPlugin {
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
             d.nodes_queue.retain(|node| {
-                if node.id == ID_CORE || node.id == ID_INCUBATOR || node.id == ID_PLAYERS {
+                if NODE_CONTAINERS.contains(&node.id) {
                     let entity = world.spawn_empty().id();
                     Self::unpack_node(node, entity, world);
                     return false;
@@ -173,6 +173,17 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_start_battle(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|| {
+            op(|world| {
+                MatchPlugin::load_battle(world).notify(world);
+            });
+        });
+    });
+
     cn().reducers.on_incubator_vote(|e, _, _| {
         if !e.check_identity() {
             return;

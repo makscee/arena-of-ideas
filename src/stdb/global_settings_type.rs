@@ -10,7 +10,6 @@ use super::match_g_type::MatchG;
 #[sats(crate = __lib)]
 pub struct GlobalSettings {
     pub always_zero: u32,
-    pub hero_speed: f32,
     pub team_slots: u8,
     pub match_g: MatchG,
 }

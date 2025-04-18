@@ -1,7 +1,6 @@
 #![enable(implicit_some)]
 (
     always_zero: 0,
-    hero_speed: 10.0,
     team_slots: 5,
     match_g: (unit_buy: 3, unit_sell: 1, reroll: 1, initial: 10),
 )

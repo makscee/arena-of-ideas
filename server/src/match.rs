@@ -123,9 +123,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let units = core.all_units(ctx)?;
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
-    let mut m = NMatch::default();
-    m.parent = player.id;
-    m.g = gs.match_g.initial;
+    let mut m = NMatch::new(ctx, player.id, gs.match_g.initial, 0, 0, 3, true);
     let team = NTeam::new(ctx, m.id, player.id);
     m.team = Some(team);
     m.shop_case = (0..3)
@@ -188,11 +186,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_submit_battle_result(
-    ctx: &ReducerContext,
-    result: bool,
-    log: Vec<String>,
-) -> Result<(), String> {
+fn match_submit_battle_result(ctx: &ReducerContext, result: bool, hash: u64) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     let battle = m.battles_load(ctx)?.last_mut().unwrap();
@@ -200,7 +194,7 @@ fn match_submit_battle_result(
         return Err("Battle result already submitted".into());
     }
     battle.result = Some(result);
-    battle.log = log;
+    battle.hash = hash;
     m.round += 1;
     if result {
         m.floor += 1;

@@ -56,6 +56,7 @@ impl AdminCheck for &ReducerContext {
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
+    GlobalSettings::default().replace(ctx);
     NCore {
         id: ID_CORE,
         ..default()

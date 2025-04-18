@@ -33,6 +33,8 @@ pub mod match_g_type;
 pub mod match_insert_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
+pub mod match_start_battle_reducer;
+pub mod match_submit_battle_result_reducer;
 pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
@@ -95,6 +97,13 @@ pub use match_g_type::MatchG;
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
+pub use match_start_battle_reducer::{
+    match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
+};
+pub use match_submit_battle_result_reducer::{
+    match_submit_battle_result, set_flags_for_match_submit_battle_result,
+    MatchSubmitBattleResultCallbackId,
+};
 pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
@@ -153,6 +162,11 @@ pub enum Reducer {
     MatchSell {
         name: String,
     },
+    MatchStartBattle,
+    MatchSubmitBattleResult {
+        result: bool,
+        hash: u64,
+    },
     Register {
         name: String,
         pass: String,
@@ -196,6 +210,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
+            Reducer::MatchStartBattle => "match_start_battle",
+            Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
             Reducer::SyncAssets { .. } => "sync_assets",
@@ -288,6 +304,16 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "match_start_battle" => Ok(__sdk::parse_reducer_args::<
+                match_start_battle_reducer::MatchStartBattleArgs,
+            >("match_start_battle", &value.args)?
+            .into()),
+            "match_submit_battle_result" => {
+                Ok(__sdk::parse_reducer_args::<
+                    match_submit_battle_result_reducer::MatchSubmitBattleResultArgs,
+                >("match_submit_battle_result", &value.args)?
+                .into())
+            }
             "register" => Ok(__sdk::parse_reducer_args::<register_reducer::RegisterArgs>(
                 "register",
                 &value.args,
