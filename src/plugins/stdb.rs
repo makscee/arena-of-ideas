@@ -16,6 +16,7 @@ impl Plugin for StdbPlugin {
 #[derive(Resource, Default)]
 struct StdbData {
     nodes_queue: Vec<TNode>,
+    on_empty: Vec<Operation>,
 }
 
 pub enum StdbChange {
@@ -31,6 +32,15 @@ pub struct StdbEvent {
 }
 
 impl StdbPlugin {
+    pub fn empty_queue_callback(
+        world: &mut World,
+        operation: impl FnOnce(&mut World) + Send + Sync + 'static,
+    ) {
+        world
+            .resource_mut::<StdbData>()
+            .on_empty
+            .push(Box::new(operation));
+    }
     fn unpack_node(node: &TNode, entity: Entity, world: &mut World) {
         debug!("Unpack {}#{entity}", node.kind);
         node.unpack(entity, world);
@@ -42,6 +52,7 @@ impl StdbPlugin {
     }
     fn update(world: &mut World) {
         world.resource_scope(|world, mut d: Mut<StdbData>| {
+            let len = d.nodes_queue.len();
             d.nodes_queue.retain(|node| {
                 if NODE_CONTAINERS.contains(&node.id) {
                     let entity = world.spawn_empty().id();
@@ -51,7 +62,9 @@ impl StdbPlugin {
                 let mut cur_node = node.clone();
                 let mut id = node.id;
                 loop {
-                    let parent = cur_node.parent.get_node().unwrap();
+                    let Some(parent) = cur_node.parent.get_node() else {
+                        panic!("Parent of {cur_node:?} does not exist");
+                    };
                     if parent.kind.to_kind().is_component(cur_node.kind.to_kind()) {
                         cur_node = parent;
                         id = cur_node.id;
@@ -68,6 +81,15 @@ impl StdbPlugin {
                 Self::unpack_node(node, entity, world);
                 false
             });
+            if len > 0 && d.nodes_queue.len() == len {
+                debug!("Nodes queue stuck at {len}");
+            }
+            if len == 0 && !d.on_empty.is_empty() {
+                let v = std::mem::take(&mut d.on_empty);
+                for operation in v {
+                    operation(world);
+                }
+            }
         });
     }
 }
@@ -179,7 +201,9 @@ pub fn subscribe_reducers() {
         }
         e.event.on_success(|| {
             op(|world| {
-                MatchPlugin::load_battle(world).notify(world);
+                StdbPlugin::empty_queue_callback(world, |world| {
+                    MatchPlugin::load_battle(world).notify(world);
+                });
             });
         });
     });

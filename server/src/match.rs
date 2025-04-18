@@ -146,14 +146,16 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
 fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
+    let m_id = m.id;
     m.round += 1;
+    let floor = m.floor;
     let mut arena = NArena::get(ctx, ID_ARENA).to_e_s("Failed to get Arena")?;
     let _ = arena.floor_pools_load(ctx);
-    m.team_load(ctx)?;
-    let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == m.floor) {
+    let player_team = m.team_load(ctx)?.with_children(ctx).with_components(ctx);
+    let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {
         pool.id
     } else {
-        let new_pool = NFloorPool::new(ctx, arena.id, m.floor);
+        let new_pool = NFloorPool::new(ctx, arena.id, floor);
         let id = new_pool.id;
         arena.floor_pools.push(new_pool);
         id
@@ -167,8 +169,8 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     {
         NBattle::new(
             ctx,
-            m.id,
-            m.team_load(ctx)?.id,
+            m_id,
+            player_team.id,
             team.id,
             ctx.timestamp.to_micros_since_unix_epoch() as u64,
             default(),
@@ -176,11 +178,11 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         );
     } else {
         let _ = arena.floor_bosses_load(ctx);
-        arena
-            .floor_bosses
-            .push(NFloorBoss::new(ctx, arena.id, m.floor));
+        let floor_boss = NFloorBoss::new(ctx, arena.id, floor);
+        player_team.clone(ctx, floor_boss.id);
     }
-    m.team_load(ctx)?.clone(ctx, pool_id);
+    todo!("fusion cloning ids remap");
+    player_team.clone(ctx, pool_id);
     player.save(ctx);
     Ok(())
 }

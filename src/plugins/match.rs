@@ -9,7 +9,6 @@ impl Plugin for MatchPlugin {
 impl MatchPlugin {
     fn show_unit(unit: &NUnit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
         let d = unit.description_load(context)?;
-        let context = &context.clone().set_owner(unit.entity()).take();
         if let Some(r) = d.representation_load(context) {
             r.paint(rect, context, ui).ui(ui);
         }
@@ -31,12 +30,8 @@ impl MatchPlugin {
                     cn().reducers.match_reroll().notify_op();
                 }
                 ui.add_space(20.0);
-                if "Start Battle"
-                    .cstr_s(CstrStyle::Heading2)
-                    .button(ui)
-                    .clicked()
-                {
-                    cn().reducers.match_start_battle();
+                if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                    cn().reducers.match_start_battle().notify_op();
                 }
                 ui.expand_to_include_y(available_rect.max.y);
             });
@@ -47,20 +42,30 @@ impl MatchPlugin {
                     ui.with_layout(
                         Layout::bottom_up(Align::Center).with_cross_justify(true),
                         |ui| {
-                            if "buy".cstr().button(ui).clicked() {
+                            if "buy"
+                                .cstr()
+                                .as_button()
+                                .enabled(!slot.sold)
+                                .ui(ui)
+                                .clicked()
+                            {
                                 cn().reducers.match_buy(slot.id()).notify_op();
                             }
-                            slot_rect_button(ui, |rect, ui| {
-                                if !slot.sold {
-                                    if let Some(unit) = NUnit::get_by_id(slot.unit, context) {
+                            if !slot.sold {
+                                if let Some(unit) = NUnit::get_by_id(slot.unit, context) {
+                                    let context = &context.clone().set_owner(unit.entity()).take();
+                                    slot_rect_button(ui, |rect, ui| {
                                         if Self::show_unit(unit, rect, context, ui).is_none() {
                                             "Failed to show unit".cstr_c(RED).label(ui);
                                         }
-                                    } else {
-                                        "Core unit not found".cstr_c(RED).label(ui);
-                                    }
+                                    })
+                                    .on_hover_ui(|ui| {
+                                        unit.show_card(context, ui).ui(ui);
+                                    });
+                                } else {
+                                    "Core unit not found".cstr_c(RED).label(ui);
                                 }
-                            });
+                            }
                         },
                     );
                 }
@@ -113,13 +118,11 @@ impl MatchPlugin {
             return Err("No battles in current match".into());
         }
         let battle = *battles.last().unwrap();
-        BattlePlugin::load_teams(
-            NTeam::load(battle.team_left)
-                .to_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?,
-            NTeam::load(battle.team_right)
-                .to_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?,
-            world,
-        );
+        let left = NTeam::load_recursive(battle.team_left)
+            .to_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
+        let right = NTeam::load_recursive(battle.team_right)
+            .to_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
+        BattlePlugin::load_teams(left, right, world);
         Ok(())
     }
 }

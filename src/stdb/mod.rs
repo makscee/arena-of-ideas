@@ -5,6 +5,7 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_daily_update_reducer;
+pub mod admin_delete_node_recursive_reducer;
 pub mod battle_insert_reducer;
 pub mod battle_table;
 pub mod daily_update_reducer_reducer;
@@ -48,6 +49,10 @@ pub mod t_node_type;
 
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
+};
+pub use admin_delete_node_recursive_reducer::{
+    admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
+    AdminDeleteNodeRecursiveCallbackId,
 };
 pub use battle_insert_reducer::{
     battle_insert, set_flags_for_battle_insert, BattleInsertCallbackId,
@@ -124,6 +129,9 @@ pub use t_node_type::TNode;
 
 pub enum Reducer {
     AdminDailyUpdate,
+    AdminDeleteNodeRecursive {
+        id: u64,
+    },
     BattleInsert {
         team_left: Vec<String>,
         team_right: Vec<String>,
@@ -194,6 +202,7 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::AdminDailyUpdate => "admin_daily_update",
+            Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
             Reducer::BattleInsert { .. } => "battle_insert",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
@@ -226,6 +235,12 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?
             .into()),
+            "admin_delete_node_recursive" => {
+                Ok(__sdk::parse_reducer_args::<
+                    admin_delete_node_recursive_reducer::AdminDeleteNodeRecursiveArgs,
+                >("admin_delete_node_recursive", &value.args)?
+                .into())
+            }
             "battle_insert" => Ok(__sdk::parse_reducer_args::<
                 battle_insert_reducer::BattleInsertArgs,
             >("battle_insert", &value.args)?

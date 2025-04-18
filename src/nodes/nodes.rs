@@ -227,6 +227,9 @@ impl NodeKind {
             NodeKind::NHouse => {
                 ns.init(VarName::visible, false.into());
             }
+            NodeKind::NUnit => {
+                ns.init(VarName::dmg, 0.into());
+            }
             _ => {}
         };
         emut.insert((Transform::default(), Visibility::default()));

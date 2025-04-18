@@ -25,6 +25,45 @@ impl AdminPlugin {
             ui.data_mut(|w| w.insert_temp(id, e));
         }
 
+        fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
+            ui.horizontal(|ui| {
+                format!("#[tw {id}]").cstr().label(ui);
+                if let Some(node) = cn().db.nodes_world().id().find(&id) {
+                    ui.vertical(|ui| {
+                        ui.label(node.data);
+                        if "[red delete node]".cstr().button(ui).clicked() {
+                            Confirmation::new("Delete Node?")
+                                .cancel(|_| {})
+                                .accept(move |world| {
+                                    cn().reducers.admin_delete_node_recursive(id).notify(world);
+                                })
+                                .push(world);
+                        }
+                    });
+                }
+            });
+
+            for n in cn()
+                .db
+                .nodes_world()
+                .iter()
+                .filter(|n| n.parent == id)
+                .sorted_by_key(|n| n.id)
+            {
+                let title = n.kind;
+                CollapsingHeader::new(title).id_salt(n.id).show(ui, |ui| {
+                    show_node_with_children(n.id, ui, world);
+                });
+            }
+        }
+        if "Inspect Nodes".cstr().button(ui).clicked() {
+            Window::new("Nodes Inspector", |ui, world| {
+                show_node_with_children(0, ui, world);
+            })
+            .expand()
+            .push(world);
+        }
+
         if "Insert Match".cstr().button(ui).clicked() {
             cn().reducers.match_insert().unwrap();
         }
