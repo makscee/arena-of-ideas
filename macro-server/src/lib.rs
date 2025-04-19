@@ -185,28 +185,26 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn set_parent(&mut self, id: u64) {
                         self.parent = id;
                     }
-                    fn clone(&self, ctx: &ReducerContext, parent: u64) -> Self {
+                    fn clone_self(&self, ctx: &ReducerContext, parent: u64) -> Self {
                         let mut d = Self::new(
                             ctx, parent,
                             #(
                                 self.#all_data_fields.clone(),
                             )*
                         );
-                        if self.parent == ID_INCUBATOR {
-                            ctx.db.incubator_source().insert(TIncubatorSource {
-                                node_id: d.id,
-                                incubator_id: self.id,
-                            });
-                        }
-                        d.parent = parent;
+                        d
+                    }
+                    fn clone(&self, ctx: &ReducerContext, parent: u64, remap: &mut HashMap<u64, u64>) -> Self {
+                        let mut d = self.clone_self(ctx, parent);
+                        remap.insert(self.id, d.id);
                         #(
                             if let Some(n) = self.#component_fields.as_ref() {
-                                d.#component_fields = Some(n.clone(ctx, d.id));
+                                d.#component_fields = Some(n.clone(ctx, d.id, remap));
                             }
                         )*
                         #(
                             for n in &self.#child_fields {
-                                d.#child_fields.push(n.clone(ctx, d.id));
+                                d.#child_fields.push(n.clone(ctx, d.id, remap));
                             }
                         )*
                         d

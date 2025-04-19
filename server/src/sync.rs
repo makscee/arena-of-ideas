@@ -65,8 +65,17 @@ fn incubator_merge(ctx: &ReducerContext) -> Result<(), String> {
     for row in ctx.db.incubator_source().iter() {
         ctx.db.incubator_source().delete(row);
     }
+    let mut remap: HashMap<u64, u64> = default();
     for house in NHouse::collect_children_of_id(ctx, ID_INCUBATOR) {
-        house.fill_from_incubator(ctx).clone(ctx, ID_CORE);
+        house
+            .fill_from_incubator(ctx)
+            .clone(ctx, ID_CORE, &mut remap);
+    }
+    for (from, to) in remap {
+        ctx.db.incubator_source().insert(TIncubatorSource {
+            node_id: to,
+            incubator_id: from,
+        });
     }
     Ok(())
 }

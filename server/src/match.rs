@@ -31,10 +31,12 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let _ = team.houses_load(ctx);
     let houses = &mut team.houses;
     if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
-        unit.clone(ctx, h.id);
+        unit.clone(ctx, h.id, &mut default());
     } else {
-        let house = house.with_components(ctx).clone(ctx, team.id);
-        unit.clone(ctx, house.id);
+        let house = house
+            .with_components(ctx)
+            .clone(ctx, team.id, &mut default());
+        unit.clone(ctx, house.id, &mut default());
     }
     player.save(ctx);
     Ok(())
@@ -179,10 +181,9 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     } else {
         let _ = arena.floor_bosses_load(ctx);
         let floor_boss = NFloorBoss::new(ctx, arena.id, floor);
-        player_team.clone(ctx, floor_boss.id);
+        player_team.clone(ctx, floor_boss.id, &mut default());
     }
-    todo!("fusion cloning ids remap");
-    player_team.clone(ctx, pool_id);
+    player_team.clone_ids_remap(ctx, pool_id);
     player.save(ctx);
     Ok(())
 }
