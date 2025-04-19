@@ -1,4 +1,5 @@
 use bevy::app::FixedUpdate;
+use bevy_egui::egui::epaint::PathStroke;
 
 use super::*;
 
@@ -23,6 +24,7 @@ struct BattleData {
     battle: Battle,
     simulation: BattleSimulation,
     t: f32,
+    playback_speed: f32,
     playing: bool,
 }
 
@@ -48,6 +50,7 @@ impl BattleData {
             simulation,
             t: 0.0,
             playing: false,
+            playback_speed: 1.0,
         }
     }
 }
@@ -96,14 +99,123 @@ impl BattlePlugin {
             playing,
             team_left: _,
             team_right: _,
+            playback_speed,
         } = &mut data;
         if simulation.duration > 0.0 {
             Slider::new("ts")
                 .full_width()
                 .ui(t, 0.0..=simulation.duration, ui);
         }
+        let mut rect = ui.available_rect_before_wrap();
+        let btn_size = 30.0;
+        rect.set_height(btn_size);
+        fn triangle(rect: Rect, color: Color32, pointed_right: bool, ui: &mut Ui) {
+            ui.painter()
+                .add(egui::Shape::Path(PathShape::convex_polygon(
+                    if pointed_right {
+                        [rect.left_top(), rect.right_center(), rect.left_bottom()]
+                    } else {
+                        [rect.right_top(), rect.right_bottom(), rect.left_center()]
+                    }
+                    .into(),
+                    color,
+                    PathStroke::NONE,
+                )));
+        }
+        if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
+            .ui(ui, |color, rect, _, ui| {
+                if !*playing {
+                    triangle(rect, color, true, ui);
+                } else {
+                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                    ui.painter().line_segment(
+                        [left.center_top(), left.center_bottom()],
+                        color.stroke_w(10.0),
+                    );
+                    ui.painter().line_segment(
+                        [right.center_top(), right.center_bottom()],
+                        color.stroke_w(10.0),
+                    );
+                }
+            })
+            .clicked()
+        {
+            *playing = !*playing;
+        }
+        if RectButton::new_rect(Rect::from_center_size(
+            rect.center() + egui::vec2(btn_size * 2.0, 0.0),
+            btn_size.v2(),
+        ))
+        .ui(ui, |color, rect, _, ui| {
+            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+            triangle(left, color, true, ui);
+            triangle(right, color, true, ui);
+        })
+        .clicked()
+        {
+            *t = simulation.duration;
+        }
+        if RectButton::new_rect(Rect::from_center_size(
+            rect.center() - egui::vec2(btn_size * 2.0, 0.0),
+            btn_size.v2(),
+        ))
+        .ui(ui, |color, rect, _, ui| {
+            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+            triangle(left, color, false, ui);
+            triangle(right, color, false, ui);
+        })
+        .clicked()
+        {
+            *t -= 1.0;
+        }
+        ui.advance_cursor_after_rect(rect);
+        let rect = rect.translate(egui::vec2(0.0, rect.height()));
+        if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
+            .ui(ui, |color, _, _, ui| {
+                ui.horizontal_centered(|ui| playback_speed.cstr_c(color).label(ui));
+            })
+            .clicked()
+        {
+            *playback_speed = 1.0;
+        }
+        if RectButton::new_rect(Rect::from_center_size(
+            rect.center() + egui::vec2(btn_size * 2.0, 0.0),
+            btn_size.v2(),
+        ))
+        .ui(ui, |color, rect, _, ui| {
+            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+            triangle(left, color, true, ui);
+            triangle(right, color, true, ui);
+        })
+        .clicked()
+        {
+            *playback_speed = *playback_speed * 2.0;
+        }
+        if RectButton::new_rect(Rect::from_center_size(
+            rect.center() - egui::vec2(btn_size * 2.0, 0.0),
+            btn_size.v2(),
+        ))
+        .ui(ui, |color, rect, _, ui| {
+            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+            triangle(left, color, false, ui);
+            triangle(right, color, false, ui);
+        })
+        .clicked()
+        {
+            *playback_speed = *playback_speed * 0.5;
+        }
+        ui.advance_cursor_after_rect(rect);
+
         ui.horizontal(|ui| {
-            Checkbox::new(playing, "play").ui(ui);
             if "+1".cstr().button(ui).clicked() {
                 simulation.run();
             }
@@ -119,7 +231,7 @@ impl BattlePlugin {
             }
         });
         if *playing {
-            *t += gt().last_delta();
+            *t += gt().last_delta() * *playback_speed;
             *t = t.at_most(simulation.duration);
         }
         if *t >= simulation.duration && !simulation.ended() {
@@ -154,6 +266,7 @@ impl BattlePlugin {
                 simulation: _,
                 t: _,
                 playing: _,
+                playback_speed: _,
             } = data.as_mut();
             let mut changed = false;
             let team_entity = if left { *team_left } else { *team_right };
