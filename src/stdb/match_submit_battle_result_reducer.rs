@@ -7,6 +7,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchSubmitBattleResultArgs {
+    pub id: u64,
     pub result: bool,
     pub hash: u64,
 }
@@ -14,6 +15,7 @@ pub(super) struct MatchSubmitBattleResultArgs {
 impl From<MatchSubmitBattleResultArgs> for super::Reducer {
     fn from(args: MatchSubmitBattleResultArgs) -> Self {
         Self::MatchSubmitBattleResult {
+            id: args.id,
             result: args.result,
             hash: args.hash,
         }
@@ -36,7 +38,7 @@ pub trait match_submit_battle_result {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_submit_battle_result`] callbacks.
-    fn match_submit_battle_result(&self, result: bool, hash: u64) -> __sdk::Result<()>;
+    fn match_submit_battle_result(&self, id: u64, result: bool, hash: u64) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_submit_battle_result`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +48,7 @@ pub trait match_submit_battle_result {
     /// to cancel the callback.
     fn on_match_submit_battle_result(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &bool, &u64) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u64, &bool, &u64) + Send + 'static,
     ) -> MatchSubmitBattleResultCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_submit_battle_result`],
     /// causing it not to run in the future.
@@ -54,15 +56,15 @@ pub trait match_submit_battle_result {
 }
 
 impl match_submit_battle_result for super::RemoteReducers {
-    fn match_submit_battle_result(&self, result: bool, hash: u64) -> __sdk::Result<()> {
+    fn match_submit_battle_result(&self, id: u64, result: bool, hash: u64) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "match_submit_battle_result",
-            MatchSubmitBattleResultArgs { result, hash },
+            MatchSubmitBattleResultArgs { id, result, hash },
         )
     }
     fn on_match_submit_battle_result(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &bool, &u64) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &bool, &u64) + Send + 'static,
     ) -> MatchSubmitBattleResultCallbackId {
         MatchSubmitBattleResultCallbackId(self.imp.on_reducer(
             "match_submit_battle_result",
@@ -70,7 +72,7 @@ impl match_submit_battle_result for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchSubmitBattleResult { result, hash },
+                            reducer: super::Reducer::MatchSubmitBattleResult { id, result, hash },
                             ..
                         },
                     ..
@@ -78,7 +80,7 @@ impl match_submit_battle_result for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, result, hash)
+                callback(ctx, id, result, hash)
             }),
         ))
     }

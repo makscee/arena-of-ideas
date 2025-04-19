@@ -1,3 +1,5 @@
+use egui_tiles::Container;
+
 use super::*;
 
 #[derive(
@@ -13,6 +15,7 @@ pub enum GameState {
     Register,
     Shop,
     Battle,
+    MatchOver,
     FusionEditor,
     Incubator,
     TestScenariosLoad,
@@ -33,6 +36,7 @@ impl GameState {
             GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
             GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
+            GameState::MatchOver => Tree::new_tabs(TREE_ID, Pane::MatchOver.into()),
             GameState::Incubator => {
                 let mut tiles = Tiles::default();
                 let left = [
@@ -70,9 +74,15 @@ impl GameState {
             GameState::Shop => {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
+                let info = tiles.insert_pane(Pane::Shop(ShopPane::Info));
                 let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
                 let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
-                let horizontal = tiles.insert_horizontal_tile([roster, shop].into());
+                let horizontal = tiles.insert_horizontal_tile([roster, info, shop].into());
+                if let Tile::Container(h) = tiles.get_mut(horizontal).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(shop, 4.0);
+                    }
+                }
                 let root = tiles.insert_vertical_tile([horizontal, team].into());
                 Tree::new(TREE_ID, root, tiles)
             }
@@ -102,6 +112,7 @@ pub enum Pane {
     Incubator(IncubatorPane),
     Battle(BattlePane),
     Shop(ShopPane),
+    MatchOver,
 
     Admin,
     WorldInspector,
@@ -128,6 +139,7 @@ pub enum ShopPane {
     Shop,
     Roster,
     Team,
+    Info,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -156,8 +168,10 @@ impl Pane {
             Pane::Register => LoginPlugin::pane_register(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
+            Pane::MatchOver => MatchPlugin::pane_match_over(ui, world)?,
             Pane::Shop(pane) => match pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
+                ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },

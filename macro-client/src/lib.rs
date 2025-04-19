@@ -142,7 +142,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             if !self.#child_fields.is_empty() {
                                 self.#child_fields.iter().collect()
                             } else if let Some(entity) = self.entity {
-                                context.children_components::<#child_types>(entity)
+                                context.children_components::<#child_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
                             } else {
                                 default()
                             }

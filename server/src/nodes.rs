@@ -105,6 +105,7 @@ where
             .children(ctx)
             .into_iter()
             .filter_map(|id| Self::get(ctx, id))
+            .sorted_by_key(|n| n.id())
             .collect()
     }
     fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
@@ -235,6 +236,7 @@ impl NTeam {
                     *unit = *id;
                 }
             }
+            fusion.update_self(ctx);
         }
         new_team
     }

@@ -26,6 +26,7 @@ struct BattleData {
     t: f32,
     playback_speed: f32,
     playing: bool,
+    on_done: Option<Box<dyn Fn(u64, bool, u64) + Sync + Send>>,
 }
 
 #[derive(Resource, Default)]
@@ -51,20 +52,26 @@ impl BattleData {
             t: 0.0,
             playing: false,
             playback_speed: 1.0,
+            on_done: None,
         }
     }
 }
 
 impl BattlePlugin {
-    pub fn load_teams(left: NTeam, right: NTeam, world: &mut World) {
-        world.insert_resource(BattleData::load(Battle { left, right }));
+    pub fn load_teams(id: u64, left: NTeam, right: NTeam, world: &mut World) {
+        world.insert_resource(BattleData::load(Battle { left, right, id }));
     }
     pub fn load_from_client_state(world: &mut World) {
         if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
-            Self::load_teams(left, right, world);
+            Self::load_teams(0, left, right, world);
         } else {
-            Self::load_teams(default(), default(), world);
+            Self::load_teams(0, default(), default(), world);
         };
+    }
+    pub fn on_done_callback(f: impl Fn(u64, bool, u64) + Send + Sync + 'static, world: &mut World) {
+        if let Some(mut r) = world.get_resource_mut::<BattleData>() {
+            r.on_done = Some(Box::new(f));
+        }
     }
     fn reload(mut data: ResMut<BattleData>, mut reload: ResMut<ReloadData>) {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
@@ -93,13 +100,14 @@ impl BattlePlugin {
             .to_e("No battle loaded")?;
         let BattleData {
             teams_world: _,
-            battle: _,
+            battle,
             simulation,
             t,
             playing,
             team_left: _,
             team_right: _,
             playback_speed,
+            on_done,
         } = &mut data;
         if simulation.duration > 0.0 {
             Slider::new("ts")
@@ -152,7 +160,10 @@ impl BattlePlugin {
             let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
             let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
             triangle(left, color, true, ui);
-            triangle(right, color, true, ui);
+            ui.painter().line_segment(
+                [right.center_top(), right.center_bottom()],
+                color.stroke_w(6.0),
+            );
         })
         .clicked()
         {
@@ -166,76 +177,114 @@ impl BattlePlugin {
             let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
             let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
             let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(left, color, false, ui);
             triangle(right, color, false, ui);
+            ui.painter().line_segment(
+                [left.center_top(), left.center_bottom()],
+                color.stroke_w(6.0),
+            );
         })
         .clicked()
         {
             *t -= 1.0;
         }
         ui.advance_cursor_after_rect(rect);
-        let rect = rect.translate(egui::vec2(0.0, rect.height()));
-        if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
-            .ui(ui, |color, _, _, ui| {
-                ui.horizontal_centered(|ui| playback_speed.cstr_c(color).label(ui));
+
+        if *t >= simulation.duration && simulation.ended() {
+            let result = simulation.fusions_right.is_empty();
+            ui.vertical_centered_justified(|ui| {
+                if result {
+                    "Victory".cstr_cs(GREEN, CstrStyle::Bold)
+                } else {
+                    "Defeat".cstr_cs(RED, CstrStyle::Bold)
+                }
+                .label(ui);
+            });
+            ui.columns(2, |ui| {
+                ui[0].vertical_centered_justified(|ui| {
+                    ui.set_max_width(200.0);
+                    if "Replay".cstr().button(ui).clicked() {
+                        *t = 0.0;
+                    }
+                });
+                ui[1].vertical_centered_justified(|ui| {
+                    ui.set_max_width(200.0);
+                    if let Some(on_done) = on_done {
+                        if "Complete".cstr().button(ui).clicked() {
+                            let mut h = DefaultHasher::new();
+                            for a in &simulation.log.actions {
+                                a.hash(&mut h);
+                            }
+                            on_done(battle.id, result, h.finish());
+                        }
+                    }
+                });
+            })
+        } else {
+            let rect = rect.translate(egui::vec2(0.0, rect.height()));
+            if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
+                .ui(ui, |color, _, _, ui| {
+                    ui.horizontal_centered(|ui| playback_speed.cstr_c(color).label(ui));
+                })
+                .clicked()
+            {
+                *playback_speed = 1.0;
+            }
+            if RectButton::new_rect(Rect::from_center_size(
+                rect.center() + egui::vec2(btn_size * 2.0, 0.0),
+                btn_size.v2(),
+            ))
+            .ui(ui, |color, rect, _, ui| {
+                let rect =
+                    Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+                let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                triangle(left, color, true, ui);
+                triangle(right, color, true, ui);
             })
             .clicked()
-        {
-            *playback_speed = 1.0;
-        }
-        if RectButton::new_rect(Rect::from_center_size(
-            rect.center() + egui::vec2(btn_size * 2.0, 0.0),
-            btn_size.v2(),
-        ))
-        .ui(ui, |color, rect, _, ui| {
-            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(left, color, true, ui);
-            triangle(right, color, true, ui);
-        })
-        .clicked()
-        {
-            *playback_speed = *playback_speed * 2.0;
-        }
-        if RectButton::new_rect(Rect::from_center_size(
-            rect.center() - egui::vec2(btn_size * 2.0, 0.0),
-            btn_size.v2(),
-        ))
-        .ui(ui, |color, rect, _, ui| {
-            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(left, color, false, ui);
-            triangle(right, color, false, ui);
-        })
-        .clicked()
-        {
-            *playback_speed = *playback_speed * 0.5;
-        }
-        ui.advance_cursor_after_rect(rect);
+            {
+                *playback_speed = *playback_speed * 2.0;
+            }
+            if RectButton::new_rect(Rect::from_center_size(
+                rect.center() - egui::vec2(btn_size * 2.0, 0.0),
+                btn_size.v2(),
+            ))
+            .ui(ui, |color, rect, _, ui| {
+                let rect =
+                    Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
+                let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                triangle(left, color, false, ui);
+                triangle(right, color, false, ui);
+            })
+            .clicked()
+            {
+                *playback_speed = *playback_speed * 0.5;
+            }
+            ui.advance_cursor_after_rect(rect);
 
-        ui.horizontal(|ui| {
-            if "+1".cstr().button(ui).clicked() {
+            ui.horizontal(|ui| {
+                if "+1".cstr().button(ui).clicked() {
+                    simulation.run();
+                }
+                if "+10".cstr().button(ui).clicked() {
+                    for _ in 0..10 {
+                        simulation.run();
+                    }
+                }
+                if "+100".cstr().button(ui).clicked() {
+                    for _ in 0..100 {
+                        simulation.run();
+                    }
+                }
+            });
+            if *playing {
+                *t += gt().last_delta() * *playback_speed;
+                *t = t.at_most(simulation.duration);
+            }
+            if *t >= simulation.duration && !simulation.ended() {
                 simulation.run();
             }
-            if "+10".cstr().button(ui).clicked() {
-                for _ in 0..10 {
-                    simulation.run();
-                }
-            }
-            if "+100".cstr().button(ui).clicked() {
-                for _ in 0..100 {
-                    simulation.run();
-                }
-            }
-        });
-        if *playing {
-            *t += gt().last_delta() * *playback_speed;
-            *t = t.at_most(simulation.duration);
-        }
-        if *t >= simulation.duration && !simulation.ended() {
-            simulation.run();
         }
         world.insert_resource(data);
         Ok(())
@@ -267,6 +316,7 @@ impl BattlePlugin {
                 t: _,
                 playing: _,
                 playback_speed: _,
+                on_done: _,
             } = data.as_mut();
             let mut changed = false;
             let team_entity = if left { *team_left } else { *team_right };

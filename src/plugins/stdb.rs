@@ -202,7 +202,20 @@ pub fn subscribe_reducers() {
         e.event.on_success(|| {
             op(|world| {
                 StdbPlugin::empty_queue_callback(world, |world| {
-                    MatchPlugin::load_battle(world).notify(world);
+                    MatchPlugin::check_active(world).notify(world);
+                    MatchPlugin::check_battles(world).notify(world);
+                });
+            });
+        });
+    });
+    cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.on_success(|| {
+            op(|world| {
+                StdbPlugin::empty_queue_callback(world, |world| {
+                    GameState::Shop.set_next(world);
                 });
             });
         });

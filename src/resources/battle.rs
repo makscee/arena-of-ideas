@@ -2,6 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, Default)]
 pub struct Battle {
+    pub id: u64,
     pub left: NTeam,
     pub right: NTeam,
 }
@@ -35,6 +36,38 @@ pub enum BattleAction {
     send_event(Event),
     vfx(HashMap<VarName, VarValue>, String),
     wait(f32),
+}
+impl Hash for BattleAction {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            BattleAction::var_set(entity, kind, var, value) => {
+                entity.hash(state);
+                kind.hash(state);
+                var.hash(state);
+                value.hash(state);
+            }
+            BattleAction::strike(a, b) => {
+                a.hash(state);
+                b.hash(state);
+            }
+            BattleAction::damage(a, b, v) | BattleAction::heal(a, b, v) => {
+                a.hash(state);
+                b.hash(state);
+                v.hash(state);
+            }
+            BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
+            BattleAction::apply_status(a, status, c, _) => {
+                a.hash(state);
+                status.hash(state);
+                c.hash(state);
+            }
+            BattleAction::send_event(event) => event.hash(state),
+            _ => {
+                return;
+            }
+        }
+        core::mem::discriminant(self).hash(state);
+    }
 }
 impl ToCstr for BattleAction {
     fn cstr(&self) -> Cstr {

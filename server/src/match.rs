@@ -169,10 +169,11 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .filter(pool_id)
         .choose(&mut ctx.rng())
     {
+        let player_team_id = player_team.clone_ids_remap(ctx, pool_id).id;
         NBattle::new(
             ctx,
             m_id,
-            player_team.id,
+            player_team_id,
             team.id,
             ctx.timestamp.to_micros_since_unix_epoch() as u64,
             default(),
@@ -181,24 +182,32 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     } else {
         let _ = arena.floor_bosses_load(ctx);
         let floor_boss = NFloorBoss::new(ctx, arena.id, floor);
-        player_team.clone(ctx, floor_boss.id, &mut default());
+        player_team.clone_ids_remap(ctx, floor_boss.id);
+        player_team.clone_ids_remap(ctx, pool_id);
+        m.active = false;
     }
-    player_team.clone_ids_remap(ctx, pool_id);
     player.save(ctx);
     Ok(())
 }
 
 #[reducer]
-fn match_submit_battle_result(ctx: &ReducerContext, result: bool, hash: u64) -> Result<(), String> {
+fn match_submit_battle_result(
+    ctx: &ReducerContext,
+    id: u64,
+    result: bool,
+    hash: u64,
+) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     let battle = m.battles_load(ctx)?.last_mut().unwrap();
+    if battle.id != id {
+        return Err("Wrong Battle id".into());
+    }
     if battle.result.is_some() {
         return Err("Battle result already submitted".into());
     }
     battle.result = Some(result);
     battle.hash = hash;
-    m.round += 1;
     if result {
         m.floor += 1;
     } else {
@@ -207,6 +216,20 @@ fn match_submit_battle_result(ctx: &ReducerContext, result: bool, hash: u64) -> 
     if m.lives <= 0 {
         m.active = false;
     }
+    m.g += ctx.global_settings().match_g.initial;
+    match_reroll(ctx)?;
     player.save(ctx);
     Ok(())
+}
+
+#[reducer]
+fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    if m.active {
+        Err("Match is still active".into())
+    } else {
+        m.delete_recursive(ctx);
+        Ok(())
+    }
 }

@@ -1,12 +1,43 @@
+use bevy_egui::egui::Grid;
+use spacetimedb_sdk::DbContext;
+
 use super::*;
 
 pub struct MatchPlugin;
 
 impl Plugin for MatchPlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Shop), Self::on_enter);
+    }
 }
 
 impl MatchPlugin {
+    pub fn check_battles(world: &mut World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?.active_match_err(context)?;
+        if let Some(last) = m.battles_load(context).last() {
+            if last.result.is_none() {
+                MatchPlugin::load_battle(world).notify(world);
+            }
+        }
+        Ok(())
+    }
+    pub fn check_active(world: &mut World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?.active_match_err(context)?;
+        if !m.active {
+            GameState::MatchOver.set_next(world);
+        }
+        Ok(())
+    }
+    fn on_enter(world: &mut World) {
+        if let Err(e) = Self::check_active(world) {
+            e.cstr().notify_error(world);
+            GameState::Title.set_next(world);
+            return;
+        }
+        Self::check_battles(world).log();
+    }
     fn show_unit(unit: &NUnit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
         let d = unit.description_load(context)?;
         if let Some(r) = d.representation_load(context) {
@@ -73,6 +104,25 @@ impl MatchPlugin {
         });
         Ok(())
     }
+    pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?.active_match_err(context)?;
+        Grid::new("shop info").show(ui, |ui| {
+            "g".cstr().label(ui);
+            m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+            ui.end_row();
+            "lives".cstr().label(ui);
+            m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+            ui.end_row();
+            "floor".cstr().label(ui);
+            m.floor.cstr_s(CstrStyle::Bold).label(ui);
+            ui.end_row();
+            "round".cstr().label(ui);
+            m.round.cstr_s(CstrStyle::Bold).label(ui);
+            ui.end_row();
+        });
+        Ok(())
+    }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         let context = &world.into();
         let m = player(context)?.active_match_err(context)?;
@@ -108,6 +158,28 @@ impl MatchPlugin {
         .ui(ui);
         Ok(())
     }
+    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let context = &world.into();
+        let m = player(context)?.active_match_err(context)?;
+        ui.vertical_centered_justified(|ui| {
+            "Match Over".cstr_s(CstrStyle::Heading).label(ui);
+            if m.lives > 0 {
+                format!("You're the [yellow [b champion]] of [b {}] floor", m.floor)
+                    .cstr()
+                    .label(ui);
+            } else {
+                format!("Reached [b {}] floor", m.floor).cstr().label(ui);
+            }
+        });
+        ui.vertical_centered(|ui| {
+            if "Done".cstr().button(ui).clicked() {
+                cn().reducers.match_complete().notify(world);
+                GameState::Title.set_next(world);
+            }
+        });
+
+        Ok(())
+    }
     pub fn load_battle(world: &mut World) -> Result<(), ExpressionError> {
         GameState::Battle.set_next(world);
         let context = &Context::new(world);
@@ -122,7 +194,15 @@ impl MatchPlugin {
             .to_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
         let right = NTeam::load_recursive(battle.team_right)
             .to_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
-        BattlePlugin::load_teams(left, right, world);
+        BattlePlugin::load_teams(battle.id, left, right, world);
+        BattlePlugin::on_done_callback(
+            |id, result, hash| {
+                cn().reducers()
+                    .match_submit_battle_result(id, result, hash)
+                    .notify_error_op();
+            },
+            world,
+        );
         Ok(())
     }
 }

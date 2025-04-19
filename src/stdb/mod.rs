@@ -29,6 +29,7 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_buy_fusion_reducer;
 pub mod match_buy_reducer;
+pub mod match_complete_reducer;
 pub mod match_edit_fusion_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
@@ -95,6 +96,9 @@ pub use match_buy_fusion_reducer::{
     match_buy_fusion, set_flags_for_match_buy_fusion, MatchBuyFusionCallbackId,
 };
 pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
+pub use match_complete_reducer::{
+    match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
+};
 pub use match_edit_fusion_reducer::{
     match_edit_fusion, set_flags_for_match_edit_fusion, MatchEditFusionCallbackId,
 };
@@ -162,6 +166,7 @@ pub enum Reducer {
         id: u64,
     },
     MatchBuyFusion,
+    MatchComplete,
     MatchEditFusion {
         fusion: TNode,
     },
@@ -172,6 +177,7 @@ pub enum Reducer {
     },
     MatchStartBattle,
     MatchSubmitBattleResult {
+        id: u64,
         result: bool,
         hash: u64,
     },
@@ -215,6 +221,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Logout => "logout",
             Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchBuyFusion => "match_buy_fusion",
+            Reducer::MatchComplete => "match_complete",
             Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchReroll => "match_reroll",
@@ -293,6 +300,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_buy_fusion" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_reducer::MatchBuyFusionArgs,
             >("match_buy_fusion", &value.args)?
+            .into()),
+            "match_complete" => Ok(__sdk::parse_reducer_args::<
+                match_complete_reducer::MatchCompleteArgs,
+            >("match_complete", &value.args)?
             .into()),
             "match_edit_fusion" => Ok(__sdk::parse_reducer_args::<
                 match_edit_fusion_reducer::MatchEditFusionArgs,
