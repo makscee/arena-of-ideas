@@ -262,14 +262,14 @@ impl ContextSource<'_> {
     }
     pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::World(w) => get_children(entity, w),
-            ContextSource::BattleSimulation(bs) => get_children(entity, &bs.world),
+            ContextSource::World(w) => entity.get_children(*w),
+            ContextSource::BattleSimulation(bs) => entity.get_children(&bs.world),
         }
     }
     pub fn get_children_recursive(&self, entity: Entity) -> Vec<Entity> {
         match self {
-            ContextSource::World(w) => get_children_recursive(entity, w),
-            ContextSource::BattleSimulation(bs) => get_children_recursive(entity, &bs.world),
+            ContextSource::World(w) => entity.get_children_recursive(*w),
+            ContextSource::BattleSimulation(bs) => entity.get_children_recursive(&bs.world),
         }
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {

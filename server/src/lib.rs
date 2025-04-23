@@ -1,22 +1,19 @@
-mod battle;
 mod daily_updater;
 mod global_data;
 mod global_settings;
-mod incubator;
 mod inflating_number;
 mod r#match;
 mod nodes;
 mod nodes_table;
 mod player;
 mod sync;
+mod votes;
 
 use std::str::FromStr;
 
-use battle::*;
 use glam::vec2;
 use global_data::*;
 use global_settings::*;
-use incubator::*;
 use inflating_number::*;
 use itertools::Itertools;
 use log::{debug, error, info};
@@ -27,6 +24,7 @@ use r#match::*;
 use schema::*;
 use spacetimedb::{reducer, table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 use std::collections::{HashMap, HashSet};
+use votes::*;
 
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
@@ -59,11 +57,6 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalSettings::default().replace(ctx);
     NCore {
         id: ID_CORE,
-        ..default()
-    }
-    .insert_self(ctx);
-    NIncubator {
-        id: ID_INCUBATOR,
         ..default()
     }
     .insert_self(ctx);

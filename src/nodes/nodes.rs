@@ -21,17 +21,18 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);
-    fn parent(&self) -> u64;
-    fn set_parent(&mut self, id: u64);
+    fn owner(&self) -> u64;
+    fn set_owner(&mut self, owner: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
-    fn from_dir(parent: u64, path: String, dir: &Dir) -> Option<Self>;
+    fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>];
-    fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
-    fn to_tnodes(&self) -> Vec<TNode>;
+    fn pack_fill(&self, pn: &mut PackedNodes, link: u64);
+    fn pack(&self) -> PackedNodes;
+    fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn load_recursive(id: u64) -> Option<Self>;
-    fn pack(entity: Entity, context: &Context) -> Option<Self>;
-    fn unpack(self, entity: Entity, world: &mut World);
+    fn pack_entity(entity: Entity, context: &Context) -> Option<Self>;
+    fn unpack_entity(self, entity: Entity, world: &mut World);
     fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
         let r = world.get::<T>(entity);
         if r.is_some() {
@@ -61,7 +62,6 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     }
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
-    fn fill_from_incubator(self) -> Self;
     fn with_components(self, context: &Context) -> Self;
     fn egui_id(&self) -> Id {
         Id::new(self.id())
@@ -76,9 +76,6 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
     fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self>;
     fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self>;
     fn load(id: u64) -> Option<Self>;
-    fn load_by_parent(parent: u64) -> Option<Self>;
-    fn find_incubator_component<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<T>;
-    fn collect_incubator_children<T: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<T>;
 }
 impl<T> NodeExt for T
 where
@@ -87,9 +84,10 @@ where
     fn to_tnode(&self) -> TNode {
         TNode {
             id: self.id(),
-            parent: self.parent(),
+            owner: self.owner(),
             kind: self.kind().to_string(),
             data: self.get_data(),
+            score: 0,
         }
     }
     fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self> {
@@ -100,51 +98,6 @@ where
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
-    }
-    fn load_by_parent(parent: u64) -> Option<Self> {
-        let kind = Self::kind_s().to_string();
-        cn().db
-            .nodes_world()
-            .iter()
-            .find(|n| n.kind == kind && n.parent == parent)
-            .and_then(|n| n.to_node().ok())
-    }
-    fn find_incubator_component<P: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Option<P> {
-        let kind = P::kind_s().to_string();
-        let id = cn()
-            .db
-            .incubator_links()
-            .iter()
-            .filter(|n| n.from == self.id() && n.to_kind == kind)
-            .max_by_key(|n| n.score)?
-            .to;
-        P::load(id)
-    }
-    fn collect_incubator_children<P: Node + GetNodeKind + GetNodeKindSelf>(&self) -> Vec<P> {
-        let kind = self.kind().to_string();
-        let child_kind = P::kind_s().to_string();
-        let mut candidates = cn()
-            .db
-            .incubator_links()
-            .iter()
-            .filter(|l| l.from_kind == child_kind && l.to_kind == kind)
-            .map(|l| l.from)
-            .unique()
-            .collect_vec();
-        candidates.retain(|id| {
-            cn().db
-                .incubator_links()
-                .iter()
-                .filter(|l| l.from == *id && l.to_kind == kind)
-                .max_by_key(|l| l.score)
-                .unwrap()
-                .to
-                == self.id()
-        });
-        candidates
-            .into_iter()
-            .filter_map(|id| P::load(id))
-            .collect()
     }
 }
 
@@ -159,7 +112,7 @@ impl TNode {
         let mut d = T::default();
         d.inject_data(&self.data)?;
         d.set_id(self.id);
-        d.set_parent(self.parent);
+        d.set_owner(self.owner);
         Ok(d)
     }
     pub fn unpack(&self, entity: Entity, world: &mut World) {
@@ -167,35 +120,6 @@ impl TNode {
     }
     pub fn to_ron(self) -> String {
         ron::to_string(&SerdeWrapper::new(self)).unwrap()
-    }
-}
-
-#[derive(Resource, Default)]
-pub struct IdEntityLinks {
-    map: HashMap<u64, Entity>,
-}
-
-pub trait WorldNodeExt {
-    fn add_id_link(&mut self, id: u64, entity: Entity);
-    fn get_id_link(&self, id: u64) -> Option<Entity>;
-    fn clear_id_link(&mut self, id: u64);
-}
-
-impl WorldNodeExt for World {
-    fn add_id_link(&mut self, id: u64, entity: Entity) {
-        self.get_resource_or_insert_with::<IdEntityLinks>(|| default())
-            .map
-            .insert(id, entity);
-    }
-    fn get_id_link(&self, id: u64) -> Option<Entity> {
-        self.get_resource::<IdEntityLinks>()
-            .and_then(|r| r.map.get(&id))
-            .copied()
-    }
-    fn clear_id_link(&mut self, id: u64) {
-        if let Some(mut r) = self.get_resource_mut::<IdEntityLinks>() {
-            r.map.remove(&id);
-        }
     }
 }
 
@@ -237,7 +161,7 @@ impl NodeKind {
         let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {
             NodeKind::NFusion => {
-                unit_rep().clone().unpack(entity, world);
+                unit_rep().clone().unpack_entity(entity, world);
                 NodeState::from_world_mut(entity, world).unwrap().init_vars(
                     [
                         (VarName::pwr, 0.into()),
@@ -247,7 +171,7 @@ impl NodeKind {
                     .into(),
                 );
             }
-            NodeKind::NStatusMagic => status_rep().clone().unpack(child(), world),
+            NodeKind::NStatusMagic => status_rep().clone().unpack_entity(child(), world),
             _ => {}
         }
     }
@@ -419,7 +343,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                         .response
                         .clicked()
                     {
-                        result = T::pack(d.entity(), context);
+                        result = T::pack_entity(d.entity(), context);
                         ui.close_menu();
                     }
                 }

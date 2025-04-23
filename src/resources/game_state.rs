@@ -17,7 +17,6 @@ pub enum GameState {
     Battle,
     MatchOver,
     FusionEditor,
-    Incubator,
     TestScenariosLoad,
     TestScenariosRun,
     ServerSync,
@@ -37,23 +36,6 @@ impl GameState {
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
             GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
             GameState::MatchOver => Tree::new_tabs(TREE_ID, Pane::MatchOver.into()),
-            GameState::Incubator => {
-                let mut tiles = Tiles::default();
-                let left = [
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::Inspect)),
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::NewNode)),
-                ]
-                .into();
-                let left = tiles.insert_tab_tile(left);
-                let right = [
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::Nodes)),
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::GraphCore)),
-                ]
-                .into();
-                let right = tiles.insert_tab_tile(right);
-                let root = tiles.insert_horizontal_tile([left, right].into());
-                Tree::new(TREE_ID, root, tiles)
-            }
             GameState::Editor => {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
@@ -105,11 +87,7 @@ pub enum Pane {
     Login,
     Register,
     MainMenu,
-    Triggers,
-    Actions,
-    FusionResult,
 
-    Incubator(IncubatorPane),
     Battle(BattlePane),
     Shop(ShopPane),
     MatchOver,
@@ -118,13 +96,6 @@ pub enum Pane {
     WorldInspector,
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum IncubatorPane {
-    Nodes,
-    NewNode,
-    Inspect,
-    GraphCore,
-}
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum BattlePane {
     View,
@@ -174,16 +145,6 @@ impl Pane {
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
-            },
-            Pane::Triggers => FusionEditorPlugin::pane_triggers(ui, world),
-            Pane::Actions => FusionEditorPlugin::pane_actions(ui, world),
-            Pane::FusionResult => FusionEditorPlugin::pane_fusion_result(ui, world)?,
-
-            Pane::Incubator(pane) => match pane {
-                IncubatorPane::NewNode => IncubatorPlugin::pane_new_node(ui, world)?,
-                IncubatorPane::Inspect => IncubatorPlugin::pane_inspect(ui, world)?,
-                IncubatorPane::Nodes => IncubatorPlugin::pane_nodes(ui, world)?,
-                IncubatorPane::GraphCore => IncubatorPlugin::pane_graph_core(ui, world)?,
             },
 
             Pane::Battle(pane) => match pane {

@@ -76,8 +76,10 @@ impl ConnectPlugin {
             .unwrap();
         c.run_threaded();
         CONNECTION.set(c).ok().unwrap();
-        for op in ON_CONNECT_OPERATIONS.get().unwrap().lock().drain(..) {
-            OperationsPlugin::add(op);
+        if let Some(ops) = ON_CONNECT_OPERATIONS.get() {
+            for op in ops.lock().drain(..) {
+                OperationsPlugin::add(op);
+            }
         }
     }
 }

@@ -30,7 +30,7 @@ pub struct LoginData {
 }
 
 impl LoginPlugin {
-    fn login(world: &mut World) {
+    fn login() {
         cn().reducers.on_login_by_identity(|e| {
             if !e.check_identity() {
                 return;
@@ -53,12 +53,6 @@ impl LoginPlugin {
                 });
             });
         });
-        let co = ConnectOption::get(world);
-        if currently_fulfilling() == GameOption::ForceLogin {
-            // if let Some((name, i)) = pd().client_state.last_logged_in {
-            // Self::complete(Some(player.clone()), world);
-            // }
-        }
     }
     fn complete() {
         subscribe_game(Self::on_subscribed);
@@ -73,7 +67,9 @@ impl LoginPlugin {
                 return;
             };
             dbg!(&identity_node);
-            if let Some(player) = NPlayer::load(identity_node.parent) {
+            if let Some(player) =
+                identity_node.id.any_parent().and_then(|id| NPlayer::load(id))
+            {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();
                 cs.last_logged_in = Some((player.player_name.clone(), identity));
@@ -115,7 +111,7 @@ impl LoginPlugin {
             let mut ld = world.resource_mut::<LoginData>();
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
-            let mut cs = pd().client_state.clone();
+            let cs = pd().client_state.clone();
             if let Some((name, identity)) = &cs.last_logged_in {
                 format!("Login as {name}")
                     .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading2)

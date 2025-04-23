@@ -6,12 +6,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TBattle {
-    pub id: u64,
-    pub team_left: Vec<String>,
-    pub team_right: Vec<String>,
+pub struct TNodeLink {
+    pub child: u64,
+    pub parent: u64,
+    pub child_kind: String,
+    pub parent_kind: String,
+    pub score: i32,
 }
 
-impl __sdk::InModule for TBattle {
+impl __sdk::InModule for TNodeLink {
     type Module = super::RemoteModule;
 }

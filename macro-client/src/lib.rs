@@ -25,12 +25,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
             semi_token: _,
         }) => {
             let ParsedNodeFields {
-                component_fields,
-                component_fields_str,
-                component_types,
-                child_fields,
-                child_fields_str,
-                child_types,
+                one_fields,
+                one_fields_str,
+                one_types,
+                many_fields,
+                many_fields_str,
+                many_types,
                 var_fields,
                 var_types,
                 data_fields,
@@ -41,19 +41,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 all_data_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
-                &component_fields,
-                &component_fields_str,
-                &component_types,
-                &child_fields,
-                &child_fields_str,
-                &child_types,
+                &one_fields,
+                &one_fields_str,
+                &one_types,
+                &many_fields,
+                &many_fields_str,
+                &many_types,
             );
             let nt = if let Some(name_ident) = all_data_fields
                 .iter()
                 .find(|ident| ident.to_string().contains("name"))
             {
                 NodeType::Name(name_ident.clone())
-            } else if !component_fields.is_empty() {
+            } else if !one_fields.is_empty() {
                 NodeType::Data
             } else {
                 NodeType::OnlyData
@@ -72,7 +72,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 fields.named.insert(
                     0,
                     Field::parse_named
-                        .parse2(quote! { pub parent: u64 })
+                        .parse2(quote! { pub owner: u64 })
                         .unwrap(),
                 );
                 fields.named.insert(
@@ -84,19 +84,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 struct_ident,
                 &all_data_fields,
                 &all_data_types,
-                &component_fields,
-                &component_types,
+                &one_fields,
+                &one_types,
             );
-            let common_trait = common_node_trait_fns(struct_ident, &component_types, &child_types);
-            let component_fields_load = component_fields
+            let common_trait = common_node_trait_fns(struct_ident, &one_types, &many_types);
+            let component_fields_load = one_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
-            let component_fields_load_err = component_fields
+            let component_fields_load_err = one_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_err"), Span::call_site()))
                 .collect_vec();
-            let child_fields_load = child_fields
+            let child_fields_load = many_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
@@ -108,13 +108,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn default() -> Self {
                         Self {
                             id: next_id(),
-                            parent: 0,
                             entity: None,
+                            owner: 0,
                             #(
-                                #component_fields: None,
+                                #one_fields: None,
                             )*
                             #(
-                                #child_fields: default(),
+                                #many_fields: default(),
                             )*
                             #(
                                 #all_data_fields: default(),
@@ -124,25 +124,25 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl #struct_ident {
                     #(
-                        pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #component_types> {
-                            self.#component_fields.as_ref().or_else(|| {
+                        pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #one_types> {
+                            self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#component_types>(e))
+                                    .and_then(|e| context.get_component::<#one_types>(e))
                             })
                         }
-                        pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #component_types, ExpressionError> {
-                            self.#component_fields.as_ref().or_else(|| {
+                        pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
+                            self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#component_types>(e))
-                            }).to_e_fn(|| format!("Failed to load {} of {}", #component_fields_str, self.kind()))
+                                    .and_then(|e| context.get_component::<#one_types>(e))
+                            }).to_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
                         }
                     )*
                     #(
-                        pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #child_types> {
-                            if !self.#child_fields.is_empty() {
-                                self.#child_fields.iter().collect()
+                        pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #many_types> {
+                            if !self.#many_fields.is_empty() {
+                                self.#many_fields.iter().collect()
                             } else if let Some(entity) = self.entity {
-                                context.children_components::<#child_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
+                                context.children_components::<#many_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
                             } else {
                                 default()
                             }
@@ -192,10 +192,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             return Some(value);
                         }
                         #(
-                            if let Some(v) = self.#component_fields.as_ref()
+                            if let Some(v) = self.#one_fields.as_ref()
                                 .or_else(|| {
                                     self.entity
-                                        .and_then(|e| context.get_component::<#component_types>(e))
+                                        .and_then(|e| context.get_component::<#one_types>(e))
                                 })
                                 .and_then(|d| d.get_var(var, context)).clone() {
                                 return Some(v);
@@ -212,7 +212,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                             _ => {
                                 #(
-                                    if let Some(n) = &mut self.#component_fields {
+                                    if let Some(n) = &mut self.#one_fields {
                                         n.set_var(var, value.clone());
                                     }
                                 )*
@@ -229,9 +229,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)> {
                         let mut vars = self.get_own_vars().into_iter().collect_vec();
                         #(
-                            if let Some(d) = self.#component_fields.as_ref().or_else(|| {
+                            if let Some(d) = self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#component_types>(e))
+                                    .and_then(|e| context.get_component::<#one_types>(e))
                             }) {
                                 vars.extend(d.get_vars(context));
                             }
@@ -269,11 +269,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn set_id(&mut self, id: u64) {
                         self.id = id;
                     }
-                    fn parent(&self) -> u64 {
-                        self.parent
+                    fn owner(&self) -> u64 {
+                        self.owner
                     }
-                    fn set_parent(&mut self, id: u64) {
-                        self.parent = id;
+                    fn set_owner(&mut self, owner: u64) {
+                        self.owner = owner;
                     }
                     fn entity(&self) -> Entity {
                         self.entity.expect("Entity not set")
@@ -281,22 +281,21 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn get_entity(&self) -> Option<Entity> {
                         self.entity
                     }
-                    fn from_dir(parent: u64, path: String, dir: &Dir) -> Option<Self> {
+                    fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                         let file = dir.get_dir(&path)?.files().next()?;
                         let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
                         let mut d = Self::default();
                         d.inject_data(file.contents_utf8()?).unwrap();
                         d.id = id;
-                        d.parent = parent;
                         #(
-                            d.#component_fields = #component_types::from_dir(id, format!("{path}/{}", #component_fields_str), dir);
+                            d.#one_fields = #one_types::from_dir(format!("{path}/{}", #one_fields_str), dir);
                         )*
                         #(
-                            d.#child_fields = dir
-                                .get_dir(format!("{path}/{}", #child_fields_str))
+                            d.#many_fields = dir
+                                .get_dir(format!("{path}/{}", #many_fields_str))
                                 .into_iter()
                                 .flat_map(|d| d.dirs())
-                                .filter_map(|d| #child_types::from_dir(id, d.path().to_string_lossy().to_string(), dir))
+                                .filter_map(|d| #many_types::from_dir(d.path().to_string_lossy().to_string(), dir))
                                 .collect_vec();
                         )*
                         Some(d)
@@ -309,10 +308,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         ));
                         entries.push(file);
                         #(
-                            let child_path = format!("{path}/{}", #component_fields_str);
+                            let child_path = format!("{path}/{}", #one_fields_str);
                             let dir = Dir::new(
                                 child_path.clone().leak(),
-                                self.#component_fields
+                                self.#one_fields
                                     .as_ref()
                                     .and_then(|c| Some(c.to_dir(child_path)))
                                     .unwrap_or_default(),
@@ -321,10 +320,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             entries.push(dir);
                         )*
                         #(
-                            let child_path = format!("{path}/{}", #child_fields_str);
+                            let child_path = format!("{path}/{}", #many_fields_str);
                             let dir = Dir::new(
                                 child_path.clone().leak(),
-                                self.#child_fields
+                                self.#many_fields
                                     .iter()
                                     .map(|d| {
                                         let path = format!("{child_path}/{}", d.id());
@@ -341,26 +340,26 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn load_recursive(id: u64) -> Option<Self> {
                         let mut d = Self::load(id)?;
                         #(
-                            let kind = #component_types::kind_s().to_string();
+                            let kind = #one_types::kind_s().to_string();
                             if let Some(id) = cn()
                                 .db
                                 .nodes_world()
                                 .iter()
-                                .find(|n| n.parent == d.id() && n.kind == kind)
+                                .find(|n| d.id().is_parent_of(n.id) && n.kind == kind)
                                 .map(|n| n.id)
                             {
-                                d.#component_fields = #component_types::load_recursive(id);
+                                d.#one_fields = #one_types::load_recursive(id);
                             }
                         )*
                         #(
-                            let kind = #child_types::kind_s().to_string();
-                            d.#child_fields = cn()
+                            let kind = #many_types::kind_s().to_string();
+                            d.#many_fields = cn()
                                 .db
                                 .nodes_world()
                                 .iter()
                                 .filter_map(|n| {
-                                    if n.parent == d.id() && n.kind == kind {
-                                        #child_types::load_recursive(n.id)
+                                    if d.id().is_parent_of(n.id) && n.kind == kind {
+                                        #many_types::load_recursive(n.id)
                                     } else {
                                         None
                                     }
@@ -369,63 +368,49 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(d)
                     }
-                    fn pack(entity: Entity, context: &Context) -> Option<Self> {
+                    fn pack_entity(entity: Entity, context: &Context) -> Option<Self> {
                         let mut s = context.get_component::<Self>(entity)?.clone();
                         #(
-                            s.#component_fields = #component_types::pack(entity, context);
+                            s.#one_fields = #one_types::pack_entity(entity, context);
                         )*
                         #(
                             for child in context.get_children(entity) {
-                                if let Some(d) = #child_types::pack(child, context) {
-                                    s.#child_fields.push(d);
+                                if let Some(d) = #many_types::pack_entity(child, context) {
+                                    s.#many_fields.push(d);
                                 }
                             }
                         )*
                         Some(s)
                     }
-                    fn unpack(mut self, entity: Entity, world: &mut World) {
+                    fn unpack_entity(mut self, entity: Entity, world: &mut World) {
                         //debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if self.id == 0 {
                             self.id = next_id();
                         }
                         world.add_id_link(self.id, entity);
-                        let parent = entity;
                         #(
-                            if let Some(d) = self.#component_fields.take() {
-                                d.unpack(entity, world);
+                            if let Some(d) = self.#one_fields.take() {
+                                let child = world.spawn_empty().id();
+                                d.unpack_entity(child, world);
+                                child.id(world).add_parent(self.id);
                             }
                         )*
                         #(
-                            for d in std::mem::take(&mut self.#child_fields) {
-                                let parent = entity;
-                                let entity = world.spawn_empty().set_parent(parent).id();
+                            for d in std::mem::take(&mut self.#many_fields) {
+                                let child = world.spawn_empty().id();
                                 //debug!("{parent} -> {entity}");
-                                d.unpack(entity, world);
+                                d.unpack_entity(child, world);
+                                child.id(world).add_parent(self.id);
                             }
                         )*
                         let kind = self.kind();
                         world.entity_mut(entity).insert(self);
                         kind.on_unpack(entity, world);
                     }
-                    fn fill_from_incubator(mut self) -> Self {
-                        #(
-                            self.#component_fields = self.find_incubator_component();
-                            self.#component_fields = self.#component_fields.map(|n| n.fill_from_incubator());
-                        )*
-                        #(
-                            self.#child_fields = self.collect_incubator_children();
-                            self.#child_fields = self
-                                .#child_fields
-                                .into_iter()
-                                .map(|n| n.fill_from_incubator())
-                                .collect();
-                        )*
-                        self
-                    }
                     fn with_components(mut self, context: &Context) -> Self {
                         #(
-                            self.#component_fields = #component_types::pack(self.entity(), context);
+                            self.#one_fields = #one_types::pack_entity(self.entity(), context);
                         )*
                         self
                     }
@@ -451,43 +436,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         ui.menu_button("publish to incubator", |ui| {
-                            if ui
-                                .menu_button("full", |ui| {
-                                    ScrollArea::both().show(ui, |ui| {
-                                        self.view(ViewContext::new(ui), context, ui);
-                                    });
-                                })
-                                .response
-                                .clicked()
-                            {
-                                let d = self.clone();
-                                op(move |world| {
-                                    IncubatorPlugin::set_publish_nodes(d, world);
-                                    Window::new("incubator publish", |ui, world| {
-                                        IncubatorPlugin::pane_new_node(ui, world).ui(ui);
-                                    })
-                                    .push(world);
-                                });
-                                ui.close_menu();
-                            }
-                            let mut d = Self::default();
-                            d.inject_data(&self.get_data()).ui(ui);
-                            if ui
-                                .menu_button("self", |ui| {
-                                    d.view(ViewContext::new(ui), context, ui);
-                                })
-                                .response
-                                .clicked()
-                            {
-                                op(move |world| {
-                                    IncubatorPlugin::set_publish_nodes(d, world);
-                                    Window::new("incubator publish", |ui, world| {
-                                        IncubatorPlugin::pane_new_node(ui, world).ui(ui);
-                                    })
-                                    .push(world);
-                                });
-                                ui.close_menu();
-                            }
+                            todo!();
                         });
                     }
                     fn context_menu_extra_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
@@ -520,20 +469,20 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
                         let mut view_resp = ViewResponse::default();
                         #(
-                            if let Some(d) = &mut self.#component_fields {
+                            if let Some(d) = &mut self.#one_fields {
                                 let mut child_resp = d.view_mut(view_ctx.collapsed(true).can_delete(true), context, ui);
                                 if child_resp.take_delete_me() {
-                                    self.#component_fields = None;
+                                    self.#one_fields = None;
                                 }
                                 view_resp.merge(child_resp);
-                            } else if let Some(mut d) = new_node_btn::<#component_types>(ui, view_ctx) {
-                                d.parent = self.id();
+                            } else if let Some(mut d) = new_node_btn::<#one_types>(ui, view_ctx) {
+                                d.id().add_parent(self.id());
                                 view_resp.changed = true;
-                                self.#component_fields = Some(d);
+                                self.#one_fields = Some(d);
                             }
                         )*
                         #(
-                            view_resp.merge(self.#child_fields.view_mut(view_ctx.collapsed(true), context, ui));
+                            view_resp.merge(self.#many_fields.view_mut(view_ctx.collapsed(true), context, ui));
                         )*
                         view_resp
                     }
@@ -612,29 +561,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             })*
                         }
                     }
-                    pub fn view_tnodes(self, nodes: &Vec<TNode>, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                d.view(view_ctx, context, ui);
-                            })*
-                        }
-                    }
-                    pub fn view_tnodes_mut(self, nodes: &mut Vec<TNode>, view_ctx: ViewContext, ui: &mut Ui, world: &mut World) {
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {
-                                let mut d = #variants::from_tnodes(nodes[0].id, &nodes).unwrap();
-                                if d.view_mut(view_ctx, &default(), ui).changed {
-                                    let mut id = next_id();
-                                    d.reassign_ids(&mut id);
-                                    set_next_id(id);
-                                    *nodes = d.to_tnodes();
-                                }
-                            })*
-                        }
-                    }
                     pub fn unpack(self, entity: Entity, node: &TNode, world: &mut World) {
                         match self {
                             Self::None => {}
@@ -642,8 +568,8 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                 let mut n = #variants::default();
                                 n.inject_data(&node.data);
                                 n.id = node.id;
-                                n.parent = node.parent;
-                                n.unpack(entity, world);
+                                n.owner = node.owner;
+                                n.unpack_entity(entity, world);
                             })*
                         };
                     }
@@ -685,8 +611,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(
                                 #struct_ident::#variants => {
                                     let mut d = #variants::default();
-                                    d.set_id(0);
-                                    d.set_parent(0);
                                     d.to_tnode()
                                 }
                             )*

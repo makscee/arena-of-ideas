@@ -6,12 +6,12 @@ use quote::ToTokens;
 use syn::{Fields, GenericArgument, Ident, PathArguments, Type, TypePath};
 
 pub struct ParsedNodeFields {
-    pub component_fields: Vec<Ident>,
-    pub component_fields_str: Vec<String>,
-    pub component_types: Vec<proc_macro2::TokenStream>,
-    pub child_fields: Vec<Ident>,
-    pub child_fields_str: Vec<String>,
-    pub child_types: Vec<proc_macro2::TokenStream>,
+    pub one_fields: Vec<Ident>,
+    pub one_fields_str: Vec<String>,
+    pub one_types: Vec<proc_macro2::TokenStream>,
+    pub many_fields: Vec<Ident>,
+    pub many_fields_str: Vec<String>,
+    pub many_types: Vec<proc_macro2::TokenStream>,
     pub var_fields: Vec<Ident>,
     pub var_types: Vec<Type>,
     pub data_fields: Vec<Ident>,
@@ -23,12 +23,12 @@ pub struct ParsedNodeFields {
 }
 
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
-    let mut component_fields = Vec::default();
-    let mut component_fields_str = Vec::default();
-    let mut component_types: Vec<proc_macro2::TokenStream> = Vec::default();
-    let mut child_fields = Vec::default();
-    let mut child_fields_str = Vec::default();
-    let mut child_types: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut one_fields = Vec::default();
+    let mut one_fields_str = Vec::default();
+    let mut one_types: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut many_fields = Vec::default();
+    let mut many_fields_str = Vec::default();
+    let mut many_types: Vec<proc_macro2::TokenStream> = Vec::default();
     let mut var_fields = Vec::default();
     let mut var_types = Vec::default();
     let mut data_fields = Vec::default();
@@ -49,20 +49,20 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "NodeChildren" {
+                if type_ident == "LinkMany" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
-                            child_fields_str.push(field_ident.to_string());
-                            child_fields.push(field_ident);
-                            child_types.push(it.to_token_stream());
+                            many_fields_str.push(field_ident.to_string());
+                            many_fields.push(field_ident);
+                            many_types.push(it.to_token_stream());
                         }
                         _ => {}
                     }
-                } else if type_ident == "NodeComponent" {
-                    component_fields_str.push(field_ident.to_string());
-                    component_fields.push(field_ident);
-                    component_types.push(inner_type(type_path).to_token_stream());
+                } else if type_ident == "LinkOne" {
+                    one_fields_str.push(field_ident.to_string());
+                    one_fields.push(field_ident);
+                    one_types.push(inner_type(type_path).to_token_stream());
                 } else if type_ident == "i32"
                     || type_ident == "f32"
                     || type_ident == "String"
@@ -87,12 +87,12 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
 
     let data_type_ident = quote! { (#(#all_data_types),*) };
     ParsedNodeFields {
-        component_fields,
-        component_fields_str,
-        component_types,
-        child_fields,
-        child_fields_str,
-        child_types,
+        one_fields,
+        one_fields_str,
+        one_types,
+        many_fields,
+        many_fields_str,
+        many_types,
         var_fields,
         var_types,
         data_fields,
@@ -105,78 +105,72 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
 }
 
 pub fn strings_conversions(
-    component_fields: &Vec<Ident>,
+    one_fields: &Vec<Ident>,
     _component_fields_str: &Vec<String>,
-    component_types: &Vec<TokenStream>,
-    child_fields: &Vec<Ident>,
+    one_types: &Vec<TokenStream>,
+    many_fields: &Vec<Ident>,
     _child_fields_str: &Vec<String>,
-    child_types: &Vec<TokenStream>,
+    many_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn to_tnodes(&self) -> Vec<TNode> {
-            let mut v = [self.to_tnode()].to_vec();
+        fn pack_fill(&self, pn: &mut PackedNodes, parent: u64) {
+            pn.add_node(self.kind().to_string(), self.get_data(), self.id, parent);
             #(
-                if let Some(d) = self.#component_fields.as_ref() {
-                    let mut nodes = d.to_tnodes();
-                    if let Some(mut node) = nodes.get_mut(0) {
-                        node.parent = self.id;
-                    }
-                    v.extend(nodes);
+                if let Some(n) = self.#one_fields.as_ref() {
+                    n.pack_fill(pn, self.id);
                 }
             )*
             #(
-                for d in &self.#child_fields {
-                    let mut nodes = d.to_tnodes();
-                    if let Some(mut node) = nodes.get_mut(0) {
-                        node.parent = self.id;
-                    }
-                    v.extend(nodes);
+                for d in &self.#many_fields {
+                    d.pack_fill(pn, self.id);
                 }
             )*
-            v
         }
-        fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self> {
-            let mut node = nodes
-                .into_iter()
-                .find(|n| n.id == id)?
-                .to_node::<Self>()
-                .ok()?;
+        fn pack(&self) -> PackedNodes {
+            let mut pn = PackedNodes::default();
+            pn.root = self.id;
+            self.pack_fill(&mut pn, 0);
+            pn
+        }
+        fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
+            let NodeData { kind, data } = pn.get(id)?;
+            if !Self::kind_s().to_string().eq(kind) {
+                panic!(
+                    "Wrong node#{id} kind, expected {} got {}",
+                    Self::kind_s(),
+                    kind
+                );
+            }
+            let mut d = Self::default();
+            if let Err(e) = d.inject_data(data) {
+                panic!("Unpack deserialize from data err: {e} data: {data}");
+            }
             #(
-                let kind = NodeKind::#component_types.to_string();
-                node.#component_fields = nodes
-                    .into_iter()
-                    .find(|n| n.parent == id && n.kind == kind)
-                    .and_then(|n| #component_types::from_tnodes(n.id, nodes));
+                d.#one_fields = pn
+                    .kind_children(id, NodeKind::#one_types.as_ref())
+                    .get(0)
+                    .and_then(|(id, n)| #one_types::unpack_id(*id, pn));
             )*
             #(
-                let kind = NodeKind::#child_types.to_string();
-                node.#child_fields = nodes
+                d.#many_fields = pn
+                    .kind_children(id, NodeKind::#many_types.as_ref())
                     .into_iter()
-                    .filter_map(|n| {
-                        if n.parent == id && n.kind == kind {
-                            #child_types::from_tnodes(n.id, nodes)
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|(id, n)| #many_types::unpack_id(id, pn))
                     .collect();
             )*
-
-            Some(node)
+            Some(d)
         }
         fn reassign_ids(&mut self, next_id: &mut u64) {
             self.set_id(*next_id);
             *next_id += 1;
             let id = self.id();
             #(
-                if let Some(d) = self.#component_fields.as_mut() {
-                    d.set_parent(id);
+                if let Some(d) = self.#one_fields.as_mut() {
                     d.reassign_ids(next_id);
                 }
             )*
             #(
-                for d in &mut self.#child_fields {
-                    d.set_parent(id);
+                for d in &mut self.#many_fields {
                     d.reassign_ids(next_id);
                 }
             )*
@@ -185,15 +179,15 @@ pub fn strings_conversions(
 }
 
 pub fn table_conversions(
-    component_fields: &Vec<Ident>,
-    component_types: &Vec<TokenStream>,
-    child_fields: &Vec<Ident>,
-    child_types: &Vec<TokenStream>,
+    one_fields: &Vec<Ident>,
+    one_types: &Vec<TokenStream>,
+    many_fields: &Vec<Ident>,
+    many_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
-                self.#component_fields = self.find_child::<#component_types>(ctx).ok()
+                self.#one_fields = self.find_child::<#one_types>(ctx).ok()
                     .map(|mut d| std::mem::take(d.with_components(ctx)
                         .with_children(ctx))
                     );
@@ -202,7 +196,7 @@ pub fn table_conversions(
         }
         fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
-                self.#child_fields = self.collect_children::<#child_types>(ctx)
+                self.#many_fields = self.collect_children::<#many_types>(ctx)
                     .into_iter()
                     .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
                     .collect();
@@ -212,12 +206,12 @@ pub fn table_conversions(
         fn save(mut self, ctx: &ReducerContext) {
             self.update_self(ctx);
             #(
-                if let Some(mut d) = self.#component_fields.take() {
+                if let Some(mut d) = self.#one_fields.take() {
                     d.save(ctx);
                 }
             )*
             #(
-                for mut d in std::mem::take(&mut self.#child_fields) {
+                for mut d in std::mem::take(&mut self.#many_fields) {
                     d.save(ctx);
                 }
             )*
@@ -228,14 +222,14 @@ pub fn common_node_fns(
     struct_ident: &Ident,
     all_data_fields: &Vec<Ident>,
     all_data_types: &Vec<Type>,
-    component_fields: &Vec<Ident>,
-    component_types: &Vec<TokenStream>,
+    one_fields: &Vec<Ident>,
+    one_types: &Vec<TokenStream>,
 ) -> TokenStream {
-    let component_link_fields_mut = component_fields
+    let component_link_fields_mut = one_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_mut"), Span::call_site()))
         .collect_vec();
-    let component_link_fields_err = component_fields
+    let component_link_fields_err = one_fields
         .iter()
         .map(|i| format!("Failed to get field {i}").leak())
         .collect_vec();
@@ -243,13 +237,13 @@ pub fn common_node_fns(
     quote! {
         impl #struct_ident {
             #(
-                pub fn #component_fields(&self) -> &#component_types {
-                    self.#component_fields.as_ref().expect(#component_link_fields_err)
+                pub fn #one_fields(&self) -> &#one_types {
+                    self.#one_fields.as_ref().expect(#component_link_fields_err)
                 }
             )*
             #(
-                pub fn #component_link_fields_mut<'a>(&'a mut self) -> &'a mut #component_types {
-                    self.#component_fields.as_mut().expect(#component_link_fields_err)
+                pub fn #component_link_fields_mut<'a>(&'a mut self) -> &'a mut #one_types {
+                    self.#one_fields.as_mut().expect(#component_link_fields_err)
                 }
             )*
             fn from_data(#(#all_data_fields: #all_data_types),*) -> Self {
@@ -305,21 +299,21 @@ pub fn common_node_fns(
 }
 pub fn common_node_trait_fns(
     _struct_ident: &Ident,
-    component_types: &Vec<TokenStream>,
-    child_types: &Vec<TokenStream>,
+    one_types: &Vec<TokenStream>,
+    many_types: &Vec<TokenStream>,
 ) -> TokenStream {
     quote! {
         fn component_kinds() -> HashSet<NodeKind> {
             [
                 #(
-                    NodeKind::#component_types,
+                    NodeKind::#one_types,
                 )*
             ].into()
         }
         fn children_kinds() -> HashSet<NodeKind> {
             [
                 #(
-                    NodeKind::#child_types,
+                    NodeKind::#many_types,
                 )*
             ].into()
         }

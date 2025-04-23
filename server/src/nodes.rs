@@ -15,19 +15,18 @@ macro_schema::nodes!();
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
+    fn owner(&self) -> u64;
     fn reassign_ids(&mut self, next_id: &mut u64);
-    fn parent(&self) -> u64;
-    fn set_parent(&mut self, id: u64);
-    fn from_tnodes(id: u64, nodes: &Vec<TNode>) -> Option<Self>;
-    fn to_tnodes(&self) -> Vec<TNode>;
+    fn pack_fill(&self, pn: &mut PackedNodes, link: u64);
+    fn pack(&self) -> PackedNodes;
+    fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(self, ctx: &ReducerContext);
-    fn clone_self(&self, ctx: &ReducerContext, parent: u64) -> Self;
-    fn clone(&self, ctx: &ReducerContext, parent: u64, remap: &mut HashMap<u64, u64>) -> Self;
+    fn clone_self(&self, ctx: &ReducerContext) -> Self;
+    fn clone(&self, ctx: &ReducerContext, remap: &mut HashMap<u64, u64>) -> Self;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
-    fn fill_from_incubator(self, ctx: &ReducerContext) -> Self;
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
@@ -47,10 +46,6 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self>;
     fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
     fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
-    fn top_link_id<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<u64>;
-    fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
-    fn find_incubator_component<T: NodeExt>(&self, ctx: &ReducerContext) -> Option<T>;
-    fn collect_incubator_children<T: NodeExt>(&self, ctx: &ReducerContext) -> Vec<T>;
 }
 
 impl<T> NodeExt for T
@@ -58,7 +53,7 @@ where
     T: Node + GetNodeKind + GetNodeKindSelf + StringData,
 {
     fn to_tnode(&self) -> TNode {
-        TNode::new(self.id(), self.parent(), self.kind(), self.get_data())
+        TNode::new(self.id(), self.owner(), self.kind(), self.get_data())
     }
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self> {
         let kind = Self::kind_s().to_string();
@@ -102,7 +97,7 @@ where
     }
     fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self> {
         parent
-            .children(ctx)
+            .collect_kind_children(ctx, Self::kind_s())
             .into_iter()
             .filter_map(|id| Self::get(ctx, id))
             .sorted_by_key(|n| n.id())
@@ -112,14 +107,9 @@ where
         P::collect_children_of_id(ctx, self.id())
     }
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self> {
-        let mut id = id;
-        while let Some(parent) = id.parent(ctx) {
-            id = parent;
-            if let Some(node) = T::get(ctx, id) {
-                return Some(node);
-            }
-        }
-        None
+        let kind = Self::kind_s();
+        id.find_kind_parent(ctx, kind)
+            .and_then(|id| Self::get(ctx, id))
     }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
         P::find_parent_of_id(ctx, self.id())
@@ -143,56 +133,6 @@ where
         }
         Ok(c.remove(0))
     }
-    fn top_link_id<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<u64> {
-        let kind = P::kind_s().to_string();
-        ctx.db
-            .incubator_links()
-            .from()
-            .filter(self.id())
-            .filter(|l| l.to_kind == kind)
-            .max_by_key(|l| l.score)
-            .map(|l| l.to)
-    }
-    fn top_link<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
-        self.top_link_id::<P>(ctx).and_then(|l| P::get(ctx, l))
-    }
-    fn find_incubator_component<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
-        let kind = P::kind_s().to_string();
-        let id = ctx
-            .db
-            .incubator_links()
-            .iter()
-            .filter(|n| n.from == self.id() && n.to_kind == kind)
-            .max_by_key(|n| n.score)?
-            .to;
-        P::get(ctx, id)
-    }
-    fn collect_incubator_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
-        let kind = self.kind().to_string();
-        let child_kind = P::kind_s().to_string();
-        let mut candidates = ctx
-            .db
-            .incubator_links()
-            .iter()
-            .filter(|l| l.from_kind == child_kind && l.to_kind == kind)
-            .map(|l| l.from)
-            .unique()
-            .collect_vec();
-        candidates.retain(|id| {
-            ctx.db
-                .incubator_links()
-                .iter()
-                .filter(|l| l.from == *id && l.to_kind == kind)
-                .max_by_key(|l| l.score)
-                .unwrap()
-                .to
-                == self.id()
-        });
-        candidates
-            .into_iter()
-            .filter_map(|id| P::get(ctx, id))
-            .collect()
-    }
 }
 
 impl NCore {
@@ -206,11 +146,6 @@ impl NCore {
             .filter_map(|h| h.units_load(ctx).ok())
             .flatten()
             .collect_vec())
-    }
-}
-impl NIncubator {
-    pub fn load(ctx: &ReducerContext) -> Self {
-        NIncubator::get(ctx, ID_INCUBATOR).unwrap()
     }
 }
 
@@ -227,9 +162,10 @@ impl NMatch {
 }
 
 impl NTeam {
-    pub fn clone_ids_remap(&self, ctx: &ReducerContext, parent: u64) -> Self {
+    #[must_use]
+    pub fn clone_ids_remap(&self, ctx: &ReducerContext, parent: u64) -> Result<Self, String> {
         let mut remap: HashMap<u64, u64> = default();
-        let mut new_team = self.clone(ctx, parent, &mut remap);
+        let mut new_team = self.clone(ctx, &mut remap);
         for fusion in &mut new_team.fusions {
             for unit in &mut fusion.units {
                 if let Some(id) = remap.get(unit) {
@@ -238,6 +174,7 @@ impl NTeam {
             }
             fusion.update_self(ctx);
         }
-        new_team
+        new_team.id.add_parent(ctx, parent)?;
+        Ok(new_team)
     }
 }

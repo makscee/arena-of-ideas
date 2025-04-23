@@ -302,8 +302,8 @@ impl BattleSimulation {
         }
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
-        battle.left.unpack(team_left, &mut world);
-        battle.right.unpack(team_right, &mut world);
+        battle.left.unpack_entity(team_left, &mut world);
+        battle.right.unpack_entity(team_right, &mut world);
 
         for entity in world
             .query_filtered::<Entity, With<NHouse>>()
@@ -462,7 +462,7 @@ impl BattleSimulation {
             }
         }
         let entity = self.world.spawn_empty().set_parent(target).id();
-        status.unpack(entity, &mut self.world);
+        status.unpack_entity(entity, &mut self.world);
 
         let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
         state.insert(0.0, 0.0, VarName::visible, false.into());

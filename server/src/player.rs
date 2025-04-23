@@ -9,13 +9,12 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.sender);
-    let mut player = NPlayer::new(ctx, ID_PLAYERS, name);
-    player.player_data = Some(NPlayerData::new(ctx, player.id, pass_hash, false, 0));
-    player.identity = Some(NPlayerIdentity::new(
+    let mut player = NPlayer::new(ctx, 0, name);
+    player.player_data_set(ctx, NPlayerData::new(ctx, player.id, pass_hash, false, 0))?;
+    player.identity_set(
         ctx,
-        player.id,
-        Some(ctx.sender.to_string()),
-    ));
+        NPlayerIdentity::new(ctx, player.id, Some(ctx.sender.to_string())),
+    )?;
     Ok(())
 }
 
@@ -136,7 +135,7 @@ impl GetPlayer for ReducerContext {
     fn player(&self) -> Result<NPlayer, String> {
         let identity =
             NPlayer::find_identity(self, &self.sender).to_e_s("NPlayerIdentity not found")?;
-        let id = identity.parent();
+        let id = identity.find_parent::<NPlayer>(self)?.id;
         NPlayer::get(self, id).to_e_s("Identity exists but Player does not")
     }
 }

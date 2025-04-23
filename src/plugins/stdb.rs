@@ -8,8 +8,7 @@ pub struct StdbPlugin;
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<StdbData>()
-            .init_resource::<Events<StdbEvent>>()
-            .add_systems(Update, Self::update);
+            .init_resource::<Events<StdbEvent>>();
     }
 }
 
@@ -31,77 +30,16 @@ pub struct StdbEvent {
     pub change: StdbChange,
 }
 
-impl StdbPlugin {
-    pub fn empty_queue_callback(
-        world: &mut World,
-        operation: impl FnOnce(&mut World) + Send + Sync + 'static,
-    ) {
-        world
-            .resource_mut::<StdbData>()
-            .on_empty
-            .push(Box::new(operation));
-    }
-    fn unpack_node(node: &TNode, entity: Entity, world: &mut World) {
-        debug!("Unpack {}#{entity}", node.kind);
-        node.unpack(entity, world);
-        world.send_event(StdbEvent {
-            entity,
-            node: node.clone(),
-            change: StdbChange::Insert,
-        });
-    }
-    fn update(world: &mut World) {
-        world.resource_scope(|world, mut d: Mut<StdbData>| {
-            let len = d.nodes_queue.len();
-            d.nodes_queue.retain(|node| {
-                if NODE_CONTAINERS.contains(&node.id) {
-                    let entity = world.spawn_empty().id();
-                    Self::unpack_node(node, entity, world);
-                    return false;
-                }
-                let mut cur_node = node.clone();
-                let mut id = node.id;
-                loop {
-                    let Some(parent) = cur_node.parent.get_node() else {
-                        panic!("Parent of {cur_node:?} does not exist");
-                    };
-                    if parent.kind.to_kind().is_component(cur_node.kind.to_kind()) {
-                        cur_node = parent;
-                        id = cur_node.id;
-                    } else {
-                        break;
-                    }
-                }
-                let Some(parent) = world.get_id_link(node.parent) else {
-                    return true;
-                };
-                let entity = world
-                    .get_id_link(id)
-                    .unwrap_or_else(|| world.spawn_empty().set_parent(parent).id());
-                Self::unpack_node(node, entity, world);
-                false
-            });
-            if len > 0 && d.nodes_queue.len() == len {
-                debug!("Nodes queue stuck at {len}");
-            }
-            if len == 0 && !d.on_empty.is_empty() {
-                let v = std::mem::take(&mut d.on_empty);
-                for operation in v {
-                    operation(world);
-                }
-            }
-        });
-    }
-}
+impl StdbPlugin {}
 
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
+    subscribe_table_updates();
     cn().subscription_builder()
         .on_error(|_, error| error.to_string().notify_error_op())
         .on_applied(move |_| {
             info!("Subscription applied");
             on_success();
-            subscribe_table_updates();
             op(|world| {
                 let q = &mut world.resource_mut::<StdbData>().nodes_queue;
                 for node in cn().db.nodes_world().iter() {
@@ -115,6 +53,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
 fn subscribe_table_updates() {
     let db = cn().db();
     db.nodes_world().on_insert(|_, node| {
+        debug!("insert node {node:?}");
         on_insert(node);
     });
     db.nodes_world().on_update(|_, _, node| {
@@ -123,8 +62,13 @@ fn subscribe_table_updates() {
     db.nodes_world().on_delete(|_, node| {
         on_delete(node);
     });
-    db.battle().on_insert(|_, _| {
-        todo!();
+
+    db.node_links().on_insert(|_, link| {
+        debug!("add link {link:?}");
+        links_add(link.child, link.parent);
+    });
+    db.node_links().on_delete(|_, link| {
+        links_remove(link.child, link.parent);
     });
 }
 
@@ -132,7 +76,7 @@ fn on_insert(node: &TNode) {
     info!("Node inserted {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        world.resource_mut::<StdbData>().nodes_queue.push(node);
+        node.unpack(world.spawn_empty().id(), world);
     });
 }
 
@@ -145,13 +89,12 @@ fn on_delete(node: &TNode) {
         };
         info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
         let id = node.id;
-        let kind = node.kind();
         world.send_event(StdbEvent {
             entity,
             node,
             change: StdbChange::Delete,
         });
-        kind.remove_component(entity, world);
+        world.despawn(entity);
         world.clear_id_link(id);
     });
 }
@@ -201,10 +144,8 @@ pub fn subscribe_reducers() {
         }
         e.event.on_success(|| {
             op(|world| {
-                StdbPlugin::empty_queue_callback(world, |world| {
-                    MatchPlugin::check_active(world).notify(world);
-                    MatchPlugin::check_battles(world).notify(world);
-                });
+                MatchPlugin::check_active(world).notify(world);
+                MatchPlugin::check_battles(world).notify(world);
             });
         });
     });
@@ -214,23 +155,8 @@ pub fn subscribe_reducers() {
         }
         e.event.on_success(|| {
             op(|world| {
-                StdbPlugin::empty_queue_callback(world, |world| {
-                    GameState::Shop.set_next(world);
-                });
+                GameState::Shop.set_next(world);
             });
         });
-    });
-
-    cn().reducers.on_incubator_vote(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_incubator_push(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
     });
 }

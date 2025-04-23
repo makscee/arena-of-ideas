@@ -73,10 +73,10 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     UNIT_REP
-        .set(NRepresentation::from_dir(0, "unit_rep".to_owned(), assets()).unwrap())
+        .set(NRepresentation::from_dir("unit_rep".to_owned(), assets()).unwrap())
         .unwrap();
     STATUS_REP
-        .set(NRepresentation::from_dir(0, "status_rep".to_owned(), assets()).unwrap())
+        .set(NRepresentation::from_dir("status_rep".to_owned(), assets()).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
     for f in assets().get_dir("animation").unwrap().files() {
@@ -97,71 +97,71 @@ pub fn parse_content_tree() {
 
 pub struct GameAssets;
 
-#[derive(Serialize, Deserialize, Default)]
-pub struct IncubatorData {
-    pub nodes: Vec<SerdeWrapper<TIncubator>>,
-    pub links: Vec<SerdeWrapper<TIncubatorLinks>>,
-    pub votes: Vec<SerdeWrapper<TIncubatorVotes>>,
-}
+// #[derive(Serialize, Deserialize, Default)]
+// pub struct IncubatorData {
+//     pub nodes: Vec<SerdeWrapper<TIncubator>>,
+//     pub links: Vec<SerdeWrapper<TIncubatorLinks>>,
+//     pub votes: Vec<SerdeWrapper<TIncubatorVotes>>,
+// }
 
-impl GameAssets {
-    pub fn update_files() {
-        let nodes = cn()
-            .db
-            .incubator_nodes()
-            .iter()
-            .sorted_by_key(|n| n.id)
-            .map(|n| SerdeWrapper::new(n))
-            .collect_vec();
-        let links = cn()
-            .db
-            .incubator_links()
-            .iter()
-            .sorted_by_cached_key(|l| l.key.clone())
-            .map(|l| SerdeWrapper::new(l))
-            .collect_vec();
-        let votes = cn()
-            .db
-            .incubator_votes()
-            .iter()
-            .sorted_by_cached_key(|v| v.key.clone())
-            .map(|v| SerdeWrapper::new(v))
-            .collect_vec();
-        let data = IncubatorData {
-            nodes,
-            links,
-            votes,
-        };
-        data.save();
-    }
-}
+// impl GameAssets {
+//     pub fn update_files() {
+//         let nodes = cn()
+//             .db
+//             .incubator_nodes()
+//             .iter()
+//             .sorted_by_key(|n| n.id)
+//             .map(|n| SerdeWrapper::new(n))
+//             .collect_vec();
+//         let links = cn()
+//             .db
+//             .incubator_links()
+//             .iter()
+//             .sorted_by_cached_key(|l| l.key.clone())
+//             .map(|l| SerdeWrapper::new(l))
+//             .collect_vec();
+//         let votes = cn()
+//             .db
+//             .incubator_votes()
+//             .iter()
+//             .sorted_by_cached_key(|v| v.key.clone())
+//             .map(|v| SerdeWrapper::new(v))
+//             .collect_vec();
+//         let data = IncubatorData {
+//             nodes,
+//             links,
+//             votes,
+//         };
+//         data.save();
+//     }
+// }
 
-impl IncubatorData {
-    fn save(&self) {
-        let path = "./assets/ron/links/";
-        create_dir_all(path).unwrap();
-        let nodes = to_ron_string(&self.nodes);
-        debug!("nodes:\n{nodes}");
-        let links = to_ron_string(&self.links);
-        debug!("links:\n{links}");
-        let votes = to_ron_string(&self.votes);
-        debug!("votes:\n{votes}");
-        write(path.to_owned() + "nodes.ron", nodes).unwrap();
-        write(path.to_owned() + "links.ron", links).unwrap();
-        write(path.to_owned() + "votes.ron", votes).unwrap();
-    }
-    pub fn load() -> Self {
-        let path = "./assets/ron/links/";
-        let nodes = read_to_string(path.to_owned() + "nodes.ron").unwrap();
-        let links = read_to_string(path.to_owned() + "links.ron").unwrap();
-        let votes = read_to_string(path.to_owned() + "votes.ron").unwrap();
-        Self {
-            nodes: ron::from_str(&nodes).unwrap(),
-            links: ron::from_str(&links).unwrap(),
-            votes: ron::from_str(&votes).unwrap(),
-        }
-    }
-}
+// impl IncubatorData {
+//     fn save(&self) {
+//         let path = "./assets/ron/links/";
+//         create_dir_all(path).unwrap();
+//         let nodes = to_ron_string(&self.nodes);
+//         debug!("nodes:\n{nodes}");
+//         let links = to_ron_string(&self.links);
+//         debug!("links:\n{links}");
+//         let votes = to_ron_string(&self.votes);
+//         debug!("votes:\n{votes}");
+//         write(path.to_owned() + "nodes.ron", nodes).unwrap();
+//         write(path.to_owned() + "links.ron", links).unwrap();
+//         write(path.to_owned() + "votes.ron", votes).unwrap();
+//     }
+//     pub fn load() -> Self {
+//         let path = "./assets/ron/links/";
+//         let nodes = read_to_string(path.to_owned() + "nodes.ron").unwrap();
+//         let links = read_to_string(path.to_owned() + "links.ron").unwrap();
+//         let votes = read_to_string(path.to_owned() + "votes.ron").unwrap();
+//         Self {
+//             nodes: ron::from_str(&nodes).unwrap(),
+//             links: ron::from_str(&links).unwrap(),
+//             votes: ron::from_str(&votes).unwrap(),
+//         }
+//     }
+// }
 fn to_ron_string<T: Serialize>(value: &T) -> String {
     to_string_pretty(value, PrettyConfig::new().depth_limit(1)).unwrap()
 }

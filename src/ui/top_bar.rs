@@ -24,7 +24,6 @@ impl TopBar {
     pub fn ui(ui: &mut Ui, world: &mut World) {
         egui::menu::bar(ui, |ui| {
             Self::state_btn(GameState::Title, ui, world, |_, _| {});
-            Self::state_btn(GameState::Incubator, ui, world, |_, _| {});
             Self::state_btn(GameState::Editor, ui, world, |ui, world| {
                 if "reset state".cstr().button(ui).clicked() {
                     pd_mut(|d| d.client_state.battle_test = default());

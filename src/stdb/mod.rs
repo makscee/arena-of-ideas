@@ -6,8 +6,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
-pub mod battle_insert_reducer;
-pub mod battle_table;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
@@ -16,14 +14,6 @@ pub mod global_data_type;
 pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
-pub mod incubator_delete_reducer;
-pub mod incubator_links_table;
-pub mod incubator_merge_reducer;
-pub mod incubator_nodes_table;
-pub mod incubator_push_reducer;
-pub mod incubator_source_table;
-pub mod incubator_vote_reducer;
-pub mod incubator_votes_table;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
@@ -37,16 +27,14 @@ pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
 pub mod match_start_battle_reducer;
 pub mod match_submit_battle_result_reducer;
+pub mod node_links_table;
 pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
 pub mod sync_assets_reducer;
-pub mod t_battle_type;
-pub mod t_incubator_links_type;
-pub mod t_incubator_source_type;
-pub mod t_incubator_type;
-pub mod t_incubator_votes_type;
+pub mod t_node_link_type;
 pub mod t_node_type;
+pub mod update_links_reducer;
 
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
@@ -55,10 +43,6 @@ pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
 };
-pub use battle_insert_reducer::{
-    battle_insert, set_flags_for_battle_insert, BattleInsertCallbackId,
-};
-pub use battle_table::*;
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
 };
@@ -71,22 +55,6 @@ pub use global_settings_type::GlobalSettings;
 pub use identity_disconnected_reducer::{
     identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
 };
-pub use incubator_delete_reducer::{
-    incubator_delete, set_flags_for_incubator_delete, IncubatorDeleteCallbackId,
-};
-pub use incubator_links_table::*;
-pub use incubator_merge_reducer::{
-    incubator_merge, set_flags_for_incubator_merge, IncubatorMergeCallbackId,
-};
-pub use incubator_nodes_table::*;
-pub use incubator_push_reducer::{
-    incubator_push, set_flags_for_incubator_push, IncubatorPushCallbackId,
-};
-pub use incubator_source_table::*;
-pub use incubator_vote_reducer::{
-    incubator_vote, set_flags_for_incubator_vote, IncubatorVoteCallbackId,
-};
-pub use incubator_votes_table::*;
 pub use login_by_identity_reducer::{
     login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
 };
@@ -113,16 +81,14 @@ pub use match_submit_battle_result_reducer::{
     match_submit_battle_result, set_flags_for_match_submit_battle_result,
     MatchSubmitBattleResultCallbackId,
 };
+pub use node_links_table::*;
 pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
-pub use t_battle_type::TBattle;
-pub use t_incubator_links_type::TIncubatorLinks;
-pub use t_incubator_source_type::TIncubatorSource;
-pub use t_incubator_type::TIncubator;
-pub use t_incubator_votes_type::TIncubatorVotes;
+pub use t_node_link_type::TNodeLink;
 pub use t_node_type::TNode;
+pub use update_links_reducer::{set_flags_for_update_links, update_links, UpdateLinksCallbackId};
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -136,26 +102,10 @@ pub enum Reducer {
     AdminDeleteNodeRecursive {
         id: u64,
     },
-    BattleInsert {
-        team_left: Vec<String>,
-        team_right: Vec<String>,
-    },
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
     },
     IdentityDisconnected,
-    IncubatorDelete {
-        id: u64,
-    },
-    IncubatorMerge,
-    IncubatorPush {
-        nodes: Vec<TNode>,
-        link_from: Option<u64>,
-    },
-    IncubatorVote {
-        from: u64,
-        to: u64,
-    },
     Login {
         name: String,
         pass: String,
@@ -191,13 +141,9 @@ pub enum Reducer {
     },
     SyncAssets {
         global_settings: GlobalSettings,
-        core: Vec<TNode>,
-        players: Vec<TNode>,
-        incubator: Vec<TNode>,
-        incubator_nodes: Vec<TIncubator>,
-        incubator_links: Vec<TIncubatorLinks>,
-        incubator_votes: Vec<TIncubatorVotes>,
+        nodes: String,
     },
+    UpdateLinks,
 }
 
 impl __sdk::InModule for Reducer {
@@ -209,13 +155,8 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
-            Reducer::BattleInsert { .. } => "battle_insert",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
-            Reducer::IncubatorDelete { .. } => "incubator_delete",
-            Reducer::IncubatorMerge => "incubator_merge",
-            Reducer::IncubatorPush { .. } => "incubator_push",
-            Reducer::IncubatorVote { .. } => "incubator_vote",
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
@@ -231,6 +172,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
             Reducer::SyncAssets { .. } => "sync_assets",
+            Reducer::UpdateLinks => "update_links",
         }
     }
 }
@@ -248,10 +190,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
-            "battle_insert" => Ok(__sdk::parse_reducer_args::<
-                battle_insert_reducer::BattleInsertArgs,
-            >("battle_insert", &value.args)?
-            .into()),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,
             >("daily_update_reducer", &value.args)?
@@ -259,22 +197,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "identity_disconnected" => Ok(__sdk::parse_reducer_args::<
                 identity_disconnected_reducer::IdentityDisconnectedArgs,
             >("identity_disconnected", &value.args)?
-            .into()),
-            "incubator_delete" => Ok(__sdk::parse_reducer_args::<
-                incubator_delete_reducer::IncubatorDeleteArgs,
-            >("incubator_delete", &value.args)?
-            .into()),
-            "incubator_merge" => Ok(__sdk::parse_reducer_args::<
-                incubator_merge_reducer::IncubatorMergeArgs,
-            >("incubator_merge", &value.args)?
-            .into()),
-            "incubator_push" => Ok(__sdk::parse_reducer_args::<
-                incubator_push_reducer::IncubatorPushArgs,
-            >("incubator_push", &value.args)?
-            .into()),
-            "incubator_vote" => Ok(__sdk::parse_reducer_args::<
-                incubator_vote_reducer::IncubatorVoteArgs,
-            >("incubator_vote", &value.args)?
             .into()),
             "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
                 "login",
@@ -359,6 +281,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "update_links" => Ok(
+                __sdk::parse_reducer_args::<update_links_reducer::UpdateLinksArgs>(
+                    "update_links",
+                    &value.args,
+                )?
+                .into(),
+            ),
             unknown => {
                 Err(
                     __sdk::InternalError::unknown_name("reducer", unknown, "ReducerCallInfo")
@@ -373,14 +302,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
-    battle: __sdk::TableUpdate<TBattle>,
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
-    incubator_links: __sdk::TableUpdate<TIncubatorLinks>,
-    incubator_nodes: __sdk::TableUpdate<TIncubator>,
-    incubator_source: __sdk::TableUpdate<TIncubatorSource>,
-    incubator_votes: __sdk::TableUpdate<TIncubatorVotes>,
+    node_links: __sdk::TableUpdate<TNodeLink>,
     nodes_world: __sdk::TableUpdate<TNode>,
 }
 
@@ -390,7 +315,6 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in raw.tables {
             match &table_update.table_name[..] {
-                "battle" => db_update.battle = battle_table::parse_table_update(table_update)?,
                 "daily_update_timer" => {
                     db_update.daily_update_timer =
                         daily_update_timer_table::parse_table_update(table_update)?
@@ -402,21 +326,8 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                     db_update.global_settings =
                         global_settings_table::parse_table_update(table_update)?
                 }
-                "incubator_links" => {
-                    db_update.incubator_links =
-                        incubator_links_table::parse_table_update(table_update)?
-                }
-                "incubator_nodes" => {
-                    db_update.incubator_nodes =
-                        incubator_nodes_table::parse_table_update(table_update)?
-                }
-                "incubator_source" => {
-                    db_update.incubator_source =
-                        incubator_source_table::parse_table_update(table_update)?
-                }
-                "incubator_votes" => {
-                    db_update.incubator_votes =
-                        incubator_votes_table::parse_table_update(table_update)?
+                "node_links" => {
+                    db_update.node_links = node_links_table::parse_table_update(table_update)?
                 }
                 "nodes_world" => {
                     db_update.nodes_world = nodes_world_table::parse_table_update(table_update)?
@@ -447,9 +358,6 @@ impl __sdk::DbUpdate for DbUpdate {
     ) -> AppliedDiff<'_> {
         let mut diff = AppliedDiff::default();
 
-        diff.battle = cache
-            .apply_diff_to_table::<TBattle>("battle", &self.battle)
-            .with_updates_by_pk(|row| &row.id);
         diff.daily_update_timer = cache
             .apply_diff_to_table::<DailyUpdateTimer>("daily_update_timer", &self.daily_update_timer)
             .with_updates_by_pk(|row| &row.scheduled_id);
@@ -457,18 +365,7 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         diff.global_settings =
             cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        diff.incubator_links = cache
-            .apply_diff_to_table::<TIncubatorLinks>("incubator_links", &self.incubator_links)
-            .with_updates_by_pk(|row| &row.key);
-        diff.incubator_nodes = cache
-            .apply_diff_to_table::<TIncubator>("incubator_nodes", &self.incubator_nodes)
-            .with_updates_by_pk(|row| &row.id);
-        diff.incubator_source = cache
-            .apply_diff_to_table::<TIncubatorSource>("incubator_source", &self.incubator_source)
-            .with_updates_by_pk(|row| &row.node_id);
-        diff.incubator_votes = cache
-            .apply_diff_to_table::<TIncubatorVotes>("incubator_votes", &self.incubator_votes)
-            .with_updates_by_pk(|row| &row.key);
+        diff.node_links = cache.apply_diff_to_table::<TNodeLink>("node_links", &self.node_links);
         diff.nodes_world = cache
             .apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world)
             .with_updates_by_pk(|row| &row.id);
@@ -481,14 +378,10 @@ impl __sdk::DbUpdate for DbUpdate {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
-    battle: __sdk::TableAppliedDiff<'r, TBattle>,
     daily_update_timer: __sdk::TableAppliedDiff<'r, DailyUpdateTimer>,
     global_data: __sdk::TableAppliedDiff<'r, GlobalData>,
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
-    incubator_links: __sdk::TableAppliedDiff<'r, TIncubatorLinks>,
-    incubator_nodes: __sdk::TableAppliedDiff<'r, TIncubator>,
-    incubator_source: __sdk::TableAppliedDiff<'r, TIncubatorSource>,
-    incubator_votes: __sdk::TableAppliedDiff<'r, TIncubatorVotes>,
+    node_links: __sdk::TableAppliedDiff<'r, TNodeLink>,
     nodes_world: __sdk::TableAppliedDiff<'r, TNode>,
 }
 
@@ -502,7 +395,6 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         event: &EventContext,
         callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
-        callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -514,26 +406,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
             &self.global_settings,
             event,
         );
-        callbacks.invoke_table_row_callbacks::<TIncubatorLinks>(
-            "incubator_links",
-            &self.incubator_links,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TIncubator>(
-            "incubator_nodes",
-            &self.incubator_nodes,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TIncubatorSource>(
-            "incubator_source",
-            &self.incubator_source,
-            event,
-        );
-        callbacks.invoke_table_row_callbacks::<TIncubatorVotes>(
-            "incubator_votes",
-            &self.incubator_votes,
-            event,
-        );
+        callbacks.invoke_table_row_callbacks::<TNodeLink>("node_links", &self.node_links, event);
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
     }
 }
@@ -1110,14 +983,10 @@ impl __sdk::SpacetimeModule for RemoteModule {
     type SubscriptionHandle = SubscriptionHandle;
 
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
-        battle_table::register_table(client_cache);
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
-        incubator_links_table::register_table(client_cache);
-        incubator_nodes_table::register_table(client_cache);
-        incubator_source_table::register_table(client_cache);
-        incubator_votes_table::register_table(client_cache);
+        node_links_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
     }
 }

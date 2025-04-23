@@ -7,6 +7,7 @@ mod inject;
 mod macro_fn;
 #[allow(dead_code)]
 mod nodes;
+mod packed_nodes;
 mod painter_action;
 mod reaction;
 mod trigger;
@@ -23,6 +24,7 @@ pub use expression::*;
 pub use fusion::*;
 pub use inject::*;
 pub use macro_fn::*;
+pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;
 use ron::ser::{to_string_pretty, PrettyConfig};
@@ -36,11 +38,10 @@ use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
 pub use utils::*;
 
 pub const ID_CORE: u64 = 1;
-pub const ID_INCUBATOR: u64 = 2;
-pub const ID_PLAYERS: u64 = 3;
-pub const ID_ARENA: u64 = 4;
+pub const ID_PLAYERS: u64 = 2;
+pub const ID_ARENA: u64 = 3;
 
-pub const NODE_CONTAINERS: [u64; 4] = [ID_CORE, ID_INCUBATOR, ID_PLAYERS, ID_ARENA];
+pub const NODE_CONTAINERS: [u64; 3] = [ID_CORE, ID_PLAYERS, ID_ARENA];
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
@@ -64,8 +65,8 @@ where
     }
 }
 
-pub type NodeChildren<T> = Vec<T>;
-pub type NodeComponent<T> = Option<T>;
+pub type LinkMany<T> = Vec<T>;
+pub type LinkOne<T> = Option<T>;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct HexColor(pub String);

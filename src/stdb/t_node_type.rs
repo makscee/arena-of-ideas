@@ -8,9 +8,10 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TNode {
     pub id: u64,
-    pub parent: u64,
+    pub owner: u64,
     pub kind: String,
     pub data: String,
+    pub score: i32,
 }
 
 impl __sdk::InModule for TNode {

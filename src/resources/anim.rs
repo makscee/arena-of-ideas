@@ -99,7 +99,7 @@ impl AnimAction {
                     material: *material.clone(),
                     ..default()
                 }
-                .unpack(entity, world);
+                .unpack_entity(entity, world);
 
                 let mut state = NodeState::from_world_mut(entity, world).unwrap();
                 state.insert(0.0, 0.0, VarName::visible, false.into());

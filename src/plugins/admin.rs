@@ -14,7 +14,7 @@ impl AdminPlugin {
             let houses = context
                 .children_components::<NHouse>(e)
                 .into_iter()
-                .filter_map(|h| NHouse::pack(e, context))
+                .filter_map(|h| NHouse::pack_entity(e, context))
                 .collect_vec();
             for h in houses {
                 h.view(ViewContext::new(ui), &default(), ui);
@@ -47,7 +47,7 @@ impl AdminPlugin {
                 .db
                 .nodes_world()
                 .iter()
-                .filter(|n| n.parent == id)
+                .filter(|n| n.id.is_child_of(id))
                 .sorted_by_key(|n| n.id)
             {
                 let title = n.kind;
@@ -74,21 +74,16 @@ impl AdminPlugin {
                 if let Some(core) = NCore::get_by_id(ID_CORE, context) {
                     core.view(view_ctx, context, ui);
                 }
-                if let Some(incubator) = NIncubator::get_by_id(ID_INCUBATOR, context) {
-                    incubator.view(view_ctx, context, ui);
-                }
                 if let Some(players) = NPlayers::get_by_id(ID_PLAYERS, context) {
                     players.view(view_ctx, context, ui);
                 }
             })
             .push(world);
         }
-        if "Incubator Merge".cstr().button(ui).clicked() {
-            cn().reducers.incubator_merge().unwrap();
-        }
         if "Export Players".cstr().button(ui).clicked() {
             let context = &Context::new(world);
-            let players = NPlayers::pack(world.get_id_link(ID_PLAYERS).unwrap(), context).unwrap();
+            let players =
+                NPlayers::pack_entity(world.get_id_link(ID_PLAYERS).unwrap(), context).unwrap();
             dbg!(&players);
             let dir = players.to_dir("players".into());
             let dir = Dir::new("players", dir);
@@ -98,7 +93,7 @@ impl AdminPlugin {
         }
         if "Export NCore".cstr().button(ui).clicked() {
             let context = &Context::new(world);
-            let core = NCore::pack(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
+            let core = NCore::pack_entity(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
             dbg!(&core);
             let dir = core.to_dir("core".into());
             let dir = Dir::new("core", dir);
@@ -106,25 +101,9 @@ impl AdminPlugin {
             std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
             dir.extract(path).unwrap();
         }
-        if "Export Incubator".cstr().button(ui).clicked() {
-            let context = &Context::new(world);
-            let inc = NIncubator::pack(world.get_id_link(ID_INCUBATOR).unwrap(), context).unwrap();
-            dbg!(&inc);
-            let dir = inc.to_dir("incubator".into());
-            let dir = Dir::new("incubator", dir);
-            let path = "./assets/ron/";
-            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
-            dir.extract(path).unwrap();
-        }
-        if "Export Incubator Data".cstr().button(ui).clicked() {
-            GameAssets::update_files();
-        }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);
             "notify error test".notify_error(world);
-        }
-        if "Incubator".cstr().button(ui).clicked() {
-            GameState::Incubator.set_next(world);
         }
     }
 }

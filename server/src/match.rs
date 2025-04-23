@@ -1,6 +1,6 @@
 use std::i32;
 
-use rand::seq::{IteratorRandom, SliceRandom};
+use rand::seq::SliceRandom;
 
 use super::*;
 
@@ -31,12 +31,11 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let _ = team.houses_load(ctx);
     let houses = &mut team.houses;
     if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
-        unit.clone(ctx, h.id, &mut default());
+        unit.clone(ctx, &mut default()).id.add_parent(ctx, h.id)?;
     } else {
-        let house = house
-            .with_components(ctx)
-            .clone(ctx, team.id, &mut default());
-        unit.clone(ctx, house.id, &mut default());
+        let house = house.with_components(ctx).clone(ctx, &mut default());
+        house.id.add_parent(ctx, team.id)?;
+        unit.clone(ctx, &mut default()).id.add_parent(ctx, house.id);
     }
     player.save(ctx);
     Ok(())
@@ -80,12 +79,14 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
+    let pid = player.id;
     let team = player.active_match_load(ctx)?.team_load(ctx)?;
     let _ = team.fusions_load(ctx);
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = NFusion::new(ctx, team.id(), i32::MAX, default(), default());
+    let fusion = NFusion::new(ctx, pid, i32::MAX, default(), default());
+    fusion.id.add_parent(ctx, team.id());
     team.fusions.push(fusion);
     for (i, fusion) in team
         .fusions
@@ -118,6 +119,7 @@ fn match_edit_fusion(ctx: &ReducerContext, fusion: TNode) -> Result<(), String> 
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
+    let pid = player.id;
     if let Ok(m) = player.active_match_load(ctx) {
         m.delete_recursive(ctx);
     }
@@ -125,18 +127,22 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let units = core.all_units(ctx)?;
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
-    let mut m = NMatch::new(ctx, player.id, gs.match_g.initial, 0, 0, 3, true);
-    let team = NTeam::new(ctx, m.id, player.id);
+    let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
+    m.id.add_parent(ctx, player.id);
+    let team = NTeam::new(ctx, pid);
+    team.id.add_parent(ctx, m.id);
     m.team = Some(team);
     m.shop_case = (0..3)
         .map(|_| {
-            NShopCaseUnit::new(
+            let n = NShopCaseUnit::new(
                 ctx,
-                m.id,
+                pid,
                 price,
                 units.choose(&mut ctx.rng()).unwrap().id,
                 false,
-            )
+            );
+            n.id.add_parent(ctx, m.id);
+            n
         })
         .collect_vec();
     player.active_match = Some(m);
@@ -147,6 +153,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
+    let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let m_id = m.id;
     m.round += 1;
@@ -157,33 +164,35 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {
         pool.id
     } else {
-        let new_pool = NFloorPool::new(ctx, arena.id, floor);
+        let new_pool = NFloorPool::new(ctx, 0, floor);
+        new_pool.id.add_parent(ctx, arena.id);
         let id = new_pool.id;
         arena.floor_pools.push(new_pool);
         id
     };
-    if let Some(team) = ctx
-        .db
-        .nodes_world()
-        .parent()
-        .filter(pool_id)
+    if let Some(team) = pool_id
+        .collect_kind_parents(ctx, NodeKind::NTeam)
         .choose(&mut ctx.rng())
+        .and_then(|id| NTeam::get(ctx, *id))
     {
-        let player_team_id = player_team.clone_ids_remap(ctx, pool_id).id;
+        let player_team_id = player_team.clone_ids_remap(ctx, pool_id)?.id;
         NBattle::new(
             ctx,
-            m_id,
+            pid,
             player_team_id,
             team.id,
             ctx.timestamp.to_micros_since_unix_epoch() as u64,
             default(),
             None,
-        );
+        )
+        .id
+        .add_parent(ctx, m_id);
     } else {
         let _ = arena.floor_bosses_load(ctx);
-        let floor_boss = NFloorBoss::new(ctx, arena.id, floor);
-        player_team.clone_ids_remap(ctx, floor_boss.id);
-        player_team.clone_ids_remap(ctx, pool_id);
+        let floor_boss = NFloorBoss::new(ctx, 0, floor);
+        floor_boss.id.add_parent(ctx, arena.id);
+        player_team.clone_ids_remap(ctx, floor_boss.id)?;
+        player_team.clone_ids_remap(ctx, pool_id)?;
         m.active = false;
     }
     player.save(ctx);

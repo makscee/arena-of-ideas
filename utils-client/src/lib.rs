@@ -1,37 +1,31 @@
 mod game_timer;
+mod links;
 mod operations;
+mod world_id_link;
 
 use arboard::Clipboard;
 pub use game_timer::*;
+pub use links::*;
 pub use operations::*;
+pub use world_id_link::*;
 
+use bevy::utils::hashbrown::HashMap;
+use bevy::utils::HashSet;
 use bevy::{math::vec2, prelude::*};
+use once_cell::sync::OnceCell;
+
 use bevy_egui::{
     egui::{
         self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui,
     },
     EguiContext,
 };
+
 use parking_lot::{Mutex, MutexGuard};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use schema::{ExpressionError, VarValue};
+use schema::{ExpressionError, OptionExpressionError, VarValue};
 use serde::Serialize;
 
-pub fn get_children(entity: Entity, world: &World) -> Vec<Entity> {
-    world
-        .get::<Children>(entity)
-        .map(|c| c.to_vec())
-        .unwrap_or_default()
-}
-pub fn get_children_recursive(entity: Entity, world: &World) -> Vec<Entity> {
-    let mut children = get_children(entity, world);
-    let mut i = 0;
-    while i < children.len() {
-        children.extend(get_children(children[i], world));
-        i += 1;
-    }
-    children
-}
 pub fn get_parent(entity: Entity, world: &World) -> Option<Entity> {
     world.get::<Parent>(entity).map(|p| p.get())
 }
@@ -289,28 +283,13 @@ impl CtxExt for egui::Context {
     }
 }
 
-pub trait EntityExt {
-    fn get_children(self, world: &World) -> Vec<Entity>;
-    fn get_parent(self, world: &World) -> Option<Entity>;
-    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity>;
-    fn to_value(self) -> VarValue;
+pub trait U64Ext {
+    fn entity(self, world: &World) -> Option<Entity>;
 }
 
-impl EntityExt for Entity {
-    fn get_children(self, world: &World) -> Vec<Entity> {
-        world
-            .get::<Children>(self)
-            .map(|c| c.to_vec())
-            .unwrap_or_default()
-    }
-    fn get_parent(self, world: &World) -> Option<Entity> {
-        world.get::<Parent>(self).map(|p| p.get())
-    }
-    fn get_parent_query(self, query: &Query<&Parent>) -> Option<Entity> {
-        query.get(self).ok().map(|p| p.get())
-    }
-    fn to_value(self) -> VarValue {
-        VarValue::Entity(self.to_bits())
+impl U64Ext for u64 {
+    fn entity(self, world: &World) -> Option<Entity> {
+        world.get_id_link(self)
     }
 }
 

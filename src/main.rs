@@ -53,6 +53,7 @@ fn main() {
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
     };
+    links_init();
     PersistentDataPlugin::load();
     parse_content_tree();
     GameState::set_target(target);
@@ -102,9 +103,7 @@ fn main() {
             AudioPlugin,
             ConfirmationPlugin,
             AdminPlugin,
-            FusionEditorPlugin,
             StdbPlugin,
-            IncubatorPlugin,
             NotificationsPlugin,
         ))
         .init_state::<GameState>();

@@ -4,7 +4,7 @@ use super::*;
 pub struct ClientState {
     pub last_logged_in: Option<(String, Identity)>,
     pub edit_anim: Option<Anim>,
-    pub battle_test: (Vec<String>, Vec<String>),
+    pub battle_test: (PackedNodes, PackedNodes),
     pub tile_states: HashMap<GameState, Tree<Pane>>,
 }
 
@@ -16,15 +16,17 @@ impl PersistentData for ClientState {
 
 impl ClientState {
     pub fn get_battle_test_teams(&self) -> Option<(NTeam, NTeam)> {
-        let left: Vec<TNode> = self.battle_test.0.iter().map(|n| n.into()).collect_vec();
-        let right: Vec<TNode> = self.battle_test.1.iter().map(|n| n.into()).collect_vec();
-        Some((
-            NTeam::from_tnodes(left.get(0)?.id, &left)?,
-            NTeam::from_tnodes(right.get(0)?.id, &right)?,
-        ))
+        let left = &self.battle_test.0;
+        let right = &self.battle_test.0;
+        if left.root == 0 || right.root == 0 {
+            return None;
+        }
+        let left = NTeam::unpack_id(left.root, left)?;
+        let right = NTeam::unpack_id(right.root, right)?;
+        Some((left, right))
     }
     pub fn set_battle_test_teams(&mut self, left: &NTeam, right: &NTeam) {
-        self.battle_test.0 = left.to_tnodes().into_iter().map(|n| n.into()).collect();
-        self.battle_test.1 = right.to_tnodes().into_iter().map(|n| n.into()).collect();
+        self.battle_test.0 = left.pack();
+        self.battle_test.1 = right.pack();
     }
 }

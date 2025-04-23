@@ -40,8 +40,14 @@ impl BattleData {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        battle.left.clone().unpack(team_left, &mut teams_world);
-        battle.right.clone().unpack(team_right, &mut teams_world);
+        battle
+            .left
+            .clone()
+            .unpack_entity(team_left, &mut teams_world);
+        battle
+            .right
+            .clone()
+            .unpack_entity(team_right, &mut teams_world);
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -345,17 +351,14 @@ impl BattlePlugin {
                 let id = next_id();
                 NFusion {
                     id,
-                    parent: team.id(),
+                    owner: player_id(),
                     entity: None,
                     units: Vec::new(),
                     behavior: Vec::new(),
                     slot,
                     stats: None,
                 }
-                .unpack(
-                    teams_world.spawn_empty().set_parent(team_entity).id(),
-                    teams_world,
-                );
+                .unpack_entity(teams_world.spawn_empty().id(), teams_world);
             }
             if let Some(fusion) = edited {
                 teams_world.entity_mut(fusion.entity()).insert(fusion);
@@ -364,7 +367,7 @@ impl BattlePlugin {
 
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
-                let updated_team = NTeam::pack(team_entity, &teams_world.into()).unwrap();
+                let updated_team = NTeam::pack_entity(team_entity, &teams_world.into()).unwrap();
                 let team = if left {
                     &mut battle.left
                 } else {

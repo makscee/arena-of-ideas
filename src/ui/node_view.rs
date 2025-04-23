@@ -30,7 +30,6 @@ fn colored_name(node: &impl Node, name: &str, context: &Context, ui: &mut Ui) ->
 
 impl NodeView for NCore {}
 impl NodeView for NPlayers {}
-impl NodeView for NIncubator {}
 impl NodeView for NPlayer {}
 impl NodeView for NPlayerData {}
 impl NodeView for NPlayerIdentity {}
