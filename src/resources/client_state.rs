@@ -17,7 +17,7 @@ impl PersistentData for ClientState {
 impl ClientState {
     pub fn get_battle_test_teams(&self) -> Option<(NTeam, NTeam)> {
         let left = &self.battle_test.0;
-        let right = &self.battle_test.0;
+        let right = &self.battle_test.1;
         if left.root == 0 || right.root == 0 {
             return None;
         }

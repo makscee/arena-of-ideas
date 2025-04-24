@@ -26,10 +26,6 @@ use ron::ser::{to_string_pretty, PrettyConfig};
 use schema::{ExpressionError, OptionExpressionError, VarValue};
 use serde::Serialize;
 
-pub fn get_parent(entity: Entity, world: &World) -> Option<Entity> {
-    world.get::<Parent>(entity).map(|p| p.get())
-}
-
 static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);
 pub fn unit_pixels() -> f32 {
     *UNIT_PIXELS.lock()

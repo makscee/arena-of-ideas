@@ -47,7 +47,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     }
     fn find_up<'a, T: Component>(&self, context: &'a Context) -> Option<&'a T> {
         let entity = self.get_entity().expect("Node not linked to world");
-        context.find_parent_component::<T>(entity)
+        context.find_parent_node::<T>(entity)
     }
     fn collect_children_entity<'a, T: Component>(entity: Entity, world: &'a World) -> Vec<&'a T> {
         entity
@@ -91,10 +91,10 @@ where
         }
     }
     fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self> {
-        context.get_component::<Self>(entity)
+        context.get_node::<Self>(entity)
     }
     fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self> {
-        context.get_component_by_id::<Self>(id)
+        context.get_node_by_id::<Self>(id)
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
@@ -332,7 +332,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                     return;
                 };
                 let view_ctx = ViewContext::new(ui);
-                for d in context.children_components_recursive::<T>(entity) {
+                for d in context.children_nodes_recursive::<T>(entity) {
                     let name = d.title_cstr(view_ctx, context);
                     if ui
                         .menu_button(name.widget(1.0, ui.style()), |ui| {

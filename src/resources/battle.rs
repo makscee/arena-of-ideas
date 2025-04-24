@@ -112,14 +112,14 @@ impl BattleAction {
                 );
                 let context = &Context::new(&battle.world);
                 let pwr = context
-                    .get_component::<NFusion>(*a)
+                    .get_node::<NFusion>(*a)
                     .unwrap()
                     .pwr_hp(context)
                     .unwrap()
                     .0;
                 let action_a = Self::damage(*a, *b, pwr);
                 let pwr = context
-                    .get_component::<NFusion>(*b)
+                    .get_node::<NFusion>(*b)
                     .unwrap()
                     .pwr_hp(context)
                     .unwrap()
@@ -316,7 +316,7 @@ impl BattleSimulation {
         }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::new(&world)
-                .children_components_recursive::<NFusion>(parent)
+                .children_nodes_recursive::<NFusion>(parent)
                 .into_iter()
                 .sorted_by_key(|s| s.slot)
                 .map(|n| n.entity())

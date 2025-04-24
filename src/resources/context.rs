@@ -172,32 +172,32 @@ impl<'w> Context<'w> {
     pub fn entity_by_id(&self, id: u64) -> Option<Entity> {
         self.get_world()?.get_id_link(id)
     }
-    pub fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
+    pub fn get_node<T: Component>(&self, entity: Entity) -> Option<&T> {
         self.get_world()?.get::<T>(entity)
     }
-    pub fn get_component_by_id<T: Component>(&self, id: u64) -> Option<&T> {
+    pub fn get_node_by_id<T: Component>(&self, id: u64) -> Option<&T> {
         let world = self.get_world()?;
         world.get::<T>(world.get_id_link(id)?)
     }
-    pub fn find_parent_component<T: Component>(&self, mut entity: Entity) -> Option<&T> {
+    pub fn find_parent_node<T: Component>(&self, mut entity: Entity) -> Option<&T> {
         while let Some(parent) = self.get_parent(entity) {
-            if let Some(c) = self.get_component::<T>(parent) {
+            if let Some(c) = self.get_node::<T>(parent) {
                 return Some(c);
             }
             entity = parent;
         }
         None
     }
-    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<&T> {
+    pub fn children_nodes<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.sources
             .iter()
-            .flat_map(|s| s.children_components::<T>(entity))
+            .flat_map(|s| s.children_nodes::<T>(entity))
             .collect()
     }
-    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
+    pub fn children_nodes_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.sources
             .iter()
-            .flat_map(|s| s.children_components_recursive::<T>(entity))
+            .flat_map(|s| s.children_nodes_recursive::<T>(entity))
             .collect()
     }
     pub fn all_allies(&self, entity: Entity) -> Vec<VarValue> {
@@ -274,8 +274,8 @@ impl ContextSource<'_> {
     }
     pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
         match self {
-            ContextSource::World(w) => get_parent(entity, w),
-            ContextSource::BattleSimulation(bs) => get_parent(entity, &bs.world),
+            ContextSource::World(w) => entity.get_parents(w).first().copied(),
+            ContextSource::BattleSimulation(bs) => entity.get_parents(&bs.world).first().copied(),
         }
     }
     fn get_all_fusions(&self) -> Vec<Entity> {
@@ -289,23 +289,23 @@ impl ContextSource<'_> {
             _ => default(),
         }
     }
-    fn get_component<T: Component>(&self, entity: Entity) -> Option<&T> {
+    fn get_node<T: Component>(&self, entity: Entity) -> Option<&T> {
         match self {
             ContextSource::World(world) => world.get::<T>(entity),
             ContextSource::BattleSimulation(bs) => bs.world.get::<T>(entity),
             _ => None,
         }
     }
-    pub fn children_components<T: Component>(&self, entity: Entity) -> Vec<&T> {
+    pub fn children_nodes<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.get_children(entity)
             .into_iter()
-            .filter_map(|e| self.get_component(e))
+            .filter_map(|e| self.get_node(e))
             .collect()
     }
-    pub fn children_components_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
+    pub fn children_nodes_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
         self.get_children_recursive(entity)
             .into_iter()
-            .filter_map(|e| self.get_component(e))
+            .filter_map(|e| self.get_node(e))
             .collect()
     }
     pub fn collect_enemies(&self, entity: Entity) -> Vec<Entity> {
@@ -364,7 +364,7 @@ impl ContextLayer<'_> {
                 if var.is_stat() {
                     if let Some(mut new_value) = value {
                         if let Some(units) = context
-                            .get_component::<NFusion>(*entity)
+                            .get_node::<NFusion>(*entity)
                             .and_then(|f| f.units(context).ok())
                         {
                             for unit in units {

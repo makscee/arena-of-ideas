@@ -87,14 +87,14 @@ impl BattleCamera {
                 let pos = cam.rect_pos(pos);
                 let rect = Rect::from_center_size(pos, cam.u().v2() * 2.0);
                 if fusions.contains(&entity) {
-                    let fusion = context.get_component::<NFusion>(entity).unwrap();
+                    let fusion = context.get_node::<NFusion>(entity).unwrap();
                     fusion.paint(rect, &context, ui).ui(ui);
                     if ui.rect_contains_pointer(rect) {
                         cursor_window(ui.ctx(), |ui| {
                             fusion.show_card(&context, ui).ui(ui);
                         });
                     }
-                } else if let Some(rep) = context.get_component::<NRepresentation>(entity) {
+                } else if let Some(rep) = context.get_node::<NRepresentation>(entity) {
                     rep.pain_or_show_err(rect, &context, ui);
                 }
             }

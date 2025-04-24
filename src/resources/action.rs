@@ -69,17 +69,17 @@ impl ActionImpl for Action {
             Action::use_ability => {
                 let caster = context.get_caster()?;
                 let ability = context
-                    .find_parent_component::<NAbilityMagic>(caster)
+                    .find_parent_node::<NAbilityMagic>(caster)
                     .to_e_fn(|| format!("Failed to find AbilityMagic of {caster}"))?;
                 let name = &ability.ability_name;
                 let entity = ability.entity();
                 let ability_actions = context
-                    .get_component::<NAbilityEffect>(entity)
+                    .get_node::<NAbilityEffect>(entity)
                     .to_e("AbilityEffect not found")?
                     .actions
                     .clone();
                 let color = context
-                    .find_parent_component::<NHouseColor>(caster)
+                    .find_parent_node::<NHouseColor>(caster)
                     .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
                     .color
                     .c32();
@@ -101,21 +101,21 @@ impl ActionImpl for Action {
                     return Err("No targets".into());
                 }
                 let status = context
-                    .find_parent_component::<NStatusMagic>(caster)
+                    .find_parent_node::<NStatusMagic>(caster)
                     .to_e_fn(|| format!("Failed to find StatusMagic of {caster}"))?;
                 let name = &status.status_name;
                 let entity = status.entity();
                 let mut status = status.clone();
                 let mut description = context
-                    .get_component::<NStatusDescription>(entity)
+                    .get_node::<NStatusDescription>(entity)
                     .to_e("NStatusDescription not found")?
                     .clone();
                 let behavior = context
-                    .get_component::<NBehavior>(entity)
+                    .get_node::<NBehavior>(entity)
                     .to_e("Behavior not found")?
                     .clone();
                 let color = context
-                    .find_parent_component::<NHouseColor>(caster)
+                    .find_parent_node::<NHouseColor>(caster)
                     .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
                     .color
                     .c32();
@@ -128,7 +128,7 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                let representation = context.get_component::<NRepresentation>(entity).cloned();
+                let representation = context.get_node::<NRepresentation>(entity).cloned();
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;

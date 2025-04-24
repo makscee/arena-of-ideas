@@ -204,12 +204,15 @@ impl TNode {
     pub fn find(ctx: &ReducerContext, id: u64) -> Option<Self> {
         ctx.db.nodes_world().id().find(id)
     }
+    pub fn delete_by_id(ctx: &ReducerContext, id: u64) {
+        ctx.db.nodes_world().id().delete(id);
+        ctx.db.node_links().child().delete(id);
+        ctx.db.node_links().parent().delete(id);
+    }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
         let ids = id.collect_children_recursive(ctx);
         for id in &ids {
-            ctx.db.nodes_world().id().delete(id);
-            ctx.db.node_links().child().delete(id);
-            ctx.db.node_links().parent().delete(id);
+            Self::delete_by_id(ctx, *id);
         }
     }
     pub fn to_node<T: Node + StringData>(&self) -> Result<T, String> {

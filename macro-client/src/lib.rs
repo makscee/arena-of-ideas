@@ -127,13 +127,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #one_types> {
                             self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#one_types>(e))
+                                    .and_then(|e| context.get_node::<#one_types>(e))
                             })
                         }
                         pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
                             self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#one_types>(e))
+                                    .and_then(|e| context.get_node::<#one_types>(e))
                             }).to_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
                         }
                     )*
@@ -142,7 +142,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             if !self.#many_fields.is_empty() {
                                 self.#many_fields.iter().collect()
                             } else if let Some(entity) = self.entity {
-                                context.children_components::<#many_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
+                                context.children_nodes::<#many_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
                             } else {
                                 default()
                             }
@@ -195,7 +195,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             if let Some(v) = self.#one_fields.as_ref()
                                 .or_else(|| {
                                     self.entity
-                                        .and_then(|e| context.get_component::<#one_types>(e))
+                                        .and_then(|e| context.get_node::<#one_types>(e))
                                 })
                                 .and_then(|d| d.get_var(var, context)).clone() {
                                 return Some(v);
@@ -231,7 +231,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_component::<#one_types>(e))
+                                    .and_then(|e| context.get_node::<#one_types>(e))
                             }) {
                                 vars.extend(d.get_vars(context));
                             }
@@ -369,7 +369,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         Some(d)
                     }
                     fn pack_entity(entity: Entity, context: &Context) -> Option<Self> {
-                        let mut s = context.get_component::<Self>(entity)?.clone();
+                        let mut s = context.get_node::<Self>(entity)?.clone();
                         #(
                             s.#one_fields = #one_types::pack_entity(entity, context);
                         )*
@@ -436,7 +436,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         ui.menu_button("publish to incubator", |ui| {
-                            todo!();
+
                         });
                     }
                     fn context_menu_extra_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {

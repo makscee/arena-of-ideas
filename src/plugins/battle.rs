@@ -349,6 +349,7 @@ impl BattlePlugin {
                 let team = NTeam::get(team_entity, context).unwrap();
                 let slot = team.fusions_load(context).len() as i32;
                 let id = next_id();
+                id.add_parent(team.id);
                 NFusion {
                     id,
                     owner: player_id(),
@@ -359,6 +360,7 @@ impl BattlePlugin {
                     stats: None,
                 }
                 .unpack_entity(teams_world.spawn_empty().id(), teams_world);
+                changed = true;
             }
             if let Some(fusion) = edited {
                 teams_world.entity_mut(fusion.entity()).insert(fusion);
@@ -368,6 +370,7 @@ impl BattlePlugin {
             if changed {
                 world.resource_mut::<ReloadData>().reload_requested = true;
                 let updated_team = NTeam::pack_entity(team_entity, &teams_world.into()).unwrap();
+                dbg!(&updated_team);
                 let team = if left {
                     &mut battle.left
                 } else {

@@ -34,7 +34,7 @@ impl NFusion {
         let mut units = Vec::new();
         for id in &self.units {
             let unit = context
-                .get_component_by_id::<NUnit>(*id)
+                .get_node_by_id::<NUnit>(*id)
                 .to_e_fn(|| format!("Failed to get NUnit#{id}"))?;
             units.push(unit);
         }
@@ -99,13 +99,13 @@ impl NFusion {
         let units = self.units(context)?;
         for unit in units {
             let unit = unit.entity();
-            let Some(rep) = context.get_component::<NRepresentation>(unit) else {
+            let Some(rep) = context.get_node::<NRepresentation>(unit) else {
                 continue;
             };
             let context = context.clone().set_owner(unit).set_owner(entity).take();
             RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)?;
         }
-        if let Some(rep) = context.get_component::<NRepresentation>(entity) {
+        if let Some(rep) = context.get_node::<NRepresentation>(entity) {
             RepresentationPlugin::paint_rect(
                 rect,
                 context.clone().set_owner(entity),
@@ -270,6 +270,9 @@ impl NFusion {
         )
         .to_e("Team not found")?;
         let units = team.roster_units_load(context);
+        if response.clicked() {
+            debug!("clicked");
+        }
         response
             .on_hover_ui(|ui| {
                 self.show_card(context, ui).ui(ui);
@@ -327,7 +330,7 @@ impl NFusion {
         on_edited: impl FnOnce(NFusion),
     ) -> Result<(), ExpressionError> {
         let team = context
-            .get_component::<NTeam>(team)
+            .get_node::<NTeam>(team)
             .to_e("Failed to get Team component")?;
         let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
             team.fusions_load(context)
@@ -351,6 +354,7 @@ impl NFusion {
                             }
                         }
                         Err(e) => {
+                            let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
                             e.cstr().label(ui);
                         }
                     }

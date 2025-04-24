@@ -77,7 +77,7 @@ where
         ctx.db.nodes_world().id().update(node);
     }
     fn delete_self(&self, ctx: &ReducerContext) {
-        ctx.db.nodes_world().id().delete(self.id());
+        TNode::delete_by_id(ctx, self.id());
     }
     fn delete_recursive(&self, ctx: &ReducerContext) {
         TNode::delete_by_id_recursive(ctx, self.id());

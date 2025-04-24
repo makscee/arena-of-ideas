@@ -154,7 +154,7 @@ impl NodeState {
         true
     }
     pub fn find_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
-        let v = context.get_component::<NodeState>(entity).and_then(|s| {
+        let v = context.get_node::<NodeState>(entity).and_then(|s| {
             if let Some(t) = context.get_t() {
                 s.get_at(t, var)
             } else {

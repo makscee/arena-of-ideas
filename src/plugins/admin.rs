@@ -12,7 +12,7 @@ impl AdminPlugin {
         if let Some(e) = world.get_id_link(ID_CORE) {
             let context = &Context::new(world);
             let houses = context
-                .children_components::<NHouse>(e)
+                .children_nodes::<NHouse>(e)
                 .into_iter()
                 .filter_map(|h| NHouse::pack_entity(e, context))
                 .collect_vec();

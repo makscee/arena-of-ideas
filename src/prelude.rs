@@ -116,4 +116,4 @@ pub use std::{
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString, FromRepr};
 pub use ui::*;
-pub use utils_client::{get_parent, ToC32, ToColor, *};
+pub use utils_client::{ToC32, ToColor, *};

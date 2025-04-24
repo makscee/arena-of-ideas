@@ -206,7 +206,7 @@ impl NFusion {
         let context = &context.clone().set_owner(self.entity()).take();
         let pwr = context.get_var(VarName::pwr)?;
         let hp = context.get_var(VarName::hp)?;
-        let statuses = context.children_components::<NStatusMagic>(self.entity());
+        let statuses = context.children_nodes::<NStatusMagic>(self.entity());
 
         ui.horizontal(|ui| {
             TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
