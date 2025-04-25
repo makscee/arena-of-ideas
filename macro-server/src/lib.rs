@@ -151,7 +151,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                             self.#one_fields
                                 .as_mut()
-                                .to_e_s_fn(|| format!("{} not found for {}", #one_types::kind_s(), id))
+                                .to_custom_e_s_fn(|| format!("{} not found for {}", #one_types::kind_s(), id))
                         }
                     )*
                     #(

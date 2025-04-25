@@ -13,7 +13,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         .shop_case_load(ctx)?
         .into_iter()
         .find(|s| s.id() == id)
-        .to_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
+        .to_custom_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
     if sc.price > g {
         return Err("Not enough g".into());
     }
@@ -22,7 +22,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let price = sc.price;
     m.g -= price;
     let unit = NUnit::get(ctx, unit)
-        .to_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
+        .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
         .with_children(ctx)
         .with_components(ctx)
         .take();
@@ -50,7 +50,7 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
         .roster_units_load(ctx)?
         .into_iter()
         .find(|u| u.unit_name == name)
-        .to_e_s_fn(|| format!("Failed to find unit {name}"))?;
+        .to_custom_e_s_fn(|| format!("Failed to find unit {name}"))?;
     unit.delete_recursive(ctx);
     player.save(ctx);
     Ok(())
@@ -158,7 +158,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let m_id = m.id;
     m.round += 1;
     let floor = m.floor;
-    let mut arena = NArena::get(ctx, ID_ARENA).to_e_s("Failed to get Arena")?;
+    let mut arena = NArena::get(ctx, ID_ARENA).to_custom_e_s("Failed to get Arena")?;
     let _ = arena.floor_pools_load(ctx);
     let player_team = m.team_load(ctx)?.with_children(ctx).with_components(ctx);
     let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {

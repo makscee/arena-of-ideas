@@ -153,23 +153,38 @@ impl NodeState {
         }
         true
     }
-    pub fn find_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
-        let v = context.get_node::<NodeState>(entity).and_then(|s| {
-            if let Some(t) = context.get_t() {
-                s.get_at(t, var)
+    pub fn get_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
+        if let Ok(ns) = context.get::<NodeState>(entity) {
+            if let Some(t) = context.t {
+                ns.get_at(t, var)
             } else {
-                s.get(var)
+                ns.get(var)
             }
-        });
-        if v.is_some() {
-            v
         } else {
-            if let Some(p) = context.get_parent(entity) {
-                Self::find_var(var, p, context)
-            } else {
-                None
+            None
+        }
+    }
+    pub fn find_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
+        let mut checked: HashSet<Entity> = default();
+        let mut q = VecDeque::from([entity]);
+        while let Some(entity) = q.pop_front() {
+            let v = Self::get_var(var, entity, context);
+            if v.is_some() {
+                return v;
+            }
+            let Some(id) = context.id(entity).ok_log() else {
+                continue;
+            };
+            let Some(parents) = context.ids_to_entities(context.parents(id)).ok_log() else {
+                continue;
+            };
+            for parent in parents {
+                if checked.insert(parent) {
+                    q.push_back(parent);
+                }
             }
         }
+        None
     }
 }
 

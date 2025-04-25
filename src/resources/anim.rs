@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 
-pub struct Animator<'w> {
+pub struct Animator {
     targets: Vec<Entity>,
-    context: Context<'w>,
     duration: f32,
     timeframe: f32,
 }
@@ -34,16 +33,11 @@ impl Anim {
             actions: actions.into_iter().map(|a| Box::new(a)).collect(),
         }
     }
-    pub fn apply(
-        &self,
-        t: &mut f32,
-        context: Context,
-        world: &mut World,
-    ) -> Result<f32, ExpressionError> {
-        let a = &mut Animator::new(context);
+    pub fn apply(&self, t: &mut f32, context: &mut Context) -> Result<f32, ExpressionError> {
+        let a = &mut Animator::new();
         let mut end_t = *t;
         for action in &self.actions {
-            end_t = end_t.max(action.apply(t, a, world)?);
+            end_t = end_t.max(action.apply(t, a, context)?);
         }
         Ok(end_t)
     }
@@ -58,42 +52,40 @@ impl AnimAction {
         &self,
         t: &mut f32,
         a: &mut Animator,
-        world: &mut World,
+        context: &mut Context,
     ) -> Result<f32, ExpressionError> {
         let mut end_t = 0.0;
         match self {
             AnimAction::translate(x) => {
-                let pos = x.get_vec2(&a.context.with_world(world))?;
+                let pos = x.get_vec2(context)?;
                 for target in a.targets.iter().copied() {
-                    NodeState::from_world_mut(target, world).unwrap().insert(
-                        *t,
-                        a.duration,
-                        VarName::position,
-                        pos.into(),
-                    );
+                    NodeState::from_world_mut(target, context.world_mut().to_e()?)
+                        .unwrap()
+                        .insert(*t, a.duration, VarName::position, pos.into());
                     end_t = *t + a.duration;
                     *t += a.timeframe;
                 }
             }
             AnimAction::set_target(x) => {
-                a.targets = [x.get_entity(&a.context.with_world(world))?].into();
+                a.targets = [x.get_entity(&context)?].into();
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_entity(&a.context.with_world(world))?);
+                a.targets.push(x.get_entity(&context)?);
             }
             AnimAction::duration(x) => {
-                a.duration = x.get_f32(&a.context.with_world(world))?;
+                a.duration = x.get_f32(&context)?;
             }
             AnimAction::timeframe(x) => {
-                a.timeframe = x.get_f32(&a.context.with_world(world))?;
+                a.timeframe = x.get_f32(&context)?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
             AnimAction::list(vec) => {
                 for aa in vec {
-                    end_t = end_t.max(aa.apply(t, a, world)?);
+                    end_t = end_t.max(aa.apply(t, a, context)?);
                 }
             }
             AnimAction::spawn(material) => {
+                let mut world = context.world_mut().to_e()?;
                 let entity = world.spawn_empty().id();
                 NRepresentation {
                     material: *material.clone(),
@@ -101,7 +93,7 @@ impl AnimAction {
                 }
                 .unpack_entity(entity, world);
 
-                let mut state = NodeState::from_world_mut(entity, world).unwrap();
+                let mut state = context.get_mut::<NodeState>(entity).to_e_not_found()?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(*t, 0.0, VarName::visible, true.into());
                 state.insert(*t + a.duration, 0.0, VarName::visible, false.into());
@@ -122,11 +114,10 @@ impl AnimAction {
     }
 }
 
-impl<'w> Animator<'w> {
-    pub fn new(context: Context<'w>) -> Self {
+impl Animator {
+    pub fn new() -> Self {
         Self {
             targets: Vec::new(),
-            context,
             duration: 1.0,
             timeframe: 0.0,
         }

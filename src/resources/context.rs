@@ -8,12 +8,6 @@ pub struct Context<'w> {
 }
 
 #[derive(Debug, Clone)]
-pub enum ContextSource<'w> {
-    World(&'w World),
-    BattleSimulation(&'w BattleSimulation),
-}
-
-#[derive(Debug, Clone)]
 enum ContextLayer<'w> {
     OwnerNode(&'w dyn GetVar),
     Owner(Entity),
@@ -83,21 +77,21 @@ impl<'w> Context<'w> {
             .iter()
             .rev()
             .find_map(|l| l.get_owner())
-            .to_e("owner not found")
+            .to_custom_e("owner not found")
     }
     pub fn get_caster(&self) -> Result<Entity, ExpressionError> {
         self.layers
             .iter()
             .rev()
             .find_map(|l| l.get_caster())
-            .to_e("Caster not found")
+            .to_custom_e("Caster not found")
     }
     pub fn get_target(&self) -> Result<Entity, ExpressionError> {
         self.layers
             .iter()
             .rev()
             .find_map(|l| l.get_target())
-            .to_e("target not found")
+            .to_custom_e("target not found")
     }
     pub fn collect_targets(&self) -> Result<Vec<Entity>, ExpressionError> {
         let targets = self
@@ -124,7 +118,7 @@ impl<'w> Context<'w> {
         self.sources
             .iter()
             .find_map(|s| s.get_state(entity))
-            .to_e("State not found")
+            .to_custom_e("State not found")
     }
     pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
         self.get_var(VarName::value)

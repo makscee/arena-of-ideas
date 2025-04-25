@@ -13,22 +13,24 @@ impl Plugin for MatchPlugin {
 
 impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        if let Some(last) = m.battles_load(context).last() {
-            if last.result.is_none() {
-                MatchPlugin::load_battle(world).notify(world);
+        Context::from_world_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            if let Some(last) = m.battles_load(context).last() {
+                if last.result.is_none() {
+                    MatchPlugin::load_battle(context).notify(context.world_mut()?);
+                }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
     pub fn check_active(world: &mut World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        if !m.active {
-            GameState::MatchOver.set_next(world);
-        }
-        Ok(())
+        Context::from_world_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            if !m.active {
+                GameState::MatchOver.set_next(context.world_mut()?);
+            }
+            Ok(())
+        })
     }
     fn on_enter(world: &mut World) {
         if let Err(e) = Self::check_active(world) {
@@ -47,142 +49,154 @@ impl MatchPlugin {
         Some(())
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        let slots = m.shop_case_load(context);
-        if slots.is_empty() {
-            return Err("Shop case slots are empty".into());
-        }
-        let available_rect = ui.available_rect_before_wrap();
-        ui.horizontal(|ui| {
-            ui.vertical(|ui| {
-                format!("g: [yellow [b {}]]", m.g).label(ui);
-                if "reroll".cstr().button(ui).clicked() {
-                    cn().reducers.match_reroll().notify_op();
-                }
-                ui.add_space(20.0);
-                if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                    cn().reducers.match_start_battle().notify_op();
-                }
-                ui.expand_to_include_y(available_rect.max.y);
-            });
-            ui.columns(slots.len(), |ui| {
-                for i in 0..slots.len() {
-                    let ui = &mut ui[i];
-                    let slot = slots[i];
-                    ui.with_layout(
-                        Layout::bottom_up(Align::Center).with_cross_justify(true),
-                        |ui| {
-                            if "buy"
-                                .cstr()
-                                .as_button()
-                                .enabled(!slot.sold)
-                                .ui(ui)
-                                .clicked()
-                            {
-                                cn().reducers.match_buy(slot.id()).notify_op();
-                            }
-                            if !slot.sold {
-                                if let Some(unit) = NUnit::get_by_id(slot.unit, context) {
-                                    let context = &context.clone().set_owner(unit.entity()).take();
-                                    slot_rect_button(ui, |rect, ui| {
-                                        if Self::show_unit(unit, rect, context, ui).is_none() {
-                                            "Failed to show unit".cstr_c(RED).label(ui);
-                                        }
-                                    })
-                                    .on_hover_ui(|ui| {
-                                        unit.show_card(context, ui).ui(ui);
-                                    });
-                                } else {
-                                    "Core unit not found".cstr_c(RED).label(ui);
+        Context::from_world_ref_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            let slots = m.shop_case_load(context).into_iter().cloned().collect_vec();
+            if slots.is_empty() {
+                return Err("Shop case slots are empty".into());
+            }
+            let available_rect = ui.available_rect_before_wrap();
+            let g = m.g;
+            ui.horizontal(|ui| {
+                ui.vertical(|ui| {
+                    format!("g: [yellow [b {g}]]").label(ui);
+                    if "reroll".cstr().button(ui).clicked() {
+                        cn().reducers.match_reroll().notify_op();
+                    }
+                    ui.add_space(20.0);
+                    if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                        cn().reducers.match_start_battle().notify_op();
+                    }
+                    ui.expand_to_include_y(available_rect.max.y);
+                });
+                ui.columns(slots.len(), |ui| {
+                    for i in 0..slots.len() {
+                        let ui = &mut ui[i];
+                        let slot = &slots[i];
+                        ui.with_layout(
+                            Layout::bottom_up(Align::Center).with_cross_justify(true),
+                            |ui| {
+                                if "buy"
+                                    .cstr()
+                                    .as_button()
+                                    .enabled(!slot.sold)
+                                    .ui(ui)
+                                    .clicked()
+                                {
+                                    cn().reducers.match_buy(slot.id()).notify_op();
                                 }
-                            }
-                        },
-                    );
-                }
-            });
-        });
-        Ok(())
-    }
-    pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        Grid::new("shop info").show(ui, |ui| {
-            "g".cstr().label(ui);
-            m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-            ui.end_row();
-            "lives".cstr().label(ui);
-            m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
-            ui.end_row();
-            "floor".cstr().label(ui);
-            m.floor.cstr_s(CstrStyle::Bold).label(ui);
-            ui.end_row();
-            "round".cstr().label(ui);
-            m.round.cstr_s(CstrStyle::Bold).label(ui);
-            ui.end_row();
-        });
-        Ok(())
-    }
-    pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        let team = m.team_err(context)?;
-        for house in team.houses_load(context) {
-            house
-                .tag_card(TagCardContext::new().expanded(true), context, ui)
-                .ui(ui);
-        }
-        Ok(())
-    }
-    pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        let team = m.team_err(context)?.entity();
-        NFusion::slots_editor(
-            team,
-            context,
-            ui,
-            |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    if "buy fusion".cstr().button(ui).clicked() {
-                        cn().reducers.match_buy_fusion().notify_op();
+                                if !slot.sold {
+                                    if let Ok(unit) = NUnit::get_by_id(slot.unit, context).cloned()
+                                    {
+                                        context.with_layer(
+                                            ContextLayer::Owner(unit.entity()),
+                                            |context| {
+                                                slot_rect_button(ui, |rect, ui| {
+                                                    if Self::show_unit(&unit, rect, context, ui)
+                                                        .is_none()
+                                                    {
+                                                        "Failed to show unit".cstr_c(RED).label(ui);
+                                                    }
+                                                })
+                                                .on_hover_ui(|ui| {
+                                                    unit.show_card(context, ui).ui(ui);
+                                                });
+                                            },
+                                        );
+                                    } else {
+                                        "Core unit not found".cstr_c(RED).label(ui);
+                                    }
+                                }
+                            },
+                        );
                     }
                 });
-            },
-            |fusion| {
-                cn().reducers
-                    .match_edit_fusion(fusion.to_tnode())
-                    .notify_op();
-            },
-        )
-        .ui(ui);
-        Ok(())
+            });
+            Ok(())
+        })
+    }
+    pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        Context::from_world_ref_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            Grid::new("shop info").show(ui, |ui| {
+                "g".cstr().label(ui);
+                m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                ui.end_row();
+                "lives".cstr().label(ui);
+                m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                ui.end_row();
+                "floor".cstr().label(ui);
+                m.floor.cstr_s(CstrStyle::Bold).label(ui);
+                ui.end_row();
+                "round".cstr().label(ui);
+                m.round.cstr_s(CstrStyle::Bold).label(ui);
+                ui.end_row();
+            });
+            Ok(())
+        })
+    }
+    pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        Context::from_world_ref_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            let team = m.team_err(context)?;
+            for house in team.houses_load(context) {
+                house
+                    .tag_card(TagCardContext::new().expanded(true), context, ui)
+                    .ui(ui);
+            }
+            Ok(())
+        })
+    }
+    pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        Context::from_world_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            let team = m.team_err(context)?.entity();
+            NFusion::slots_editor(
+                team,
+                context,
+                ui,
+                |ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        if "buy fusion".cstr().button(ui).clicked() {
+                            cn().reducers.match_buy_fusion().notify_op();
+                        }
+                    });
+                },
+                |fusion| {
+                    cn().reducers
+                        .match_edit_fusion(fusion.to_tnode())
+                        .notify_op();
+                },
+            )
+            .ui(ui);
+            Ok(())
+        })
     }
     pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let context = &world.into();
-        let m = player(context)?.active_match_err(context)?;
-        ui.vertical_centered_justified(|ui| {
-            "Match Over".cstr_s(CstrStyle::Heading).label(ui);
-            if m.lives > 0 {
-                format!("You're the [yellow [b champion]] of [b {}] floor", m.floor)
-                    .cstr()
-                    .label(ui);
-            } else {
-                format!("Reached [b {}] floor", m.floor).cstr().label(ui);
-            }
-        });
-        ui.vertical_centered(|ui| {
-            if "Done".cstr().button(ui).clicked() {
-                cn().reducers.match_complete().notify(world);
-                GameState::Title.set_next(world);
-            }
-        });
-
-        Ok(())
+        Context::from_world_r(world, |context| {
+            let m = player(context)?.active_match_err(context)?;
+            ui.vertical_centered_justified(|ui| {
+                "Match Over".cstr_s(CstrStyle::Heading).label(ui);
+                if m.lives > 0 {
+                    format!("You're the [yellow [b champion]] of [b {}] floor", m.floor)
+                        .cstr()
+                        .label(ui);
+                } else {
+                    format!("Reached [b {}] floor", m.floor).cstr().label(ui);
+                }
+            });
+            let world = context.world_mut()?;
+            ui.vertical_centered(|ui| {
+                if "Done".cstr().button(ui).clicked() {
+                    cn().reducers.match_complete().notify(world);
+                    GameState::Title.set_next(world);
+                }
+            });
+            Ok(())
+        })
     }
-    pub fn load_battle(world: &mut World) -> Result<(), ExpressionError> {
-        GameState::Battle.set_next(world);
-        let context = &Context::new(world);
+    pub fn load_battle(context: &mut Context) -> Result<(), ExpressionError> {
+        GameState::Battle.set_next(context.world_mut()?);
         let battles = player(context)?
             .active_match_err(context)?
             .battles_load(context);
@@ -191,10 +205,12 @@ impl MatchPlugin {
         }
         let battle = *battles.last().unwrap();
         let left = NTeam::load_recursive(battle.team_left)
-            .to_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
+            .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
         let right = NTeam::load_recursive(battle.team_right)
-            .to_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
-        BattlePlugin::load_teams(battle.id, left, right, world);
+            .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
+        let bid = battle.id;
+        let world = context.world_mut()?;
+        BattlePlugin::load_teams(bid, left, right, world);
         BattlePlugin::on_done_callback(
             |id, result, hash| {
                 cn().reducers()

@@ -1,0 +1,74 @@
+use super::*;
+
+pub trait WorldLinks {
+    fn init_links(&mut self);
+    fn parents_children_map(&self) -> &HashMap<u64, HashSet<u64>>;
+    fn children_parents_map(&self) -> &HashMap<u64, HashSet<u64>>;
+    fn id_to_entity_map(&self) -> &HashMap<u64, Entity>;
+    fn entity_to_id_map(&self) -> &HashMap<Entity, u64>;
+    fn add_parent_child(&mut self, parent: u64, child: u64);
+    fn id_entity(&self, id: u64) -> Option<Entity>;
+    fn entity_id(&self, entity: Entity) -> Option<u64>;
+    fn link_id_entity(&mut self, id: u64, entity: Entity);
+    fn despawn_entity(&mut self, entity: Entity);
+}
+#[derive(Default, Resource)]
+struct WorldLinksResource {
+    parent_to_child: HashMap<u64, HashSet<u64>>,
+    child_to_parent: HashMap<u64, HashSet<u64>>,
+    id_to_entity: HashMap<u64, Entity>,
+    entity_to_id: HashMap<Entity, u64>,
+}
+impl WorldLinks for World {
+    fn init_links(&mut self) {
+        self.init_resource::<WorldLinksResource>();
+    }
+    fn parents_children_map(&self) -> &HashMap<u64, HashSet<u64>> {
+        &self.resource::<WorldLinksResource>().parent_to_child
+    }
+    fn children_parents_map(&self) -> &HashMap<u64, HashSet<u64>> {
+        &self.resource::<WorldLinksResource>().child_to_parent
+    }
+    fn id_to_entity_map(&self) -> &HashMap<u64, Entity> {
+        &self.resource::<WorldLinksResource>().id_to_entity
+    }
+    fn entity_to_id_map(&self) -> &HashMap<Entity, u64> {
+        &self.resource::<WorldLinksResource>().entity_to_id
+    }
+    fn add_parent_child(&mut self, parent: u64, child: u64) {
+        let mut r = self.resource_mut::<WorldLinksResource>();
+        r.parent_to_child.entry(parent).or_default().insert(child);
+        r.child_to_parent.entry(child).or_default().insert(parent);
+    }
+    fn despawn_entity(&mut self, entity: Entity) {
+        let mut r = self.resource_mut::<WorldLinksResource>();
+        if let Some(id) = r.entity_to_id.get(&entity).copied() {
+            r.id_to_entity.remove(&id);
+            if let Some(children) = r.parent_to_child.remove(&id) {
+                for child in children {
+                    if let Some(parents) = r.child_to_parent.get_mut(&child) {
+                        parents.remove(&id);
+                    }
+                }
+            }
+        }
+        r.entity_to_id.remove(&entity);
+    }
+    fn id_entity(&self, id: u64) -> Option<Entity> {
+        self.resource::<WorldLinksResource>()
+            .id_to_entity
+            .get(&id)
+            .copied()
+    }
+    fn entity_id(&self, entity: Entity) -> Option<u64> {
+        self.resource::<WorldLinksResource>()
+            .entity_to_id
+            .get(&entity)
+            .copied()
+    }
+    fn link_id_entity(&mut self, id: u64, entity: Entity) {
+        let mut r = self.resource_mut::<WorldLinksResource>();
+        r.entity_to_id.insert(entity, id);
+        r.id_to_entity.insert(id, entity);
+    }
+}

@@ -102,7 +102,7 @@ pub fn player_identity() -> Identity {
     *PLAYER_IDENTITY.lock()
 }
 pub fn player<'a>(context: &'a Context) -> Result<&'a NPlayer, ExpressionError> {
-    NPlayer::get_by_id(player_id(), context).to_e("Player not found")
+    NPlayer::get_by_id(player_id(), context).to_custom_e("Player not found")
 }
 pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;

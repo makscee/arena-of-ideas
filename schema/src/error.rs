@@ -16,6 +16,13 @@ pub enum ExpressionError {
     ValueNotFound(VarName),
     #[error("{0}")]
     Custom(String),
+    #[error("Entity#{0} {1} not linked to id")]
+    // provide Entity on bevy 0.16 from nostd dependency
+    IdNotFound(u32, u32),
+    #[error("Id#{0} not liked to Entity")]
+    EntityNotFound(u64),
+    #[error("Not found {0}")]
+    NotFound(String),
 }
 
 pub trait ExpressionErrorResultExt<T> {
@@ -40,43 +47,36 @@ impl<T> ExpressionErrorResultExt<T> for Result<T, ExpressionError> {
     }
 }
 
-pub trait OptionExpressionError<T> {
-    fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
-    fn to_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError>;
-    fn to_e_s(self, s: impl Into<String>) -> Result<T, String>;
-    fn to_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String>;
-    fn to_e_var(self, var: VarName) -> Result<T, ExpressionError>;
+pub trait OptionExpressionCustomError<T> {
+    fn to_custom_e(self, s: impl Into<String>) -> Result<T, ExpressionError>;
+    fn to_custom_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError>;
+    fn to_custom_e_s(self, s: impl Into<String>) -> Result<T, String>;
+    fn to_custom_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String>;
 }
 
-impl<T> OptionExpressionError<T> for Option<T> {
-    fn to_e(self, s: impl Into<String>) -> Result<T, ExpressionError> {
+impl<T> OptionExpressionCustomError<T> for Option<T> {
+    fn to_custom_e(self, s: impl Into<String>) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
             None => Err(ExpressionError::Custom(s.into())),
         }
     }
-    fn to_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError> {
+    fn to_custom_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
             None => Err(ExpressionError::Custom(s())),
         }
     }
-    fn to_e_s(self, s: impl Into<String>) -> Result<T, String> {
+    fn to_custom_e_s(self, s: impl Into<String>) -> Result<T, String> {
         match self {
             Some(v) => Ok(v),
             None => Err(s.into()),
         }
     }
-    fn to_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String> {
+    fn to_custom_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String> {
         match self {
             Some(v) => Ok(v),
             None => Err(s()),
-        }
-    }
-    fn to_e_var(self, var: VarName) -> Result<T, ExpressionError> {
-        match self {
-            Some(v) => Ok(v),
-            None => Err(ExpressionError::ValueNotFound(var)),
         }
     }
 }

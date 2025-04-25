@@ -23,8 +23,8 @@ impl ExpressionImpl for Expression {
             Expression::zero => Ok(0.into()),
             Expression::pi => Ok(PI.into()),
             Expression::pi2 => Ok((PI * 2.0).into()),
-            Expression::owner => Ok(context.get_owner()?.to_value()),
-            Expression::target => Ok(context.get_target()?.to_value()),
+            Expression::owner => Ok(context.owner_entity()?.to_value()),
+            Expression::target => Ok(context.target_entity()?.to_value()),
             Expression::var(var) => {
                 let v = context.get_var(*var);
                 if v.is_err() && *var == VarName::index {
@@ -34,9 +34,9 @@ impl ExpressionImpl for Expression {
                 }
             }
             Expression::state_var(x, var) => context
-                .get_state(x.get_entity(context)?)?
+                .get::<NodeState>(x.get_entity(context)?)?
                 .get(*var)
-                .to_e_var(*var),
+                .to_e(*var),
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),
             Expression::i32(v) => Ok((*v).into()),
@@ -53,24 +53,36 @@ impl ExpressionImpl for Expression {
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),
             Expression::unit_size => Ok(UNIT_SIZE.into()),
-            Expression::all_units => Ok(context.get_all_units().into()),
-            Expression::all_ally_units => Ok(context.all_allies(context.get_owner()?).into()),
+            Expression::all_units => Ok(context.battle_all_units().vec_to_value()),
+            Expression::all_ally_units => Ok(context
+                .battle_all_allies(context.owner_entity()?)
+                .vec_to_value()),
             Expression::all_other_ally_units => Ok(context
-                .all_allies(context.get_owner()?)
+                .battle_all_allies(context.owner_entity()?)
                 .into_iter()
-                .filter(|v| v.get_entity().unwrap() != context.get_owner().unwrap())
+                .filter(|v| *v != context.owner_entity().unwrap())
                 .collect_vec()
-                .into()),
-            Expression::all_enemy_units => Ok(context.all_enemies(context.get_owner()?).into()),
+                .vec_to_value()),
+            Expression::all_enemy_units => Ok(context
+                .battle_all_enemies(context.owner_entity()?)
+                .vec_to_value()),
             Expression::adjacent_ally_units => {
-                Ok(context.adjacent_allies(context.get_owner()?).into())
+                let owner = context.owner_entity()?;
+                Ok(context
+                    .battle_offset_unit(owner, -1)
+                    .into_iter()
+                    .chain(context.battle_offset_unit(owner, 1))
+                    .collect_vec()
+                    .vec_to_value())
             }
             Expression::adjacent_front => context
-                .offset_unit(context.get_owner()?, -1)
-                .to_e("No front unit found"),
+                .battle_offset_unit(context.owner_entity()?, -1)
+                .map(|e| e.to_value())
+                .to_custom_e("No front unit found"),
             Expression::adjacent_back => context
-                .offset_unit(context.get_owner()?, 1)
-                .to_e("No back unit found"),
+                .battle_offset_unit(context.owner_entity()?, 1)
+                .map(|e| e.to_value())
+                .to_custom_e("No back unit found"),
             Expression::sin(x) => Ok(x.get_f32(context)?.sin().into()),
             Expression::cos(x) => Ok(x.get_f32(context)?.cos().into()),
             Expression::even(x) => Ok((x.get_i32(context)? % 2 == 0).into()),
@@ -99,7 +111,7 @@ impl ExpressionImpl for Expression {
                 .get_entity_list(context)?
                 .choose(&mut thread_rng())
                 .map(|e| e.to_value())
-                .to_e("No units found"),
+                .to_custom_e("No units found"),
             Expression::str_macro(s, v) => {
                 let s = s.get_string(context)?;
                 let v = v.get_string(context)?;

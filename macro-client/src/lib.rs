@@ -134,7 +134,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             self.#one_fields.as_ref().or_else(|| {
                                 self.entity
                                     .and_then(|e| context.get_node::<#one_types>(e))
-                            }).to_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
+                            }).to_custom_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
                         }
                     )*
                     #(

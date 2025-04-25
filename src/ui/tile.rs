@@ -163,13 +163,16 @@ pub trait TreeExt {
 
 impl TreeExt for Tree<Pane> {
     fn add_tab(&mut self, cur: TileId, new: TileId) -> Result<(), ExpressionError> {
-        let cur_tile = self.tiles.get_mut(cur).to_e("Failed to get current tile")?;
+        let cur_tile = self
+            .tiles
+            .get_mut(cur)
+            .to_custom_e("Failed to get current tile")?;
         match cur_tile {
             Tile::Pane(_) => {
                 let container = self
                     .tiles
                     .parent_of(cur)
-                    .to_e("Failed to get parent of current tile")?;
+                    .to_custom_e("Failed to get parent of current tile")?;
                 match self.tiles.get_mut(container).unwrap() {
                     Tile::Pane(_) => unreachable!(),
                     Tile::Container(container) => container.add_child(new),

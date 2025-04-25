@@ -45,3 +45,13 @@ impl EntityExt for Entity {
         VarValue::Entity(self.to_bits())
     }
 }
+
+pub trait EntityVecVarValue {
+    fn vec_to_value(self) -> VarValue;
+}
+
+impl EntityVecVarValue for Vec<Entity> {
+    fn vec_to_value(self) -> VarValue {
+        self.into_iter().map(|e| e.to_value()).collect_vec().into()
+    }
+}

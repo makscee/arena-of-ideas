@@ -1,29 +1,31 @@
+mod error;
 mod game_timer;
 mod links;
 mod operations;
 mod world_id_link;
 
 use arboard::Clipboard;
+pub use error::*;
 pub use game_timer::*;
 pub use links::*;
 pub use operations::*;
 pub use world_id_link::*;
 
-use bevy::utils::hashbrown::HashMap;
-use bevy::utils::HashSet;
-use bevy::{math::vec2, prelude::*};
-use once_cell::sync::OnceCell;
-
+use bevy::{
+    math::vec2,
+    prelude::*,
+    utils::{hashbrown::HashMap, HashSet},
+};
 use bevy_egui::{
     egui::{
         self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui,
     },
     EguiContext,
 };
-
+use once_cell::sync::OnceCell;
 use parking_lot::{Mutex, MutexGuard};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use schema::{ExpressionError, OptionExpressionError, VarValue};
+use schema::{ExpressionError, OptionExpressionCustomError, VarName, VarValue};
 use serde::Serialize;
 
 static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);

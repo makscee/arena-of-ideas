@@ -45,9 +45,9 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
             }
         }
     }
-    fn find_up<'a, T: Component>(&self, context: &'a Context) -> Option<&'a T> {
-        let entity = self.get_entity().expect("Node not linked to world");
-        context.find_parent_node::<T>(entity)
+    fn find_up<'a, T: Component>(&self, context: &'a Context) -> Result<&'a T, ExpressionError> {
+        let entity = self.get_entity().to_e_not_found()?;
+        context.first_parent::<T>(entity)
     }
     fn collect_children_entity<'a, T: Component>(entity: Entity, world: &'a World) -> Vec<&'a T> {
         entity
@@ -73,8 +73,8 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
         Id::new(self.get_entity()).with(self.id()).with(self.kind())
     }
     fn to_tnode(&self) -> TNode;
-    fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self>;
-    fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self>;
+    fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError>;
+    fn get_by_id<'a>(id: u64, context: &'a Context) -> Result<&'a Self, ExpressionError>;
     fn load(id: u64) -> Option<Self>;
 }
 impl<T> NodeExt for T
@@ -90,11 +90,11 @@ where
             score: 0,
         }
     }
-    fn get<'a>(entity: Entity, context: &'a Context) -> Option<&'a Self> {
-        context.get_node::<Self>(entity)
+    fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError> {
+        context.get::<Self>(entity)
     }
-    fn get_by_id<'a>(id: u64, context: &'a Context) -> Option<&'a Self> {
-        context.get_node_by_id::<Self>(id)
+    fn get_by_id<'a>(id: u64, context: &'a Context) -> Result<&'a Self, ExpressionError> {
+        context.get::<Self>(context.entity(id)?)
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
@@ -189,9 +189,8 @@ impl NTeam {
 impl NUnit {
     pub fn to_house(self, context: &Context) -> Result<NHouse, ExpressionError> {
         let mut house = self
-            .find_up::<NHouse>(context)
-            .cloned()
-            .to_e("House not found")?
+            .find_up::<NHouse>(context)?
+            .clone()
             .with_components(context);
         house.units.push(self.with_components(context));
         Ok(house)
@@ -328,7 +327,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
         ScrollArea::vertical()
             .min_scrolled_height(500.0)
             .show(ui, |ui| {
-                let Some(entity) = context.entity_by_id(ID_CORE) else {
+                let Ok(entity) = context.entity(ID_CORE) else {
                     return;
                 };
                 let view_ctx = ViewContext::new(ui);

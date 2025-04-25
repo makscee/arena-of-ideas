@@ -32,13 +32,13 @@ impl ActionImpl for Action {
                 dbg!(x.get_value(context))?;
             }
             Action::set_value(x) => {
-                context.set_value(x.get_value(context)?);
+                context.set_value_var(x.get_value(context)?);
             }
             Action::add_value(x) => {
-                context.set_value(context.get_value()?.add(&x.get_value(context)?)?);
+                context.set_value_var(context.get_value()?.add(&x.get_value(context)?)?);
             }
             Action::subtract_value(x) => {
-                context.set_value(context.get_value()?.sub(&x.get_value(context)?)?);
+                context.set_value_var(context.get_value()?.sub(&x.get_value(context)?)?);
             }
             Action::add_target(x) => match x.get_entity_list(context) {
                 Ok(entities) => {
@@ -49,40 +49,33 @@ impl ActionImpl for Action {
                 Err(e) => error!("add_target error: {e}"),
             },
             Action::deal_damage => {
-                let owner = context.get_owner()?;
+                let owner = context.owner_entity()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
-                    for target in context.collect_targets()? {
+                    for target in context.collect_targets() {
                         actions.push(BattleAction::damage(owner, target, value));
                     }
                 }
             }
             Action::heal_damage => {
-                let owner = context.get_owner()?;
+                let owner = context.owner_entity()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
-                    for target in context.collect_targets()? {
+                    for target in context.collect_targets() {
                         actions.push(BattleAction::heal(owner, target, value));
                     }
                 }
             }
             Action::use_ability => {
-                let caster = context.get_caster()?;
-                let ability = context
-                    .find_parent_node::<NAbilityMagic>(caster)
-                    .to_e_fn(|| format!("Failed to find AbilityMagic of {caster}"))?;
+                let caster = context.caster_entity()?;
+                let ability = context.first_parent::<NAbilityMagic>(caster)?;
                 let name = &ability.ability_name;
                 let entity = ability.entity();
                 let ability_actions = context
-                    .get_node::<NAbilityEffect>(entity)
-                    .to_e("AbilityEffect not found")?
+                    .first_child::<NAbilityEffect>(entity)?
                     .actions
                     .clone();
-                let color = context
-                    .find_parent_node::<NHouseColor>(caster)
-                    .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
-                    .color
-                    .c32();
+                let color = context.first_parent::<NHouseColor>(caster)?.color.c32();
                 let text = format!("use ability [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -95,30 +88,18 @@ impl ActionImpl for Action {
                 actions.extend(ability_actions.process(context)?);
             }
             Action::apply_status => {
-                let caster = context.get_caster()?;
-                let targets = context.collect_targets()?;
+                let caster = context.caster_entity()?;
+                let targets = context.collect_targets();
                 if targets.is_empty() {
                     return Err("No targets".into());
                 }
-                let status = context
-                    .find_parent_node::<NStatusMagic>(caster)
-                    .to_e_fn(|| format!("Failed to find StatusMagic of {caster}"))?;
+                let status = context.first_parent::<NStatusMagic>(caster)?;
                 let name = &status.status_name;
                 let entity = status.entity();
                 let mut status = status.clone();
-                let mut description = context
-                    .get_node::<NStatusDescription>(entity)
-                    .to_e("NStatusDescription not found")?
-                    .clone();
-                let behavior = context
-                    .get_node::<NBehavior>(entity)
-                    .to_e("Behavior not found")?
-                    .clone();
-                let color = context
-                    .find_parent_node::<NHouseColor>(caster)
-                    .to_e_fn(|| format!("Failed to find HouseColor of {caster}"))?
-                    .color
-                    .c32();
+                let mut description = context.first_child::<NStatusDescription>(entity)?.clone();
+                let behavior = context.first_child::<NBehavior>(entity)?.clone();
+                let color = context.first_parent::<NHouseColor>(caster)?.color.c32();
                 let text = format!("apply [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -128,7 +109,7 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                let representation = context.get_node::<NRepresentation>(entity).cloned();
+                let representation = context.first_child::<NRepresentation>(entity).ok().cloned();
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;
@@ -138,7 +119,6 @@ impl ActionImpl for Action {
             }
             Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {
-                    let context = &mut context.clone();
                     for a in vec {
                         actions.extend(a.process(context)?);
                     }

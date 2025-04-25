@@ -113,7 +113,7 @@ where
     }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
         P::find_parent_of_id(ctx, self.id())
-            .to_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
+            .to_custom_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
     }
     fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
         let mut c = P::collect_children_of_id(ctx, self.id());

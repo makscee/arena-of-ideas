@@ -35,7 +35,7 @@ impl NFusion {
         for id in &self.units {
             let unit = context
                 .get_node_by_id::<NUnit>(*id)
-                .to_e_fn(|| format!("Failed to get NUnit#{id}"))?;
+                .to_custom_e_fn(|| format!("Failed to get NUnit#{id}"))?;
             units.push(unit);
         }
         Ok(units)
@@ -44,7 +44,7 @@ impl NFusion {
         self.units(context)?
             .get(ui as usize)
             .copied()
-            .to_e_fn(|| format!("Failed to find NUnit as index {ui}"))
+            .to_custom_e_fn(|| format!("Failed to find NUnit as index {ui}"))
     }
     pub fn get_behavior<'a>(
         &self,
@@ -53,9 +53,9 @@ impl NFusion {
     ) -> Result<&'a NBehavior, ExpressionError> {
         self.get_unit(ui, context)?
             .description_load(context)
-            .to_e("Failed to load UnitDescription")?
+            .to_custom_e("Failed to load UnitDescription")?
             .behavior_load(context)
-            .to_e("Failed to load NBehavior")
+            .to_custom_e("Failed to load NBehavior")
     }
     pub fn get_trigger<'a>(
         &self,
@@ -265,10 +265,10 @@ impl NFusion {
         let team = NTeam::get(
             context
                 .get_parent(self.entity())
-                .to_e("Fusion parent not found")?,
+                .to_custom_e("Fusion parent not found")?,
             context,
         )
-        .to_e("Team not found")?;
+        .to_custom_e("Team not found")?;
         let units = team.roster_units_load(context);
         if response.clicked() {
             debug!("clicked");
@@ -331,7 +331,7 @@ impl NFusion {
     ) -> Result<(), ExpressionError> {
         let team = context
             .get_node::<NTeam>(team)
-            .to_e("Failed to get Team component")?;
+            .to_custom_e("Failed to get Team component")?;
         let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
             team.fusions_load(context)
                 .into_iter()

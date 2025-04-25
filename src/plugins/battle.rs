@@ -93,7 +93,7 @@ impl BattlePlugin {
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = world
             .remove_resource::<BattleData>()
-            .to_e("No battle loaded")?;
+            .to_custom_e("No battle loaded")?;
 
         let t = data.t;
         BattleCamera::show(&mut data.simulation, t, ui);
@@ -103,7 +103,7 @@ impl BattlePlugin {
     pub fn pane_controls(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = world
             .remove_resource::<BattleData>()
-            .to_e("No battle loaded")?;
+            .to_custom_e("No battle loaded")?;
         let BattleData {
             teams_world: _,
             battle,
@@ -297,18 +297,20 @@ impl BattlePlugin {
     }
     pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut data: Mut<BattleData>| {
-            let team = if left {
-                &mut data.battle.left
-            } else {
-                &mut data.battle.right
-            };
-            let mut changed = false;
-            changed |= team
-                .view_mut(ViewContext::new(ui), &world.into(), ui)
-                .changed;
-            if changed {
-                world.resource_mut::<ReloadData>().reload_requested = true;
-            }
+            Context::from_world(world, |context| {
+                let team = if left {
+                    &mut data.battle.left
+                } else {
+                    &mut data.battle.right
+                };
+                if team.view_mut(ViewContext::new(ui), context, ui).changed {
+                    context
+                        .world_mut()
+                        .unwrap()
+                        .resource_mut::<ReloadData>()
+                        .reload_requested = true;
+                }
+            });
         });
     }
     pub fn pane_edit_slots(left: bool, ui: &mut Ui, world: &mut World) {
@@ -328,56 +330,68 @@ impl BattlePlugin {
             let team_entity = if left { *team_left } else { *team_right };
             let mut edited = None;
             let mut add_fusion = false;
-            let context = &teams_world.into();
-            NFusion::slots_editor(
-                team_entity,
-                context,
-                ui,
-                |ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        if "add fusion".cstr().button(ui).clicked() {
-                            add_fusion = true;
-                        }
-                    });
-                },
-                |fusion| {
-                    edited = Some(fusion);
-                },
-            )
-            .ui(ui);
-            if add_fusion {
-                let team = NTeam::get(team_entity, context).unwrap();
-                let slot = team.fusions_load(context).len() as i32;
-                let id = next_id();
-                id.add_parent(team.id);
-                NFusion {
-                    id,
-                    owner: player_id(),
-                    entity: None,
-                    units: Vec::new(),
-                    behavior: Vec::new(),
-                    slot,
-                    stats: None,
+            Context::from_world(teams_world, |context| {
+                NFusion::slots_editor(
+                    team_entity,
+                    context,
+                    ui,
+                    |ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            if "add fusion".cstr().button(ui).clicked() {
+                                add_fusion = true;
+                            }
+                        });
+                    },
+                    |fusion| {
+                        edited = Some(fusion);
+                    },
+                )
+                .ui(ui);
+                if add_fusion {
+                    let team = NTeam::get(team_entity, context).unwrap();
+                    let slot = team.fusions_load(context).len() as i32;
+                    let id = next_id();
+                    id.add_parent(team.id);
+                    NFusion {
+                        id,
+                        owner: player_id(),
+                        entity: None,
+                        units: Vec::new(),
+                        behavior: Vec::new(),
+                        slot,
+                        stats: None,
+                    }
+                    .unpack_entity(
+                        context.world_mut().unwrap().spawn_empty().id(),
+                        context.world_mut().unwrap(),
+                    );
+                    changed = true;
                 }
-                .unpack_entity(teams_world.spawn_empty().id(), teams_world);
-                changed = true;
-            }
-            if let Some(fusion) = edited {
-                teams_world.entity_mut(fusion.entity()).insert(fusion);
-                changed = true;
-            }
+                if let Some(fusion) = edited {
+                    context
+                        .world_mut()
+                        .unwrap()
+                        .entity_mut(fusion.entity())
+                        .insert(fusion);
+                    changed = true;
+                }
 
-            if changed {
-                world.resource_mut::<ReloadData>().reload_requested = true;
-                let updated_team = NTeam::pack_entity(team_entity, &teams_world.into()).unwrap();
-                dbg!(&updated_team);
-                let team = if left {
-                    &mut battle.left
-                } else {
-                    &mut battle.right
-                };
-                *team = updated_team;
-            }
+                if changed {
+                    context
+                        .world_mut()
+                        .unwrap()
+                        .resource_mut::<ReloadData>()
+                        .reload_requested = true;
+                    let updated_team = NTeam::pack_entity(team_entity, context).unwrap();
+                    dbg!(&updated_team);
+                    let team = if left {
+                        &mut battle.left
+                    } else {
+                        &mut battle.right
+                    };
+                    *team = updated_team;
+                }
+            });
         });
     }
 }

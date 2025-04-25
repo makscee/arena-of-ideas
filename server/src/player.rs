@@ -1,6 +1,6 @@
 use bcrypt_no_getrandom::{hash_with_salt, verify};
 use rand::RngCore;
-use schema::OptionExpressionError;
+use schema::OptionExpressionCustomError;
 
 use super::*;
 
@@ -20,7 +20,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let mut player = NPlayer::find_by_data(ctx, name.clone()).to_e_s("Player not found")?;
+    let mut player = NPlayer::find_by_data(ctx, name.clone()).to_custom_e_s("Player not found")?;
     debug!("{player:?}");
     if player.player_data_load(ctx)?.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
@@ -132,9 +132,9 @@ pub trait GetPlayer {
 
 impl GetPlayer for ReducerContext {
     fn player(&self) -> Result<NPlayer, String> {
-        let identity =
-            NPlayer::find_identity(self, &self.sender).to_e_s("NPlayerIdentity not found")?;
+        let identity = NPlayer::find_identity(self, &self.sender)
+            .to_custom_e_s("NPlayerIdentity not found")?;
         let id = identity.find_parent::<NPlayer>(self)?.id;
-        NPlayer::get(self, id).to_e_s("Identity exists but Player does not")
+        NPlayer::get(self, id).to_custom_e_s("Identity exists but Player does not")
     }
 }

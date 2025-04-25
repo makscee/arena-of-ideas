@@ -155,6 +155,7 @@ pub trait ToCstr {
         c
     }
 }
+
 #[derive(Default)]
 struct StyleState {
     stack: Vec<CstrStyle>,
