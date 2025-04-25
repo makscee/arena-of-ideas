@@ -99,191 +99,189 @@ impl std::fmt::Display for BattleAction {
 impl BattleAction {
     pub fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        let applied = match self {
-            BattleAction::strike(a, b) => {
-                let strike_anim = animations().get("strike").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_owner(*a)
-                        .add_target(*b)
-                        .set_var(VarName::position, vec2(0.0, 0.0).into())
-                        .take(),
-                    strike_anim,
-                );
-                let context = &Context::new(&battle.world);
-                let pwr = context
-                    .get_node::<NFusion>(*a)
-                    .unwrap()
-                    .pwr_hp(context)
-                    .unwrap()
-                    .0;
-                let action_a = Self::damage(*a, *b, pwr);
-                let pwr = context
-                    .get_node::<NFusion>(*b)
-                    .unwrap()
-                    .pwr_hp(context)
-                    .unwrap()
-                    .0;
-                let action_b = Self::damage(*b, *a, pwr);
-                add_actions.extend_from_slice(&[action_a, action_b]);
-                add_actions.extend(battle.slots_sync());
-                true
-            }
-            BattleAction::death(a) => {
-                let position = Context::new_battle_simulation(battle)
-                    .set_owner(*a)
-                    .get_var(VarName::position)
-                    .unwrap();
-                add_actions.extend(battle.die(*a));
-                add_actions.push(BattleAction::vfx(
-                    HashMap::from_iter([(VarName::position, position)]),
-                    "death_vfx".into(),
-                ));
-                true
-            }
-            BattleAction::damage(a, b, x) => {
-                let owner_pos = Context::new_battle_simulation(battle)
-                    .set_owner(*a)
-                    .get_var(VarName::position)
-                    .unwrap();
-                let target_pos = Context::new_battle_simulation(battle)
-                    .set_owner(*b)
-                    .get_var(VarName::position)
-                    .unwrap();
-                let curve = animations().get("range_effect_vfx").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_var(VarName::position, owner_pos)
-                        .set_var(VarName::extra_position, target_pos.clone())
-                        .take(),
-                    curve,
-                );
-                if *x > 0 {
-                    let pain = animations().get("pain_vfx").unwrap();
-                    battle.apply_animation(
-                        Context::default()
-                            .set_var(VarName::position, target_pos.clone())
-                            .take(),
-                        pain,
-                    );
-                    let dmg = battle.world.get::<NFusionStats>(*b).unwrap().dmg + x;
-                    add_actions.push(Self::var_set(
-                        *b,
-                        NodeKind::NFusionStats,
-                        VarName::dmg,
-                        dmg.into(),
-                    ));
-                }
-                let text = animations().get("text").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_var(VarName::text, (-*x).to_string().into())
-                        .set_var(VarName::color, RED.into())
-                        .set_var(VarName::position, target_pos)
-                        .take(),
-                    text,
-                );
-                battle.duration += ANIMATION;
-                true
-            }
-            BattleAction::heal(a, b, x) => {
-                let owner_pos = Context::new_battle_simulation(battle)
-                    .set_owner(*a)
-                    .get_var(VarName::position)
-                    .unwrap();
-                let target_pos = Context::new_battle_simulation(battle)
-                    .set_owner(*b)
-                    .get_var(VarName::position)
-                    .unwrap();
-                let curve = animations().get("range_effect_vfx").unwrap();
-                battle.apply_animation(
-                    Context::default()
-                        .set_var(VarName::position, owner_pos)
-                        .set_var(VarName::extra_position, target_pos.clone())
-                        .take(),
-                    curve,
-                );
-                if *x > 0 {
-                    let pain = animations().get("pleasure_vfx").unwrap();
-                    battle.apply_animation(
-                        Context::default()
-                            .set_var(VarName::position, target_pos.clone())
-                            .take(),
-                        pain,
-                    );
-                    let dmg = (battle.world.get::<NFusionStats>(*b).unwrap().dmg - x).at_least(0);
-                    add_actions.push(Self::var_set(
-                        *b,
-                        NodeKind::NFusionStats,
-                        VarName::dmg,
-                        dmg.into(),
-                    ));
-                    let text = animations().get("text").unwrap();
-                    battle.apply_animation(
-                        Context::default()
-                            .set_var(VarName::text, format!("+{x}").into())
-                            .set_var(VarName::color, GREEN.into())
-                            .set_var(VarName::position, target_pos)
-                            .take(),
-                        text,
-                    );
-                }
-                battle.duration += ANIMATION;
-                true
-            }
-            BattleAction::var_set(entity, kind, var, value) => {
-                if battle.world.get_mut::<NodeState>(*entity).unwrap().insert(
-                    battle.duration,
-                    0.1,
-                    *var,
-                    value.clone(),
-                ) {
-                    kind.set_var(*entity, *var, value.clone(), &mut battle.world);
+        Context::from_battle_simulation_r(battle, |context| {
+            let applied = match self {
+                BattleAction::strike(a, b) => {
+                    let strike_anim = animations().get("strike").unwrap();
+                    context.with_layers_r(
+                        [
+                            ContextLayer::Owner(*a),
+                            ContextLayer::Target(*b),
+                            ContextLayer::Var(VarName::position, vec2(0.0, 0.0).into()),
+                        ]
+                        .into(),
+                        |context| strike_anim.apply(context),
+                    )?;
+                    let pwr = context
+                        .with_layer_r(ContextLayer::Owner(*a), |context| {
+                            context.sum_var(VarName::pwr)
+                        })?
+                        .get_i32()?;
+                    let action_a = Self::damage(*a, *b, pwr);
+                    let pwr = context
+                        .with_layer_r(ContextLayer::Owner(*b), |context| {
+                            context.sum_var(VarName::pwr)
+                        })?
+                        .get_i32()?;
+                    let action_b = Self::damage(*b, *a, pwr);
+                    add_actions.extend_from_slice(&[action_a, action_b]);
+                    add_actions.extend(battle.slots_sync());
                     true
-                } else {
+                }
+                BattleAction::death(a) => {
+                    let position = context.with_layer_r(ContextLayer::Owner(*a), |context| {
+                        context.get_var(VarName::position)
+                    })?;
+                    add_actions.extend(battle.die(*a));
+                    add_actions.push(BattleAction::vfx(
+                        HashMap::from_iter([(VarName::position, position)]),
+                        "death_vfx".into(),
+                    ));
+                    true
+                }
+                BattleAction::damage(a, b, x) => {
+                    let owner_pos = context.with_layer_r(ContextLayer::Owner(*a), |context| {
+                        context.get_var(VarName::position)
+                    })?;
+                    let target_pos = context.with_layer_r(ContextLayer::Owner(*b), |context| {
+                        context.get_var(VarName::position)
+                    })?;
+                    let curve = animations().get("range_effect_vfx").unwrap();
+                    context.with_layers_r(
+                        [
+                            ContextLayer::Var(VarName::position, owner_pos),
+                            ContextLayer::Var(VarName::extra_position, target_pos.clone()),
+                        ]
+                        .into(),
+                        |context| curve.apply(context),
+                    )?;
+                    if *x > 0 {
+                        let pain = animations().get("pain_vfx").unwrap();
+                        context.with_layer_r(
+                            ContextLayer::Var(VarName::position, target_pos.clone()),
+                            |context| pain.apply(context),
+                        )?;
+                        let dmg = context.get::<NFusionStats>(*b)?.dmg + x;
+                        add_actions.push(Self::var_set(
+                            *b,
+                            NodeKind::NFusionStats,
+                            VarName::dmg,
+                            dmg.into(),
+                        ));
+                    }
+                    let text = animations().get("text").unwrap();
+                    context.with_layers_r(
+                        [
+                            ContextLayer::Var(VarName::text, (-*x).to_string().into()),
+                            ContextLayer::Var(VarName::color, RED.into()),
+                            ContextLayer::Var(VarName::position, target_pos),
+                        ]
+                        .into(),
+                        |context| text.apply(context),
+                    )?;
+                    battle.duration += ANIMATION;
+                    true
+                }
+                BattleAction::heal(a, b, x) => {
+                    let owner_pos = context.with_layer_r(ContextLayer::Owner(*a), |context| {
+                        context.get_var(VarName::position)
+                    })?;
+                    let target_pos = context.with_layer_r(ContextLayer::Owner(*b), |context| {
+                        context.get_var(VarName::position)
+                    })?;
+                    let curve = animations().get("range_effect_vfx").unwrap();
+                    context.with_layers_r(
+                        [
+                            ContextLayer::Var(VarName::position, owner_pos),
+                            ContextLayer::Var(VarName::extra_position, target_pos.clone()),
+                        ]
+                        .into(),
+                        |context| curve.apply(context),
+                    )?;
+                    if *x > 0 {
+                        let pleasure = animations().get("pleasure_vfx").unwrap();
+                        battle.apply_animation(
+                            Context::default()
+                                .set_var(VarName::position, target_pos.clone())
+                                .take(),
+                            pain,
+                        );
+                        let dmg =
+                            (battle.world.get::<NFusionStats>(*b).unwrap().dmg - x).at_least(0);
+                        add_actions.push(Self::var_set(
+                            *b,
+                            NodeKind::NFusionStats,
+                            VarName::dmg,
+                            dmg.into(),
+                        ));
+                        let text = animations().get("text").unwrap();
+                        battle.apply_animation(
+                            Context::default()
+                                .set_var(VarName::text, format!("+{x}").into())
+                                .set_var(VarName::color, GREEN.into())
+                                .set_var(VarName::position, target_pos)
+                                .take(),
+                            text,
+                        );
+                    }
+                    battle.duration += ANIMATION;
+                    true
+                }
+                BattleAction::var_set(entity, kind, var, value) => {
+                    if context.get_mut::<NodeState>(*entity)?.insert(
+                        battle.duration,
+                        0.1,
+                        *var,
+                        value.clone(),
+                    ) {
+                        kind.set_var(*entity, *var, value.clone(), &mut battle.world);
+                        true
+                    } else {
+                        false
+                    }
+                }
+                BattleAction::spawn(entity) => {
+                    battle
+                        .world
+                        .run_system_once_with(
+                            (*entity, battle.duration),
+                            NodeStatePlugin::inject_entity_vars,
+                        )
+                        .unwrap();
+                    add_actions.extend_from_slice(&[BattleAction::var_set(
+                        *entity,
+                        NodeKind::None,
+                        VarName::visible,
+                        true.into(),
+                    )]);
+                    true
+                }
+                BattleAction::apply_status(target, status, charges, color) => {
+                    battle.apply_status(*target, status.clone(), *charges, *color);
+                    battle.duration += ANIMATION;
+                    true
+                }
+                BattleAction::wait(t) => {
+                    battle.duration += *t;
                     false
                 }
-            }
-            BattleAction::spawn(entity) => {
-                battle
-                    .world
-                    .run_system_once_with(
-                        (*entity, battle.duration),
-                        NodeStatePlugin::inject_entity_vars,
-                    )
-                    .unwrap();
-                add_actions.extend_from_slice(&[BattleAction::var_set(
-                    *entity,
-                    NodeKind::None,
-                    VarName::visible,
-                    true.into(),
-                )]);
-                true
-            }
-            BattleAction::apply_status(target, status, charges, color) => {
-                battle.apply_status(*target, status.clone(), *charges, *color);
-                battle.duration += ANIMATION;
-                true
-            }
-            BattleAction::wait(t) => {
-                battle.duration += *t;
-                false
-            }
-            BattleAction::vfx(vars, vfx) => {
-                if let Some(vfx) = animations().get(vfx) {
-                    let mut context = Context::default();
-                    for (var, value) in vars {
-                        context.set_var(*var, value.clone());
+                BattleAction::vfx(vars, vfx) => {
+                    if let Some(vfx) = animations().get(vfx) {
+                        let mut context = Context::default();
+                        for (var, value) in vars {
+                            context.set_var(*var, value.clone());
+                        }
+                        battle.apply_animation(context, vfx);
                     }
-                    battle.apply_animation(context, vfx);
+                    false
                 }
-                false
-            }
-            BattleAction::send_event(event) => {
-                add_actions.extend(battle.send_event(*event));
-                true
-            }
-        };
+                BattleAction::send_event(event) => {
+                    add_actions.extend(battle.send_event(*event));
+                    true
+                }
+            };
+            Ok(())
+        });
         if applied {
             info!("{} {self}", "+".green().dimmed());
             battle.log.actions.push(self.clone());
@@ -470,12 +468,6 @@ impl BattleSimulation {
         state.insert(self.duration, 0.0, VarName::charges, charges.into());
         state.insert(self.duration, 0.0, VarName::color, color.into());
     }
-    fn apply_animation(&mut self, context: Context, anim: &Anim) {
-        match anim.apply(&mut self.duration, context, &mut self.world) {
-            Ok(_) => {}
-            Err(e) => error!("Animation error: {e}"),
-        }
-    }
     fn process_actions(&mut self, actions: impl Into<VecDeque<BattleAction>>) {
         let mut actions = actions.into();
         while let Some(a) = actions.pop_front() {
@@ -556,5 +548,19 @@ impl BattleSimulation {
         }
         actions.push_back(BattleAction::wait(ANIMATION * 3.0));
         actions
+    }
+}
+
+impl Default for BattleSimulation {
+    fn default() -> Self {
+        Self {
+            duration: default(),
+            world: default(),
+            fusions_left: default(),
+            fusions_right: default(),
+            team_left: Entity::PLACEHOLDER,
+            team_right: Entity::PLACEHOLDER,
+            log: default(),
+        }
     }
 }

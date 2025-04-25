@@ -33,13 +33,12 @@ impl Anim {
             actions: actions.into_iter().map(|a| Box::new(a)).collect(),
         }
     }
-    pub fn apply(&self, t: &mut f32, context: &mut Context) -> Result<f32, ExpressionError> {
+    pub fn apply(&self, context: &mut Context) -> Result<(), ExpressionError> {
         let a = &mut Animator::new();
-        let mut end_t = *t;
         for action in &self.actions {
-            end_t = end_t.max(action.apply(t, a, context)?);
+            action.apply(a, context)?;
         }
-        Ok(end_t)
+        Ok(())
     }
     pub fn push(&mut self, action: AnimAction) -> &mut Self {
         self.actions.push(Box::new(action));
@@ -48,23 +47,22 @@ impl Anim {
 }
 
 impl AnimAction {
-    fn apply(
-        &self,
-        t: &mut f32,
-        a: &mut Animator,
-        context: &mut Context,
-    ) -> Result<f32, ExpressionError> {
+    fn apply(&self, a: &mut Animator, context: &mut Context) -> Result<f32, ExpressionError> {
         let mut end_t = 0.0;
         match self {
             AnimAction::translate(x) => {
                 let pos = x.get_vec2(context)?;
+                let mut t = context.t()?;
                 for target in a.targets.iter().copied() {
-                    NodeState::from_world_mut(target, context.world_mut().to_e()?)
-                        .unwrap()
-                        .insert(*t, a.duration, VarName::position, pos.into());
-                    end_t = *t + a.duration;
-                    *t += a.timeframe;
+                    context.get_mut::<NodeState>(target)?.insert(
+                        t,
+                        a.duration,
+                        VarName::position,
+                        pos.into(),
+                    );
+                    t += a.timeframe;
                 }
+                *context.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
                 a.targets = [x.get_entity(&context)?].into();
@@ -81,11 +79,11 @@ impl AnimAction {
             }
             AnimAction::list(vec) => {
                 for aa in vec {
-                    end_t = end_t.max(aa.apply(t, a, context)?);
+                    aa.apply(a, context)?;
                 }
             }
             AnimAction::spawn(material) => {
-                let mut world = context.world_mut().to_e()?;
+                let mut world = context.world_mut()?;
                 let entity = world.spawn_empty().id();
                 NRepresentation {
                     material: *material.clone(),
@@ -93,21 +91,23 @@ impl AnimAction {
                 }
                 .unpack_entity(entity, world);
 
-                let mut state = context.get_mut::<NodeState>(entity).to_e_not_found()?;
+                let mut t = context.t()?;
+                let vars_layers = context.get_vars_layers();
+                let mut state = context.get_mut::<NodeState>(entity)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
-                state.insert(*t, 0.0, VarName::visible, true.into());
-                state.insert(*t + a.duration, 0.0, VarName::visible, false.into());
-                state.insert(*t, 0.0, VarName::t, 0.0.into());
-                state.insert(*t + 0.0001, a.duration, VarName::t, 1.0.into());
-                for (var, value) in a.context.get_vars_layers() {
+                state.insert(t, 0.0, VarName::visible, true.into());
+                state.insert(t + a.duration, 0.0, VarName::visible, false.into());
+                state.insert(t, 0.0, VarName::t, 0.0.into());
+                state.insert(t + 0.0001, a.duration, VarName::t, 1.0.into());
+                for (var, value) in vars_layers {
                     state.insert(0.0, 0.0, var, value);
                 }
                 a.targets = vec![entity];
-                end_t = *t + a.duration;
-                *t += a.timeframe;
+                t += a.timeframe;
+                *context.t_mut()? = t;
             }
             AnimAction::wait(expression) => {
-                *t += expression.get_f32(&a.context)?;
+                *context.t_mut()? += expression.get_f32(context)?;
             }
         };
         Ok(end_t)

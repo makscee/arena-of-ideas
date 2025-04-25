@@ -71,16 +71,17 @@ pub trait TagCard: Node {
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let tctx = tctx.merge_state(self, ui);
-        let context = &context.clone().set_owner(self.entity()).take();
-        let response = if tctx.expanded {
-            self.show_card(context, ui)?
-        } else {
-            self.show_tag(context, ui)?
-        };
-        if response.clicked() {
-            tctx.expanded(!tctx.expanded).save(self, ui);
-        }
-        Ok(())
+        context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
+            let response = if tctx.expanded {
+                self.show_card(context, ui)?
+            } else {
+                self.show_tag(context, ui)?
+            };
+            if response.clicked() {
+                tctx.expanded(!tctx.expanded).save(self, ui);
+            }
+            Ok(())
+        })
     }
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;
     fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;

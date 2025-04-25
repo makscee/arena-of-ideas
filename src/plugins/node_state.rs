@@ -103,12 +103,6 @@ impl NodeState {
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
-    pub fn from_world(entity: Entity, world: &World) -> Option<&Self> {
-        world.get::<Self>(entity)
-    }
-    pub fn from_world_mut(entity: Entity, world: &mut World) -> Option<Mut<Self>> {
-        world.get_mut::<Self>(entity)
-    }
     fn get_state<'a>(&'a self, var: VarName) -> Option<&'a VarState> {
         self.vars.get(&var)
     }
@@ -153,7 +147,7 @@ impl NodeState {
         }
         true
     }
-    pub fn get_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
+    pub fn get_var(context: &Context, var: VarName, entity: Entity) -> Option<VarValue> {
         if let Ok(ns) = context.get::<NodeState>(entity) {
             if let Some(t) = context.t {
                 ns.get_at(t, var)
@@ -164,11 +158,11 @@ impl NodeState {
             None
         }
     }
-    pub fn find_var(var: VarName, entity: Entity, context: &Context) -> Option<VarValue> {
+    pub fn find_var(context: &Context, var: VarName, entity: Entity) -> Option<VarValue> {
         let mut checked: HashSet<Entity> = default();
         let mut q = VecDeque::from([entity]);
         while let Some(entity) = q.pop_front() {
-            let v = Self::get_var(var, entity, context);
+            let v = Self::get_var(context, var, entity);
             if v.is_some() {
                 return v;
             }
@@ -185,6 +179,20 @@ impl NodeState {
             }
         }
         None
+    }
+    pub fn sum_var(
+        context: &Context,
+        var: VarName,
+        entity: Entity,
+    ) -> Result<VarValue, ExpressionError> {
+        let mut result = Self::get_var(context, var, entity).unwrap_or_default();
+        let ids = context.parents_recursive(context.id(entity)?);
+        for entity in context.ids_to_entities(ids)? {
+            if let Some(v) = Self::get_var(context, var, entity) {
+                result = result.add(&v)?;
+            }
+        }
+        Ok(result)
     }
 }
 

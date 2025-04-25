@@ -51,15 +51,14 @@ impl MatchPlugin {
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_err(context)?;
-            let slots = m.shop_case_load(context).into_iter().cloned().collect_vec();
+            let slots = m.shop_case_load(context);
             if slots.is_empty() {
                 return Err("Shop case slots are empty".into());
             }
             let available_rect = ui.available_rect_before_wrap();
-            let g = m.g;
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
-                    format!("g: [yellow [b {g}]]").label(ui);
+                    format!("g: [yellow [b {}]]", m.g).label(ui);
                     if "reroll".cstr().button(ui).clicked() {
                         cn().reducers.match_reroll().notify_op();
                     }
@@ -86,9 +85,8 @@ impl MatchPlugin {
                                     cn().reducers.match_buy(slot.id()).notify_op();
                                 }
                                 if !slot.sold {
-                                    if let Ok(unit) = NUnit::get_by_id(slot.unit, context).cloned()
-                                    {
-                                        context.with_layer(
+                                    if let Ok(unit) = NUnit::get_by_id(slot.unit, context) {
+                                        context.with_layer_ref(
                                             ContextLayer::Owner(unit.entity()),
                                             |context| {
                                                 slot_rect_button(ui, |rect, ui| {
