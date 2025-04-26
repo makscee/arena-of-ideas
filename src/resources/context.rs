@@ -1,347 +1,483 @@
+use std::any::type_name;
+
 use super::*;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Debug)]
 pub struct Context<'w> {
-    t: Option<f32>,
-    layers: Vec<ContextLayer<'w>>,
+    pub t: Option<f32>,
     sources: Vec<ContextSource<'w>>,
+    layers: Vec<ContextLayer>,
+}
+
+#[derive(Debug)]
+pub enum ContextSource<'w> {
+    Context(&'w Context<'w>),
+    WorldRef(&'w World),
+    WorldOwned(World),
+    BattleSimulation(BattleSimulation),
 }
 
 #[derive(Debug, Clone)]
-enum ContextLayer<'w> {
-    OwnerNode(&'w dyn GetVar),
+pub enum ContextLayer {
     Owner(Entity),
-    Caster(Entity),
     Target(Entity),
+    Caster(Entity),
     Var(VarName, VarValue),
 }
 
 impl<'w> Context<'w> {
-    pub fn new(world: &'w World) -> Self {
-        Self {
-            layers: default(),
-            sources: vec![ContextSource::World(world)],
-            t: None,
+    pub fn from_world_r(
+        world: &mut World,
+        f: impl FnOnce(&mut Self) -> Result<(), ExpressionError>,
+    ) -> Result<(), ExpressionError> {
+        let mut t = mem::take(world);
+        t.init_links();
+        let cs = ContextSource::WorldOwned(t);
+        let mut context = Context {
+            sources: [cs].into(),
+            ..default()
+        };
+        let r = f(&mut context);
+        let ContextSource::WorldOwned(t) = context.sources.remove(0) else {
+            unreachable!()
+        };
+        *world = t;
+        r
+    }
+    pub fn from_world(world: &mut World, f: impl FnOnce(&mut Self)) {
+        Self::from_world_r(world, |context| {
+            f(context);
+            Ok(())
+        })
+        .log();
+    }
+    pub fn from_world_ref_r<T>(
+        world: &'w World,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        let mut context = Context {
+            sources: [ContextSource::WorldRef(world)].into(),
+            ..default()
+        };
+        f(&mut context)
+    }
+    pub fn from_battle_simulation_r<T>(
+        bs: &mut BattleSimulation,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        let mut context = Context {
+            sources: [ContextSource::BattleSimulation(mem::take(bs))].into(),
+            ..default()
+        };
+        let r = f(&mut context);
+        let ContextSource::BattleSimulation(t) = context.sources.remove(0) else {
+            unreachable!()
+        };
+        *bs = t;
+        r
+    }
+    pub fn from_battle_simulation(bs: &mut BattleSimulation, f: impl FnOnce(&mut Self)) {
+        Self::from_battle_simulation_r(bs, |context| {
+            f(context);
+            Ok(())
+        })
+        .log();
+    }
+    pub fn world_mut<'a>(&'a mut self) -> Result<&'a mut World, ExpressionError> {
+        for s in &mut self.sources {
+            let w = s.world_mut();
+            if let Some(w) = w {
+                return Ok(w);
+            }
         }
+        Err(ExpressionError::NotFound(
+            "World not set for Context".into(),
+        ))
     }
-    pub fn new_battle_simulation(bs: &'w BattleSimulation) -> Self {
-        Self {
-            layers: default(),
-            sources: vec![ContextSource::BattleSimulation(bs)],
-            t: None,
+    pub fn world<'a>(&'a self) -> Result<&'a World, ExpressionError> {
+        for s in &self.sources {
+            let w = s.world();
+            if let Some(w) = w {
+                return Ok(w);
+            }
         }
+        Err(ExpressionError::NotFound(
+            "World not set for Context".into(),
+        ))
     }
-    pub fn with_world(&self, world: &'w World) -> Self {
-        self.clone().set_world(world).take()
+    pub fn battle_simulation_mut<'a>(
+        &'a mut self,
+    ) -> Result<&'a mut BattleSimulation, ExpressionError> {
+        for s in &mut self.sources {
+            let bs = s.battle_simulation_mut();
+            if let Some(bs) = bs {
+                return Ok(bs);
+            }
+        }
+        Err(ExpressionError::NotFound(
+            "BattleSimulation not set for Context".into(),
+        ))
     }
-    pub fn set_world(&mut self, world: &'w World) -> &mut Self {
-        self.sources.push(ContextSource::World(world));
-        self
+    pub fn battle_simulation<'a>(&'a self) -> Result<&'a BattleSimulation, ExpressionError> {
+        for s in &self.sources {
+            let bs = s.battle_simulation();
+            if let Some(bs) = bs {
+                return Ok(bs);
+            }
+        }
+        Err(ExpressionError::NotFound(
+            "BattleSimulation not set for Context".into(),
+        ))
     }
-    pub fn get_world(&self) -> Option<&World> {
-        self.sources.iter().find_map(|s| s.get_world())
+    pub fn with_layer_r<T>(
+        &mut self,
+        layer: ContextLayer,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        self.with_layers_r([layer].into(), f)
     }
-    pub fn set_t(&mut self, t: f32) -> &mut Self {
-        self.t = Some(t);
-        self
+    pub fn with_layers_r<T>(
+        &mut self,
+        mut layers: Vec<ContextLayer>,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        let old_layers = self.layers.clone();
+        self.layers.append(&mut layers);
+        let r = f(self);
+        self.layers = old_layers;
+        r
     }
-    pub fn get_t(&self) -> Option<f32> {
-        self.t
+    pub fn with_layer(&mut self, layer: ContextLayer, f: impl FnOnce(&mut Self)) {
+        self.with_layer_r(layer, |context| {
+            f(context);
+            Ok(())
+        })
+        .log();
     }
-    pub fn set_owner(&mut self, owner: Entity) -> &mut Self {
+    pub fn with_layers(&mut self, layers: Vec<ContextLayer>, f: impl FnOnce(&mut Self)) {
+        self.with_layers_r(layers, |context| {
+            f(context);
+            Ok(())
+        })
+        .log();
+    }
+    pub fn with_layer_ref_r<T>(
+        &'w self,
+        layer: ContextLayer,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        self.with_layers_ref_r([layer].into(), f)
+    }
+    pub fn with_layers_ref_r<T>(
+        &'w self,
+        mut layers: Vec<ContextLayer>,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        let mut all_layers = self.layers.clone();
+        all_layers.append(&mut layers);
+        let mut context = Self {
+            t: self.t,
+            sources: [ContextSource::Context(self)].into(),
+            layers: all_layers,
+        };
+        f(&mut context)
+    }
+    pub fn with_layers_ref(&'w self, layers: Vec<ContextLayer>, f: impl FnOnce(&mut Self)) {
+        self.with_layers_ref_r(layers, |context| {
+            f(context);
+            Ok(())
+        })
+        .log();
+    }
+    pub fn with_layer_ref(&'w self, layer: ContextLayer, f: impl FnOnce(&mut Self)) {
+        self.with_layers_ref([layer].into(), f);
+    }
+    pub fn with_owner<T>(
+        &mut self,
+        entity: Entity,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        self.with_layer_r(ContextLayer::Owner(entity), f)
+    }
+    pub fn t(&self) -> Result<f32, ExpressionError> {
+        self.t.to_custom_e("Context t not set")
+    }
+    pub fn t_mut(&mut self) -> Result<&mut f32, ExpressionError> {
+        self.t.as_mut().to_custom_e("Context t not set")
+    }
+    pub fn id(&self, entity: Entity) -> Result<u64, ExpressionError> {
+        self.world()?.entity_id(entity).to_e(entity)
+    }
+    pub fn entity(&self, id: u64) -> Result<Entity, ExpressionError> {
+        self.world()?.id_entity(id).to_e(id)
+    }
+    pub fn parents(&self, id: u64) -> HashSet<u64> {
+        self.world()
+            .ok()
+            .and_then(|w| w.children_parents_map().get(&id).cloned())
+            .unwrap_or_default()
+    }
+    pub fn children(&self, id: u64) -> HashSet<u64> {
+        self.world()
+            .ok()
+            .and_then(|w| w.parents_children_map().get(&id).cloned())
+            .unwrap_or_default()
+    }
+    pub fn parents_recursive(&self, id: u64) -> HashSet<u64> {
+        let mut result: HashSet<u64> = default();
+        let mut q = VecDeque::from([id]);
+        while let Some(id) = q.pop_front() {
+            for parent in self.parents(id) {
+                if !result.insert(parent) {
+                    continue;
+                }
+                q.push_back(parent);
+            }
+        }
+        result
+    }
+    pub fn children_recursive(&self, id: u64) -> HashSet<u64> {
+        let mut result: HashSet<u64> = default();
+        let mut q = VecDeque::from([id]);
+        while let Some(id) = q.pop_front() {
+            for child in self.children(id) {
+                if !result.insert(child) {
+                    continue;
+                }
+                q.push_back(child);
+            }
+        }
+        result
+    }
+    pub fn first_parent<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
+        let id = self.id(entity)?;
+        let mut checked: HashSet<u64> = default();
+        let mut q = VecDeque::from([id]);
+        while let Some(id) = q.pop_front() {
+            for parent in self.parents(id) {
+                if !checked.insert(parent) {
+                    continue;
+                }
+                if let Ok(c) = self.get_by_id::<T>(parent) {
+                    return Ok(c);
+                }
+                q.push_back(parent);
+            }
+        }
+        Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
+    }
+    pub fn first_child<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
+        let id = self.id(entity)?;
+        let mut checked: HashSet<u64> = default();
+        let mut q = VecDeque::from([id]);
+        while let Some(id) = q.pop_front() {
+            for child in self.children(id) {
+                if !checked.insert(child) {
+                    continue;
+                }
+                if let Ok(c) = self.get_by_id::<T>(child) {
+                    return Ok(c);
+                }
+                q.push_back(child);
+            }
+        }
+        Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
+    }
+    pub fn add_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
+        self.world_mut()?.add_parent_child(parent, child);
+        Ok(())
+    }
+    pub fn despawn(&mut self, entity: Entity) -> Result<(), ExpressionError> {
+        self.world_mut()?.despawn_entity(entity);
+        Ok(())
+    }
+    pub fn get<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
+        self.world()?.get::<T>(entity).to_e_not_found()
+    }
+    pub fn get_mut<T: Component>(&mut self, entity: Entity) -> Result<Mut<T>, ExpressionError> {
+        self.world_mut()?.get_mut::<T>(entity).to_e_not_found()
+    }
+    pub fn get_by_id<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
+        self.get::<T>(self.entity(id)?)
+    }
+    pub fn get_by_id_mut<T: Component>(&mut self, id: u64) -> Result<Mut<T>, ExpressionError> {
+        self.get_mut::<T>(self.entity(id)?)
+    }
+    pub fn ids_to_entities(
+        &self,
+        ids: impl IntoIterator<Item = u64>,
+    ) -> Result<Vec<Entity>, ExpressionError> {
+        let m = self.world()?.id_to_entity_map();
+        Ok(ids
+            .into_iter()
+            .filter_map(|id| m.get(&id).copied())
+            .collect())
+    }
+    pub fn entities_to_ids(
+        &self,
+        entities: impl IntoIterator<Item = Entity>,
+    ) -> Result<Vec<u64>, ExpressionError> {
+        let m = self.world()?.entity_to_id_map();
+        Ok(entities
+            .into_iter()
+            .filter_map(|entity| m.get(&entity).copied())
+            .collect())
+    }
+    pub fn collect_components<T: Component>(
+        &self,
+        ids: impl IntoIterator<Item = u64>,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        Ok(self
+            .ids_to_entities(ids)?
+            .into_iter()
+            .filter_map(|entity| self.get::<T>(entity).ok())
+            .collect())
+    }
+    pub fn collect_children_components<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.children(id))
+    }
+    pub fn collect_children_components_recursive<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.children_recursive(id))
+    }
+
+    pub fn owner_entity(&self) -> Result<Entity, ExpressionError> {
+        for l in self.layers.iter().rev() {
+            if let Some(e) = l.get_owner() {
+                return Ok(e);
+            }
+        }
+        Err(ExpressionError::NotFound("Owner not set".into()))
+    }
+    pub fn target_entity(&self) -> Result<Entity, ExpressionError> {
+        for l in self.layers.iter().rev() {
+            if let Some(e) = l.get_target() {
+                return Ok(e);
+            }
+        }
+        Err(ExpressionError::NotFound("Target not set".into()))
+    }
+    pub fn caster_entity(&self) -> Result<Entity, ExpressionError> {
+        for l in self.layers.iter().rev() {
+            if let Some(e) = l.get_caster() {
+                return Ok(e);
+            }
+        }
+        Err(ExpressionError::NotFound("Caster not set".into()))
+    }
+    pub fn collect_targets(&self) -> Vec<Entity> {
+        self.layers.iter().filter_map(|l| l.get_target()).collect()
+    }
+    pub fn add_owner(&mut self, owner: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Owner(owner));
-        self
-    }
-    pub fn set_caster(&mut self, owner: Entity) -> &mut Self {
-        self.layers.push(ContextLayer::Caster(owner));
         self
     }
     pub fn add_target(&mut self, target: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Target(target));
         self
     }
-    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
-        self.layers.push(ContextLayer::Var(var, value));
+    pub fn add_caster(&mut self, caster: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Caster(caster));
         self
-    }
-    pub fn set_value(&mut self, value: VarValue) -> &mut Self {
-        self.set_var(VarName::value, value)
-    }
-    pub fn set_owner_node(&mut self, node: &'w dyn GetVar) -> &mut Self {
-        self.layers.push(ContextLayer::OwnerNode(node));
-        self
-    }
-
-    pub fn get_owner(&self) -> Result<Entity, ExpressionError> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_owner())
-            .to_custom_e("owner not found")
-    }
-    pub fn get_caster(&self) -> Result<Entity, ExpressionError> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_caster())
-            .to_custom_e("Caster not found")
-    }
-    pub fn get_target(&self) -> Result<Entity, ExpressionError> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_target())
-            .to_custom_e("target not found")
-    }
-    pub fn collect_targets(&self) -> Result<Vec<Entity>, ExpressionError> {
-        let targets = self
-            .layers
-            .iter()
-            .filter_map(|l| l.get_target())
-            .collect_vec();
-        match targets.is_empty() {
-            true => Err("No targets found".into()),
-            false => Ok(targets),
-        }
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        self.layers
-            .iter()
-            .rev()
-            .find_map(|l| l.get_var(var, self))
-            .to_e_var(var)
+        for l in self.layers.iter().rev() {
+            if let Some(v) = l.get_var(self, var) {
+                return Ok(v);
+            }
+        }
+        Err(ExpressionError::ValueNotFound(var))
     }
-    pub fn get_vars(&self, vars: impl Iterator<Item = VarName>) -> HashMap<VarName, VarValue> {
-        HashMap::from_iter(vars.filter_map(|var| self.get_var(var).ok().map(|value| (var, value))))
-    }
-    pub fn get_state<'a>(&'a self, entity: Entity) -> Result<&'a NodeState, ExpressionError> {
-        self.sources
-            .iter()
-            .find_map(|s| s.get_state(entity))
-            .to_custom_e("State not found")
+    pub fn sum_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
+        let mut value = VarValue::default();
+        for l in &self.layers {
+            value = l.sum_var(self, var, value)?;
+        }
+        Ok(value)
     }
     pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
         self.get_var(VarName::value)
     }
-    pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
-        self.get_var(var)?.get_bool()
+    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
+        self.layers.push(ContextLayer::Var(var, value));
+        self
     }
+    pub fn set_value_var(&mut self, value: VarValue) -> &mut Self {
+        self.set_var(VarName::value, value);
+        self
+    }
+
     pub fn get_i32(&self, var: VarName) -> Result<i32, ExpressionError> {
         self.get_var(var)?.get_i32()
     }
     pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
         self.get_var(var)?.get_f32()
     }
-    pub fn get_string(&self, var: VarName) -> Result<String, ExpressionError> {
-        self.get_var(var)?.get_string()
-    }
     pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
         self.get_var(var)?.get_color()
-    }
-    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
-        HashMap::from_iter(self.layers.iter().filter_map(|l| match l {
-            ContextLayer::Var(var, value) => Some((*var, value.clone())),
-            _ => None,
-        }))
-    }
-    pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
-        for s in self.sources.iter().rev() {
-            let c = s.get_children(entity);
-            if !c.is_empty() {
-                return c;
-            }
-        }
-        default()
-    }
-    pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
-        self.sources.iter().rev().find_map(|s| s.get_parent(entity))
-    }
-    pub fn get_all_units(&self) -> Vec<VarValue> {
-        self.sources
-            .iter()
-            .flat_map(|s| s.get_all_fusions())
-            .map(|e| e.to_value())
-            .collect()
-    }
-    pub fn entity_by_id(&self, id: u64) -> Option<Entity> {
-        self.get_world()?.get_id_link(id)
-    }
-    pub fn get_node<T: Component>(&self, entity: Entity) -> Option<&T> {
-        self.get_world()?.get::<T>(entity)
-    }
-    pub fn get_node_by_id<T: Component>(&self, id: u64) -> Option<&T> {
-        let world = self.get_world()?;
-        world.get::<T>(world.get_id_link(id)?)
-    }
-    pub fn find_parent_node<T: Component>(&self, mut entity: Entity) -> Option<&T> {
-        while let Some(parent) = self.get_parent(entity) {
-            if let Some(c) = self.get_node::<T>(parent) {
-                return Some(c);
-            }
-            entity = parent;
-        }
-        None
-    }
-    pub fn children_nodes<T: Component>(&self, entity: Entity) -> Vec<&T> {
-        self.sources
-            .iter()
-            .flat_map(|s| s.children_nodes::<T>(entity))
-            .collect()
-    }
-    pub fn children_nodes_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
-        self.sources
-            .iter()
-            .flat_map(|s| s.children_nodes_recursive::<T>(entity))
-            .collect()
-    }
-    pub fn all_allies(&self, entity: Entity) -> Vec<VarValue> {
-        self.sources
-            .iter()
-            .flat_map(|s| s.collect_allies(entity))
-            .map(|e| e.to_value())
-            .collect()
-    }
-    pub fn all_enemies(&self, entity: Entity) -> Vec<VarValue> {
-        self.sources
-            .iter()
-            .flat_map(|s| s.collect_enemies(entity))
-            .map(|e| e.to_value())
-            .collect()
-    }
-    pub fn offset_unit(&self, entity: Entity, offset: i32) -> Option<VarValue> {
-        let entities = self
-            .sources
-            .iter()
-            .flat_map(|s| s.collect_allies(entity))
-            .collect_vec();
-        if let Some(pos) = entities.iter().position(|e| *e == entity) {
-            let i = pos as i32 + offset;
-            if i >= 0 && (i as usize) < entities.len() {
-                return Some(entities[i as usize].to_value());
-            }
-        }
-        None
-    }
-    pub fn adjacent_allies(&self, entity: Entity) -> Vec<VarValue> {
-        self.offset_unit(entity, 1)
-            .into_iter()
-            .chain(self.offset_unit(entity, -1))
-            .collect()
     }
     pub fn color(&self, ui: &mut Ui) -> Color32 {
         self.get_color(VarName::color)
             .unwrap_or(ui.visuals().text_color())
     }
-
-    pub fn clear(&mut self) {
-        self.layers.clear();
+    pub fn get_string(&self, var: VarName) -> Result<String, ExpressionError> {
+        self.get_var(var)?.get_string()
     }
-    pub fn take(&mut self) -> Self {
-        mem::take(self)
+
+    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
+        let mut result: HashMap<VarName, VarValue> = default();
+        for l in self.layers.iter().rev() {
+            match l {
+                ContextLayer::Var(var, value) => {
+                    result.insert(*var, value.clone());
+                }
+                _ => {}
+            }
+        }
+        result
     }
 }
 
 impl ContextSource<'_> {
-    pub fn get_world(&self) -> Option<&World> {
+    fn world_mut(&mut self) -> Option<&mut World> {
         match self {
-            ContextSource::World(world) => Some(*world),
-            ContextSource::BattleSimulation(bs) => Some(&bs.world),
-        }
-    }
-    pub fn get_state(&self, entity: Entity) -> Option<&NodeState> {
-        match self {
-            ContextSource::World(w) => NodeState::from_world(entity, w),
-            ContextSource::BattleSimulation(bs) => NodeState::from_world(entity, &bs.world),
-        }
-    }
-    pub fn get_children(&self, entity: Entity) -> Vec<Entity> {
-        match self {
-            ContextSource::World(w) => entity.get_children(*w),
-            ContextSource::BattleSimulation(bs) => entity.get_children(&bs.world),
-        }
-    }
-    pub fn get_children_recursive(&self, entity: Entity) -> Vec<Entity> {
-        match self {
-            ContextSource::World(w) => entity.get_children_recursive(*w),
-            ContextSource::BattleSimulation(bs) => entity.get_children_recursive(&bs.world),
-        }
-    }
-    pub fn get_parent(&self, entity: Entity) -> Option<Entity> {
-        match self {
-            ContextSource::World(w) => entity.get_parents(w).first().copied(),
-            ContextSource::BattleSimulation(bs) => entity.get_parents(&bs.world).first().copied(),
-        }
-    }
-    fn get_all_fusions(&self) -> Vec<Entity> {
-        match self {
-            ContextSource::BattleSimulation(bs) => bs
-                .fusions_left
-                .iter()
-                .chain(bs.fusions_right.iter())
-                .copied()
-                .collect(),
-            _ => default(),
-        }
-    }
-    fn get_node<T: Component>(&self, entity: Entity) -> Option<&T> {
-        match self {
-            ContextSource::World(world) => world.get::<T>(entity),
-            ContextSource::BattleSimulation(bs) => bs.world.get::<T>(entity),
+            ContextSource::WorldOwned(world) => Some(world),
+            ContextSource::BattleSimulation(bs) => Some(&mut bs.world),
             _ => None,
         }
     }
-    pub fn children_nodes<T: Component>(&self, entity: Entity) -> Vec<&T> {
-        self.get_children(entity)
-            .into_iter()
-            .filter_map(|e| self.get_node(e))
-            .collect()
-    }
-    pub fn children_nodes_recursive<T: Component>(&self, entity: Entity) -> Vec<&T> {
-        self.get_children_recursive(entity)
-            .into_iter()
-            .filter_map(|e| self.get_node(e))
-            .collect()
-    }
-    pub fn collect_enemies(&self, entity: Entity) -> Vec<Entity> {
+    fn world(&self) -> Option<&World> {
         match self {
-            ContextSource::World(..) => default(),
-            ContextSource::BattleSimulation(bs) => {
-                if bs.fusions_left.contains(&entity) {
-                    bs.fusions_right.clone()
-                } else if bs.fusions_right.contains(&entity) {
-                    bs.fusions_left.clone()
-                } else {
-                    default()
-                }
-            }
+            ContextSource::WorldOwned(world) => Some(world),
+            ContextSource::BattleSimulation(bs) => Some(&bs.world),
+            ContextSource::WorldRef(world) => Some(*world),
+            ContextSource::Context(context) => context.world().ok(),
         }
     }
-    pub fn collect_allies(&self, entity: Entity) -> Vec<Entity> {
+    fn battle_simulation_mut(&mut self) -> Option<&mut BattleSimulation> {
         match self {
-            ContextSource::World(..) => default(),
-            ContextSource::BattleSimulation(bs) => {
-                if bs.fusions_left.contains(&entity) {
-                    bs.fusions_left.clone()
-                } else if bs.fusions_right.contains(&entity) {
-                    bs.fusions_right.clone()
-                } else {
-                    default()
-                }
-            }
+            ContextSource::BattleSimulation(bs) => Some(bs),
+            _ => None,
+        }
+    }
+    fn battle_simulation(&self) -> Option<&BattleSimulation> {
+        match self {
+            ContextSource::Context(context) => context.battle_simulation(),
+            ContextSource::BattleSimulation(bs) => Some(bs),
+            _ => None,
         }
     }
 }
 
-impl ContextLayer<'_> {
+impl ContextLayer {
     fn get_owner(&self) -> Option<Entity> {
         match self {
             ContextLayer::Owner(entity) => Some(*entity),
-            _ => None,
-        }
-    }
-    fn get_caster(&self) -> Option<Entity> {
-        match self {
-            ContextLayer::Caster(entity) => Some(*entity),
             _ => None,
         }
     }
@@ -351,52 +487,41 @@ impl ContextLayer<'_> {
             _ => None,
         }
     }
-    fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue> {
+    fn get_caster(&self) -> Option<Entity> {
         match self {
-            ContextLayer::Owner(entity) => {
-                let mut value = NodeState::find_var(var, *entity, context);
-                if var.is_stat() {
-                    if let Some(mut new_value) = value {
-                        if let Some(units) = context
-                            .get_node::<NFusion>(*entity)
-                            .and_then(|f| f.units(context).ok())
-                        {
-                            for unit in units {
-                                if let Some(sum_value) =
-                                    NodeState::find_var(var, unit.entity(), context)
-                                        .and_then(|v| v.add(&new_value).ok())
-                                {
-                                    new_value = sum_value;
-                                }
-                            }
-                        }
-                        value = Some(new_value);
-                    }
-                }
-                value
-            }
-            ContextLayer::Var(v, value) => {
-                if var.eq(v) {
-                    Some(value.clone())
+            ContextLayer::Caster(entity) => Some(*entity),
+            _ => None,
+        }
+    }
+    fn get_var(&self, context: &Context, var: VarName) -> Option<VarValue> {
+        match self {
+            ContextLayer::Var(vr, vl) => {
+                if *vr == var {
+                    Some(vl.clone())
                 } else {
                     None
                 }
             }
-            ContextLayer::OwnerNode(node) => node.get_own_var(var),
-            ContextLayer::Caster(..) => None,
-            ContextLayer::Target(..) => None,
+            ContextLayer::Owner(entity) => NodeState::find_var(context, var, *entity),
+            _ => None,
         }
     }
-}
-
-impl<'w> From<&'w World> for Context<'w> {
-    fn from(value: &'w World) -> Self {
-        Context::new(value)
-    }
-}
-
-impl<'w> From<&'w mut World> for Context<'w> {
-    fn from(value: &'w mut World) -> Self {
-        Context::new(value)
+    fn sum_var(
+        &self,
+        context: &Context,
+        var: VarName,
+        value: VarValue,
+    ) -> Result<VarValue, ExpressionError> {
+        match self {
+            ContextLayer::Owner(entity) => NodeState::sum_var(context, var, *entity),
+            ContextLayer::Var(vr, vl) => {
+                if *vr == var {
+                    value.add(vl)
+                } else {
+                    Ok(value)
+                }
+            }
+            _ => Ok(value),
+        }
     }
 }
