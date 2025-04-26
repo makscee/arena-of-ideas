@@ -53,34 +53,43 @@ impl ExpressionImpl for Expression {
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),
             Expression::unit_size => Ok(UNIT_SIZE.into()),
-            Expression::all_units => Ok(context.battle_all_units().vec_to_value()),
+            Expression::all_units => Ok(context.battle_simulation()?.all_units().vec_to_value()),
             Expression::all_ally_units => Ok(context
-                .battle_all_allies(context.owner_entity()?)
+                .battle_simulation()?
+                .all_allies(context.owner_entity()?)?
+                .clone()
                 .vec_to_value()),
             Expression::all_other_ally_units => Ok(context
-                .battle_all_allies(context.owner_entity()?)
+                .battle_simulation()?
+                .all_allies(context.owner_entity()?)?
                 .into_iter()
-                .filter(|v| *v != context.owner_entity().unwrap())
+                .filter(|v| **v != context.owner_entity().unwrap())
+                .copied()
                 .collect_vec()
                 .vec_to_value()),
             Expression::all_enemy_units => Ok(context
-                .battle_all_enemies(context.owner_entity()?)
+                .battle_simulation()?
+                .all_enemies(context.owner_entity()?)?
+                .clone()
                 .vec_to_value()),
             Expression::adjacent_ally_units => {
                 let owner = context.owner_entity()?;
-                Ok(context
-                    .battle_offset_unit(owner, -1)
+                let bs = context.battle_simulation()?;
+                Ok(bs
+                    .offset_unit(owner, -1)
                     .into_iter()
-                    .chain(context.battle_offset_unit(owner, 1))
+                    .chain(bs.offset_unit(owner, 1))
                     .collect_vec()
                     .vec_to_value())
             }
             Expression::adjacent_front => context
-                .battle_offset_unit(context.owner_entity()?, -1)
+                .battle_simulation()?
+                .offset_unit(context.owner_entity()?, -1)
                 .map(|e| e.to_value())
                 .to_custom_e("No front unit found"),
             Expression::adjacent_back => context
-                .battle_offset_unit(context.owner_entity()?, 1)
+                .battle_simulation()?
+                .offset_unit(context.owner_entity()?, 1)
                 .map(|e| e.to_value())
                 .to_custom_e("No back unit found"),
             Expression::sin(x) => Ok(x.get_f32(context)?.sin().into()),

@@ -382,7 +382,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(s)
                     }
-                    fn unpack_entity(mut self, entity: Entity, world: &mut World) {
+                    fn unpack_entity(mut self, context: &mut Context, entity: Entity) {
                         //debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if self.id == 0 {
@@ -531,37 +531,23 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
             quote! {
                 #input
                 impl NodeKind {
-                    pub fn register(self, app: &mut App) {
-                        use bevy_trait_query::RegisterExt;
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {app.register_component_as::<dyn GetVar, #variants>();})*
-                        };
-                    }
-                    pub fn register_world(self, world: &mut World) {
-                        use bevy_trait_query::RegisterExt;
-                        match self {
-                            Self::None => {}
-                            #(#struct_ident::#variants => {world.register_component_as::<dyn GetVar, #variants>();})*
-                        };
-                    }
-                    pub fn set_var(self, entity: Entity, var: VarName, value: VarValue, world: &mut World) {
+                    pub fn set_var(self, context: &mut Context, entity: Entity, var: VarName, value: VarValue) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
-                                world.get_mut::<#variants>(entity).unwrap().set_var(var, value);
+                                context.get_mut::<#variants>(entity).unwrap().set_var(var, value);
                             })*
                         }
                     }
-                    pub fn get_vars(self, entity: Entity, world: &World) -> Vec<(VarName, VarValue)> {
+                    pub fn get_vars(self, context: &Context, entity: Entity) -> Vec<(VarName, VarValue)> {
                         match self {
                             Self::None => default(),
                             #(#struct_ident::#variants => {
-                                world.get::<#variants>(entity).unwrap().get_own_vars()
+                                context.get::<#variants>(entity).unwrap().get_own_vars()
                             })*
                         }
                     }
-                    pub fn unpack(self, entity: Entity, node: &TNode, world: &mut World) {
+                    pub fn unpack(self, context: &mut Context, entity: Entity, node: &TNode) {
                         match self {
                             Self::None => {}
                             #(#struct_ident::#variants => {
@@ -569,7 +555,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                 n.inject_data(&node.data);
                                 n.id = node.id;
                                 n.owner = node.owner;
-                                n.unpack_entity(entity, world);
+                                n.unpack_entity(context, entity);
                             })*
                         };
                     }
@@ -579,18 +565,6 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(
                                 #struct_ident::#variants => {
                                     #variants::component_kinds().contains(&child)
-                                }
-                            )*
-                        }
-                    }
-                    pub fn remove_component(self, entity: Entity, world: &mut World) {
-                        match self {
-                            NodeKind::None => {}
-                            #(
-                                #struct_ident::#variants => {
-                                    if let Ok(mut e) = world.get_entity_mut(entity) {
-                                        e.remove::<#variants>();
-                                    }
                                 }
                             )*
                         }

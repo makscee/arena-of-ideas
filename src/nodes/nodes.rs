@@ -8,7 +8,6 @@ use std::fmt::Debug;
 
 macro_schema::nodes!();
 
-#[bevy_trait_query::queryable]
 pub trait GetVar: GetNodeKind + Debug {
     fn get_own_var(&self, var: VarName) -> Option<VarValue>;
     fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
@@ -31,35 +30,8 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn load_recursive(id: u64) -> Option<Self>;
-    fn pack_entity(entity: Entity, context: &Context) -> Option<Self>;
-    fn unpack_entity(self, entity: Entity, world: &mut World);
-    fn find_up_entity<T: Component>(entity: Entity, world: &World) -> Option<&T> {
-        let r = world.get::<T>(entity);
-        if r.is_some() {
-            r
-        } else {
-            if let Some(p) = world.get::<Parent>(entity) {
-                Self::find_up_entity(p.get(), world)
-            } else {
-                None
-            }
-        }
-    }
-    fn find_up<'a, T: Component>(&self, context: &'a Context) -> Result<&'a T, ExpressionError> {
-        let entity = self.get_entity().to_e_not_found()?;
-        context.first_parent::<T>(entity)
-    }
-    fn collect_children_entity<'a, T: Component>(entity: Entity, world: &'a World) -> Vec<&'a T> {
-        entity
-            .get_children(world)
-            .into_iter()
-            .filter_map(|e| world.get::<T>(e))
-            .collect_vec()
-    }
-    fn collect_children<'a, T: Component>(&self, world: &'a World) -> Vec<&'a T> {
-        let entity = self.get_entity().expect("Node not linked to world");
-        Self::collect_children_entity(entity, world)
-    }
+    fn pack_entity(context: &Context, entity: Entity) -> Option<Self>;
+    fn unpack_entity(self, context: &mut Context, entity: Entity);
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn with_components(self, context: &Context) -> Self;
@@ -130,9 +102,9 @@ impl ToCstr for NodeKind {
 }
 
 impl NodeKind {
-    fn on_unpack(self, entity: Entity, world: &mut World) {
-        let vars = self.get_vars(entity, world);
-        let mut emut = world.entity_mut(entity);
+    fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
+        let vars = self.get_vars(context, entity);
+        let mut emut = context.world_mut()?.entity_mut(entity);
         match self {
             NodeKind::NFusion => {
                 emut.insert(NFusionStats::default());
@@ -158,10 +130,9 @@ impl NodeKind {
         };
         emut.insert((Transform::default(), Visibility::default()));
 
-        let mut child = || world.spawn_empty().set_parent(entity).id();
         match self {
             NodeKind::NFusion => {
-                unit_rep().clone().unpack_entity(entity, world);
+                unit_rep().clone().unpack_entity(context, entity);
                 NodeState::from_world_mut(entity, world).unwrap().init_vars(
                     [
                         (VarName::pwr, 0.into()),
@@ -171,9 +142,10 @@ impl NodeKind {
                     .into(),
                 );
             }
-            NodeKind::NStatusMagic => status_rep().clone().unpack_entity(child(), world),
+            NodeKind::NStatusMagic => status_rep().clone().unpack_entity(context, entity),
             _ => {}
         }
+        Ok(())
     }
 }
 

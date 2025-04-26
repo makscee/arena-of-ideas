@@ -4,13 +4,14 @@ pub struct NodeStatePlugin;
 
 impl Plugin for NodeStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreUpdate, Self::inject_vars);
+        // app.add_systems(PreUpdate, Self::inject_vars);
     }
 }
 
 #[derive(Component, Debug, Default)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarState>,
+    pub kind: NodeKind,
 }
 
 #[derive(Debug)]
@@ -46,51 +47,37 @@ struct VarChange {
 }
 
 impl NodeStatePlugin {
-    fn inject_vars(mut nodes: Query<(&mut NodeState, &dyn GetVar, &GlobalTransform)>) {
-        let t = gt().play_head();
-        for (mut state, gv, transform) in &mut nodes {
-            state.insert(
-                t,
-                0.1,
-                VarName::position,
-                transform.translation().xy().into(),
-            );
-            for v in gv {
-                for (var, value) in v.get_own_vars() {
-                    state.insert(t, 0.0, var, value);
-                }
-            }
+    // fn inject_vars(mut nodes: Query<(&mut NodeState, &dyn GetVar, &GlobalTransform)>) {
+    //     let t = gt().play_head();
+    //     for (mut state, gv, transform) in &mut nodes {
+    //         state.insert(
+    //             t,
+    //             0.1,
+    //             VarName::position,
+    //             transform.translation().xy().into(),
+    //         );
+    //         for v in gv {
+    //             for (var, value) in v.get_own_vars() {
+    //                 state.insert(t, 0.0, var, value);
+    //             }
+    //         }
+    //     }
+    // }
+    pub fn init_kind(
+        context: &mut Context,
+        kind: NodeKind,
+        entity: Entity,
+    ) -> Result<(), ExpressionError> {
+        let t = context.t()?;
+        let vars = kind.get_vars(context, entity);
+        let mut ns = context.get_mut::<NodeState>(entity)?;
+        for (var, value) in vars {
+            ns.insert(t, 0.0, var, value);
         }
+        Ok(())
     }
-    pub fn inject_entity_vars(
-        In((entity, t)): In<(Entity, f32)>,
-        mut nodes: Query<(&dyn GetVar, &mut NodeState)>,
-    ) {
-        if let Ok((gv, mut state)) = nodes.get_mut(entity) {
-            for v in gv {
-                for (var, value) in v.get_own_vars() {
-                    state.insert(t, 0.0, var, value);
-                }
-            }
-        }
-    }
-    pub fn collect_vars(
-        In(entity): In<Entity>,
-        nodes: Query<(&dyn GetVar, Option<&Parent>)>,
-    ) -> HashMap<VarName, VarValue> {
-        let mut entity = Some(entity);
-        let mut result: HashMap<VarName, VarValue> = default();
-        while let Some((gv, p)) = entity.and_then(|e| nodes.get(e).ok()) {
-            for v in gv {
-                for (var, value) in v.get_own_vars() {
-                    if !result.contains_key(&var) {
-                        result.insert(var, value);
-                    }
-                }
-            }
-            entity = p.map(|p| p.get());
-        }
-        result
+    pub fn init_entity_vars(context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
+        Self::init_kind(context, context.get::<NodeState>(entity)?.kind, entity)
     }
 }
 

@@ -26,7 +26,7 @@ pub struct Corpse;
 #[derive(Clone, Debug)]
 #[allow(non_camel_case_types)]
 pub enum BattleAction {
-    var_set(Entity, NodeKind, VarName, VarValue),
+    var_set(Entity, VarName, VarValue),
     strike(Entity, Entity),
     damage(Entity, Entity, i32),
     heal(Entity, Entity, i32),
@@ -40,9 +40,8 @@ pub enum BattleAction {
 impl Hash for BattleAction {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            BattleAction::var_set(entity, kind, var, value) => {
+            BattleAction::var_set(entity, var, value) => {
                 entity.hash(state);
-                kind.hash(state);
                 var.hash(state);
                 value.hash(state);
             }
@@ -76,7 +75,7 @@ impl ToCstr for BattleAction {
             BattleAction::damage(a, b, x) => format!("{a}>{b}-{x}"),
             BattleAction::heal(a, b, x) => format!("{a}>{b}+{x}"),
             BattleAction::death(a) => format!("x{a}"),
-            BattleAction::var_set(a, _, var, value) => format!("{a}>${var}>{value}"),
+            BattleAction::var_set(a, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::spawn(a) => format!("*{a}"),
             BattleAction::apply_status(a, status, charges, color) => {
                 format!(
@@ -99,7 +98,7 @@ impl std::fmt::Display for BattleAction {
 impl BattleAction {
     pub fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        Context::from_battle_simulation_r(battle, |context| {
+        let result = Context::from_battle_simulation_r(battle, |context| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
                     let strike_anim = animations().get("strike").unwrap();
@@ -125,14 +124,14 @@ impl BattleAction {
                         .get_i32()?;
                     let action_b = Self::damage(*b, *a, pwr);
                     add_actions.extend_from_slice(&[action_a, action_b]);
-                    add_actions.extend(battle.slots_sync());
+                    add_actions.extend(context.battle_simulation()?.slots_sync());
                     true
                 }
                 BattleAction::death(a) => {
                     let position = context.with_layer_r(ContextLayer::Owner(*a), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    add_actions.extend(battle.die(*a));
+                    add_actions.extend(context.battle_simulation_mut()?.die(*a));
                     add_actions.push(BattleAction::vfx(
                         HashMap::from_iter([(VarName::position, position)]),
                         "death_vfx".into(),
@@ -162,12 +161,7 @@ impl BattleAction {
                             |context| pain.apply(context),
                         )?;
                         let dmg = context.get::<NFusionStats>(*b)?.dmg + x;
-                        add_actions.push(Self::var_set(
-                            *b,
-                            NodeKind::NFusionStats,
-                            VarName::dmg,
-                            dmg.into(),
-                        ));
+                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     let text = animations().get("text").unwrap();
                     context.with_layers_r(
@@ -179,7 +173,7 @@ impl BattleAction {
                         .into(),
                         |context| text.apply(context),
                     )?;
-                    battle.duration += ANIMATION;
+                    context.battle_simulation_mut()?.duration += ANIMATION;
                     true
                 }
                 BattleAction::heal(a, b, x) => {
@@ -200,93 +194,88 @@ impl BattleAction {
                     )?;
                     if *x > 0 {
                         let pleasure = animations().get("pleasure_vfx").unwrap();
-                        battle.apply_animation(
-                            Context::default()
-                                .set_var(VarName::position, target_pos.clone())
-                                .take(),
-                            pain,
-                        );
-                        let dmg =
-                            (battle.world.get::<NFusionStats>(*b).unwrap().dmg - x).at_least(0);
-                        add_actions.push(Self::var_set(
-                            *b,
-                            NodeKind::NFusionStats,
-                            VarName::dmg,
-                            dmg.into(),
-                        ));
+                        context.with_layer_r(
+                            ContextLayer::Var(VarName::position, target_pos.clone()),
+                            |context| pleasure.apply(context),
+                        )?;
+                        let dmg = (context.get::<NFusionStats>(*b)?.dmg - x).at_least(0);
+                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         let text = animations().get("text").unwrap();
-                        battle.apply_animation(
-                            Context::default()
-                                .set_var(VarName::text, format!("+{x}").into())
-                                .set_var(VarName::color, GREEN.into())
-                                .set_var(VarName::position, target_pos)
-                                .take(),
-                            text,
-                        );
+                        context.with_layers_r(
+                            [
+                                ContextLayer::Var(VarName::text, format!("+{x}").into()),
+                                ContextLayer::Var(VarName::color, GREEN.into()),
+                                ContextLayer::Var(VarName::position, target_pos),
+                            ]
+                            .into(),
+                            |context| text.apply(context),
+                        )?;
                     }
-                    battle.duration += ANIMATION;
+                    context.battle_simulation_mut()?.duration += ANIMATION;
                     true
                 }
-                BattleAction::var_set(entity, kind, var, value) => {
-                    if context.get_mut::<NodeState>(*entity)?.insert(
-                        battle.duration,
-                        0.1,
-                        *var,
-                        value.clone(),
-                    ) {
-                        kind.set_var(*entity, *var, value.clone(), &mut battle.world);
+                BattleAction::var_set(entity, var, value) => {
+                    let t = context.battle_simulation()?.duration;
+                    let mut ns = context.get_mut::<NodeState>(*entity)?;
+                    if ns.insert(t, 0.1, *var, value.clone()) {
+                        ns.kind.set_var(*entity, *var, value.clone(), context);
                         true
                     } else {
                         false
                     }
                 }
                 BattleAction::spawn(entity) => {
-                    battle
-                        .world
-                        .run_system_once_with(
-                            (*entity, battle.duration),
-                            NodeStatePlugin::inject_entity_vars,
-                        )
-                        .unwrap();
+                    NodeStatePlugin::init_entity_vars(context, *entity);
                     add_actions.extend_from_slice(&[BattleAction::var_set(
                         *entity,
-                        NodeKind::None,
                         VarName::visible,
                         true.into(),
                     )]);
                     true
                 }
                 BattleAction::apply_status(target, status, charges, color) => {
-                    battle.apply_status(*target, status.clone(), *charges, *color);
-                    battle.duration += ANIMATION;
+                    BattleSimulation::apply_status(
+                        context,
+                        *target,
+                        status.clone(),
+                        *charges,
+                        *color,
+                    );
+                    context.battle_simulation_mut()?.duration += ANIMATION;
                     true
                 }
                 BattleAction::wait(t) => {
-                    battle.duration += *t;
+                    context.battle_simulation_mut()?.duration += *t;
                     false
                 }
                 BattleAction::vfx(vars, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        let mut context = Context::default();
-                        for (var, value) in vars {
-                            context.set_var(*var, value.clone());
-                        }
-                        battle.apply_animation(context, vfx);
+                        context.with_layers_r(
+                            vars.iter()
+                                .map(|(var, value)| ContextLayer::Var(*var, value.clone()))
+                                .collect(),
+                            |context| vfx.apply(context),
+                        )?
                     }
                     false
                 }
                 BattleAction::send_event(event) => {
-                    add_actions.extend(battle.send_event(*event));
+                    add_actions.extend(BattleSimulation::send_event(context, *event)?);
                     true
                 }
             };
-            Ok(())
+            Ok(applied)
         });
-        if applied {
-            info!("{} {self}", "+".green().dimmed());
-            battle.log.actions.push(self.clone());
-        } else {
-            info!("{} {self}", "-".dimmed());
+        match result {
+            Ok(applied) => {
+                if applied {
+                    info!("{} {self}", "+".green().dimmed());
+                    battle.log.actions.push(self.clone());
+                } else {
+                    info!("{} {self}", "-".dimmed());
+                }
+            }
+            Err(e) => error!("BattleAction apply error: {e}"),
         }
         add_actions
     }
@@ -295,30 +284,21 @@ impl BattleAction {
 impl BattleSimulation {
     pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
-        for k in NodeKind::iter() {
-            k.register_world(&mut world);
-        }
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
         battle.left.unpack_entity(team_left, &mut world);
         battle.right.unpack_entity(team_right, &mut world);
 
-        for entity in world
-            .query_filtered::<Entity, With<NHouse>>()
-            .iter(&world)
-            .collect_vec()
-        {
-            world
-                .run_system_once_with((entity, 0.0), NodeStatePlugin::inject_entity_vars)
-                .unwrap();
-        }
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
-            Context::new(&world)
-                .children_nodes_recursive::<NFusion>(parent)
-                .into_iter()
-                .sorted_by_key(|s| s.slot)
-                .map(|n| n.entity())
-                .collect_vec()
+            Context::from_world_ref_r(world, |context| {
+                Ok(context
+                    .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
+                    .into_iter()
+                    .sorted_by_key(|s| s.slot)
+                    .map(|n| n.entity())
+                    .collect_vec())
+            })
+            .unwrap()
         }
         let fusions_left = entities_by_slot(team_left, &world);
         let fusions_right = entities_by_slot(team_right, &world);
@@ -348,125 +328,171 @@ impl BattleSimulation {
             .collect_vec();
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
-        let actions = self.send_event(Event::BattleStart);
-        self.process_actions(actions);
+
+        match Context::from_battle_simulation_r(&mut self, |context| {
+            Self::send_event(context, Event::BattleStart)
+        }) {
+            Ok(a) => self.process_actions(a),
+            Err(e) => error!("BattleStart event error: {e}"),
+        };
         self
     }
     pub fn run(&mut self) {
         if self.ended() {
             return;
         }
-        for entity in self
-            .world
-            .query_filtered::<Entity, (With<NFusion>, Without<Corpse>)>()
-            .iter(&self.world)
-            .collect_vec()
-        {
-            let vars = self
-                .world
-                .run_system_once_with(entity, NodeStatePlugin::collect_vars)
-                .unwrap();
-            for (var, value) in vars {
-                let value = self.send_update_event(entity, var, value);
-                NodeState::from_world_mut(entity, &mut self.world)
-                    .unwrap()
-                    .insert(self.duration, 0.0, var, value);
+        let t = self.duration;
+        let entities = self
+            .fusions_left
+            .iter()
+            .chain(self.fusions_right.iter())
+            .copied()
+            .collect_vec();
+        Context::from_battle_simulation_r(self, |context| {
+            for entity in entities {
+                let vars = context
+                    .get::<NodeState>(entity)?
+                    .kind
+                    .get_vars(context, entity);
+                for (var, value) in vars {
+                    let value = Self::send_update_event(context, entity, var, value);
+                    context
+                        .get_mut::<NodeState>(entity)?
+                        .insert(t, 0.0, var, value);
+                }
             }
-        }
+            Ok(())
+        });
         let a = BattleAction::strike(self.fusions_left[0], self.fusions_right[0]);
         self.process_actions([a]);
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
-        let a = self.send_event(Event::TurnEnd);
-        self.process_actions(a);
+        match Context::from_battle_simulation_r(self, |context| {
+            Self::send_event(context, Event::TurnEnd)
+        }) {
+            Ok(a) => self.process_actions(a),
+            Err(e) => error!("TurnEnd event error: {e}"),
+        };
     }
     pub fn ended(&self) -> bool {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
     }
-    fn send_update_event(&mut self, entity: Entity, var: VarName, value: VarValue) -> VarValue {
-        let mut context = Context::new_battle_simulation(self)
-            .set_owner(entity)
-            .set_value(value)
-            .take();
-        let event = &Event::UpdateStat(var);
-        if let Some(fusion) = self.world.get::<NFusion>(entity) {
-            fusion.react(event, &mut context).log();
-        }
-        for child in entity.get_children(&self.world) {
-            if let Some(reaction) = self.world.get::<NBehavior>(child) {
-                let mut status_context = context.clone().set_owner(child).take();
-                if let Some(actions) = reaction.react(event, &status_context) {
-                    match actions.process(&mut status_context) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            error!("Update event {event} failed: {e}");
-                            continue;
-                        }
-                    }
+    fn send_update_event(
+        context: &mut Context,
+        entity: Entity,
+        var: VarName,
+        value: VarValue,
+    ) -> VarValue {
+        match context.with_layers_r(
+            [
+                ContextLayer::Owner(entity),
+                ContextLayer::Var(VarName::value, value.clone()),
+            ]
+            .into(),
+            |context| {
+                let event = &Event::UpdateStat(var);
+                // if let Ok(fusion) = context.get::<NFusion>(entity) {
+                //     fusion.react(event, context).log();
+                // }
+                for b in context
+                    .collect_children_components_recursive::<NBehavior>(context.id(entity)?)?
+                {
+                    let mut value = context.get_value()?;
+                    context
+                        .with_layer_ref_r(ContextLayer::Owner(b.entity()), |context| {
+                            if let Some(actions) = b.react(event, context) {
+                                match actions.process(context) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        return Err(e);
+                                    }
+                                }
+                            }
+                            value = context.get_value()?;
+                            Ok(())
+                        })
+                        .log();
                 }
-                context.set_value(status_context.get_value().unwrap());
+                context.get_value()
+            },
+        ) {
+            Ok(value) => value,
+            Err(e) => {
+                error!("Update event for {var} {entity} failed: {e}");
+                value
             }
         }
-        context.get_value().unwrap()
     }
     #[must_use]
-    fn send_event(&mut self, event: Event) -> VecDeque<BattleAction> {
+    fn send_event(
+        context: &mut Context,
+        event: Event,
+    ) -> Result<VecDeque<BattleAction>, ExpressionError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
-        for f in self
-            .world
-            .query_filtered::<&NFusion, Without<Corpse>>()
-            .iter(&self.world)
-        {
-            let mut context = Context::new_battle_simulation(self)
-                .set_owner(f.entity())
-                .take();
-            match f.react(&event, &mut context) {
-                Ok(a) => battle_actions.extend(a),
-                Err(e) => error!("NFusion event {event} failed: {e}"),
-            }
+        for entity in context.battle_simulation()?.all_units() {
+            context
+                .with_owner(entity, |context| {
+                    match context.get::<NFusion>(entity)?.react(&event, context) {
+                        Ok(a) => battle_actions.extend(a),
+                        Err(e) => error!("NFusion event {event} failed: {e}"),
+                    };
+                    Ok(())
+                })
+                .log();
         }
-        for (r, s) in self
-            .world
+        for (r, s) in context
+            .world_mut()?
             .query::<(&NBehavior, &NStatusMagic)>()
-            .iter(&self.world)
+            .iter(context.world()?)
         {
-            let context = Context::new_battle_simulation(self)
-                .set_owner(s.entity())
-                .take();
-            if let Some(actions) = r.react(&event, &context) {
-                match actions.process(Context::new_battle_simulation(self).set_owner(s.entity())) {
-                    Ok(a) => battle_actions.extend(a),
-                    Err(e) => error!("StatusMagic {} event {event} failed: {e}", s.status_name),
-                };
-            }
+            context.with_layer_ref_r(ContextLayer::Owner(s.entity()), |context| {
+                if let Some(actions) = r.react(&event, &context) {
+                    match actions.process(context) {
+                        Ok(a) => battle_actions.extend(a),
+                        Err(e) => {
+                            error!("StatusMagic {} event {event} failed: {e}", s.status_name)
+                        }
+                    };
+                }
+                Ok(())
+            })?;
         }
-        battle_actions
+        Ok(battle_actions)
     }
-    fn apply_status(&mut self, target: Entity, status: NStatusMagic, charges: i32, color: Color32) {
-        for child in target.get_children(&self.world) {
-            if let Some(child_status) = self.world.get::<NStatusMagic>(child) {
+    fn apply_status(
+        context: &mut Context,
+        target: Entity,
+        status: NStatusMagic,
+        charges: i32,
+        color: Color32,
+    ) -> Result<(), ExpressionError> {
+        let t = context.t()?;
+        for child in context.children(context.id(target)?) {
+            let child = context.entity(child)?;
+            if let Ok(child_status) = context.get::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = NodeState::from_world_mut(child, &mut self.world).unwrap();
+                    let mut state = context.get_mut::<NodeState>(child)?;
                     let charges = state
                         .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
-                        .unwrap()
+                        .to_e_not_found()?
                         + charges;
-                    state.insert(self.duration, 0.0, VarName::charges, charges.into());
-                    return;
+                    state.insert(t, 0.0, VarName::charges, charges.into());
+                    return Ok(());
                 }
             }
         }
-        let entity = self.world.spawn_empty().set_parent(target).id();
-        status.unpack_entity(entity, &mut self.world);
+        let entity = context.world_mut()?.spawn_empty().set_parent(target).id();
+        status.unpack_entity(entity, context.world_mut()?);
 
-        let mut state = NodeState::from_world_mut(entity, &mut self.world).unwrap();
+        let mut state = context.get_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
-        state.insert(self.duration, 0.0, VarName::visible, true.into());
-        state.insert(self.duration, 0.0, VarName::charges, charges.into());
-        state.insert(self.duration, 0.0, VarName::color, color.into());
+        state.insert(t, 0.0, VarName::visible, true.into());
+        state.insert(t, 0.0, VarName::charges, charges.into());
+        state.insert(t, 0.0, VarName::color, color.into());
+        Ok(())
     }
     fn process_actions(&mut self, actions: impl Into<VecDeque<BattleAction>>) {
         let mut actions = actions.into();
@@ -479,16 +505,20 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
-        for (entity, stats, fusion) in self
-            .world
-            .query_filtered::<(Entity, &NFusionStats, &NFusion), Without<Corpse>>()
-            .iter(&self.world)
-        {
-            if stats.dmg >= fusion.pwr_hp(&Context::new(&self.world)).unwrap().1 {
-                actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
-                actions.push_back(BattleAction::death(entity));
+        Context::from_battle_simulation_r(self, |context| {
+            for entity in context.battle_simulation()?.all_units() {
+                let dmg = context.get::<NFusionStats>(entity)?.dmg;
+                context.with_owner(entity, |context| {
+                    if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
+                        actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
+                        actions.push_back(BattleAction::death(entity));
+                    }
+                    Ok(())
+                })?;
             }
-        }
+            Ok(())
+        })
+        .log();
         actions
     }
     #[must_use]
@@ -508,7 +538,7 @@ impl BattleSimulation {
                 self.duration += 1.0;
             }
             [
-                BattleAction::var_set(entity, NodeKind::None, VarName::visible, false.into()),
+                BattleAction::var_set(entity, VarName::visible, false.into()),
                 BattleAction::wait(ANIMATION),
             ]
             .into()
@@ -526,28 +556,66 @@ impl BattleSimulation {
             .enumerate()
             .chain(self.fusions_right.iter().map(|e| (e, false)).enumerate())
         {
-            actions.push_back(BattleAction::var_set(
-                *e,
-                NodeKind::None,
-                VarName::slot,
-                i.into(),
-            ));
-            actions.push_back(BattleAction::var_set(
-                *e,
-                NodeKind::None,
-                VarName::side,
-                side.into(),
-            ));
+            actions.push_back(BattleAction::var_set(*e, VarName::slot, i.into()));
+            actions.push_back(BattleAction::var_set(*e, VarName::side, side.into()));
             let position = vec2((i + 1) as f32 * if side { -1.0 } else { 1.0 } * 2.0, 0.0);
             actions.push_back(BattleAction::var_set(
                 *e,
-                NodeKind::None,
                 VarName::position,
                 position.into(),
             ));
         }
         actions.push_back(BattleAction::wait(ANIMATION * 3.0));
         actions
+    }
+
+    pub fn left_units(&self) -> &Vec<Entity> {
+        &self.fusions_left
+    }
+    pub fn right_units(&self) -> &Vec<Entity> {
+        &self.fusions_right
+    }
+    pub fn all_units(&self) -> Vec<Entity> {
+        let mut units = self.fusions_left.clone();
+        units.append(&mut self.fusions_right.clone());
+        units
+    }
+    pub fn all_allies(&self, entity: Entity) -> Result<&Vec<Entity>, ExpressionError> {
+        let left = self.left_units();
+        if left.contains(&entity) {
+            return Ok(left);
+        } else {
+            let right = self.right_units();
+            if right.contains(&entity) {
+                return Ok(right);
+            }
+        }
+        Err(ExpressionError::NotFound(format!(
+            "Failed to find allies: {entity} is not in any team"
+        )))
+    }
+    pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, ExpressionError> {
+        let left = self.left_units();
+        let right = self.left_units();
+        if left.contains(&entity) {
+            return Ok(right);
+        } else if right.contains(&entity) {
+            return Ok(left);
+        }
+        Err(ExpressionError::NotFound(format!(
+            "Failed to find enemies: {entity} is not in any team"
+        )))
+    }
+    pub fn offset_unit(&self, entity: Entity, offset: i32) -> Option<Entity> {
+        let allies = self.all_allies(entity).ok()?;
+        let pos = allies.iter().position(|e| *e == entity)?;
+        allies.into_iter().enumerate().find_map(|(i, e)| {
+            if i as i32 - pos as i32 == offset {
+                Some(*e)
+            } else {
+                None
+            }
+        })
     }
 }
 

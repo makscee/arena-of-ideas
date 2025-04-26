@@ -79,19 +79,22 @@ impl NFusion {
     pub fn react(
         &self,
         event: &Event,
-        context: &mut Context,
+        context: &Context,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        for (tr, actions) in &self.behavior {
-            if self.get_trigger(tr, context)?.fire(event, context) {
-                for ar in actions {
-                    let (entity, action) = self.get_action(ar, context)?;
-                    let action = action.clone();
-                    context.set_caster(entity);
-                    battle_actions.extend(action.process(context)?);
+        context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
+            for (tr, actions) in &self.behavior {
+                if self.get_trigger(tr, context)?.fire(event, context) {
+                    for ar in actions {
+                        let (entity, action) = self.get_action(ar, context)?;
+                        let action = action.clone();
+                        context.add_caster(entity);
+                        battle_actions.extend(action.process(context)?);
+                    }
                 }
             }
-        }
+            Ok(())
+        })?;
         Ok(battle_actions)
     }
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {

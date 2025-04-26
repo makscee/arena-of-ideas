@@ -30,7 +30,8 @@ impl<'w> Context<'w> {
         world: &mut World,
         f: impl FnOnce(&mut Self) -> Result<(), ExpressionError>,
     ) -> Result<(), ExpressionError> {
-        let t = mem::take(world);
+        let mut t = mem::take(world);
+        t.init_links();
         let cs = ContextSource::WorldOwned(t);
         let mut context = Context {
             sources: [cs].into(),
@@ -50,20 +51,20 @@ impl<'w> Context<'w> {
         })
         .log();
     }
-    pub fn from_world_ref_r(
+    pub fn from_world_ref_r<T>(
         world: &'w World,
-        f: impl FnOnce(&mut Self) -> Result<(), ExpressionError>,
-    ) -> Result<(), ExpressionError> {
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
         let mut context = Context {
             sources: [ContextSource::WorldRef(world)].into(),
             ..default()
         };
         f(&mut context)
     }
-    pub fn from_battle_simulation_r(
+    pub fn from_battle_simulation_r<T>(
         bs: &mut BattleSimulation,
-        f: impl FnOnce(&mut Self) -> Result<(), ExpressionError>,
-    ) -> Result<(), ExpressionError> {
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
         let mut context = Context {
             sources: [ContextSource::BattleSimulation(mem::take(bs))].into(),
             ..default()
@@ -102,6 +103,30 @@ impl<'w> Context<'w> {
         }
         Err(ExpressionError::NotFound(
             "World not set for Context".into(),
+        ))
+    }
+    pub fn battle_simulation_mut<'a>(
+        &'a mut self,
+    ) -> Result<&'a mut BattleSimulation, ExpressionError> {
+        for s in &mut self.sources {
+            let bs = s.battle_simulation_mut();
+            if let Some(bs) = bs {
+                return Ok(bs);
+            }
+        }
+        Err(ExpressionError::NotFound(
+            "BattleSimulation not set for Context".into(),
+        ))
+    }
+    pub fn battle_simulation<'a>(&'a self) -> Result<&'a BattleSimulation, ExpressionError> {
+        for s in &self.sources {
+            let bs = s.battle_simulation();
+            if let Some(bs) = bs {
+                return Ok(bs);
+            }
+        }
+        Err(ExpressionError::NotFound(
+            "BattleSimulation not set for Context".into(),
         ))
     }
     pub fn with_layer_r<T>(
@@ -166,6 +191,13 @@ impl<'w> Context<'w> {
     }
     pub fn with_layer_ref(&'w self, layer: ContextLayer, f: impl FnOnce(&mut Self)) {
         self.with_layers_ref([layer].into(), f);
+    }
+    pub fn with_owner<T>(
+        &mut self,
+        entity: Entity,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        self.with_layer_r(ContextLayer::Owner(entity), f)
     }
     pub fn t(&self) -> Result<f32, ExpressionError> {
         self.t.to_custom_e("Context t not set")
@@ -314,69 +346,6 @@ impl<'w> Context<'w> {
         self.collect_components(self.children_recursive(id))
     }
 
-    pub fn battle_left_units(&self) -> Vec<Entity> {
-        for s in &self.sources {
-            match s {
-                ContextSource::BattleSimulation(bs) => {
-                    return bs.fusions_left.clone();
-                }
-                _ => {}
-            }
-        }
-        default()
-    }
-    pub fn battle_right_units(&self) -> Vec<Entity> {
-        for s in &self.sources {
-            match s {
-                ContextSource::BattleSimulation(bs) => {
-                    return bs.fusions_right.clone();
-                }
-                _ => {}
-            }
-        }
-        default()
-    }
-    pub fn battle_all_units(&self) -> Vec<Entity> {
-        self.battle_left_units()
-            .into_iter()
-            .chain(self.battle_right_units())
-            .collect()
-    }
-    pub fn battle_all_allies(&self, entity: Entity) -> Vec<Entity> {
-        let left = self.battle_left_units();
-        if left.contains(&entity) {
-            return left;
-        } else {
-            let right = self.battle_right_units();
-            if right.contains(&entity) {
-                return right;
-            }
-        }
-        default()
-    }
-    pub fn battle_all_enemies(&self, entity: Entity) -> Vec<Entity> {
-        let left = self.battle_left_units();
-        let right = self.battle_left_units();
-        if left.contains(&entity) {
-            return right;
-        } else if right.contains(&entity) {
-            return left;
-        }
-
-        default()
-    }
-    pub fn battle_offset_unit(&self, entity: Entity, offset: i32) -> Option<Entity> {
-        let allies = self.battle_all_allies(entity);
-        let pos = allies.iter().position(|e| *e == entity)?;
-        allies.into_iter().enumerate().find_map(|(i, e)| {
-            if i as i32 - pos as i32 == offset {
-                Some(e)
-            } else {
-                None
-            }
-        })
-    }
-
     pub fn owner_entity(&self) -> Result<Entity, ExpressionError> {
         for l in self.layers.iter().rev() {
             if let Some(e) = l.get_owner() {
@@ -410,6 +379,10 @@ impl<'w> Context<'w> {
     }
     pub fn add_target(&mut self, target: Entity) -> &mut Self {
         self.layers.push(ContextLayer::Target(target));
+        self
+    }
+    pub fn add_caster(&mut self, caster: Entity) -> &mut Self {
+        self.layers.push(ContextLayer::Caster(caster));
         self
     }
     pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
@@ -484,6 +457,19 @@ impl ContextSource<'_> {
             ContextSource::BattleSimulation(bs) => Some(&bs.world),
             ContextSource::WorldRef(world) => Some(*world),
             ContextSource::Context(context) => context.world().ok(),
+        }
+    }
+    fn battle_simulation_mut(&mut self) -> Option<&mut BattleSimulation> {
+        match self {
+            ContextSource::BattleSimulation(bs) => Some(bs),
+            _ => None,
+        }
+    }
+    fn battle_simulation(&self) -> Option<&BattleSimulation> {
+        match self {
+            ContextSource::Context(context) => context.battle_simulation(),
+            ContextSource::BattleSimulation(bs) => Some(bs),
+            _ => None,
         }
     }
 }
