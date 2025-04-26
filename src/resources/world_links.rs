@@ -72,3 +72,33 @@ impl WorldLinks for World {
         r.id_to_entity.insert(id, entity);
     }
 }
+
+pub trait IdLinkExt {
+    fn add_parent(self, world: &mut World, parent: u64);
+    fn add_child(self, world: &mut World, child: u64);
+    fn is_parent_of(self, world: &World, child: u64) -> bool;
+    fn is_child_of(self, world: &World, parent: u64) -> bool;
+}
+
+impl IdLinkExt for u64 {
+    fn add_parent(self, world: &mut World, parent: u64) {
+        world.add_parent_child(parent, self);
+    }
+    fn add_child(self, world: &mut World, child: u64) {
+        world.add_parent_child(self, child);
+    }
+    fn is_parent_of(self, world: &World, child: u64) -> bool {
+        if let Some(children) = world.parents_children_map().get(&self) {
+            children.contains(&child)
+        } else {
+            false
+        }
+    }
+    fn is_child_of(self, world: &World, parent: u64) -> bool {
+        if let Some(children) = world.children_parents_map().get(&self) {
+            children.contains(&parent)
+        } else {
+            false
+        }
+    }
+}

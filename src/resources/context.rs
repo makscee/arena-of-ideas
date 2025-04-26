@@ -26,10 +26,10 @@ pub enum ContextLayer {
 }
 
 impl<'w> Context<'w> {
-    pub fn from_world_r(
+    pub fn from_world_r<T>(
         world: &mut World,
-        f: impl FnOnce(&mut Self) -> Result<(), ExpressionError>,
-    ) -> Result<(), ExpressionError> {
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
         let mut t = mem::take(world);
         t.init_links();
         let cs = ContextSource::WorldOwned(t);
@@ -223,6 +223,14 @@ impl<'w> Context<'w> {
             .and_then(|w| w.parents_children_map().get(&id).cloned())
             .unwrap_or_default()
     }
+    pub fn parents_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
+        let id = entity.id(self)?;
+        self.ids_to_entities(self.parents(id))
+    }
+    pub fn children_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
+        let id = entity.id(self)?;
+        self.ids_to_entities(self.children(id))
+    }
     pub fn parents_recursive(&self, id: u64) -> HashSet<u64> {
         let mut result: HashSet<u64> = default();
         let mut q = VecDeque::from([id]);
@@ -249,8 +257,7 @@ impl<'w> Context<'w> {
         }
         result
     }
-    pub fn first_parent<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
-        let id = self.id(entity)?;
+    pub fn first_parent_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         let mut checked: HashSet<u64> = default();
         let mut q = VecDeque::from([id]);
         while let Some(id) = q.pop_front() {
@@ -266,8 +273,7 @@ impl<'w> Context<'w> {
         }
         Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
     }
-    pub fn first_child<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
-        let id = self.id(entity)?;
+    pub fn first_child_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         let mut checked: HashSet<u64> = default();
         let mut q = VecDeque::from([id]);
         while let Some(id) = q.pop_front() {
@@ -282,6 +288,10 @@ impl<'w> Context<'w> {
             }
         }
         Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
+    }
+    pub fn link_id_entity(&mut self, id: u64, entity: Entity) -> Result<(), ExpressionError> {
+        self.world_mut()?.link_id_entity(id, entity);
+        Ok(())
     }
     pub fn add_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
         self.world_mut()?.add_parent_child(parent, child);
@@ -467,7 +477,7 @@ impl ContextSource<'_> {
     }
     fn battle_simulation(&self) -> Option<&BattleSimulation> {
         match self {
-            ContextSource::Context(context) => context.battle_simulation(),
+            ContextSource::Context(context) => context.battle_simulation().ok(),
             ContextSource::BattleSimulation(bs) => Some(bs),
             _ => None,
         }

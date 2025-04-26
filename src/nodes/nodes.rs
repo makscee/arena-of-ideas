@@ -29,9 +29,9 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn pack_fill(&self, pn: &mut PackedNodes, link: u64);
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
-    fn load_recursive(id: u64) -> Option<Self>;
-    fn pack_entity(context: &Context, entity: Entity) -> Option<Self>;
-    fn unpack_entity(self, context: &mut Context, entity: Entity);
+    fn load_recursive(world: &World, id: u64) -> Option<Self>;
+    fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError>;
+    fn unpack_entity(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn with_components(self, context: &Context) -> Self;
@@ -87,8 +87,8 @@ impl TNode {
         d.set_owner(self.owner);
         Ok(d)
     }
-    pub fn unpack(&self, entity: Entity, world: &mut World) {
-        self.kind().unpack(entity, self, world);
+    pub fn unpack(&self, context: &mut Context, entity: Entity) {
+        self.kind().unpack(context, entity, self);
     }
     pub fn to_ron(self) -> String {
         ron::to_string(&SerdeWrapper::new(self)).unwrap()
@@ -133,7 +133,7 @@ impl NodeKind {
         match self {
             NodeKind::NFusion => {
                 unit_rep().clone().unpack_entity(context, entity);
-                NodeState::from_world_mut(entity, world).unwrap().init_vars(
+                context.get_mut::<NodeState>(entity)?.init_vars(
                     [
                         (VarName::pwr, 0.into()),
                         (VarName::hp, 0.into()),
@@ -142,7 +142,9 @@ impl NodeKind {
                     .into(),
                 );
             }
-            NodeKind::NStatusMagic => status_rep().clone().unpack_entity(context, entity),
+            NodeKind::NStatusMagic => {
+                status_rep().clone().unpack_entity(context, entity).log();
+            }
             _ => {}
         }
         Ok(())
@@ -158,17 +160,6 @@ impl NTeam {
     }
 }
 
-impl NUnit {
-    pub fn to_house(self, context: &Context) -> Result<NHouse, ExpressionError> {
-        let mut house = self
-            .find_up::<NHouse>(context)?
-            .clone()
-            .with_components(context);
-        house.units.push(self.with_components(context));
-        Ok(house)
-    }
-}
-
 pub trait TableNodeView<T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
 }
@@ -177,110 +168,135 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self {
         match kind {
             NodeKind::NHouse => self.column_cstr_opt_dyn("name", move |d, world| {
-                NHouse::get_by_id(f(d), &world.into()).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
+                Context::from_world_ref_r(world, |context| {
+                    NHouse::get_by_id(f(d), context).map(|n| n.house_name.cstr_s(CstrStyle::Bold))
+                })
+                .ok()
             }),
             NodeKind::NHouseColor => self.column_cstr_opt_dyn("color", move |d, world| {
-                NHouseColor::get_by_id(f(d), &world.into()).map(|n| {
-                    let c = &n.color;
-                    format!("[{c} {c}]")
+                Context::from_world_ref_r(world, |context| {
+                    NHouseColor::get_by_id(f(d), context).map(|n| {
+                        let c = &n.color;
+                        format!("[{c} {c}]")
+                    })
                 })
+                .ok()
             }),
             NodeKind::NAbilityMagic => self.column_cstr_opt_dyn("name", move |d, world| {
-                Some(
-                    NAbilityMagic::get_by_id(f(d), &Context::new(world))?
+                Context::from_world_ref_r(world, |context| {
+                    Ok(NAbilityMagic::get_by_id(f(d), context)?
                         .ability_name
-                        .cstr_s(CstrStyle::Bold),
-                )
+                        .cstr_s(CstrStyle::Bold))
+                })
+                .ok()
             }),
             NodeKind::NAbilityDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    Some(
-                        NAbilityDescription::get_by_id(f(d), &world.into())?
+                    Context::from_world_ref_r(world, |context| {
+                        Ok(NAbilityDescription::get_by_id(f(d), context)?
                             .description
-                            .cstr_s(CstrStyle::Bold),
-                    )
+                            .cstr_s(CstrStyle::Bold))
+                    })
+                    .ok()
                 })
             }
             NodeKind::NAbilityEffect => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = NAbilityEffect::get_by_id(f(d), &world.into()) {
-                            n.view(ViewContext::new(ui), &default(), ui);
-                        }
+                        Context::from_world_ref_r(world, |context| {
+                            if let Ok(n) = NAbilityEffect::get_by_id(f(d), context) {
+                                n.view(ViewContext::new(ui), &default(), ui);
+                            }
+                            Ok(())
+                        });
                     })
             }
             NodeKind::NStatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
-                Some(
-                    NStatusMagic::get_by_id(f(d), &world.into())?
+                Context::from_world_ref_r(world, |context| {
+                    Ok(NStatusMagic::get_by_id(f(d), context)?
                         .status_name
-                        .cstr_s(CstrStyle::Bold),
-                )
+                        .cstr_s(CstrStyle::Bold))
+                })
+                .ok()
             }),
             NodeKind::NStatusDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    Some(
-                        NStatusDescription::get_by_id(f(d), &world.into())?
+                    Context::from_world_ref_r(world, |context| {
+                        Ok(NStatusDescription::get_by_id(f(d), context)?
                             .description
-                            .cstr_s(CstrStyle::Bold),
-                    )
+                            .cstr_s(CstrStyle::Bold))
+                    })
+                    .ok()
                 })
             }
             NodeKind::NUnit => self.column_cstr_opt_dyn("name", move |d, world| {
-                Some(
-                    NUnit::get_by_id(f(d), &world.into())?
+                Context::from_world_ref_r(world, |context| {
+                    Ok(NUnit::get_by_id(f(d), context)?
                         .unit_name
-                        .cstr_s(CstrStyle::Bold),
-                )
+                        .cstr_s(CstrStyle::Bold))
+                })
+                .ok()
             }),
             NodeKind::NUnitDescription => {
                 self.column_cstr_opt_dyn("description", move |d, world| {
-                    Some(
-                        NUnitDescription::get_by_id(f(d), &world.into())?
+                    Context::from_world_ref_r(world, |context| {
+                        Ok(NUnitDescription::get_by_id(f(d), context)?
                             .description
-                            .cstr_s(CstrStyle::Bold),
-                    )
+                            .cstr_s(CstrStyle::Bold))
+                    })
+                    .ok()
                 })
             }
             NodeKind::NUnitStats => self
                 .column_cstr_value_dyn(
                     "pwr",
                     move |d, world| {
-                        NUnitStats::get_by_id(f(d), &world.into())
-                            .map(|n| n.pwr.into())
-                            .unwrap_or_default()
+                        Context::from_world_ref_r(world, |context| {
+                            Ok(NUnitStats::get_by_id(f(d), context)?.pwr)
+                        })
+                        .unwrap_or_default()
+                        .into()
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(YELLOW),
                 )
                 .column_cstr_value_dyn(
                     "hp",
                     move |d, world| {
-                        NUnitStats::get_by_id(f(d), &world.into())
-                            .map(|n| n.hp.into())
-                            .unwrap_or_default()
+                        Context::from_world_ref_r(world, |context| {
+                            Ok(NUnitStats::get_by_id(f(d), context)?.hp)
+                        })
+                        .unwrap_or_default()
+                        .into()
                     },
                     move |_, value| value.get_i32().unwrap().cstr_c(RED),
                 ),
             NodeKind::NBehavior => {
                 self.per_row_render()
                     .column_ui_dyn("data", move |d, _, ui, world| {
-                        if let Some(n) = NBehavior::get_by_id(f(d), &world.into()) {
-                            n.view(ViewContext::new(ui), &default(), ui);
-                        }
+                        Context::from_world_ref_r(world, |context| {
+                            if let Ok(n) = NBehavior::get_by_id(f(d), context) {
+                                n.view(ViewContext::new(ui), &default(), ui);
+                            }
+                            Ok(())
+                        });
                     })
             }
             NodeKind::NRepresentation => self.row_height(100.0).column_dyn(
                 "view",
                 |_, _| default(),
                 move |d, _, ui, world| {
-                    let context = &world.into();
-                    if let Some(d) = NRepresentation::get_by_id(f(d), context) {
-                        let size = ui.available_height();
-                        let (rect, _) =
-                            ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-                        ui.set_clip_rect(ui.clip_rect().intersect(rect));
-                        d.paint(rect, context.clone().set_owner(d.entity()), ui)
-                            .log();
-                    }
+                    Context::from_world_ref_r(world, |context| {
+                        if let Ok(d) = NRepresentation::get_by_id(f(d), context) {
+                            let size = ui.available_height();
+                            let (rect, _) =
+                                ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                            ui.set_clip_rect(ui.clip_rect().intersect(rect));
+                            context.with_layer_ref(ContextLayer::Owner(d.entity()), |context| {
+                                d.paint(rect, context, ui).ui(ui);
+                            });
+                        }
+                        Ok(())
+                    });
                 },
                 false,
             ),
@@ -303,7 +319,11 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                     return;
                 };
                 let view_ctx = ViewContext::new(ui);
-                for d in context.children_nodes_recursive::<T>(entity) {
+                for d in entity
+                    .id(context)
+                    .and_then(|id| context.collect_children_components_recursive::<T>(id))
+                    .unwrap_or_default()
+                {
                     let name = d.title_cstr(view_ctx, context);
                     if ui
                         .menu_button(name.widget(1.0, ui.style()), |ui| {
@@ -314,7 +334,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                         .response
                         .clicked()
                     {
-                        result = T::pack_entity(d.entity(), context);
+                        result = T::pack_entity(context, d.entity());
                         ui.close_menu();
                     }
                 }

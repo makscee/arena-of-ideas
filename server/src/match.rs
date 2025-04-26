@@ -35,7 +35,9 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     } else {
         let house = house.with_components(ctx).clone(ctx, &mut default());
         house.id.add_parent(ctx, team.id)?;
-        unit.clone(ctx, &mut default()).id.add_parent(ctx, house.id);
+        unit.clone(ctx, &mut default())
+            .id
+            .add_parent(ctx, house.id)?;
     }
     player.save(ctx);
     Ok(())
@@ -86,7 +88,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
         return Err("Team size limit reached".into());
     }
     let fusion = NFusion::new(ctx, pid, i32::MAX, default(), default());
-    fusion.id.add_parent(ctx, team.id());
+    fusion.id.add_parent(ctx, team.id())?;
     team.fusions.push(fusion);
     for (i, fusion) in team
         .fusions
@@ -128,9 +130,9 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
-    m.id.add_parent(ctx, player.id);
+    m.id.add_parent(ctx, player.id)?;
     let team = NTeam::new(ctx, pid);
-    team.id.add_parent(ctx, m.id);
+    team.id.add_parent(ctx, m.id)?;
     m.team = Some(team);
     m.shop_case = (0..3)
         .map(|_| {
@@ -141,7 +143,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
                 units.choose(&mut ctx.rng()).unwrap().id,
                 false,
             );
-            n.id.add_parent(ctx, m.id);
+            n.id.add_parent(ctx, m.id).unwrap();
             n
         })
         .collect_vec();
@@ -165,7 +167,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         pool.id
     } else {
         let new_pool = NFloorPool::new(ctx, 0, floor);
-        new_pool.id.add_parent(ctx, arena.id);
+        new_pool.id.add_parent(ctx, arena.id)?;
         let id = new_pool.id;
         arena.floor_pools.push(new_pool);
         id
@@ -186,11 +188,11 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
             None,
         )
         .id
-        .add_parent(ctx, m_id);
+        .add_parent(ctx, m_id)?;
     } else {
         let _ = arena.floor_bosses_load(ctx);
         let floor_boss = NFloorBoss::new(ctx, 0, floor);
-        floor_boss.id.add_parent(ctx, arena.id);
+        floor_boss.id.add_parent(ctx, arena.id)?;
         player_team.clone_ids_remap(ctx, floor_boss.id)?;
         player_team.clone_ids_remap(ctx, pool_id)?;
         m.active = false;

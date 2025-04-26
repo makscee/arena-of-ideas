@@ -9,15 +9,6 @@ pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
     let transform = entity.get::<GlobalTransform>().unwrap();
     camera.world_to_viewport(transform, pos).unwrap_or_default()
 }
-pub fn screen_to_world(pos: Vec2, world: &World) -> Vec2 {
-    let entity = CameraPlugin::entity(world);
-    let camera = world.get::<Camera>(entity).unwrap();
-    let transform = world.get::<GlobalTransform>(entity).unwrap();
-    screen_to_world_cam(pos, camera, transform)
-}
-pub fn cursor_world_pos(world: &mut World) -> Option<Vec2> {
-    cursor_pos(world).map(|p| screen_to_world(p, world))
-}
 pub fn delta_time(world: &World) -> f32 {
     world.resource::<Time>().delta_secs()
 }

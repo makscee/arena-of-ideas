@@ -218,7 +218,7 @@ impl BattleAction {
                     let t = context.battle_simulation()?.duration;
                     let mut ns = context.get_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
-                        ns.kind.set_var(*entity, *var, value.clone(), context);
+                        ns.kind.set_var(context, *entity, *var, value.clone());
                         true
                     } else {
                         false
@@ -286,8 +286,10 @@ impl BattleSimulation {
         let mut world = World::new();
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
-        battle.left.unpack_entity(team_left, &mut world);
-        battle.right.unpack_entity(team_right, &mut world);
+        Context::from_world(&mut world, |context| {
+            battle.left.unpack_entity(context, team_left);
+            battle.right.unpack_entity(context, team_right);
+        });
 
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::from_world_ref_r(world, |context| {
@@ -485,7 +487,7 @@ impl BattleSimulation {
             }
         }
         let entity = context.world_mut()?.spawn_empty().set_parent(target).id();
-        status.unpack_entity(entity, context.world_mut()?);
+        status.unpack_entity(context, entity);
 
         let mut state = context.get_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());

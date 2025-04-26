@@ -13,10 +13,13 @@ impl<'a, T: 'static + Clone + Send + Sync> TableExt<T> for Table<'a, T> {
     ) -> Self {
         self.column_cstr_dyn(name, move |d, world| {
             let id = f(d, world);
-            match NPlayer::get_by_id(id, &world.into()) {
-                Some(p) => p.player_name.cstr_c(tokens_global().high_contrast_text()),
-                None => format!("[red [s player#{id} not found]]"),
-            }
+            Context::from_world_ref_r(world, |context| {
+                Ok(match NPlayer::get_by_id(id, context) {
+                    Ok(p) => p.player_name.cstr_c(tokens_global().high_contrast_text()),
+                    Err(e) => format!("[red [s player#{id}] {e}]"),
+                })
+            })
+            .unwrap()
         })
     }
 }

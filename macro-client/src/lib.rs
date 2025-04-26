@@ -127,13 +127,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #one_types> {
                             self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_node::<#one_types>(e))
+                                    .and_then(|e| context.get::<#one_types>(e).ok())
                             })
                         }
                         pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
                             self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_node::<#one_types>(e))
+                                    .and_then(|e| context.get::<#one_types>(e).ok())
                             }).to_custom_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
                         }
                     )*
@@ -142,7 +142,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             if !self.#many_fields.is_empty() {
                                 self.#many_fields.iter().collect()
                             } else if let Some(entity) = self.entity {
-                                context.children_nodes::<#many_types>(entity).into_iter().sorted_by_key(|n| n.id).collect_vec()
+                                context.collect_children_components::<#many_types>(entity).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
                             } else {
                                 default()
                             }
@@ -337,7 +337,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         entries.leak()
                     }
-                    fn load_recursive(id: u64) -> Option<Self> {
+                    fn load_recursive(world: &World, id: u64) -> Option<Self> {
                         let mut d = Self::load(id)?;
                         #(
                             let kind = #one_types::kind_s().to_string();
@@ -345,10 +345,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .db
                                 .nodes_world()
                                 .iter()
-                                .find(|n| d.id().is_parent_of(n.id) && n.kind == kind)
+                                .find(|n| d.id().is_parent_of(world, n.id) && n.kind == kind)
                                 .map(|n| n.id)
                             {
-                                d.#one_fields = #one_types::load_recursive(id);
+                                d.#one_fields = #one_types::load_recursive(world, id);
                             }
                         )*
                         #(
@@ -358,8 +358,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .nodes_world()
                                 .iter()
                                 .filter_map(|n| {
-                                    if d.id().is_parent_of(n.id) && n.kind == kind {
-                                        #many_types::load_recursive(n.id)
+                                    if d.id().is_parent_of(world, n.id) && n.kind == kind {
+                                        #many_types::load_recursive(world, n.id)
                                     } else {
                                         None
                                     }
@@ -368,49 +368,50 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         Some(d)
                     }
-                    fn pack_entity(entity: Entity, context: &Context) -> Option<Self> {
-                        let mut s = context.get_node::<Self>(entity)?.clone();
+                    fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
+                        let mut s = context.get::<Self>(entity)?.clone();
                         #(
-                            s.#one_fields = #one_types::pack_entity(entity, context);
+                            s.#one_fields = #one_types::pack_entity(context, entity).ok();
                         )*
                         #(
-                            for child in context.get_children(entity) {
-                                if let Some(d) = #many_types::pack_entity(child, context) {
+                            for child in context.children_entity(entity)? {
+                                if let Ok(d) = #many_types::pack_entity(context, child) {
                                     s.#many_fields.push(d);
                                 }
                             }
                         )*
-                        Some(s)
+                        Ok(s)
                     }
-                    fn unpack_entity(mut self, context: &mut Context, entity: Entity) {
+                    fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
                         //debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if self.id == 0 {
                             self.id = next_id();
                         }
-                        world.add_id_link(self.id, entity);
+                        context.link_id_entity(self.id, entity)?;
                         #(
                             if let Some(d) = self.#one_fields.take() {
-                                let child = world.spawn_empty().id();
-                                d.unpack_entity(child, world);
-                                child.id(world).add_parent(self.id);
+                                let child = context.world_mut()?.spawn_empty().id();
+                                d.unpack_entity(context, child).log();
+                                child.id(context)?.add_parent(context.world_mut()?, self.id);
                             }
                         )*
                         #(
                             for d in std::mem::take(&mut self.#many_fields) {
-                                let child = world.spawn_empty().id();
+                                let child = context.world_mut()?.spawn_empty().id();
                                 //debug!("{parent} -> {entity}");
-                                d.unpack_entity(child, world);
-                                child.id(world).add_parent(self.id);
+                                d.unpack_entity(context, child).log();
+                                child.id(context)?.add_parent(context.world_mut()?, self.id);
                             }
                         )*
                         let kind = self.kind();
-                        world.entity_mut(entity).insert(self);
-                        kind.on_unpack(entity, world);
+                        context.world_mut()?.entity_mut(entity).insert(self);
+                        kind.on_unpack(context, entity);
+                        Ok(())
                     }
                     fn with_components(mut self, context: &Context) -> Self {
                         #(
-                            self.#one_fields = #one_types::pack_entity(self.entity(), context);
+                            self.#one_fields = #one_types::pack_entity(context, self.entity()).ok();
                         )*
                         self
                     }
@@ -476,7 +477,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 }
                                 view_resp.merge(child_resp);
                             } else if let Some(mut d) = new_node_btn::<#one_types>(ui, view_ctx) {
-                                d.id().add_parent(self.id());
+                                todo!();
+                                // d.id(context).add_parent(self.id());
                                 view_resp.changed = true;
                                 self.#one_fields = Some(d);
                             }

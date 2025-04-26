@@ -84,7 +84,6 @@ fn main() {
             LoginPlugin,
             GameStatePlugin,
             TextColumnPlugin,
-            CameraPlugin,
             NodeStatePlugin,
             RepresentationPlugin,
             GameTimerPlugin,
@@ -107,9 +106,6 @@ fn main() {
             NotificationsPlugin,
         ))
         .init_state::<GameState>();
-    for n in NodeKind::iter() {
-        n.register(&mut app);
-    }
     app.run();
 }
 
@@ -119,7 +115,6 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
-    CameraPlugin::respawn_camera(world);
 }
 
 fn on_error_state(world: &mut World) {

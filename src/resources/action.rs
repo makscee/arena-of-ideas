@@ -67,15 +67,18 @@ impl ActionImpl for Action {
                 }
             }
             Action::use_ability => {
-                let caster = context.caster_entity()?;
-                let ability = context.first_parent::<NAbilityMagic>(caster)?;
+                let caster = context.caster_entity()?.id(context)?;
+                let ability = context.first_parent_recursive::<NAbilityMagic>(caster)?;
                 let name = &ability.ability_name;
-                let entity = ability.entity();
+                let entity = ability.entity().id(context)?;
                 let ability_actions = context
-                    .first_child::<NAbilityEffect>(entity)?
+                    .first_child_recursive::<NAbilityEffect>(entity)?
                     .actions
                     .clone();
-                let color = context.first_parent::<NHouseColor>(caster)?.color.c32();
+                let color = context
+                    .first_parent_recursive::<NHouseColor>(caster)?
+                    .color
+                    .c32();
                 let text = format!("use ability [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -88,18 +91,23 @@ impl ActionImpl for Action {
                 actions.extend(ability_actions.process(context)?);
             }
             Action::apply_status => {
-                let caster = context.caster_entity()?;
+                let caster = context.caster_entity()?.id(context)?;
                 let targets = context.collect_targets();
                 if targets.is_empty() {
                     return Err("No targets".into());
                 }
-                let status = context.first_parent::<NStatusMagic>(caster)?;
+                let status = context.first_parent_recursive::<NStatusMagic>(caster)?;
                 let name = &status.status_name;
-                let entity = status.entity();
+                let entity = status.entity().id(context)?;
                 let mut status = status.clone();
-                let mut description = context.first_child::<NStatusDescription>(entity)?.clone();
-                let behavior = context.first_child::<NBehavior>(entity)?.clone();
-                let color = context.first_parent::<NHouseColor>(caster)?.color.c32();
+                let mut description = context
+                    .first_child_recursive::<NStatusDescription>(entity)?
+                    .clone();
+                let behavior = context.first_child_recursive::<NBehavior>(entity)?.clone();
+                let color = context
+                    .first_parent_recursive::<NHouseColor>(caster)?
+                    .color
+                    .c32();
                 let text = format!("apply [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -109,7 +117,10 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                let representation = context.first_child::<NRepresentation>(entity).ok().cloned();
+                let representation = context
+                    .first_child_recursive::<NRepresentation>(entity)
+                    .ok()
+                    .cloned();
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;

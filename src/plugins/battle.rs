@@ -40,14 +40,10 @@ impl BattleData {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        battle
-            .left
-            .clone()
-            .unpack_entity(team_left, &mut teams_world);
-        battle
-            .right
-            .clone()
-            .unpack_entity(team_right, &mut teams_world);
+        Context::from_world(&mut teams_world, |context| {
+            battle.left.clone().unpack_entity(context, team_left);
+            battle.right.clone().unpack_entity(context, team_right);
+        });
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -348,6 +344,7 @@ impl BattlePlugin {
                 )
                 .ui(ui);
                 if add_fusion {
+                    let entity = context.world_mut().unwrap().spawn_empty().id();
                     let team = NTeam::get(team_entity, context).unwrap();
                     let slot = team.fusions_load(context).len() as i32;
                     let id = next_id();
@@ -361,10 +358,7 @@ impl BattlePlugin {
                         slot,
                         stats: None,
                     }
-                    .unpack_entity(
-                        context.world_mut().unwrap().spawn_empty().id(),
-                        context.world_mut().unwrap(),
-                    );
+                    .unpack_entity(context, entity);
                     changed = true;
                 }
                 if let Some(fusion) = edited {
@@ -382,7 +376,7 @@ impl BattlePlugin {
                         .unwrap()
                         .resource_mut::<ReloadData>()
                         .reload_requested = true;
-                    let updated_team = NTeam::pack_entity(team_entity, context).unwrap();
+                    let updated_team = NTeam::pack_entity(context, team_entity).unwrap();
                     dbg!(&updated_team);
                     let team = if left {
                         &mut battle.left
