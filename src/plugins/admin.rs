@@ -8,23 +8,6 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
-        let id = ui.id();
-        if let Some(e) = world.get_id_link(ID_CORE) {
-            let context = &Context::new(world);
-            let houses = context
-                .children_nodes::<NHouse>(e)
-                .into_iter()
-                .filter_map(|h| NHouse::pack_entity(e, context))
-                .collect_vec();
-            for h in houses {
-                h.view(ViewContext::new(ui), &default(), ui);
-            }
-        }
-        let mut e = ui.data(|r| r.get_temp::<Material>(id)).unwrap_or_default();
-        if e.view_mut(ViewContext::new(ui), &default(), ui).changed {
-            ui.data_mut(|w| w.insert_temp(id, e));
-        }
-
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {
                 format!("#[tw {id}]").cstr().label(ui);
@@ -47,7 +30,7 @@ impl AdminPlugin {
                 .db
                 .nodes_world()
                 .iter()
-                .filter(|n| n.id.is_child_of(id))
+                .filter(|n| n.id.is_child_of(world, id))
                 .sorted_by_key(|n| n.id)
             {
                 let title = n.kind;
@@ -69,37 +52,41 @@ impl AdminPlugin {
         }
         if "World Inspector".cstr().button(ui).clicked() {
             Window::new("world Inspector", |ui, world| {
-                let context = &Context::new(world);
-                let view_ctx = ViewContext::new(ui).collapsed(true);
-                if let Some(core) = NCore::get_by_id(ID_CORE, context) {
-                    core.view(view_ctx, context, ui);
-                }
-                if let Some(players) = NPlayers::get_by_id(ID_PLAYERS, context) {
-                    players.view(view_ctx, context, ui);
-                }
+                Context::from_world_r(world, |context| {
+                    let view_ctx = ViewContext::new(ui).collapsed(true);
+                    NCore::get_by_id(ID_CORE, context)?.view(view_ctx, context, ui);
+                    NPlayers::get_by_id(ID_PLAYERS, context)?.view(view_ctx, context, ui);
+                    Ok(())
+                })
+                .unwrap();
             })
             .push(world);
         }
         if "Export Players".cstr().button(ui).clicked() {
-            let context = &Context::new(world);
-            let players =
-                NPlayers::pack_entity(world.get_id_link(ID_PLAYERS).unwrap(), context).unwrap();
-            dbg!(&players);
-            let dir = players.to_dir("players".into());
-            let dir = Dir::new("players", dir);
-            let path = "./assets/ron/";
-            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
-            dir.extract(path).unwrap();
+            Context::from_world_r(world, |context| {
+                let players = NPlayers::pack_entity(context, context.entity(ID_PLAYERS)?)?;
+                dbg!(&players);
+                let dir = players.to_dir("players".into());
+                let dir = Dir::new("players", dir);
+                let path = "./assets/ron/";
+                std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+                dir.extract(path).unwrap();
+                Ok(())
+            })
+            .unwrap();
         }
         if "Export NCore".cstr().button(ui).clicked() {
-            let context = &Context::new(world);
-            let core = NCore::pack_entity(world.get_id_link(ID_CORE).unwrap(), context).unwrap();
-            dbg!(&core);
-            let dir = core.to_dir("core".into());
-            let dir = Dir::new("core", dir);
-            let path = "./assets/ron/";
-            std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
-            dir.extract(path).unwrap();
+            Context::from_world_r(world, |context| {
+                let core = NCore::pack_entity(context, context.entity(ID_CORE)?)?;
+                dbg!(&core);
+                let dir = core.to_dir("core".into());
+                let dir = Dir::new("core", dir);
+                let path = "./assets/ron/";
+                std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
+                dir.extract(path).unwrap();
+                Ok(())
+            })
+            .unwrap();
         }
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);

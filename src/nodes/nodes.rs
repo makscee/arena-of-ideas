@@ -132,7 +132,7 @@ impl NodeKind {
 
         match self {
             NodeKind::NFusion => {
-                unit_rep().clone().unpack_entity(context, entity);
+                unit_rep().clone().unpack_entity(context, entity)?;
                 context.get_mut::<NodeState>(entity)?.init_vars(
                     [
                         (VarName::pwr, 0.into()),
@@ -208,7 +208,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                                 n.view(ViewContext::new(ui), &default(), ui);
                             }
                             Ok(())
-                        });
+                        })
+                        .ui(ui);
                     })
             }
             NodeKind::NStatusMagic => self.column_cstr_opt_dyn("name", move |d, world| {
@@ -278,7 +279,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                                 n.view(ViewContext::new(ui), &default(), ui);
                             }
                             Ok(())
-                        });
+                        })
+                        .ui(ui);
                     })
             }
             NodeKind::NRepresentation => self.row_height(100.0).column_dyn(
@@ -296,7 +298,8 @@ impl<'a, T: 'static + Clone + Send + Sync> TableNodeView<T> for Table<'a, T> {
                             });
                         }
                         Ok(())
-                    });
+                    })
+                    .ui(ui);
                 },
                 false,
             ),
@@ -334,7 +337,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                         .response
                         .clicked()
                     {
-                        result = T::pack_entity(context, d.entity());
+                        result = T::pack_entity(context, d.entity()).ok();
                         ui.close_menu();
                     }
                 }

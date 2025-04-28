@@ -6,7 +6,8 @@ pub trait WorldLinks {
     fn children_parents_map(&self) -> &HashMap<u64, HashSet<u64>>;
     fn id_to_entity_map(&self) -> &HashMap<u64, Entity>;
     fn entity_to_id_map(&self) -> &HashMap<Entity, u64>;
-    fn add_parent_child(&mut self, parent: u64, child: u64);
+    fn link_parent_child(&mut self, parent: u64, child: u64);
+    fn unlink_parent_child(&mut self, parent: u64, child: u64);
     fn id_entity(&self, id: u64) -> Option<Entity>;
     fn entity_id(&self, entity: Entity) -> Option<u64>;
     fn link_id_entity(&mut self, id: u64, entity: Entity);
@@ -35,10 +36,19 @@ impl WorldLinks for World {
     fn entity_to_id_map(&self) -> &HashMap<Entity, u64> {
         &self.resource::<WorldLinksResource>().entity_to_id
     }
-    fn add_parent_child(&mut self, parent: u64, child: u64) {
+    fn link_parent_child(&mut self, parent: u64, child: u64) {
         let mut r = self.resource_mut::<WorldLinksResource>();
         r.parent_to_child.entry(parent).or_default().insert(child);
         r.child_to_parent.entry(child).or_default().insert(parent);
+    }
+    fn unlink_parent_child(&mut self, parent: u64, child: u64) {
+        let mut r = self.resource_mut::<WorldLinksResource>();
+        if let Some(children) = r.parent_to_child.get_mut(&parent) {
+            children.remove(&child);
+        }
+        if let Some(parents) = r.child_to_parent.get_mut(&child) {
+            parents.remove(&parent);
+        }
     }
     fn despawn_entity(&mut self, entity: Entity) {
         let mut r = self.resource_mut::<WorldLinksResource>();
@@ -82,10 +92,10 @@ pub trait IdLinkExt {
 
 impl IdLinkExt for u64 {
     fn add_parent(self, world: &mut World, parent: u64) {
-        world.add_parent_child(parent, self);
+        world.link_parent_child(parent, self);
     }
     fn add_child(self, world: &mut World, child: u64) {
-        world.add_parent_child(self, child);
+        world.link_parent_child(self, child);
     }
     fn is_parent_of(self, world: &World, child: u64) -> bool {
         if let Some(children) = world.parents_children_map().get(&self) {

@@ -146,7 +146,10 @@ impl TagCard for NHouse {
                     status.tag_card(default(), context, ui).ui(ui);
                 }
                 for unit in self.units_load(context) {
-                    unit.tag_card(default(), context.clone().set_owner(unit.entity()), ui)
+                    context
+                        .with_owner_ref(unit.entity(), |context| {
+                            unit.tag_card(default(), context, ui)
+                        })
                         .ui(ui);
                 }
             },
@@ -204,56 +207,69 @@ impl TagCard for NStatusMagic {
 impl NFusion {
     pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let units = self.units(context)?;
-        let context = &context.clone().set_owner(self.entity()).take();
-        let pwr = context.get_var(VarName::pwr)?;
-        let hp = context.get_var(VarName::hp)?;
-        let statuses = context.children_nodes::<NStatusMagic>(self.entity());
-
-        ui.horizontal(|ui| {
-            TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
-            TagWidget::new_var_value(VarName::hp, hp).ui(ui);
-        });
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
-            "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-            for unit in &units {
-                unit.tag_card(default(), context.clone().set_owner(unit.entity()), ui)
-                    .ui(ui);
-            }
-            if !statuses.is_empty() {
-                "statuses:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                for status in statuses {
-                    let context = context.clone().set_owner(status.entity()).take();
-                    let charges = context.get_i32(VarName::charges).unwrap_or_default();
-                    let color = context.get_color(VarName::color).unwrap_or(MISSING_COLOR);
-                    if charges > 0 {
-                        TagWidget::new_name_value(
-                            &status.status_name,
-                            color,
-                            charges.cstr_s(CstrStyle::Bold),
-                        )
+        context.with_owner_ref(self.entity(), |context| {
+            let pwr = context.get_var(VarName::pwr)?;
+            let hp = context.get_var(VarName::hp)?;
+            ui.horizontal(|ui| {
+                TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
+                TagWidget::new_var_value(VarName::hp, hp).ui(ui);
+            });
+            ui.vertical(|ui| -> Result<(), ExpressionError> {
+                "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                for unit in &units {
+                    context
+                        .with_owner(unit.entity(), |context| {
+                            unit.tag_card(default(), context, ui)
+                        })
                         .ui(ui);
+                }
+                let statuses = context.collect_children_components::<NStatusMagic>(self.id)?;
+                if !statuses.is_empty() {
+                    "statuses:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    for status in statuses {
+                        context
+                            .with_owner_ref(status.entity(), |context| {
+                                let charges = context.get_i32(VarName::charges).unwrap_or_default();
+                                let color =
+                                    context.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+                                if charges > 0 {
+                                    TagWidget::new_name_value(
+                                        &status.status_name,
+                                        color,
+                                        charges.cstr_s(CstrStyle::Bold),
+                                    )
+                                    .ui(ui);
+                                }
+                                Ok(())
+                            })
+                            .ui(ui);
                     }
                 }
-            }
-            "behavior:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-            for (tr, actions) in &self.behavior {
-                if actions.is_empty() {
-                    continue;
+                "behavior:".cstr_c(ui.visuals().weak_text_color()).label(ui);
+                for (tr, actions) in &self.behavior {
+                    if actions.is_empty() {
+                        continue;
+                    }
+                    let trigger = self.get_trigger(tr, context)?;
+                    let view_ctx = ViewContext::new(ui).non_interactible(true);
+                    ui.horizontal(|ui| {
+                        Icon::Lightning.show(ui);
+                        trigger.show_title(view_ctx, context, ui);
+                    });
+                    for ar in actions {
+                        let (entity, action) = self.get_action(ar, context)?;
+                        let action = action.clone();
+                        context
+                            .with_owner(entity, |context| {
+                                action.show_title(view_ctx, context, ui);
+                                Ok(())
+                            })
+                            .ui(ui);
+                    }
                 }
-                let trigger = self.get_trigger(tr, context)?;
-                let view_ctx = ViewContext::new(ui).non_interactible(true);
-                ui.horizontal(|ui| {
-                    Icon::Lightning.show(ui);
-                    trigger.show_title(view_ctx, context, ui);
-                });
-                for ar in actions {
-                    let (entity, action) = self.get_action(ar, context)?;
-                    let action = action.clone();
-                    action.show_title(view_ctx, context.clone().set_owner(entity), ui);
-                }
-            }
-            Ok(())
+                Ok(())
+            })
+            .inner
         })
-        .inner
     }
 }

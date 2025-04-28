@@ -94,162 +94,170 @@ pub trait DataView: Sized + Clone + Default + StringData + ToCstr + Debug {
         default()
     }
     fn move_inner(&mut self, _source: &mut Self) {}
-    fn merge_state<'a>(
+    fn merge_state(
         &self,
         view_ctx: ViewContext,
-        context: &Context<'a>,
+        _context: &mut Context,
         ui: &mut Ui,
-    ) -> (ViewContext, Context<'a>) {
-        (view_ctx.merge_state(self, ui), context.clone())
+    ) -> ViewContext {
+        view_ctx.merge_state(self, ui)
     }
     fn view(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut view_resp = ViewResponse::default();
-        let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
-        let parent_rect = view_ctx.parent_rect;
-        let mut self_rect = Rect::ZERO;
-        let mut show = |s: &Self, mut view_ctx: ViewContext, ui: &mut Ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    let title_response = s.show_title(view_ctx, &context, ui);
-                    self_rect = title_response.rect;
-                    show_parent_line(
-                        view_ctx.parent_rect,
-                        self_rect,
-                        title_response.hovered(),
-                        ui,
-                    );
-                    view_ctx.parent_rect = self_rect;
-                    if title_response.hovered() {
-                        view_resp.hovered = true;
-                    }
-                    title_response.bar_menu(|ui| {
-                        s.context_menu(view_ctx, &context, ui);
-                    });
-                    if ui
-                        .ctx()
-                        .rect_contains_pointer(ui.layer_id(), title_response.rect)
-                    {
-                        let size = 8.0;
-                        if RectButton::new_rect(Rect::from_center_size(
-                            title_response.rect.right_center() - egui::vec2(size, 0.0),
-                            egui::Vec2::splat(size),
-                        ))
-                        .color(ui.visuals().weak_text_color())
-                        .ui(ui, |color, rect, _, ui| {
-                            ui.painter().line(
-                                [
-                                    rect.left_bottom(),
-                                    rect.left_top(),
-                                    rect.right_center(),
-                                    rect.left_bottom(),
-                                ]
-                                .into(),
-                                color.stroke(),
+        context
+            .with_layers_ref_r(default(), |context| {
+                let view_ctx = self.merge_state(view_ctx, context, ui);
+                let parent_rect = view_ctx.parent_rect;
+                let mut self_rect = Rect::ZERO;
+                let mut show = |s: &Self, mut view_ctx: ViewContext, ui: &mut Ui| {
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            let title_response = s.show_title(view_ctx, &context, ui);
+                            self_rect = title_response.rect;
+                            show_parent_line(
+                                view_ctx.parent_rect,
+                                self_rect,
+                                title_response.hovered(),
+                                ui,
                             );
-                        })
+                            view_ctx.parent_rect = self_rect;
+                            if title_response.hovered() {
+                                view_resp.hovered = true;
+                            }
+                            title_response.bar_menu(|ui| {
+                                s.context_menu(view_ctx, &context, ui);
+                            });
+                            if ui
+                                .ctx()
+                                .rect_contains_pointer(ui.layer_id(), title_response.rect)
+                            {
+                                let size = 8.0;
+                                if RectButton::new_rect(Rect::from_center_size(
+                                    title_response.rect.right_center() - egui::vec2(size, 0.0),
+                                    egui::Vec2::splat(size),
+                                ))
+                                .color(ui.visuals().weak_text_color())
+                                .ui(ui, |color, rect, _, ui| {
+                                    ui.painter().line(
+                                        [
+                                            rect.left_bottom(),
+                                            rect.left_top(),
+                                            rect.right_center(),
+                                            rect.left_bottom(),
+                                        ]
+                                        .into(),
+                                        color.stroke(),
+                                    );
+                                })
+                                .clicked()
+                                {
+                                    view_ctx.collapsed(true).save_state(ui);
+                                }
+                            }
+                            s.show_value(view_ctx, &context, ui);
+                        });
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            view_resp.merge(s.view_children(view_ctx, &context, ui));
+                        });
+                    });
+                };
+                if view_ctx.collapsed {
+                    let r = self.show_collapsed(view_ctx, &context, ui);
+                    show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
+                    if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
                         .clicked()
-                        {
-                            view_ctx.collapsed(true).save_state(ui);
-                        }
+                    {
+                        view_ctx.collapsed(false).save_state(ui);
                     }
-                    s.show_value(view_ctx, &context, ui);
-                });
-                ui.add_space(8.0);
-                ui.vertical(|ui| {
-                    view_resp.merge(s.view_children(view_ctx, &context, ui));
-                });
-            });
-        };
-        if view_ctx.collapsed {
-            let r = self.show_collapsed(view_ctx, &context, ui);
-            show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
-            if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
-                .clicked()
-            {
-                view_ctx.collapsed(false).save_state(ui);
-            }
-        } else {
-            show(self, view_ctx, ui);
-        }
-        if view_resp.hovered {
-            show_parent_line(parent_rect, self_rect, true, ui);
-        }
-        view_resp
+                } else {
+                    show(self, view_ctx, ui);
+                }
+                if view_resp.hovered {
+                    show_parent_line(parent_rect, self_rect, true, ui);
+                }
+                Ok(view_resp)
+            })
+            .unwrap_or_default()
     }
     fn view_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut view_resp = ViewResponse::default();
-        let (view_ctx, context) = self.merge_state(view_ctx, context, ui);
-        let parent_rect = view_ctx.parent_rect;
-        let mut self_rect = Rect::ZERO;
-        let mut show = |s: &mut Self, mut view_ctx: ViewContext, ui: &mut Ui| {
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    let title_response = s.show_title(view_ctx, &context, ui);
-                    self_rect = title_response.rect;
-                    show_parent_line(
-                        view_ctx.parent_rect,
-                        self_rect,
-                        title_response.hovered(),
-                        ui,
-                    );
-                    view_ctx.parent_rect = self_rect;
-                    if title_response.hovered() {
-                        view_resp.hovered = true;
-                    }
-                    title_response.bar_menu(|ui| {
-                        s.context_menu(view_ctx, &context, ui);
-                        view_resp.merge(s.context_menu_mut(view_ctx, &context, ui));
-                    });
-                    if ui
-                        .ctx()
-                        .rect_contains_pointer(ui.layer_id(), title_response.rect)
-                    {
-                        let size = 8.0;
-                        if RectButton::new_rect(Rect::from_center_size(
-                            title_response.rect.right_center() - egui::vec2(size, 0.0),
-                            egui::Vec2::splat(size),
-                        ))
-                        .color(ui.visuals().weak_text_color())
-                        .ui(ui, |color, rect, _, ui| {
-                            ui.painter().line(
-                                [
-                                    rect.left_bottom(),
-                                    rect.left_top(),
-                                    rect.right_center(),
-                                    rect.left_bottom(),
-                                ]
-                                .into(),
-                                color.stroke(),
+        context
+            .with_layers_ref_r(default(), |context| {
+                let view_ctx = self.merge_state(view_ctx, context, ui);
+                let parent_rect = view_ctx.parent_rect;
+                let mut self_rect = Rect::ZERO;
+                let mut show = |s: &mut Self, mut view_ctx: ViewContext, ui: &mut Ui| {
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            let title_response = s.show_title(view_ctx, &context, ui);
+                            self_rect = title_response.rect;
+                            show_parent_line(
+                                view_ctx.parent_rect,
+                                self_rect,
+                                title_response.hovered(),
+                                ui,
                             );
-                        })
+                            view_ctx.parent_rect = self_rect;
+                            if title_response.hovered() {
+                                view_resp.hovered = true;
+                            }
+                            title_response.bar_menu(|ui| {
+                                s.context_menu(view_ctx, &context, ui);
+                                view_resp.merge(s.context_menu_mut(view_ctx, &context, ui));
+                            });
+                            if ui
+                                .ctx()
+                                .rect_contains_pointer(ui.layer_id(), title_response.rect)
+                            {
+                                let size = 8.0;
+                                if RectButton::new_rect(Rect::from_center_size(
+                                    title_response.rect.right_center() - egui::vec2(size, 0.0),
+                                    egui::Vec2::splat(size),
+                                ))
+                                .color(ui.visuals().weak_text_color())
+                                .ui(ui, |color, rect, _, ui| {
+                                    ui.painter().line(
+                                        [
+                                            rect.left_bottom(),
+                                            rect.left_top(),
+                                            rect.right_center(),
+                                            rect.left_bottom(),
+                                        ]
+                                        .into(),
+                                        color.stroke(),
+                                    );
+                                })
+                                .clicked()
+                                {
+                                    view_ctx.collapsed(true).save_state(ui);
+                                }
+                            }
+                            view_resp.changed |= s.show_value_mut(view_ctx, &context, ui);
+                        });
+                        ui.add_space(8.0);
+                        ui.vertical(|ui| {
+                            view_resp.merge(s.view_children_mut(view_ctx, &context, ui));
+                        });
+                    });
+                };
+                if view_ctx.collapsed {
+                    let r = self.show_collapsed(view_ctx, &context, ui);
+                    show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
+                    if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
                         .clicked()
-                        {
-                            view_ctx.collapsed(true).save_state(ui);
-                        }
+                    {
+                        view_ctx.collapsed(false).save_state(ui);
                     }
-                    view_resp.changed |= s.show_value_mut(view_ctx, &context, ui);
-                });
-                ui.add_space(8.0);
-                ui.vertical(|ui| {
-                    view_resp.merge(s.view_children_mut(view_ctx, &context, ui));
-                });
-            });
-        };
-        if view_ctx.collapsed {
-            let r = self.show_collapsed(view_ctx, &context, ui);
-            show_parent_line(view_ctx.parent_rect, r.rect, false, ui);
-            if r.on_hover_ui(|ui| show(self, view_ctx.collapsed(false), ui))
-                .clicked()
-            {
-                view_ctx.collapsed(false).save_state(ui);
-            }
-        } else {
-            show(self, view_ctx, ui);
-        }
-        if view_resp.hovered {
-            show_parent_line(parent_rect, self_rect, true, ui);
-        }
-        view_resp
+                } else {
+                    show(self, view_ctx, ui);
+                }
+                if view_resp.hovered {
+                    show_parent_line(parent_rect, self_rect, true, ui);
+                }
+                Ok(view_resp)
+            })
+            .unwrap_or_default()
     }
     fn show_collapsed(&self, _view_ctx: ViewContext, _context: &Context, ui: &mut Ui) -> Response {
         "([tw ...])".cstr().button(ui)
@@ -727,8 +735,7 @@ where
         + DeserializeOwned,
 {
     fn title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
-        let name = type_name::<T>();
-        let name = name.split("::").last().unwrap_or_default();
+        let name = type_name_short::<T>();
         format!("[tw {name}] ({})", self.len())
     }
     fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {

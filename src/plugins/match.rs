@@ -202,9 +202,9 @@ impl MatchPlugin {
             return Err("No battles in current match".into());
         }
         let battle = *battles.last().unwrap();
-        let left = NTeam::load_recursive(battle.team_left)
+        let left = NTeam::load_recursive(context.world()?, battle.team_left)
             .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
-        let right = NTeam::load_recursive(battle.team_right)
+        let right = NTeam::load_recursive(context.world()?, battle.team_right)
             .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
         let bid = battle.id;
         let world = context.world_mut()?;

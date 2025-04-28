@@ -7,62 +7,6 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
-    fn hover(world: &mut World) {
-        let Some(ctx) = &egui_context(world) else {
-            return;
-        };
-        let mut open_window = None;
-        let mut close_window = None;
-        let up = unit_pixels();
-        for (unit, t) in world.query::<(&NUnit, &GlobalTransform)>().iter(world) {
-            let pos = world_to_screen(t.translation(), world).to_pos2();
-            if !ctx.screen_rect().contains(pos) {
-                continue;
-            }
-            let rect = Rect::from_center_size(pos, egui::vec2(up, up));
-            let resp = Area::new(Id::new(&unit.entity))
-                .fixed_pos(rect.center())
-                .pivot(Align2::CENTER_CENTER)
-                .constrain(false)
-                .sense(Sense::click())
-                .show(ctx, |ui| {
-                    ui.expand_to_include_rect(rect);
-                })
-                .response;
-            if resp.hovered() {
-                cursor_window(ctx, |ui| {
-                    unit.view(
-                        ViewContext::new(ui),
-                        Context::new(world).set_owner(unit.entity.unwrap()),
-                        ui,
-                    );
-                });
-            }
-            if resp.clicked() {
-                if WindowPlugin::is_open(&unit.unit_name, world) {
-                    close_window = Some(unit.unit_name.clone());
-                } else {
-                    open_window = Some((unit.entity.unwrap(), unit.unit_name.clone()));
-                }
-            }
-        }
-        if let Some(name) = close_window {
-            WindowPlugin::close(&name, world);
-        }
-        if let Some((entity, name)) = open_window {
-            Window::new(name, move |ui, world| {
-                if let Some(unit) = world.get::<NUnit>(entity) {
-                    unit.view(
-                        ViewContext::new(ui),
-                        Context::new(world).set_owner(unit.entity.unwrap()),
-                        ui,
-                    );
-                }
-            })
-            .no_frame()
-            .push(world);
-        }
-    }
     fn paint(
         m: &Material,
         context: &Context,
@@ -81,7 +25,7 @@ impl RepresentationPlugin {
         if !ctx.screen_rect().intersects(rect) {
             return Ok(());
         }
-        let owner = context.get_owner().unwrap();
+        let owner = context.owner_entity()?;
         Area::new(Id::new(owner))
             .constrain(false)
             .fixed_pos(rect.center())

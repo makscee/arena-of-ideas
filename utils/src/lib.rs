@@ -1,5 +1,8 @@
 use humanize_duration::prelude::DurationExt;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::{
+    any::type_name,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 
 use chrono::Utc;
 
@@ -30,4 +33,7 @@ pub fn format_duration(seconds: u64) -> String {
     Duration::from_secs(seconds)
         .human(humanize_duration::Truncate::Second)
         .to_string()
+}
+pub fn type_name_short<T>() -> &'static str {
+    type_name::<T>().split("::").last().unwrap_or("---")
 }

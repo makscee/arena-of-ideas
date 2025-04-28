@@ -12,7 +12,6 @@ mod representation;
 mod stdb;
 mod stdb_ext;
 mod stdb_sync;
-mod text_column;
 mod tile;
 mod ui;
 
@@ -31,6 +30,5 @@ pub use representation::*;
 pub use stdb::*;
 pub use stdb_ext::*;
 pub use stdb_sync::*;
-pub use text_column::*;
 pub use tile::*;
 pub use ui::*;

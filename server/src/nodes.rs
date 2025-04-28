@@ -7,7 +7,6 @@ use serde::{
     ser::SerializeTuple,
 };
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
 macro_schema::nodes!();

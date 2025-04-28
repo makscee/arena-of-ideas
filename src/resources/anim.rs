@@ -83,13 +83,12 @@ impl AnimAction {
                 }
             }
             AnimAction::spawn(material) => {
-                let mut world = context.world_mut()?;
-                let entity = world.spawn_empty().id();
+                let entity = context.world_mut()?.spawn_empty().id();
                 NRepresentation {
                     material: *material.clone(),
                     ..default()
                 }
-                .unpack_entity(entity, world);
+                .unpack_entity(context, entity)?;
 
                 let mut t = context.t()?;
                 let vars_layers = context.get_vars_layers();

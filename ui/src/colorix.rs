@@ -1,7 +1,4 @@
-use egui_colors::{
-    tokens::{ColorTokens, ThemeColor},
-    Theme,
-};
+use egui_colors::tokens::ColorTokens;
 use parking_lot::{Mutex, MutexGuard};
 use strum_macros::{Display, EnumIter};
 

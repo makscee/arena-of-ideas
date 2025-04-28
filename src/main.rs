@@ -53,7 +53,6 @@ fn main() {
         RunMode::MigrationDownload => GameState::MigrationDownload,
         RunMode::MigrationUpload => GameState::MigrationUpload,
     };
-    links_init();
     PersistentDataPlugin::load();
     parse_content_tree();
     GameState::set_target(target);
@@ -83,7 +82,6 @@ fn main() {
             UiPlugin,
             LoginPlugin,
             GameStatePlugin,
-            TextColumnPlugin,
             NodeStatePlugin,
             RepresentationPlugin,
             GameTimerPlugin,
@@ -115,6 +113,7 @@ fn setup(world: &mut World) {
     if let Some(ctx) = egui_context(world) {
         egui_extras::install_image_loaders(&ctx);
     }
+    world.init_links();
 }
 
 fn on_error_state(world: &mut World) {

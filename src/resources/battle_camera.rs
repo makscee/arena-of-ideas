@@ -73,32 +73,38 @@ impl BattleCamera {
             .query_filtered::<Entity, Without<Parent>>()
             .iter(&bs.world)
             .collect();
-        let context = Context::new(&bs.world).set_t(t).take();
-        while let Some(entity) = entities.pop_front() {
-            let context = context.clone().set_owner(entity).take();
-            if context.get_bool(VarName::visible).unwrap_or(true) {
-                entities.extend(context.get_children(entity));
-                let pos = context
-                    .get_var(VarName::position)
-                    .unwrap_or_default()
-                    .get_vec2()
-                    .unwrap()
-                    .to_pos2();
-                let pos = cam.rect_pos(pos);
-                let rect = Rect::from_center_size(pos, cam.u().v2() * 2.0);
-                if fusions.contains(&entity) {
-                    let fusion = context.get_node::<NFusion>(entity).unwrap();
-                    fusion.paint(rect, &context, ui).ui(ui);
-                    if ui.rect_contains_pointer(rect) {
-                        cursor_window(ui.ctx(), |ui| {
-                            fusion.show_card(&context, ui).ui(ui);
-                        });
-                    }
-                } else if let Some(rep) = context.get_node::<NRepresentation>(entity) {
-                    rep.pain_or_show_err(rect, &context, ui);
-                }
+        Context::from_world(&mut bs.world, |context| {
+            context.t = Some(t);
+            while let Some(entity) = entities.pop_front() {
+                context
+                    .with_owner(entity, |context| {
+                        if context.get_bool(VarName::visible).unwrap_or(true) {
+                            entities.extend(context.children_entity(entity)?);
+                            let pos = context
+                                .get_var(VarName::position)
+                                .unwrap_or_default()
+                                .get_vec2()
+                                .unwrap()
+                                .to_pos2();
+                            let pos = cam.rect_pos(pos);
+                            let rect = Rect::from_center_size(pos, cam.u().v2() * 2.0);
+                            if fusions.contains(&entity) {
+                                let fusion = context.get::<NFusion>(entity)?;
+                                fusion.paint(rect, &context, ui).ui(ui);
+                                if ui.rect_contains_pointer(rect) {
+                                    cursor_window(ui.ctx(), |ui| {
+                                        fusion.show_card(&context, ui).ui(ui);
+                                    });
+                                }
+                            } else if let Ok(rep) = context.get::<NRepresentation>(entity) {
+                                rep.pain_or_show_err(rect, &context, ui);
+                            }
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
             }
-        }
+        });
 
         ui.data_mut(|w| w.insert_temp(ui.id(), cam));
     }

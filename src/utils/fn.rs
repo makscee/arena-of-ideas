@@ -3,12 +3,6 @@ use spacetimedb_lib::Timestamp;
 
 use super::*;
 
-pub fn world_to_screen(pos: Vec3, world: &World) -> Vec2 {
-    let entity = world.entity(world.resource::<CameraData>().entity);
-    let camera = entity.get::<Camera>().unwrap();
-    let transform = entity.get::<GlobalTransform>().unwrap();
-    camera.world_to_viewport(transform, pos).unwrap_or_default()
-}
 pub fn delta_time(world: &World) -> f32 {
     world.resource::<Time>().delta_secs()
 }

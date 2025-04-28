@@ -65,10 +65,19 @@ fn subscribe_table_updates() {
 
     db.node_links().on_insert(|_, link| {
         debug!("add link {link:?}");
-        links_add(link.child, link.parent);
+        let parent = link.parent;
+        let child = link.child;
+        op(move |world| {
+            world.link_parent_child(parent, child);
+        });
     });
     db.node_links().on_delete(|_, link| {
-        links_remove(link.child, link.parent);
+        debug!("remove link {link:?}");
+        let parent = link.parent;
+        let child = link.child;
+        op(move |world| {
+            world.unlink_parent_child(parent, child);
+        });
     });
 }
 
@@ -76,26 +85,27 @@ fn on_insert(node: &TNode) {
     info!("Node inserted {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        node.unpack(world.spawn_empty().id(), world);
+        let entity = world.spawn_empty().id();
+        Context::from_world(world, |context| {
+            node.unpack(context, entity);
+        });
     });
 }
 
 fn on_delete(node: &TNode) {
     let node = node.clone();
     op(move |world| {
-        let Some(entity) = world.get_id_link(node.id) else {
-            error!("Failed to delete entity: id link not found");
-            return;
-        };
-        info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
-        let id = node.id;
-        world.send_event(StdbEvent {
-            entity,
-            node,
-            change: StdbChange::Delete,
-        });
-        world.despawn(entity);
-        world.clear_id_link(id);
+        Context::from_world_r(world, |context| {
+            let entity = context.entity(node.id)?;
+            info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
+            context.world_mut()?.send_event(StdbEvent {
+                entity,
+                node,
+                change: StdbChange::Delete,
+            });
+            context.despawn(entity)
+        })
+        .log();
     });
 }
 
@@ -103,16 +113,17 @@ fn on_update(node: &TNode) {
     info!("Node updated {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        let Some(entity) = world.get_id_link(node.id) else {
-            error!("Failed to update entity: id link not found");
-            return;
-        };
-        node.unpack(entity, world);
-        world.send_event(StdbEvent {
-            entity,
-            node,
-            change: StdbChange::Update,
-        });
+        Context::from_world_r(world, |context| {
+            let entity = context.entity(node.id)?;
+            node.unpack(context, entity);
+            context.world_mut()?.send_event(StdbEvent {
+                entity,
+                node,
+                change: StdbChange::Update,
+            });
+            Ok(())
+        })
+        .log();
     });
 }
 

@@ -1,4 +1,4 @@
-use std::any::type_name;
+use schema::type_name_short;
 
 use super::*;
 
@@ -60,7 +60,7 @@ impl<T> ToENotFound<T> for Option<T> {
             Some(v) => Ok(v),
             None => Err(ExpressionError::NotFound(format!(
                 "Not found: {}",
-                type_name::<T>()
+                type_name_short::<T>()
             ))),
         }
     }

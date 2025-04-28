@@ -141,8 +141,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #many_types> {
                             if !self.#many_fields.is_empty() {
                                 self.#many_fields.iter().collect()
-                            } else if let Some(entity) = self.entity {
-                                context.collect_children_components::<#many_types>(entity).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
+                            } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
+                                context.collect_children_components::<#many_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
                             } else {
                                 default()
                             }
@@ -195,7 +195,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             if let Some(v) = self.#one_fields.as_ref()
                                 .or_else(|| {
                                     self.entity
-                                        .and_then(|e| context.get_node::<#one_types>(e))
+                                        .and_then(|e| context.get::<#one_types>(e).ok())
                                 })
                                 .and_then(|d| d.get_var(var, context)).clone() {
                                 return Some(v);
@@ -231,7 +231,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             if let Some(d) = self.#one_fields.as_ref().or_else(|| {
                                 self.entity
-                                    .and_then(|e| context.get_node::<#one_types>(e))
+                                    .and_then(|e| context.get::<#one_types>(e).ok())
                             }) {
                                 vars.extend(d.get_vars(context));
                             }
@@ -477,8 +477,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 }
                                 view_resp.merge(child_resp);
                             } else if let Some(mut d) = new_node_btn::<#one_types>(ui, view_ctx) {
-                                todo!();
-                                // d.id(context).add_parent(self.id());
                                 view_resp.changed = true;
                                 self.#one_fields = Some(d);
                             }
@@ -488,17 +486,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         view_resp
                     }
-                    fn merge_state<'a>(
+                    fn merge_state(
                         &self,
                         view_ctx: ViewContext,
-                        context: &Context<'a>,
+                        context: &mut Context,
                         ui: &mut Ui,
-                    ) -> (ViewContext, Context<'a>) {
-                        let mut context = context.clone();
+                    ) -> ViewContext {
                         for (var, value) in self.get_vars(&context) {
                             context.set_var(var, value);
                         }
-                        (view_ctx.merge_state(self, ui), context)
+                        view_ctx.merge_state(self, ui)
                     }
                 }
                 impl From<&str> for #struct_ident {

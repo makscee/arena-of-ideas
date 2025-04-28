@@ -40,10 +40,11 @@ impl BattleData {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        Context::from_world(&mut teams_world, |context| {
-            battle.left.clone().unpack_entity(context, team_left);
-            battle.right.clone().unpack_entity(context, team_right);
-        });
+        Context::from_world_r(&mut teams_world, |context| {
+            battle.left.clone().unpack_entity(context, team_left)?;
+            battle.right.clone().unpack_entity(context, team_right)
+        })
+        .unwrap();
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -348,7 +349,7 @@ impl BattlePlugin {
                     let team = NTeam::get(team_entity, context).unwrap();
                     let slot = team.fusions_load(context).len() as i32;
                     let id = next_id();
-                    id.add_parent(team.id);
+                    context.link_parent_child(team.id, id).log();
                     NFusion {
                         id,
                         owner: player_id(),
@@ -358,7 +359,8 @@ impl BattlePlugin {
                         slot,
                         stats: None,
                     }
-                    .unpack_entity(context, entity);
+                    .unpack_entity(context, entity)
+                    .log();
                     changed = true;
                 }
                 if let Some(fusion) = edited {
@@ -371,11 +373,7 @@ impl BattlePlugin {
                 }
 
                 if changed {
-                    context
-                        .world_mut()
-                        .unwrap()
-                        .resource_mut::<ReloadData>()
-                        .reload_requested = true;
+                    world.resource_mut::<ReloadData>().reload_requested = true;
                     let updated_team = NTeam::pack_entity(context, team_entity).unwrap();
                     dbg!(&updated_team);
                     let team = if left {

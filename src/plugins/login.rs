@@ -67,8 +67,13 @@ impl LoginPlugin {
                 return;
             };
             dbg!(&identity_node);
-            if let Some(player) =
-                identity_node.id.any_parent().and_then(|id| NPlayer::load(id))
+
+            if let Some(player) = cn()
+                .db
+                .node_links()
+                .iter()
+                .find(|link| link.child == identity_node.id)
+                .and_then(|link| NPlayer::load(link.parent))
             {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();
@@ -76,7 +81,7 @@ impl LoginPlugin {
                 cs.save();
                 LoginOption { player }.save(world);
             } else {
-                error!("Failed to find Player");
+                error!("Failed to load NPlayer by Identity");
             }
             GameState::proceed(world);
         });

@@ -225,7 +225,7 @@ impl BattleAction {
                     }
                 }
                 BattleAction::spawn(entity) => {
-                    NodeStatePlugin::init_entity_vars(context, *entity);
+                    NodeStatePlugin::init_entity_vars(context, *entity).log();
                     add_actions.extend_from_slice(&[BattleAction::var_set(
                         *entity,
                         VarName::visible,
@@ -240,7 +240,8 @@ impl BattleAction {
                         status.clone(),
                         *charges,
                         *color,
-                    );
+                    )
+                    .log();
                     context.battle_simulation_mut()?.duration += ANIMATION;
                     true
                 }
@@ -286,10 +287,11 @@ impl BattleSimulation {
         let mut world = World::new();
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
-        Context::from_world(&mut world, |context| {
-            battle.left.unpack_entity(context, team_left);
-            battle.right.unpack_entity(context, team_right);
-        });
+        Context::from_world_r(&mut world, |context| {
+            battle.left.unpack_entity(context, team_left)?;
+            battle.right.unpack_entity(context, team_right)
+        })
+        .log();
 
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::from_world_ref_r(world, |context| {
@@ -364,7 +366,8 @@ impl BattleSimulation {
                 }
             }
             Ok(())
-        });
+        })
+        .log();
         let a = BattleAction::strike(self.fusions_left[0], self.fusions_right[0]);
         self.process_actions([a]);
         let a = self.death_check();
@@ -487,7 +490,7 @@ impl BattleSimulation {
             }
         }
         let entity = context.world_mut()?.spawn_empty().set_parent(target).id();
-        status.unpack_entity(context, entity);
+        status.unpack_entity(context, entity)?;
 
         let mut state = context.get_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());

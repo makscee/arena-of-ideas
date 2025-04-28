@@ -199,6 +199,13 @@ impl<'w> Context<'w> {
     ) -> Result<T, ExpressionError> {
         self.with_layer_r(ContextLayer::Owner(entity), f)
     }
+    pub fn with_owner_ref<T>(
+        &'w self,
+        entity: Entity,
+        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
+    ) -> Result<T, ExpressionError> {
+        self.with_layer_ref_r(ContextLayer::Owner(entity), f)
+    }
     pub fn t(&self) -> Result<f32, ExpressionError> {
         self.t.to_custom_e("Context t not set")
     }
@@ -271,7 +278,7 @@ impl<'w> Context<'w> {
                 q.push_back(parent);
             }
         }
-        Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
+        Err(ExpressionError::NotFound(type_name_short::<T>().to_owned()))
     }
     pub fn first_child_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         let mut checked: HashSet<u64> = default();
@@ -293,8 +300,8 @@ impl<'w> Context<'w> {
         self.world_mut()?.link_id_entity(id, entity);
         Ok(())
     }
-    pub fn add_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
-        self.world_mut()?.add_parent_child(parent, child);
+    pub fn link_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
+        self.world_mut()?.link_parent_child(parent, child);
         Ok(())
     }
     pub fn despawn(&mut self, entity: Entity) -> Result<(), ExpressionError> {
@@ -427,6 +434,9 @@ impl<'w> Context<'w> {
     }
     pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
         self.get_var(var)?.get_f32()
+    }
+    pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
+        self.get_var(var)?.get_bool()
     }
     pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
         self.get_var(var)?.get_color()

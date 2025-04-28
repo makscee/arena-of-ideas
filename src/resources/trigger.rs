@@ -24,7 +24,7 @@ impl TriggerImpl for Trigger {
             }
             Event::Death(entity) => {
                 let entity = entity.to_e();
-                let Ok(owner) = context.get_owner() else {
+                let Ok(owner) = context.owner_entity() else {
                     return false;
                 };
                 if matches!(self, Trigger::BeforeDeath) && owner == entity {

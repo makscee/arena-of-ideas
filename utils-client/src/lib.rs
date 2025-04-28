@@ -1,31 +1,22 @@
 mod error;
 mod game_timer;
-mod links;
 mod operations;
-mod world_id_link;
 
 use arboard::Clipboard;
 pub use error::*;
 pub use game_timer::*;
-pub use links::*;
 pub use operations::*;
-pub use world_id_link::*;
 
-use bevy::{
-    math::vec2,
-    prelude::*,
-    utils::{hashbrown::HashMap, HashSet},
-};
+use bevy::{math::vec2, prelude::*};
 use bevy_egui::{
     egui::{
         self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui,
     },
     EguiContext,
 };
-use once_cell::sync::OnceCell;
 use parking_lot::{Mutex, MutexGuard};
 use ron::ser::{to_string_pretty, PrettyConfig};
-use schema::{ExpressionError, OptionExpressionCustomError, VarName, VarValue};
+use schema::{ExpressionError, VarName, VarValue};
 use serde::Serialize;
 
 static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);
@@ -278,16 +269,6 @@ impl CtxExt for egui::Context {
     fn get_frame_flag(&self, id: impl Into<Id>) -> bool {
         let frame = self.cumulative_pass_nr();
         self.data(|r| r.get_temp::<u64>(id.into()).unwrap_or_default() + 1 >= frame)
-    }
-}
-
-pub trait U64Ext {
-    fn entity(self, world: &World) -> Option<Entity>;
-}
-
-impl U64Ext for u64 {
-    fn entity(self, world: &World) -> Option<Entity> {
-        world.get_id_link(self)
     }
 }
 

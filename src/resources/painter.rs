@@ -166,14 +166,16 @@ impl Paint for PainterAction {
             PainterAction::repeat(x, action) => {
                 let max_index = x.get_i32(context)?;
                 for i in 0..max_index {
-                    action.paint(
-                        context
-                            .clone()
-                            .set_var(VarName::index, i.into())
-                            .set_var(VarName::max_index, max_index.into()),
-                        p,
-                        ui,
-                    )?;
+                    context
+                        .with_layers_ref_r(
+                            [
+                                ContextLayer::Var(VarName::index, i.into()),
+                                ContextLayer::Var(VarName::max_index, max_index.into()),
+                            ]
+                            .into(),
+                            |context| action.paint(context, p, ui),
+                        )
+                        .ui(ui);
                 }
             }
             PainterAction::paint => {

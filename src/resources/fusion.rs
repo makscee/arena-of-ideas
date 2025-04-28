@@ -33,9 +33,7 @@ impl NFusion {
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
         let mut units = Vec::new();
         for id in &self.units {
-            let unit = context
-                .get_node_by_id::<NUnit>(*id)
-                .to_custom_e_fn(|| format!("Failed to get NUnit#{id}"))?;
+            let unit = context.get_by_id::<NUnit>(*id)?;
             units.push(unit);
         }
         Ok(units)
@@ -102,19 +100,21 @@ impl NFusion {
         let units = self.units(context)?;
         for unit in units {
             let unit = unit.entity();
-            let Some(rep) = context.get_node::<NRepresentation>(unit) else {
+            let Ok(rep) = context.get::<NRepresentation>(unit) else {
                 continue;
             };
-            let context = context.clone().set_owner(unit).set_owner(entity).take();
-            RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)?;
+            context
+                .with_owner_ref(unit, |context| {
+                    RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
+                })
+                .ui(ui);
         }
-        if let Some(rep) = context.get_node::<NRepresentation>(entity) {
-            RepresentationPlugin::paint_rect(
-                rect,
-                context.clone().set_owner(entity),
-                &rep.material,
-                ui,
-            )?;
+        if let Ok(rep) = context.get::<NRepresentation>(entity) {
+            context
+                .with_owner_ref(entity, |context| {
+                    RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
+                })
+                .ui(ui);
         }
         Ok(())
     }
@@ -192,14 +192,19 @@ impl NFusion {
                         continue;
                     }
                     let unit = units[*u as usize].entity();
-                    if action
-                        .title_cstr(ViewContext::new(ui), context.clone().set_owner(unit))
-                        .button(ui)
-                        .clicked()
-                    {
-                        self.behavior.last_mut().unwrap().1.push(r);
-                        changed = true;
-                    }
+                    context
+                        .with_owner_ref(unit, |context| {
+                            if action
+                                .title_cstr(ViewContext::new(ui), context)
+                                .button(ui)
+                                .clicked()
+                            {
+                                self.behavior.last_mut().unwrap().1.push(r);
+                                changed = true;
+                            }
+                            Ok(())
+                        })
+                        .ui(ui);
                 }
             }
             space(ui);
@@ -238,15 +243,20 @@ impl NFusion {
                                 new_behavior = Some(behavior);
                             }
                         }
-                        if action
-                            .title_cstr(ViewContext::new(ui), context.clone().set_owner(entity))
-                            .button(ui)
-                            .clicked()
-                        {
-                            let mut behavior = self.behavior.clone();
-                            behavior[ti].1.remove(ai);
-                            new_behavior = Some(behavior);
-                        }
+                        context
+                            .with_owner_ref(entity, |context| {
+                                if action
+                                    .title_cstr(ViewContext::new(ui), context)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    let mut behavior = self.behavior.clone();
+                                    behavior[ti].1.remove(ai);
+                                    new_behavior = Some(behavior);
+                                }
+                                Ok(())
+                            })
+                            .ui(ui);
                     });
                 }
             }
@@ -265,13 +275,7 @@ impl NFusion {
         context: &Context,
     ) -> Result<Option<NFusion>, ExpressionError> {
         let mut edited: Option<NFusion> = None;
-        let team = NTeam::get(
-            context
-                .get_parent(self.entity())
-                .to_custom_e("Fusion parent not found")?,
-            context,
-        )
-        .to_custom_e("Team not found")?;
+        let team = context.first_parent_recursive::<NTeam>(self.id)?;
         let units = team.roster_units_load(context);
         if response.clicked() {
             debug!("clicked");
@@ -286,18 +290,23 @@ impl NFusion {
                         if self.units.contains(&unit.id()) {
                             continue;
                         }
-                        match unit.show_tag(context.clone().set_owner(unit.entity()), ui) {
-                            Ok(response) => {
-                                if response.clicked() {
-                                    let mut fusion = self.clone();
-                                    fusion.units.push(unit.id());
-                                    edited = Some(fusion);
+                        context
+                            .with_owner_ref(unit.entity(), |context| {
+                                match unit.show_tag(context, ui) {
+                                    Ok(response) => {
+                                        if response.clicked() {
+                                            let mut fusion = self.clone();
+                                            fusion.units.push(unit.id());
+                                            edited = Some(fusion);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        e.cstr().label(ui);
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                e.cstr().label(ui);
-                            }
-                        }
+                                Ok(())
+                            })
+                            .ui(ui);
                     }
                 });
                 if !self.units.is_empty() {
@@ -332,9 +341,7 @@ impl NFusion {
         on_empty: impl FnOnce(&mut Ui),
         on_edited: impl FnOnce(NFusion),
     ) -> Result<(), ExpressionError> {
-        let team = context
-            .get_node::<NTeam>(team)
-            .to_custom_e("Failed to get Team component")?;
+        let team = context.get::<NTeam>(team)?;
         let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
             team.fusions_load(context)
                 .into_iter()
