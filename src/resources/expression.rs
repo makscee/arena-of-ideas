@@ -45,10 +45,13 @@ impl ExpressionImpl for Expression {
             Expression::string(s) => Ok(s.clone().into()),
             Expression::color(s) => s
                 .try_c32()
-                .map_err(|e| ExpressionError::OperationNotSupported {
-                    values: default(),
-                    op: "Hex color parse",
-                    msg: Some(format!("{e:?}")),
+                .map_err(|e| {
+                    ExpressionErrorVariants::OperationNotSupported {
+                        values: default(),
+                        op: "Hex color parse",
+                        msg: Some(format!("{e:?}")),
+                    }
+                    .into()
                 })
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),

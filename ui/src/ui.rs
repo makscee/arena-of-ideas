@@ -1,3 +1,4 @@
+use bevy_egui::egui::ScrollArea;
 use egui::{CornerRadius, Margin, Shadow};
 
 use super::*;
@@ -65,9 +66,18 @@ pub trait ErrorExt {
 }
 
 impl<T> ErrorExt for Result<T, ExpressionError> {
+    #[track_caller]
     fn ui(self, ui: &mut Ui) {
         if let Err(e) = self {
-            e.cstr().label(ui);
+            let error_text = format!("{}\n[s {}]", e.cstr(), std::panic::Location::caller());
+            error_text.clone().button(ui).bar_menu(|ui| {
+                ScrollArea::vertical().show(ui, |ui| {
+                    let mut b = e.bt;
+                    b.resolve();
+                    error_text.cstr().label(ui);
+                    format!("[s {b:?}]").label(ui);
+                });
+            });
         }
     }
 }

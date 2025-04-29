@@ -1,3 +1,4 @@
+use backtrace::Backtrace as Btrace;
 use itertools::join;
 use thiserror::Error;
 use var_value::VarValue;
@@ -5,7 +6,19 @@ use var_value::VarValue;
 use super::*;
 
 #[derive(Error, Debug)]
-pub enum ExpressionError {
+pub struct ExpressionError {
+    pub source: ExpressionErrorVariants,
+    pub bt: Btrace,
+}
+
+impl std::fmt::Display for ExpressionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.source)
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ExpressionErrorVariants {
     #[error("Operation {op} for {} not supported {}", join(values, ", "), msg.clone().unwrap_or_default())]
     OperationNotSupported {
         values: Vec<VarValue>,
@@ -33,14 +46,14 @@ impl<T> ExpressionErrorResultExt<T> for Result<T, ExpressionError> {
     fn log(self) {
         match self {
             Ok(_) => {}
-            Err(e) => log::error!("{e}"),
+            Err(e) => log::error!("{}", e.source),
         }
     }
     fn ok_log(self) -> Option<T> {
         match self {
             Ok(v) => Some(v),
             Err(e) => {
-                log::error!("{e}");
+                log::error!("{}", e.source);
                 None
             }
         }
@@ -58,13 +71,13 @@ impl<T> OptionExpressionCustomError<T> for Option<T> {
     fn to_custom_e(self, s: impl Into<String>) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
-            None => Err(ExpressionError::Custom(s.into())),
+            None => Err(ExpressionErrorVariants::Custom(s.into()).into()),
         }
     }
     fn to_custom_e_fn(self, s: impl FnOnce() -> String) -> Result<T, ExpressionError> {
         match self {
             Some(v) => Ok(v),
-            None => Err(ExpressionError::Custom(s())),
+            None => Err(ExpressionErrorVariants::Custom(s()).into()),
         }
     }
     fn to_custom_e_s(self, s: impl Into<String>) -> Result<T, String> {
@@ -89,41 +102,51 @@ impl<T> ExpressionErrorString<T> for Result<T, ExpressionError> {
     fn to_str_err(self) -> Result<T, String> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => Err(e.to_string()),
+            Err(e) => Err(e.source.to_string()),
         }
     }
 }
 
 impl ExpressionError {
     pub fn not_supported_single(op: &'static str, value: VarValue) -> Self {
-        Self::OperationNotSupported {
+        ExpressionErrorVariants::OperationNotSupported {
             values: [value].into(),
             op,
             msg: None,
         }
+        .into()
     }
     pub fn not_supported_multiple(op: &'static str, values: Vec<VarValue>) -> Self {
-        Self::OperationNotSupported {
+        ExpressionErrorVariants::OperationNotSupported {
             values,
             op,
             msg: None,
         }
+        .into()
     }
 }
 
 impl Into<String> for ExpressionError {
     fn into(self) -> String {
-        self.to_string()
+        self.source.to_string()
     }
 }
 
 impl From<&str> for ExpressionError {
     fn from(value: &str) -> Self {
-        Self::Custom(value.into())
+        ExpressionErrorVariants::Custom(value.into()).into()
     }
 }
 impl From<String> for ExpressionError {
     fn from(value: String) -> Self {
-        Self::Custom(value.into())
+        ExpressionErrorVariants::Custom(value.into()).into()
+    }
+}
+impl Into<ExpressionError> for ExpressionErrorVariants {
+    fn into(self) -> ExpressionError {
+        ExpressionError {
+            source: self,
+            bt: Btrace::new_unresolved(),
+        }
     }
 }

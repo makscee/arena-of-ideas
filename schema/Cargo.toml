@@ -17,3 +17,4 @@ ron = { workspace = true }
 log = { workspace = true }
 glam = { workspace = true }
 ecolor = { workspace = true }
+backtrace = { workspace = true }

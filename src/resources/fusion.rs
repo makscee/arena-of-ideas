@@ -301,12 +301,10 @@ impl NFusion {
                                             fusion.units.push(unit.id());
                                             edited = Some(fusion);
                                         }
+                                        Ok(())
                                     }
-                                    Err(e) => {
-                                        e.cstr().label(ui);
-                                    }
+                                    Err(e) => Err(e),
                                 }
-                                Ok(())
                             })
                             .ui(ui);
                     }

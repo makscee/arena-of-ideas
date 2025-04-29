@@ -1,5 +1,3 @@
-use std::any::type_name;
-
 use super::*;
 
 #[derive(Default, Debug)]
@@ -90,9 +88,7 @@ impl<'w> Context<'w> {
                 return Ok(w);
             }
         }
-        Err(ExpressionError::NotFound(
-            "World not set for Context".into(),
-        ))
+        Err(ExpressionErrorVariants::NotFound("World not set for Context".into()).into())
     }
     pub fn world<'a>(&'a self) -> Result<&'a World, ExpressionError> {
         for s in &self.sources {
@@ -101,9 +97,7 @@ impl<'w> Context<'w> {
                 return Ok(w);
             }
         }
-        Err(ExpressionError::NotFound(
-            "World not set for Context".into(),
-        ))
+        Err(ExpressionErrorVariants::NotFound("World not set for Context".into()).into())
     }
     pub fn battle_simulation_mut<'a>(
         &'a mut self,
@@ -114,9 +108,7 @@ impl<'w> Context<'w> {
                 return Ok(bs);
             }
         }
-        Err(ExpressionError::NotFound(
-            "BattleSimulation not set for Context".into(),
-        ))
+        Err(ExpressionErrorVariants::NotFound("BattleSimulation not set for Context".into()).into())
     }
     pub fn battle_simulation<'a>(&'a self) -> Result<&'a BattleSimulation, ExpressionError> {
         for s in &self.sources {
@@ -125,9 +117,7 @@ impl<'w> Context<'w> {
                 return Ok(bs);
             }
         }
-        Err(ExpressionError::NotFound(
-            "BattleSimulation not set for Context".into(),
-        ))
+        Err(ExpressionErrorVariants::NotFound("BattleSimulation not set for Context".into()).into())
     }
     pub fn with_layer_r<T>(
         &mut self,
@@ -278,7 +268,7 @@ impl<'w> Context<'w> {
                 q.push_back(parent);
             }
         }
-        Err(ExpressionError::NotFound(type_name_short::<T>().to_owned()))
+        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
     }
     pub fn first_child_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         let mut checked: HashSet<u64> = default();
@@ -294,7 +284,7 @@ impl<'w> Context<'w> {
                 q.push_back(child);
             }
         }
-        Err(ExpressionError::NotFound(type_name::<T>().to_owned()))
+        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
     }
     pub fn link_id_entity(&mut self, id: u64, entity: Entity) -> Result<(), ExpressionError> {
         self.world_mut()?.link_id_entity(id, entity);
@@ -376,7 +366,7 @@ impl<'w> Context<'w> {
                 return Ok(e);
             }
         }
-        Err(ExpressionError::NotFound("Owner not set".into()))
+        Err(ExpressionErrorVariants::NotFound("Owner not set".into()).into())
     }
     pub fn target_entity(&self) -> Result<Entity, ExpressionError> {
         for l in self.layers.iter().rev() {
@@ -384,7 +374,7 @@ impl<'w> Context<'w> {
                 return Ok(e);
             }
         }
-        Err(ExpressionError::NotFound("Target not set".into()))
+        Err(ExpressionErrorVariants::NotFound("Target not set".into()).into())
     }
     pub fn caster_entity(&self) -> Result<Entity, ExpressionError> {
         for l in self.layers.iter().rev() {
@@ -392,7 +382,7 @@ impl<'w> Context<'w> {
                 return Ok(e);
             }
         }
-        Err(ExpressionError::NotFound("Caster not set".into()))
+        Err(ExpressionErrorVariants::NotFound("Caster not set".into()).into())
     }
     pub fn collect_targets(&self) -> Vec<Entity> {
         self.layers.iter().filter_map(|l| l.get_target()).collect()
@@ -415,7 +405,7 @@ impl<'w> Context<'w> {
                 return Ok(v);
             }
         }
-        Err(ExpressionError::ValueNotFound(var))
+        Err(ExpressionErrorVariants::ValueNotFound(var).into())
     }
     pub fn sum_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
         let mut value = VarValue::default();
