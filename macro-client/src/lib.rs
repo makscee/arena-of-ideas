@@ -371,7 +371,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
                         let mut s = context.get::<Self>(entity)?.clone();
                         #(
-                            s.#one_fields = #one_types::pack_entity(context, entity).ok();
+                            s.#one_fields = context.parents_entity(entity)?.into_iter().find_map(|e|
+                                if let Ok(c) = #one_types::pack_entity(context, e) {
+                                    Some(c)
+                                } else {
+                                    None
+                                });
                         )*
                         #(
                             for child in context.children_entity(entity)? {
@@ -383,7 +388,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         Ok(s)
                     }
                     fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
-                        debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
+                        // debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if self.id == 0 {
                             self.id = next_id();
@@ -391,9 +396,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         context.link_id_entity(self.id, entity)?;
                         #(
                             if let Some(d) = self.#one_fields.take() {
-                                let child = context.world_mut()?.spawn_empty().id();
-                                d.unpack_entity(context, child).log();
-                                child.id(context)?.add_parent(context.world_mut()?, self.id);
+                                let entity = context.world_mut()?.spawn_empty().id();
+                                d.unpack_entity(context, entity).log();
+                                let id = entity.id(context)?;
+                                let world = context.world_mut()?;
+                                // id.add_parent(world, self.id);
+                                self.id.add_parent(world, id);
                             }
                         )*
                         #(

@@ -254,6 +254,24 @@ impl<'w> Context<'w> {
         }
         result
     }
+    pub fn first_parent<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
+        for parent in self.parents(id) {
+            let c = self.get_by_id::<T>(parent);
+            if c.is_ok() {
+                return c;
+            }
+        }
+        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
+    }
+    pub fn first_child<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
+        for child in self.children(id) {
+            let c = self.get_by_id::<T>(child);
+            if c.is_ok() {
+                return c;
+            }
+        }
+        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
+    }
     pub fn first_parent_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         let mut checked: HashSet<u64> = default();
         let mut q = VecDeque::from([id]);
