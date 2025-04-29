@@ -132,7 +132,9 @@ impl NodeKind {
 
         match self {
             NodeKind::NFusion => {
-                unit_rep().clone().unpack_entity(context, entity)?;
+                let rep_entity = context.world_mut()?.spawn_empty().id();
+                unit_rep().clone().unpack_entity(context, rep_entity)?;
+                context.link_parent_child_entity(entity, rep_entity)?;
                 context.get_mut::<NodeState>(entity)?.init_vars(
                     [
                         (VarName::pwr, 0.into()),
@@ -143,7 +145,9 @@ impl NodeKind {
                 );
             }
             NodeKind::NStatusMagic => {
-                status_rep().clone().unpack_entity(context, entity).log();
+                let rep_entity = context.world_mut()?.spawn_empty().id();
+                status_rep().clone().unpack_entity(context, rep_entity)?;
+                context.link_parent_child_entity(entity, rep_entity)?;
             }
             _ => {}
         }

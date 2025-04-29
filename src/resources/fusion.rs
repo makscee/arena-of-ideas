@@ -109,12 +109,14 @@ impl NFusion {
                 })
                 .ui(ui);
         }
-        if let Ok(rep) = context.get::<NRepresentation>(entity) {
-            context
-                .with_owner_ref(entity, |context| {
-                    RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
-                })
-                .ui(ui);
+        if let Ok(reps) = context.collect_children_components::<NRepresentation>(self.id) {
+            for rep in reps {
+                context
+                    .with_owner_ref(entity, |context| {
+                        RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
+                    })
+                    .ui(ui);
+            }
         }
         Ok(())
     }

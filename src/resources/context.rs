@@ -304,6 +304,13 @@ impl<'w> Context<'w> {
         self.world_mut()?.link_parent_child(parent, child);
         Ok(())
     }
+    pub fn link_parent_child_entity(
+        &mut self,
+        parent: Entity,
+        child: Entity,
+    ) -> Result<(), ExpressionError> {
+        self.link_parent_child(self.id(parent)?, self.id(child)?)
+    }
     pub fn despawn(&mut self, entity: Entity) -> Result<(), ExpressionError> {
         self.world_mut()?.despawn_entity(entity);
         Ok(())

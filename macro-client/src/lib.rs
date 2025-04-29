@@ -383,7 +383,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         Ok(s)
                     }
                     fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
-                        //debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
+                        debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
                         self.entity = Some(entity);
                         if self.id == 0 {
                             self.id = next_id();
@@ -399,7 +399,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         #(
                             for d in std::mem::take(&mut self.#many_fields) {
                                 let child = context.world_mut()?.spawn_empty().id();
-                                //debug!("{parent} -> {entity}");
                                 d.unpack_entity(context, child).log();
                                 child.id(context)?.add_parent(context.world_mut()?, self.id);
                             }
