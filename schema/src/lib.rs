@@ -65,8 +65,8 @@ where
     }
 }
 
-pub type LinkMany<T> = Vec<T>;
-pub type LinkOne<T> = Option<T>;
+pub type NodeChildren<T> = Vec<T>;
+pub type NodeComponent<T> = Option<T>;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct HexColor(pub String);

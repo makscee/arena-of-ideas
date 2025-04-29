@@ -49,7 +49,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "LinkMany" {
+                if type_ident == "NodeChildren" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
@@ -59,7 +59,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                         }
                         _ => {}
                     }
-                } else if type_ident == "LinkOne" {
+                } else if type_ident == "NodeComponent" {
                     one_fields_str.push(field_ident.to_string());
                     one_fields.push(field_ident);
                     one_types.push(inner_type(type_path).to_token_stream());
