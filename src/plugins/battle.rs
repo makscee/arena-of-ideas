@@ -348,19 +348,10 @@ impl BattlePlugin {
                     let entity = context.world_mut().unwrap().spawn_empty().id();
                     let team = NTeam::get(team_entity, context).unwrap();
                     let slot = team.fusions_load(context).len() as i32;
-                    let id = next_id();
-                    context.link_parent_child(team.id, id).log();
-                    NFusion {
-                        id,
-                        owner: player_id(),
-                        entity: None,
-                        units: Vec::new(),
-                        behavior: Vec::new(),
-                        slot,
-                        stats: None,
-                    }
-                    .unpack_entity(context, entity)
-                    .log();
+                    let mut fusion = NFusion::default();
+                    context.link_parent_child(team.id, fusion.id).log();
+                    fusion.slot = slot;
+                    fusion.unpack_entity(context, entity).log();
                     changed = true;
                 }
                 if let Some(fusion) = edited {

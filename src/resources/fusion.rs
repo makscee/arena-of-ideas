@@ -365,7 +365,7 @@ impl NFusion {
                         }
                         Err(e) => {
                             let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
-                            e.cstr().label(ui);
+                            e.cstr().label_w(ui);
                         }
                     }
                 } else {

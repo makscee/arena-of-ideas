@@ -142,6 +142,7 @@ pub fn strings_conversions(
                 );
             }
             let mut d = Self::default();
+            d.id = id;
             if let Err(e) = d.inject_data(data) {
                 panic!("Unpack deserialize from data err: {e} data: {data}");
             }
@@ -246,7 +247,18 @@ pub fn common_node_fns(
                     self.#one_fields.as_mut().expect(#component_link_fields_err)
                 }
             )*
-            fn from_data(#(#all_data_fields: #all_data_types),*) -> Self {
+            fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
+                match ron::from_str::<Self>(data) {
+                    Ok(v) => {
+                        #(
+                            self.#all_data_fields = v.#all_data_fields;
+                        )*
+                        Ok(())
+                    }
+                    Err(e) => Err(format!("Deserialize error: {e}").into()),
+                }
+            }
+            fn from_data_fields(#(#all_data_fields: #all_data_types),*) -> Self {
                 Self {
                     #(
                         #all_data_fields,
@@ -292,7 +304,7 @@ pub fn common_node_fns(
                     }
                 }
                 let (#(#all_data_fields,)*) = deserializer.deserialize_tuple(#fields_len, TupleVisitor)?;
-                Ok(Self::from_data(#(#all_data_fields),*))
+                Ok(Self::from_data_fields(#(#all_data_fields),*))
             }
         }
     }
