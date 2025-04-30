@@ -26,7 +26,7 @@ pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
     fn get_entity(&self) -> Option<Entity>;
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>];
-    fn pack_fill(&self, pn: &mut PackedNodes, link: u64);
+    fn pack_fill(&self, pn: &mut PackedNodes);
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn load_recursive(world: &World, id: u64) -> Option<Self>;
@@ -143,7 +143,6 @@ impl NodeKind {
                     ]
                     .into(),
                 );
-                NFusion::link_used_units(context.get::<NFusion>(entity)?.clone(), context)?;
             }
             NodeKind::NStatusMagic => {
                 let rep_entity = context.world_mut()?.spawn_empty().id();

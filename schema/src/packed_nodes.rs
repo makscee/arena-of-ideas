@@ -16,39 +16,69 @@ pub struct NodeData {
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct NodeLink {
-    pub child: u64,
     pub parent: u64,
+    pub child: u64,
+    pub parent_kind: String,
+    pub child_kind: String,
 }
 
 impl PackedNodes {
     pub fn get<'a>(&'a self, id: u64) -> Option<&'a NodeData> {
         self.nodes.get(&id)
     }
-    pub fn add_node(&mut self, kind: String, data: String, id: u64, parent: u64) {
+    pub fn add_node(&mut self, kind: String, data: String, id: u64) {
         self.nodes.insert(id, NodeData { kind, data });
-        if parent != 0 {
-            self.links.push(NodeLink { child: id, parent });
-        }
     }
-    fn children(&self, id: u64) -> Vec<u64> {
+    pub fn link_parent_child(
+        &mut self,
+        parent: u64,
+        child: u64,
+        parent_kind: String,
+        child_kind: String,
+    ) {
+        self.links.push(NodeLink {
+            child,
+            parent,
+            parent_kind,
+            child_kind,
+        });
+    }
+    pub fn kind_parents(&self, id: u64, kind: &str) -> Vec<u64> {
         self.links
             .iter()
             .filter_map(
-                |NodeLink { child, parent }| if *parent == id { Some(*child) } else { None },
+                |NodeLink {
+                     child,
+                     parent,
+                     parent_kind,
+                     ..
+                 }| {
+                    if *child == id && parent_kind.eq(kind) {
+                        Some(*parent)
+                    } else {
+                        None
+                    }
+                },
             )
             .collect()
     }
-    pub fn kind_children<'a>(&'a self, id: u64, kind: &str) -> Vec<(u64, &'a NodeData)> {
-        self.children(id)
-            .into_iter()
-            .filter_map(|id| {
-                if let Some(node) = self.nodes.get(&id) {
-                    if node.kind.eq(kind) {
-                        return Some((id, node));
+    pub fn kind_children(&self, id: u64, kind: &str) -> Vec<u64> {
+        self.links
+            .iter()
+            .filter_map(
+                |NodeLink {
+                     child,
+                     parent,
+                     child_kind,
+                     ..
+                 }| {
+                    if *parent == id && child_kind.eq(kind) {
+                        Some(*child)
+                    } else {
+                        None
                     }
-                }
-                None
-            })
+                },
+            )
             .collect()
     }
 }

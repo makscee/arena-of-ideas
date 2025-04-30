@@ -7,19 +7,6 @@ impl NFusion {
             ars.retain(|ar| ar.unit != id);
         }
     }
-    pub fn link_used_units(self, context: &mut Context) -> Result<(), ExpressionError> {
-        let mut units: HashSet<u64> = default();
-        for (tr, ars) in self.behavior {
-            units.insert(tr.unit);
-            for ar in ars {
-                units.insert(ar.unit);
-            }
-        }
-        for unit in units {
-            context.link_parent_child(unit, self.id)?;
-        }
-        Ok(())
-    }
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
         context.collect_parents_components::<NUnit>(self.id)
     }

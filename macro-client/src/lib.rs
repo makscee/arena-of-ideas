@@ -39,6 +39,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 data_type_ident: _,
                 all_data_fields,
                 all_data_types,
+                parent_fields,
+                parent_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
                 &one_fields,
@@ -47,6 +49,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &many_fields,
                 &many_fields_str,
                 &many_types,
+                &parent_fields,
+                &parent_types,
             );
             let nt = if let Some(name_ident) = all_data_fields
                 .iter()
@@ -110,6 +114,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             id: next_id(),
                             entity: None,
                             owner: 0,
+                            #(
+                                #parent_fields: default(),
+                            )*
                             #(
                                 #one_fields: None,
                             )*
@@ -385,6 +392,13 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 }
                             }
                         )*
+                        #(
+                            let ids = context.collect_parents_components::<#parent_types>(s.id)?
+                                .into_iter()
+                                .map(|n| n.id)
+                                .collect_vec();
+                            s.#parent_fields = parent_link::<#parent_types>(ids);
+                        )*
                         Ok(s)
                     }
                     fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
@@ -394,6 +408,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             self.id = next_id();
                         }
                         context.link_id_entity(self.id, entity)?;
+                        #(
+                            for parent in &self.#parent_fields.ids {
+                                context.link_parent_child(*parent, self.id)?;
+                            }
+                        )*
                         #(
                             if let Some(d) = self.#one_fields.take() {
                                 let entity = context.world_mut()?.spawn_empty().id();

@@ -108,6 +108,7 @@ struct NShopCaseUnit {
 }
 
 struct NFusion {
+    pub units: ParentLinks<NUnit>,
     pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: i32,
     pub stats: NodeComponent<NFusionStats>,

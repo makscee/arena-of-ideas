@@ -20,6 +20,8 @@ pub struct ParsedNodeFields {
     pub data_type_ident: proc_macro2::TokenStream,
     pub all_data_fields: Vec<Ident>,
     pub all_data_types: Vec<Type>,
+    pub parent_fields: Vec<Ident>,
+    pub parent_types: Vec<proc_macro2::TokenStream>,
 }
 
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
@@ -34,6 +36,8 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut data_fields = Vec::default();
     let mut data_fields_str = Vec::default();
     let mut data_types = Vec::default();
+    let mut parent_fields = Vec::default();
+    let mut parent_types: Vec<proc_macro2::TokenStream> = Vec::default();
     fn inner_type(type_path: &TypePath) -> Type {
         match &type_path.path.segments.first().unwrap().arguments {
             PathArguments::AngleBracketed(arg) => match arg.args.first().unwrap() {
@@ -63,6 +67,9 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     one_fields_str.push(field_ident.to_string());
                     one_fields.push(field_ident);
                     one_types.push(inner_type(type_path).to_token_stream());
+                } else if type_ident == "ParentLinks" {
+                    parent_fields.push(field_ident);
+                    parent_types.push(inner_type(type_path).to_token_stream());
                 } else if type_ident == "i32"
                     || type_ident == "f32"
                     || type_ident == "String"
@@ -101,6 +108,8 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         data_type_ident,
         all_data_fields,
         all_data_types,
+        parent_fields,
+        parent_types,
     }
 }
 
@@ -111,25 +120,35 @@ pub fn strings_conversions(
     many_fields: &Vec<Ident>,
     _child_fields_str: &Vec<String>,
     many_types: &Vec<TokenStream>,
+    parent_fields: &Vec<Ident>,
+    parent_types: &Vec<proc_macro2::TokenStream>,
 ) -> TokenStream {
     quote! {
-        fn pack_fill(&self, pn: &mut PackedNodes, parent: u64) {
-            pn.add_node(self.kind().to_string(), self.get_data(), self.id, parent);
+        fn pack_fill(&self, pn: &mut PackedNodes) {
+            let kind = self.kind().to_string();
+            pn.add_node(kind.clone(), self.get_data(), self.id);
             #(
                 if let Some(n) = self.#one_fields.as_ref() {
-                    n.pack_fill(pn, self.id);
+                    n.pack_fill(pn);
+                    pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
                 }
             )*
             #(
-                for d in &self.#many_fields {
-                    d.pack_fill(pn, self.id);
+                for n in &self.#many_fields {
+                    n.pack_fill(pn);
+                    pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
+                }
+            )*
+            #(
+                for parent in &self.#parent_fields.ids {
+                    pn.link_parent_child(*parent, self.id, NodeKind::#parent_types.to_string(), kind.clone());
                 }
             )*
         }
         fn pack(&self) -> PackedNodes {
             let mut pn = PackedNodes::default();
             pn.root = self.id;
-            self.pack_fill(&mut pn, 0);
+            self.pack_fill(&mut pn);
             pn
         }
         fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
@@ -148,16 +167,19 @@ pub fn strings_conversions(
             }
             #(
                 d.#one_fields = pn
-                    .kind_children(id, NodeKind::#one_types.as_ref())
+                    .kind_parents(id, NodeKind::#one_types.as_ref())
                     .get(0)
-                    .and_then(|(id, n)| #one_types::unpack_id(*id, pn));
+                    .and_then(|id| #one_types::unpack_id(*id, pn));
             )*
             #(
                 d.#many_fields = pn
                     .kind_children(id, NodeKind::#many_types.as_ref())
                     .into_iter()
-                    .filter_map(|(id, n)| #many_types::unpack_id(id, pn))
+                    .filter_map(|id| #many_types::unpack_id(id, pn))
                     .collect();
+            )*
+            #(
+                d.#parent_fields = parent_link(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
             )*
             Some(d)
         }

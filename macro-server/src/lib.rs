@@ -32,6 +32,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 data_type_ident,
                 all_data_fields,
                 all_data_types,
+                parent_fields,
+                parent_types,
             } = parse_node_fields(fields);
             let strings_conversions = strings_conversions(
                 &one_fields,
@@ -40,6 +42,8 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &many_fields,
                 &many_fields_str,
                 &many_types,
+                &parent_fields,
+                &parent_types,
             );
             let table_conversions =
                 table_conversions(&one_fields, &one_types, &many_fields, &many_types);
@@ -125,6 +129,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             #(
                                 #many_fields,
                             )*
+                            ..default()
                         };
                         d.insert_self(ctx);
                         d

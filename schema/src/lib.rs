@@ -14,7 +14,7 @@ mod trigger;
 mod var_name;
 mod var_value;
 
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 pub use action::*;
 use ecolor::Color32;
@@ -67,6 +67,19 @@ where
 
 pub type NodeChildren<T> = Vec<T>;
 pub type NodeComponent<T> = Option<T>;
+
+#[derive(Default, Debug, Clone, Hash)]
+pub struct ParentLinks<T> {
+    pub ids: Vec<u64>,
+    t: PhantomData<T>,
+}
+
+pub fn parent_link<T>(ids: Vec<u64>) -> ParentLinks<T> {
+    ParentLinks {
+        ids,
+        t: PhantomData::<T>,
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct HexColor(pub String);
