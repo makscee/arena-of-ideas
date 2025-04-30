@@ -312,6 +312,13 @@ impl<'w> Context<'w> {
         self.world_mut()?.link_parent_child(parent, child);
         Ok(())
     }
+    pub fn unlink_parent_child(
+        &mut self,
+        parent: u64,
+        child: u64,
+    ) -> Result<bool, ExpressionError> {
+        Ok(self.world_mut()?.unlink_parent_child(parent, child))
+    }
     pub fn link_parent_child_entity(
         &mut self,
         parent: Entity,
@@ -365,11 +372,23 @@ impl<'w> Context<'w> {
             .filter_map(|entity| self.get::<T>(entity).ok())
             .collect())
     }
+    pub fn collect_parents_components<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.parents(id))
+    }
     pub fn collect_children_components<T: Component>(
         &self,
         id: u64,
     ) -> Result<Vec<&T>, ExpressionError> {
         self.collect_components(self.children(id))
+    }
+    pub fn collect_parents_components_recursive<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.parents_recursive(id))
     }
     pub fn collect_children_components_recursive<T: Component>(
         &self,

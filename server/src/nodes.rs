@@ -166,11 +166,7 @@ impl NTeam {
         let mut remap: HashMap<u64, u64> = default();
         let mut new_team = self.clone(ctx, &mut remap);
         for fusion in &mut new_team.fusions {
-            for unit in &mut fusion.units {
-                if let Some(id) = remap.get(unit) {
-                    *unit = *id;
-                }
-            }
+            todo!();
             fusion.update_self(ctx);
         }
         new_team.id.add_parent(ctx, parent)?;

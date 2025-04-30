@@ -165,6 +165,8 @@ impl MatchPlugin {
                         .match_edit_fusion(fusion.to_tnode())
                         .notify_op();
                 },
+                |_, _| todo!(),
+                |_, _| todo!(),
             )
             .ui(ui);
             Ok(())

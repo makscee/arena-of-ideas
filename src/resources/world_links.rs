@@ -7,7 +7,7 @@ pub trait WorldLinks {
     fn id_to_entity_map(&self) -> &HashMap<u64, Entity>;
     fn entity_to_id_map(&self) -> &HashMap<Entity, u64>;
     fn link_parent_child(&mut self, parent: u64, child: u64);
-    fn unlink_parent_child(&mut self, parent: u64, child: u64);
+    fn unlink_parent_child(&mut self, parent: u64, child: u64) -> bool;
     fn id_entity(&self, id: u64) -> Option<Entity>;
     fn entity_id(&self, entity: Entity) -> Option<u64>;
     fn link_id_entity(&mut self, id: u64, entity: Entity);
@@ -41,14 +41,18 @@ impl WorldLinks for World {
         r.parent_to_child.entry(parent).or_default().insert(child);
         r.child_to_parent.entry(child).or_default().insert(parent);
     }
-    fn unlink_parent_child(&mut self, parent: u64, child: u64) {
+    fn unlink_parent_child(&mut self, parent: u64, child: u64) -> bool {
         let mut r = self.resource_mut::<WorldLinksResource>();
+        let mut removed = false;
         if let Some(children) = r.parent_to_child.get_mut(&parent) {
+            removed = true;
             children.remove(&child);
         }
         if let Some(parents) = r.child_to_parent.get_mut(&child) {
+            removed = true;
             parents.remove(&parent);
         }
+        removed
     }
     fn despawn_entity(&mut self, entity: Entity) {
         let mut r = self.resource_mut::<WorldLinksResource>();

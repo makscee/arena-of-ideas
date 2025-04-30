@@ -1,78 +1,54 @@
 use super::*;
 
 impl NFusion {
-    fn remove_unit(&mut self, id: u64) {
-        let Some(ui) = self.units.iter().position(|u| *u == id) else {
-            return;
-        };
-        self.units.remove(ui);
-        let ui = ui as u8;
-        self.behavior.retain(|(t, _)| t.unit != ui);
-        for (tr, ars) in &mut self.behavior {
-            if tr.unit > ui {
-                tr.unit -= 1;
-            }
-            ars.retain(|ar| ar.unit != ui);
-            for ar in ars {
-                if ar.unit > ui {
-                    ar.unit -= 1;
-                }
-            }
+    pub fn remove_unit(&mut self, id: u64) {
+        self.behavior.retain(|(t, _)| t.unit != id);
+        for (_, ars) in &mut self.behavior {
+            ars.retain(|ar| ar.unit != id);
         }
     }
-    pub fn pwr_hp(&self, context: &Context) -> Result<(i32, i32), ExpressionError> {
-        let mut pwr = 0;
-        let mut hp = 0;
-        for unit in self.units(context)? {
-            let stats = unit.stats_err(context)?;
-            pwr += stats.pwr;
-            hp += stats.hp;
+    pub fn link_used_units(self, context: &mut Context) -> Result<(), ExpressionError> {
+        let mut units: HashSet<u64> = default();
+        for (tr, ars) in self.behavior {
+            units.insert(tr.unit);
+            for ar in ars {
+                units.insert(ar.unit);
+            }
         }
-        Ok((pwr, hp))
+        for unit in units {
+            context.link_parent_child(unit, self.id)?;
+        }
+        Ok(())
     }
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
-        let mut units = Vec::new();
-        for id in &self.units {
-            let unit = context.get_by_id::<NUnit>(*id)?;
-            units.push(unit);
-        }
-        Ok(units)
+        context.collect_parents_components::<NUnit>(self.id)
     }
-    pub fn get_unit<'a>(&self, ui: u8, context: &'a Context) -> Result<&'a NUnit, ExpressionError> {
-        self.units(context)?
-            .get(ui as usize)
-            .copied()
-            .to_custom_e_fn(|| format!("Failed to find NUnit as index {ui}"))
-    }
-    pub fn get_behavior<'a>(
-        &self,
-        ui: u8,
-        context: &'a Context,
-    ) -> Result<&'a NBehavior, ExpressionError> {
-        self.get_unit(ui, context)?
-            .description_load(context)
-            .to_custom_e("Failed to load UnitDescription")?
-            .behavior_load(context)
-            .to_custom_e("Failed to load NBehavior")
+    fn get_behavior<'a>(context: &'a Context, unit: u64) -> Result<&'a NBehavior, ExpressionError> {
+        context.first_parent_recursive::<NBehavior>(unit)
     }
     pub fn get_trigger<'a>(
-        &self,
-        tr: &UnitTriggerRef,
         context: &'a Context,
+        tr: &UnitTriggerRef,
     ) -> Result<&'a Trigger, ExpressionError> {
-        let reaction = self.get_behavior(tr.unit, context)?;
-        Ok(&reaction.reactions[tr.trigger as usize].trigger)
+        Self::get_behavior(context, tr.unit)?
+            .reactions
+            .get(tr.trigger as usize)
+            .to_e_not_found()
+            .map(|b| &b.trigger)
     }
     pub fn get_action<'a>(
-        &self,
-        ar: &UnitActionRef,
         context: &'a Context,
-    ) -> Result<(Entity, &'a Action), ExpressionError> {
-        let behavior = self.get_behavior(ar.unit, context)?;
-        Ok((
-            behavior.entity(),
-            &behavior.reactions[ar.trigger as usize].actions[ar.action as usize],
-        ))
+        ar: &UnitActionRef,
+    ) -> Result<&'a Action, ExpressionError> {
+        Self::get_behavior(context, ar.unit)?
+            .reactions
+            .get(ar.trigger as usize)
+            .to_e_not_found()?
+            .actions
+            .0
+            .get(ar.action as usize)
+            .to_e_not_found()
+            .map(|a| a.as_ref())
     }
     pub fn react(
         &self,
@@ -82,12 +58,19 @@ impl NFusion {
         let mut battle_actions: Vec<BattleAction> = default();
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
             for (tr, actions) in &self.behavior {
-                if self.get_trigger(tr, context)?.fire(event, context) {
+                if Self::get_trigger(context, tr)?.fire(event, context) {
                     for ar in actions {
-                        let (entity, action) = self.get_action(ar, context)?;
+                        let action = Self::get_action(context, ar)?;
                         let action = action.clone();
-                        context.add_caster(entity);
-                        battle_actions.extend(action.process(context)?);
+                        context
+                            .with_layer_r(
+                                ContextLayer::Caster(context.entity(ar.unit)?),
+                                |context| {
+                                    battle_actions.extend(action.process(context)?);
+                                    Ok(())
+                                },
+                            )
+                            .log();
                     }
                 }
             }
@@ -99,12 +82,12 @@ impl NFusion {
         let entity = self.entity();
         let units = self.units(context)?;
         for unit in units {
-            let unit = unit.entity();
-            let Ok(rep) = context.get::<NRepresentation>(unit) else {
+            let unit_entity = unit.entity();
+            let Ok(rep) = context.first_parent::<NRepresentation>(unit.id) else {
                 continue;
             };
             context
-                .with_owner_ref(unit, |context| {
+                .with_owner_ref(unit_entity, |context| {
                     RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
                 })
                 .ui(ui);
@@ -130,37 +113,25 @@ impl NFusion {
         })
     }
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
-        let units = self.units(context)?;
-        let behaviors = units
-            .iter()
-            .enumerate()
-            .filter_map(|(i, u)| {
-                if let Some(b) = u
-                    .description_load(context)
-                    .and_then(|d| d.behavior_load(context))
-                {
-                    Some((i as u8, b))
-                } else {
-                    None
-                }
-            })
-            .collect_vec();
         let mut changed = false;
-        ui.vertical(|ui| {
-            for (u, b) in &behaviors {
-                for (t, reaction) in b.reactions.iter().enumerate() {
+        let units = self.units(context)?;
+
+        ui.vertical(|ui| -> Result<(), ExpressionError> {
+            for unit in &units {
+                let b = Self::get_behavior(context, unit.id)?;
+                for (ti, r) in b.reactions.iter().enumerate() {
                     if self
                         .behavior
                         .iter()
-                        .any(|(r, _)| r.trigger == t as u8 && r.unit == *u)
+                        .any(|(t, _)| t.unit == unit.id && t.trigger as usize == ti)
                     {
                         continue;
                     }
-                    if reaction.trigger.cstr().as_button().ui(ui).clicked() {
+                    if r.trigger.cstr().button(ui).clicked() {
                         self.behavior.push((
                             UnitTriggerRef {
-                                unit: *u,
-                                trigger: t as u8,
+                                unit: unit.id,
+                                trigger: ti as u8,
                             },
                             default(),
                         ));
@@ -168,59 +139,44 @@ impl NFusion {
                     }
                 }
             }
-        });
-        space(ui);
-        ui.vertical(|ui| {
             if self.behavior.is_empty() {
-                return Result::<(), ExpressionError>::Ok(());
+                return Ok(());
             }
-            for (u, b) in &behaviors {
-                for (t, (a, action)) in b
-                    .reactions
-                    .iter()
-                    .enumerate()
-                    .flat_map(|(i, r)| r.actions.0.iter().enumerate().map(move |a| (i, a)))
-                {
-                    let r = UnitActionRef {
-                        unit: *u,
-                        trigger: t as u8,
-                        action: a as u8,
-                    };
-                    if self
-                        .behavior
-                        .iter()
-                        .any(|(_, actions)| actions.contains(&r))
-                    {
-                        continue;
+            for unit in &units {
+                let b = Self::get_behavior(context, unit.id)?;
+                for (ti, r) in b.reactions.iter().enumerate() {
+                    for (ai, a) in r.actions.0.iter().enumerate() {
+                        let ar = UnitActionRef {
+                            unit: unit.id,
+                            trigger: ti as u8,
+                            action: ai as u8,
+                        };
+                        if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
+                            continue;
+                        }
+                        if a.cstr().button(ui).clicked() {
+                            self.behavior.get_mut(0).unwrap().1.push(ar);
+                            changed = true;
+                        }
                     }
-                    let unit = units[*u as usize].entity();
-                    context
-                        .with_owner_ref(unit, |context| {
-                            if action
-                                .title_cstr(ViewContext::new(ui), context)
-                                .button(ui)
-                                .clicked()
-                            {
-                                self.behavior.last_mut().unwrap().1.push(r);
-                                changed = true;
-                            }
-                            Ok(())
-                        })
-                        .ui(ui);
                 }
             }
-            space(ui);
+            Ok(())
+        })
+        .inner?;
+        space(ui);
+        ui.vertical(|ui| -> Result<(), ExpressionError> {
             let mut new_behavior = None;
             for (ti, (tr, actions)) in self.behavior.iter().enumerate() {
-                let trigger = self.get_trigger(tr, context)?;
+                let trigger = Self::get_trigger(context, tr)?;
                 if trigger.cstr().button(ui).clicked() {
                     let mut behavior = self.behavior.clone();
                     behavior.remove(ti);
                     new_behavior = Some(behavior);
                 }
                 for (ai, ar) in actions.iter().enumerate() {
-                    let (entity, action) = self.get_action(ar, context)?;
-                    ui.horizontal(|ui| {
+                    let action = Self::get_action(context, ar)?;
+                    ui.horizontal(|ui| -> Result<(), ExpressionError> {
                         if ti + 1 < self.behavior.len() || ai + 1 < actions.len() {
                             if "🔽".cstr().button(ui).clicked() {
                                 let mut behavior = self.behavior.clone();
@@ -245,20 +201,18 @@ impl NFusion {
                                 new_behavior = Some(behavior);
                             }
                         }
-                        context
-                            .with_owner_ref(entity, |context| {
-                                if action
-                                    .title_cstr(ViewContext::new(ui), context)
-                                    .button(ui)
-                                    .clicked()
-                                {
-                                    let mut behavior = self.behavior.clone();
-                                    behavior[ti].1.remove(ai);
-                                    new_behavior = Some(behavior);
-                                }
-                                Ok(())
-                            })
-                            .ui(ui);
+                        context.with_owner_ref(context.entity(ar.unit)?, |context| {
+                            if action
+                                .title_cstr(ViewContext::new(ui), context)
+                                .button(ui)
+                                .clicked()
+                            {
+                                let mut behavior = self.behavior.clone();
+                                behavior[ti].1.remove(ai);
+                                new_behavior = Some(behavior);
+                            }
+                            Ok(())
+                        })
                     });
                 }
             }
@@ -273,23 +227,23 @@ impl NFusion {
     }
     pub fn editor(
         &self,
-        response: Response,
         context: &Context,
+        response: Response,
+        on_add_unit: &mut impl FnMut(NFusion, u64),
+        on_remove_unit: &mut impl FnMut(NFusion, u64),
     ) -> Result<Option<NFusion>, ExpressionError> {
         let mut edited: Option<NFusion> = None;
         let team = context.first_parent_recursive::<NTeam>(self.id)?;
-        let units = team.roster_units_load(context);
-        if response.clicked() {
-            debug!("clicked");
-        }
+        let roster = team.roster_units_load(context);
+        let units = self.units(context)?;
         response
             .on_hover_ui(|ui| {
                 self.show_card(context, ui).ui(ui);
             })
             .bar_menu(|ui| {
                 ui.menu_button("add unit", |ui| {
-                    for unit in &units {
-                        if self.units.contains(&unit.id()) {
+                    for unit in &roster {
+                        if units.iter().any(|u| u.id == unit.id) {
                             continue;
                         }
                         context
@@ -297,9 +251,7 @@ impl NFusion {
                                 match unit.show_tag(context, ui) {
                                     Ok(response) => {
                                         if response.clicked() {
-                                            let mut fusion = self.clone();
-                                            fusion.units.push(unit.id());
-                                            edited = Some(fusion);
+                                            on_add_unit(self.clone(), unit.id);
                                         }
                                         Ok(())
                                     }
@@ -309,13 +261,11 @@ impl NFusion {
                             .ui(ui);
                     }
                 });
-                if !self.units.is_empty() {
+                if !units.is_empty() {
                     ui.menu_button("remove unit", |ui| {
-                        for unit in self.units.clone() {
+                        for unit in &units {
                             if unit.cstr().button(ui).clicked() {
-                                let mut fusion = self.clone();
-                                fusion.remove_unit(unit);
-                                edited = Some(fusion);
+                                on_remove_unit(self.clone(), unit.id);
                             }
                         }
                     });
@@ -340,6 +290,8 @@ impl NFusion {
         ui: &mut Ui,
         on_empty: impl FnOnce(&mut Ui),
         on_edited: impl FnOnce(NFusion),
+        mut on_add_unit: impl FnMut(NFusion, u64),
+        mut on_remove_unit: impl FnMut(NFusion, u64),
     ) -> Result<(), ExpressionError> {
         let team = context.get::<NTeam>(team)?;
         let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
@@ -356,7 +308,7 @@ impl NFusion {
                     let response = slot_rect_button(ui, |rect, ui| {
                         fusion.paint(rect, context, ui).ui(ui);
                     });
-                    match fusion.editor(response, context) {
+                    match fusion.editor(context, response, &mut on_add_unit, &mut on_remove_unit) {
                         Ok(edited) => {
                             if let Some(fusion) = edited {
                                 on_edited(fusion);

@@ -143,6 +143,7 @@ impl NodeKind {
                     ]
                     .into(),
                 );
+                NFusion::link_used_units(context.get::<NFusion>(entity)?.clone(), context)?;
             }
             NodeKind::NStatusMagic => {
                 let rep_entity = context.world_mut()?.spawn_empty().id();

@@ -250,17 +250,16 @@ impl NFusion {
                     if actions.is_empty() {
                         continue;
                     }
-                    let trigger = self.get_trigger(tr, context)?;
+                    let trigger = NFusion::get_trigger(context, tr)?;
                     let view_ctx = ViewContext::new(ui).non_interactible(true);
                     ui.horizontal(|ui| {
                         Icon::Lightning.show(ui);
                         trigger.show_title(view_ctx, context, ui);
                     });
                     for ar in actions {
-                        let (entity, action) = self.get_action(ar, context)?;
-                        let action = action.clone();
+                        let action = NFusion::get_action(context, ar)?.clone();
                         context
-                            .with_owner(entity, |context| {
+                            .with_owner(context.entity(ar.unit)?, |context| {
                                 action.show_title(view_ctx, context, ui);
                                 Ok(())
                             })

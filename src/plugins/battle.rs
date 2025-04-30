@@ -327,7 +327,9 @@ impl BattlePlugin {
             let team_entity = if left { *team_left } else { *team_right };
             let mut edited = None;
             let mut add_fusion = false;
-            Context::from_world(teams_world, |context| {
+            let mut add_unit: Option<(u64, u64)> = None;
+            let mut remove_unit: Option<(u64, u64)> = None;
+            Context::from_world_r(teams_world, |context| {
                 NFusion::slots_editor(
                     team_entity,
                     context,
@@ -341,6 +343,12 @@ impl BattlePlugin {
                     },
                     |fusion| {
                         edited = Some(fusion);
+                    },
+                    |fusion, unit| {
+                        add_unit = Some((fusion.id, unit));
+                    },
+                    |fusion, unit| {
+                        remove_unit = Some((fusion.id, unit));
                     },
                 )
                 .ui(ui);
@@ -362,6 +370,13 @@ impl BattlePlugin {
                         .insert(fusion);
                     changed = true;
                 }
+                if let Some((fusion, unit)) = add_unit {
+                    context.link_parent_child(unit, fusion)?;
+                }
+                if let Some((fusion, unit)) = remove_unit {
+                    context.get_by_id_mut::<NFusion>(fusion)?.remove_unit(unit);
+                    context.unlink_parent_child(unit, fusion)?;
+                }
 
                 if changed {
                     world.resource_mut::<ReloadData>().reload_requested = true;
@@ -374,7 +389,9 @@ impl BattlePlugin {
                     };
                     *team = updated_team;
                 }
-            });
+                Ok(())
+            })
+            .ui(ui);
         });
     }
 }
