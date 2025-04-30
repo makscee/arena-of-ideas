@@ -33,6 +33,7 @@ impl ExpressionImpl for Expression {
                     v
                 }
             }
+            Expression::var_sum(var) => context.sum_var(*var),
             Expression::state_var(x, var) => context
                 .get::<NodeState>(x.get_entity(context)?)?
                 .get(*var)

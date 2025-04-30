@@ -468,7 +468,7 @@ impl ToCstr for Expression {
             | Expression::all_enemy_units
             | Expression::owner
             | Expression::target => String::default(),
-            Expression::var(v) => v.cstr(),
+            Expression::var(v) | Expression::var_sum(v) => v.cstr(),
             Expression::value(v) => v.cstr(),
             Expression::string(v) => v.to_owned(),
             Expression::f32(v) | Expression::f32_slider(v) => v.cstr(),

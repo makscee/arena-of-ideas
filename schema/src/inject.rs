@@ -86,6 +86,7 @@ impl Injector<Self> for Expression {
             | Expression::owner
             | Expression::target
             | Expression::var(..)
+            | Expression::var_sum(..)
             | Expression::value(..)
             | Expression::string(..)
             | Expression::f32(..)
@@ -145,6 +146,7 @@ impl Injector<Self> for Expression {
             | Expression::owner
             | Expression::target
             | Expression::var(..)
+            | Expression::var_sum(..)
             | Expression::value(..)
             | Expression::string(..)
             | Expression::f32(..)
@@ -207,13 +209,13 @@ impl Injector<f32> for Expression {
 impl Injector<VarName> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut VarName> {
         match self {
-            Expression::var(var) => [var].into(),
+            Expression::var(var) | Expression::var_sum(var) => [var].into(),
             _ => default(),
         }
     }
     fn get_inner(&self) -> Vec<&VarName> {
         match self {
-            Expression::var(var) => [var].into(),
+            Expression::var(var) | Expression::var_sum(var) => [var].into(),
             _ => default(),
         }
     }

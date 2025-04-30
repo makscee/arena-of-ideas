@@ -70,7 +70,7 @@ impl EnumColor for Expression {
             | Expression::vec2(..)
             | Expression::value(..)
             | Expression::color(..) => tokens_global().high_contrast_text(),
-            Expression::var(var) => var.color(),
+            Expression::var(var) | Expression::var_sum(var) => var.color(),
             Expression::state_var(_x, _)
             | Expression::sin(_x)
             | Expression::cos(_x)

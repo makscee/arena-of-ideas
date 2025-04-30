@@ -27,6 +27,7 @@ pub enum Expression {
     adjacent_front,
 
     var(VarName),
+    var_sum(VarName),
     value(VarValue),
 
     string(String),
@@ -92,7 +93,7 @@ impl std::hash::Hash for Expression {
             | Expression::adjacent_front
             | Expression::owner
             | Expression::target => {}
-            Expression::var(v) => v.hash(state),
+            Expression::var(v) | Expression::var_sum(v) => v.hash(state),
             Expression::value(v) => v.hash(state),
             Expression::string(v) => v.hash(state),
             Expression::color(v) => v.hash(state),

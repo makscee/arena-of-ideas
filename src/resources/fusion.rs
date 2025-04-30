@@ -70,7 +70,7 @@ impl NFusion {
         let units = self.units(context)?;
         for unit in units {
             let unit_entity = unit.entity();
-            let Ok(rep) = context.first_parent::<NRepresentation>(unit.id) else {
+            let Ok(rep) = context.first_parent_recursive::<NRepresentation>(unit.id) else {
                 continue;
             };
             context
@@ -258,13 +258,13 @@ impl NFusion {
                     });
                     ui.menu_button("edit", |ui| {
                         let mut fusion = self.clone();
-                        match fusion.show_editor(context, ui) {
-                            Ok(c) => {
-                                if c {
-                                    edited = Some(fusion);
-                                }
+                        let r = fusion.show_editor(context, ui);
+                        if let Ok(c) = &r {
+                            if *c {
+                                edited = Some(fusion);
                             }
-                            Err(e) => e.cstr().notify_error_op(),
+                        } else {
+                            r.ui(ui);
                         }
                     });
                 }
