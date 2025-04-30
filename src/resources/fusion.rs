@@ -132,7 +132,7 @@ impl NFusion {
             for unit in &units {
                 let b = Self::get_behavior(context, unit.id)?;
                 for (ti, r) in b.reactions.iter().enumerate() {
-                    for (ai, a) in r.actions.0.iter().enumerate() {
+                    for (ai, action) in r.actions.0.iter().enumerate() {
                         let ar = UnitActionRef {
                             unit: unit.id,
                             trigger: ti as u8,
@@ -141,7 +141,11 @@ impl NFusion {
                         if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
                             continue;
                         }
-                        if a.cstr().button(ui).clicked() {
+                        if action
+                            .title_cstr(ViewContext::new(ui), context)
+                            .button(ui)
+                            .clicked()
+                        {
                             self.behavior.get_mut(0).unwrap().1.push(ar);
                             changed = true;
                         }

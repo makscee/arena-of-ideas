@@ -41,6 +41,11 @@ impl BattleCamera {
         self.zoom = 22.0;
         self.pos = default();
     }
+    fn rect_from_context(&self, context: &Context) -> Result<Rect, ExpressionError> {
+        let pos = context.get_vec2(VarName::position)?.to_pos2();
+        let pos = self.rect_pos(pos);
+        Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
+    }
     pub fn show(bs: &mut BattleSimulation, t: f32, ui: &mut Ui) {
         let mut cam = ui
             .data(|r| r.get_temp::<BattleCamera>(ui.id()))
@@ -63,48 +68,44 @@ impl BattleCamera {
             cam.show_slot_rect(-(s as i32), ui);
         }
 
-        let fusions: HashSet<Entity> = HashSet::from_iter(
-            bs.world
-                .query_filtered::<Entity, With<NFusion>>()
-                .iter(&bs.world),
-        );
-        let mut entities: VecDeque<Entity> = bs
-            .world
-            .query_filtered::<Entity, Without<Parent>>()
-            .iter(&bs.world)
-            .collect();
-        Context::from_world(&mut bs.world, |context| {
+        Context::from_world_r(&mut bs.world, |context| {
             context.t = Some(t);
-            while let Some(entity) = entities.pop_front() {
+            let world = context.world_mut()?;
+            for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                 context
-                    .with_owner(entity, |context| {
-                        if context.get_bool(VarName::visible).unwrap_or(true) {
-                            entities.extend(context.children_entity(entity)?);
-                            let pos = context
-                                .get_var(VarName::position)
-                                .unwrap_or_default()
-                                .get_vec2()
-                                .unwrap()
-                                .to_pos2();
-                            let pos = cam.rect_pos(pos);
-                            let rect = Rect::from_center_size(pos, cam.u().v2() * 2.0);
-                            if fusions.contains(&entity) {
-                                let fusion = context.get::<NFusion>(entity)?;
-                                fusion.paint(rect, &context, ui).ui(ui);
-                                if ui.rect_contains_pointer(rect) {
-                                    cursor_window(ui.ctx(), |ui| {
-                                        fusion.show_card(&context, ui).ui(ui);
-                                    });
-                                }
-                            } else if let Ok(rep) = context.get::<NRepresentation>(entity) {
-                                rep.pain_or_show_err(rect, &context, ui);
-                            }
+                    .with_owner(fusion.entity(), |context| {
+                        if !context.get_bool(VarName::visible)? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(context)?;
+                        fusion.paint(rect, &context, ui)?;
+                        if ui.rect_contains_pointer(rect) {
+                            cursor_window(ui.ctx(), |ui| fusion.show_card(&context, ui));
                         }
                         Ok(())
                     })
                     .ui(ui);
             }
-        });
+            let world = context.world_mut()?;
+            for entity in world
+                .query_filtered::<Entity, With<Vfx>>()
+                .iter(world)
+                .collect_vec()
+            {
+                context
+                    .with_owner(entity, |context| {
+                        if !context.get_bool(VarName::visible)? {
+                            return Ok(());
+                        }
+                        let rep = context.get::<NRepresentation>(entity)?;
+                        let rect = cam.rect_from_context(context)?;
+                        rep.paint(rect, context, ui)
+                    })
+                    .ui(ui);
+            }
+            Ok(())
+        })
+        .ui(ui);
 
         ui.data_mut(|w| w.insert_temp(ui.id(), cam));
     }

@@ -46,9 +46,11 @@ impl Anim {
     }
 }
 
+#[derive(Component)]
+pub struct Vfx;
+
 impl AnimAction {
-    fn apply(&self, a: &mut Animator, context: &mut Context) -> Result<f32, ExpressionError> {
-        let mut end_t = 0.0;
+    fn apply(&self, a: &mut Animator, context: &mut Context) -> Result<(), ExpressionError> {
         match self {
             AnimAction::translate(x) => {
                 let pos = x.get_vec2(context)?;
@@ -89,6 +91,7 @@ impl AnimAction {
                     ..default()
                 }
                 .unpack_entity(context, entity)?;
+                context.world_mut()?.entity_mut(entity).insert(Vfx);
 
                 let mut t = context.t()?;
                 let vars_layers = context.get_vars_layers();
@@ -109,7 +112,7 @@ impl AnimAction {
                 *context.t_mut()? += expression.get_f32(context)?;
             }
         };
-        Ok(end_t)
+        Ok(())
     }
 }
 

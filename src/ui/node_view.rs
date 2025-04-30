@@ -67,7 +67,6 @@ impl NodeView for NUnit {
 }
 impl NodeView for NUnitDescription {}
 impl NodeView for NUnitStats {}
-impl NodeView for NFusionStats {}
 impl NodeView for NBehavior {}
 impl NodeView for NRepresentation {}
 impl NodeView for NArena {}

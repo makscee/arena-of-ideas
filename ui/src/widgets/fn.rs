@@ -100,15 +100,18 @@ pub fn title(text: &str, ui: &mut Ui) {
     br(ui);
 }
 
-pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui)) {
+pub fn cursor_window(
+    ctx: &egui::Context,
+    content: impl FnOnce(&mut Ui) -> Result<(), ExpressionError>,
+) {
     const WIDTH: f32 = 350.0;
-    cursor_window_frame(ctx, Frame::popup(&ctx.style()), WIDTH, content);
+    cursor_window_frame(ctx, Frame::popup(&ctx.style()), WIDTH, content)
 }
 pub fn cursor_window_frame(
     ctx: &egui::Context,
     frame: Frame,
     width: f32,
-    content: impl FnOnce(&mut Ui),
+    content: impl FnOnce(&mut Ui) -> Result<(), ExpressionError>,
 ) {
     let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
     let pivot = if pos.x > ctx.screen_rect().right() - width {
@@ -128,9 +131,7 @@ pub fn cursor_window_frame(
         .interactable(false)
         .order(Order::Tooltip)
         .show(ctx, |ui| {
-            ui.vertical_centered_justified(|ui| {
-                content(ui);
-            });
+            ui.vertical_centered_justified(|ui| content(ui).ui(ui))
         });
 }
 

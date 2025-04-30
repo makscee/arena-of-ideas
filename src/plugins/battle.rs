@@ -372,10 +372,12 @@ impl BattlePlugin {
                 }
                 if let Some((fusion, unit)) = add_unit {
                     context.link_parent_child(unit, fusion)?;
+                    changed = true;
                 }
                 if let Some((fusion, unit)) = remove_unit {
                     context.get_by_id_mut::<NFusion>(fusion)?.remove_unit(unit);
                     context.unlink_parent_child(unit, fusion)?;
+                    changed = true;
                 }
 
                 if changed {

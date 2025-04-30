@@ -111,7 +111,9 @@ struct NFusion {
     pub units: ParentLinks<NUnit>,
     pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
     pub slot: i32,
-    pub stats: NodeComponent<NFusionStats>,
+    pub pwr: i32,
+    pub hp: i32,
+    pub dmg: i32,
 }
 
 struct NUnit {
@@ -129,12 +131,6 @@ struct NUnitDescription {
 struct NUnitStats {
     pub pwr: i32,
     pub hp: i32,
-}
-
-struct NFusionStats {
-    pub pwr: i32,
-    pub hp: i32,
-    pub dmg: i32,
 }
 
 struct NBehavior {

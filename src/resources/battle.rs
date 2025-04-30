@@ -96,9 +96,9 @@ impl std::fmt::Display for BattleAction {
     }
 }
 impl BattleAction {
-    pub fn apply(&self, battle: &mut BattleSimulation) -> Vec<Self> {
+    pub fn apply(&self, sim: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        let result = Context::from_battle_simulation_r(battle, |context| {
+        let result = Context::from_battle_simulation_r(sim, |context| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
                     let strike_anim = animations().get("strike").unwrap();
@@ -160,7 +160,7 @@ impl BattleAction {
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pain.apply(context),
                         )?;
-                        let dmg = context.get::<NFusionStats>(*b)?.dmg + x;
+                        let dmg = context.get::<NFusion>(*b)?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     let text = animations().get("text").unwrap();
@@ -173,7 +173,7 @@ impl BattleAction {
                         .into(),
                         |context| text.apply(context),
                     )?;
-                    context.battle_simulation_mut()?.duration += ANIMATION;
+                    *context.t_mut()? += ANIMATION;
                     true
                 }
                 BattleAction::heal(a, b, x) => {
@@ -198,7 +198,7 @@ impl BattleAction {
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pleasure.apply(context),
                         )?;
-                        let dmg = (context.get::<NFusionStats>(*b)?.dmg - x).at_least(0);
+                        let dmg = (context.get::<NFusion>(*b)?.dmg - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         let text = animations().get("text").unwrap();
                         context.with_layers_r(
@@ -211,13 +211,15 @@ impl BattleAction {
                             |context| text.apply(context),
                         )?;
                     }
-                    context.battle_simulation_mut()?.duration += ANIMATION;
+                    *context.t_mut()? += ANIMATION;
                     true
                 }
                 BattleAction::var_set(entity, var, value) => {
-                    let t = context.battle_simulation()?.duration;
+                    dbg!(entity, var, value);
+                    let t = context.t()?;
                     let mut ns = context.get_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
+                        debug!("updated {var} {}", ns.kind);
                         ns.kind.set_var(context, *entity, *var, value.clone());
                         true
                     } else {
@@ -242,11 +244,11 @@ impl BattleAction {
                         *color,
                     )
                     .log();
-                    context.battle_simulation_mut()?.duration += ANIMATION;
+                    *context.t_mut()? += ANIMATION;
                     true
                 }
                 BattleAction::wait(t) => {
-                    context.battle_simulation_mut()?.duration += *t;
+                    *context.t_mut()? += *t;
                     false
                 }
                 BattleAction::vfx(vars, vfx) => {
@@ -265,18 +267,24 @@ impl BattleAction {
                     true
                 }
             };
+            let t = context.t()?;
+            context.battle_simulation_mut()?.duration = t;
             Ok(applied)
         });
         match result {
             Ok(applied) => {
                 if applied {
                     info!("{} {self}", "+".green().dimmed());
-                    battle.log.actions.push(self.clone());
+                    sim.log.actions.push(self.clone());
                 } else {
                     info!("{} {self}", "-".dimmed());
                 }
             }
-            Err(e) => error!("BattleAction apply error: {e}"),
+            Err(e) => {
+                let mut bt = e.bt;
+                bt.resolve();
+                error!("BattleAction apply error: {}\n{bt:?}", e.source);
+            }
         }
         add_actions
     }
@@ -345,7 +353,6 @@ impl BattleSimulation {
         if self.ended() {
             return;
         }
-        let t = self.duration;
         let entities = self
             .fusions_left
             .iter()
@@ -360,6 +367,7 @@ impl BattleSimulation {
                     .get_vars(context, entity);
                 for (var, value) in vars {
                     let value = Self::send_update_event(context, entity, var, value);
+                    let t = context.t()?;
                     context
                         .get_mut::<NodeState>(entity)?
                         .insert(t, 0.0, var, value);
@@ -500,7 +508,7 @@ impl BattleSimulation {
         Ok(())
     }
     fn process_actions(&mut self, actions: impl Into<VecDeque<BattleAction>>) {
-        let mut actions = actions.into();
+        let mut actions: VecDeque<BattleAction> = actions.into();
         while let Some(a) = actions.pop_front() {
             for a in a.apply(self) {
                 actions.push_front(a);
@@ -510,11 +518,13 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
+        debug!("death check");
         Context::from_battle_simulation_r(self, |context| {
             for entity in context.battle_simulation()?.all_units() {
-                let dmg = context.get::<NFusionStats>(entity)?.dmg;
+                let dmg = context.get::<NFusion>(entity)?.dmg;
+                dbg!(dmg);
                 context.with_owner(entity, |context| {
-                    if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
+                    if dbg!(context.sum_var(VarName::hp)?.get_i32()?) <= dmg {
                         actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
                         actions.push_back(BattleAction::death(entity));
                     }

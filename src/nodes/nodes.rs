@@ -105,12 +105,6 @@ impl NodeKind {
     fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
         let vars = self.get_vars(context, entity);
         let mut emut = context.world_mut()?.entity_mut(entity);
-        match self {
-            NodeKind::NFusion => {
-                emut.insert(NFusionStats::default());
-            }
-            _ => {}
-        }
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
             ns
         } else {
@@ -118,6 +112,7 @@ impl NodeKind {
                 .get_mut::<NodeState>()
                 .unwrap()
         };
+        ns.kind = self;
         ns.init_vars(vars);
         match self {
             NodeKind::NHouse => {

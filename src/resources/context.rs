@@ -63,7 +63,9 @@ impl<'w> Context<'w> {
         bs: &mut BattleSimulation,
         f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
     ) -> Result<T, ExpressionError> {
+        let t = bs.duration;
         let mut context = Context {
+            t: Some(t),
             sources: [ContextSource::BattleSimulation(mem::take(bs))].into(),
             ..default()
         };
@@ -468,6 +470,9 @@ impl<'w> Context<'w> {
     }
     pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
         self.get_var(var)?.get_f32()
+    }
+    pub fn get_vec2(&self, var: VarName) -> Result<Vec2, ExpressionError> {
+        self.get_var(var)?.get_vec2()
     }
     pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
         self.get_var(var)?.get_bool()
