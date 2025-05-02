@@ -8,6 +8,14 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        Context::from_world(world, |context| {
+            Expression::max(
+                Box::new(Expression::f32(0.5)),
+                Box::new(Expression::abs(Box::new(Expression::f32(1.0)))),
+            )
+            .view_with_children(default(), context, ui);
+        });
+
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {
                 format!("#[tw {id}]").cstr().label(ui);
