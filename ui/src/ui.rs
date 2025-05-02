@@ -34,6 +34,7 @@ pub const MARGIN: Margin = Margin::same(8);
 
 pub const ROUNDING: CornerRadius = CornerRadius::same(6);
 
+pub const LINE_HEIGHT: f32 = 22.0;
 pub const UNIT_SIZE: f32 = 1.0;
 
 pub fn dark_frame() -> Frame {

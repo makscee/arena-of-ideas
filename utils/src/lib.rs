@@ -1,6 +1,6 @@
 use humanize_duration::prelude::DurationExt;
 use std::{
-    any::type_name,
+    any::{type_name, type_name_of_val},
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
@@ -34,6 +34,12 @@ pub fn format_duration(seconds: u64) -> String {
         .human(humanize_duration::Truncate::Second)
         .to_string()
 }
+fn type_last(s: &'static str) -> &'static str {
+    s.split("::").last().unwrap_or("---")
+}
 pub fn type_name_short<T>() -> &'static str {
-    type_name::<T>().split("::").last().unwrap_or("---")
+    type_last(type_name::<T>())
+}
+pub fn type_name_of_val_short<T>(val: &T) -> &'static str {
+    type_last(type_name_of_val(val))
 }

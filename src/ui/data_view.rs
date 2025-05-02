@@ -1,4 +1,4 @@
-use std::any::{type_name, type_name_of_val};
+use std::any::type_name_of_val;
 
 use serde::de::DeserializeOwned;
 
