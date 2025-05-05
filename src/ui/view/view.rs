@@ -167,7 +167,14 @@ pub trait ViewChildren: View {
 }
 
 pub trait ViewFns: Sized + Clone + StringData {
-    fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response;
+    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr;
+    fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response {
+        if vctx.non_interactible {
+            self.title_cstr(vctx, context).label(ui)
+        } else {
+            self.title_cstr(vctx, context).button(ui)
+        }
+    }
     fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
         None
     }
@@ -178,6 +185,12 @@ pub trait ViewFns: Sized + Clone + StringData {
         None
     }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
+        None
+    }
+    fn fn_replace_options() -> Option<fn() -> Vec<Self>> {
+        None
+    }
+    fn fn_move_inner() -> Option<fn(&mut Self, &mut Self)> {
         None
     }
     fn fn_view_context_menu() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
@@ -193,6 +206,26 @@ pub trait ViewFns: Sized + Clone + StringData {
         if Self::fn_wrap().is_some() {
             Some(|s, vctx, context, ui| {
                 let mut vr = ViewResponseNew::default();
+                if let Some(f) = Self::fn_replace_options() {
+                    ui.menu_button("replace", |ui| {
+                        ScrollArea::vertical()
+                            .min_scrolled_height(150.0)
+                            .show(ui, |ui| {
+                                for mut opt in f() {
+                                    if opt.title_cstr(vctx, context).button(ui).clicked() {
+                                        if let Some(f) = Self::fn_move_inner() {
+                                            f(s, &mut opt);
+                                            mem::swap(s, &mut opt);
+                                        } else {
+                                            *s = opt;
+                                        }
+                                        vr.changed = true;
+                                        ui.close_menu();
+                                    }
+                                }
+                            });
+                    });
+                }
                 if let Some(f) = Self::fn_wrap() {
                     if ui.button("wrap").clicked() {
                         *s = f(s.clone());
@@ -209,16 +242,26 @@ pub trait ViewFns: Sized + Clone + StringData {
 }
 
 impl ViewFns for Expression {
-    fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response {
-        self.cstr().button(ui)
+    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr {
+        self.cstr()
     }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
         Some(|s| Self::abs(Box::new(s)))
     }
+    fn fn_replace_options() -> Option<fn() -> Vec<Self>> {
+        Some(|| Self::iter().collect())
+    }
+    fn fn_move_inner() -> Option<fn(&mut Self, &mut Self)> {
+        Some(|s, source| {
+            <Expression as Injector<Expression>>::inject_inner(s, source);
+            <Expression as Injector<f32>>::inject_inner(s, source);
+            <Expression as Injector<VarName>>::inject_inner(s, source);
+        })
+    }
 }
 impl ViewFns for f32 {
-    fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response {
-        type_name_of_val_short(self).cstr().label(ui)
+    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr {
+        type_name_of_val_short(self).cstr()
     }
     fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
         Some(|s, _, context, ui| {
