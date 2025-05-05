@@ -216,24 +216,71 @@ pub trait ViewFns: Sized + Clone + StringData {
             Some(|s, vctx, context, ui| {
                 let mut vr = ViewResponseNew::default();
                 if let Some(f) = Self::fn_replace_options() {
-                    ui.menu_button("replace", |ui| {
-                        ScrollArea::vertical()
-                            .min_scrolled_height(150.0)
-                            .show(ui, |ui| {
-                                for mut opt in f() {
-                                    if opt.title_cstr(vctx, context).button(ui).clicked() {
-                                        if let Some(f) = Self::fn_move_inner() {
-                                            f(s, &mut opt);
-                                            mem::swap(s, &mut opt);
-                                        } else {
-                                            *s = opt;
-                                        }
-                                        vr.changed = true;
-                                        ui.close_menu();
-                                    }
+                    let lookup_id = Id::new("lookup text");
+                    if ui
+                        .menu_button("replace", |ui| {
+                            let lookup = if let Some(mut lookup) =
+                                ui.data(|r| r.get_temp::<String>(lookup_id))
+                            {
+                                let resp = Input::new("")
+                                    .desired_width(ui.available_width())
+                                    .ui_string(&mut lookup, ui);
+                                if resp.changed() {
+                                    ui.data_mut(|w| w.insert_temp(lookup_id, lookup.clone()));
                                 }
-                            });
-                    });
+                                resp.request_focus();
+                                lookup
+                            } else {
+                                String::new()
+                            };
+                            ScrollArea::vertical()
+                                .min_scrolled_height(200.0)
+                                .show(ui, |ui| {
+                                    let opts = if lookup.is_empty() {
+                                        f()
+                                    } else {
+                                        f().into_iter()
+                                            .filter(|o| {
+                                                let text = o.title_cstr(vctx, context).get_text();
+                                                let mut text = text.chars();
+                                                'c: for c in lookup.chars() {
+                                                    while let Some(text_c) = text.next() {
+                                                        if text_c == c {
+                                                            continue 'c;
+                                                        }
+                                                    }
+                                                    return false;
+                                                }
+                                                true
+                                            })
+                                            .sorted_by_cached_key(|o| {
+                                                let text = o.title_cstr(vctx, context).get_text();
+                                                !text.starts_with(&lookup)
+                                            })
+                                            .collect()
+                                    };
+                                    for mut opt in opts {
+                                        let text = opt.title_cstr(vctx, context);
+                                        let resp = opt.title_cstr(vctx, context).button(ui);
+                                        if resp.clicked() || resp.gained_focus() {
+                                            if let Some(f) = Self::fn_move_inner() {
+                                                f(s, &mut opt);
+                                                mem::swap(s, &mut opt);
+                                            } else {
+                                                *s = opt;
+                                            }
+                                            vr.changed = true;
+                                            ui.close_menu();
+                                        }
+                                    }
+                                });
+                        })
+                        .response
+                        .clicked()
+                        || vr.changed
+                    {
+                        ui.data_mut(|w| w.insert_temp(lookup_id, String::new()));
+                    }
                 }
                 if let Some(f) = Self::fn_wrap() {
                     if ui.button("wrap").clicked() {
@@ -282,11 +329,11 @@ impl ViewFns for Expression {
     }
 }
 impl ViewFns for f32 {
-    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr {
+    fn title_cstr(&self, _: ViewContextNew, _: &Context) -> Cstr {
         type_name_of_val_short(self).cstr()
     }
     fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
-        Some(|s, _, context, ui| {
+        Some(|s, _, _, ui| {
             s.cstr().label(ui);
         })
     }
