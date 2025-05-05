@@ -62,7 +62,7 @@ pub trait View: Sized + ViewFns {
     ) -> ViewResponseNew {
         let mut vr = ViewResponseNew::default();
         ui.horizontal(|ui| {
-            let r = self.view_title(vctx, context, ui);
+            let mut r = self.view_title(vctx, context, ui);
             if Self::fn_view_context_menu().is_some() || Self::fn_view_context_menu_mut().is_some()
             {
                 if vctx.separate_contex_menu_btn {
@@ -81,6 +81,11 @@ pub trait View: Sized + ViewFns {
             }
             if let Some(f) = Self::fn_view_type() {
                 f(self, vctx, context, ui);
+            }
+            if let Some(f) = Self::fn_view_value() {
+                r = r.on_hover_ui(|ui| {
+                    f(self, vctx, context, ui);
+                });
             }
             if r.clicked() {
                 vr.title_clicked = true;
@@ -185,6 +190,9 @@ pub trait ViewFns: Sized + Clone + StringData {
     fn fn_view_type() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
         None
     }
+    fn fn_view_value() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+        None
+    }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
         None
     }
@@ -257,6 +265,19 @@ impl ViewFns for Expression {
             <Expression as Injector<Expression>>::inject_inner(s, source);
             <Expression as Injector<f32>>::inject_inner(s, source);
             <Expression as Injector<VarName>>::inject_inner(s, source);
+        })
+    }
+    fn fn_view_value() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+        Some(|s, _, context, ui| match s.get_value(context) {
+            Ok(v) => {
+                ui.horizontal(|ui| {
+                    v.as_ref()
+                        .cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
+                        .label(ui);
+                    v.show(context, ui);
+                });
+            }
+            Err(e) => e.show(context, ui),
         })
     }
 }

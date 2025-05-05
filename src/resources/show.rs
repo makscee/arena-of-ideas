@@ -13,7 +13,7 @@ impl ShowPrefix for Option<&str> {
         }
     }
 }
-pub trait Show: StringData {
+pub trait Show {
     fn show(&self, context: &Context, ui: &mut Ui);
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool;
 }
@@ -353,5 +353,15 @@ impl Show for VarName {
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_mut(ViewContext::new(ui), context, ui).changed
+    }
+}
+
+impl Show for ExpressionError {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
     }
 }

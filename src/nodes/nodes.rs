@@ -51,7 +51,7 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
 }
 impl<T> NodeExt for T
 where
-    T: Node + GetNodeKind + GetNodeKindSelf,
+    T: Node + GetNodeKind + GetNodeKindSelf + StringData,
 {
     fn to_tnode(&self) -> TNode {
         TNode {
@@ -80,7 +80,7 @@ impl TNode {
     pub fn kind(&self) -> NodeKind {
         self.kind.to_kind()
     }
-    pub fn to_node<T: Node>(&self) -> Result<T, ExpressionError> {
+    pub fn to_node<T: Node + StringData>(&self) -> Result<T, ExpressionError> {
         let mut d = T::default();
         d.inject_data(&self.data)?;
         d.set_id(self.id);
