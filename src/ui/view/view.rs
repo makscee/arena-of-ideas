@@ -87,7 +87,7 @@ pub trait View: Sized + ViewFns {
             }
         });
         if let Some(f) = Self::fn_view_data_mut() {
-            f(self, vctx, context, ui);
+            vr.merge(f(self, vctx, context, ui));
         } else if let Some(f) = Self::fn_view_data() {
             f(self, vctx, context, ui);
         }
@@ -178,7 +178,8 @@ pub trait ViewFns: Sized + Clone + StringData {
     fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
         None
     }
-    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> bool> {
+    fn fn_view_data_mut(
+    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
         None
     }
     fn fn_view_type() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
@@ -268,12 +269,17 @@ impl ViewFns for f32 {
             s.cstr().label(ui);
         })
     }
-    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> bool> {
-        Some(|s, _, context, ui| s.show_mut(context, ui))
+    fn fn_view_data_mut(
+    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+        Some(|s, _, context, ui| {
+            let mut vr = ViewResponseNew::default();
+            vr.changed = s.show_mut(context, ui);
+            vr
+        })
     }
 }
 
-fn view_children_recursive_mut<T: Inject + Injector<I>, I: ViewChildren + Inject>(
+fn view_children_recursive_mut<T: Inject + Injector<I>, I: ViewChildren>(
     s: &mut T,
     vctx: ViewContextNew,
     context: &Context,
@@ -287,7 +293,35 @@ fn view_children_recursive_mut<T: Inject + Injector<I>, I: ViewChildren + Inject
     }
     view_resp
 }
-fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren + Inject>(
+fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren>(
+    s: &T,
+    vctx: ViewContextNew,
+    context: &Context,
+    ui: &mut Ui,
+) -> ViewResponseNew {
+    let mut view_resp = ViewResponseNew::default();
+    for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            view_resp.merge(e.view_new(vctx.with_id(i), context, ui));
+        });
+    }
+    view_resp
+}
+fn view_children_mut<T: Inject + Injector<I>, I: ViewFns>(
+    s: &mut T,
+    vctx: ViewContextNew,
+    context: &Context,
+    ui: &mut Ui,
+) -> ViewResponseNew {
+    let mut view_resp = ViewResponseNew::default();
+    for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
+        ui.horizontal(|ui| {
+            view_resp.merge(e.view_mut_new(vctx.with_id(i), context, ui));
+        });
+    }
+    view_resp
+}
+fn view_children<T: Inject + Injector<I>, I: ViewFns>(
     s: &T,
     vctx: ViewContextNew,
     context: &Context,
@@ -309,7 +343,9 @@ impl ViewChildren for Expression {
         context: &Context,
         ui: &mut Ui,
     ) -> ViewResponseNew {
-        view_children_recursive::<_, Self>(self, vctx, context, ui)
+        let mut vr = view_children_recursive::<_, Self>(self, vctx, context, ui);
+        vr.merge(view_children::<_, f32>(self, vctx, context, ui));
+        vr
     }
     fn view_children_mut(
         &mut self,
@@ -317,6 +353,8 @@ impl ViewChildren for Expression {
         context: &Context,
         ui: &mut Ui,
     ) -> ViewResponseNew {
-        view_children_recursive_mut::<_, Self>(self, vctx, context, ui)
+        let mut vr = view_children_recursive_mut::<_, Self>(self, vctx, context, ui);
+        vr.merge(view_children_mut::<_, f32>(self, vctx, context, ui));
+        vr
     }
 }
