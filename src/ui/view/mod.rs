@@ -1,4 +1,4 @@
-mod view;
+ mod view;
 
 pub use super::*;
 

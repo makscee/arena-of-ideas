@@ -8,12 +8,17 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        let id = "exp_test".into();
+        let mut e = ui
+            .ctx()
+            .data_mut(|w| w.get_persisted_mut_or_default::<Expression>(id).clone());
+
         Context::from_world(world, |context| {
-            Expression::max(
-                Box::new(Expression::f32(0.5)),
-                Box::new(Expression::abs(Box::new(Expression::f32(1.0)))),
-            )
-            .view_with_children(default(), context, ui);
+            if e.view_with_children_mut(ViewContextNew::new(ui), context, ui)
+                .changed
+            {
+                ui.ctx().data_mut(|w| w.insert_persisted(id, e))
+            }
         });
 
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
