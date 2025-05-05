@@ -171,7 +171,7 @@ pub trait ViewChildren: View {
     ) -> ViewResponseNew;
 }
 
-pub trait ViewFns: Sized + Clone + StringData {
+pub trait ViewFns: Sized + Clone + StringData + Default {
     fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr;
     fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response {
         if vctx.non_interactible {
@@ -209,6 +209,14 @@ pub trait ViewFns: Sized + Clone + StringData {
                 ui.close_menu();
             }
         })
+    }
+    fn fn_paste_preview(
+        &mut self,
+        vctx: ViewContextNew,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponseNew {
+        self.view_mut_new(vctx, context, ui)
     }
     fn fn_view_context_menu_mut(
     ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
@@ -289,6 +297,28 @@ pub trait ViewFns: Sized + Clone + StringData {
                         ui.close_menu();
                     }
                 }
+                if let Some(data) = clipboard_get() {
+                    if ui
+                        .menu_button("paste", |ui| {
+                            let mut d = Self::default();
+                            if let Err(e) = d.inject_data(&data) {
+                                ui.set_max_width(300.0);
+                                Label::new(&data).wrap().ui(ui);
+                                e.cstr().label_w(ui);
+                            } else {
+                                if Self::fn_paste_preview(&mut d, vctx, context, ui).changed {
+                                    clipboard_set(d.get_data());
+                                }
+                            }
+                        })
+                        .response
+                        .clicked()
+                    {
+                        s.inject_data(&data).notify_op();
+                        vr.changed = true;
+                        ui.close_menu();
+                    }
+                }
                 vr
             })
         } else {
@@ -326,6 +356,14 @@ impl ViewFns for Expression {
             }
             Err(e) => e.show(context, ui),
         })
+    }
+    fn fn_paste_preview(
+        &mut self,
+        vctx: ViewContextNew,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponseNew {
+        self.view_with_children_mut(vctx, context, ui)
     }
 }
 impl ViewFns for f32 {
