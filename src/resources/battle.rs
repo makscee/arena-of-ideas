@@ -215,7 +215,6 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(entity, var, value) => {
-                    dbg!(entity, var, value);
                     let t = context.t()?;
                     let mut ns = context.get_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {

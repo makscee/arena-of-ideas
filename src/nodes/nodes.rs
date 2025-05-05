@@ -16,7 +16,9 @@ pub trait GetVar: GetNodeKind + Debug {
     fn set_var(&mut self, var: VarName, value: VarValue);
 }
 
-pub trait Node: Default + Component + Sized + GetVar + Show + Debug + Hash {
+pub trait Node:
+    Default + Component + Sized + GetVar + Show + Debug + Hash + StringData + Clone + ToCstr
+{
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);

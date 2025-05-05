@@ -21,6 +21,10 @@ impl ViewContextNew {
         self.id = self.id.with(h);
         self
     }
+    pub fn context_btn(mut self) -> Self {
+        self.separate_contex_menu_btn = true;
+        self
+    }
 }
 
 #[derive(Copy, Clone, Default)]

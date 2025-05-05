@@ -294,12 +294,25 @@ impl BattlePlugin {
     }
     pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut data: Mut<BattleData>| {
+            Context::from_world_r(&mut data.teams_world, |context| {
+                let exp_kind_id = Id::new("explorer kind");
+                let mut kind = ui.ctx().data_mut(|w| {
+                    w.get_temp_mut_or::<NodeKind>(exp_kind_id, NodeKind::NHouse)
+                        .clone()
+                });
+                if Selector::new("kind").ui_enum(&mut kind, ui) {
+                    ui.ctx().data_mut(|w| w.insert_temp(exp_kind_id, kind));
+                }
+                kind.show_explorer(context, ui)
+            })
+            .ui(ui);
             Context::from_world(world, |context| {
                 let team = if left {
                     &mut data.battle.left
                 } else {
                     &mut data.battle.right
                 };
+
                 if team.view_mut(ViewContext::new(ui), context, ui).changed {
                     context
                         .world_mut()

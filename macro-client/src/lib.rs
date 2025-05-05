@@ -541,7 +541,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(item as syn::DeriveInput);
-    let struct_ident = &input.ident;
     match &mut input.data {
         Data::Enum(DataEnum {
             enum_token: _,
@@ -559,7 +558,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     pub fn set_var(self, context: &mut Context, entity: Entity, var: VarName, value: VarValue) {
                         match self {
                             Self::None => {}
-                            #(#struct_ident::#variants => {
+                            #(Self::#variants => {
                                 context.get_mut::<#variants>(entity).unwrap().set_var(var, value);
                             })*
                         }
@@ -567,7 +566,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     pub fn get_vars(self, context: &Context, entity: Entity) -> Vec<(VarName, VarValue)> {
                         match self {
                             Self::None => default(),
-                            #(#struct_ident::#variants => {
+                            #(Self::#variants => {
                                 context.get::<#variants>(entity).unwrap().get_own_vars()
                             })*
                         }
@@ -575,7 +574,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     pub fn unpack(self, context: &mut Context, entity: Entity, node: &TNode) {
                         match self {
                             Self::None => {}
-                            #(#struct_ident::#variants => {
+                            #(Self::#variants => {
                                 let mut n = #variants::default();
                                 n.inject_data(&node.data);
                                 n.id = node.id;
@@ -588,7 +587,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         match self {
                             NodeKind::None => false,
                             #(
-                                #struct_ident::#variants => {
+                                Self::#variants => {
                                     #variants::component_kinds().contains(&child)
                                 }
                             )*
@@ -598,7 +597,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         match self {
                             NodeKind::None => unimplemented!(),
                             #(
-                                #struct_ident::#variants => {
+                                Self::#variants => {
                                     #variants::default().get_data()
                                 }
                             )*
@@ -608,9 +607,19 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                         match self {
                             NodeKind::None => unimplemented!(),
                             #(
-                                #struct_ident::#variants => {
+                                Self::#variants => {
                                     let mut d = #variants::default();
                                     d.to_tnode()
+                                }
+                            )*
+                        }
+                    }
+                    pub fn show_explorer(self, context: &mut Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+                        match self {
+                            Self::None => unimplemented!(),
+                            #(
+                                Self::#variants => {
+                                    NodeExplorer::<#variants>::new().ui(context, ui)
                                 }
                             )*
                         }
