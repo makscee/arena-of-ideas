@@ -4,5 +4,5 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct Reaction {
     pub trigger: Trigger,
-    pub actions: Actions,
+    pub actions: Vec<Action>,
 }

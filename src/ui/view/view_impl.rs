@@ -216,7 +216,7 @@ impl ViewChildren for Reaction {
     fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();
         vr.merge(self.trigger.view(vctx, context, ui));
-        vr.merge(self.actions.0.view_with_children(vctx, context, ui));
+        vr.merge(self.actions.view_with_children(vctx, context, ui));
         vr
     }
     fn view_children_mut(
@@ -227,7 +227,7 @@ impl ViewChildren for Reaction {
     ) -> ViewResponse {
         let mut vr = ViewResponse::default();
         vr.merge(self.trigger.view_mut(vctx, context, ui));
-        vr.merge(self.actions.0.view_with_children_mut(vctx, context, ui));
+        vr.merge(self.actions.view_with_children_mut(vctx, context, ui));
         vr
     }
 }

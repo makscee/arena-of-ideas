@@ -63,7 +63,7 @@ struct NAbilityDescription {
 }
 
 struct NAbilityEffect {
-    pub actions: Actions,
+    pub actions: Vec<Action>,
 }
 
 struct NStatusMagic {

@@ -32,7 +32,6 @@ impl NFusion {
             .get(ar.trigger as usize)
             .to_e_not_found()?
             .actions
-            .0
             .get(ar.action as usize)
             .to_e_not_found()
     }
@@ -131,7 +130,7 @@ impl NFusion {
             for unit in &units {
                 let b = Self::get_behavior(context, unit.id)?;
                 for (ti, r) in b.reactions.iter().enumerate() {
-                    for (ai, action) in r.actions.0.iter().enumerate() {
+                    for (ai, action) in r.actions.iter().enumerate() {
                         let ar = UnitActionRef {
                             unit: unit.id,
                             trigger: ti as u8,

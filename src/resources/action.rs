@@ -8,10 +8,10 @@ pub trait ActionImpl {
     fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError>;
 }
 
-impl ActionsImpl for Actions {
+impl ActionsImpl for Vec<Action> {
     fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut actions: Vec<BattleAction> = default();
-        for a in &self.0 {
+        for a in self {
             actions.extend(a.process(context)?);
         }
         Ok(actions)
