@@ -313,7 +313,11 @@ impl BattlePlugin {
                     &mut data.battle.right
                 };
 
-                if team.view_mut(ViewContext::new(ui), context, ui).changed {
+                if team
+                    .view_with_children_mut(ViewContextNew::new(ui), context, ui)
+                    .changed
+                    || team.view_mut(ViewContext::new(ui), context, ui).changed
+                {
                     context
                         .world_mut()
                         .unwrap()

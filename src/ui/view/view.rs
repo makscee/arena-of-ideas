@@ -1,3 +1,5 @@
+use serde::de::DeserializeOwned;
+
 use super::*;
 
 #[derive(Copy, Clone)]
@@ -6,6 +8,7 @@ pub struct ViewContextNew {
     pub non_interactible: bool,
     pub one_line: bool,
     pub separate_contex_menu_btn: bool,
+    pub parent_rect: Option<Rect>,
 }
 
 impl ViewContextNew {
@@ -15,6 +18,7 @@ impl ViewContextNew {
             non_interactible: false,
             one_line: false,
             separate_contex_menu_btn: false,
+            parent_rect: None,
         }
     }
     pub fn with_id(mut self, h: impl Hash) -> Self {
@@ -25,17 +29,28 @@ impl ViewContextNew {
         self.separate_contex_menu_btn = true;
         self
     }
+    pub fn with_parent_rect(mut self, rect: Rect) -> Self {
+        self.parent_rect = Some(rect);
+        self
+    }
 }
 
 #[derive(Copy, Clone, Default)]
 pub struct ViewResponseNew {
     pub changed: bool,
     pub title_clicked: bool,
+    pub delete_me: bool,
 }
 
 impl ViewResponseNew {
-    fn merge(&mut self, other: Self) {
+    pub fn merge(&mut self, other: Self) {
         self.changed |= other.changed;
+        self.delete_me |= other.delete_me;
+    }
+    pub fn take_delete_me(&mut self) -> bool {
+        let v = self.delete_me;
+        self.delete_me = false;
+        v
     }
 }
 
@@ -139,6 +154,13 @@ pub trait ViewChildren: View {
     ) -> ViewResponseNew {
         ui.horizontal(|ui| {
             let mut vr = self.view_mut_new(vctx, context, ui);
+            if let Some(rect) = vctx.parent_rect {
+                ui.painter().line_segment(
+                    [rect.right_top(), ui.min_rect().left_top()],
+                    ui.visuals().weak_text_color().stroke(),
+                );
+            }
+            let vctx = vctx.with_parent_rect(ui.min_rect());
             ui.vertical(|ui| {
                 vr.merge(self.view_children_mut(vctx, context, ui));
             });
@@ -173,6 +195,105 @@ pub trait ViewChildren: View {
         context: &Context,
         ui: &mut Ui,
     ) -> ViewResponseNew;
+}
+
+impl<T> ViewFns for Vec<T>
+where
+    T: ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn title_cstr(&self, _: ViewContextNew, _: &Context) -> Cstr {
+        format!("{} ({})", type_name_short::<T>(), self.len())
+    }
+}
+
+impl<T> ViewChildren for Vec<T>
+where
+    T: ViewChildren + StringData + Serialize + DeserializeOwned,
+{
+    fn view_children(
+        &self,
+        vctx: ViewContextNew,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponseNew {
+        for (i, v) in self.into_iter().enumerate() {
+            v.view_with_children(vctx.with_id(i), context, ui);
+        }
+        default()
+    }
+
+    fn view_children_mut(
+        &mut self,
+        vctx: ViewContextNew,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponseNew {
+        let mut vr = ViewResponseNew::default();
+        let mut to_remove = None;
+        let mut swap = None;
+        let len = self.len();
+        let size = egui::Vec2::splat(8.0);
+        for (i, v) in self.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                if RectButton::new_size(size)
+                    .enabled(i > 0)
+                    .ui(ui, |color, rect, _, ui| {
+                        ui.painter().line(
+                            [
+                                rect.left_bottom(),
+                                rect.center_top(),
+                                rect.right_bottom(),
+                                rect.left_bottom(),
+                            ]
+                            .into(),
+                            color.stroke(),
+                        );
+                    })
+                    .clicked()
+                {
+                    swap = Some((i, i - 1));
+                }
+                if RectButton::new_size(size)
+                    .enabled(i + 1 < len)
+                    .ui(ui, |color, rect, _, ui| {
+                        ui.painter().line(
+                            [
+                                rect.left_top(),
+                                rect.right_top(),
+                                rect.center_bottom(),
+                                rect.left_top(),
+                            ]
+                            .into(),
+                            color.stroke(),
+                        );
+                    })
+                    .clicked()
+                {
+                    swap = Some((i, i + 1));
+                }
+                ui.vertical(|ui| {
+                    vr.merge(v.view_with_children_mut(vctx.with_id(i), context, ui));
+                    if vr.take_delete_me() {
+                        to_remove = Some(i);
+                    }
+                });
+            });
+        }
+
+        if let Some(i) = to_remove {
+            self.remove(i);
+            vr.changed = true;
+        }
+        if let Some((a, b)) = swap {
+            self.swap(a, b);
+            vr.changed = true;
+        }
+        if "[b +]".cstr().button(ui).clicked() {
+            self.push(default());
+            vr.changed = true;
+        }
+        vr
+    }
 }
 
 pub trait ViewFns: Sized + Clone + StringData + Default {
@@ -222,112 +343,115 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     ) -> ViewResponseNew {
         self.view_mut_new(vctx, context, ui)
     }
+    fn fn_view_context_menu_extra_mut(
+    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+        None
+    }
     fn fn_view_context_menu_mut(
     ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
-        if Self::fn_wrap().is_some() {
-            Some(|s, vctx, context, ui| {
-                let mut vr = ViewResponseNew::default();
-                if let Some(f) = Self::fn_replace_options() {
-                    let lookup_id = Id::new("lookup text");
-                    if ui
-                        .menu_button("replace", |ui| {
-                            let lookup = if let Some(mut lookup) =
-                                ui.data(|r| r.get_temp::<String>(lookup_id))
-                            {
-                                let resp = Input::new("")
-                                    .desired_width(ui.available_width())
-                                    .ui_string(&mut lookup, ui);
-                                if resp.changed() {
-                                    ui.data_mut(|w| w.insert_temp(lookup_id, lookup.clone()));
-                                }
-                                resp.request_focus();
-                                lookup
-                            } else {
-                                String::new()
-                            };
-                            ScrollArea::vertical()
-                                .min_scrolled_height(200.0)
-                                .show(ui, |ui| {
-                                    let opts = if lookup.is_empty() {
-                                        f()
-                                    } else {
-                                        f().into_iter()
-                                            .filter(|o| {
-                                                let text = o.title_cstr(vctx, context).get_text();
-                                                let mut text = text.chars();
-                                                'c: for c in lookup.chars() {
-                                                    while let Some(text_c) = text.next() {
-                                                        if text_c == c {
-                                                            continue 'c;
-                                                        }
-                                                    }
-                                                    return false;
-                                                }
-                                                true
-                                            })
-                                            .sorted_by_cached_key(|o| {
-                                                let text = o.title_cstr(vctx, context).get_text();
-                                                !text.starts_with(&lookup)
-                                            })
-                                            .collect()
-                                    };
-                                    for mut opt in opts {
-                                        let text = opt.title_cstr(vctx, context);
-                                        let resp = opt.title_cstr(vctx, context).button(ui);
-                                        if resp.clicked() || resp.gained_focus() {
-                                            if let Some(f) = Self::fn_move_inner() {
-                                                f(s, &mut opt);
-                                                mem::swap(s, &mut opt);
-                                            } else {
-                                                *s = opt;
-                                            }
-                                            vr.changed = true;
-                                            ui.close_menu();
-                                        }
-                                    }
-                                });
-                        })
-                        .response
-                        .clicked()
-                        || vr.changed
-                    {
-                        ui.data_mut(|w| w.insert_temp(lookup_id, String::new()));
-                    }
-                }
-                if let Some(f) = Self::fn_wrap() {
-                    if ui.button("wrap").clicked() {
-                        *s = f(s.clone());
-                        vr.changed = true;
-                        ui.close_menu();
-                    }
-                }
-                if let Some(data) = clipboard_get() {
-                    if ui
-                        .menu_button("paste", |ui| {
-                            let mut d = Self::default();
-                            if let Err(e) = d.inject_data(&data) {
-                                ui.set_max_width(300.0);
-                                Label::new(&data).wrap().ui(ui);
-                                e.cstr().label_w(ui);
-                            } else {
-                                if Self::fn_paste_preview(&mut d, vctx, context, ui).changed {
-                                    clipboard_set(d.get_data());
-                                }
+        Some(|s, vctx, context, ui| {
+            let mut vr = ViewResponseNew::default();
+            if let Some(f) = Self::fn_replace_options() {
+                let lookup_id = Id::new("lookup text");
+                if ui
+                    .menu_button("replace", |ui| {
+                        let lookup = if let Some(mut lookup) =
+                            ui.data(|r| r.get_temp::<String>(lookup_id))
+                        {
+                            let resp = Input::new("")
+                                .desired_width(ui.available_width())
+                                .ui_string(&mut lookup, ui);
+                            if resp.changed() {
+                                ui.data_mut(|w| w.insert_temp(lookup_id, lookup.clone()));
                             }
-                        })
-                        .response
-                        .clicked()
-                    {
-                        s.inject_data(&data).notify_op();
-                        vr.changed = true;
-                        ui.close_menu();
-                    }
+                            resp.request_focus();
+                            lookup
+                        } else {
+                            String::new()
+                        };
+                        ScrollArea::vertical()
+                            .min_scrolled_height(200.0)
+                            .show(ui, |ui| {
+                                let opts = if lookup.is_empty() {
+                                    f()
+                                } else {
+                                    f().into_iter()
+                                        .filter(|o| {
+                                            let text = o.title_cstr(vctx, context).get_text();
+                                            let mut text = text.chars();
+                                            'c: for c in lookup.chars() {
+                                                while let Some(text_c) = text.next() {
+                                                    if text_c == c {
+                                                        continue 'c;
+                                                    }
+                                                }
+                                                return false;
+                                            }
+                                            true
+                                        })
+                                        .sorted_by_cached_key(|o| {
+                                            let text = o.title_cstr(vctx, context).get_text();
+                                            !text.starts_with(&lookup)
+                                        })
+                                        .collect()
+                                };
+                                for mut opt in opts {
+                                    let text = opt.title_cstr(vctx, context);
+                                    let resp = opt.title_cstr(vctx, context).button(ui);
+                                    if resp.clicked() || resp.gained_focus() {
+                                        if let Some(f) = Self::fn_move_inner() {
+                                            f(s, &mut opt);
+                                            mem::swap(s, &mut opt);
+                                        } else {
+                                            *s = opt;
+                                        }
+                                        vr.changed = true;
+                                        ui.close_menu();
+                                    }
+                                }
+                            });
+                    })
+                    .response
+                    .clicked()
+                    || vr.changed
+                {
+                    ui.data_mut(|w| w.insert_temp(lookup_id, String::new()));
                 }
-                vr
-            })
-        } else {
-            None
-        }
+            }
+            if let Some(f) = Self::fn_wrap() {
+                if ui.button("wrap").clicked() {
+                    *s = f(s.clone());
+                    vr.changed = true;
+                    ui.close_menu();
+                }
+            }
+            if let Some(data) = clipboard_get() {
+                if ui
+                    .menu_button("paste", |ui| {
+                        let mut d = Self::default();
+                        if let Err(e) = d.inject_data(&data) {
+                            ui.set_max_width(300.0);
+                            Label::new(&data).wrap().ui(ui);
+                            e.cstr().label_w(ui);
+                        } else {
+                            if Self::fn_paste_preview(&mut d, vctx, context, ui).changed {
+                                clipboard_set(d.get_data());
+                            }
+                        }
+                    })
+                    .response
+                    .clicked()
+                {
+                    s.inject_data(&data).notify_op();
+                    vr.changed = true;
+                    ui.close_menu();
+                }
+            }
+            if let Some(f) = Self::fn_view_context_menu_extra_mut() {
+                vr.merge(f(s, vctx, context, ui));
+            }
+            vr
+        })
     }
 }
 
@@ -395,13 +519,13 @@ fn view_children_recursive_mut<T: Inject + Injector<I>, I: ViewChildren>(
     context: &Context,
     ui: &mut Ui,
 ) -> ViewResponseNew {
-    let mut view_resp = ViewResponseNew::default();
+    let mut vr = ViewResponseNew::default();
     for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
-            view_resp.merge(e.view_with_children_mut(vctx.with_id(i), context, ui));
+            vr.merge(e.view_with_children_mut(vctx.with_id(i), context, ui));
         });
     }
-    view_resp
+    vr
 }
 fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren>(
     s: &T,
@@ -409,13 +533,13 @@ fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren>(
     context: &Context,
     ui: &mut Ui,
 ) -> ViewResponseNew {
-    let mut view_resp = ViewResponseNew::default();
+    let mut vr = ViewResponseNew::default();
     for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
-            view_resp.merge(e.view_new(vctx.with_id(i), context, ui));
+            vr.merge(e.view_new(vctx.with_id(i), context, ui));
         });
     }
-    view_resp
+    vr
 }
 fn view_children_mut<T: Inject + Injector<I>, I: ViewFns>(
     s: &mut T,
@@ -423,13 +547,13 @@ fn view_children_mut<T: Inject + Injector<I>, I: ViewFns>(
     context: &Context,
     ui: &mut Ui,
 ) -> ViewResponseNew {
-    let mut view_resp = ViewResponseNew::default();
+    let mut vr = ViewResponseNew::default();
     for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
-            view_resp.merge(e.view_mut_new(vctx.with_id(i), context, ui));
+            vr.merge(e.view_mut_new(vctx.with_id(i), context, ui));
         });
     }
-    view_resp
+    vr
 }
 fn view_children<T: Inject + Injector<I>, I: ViewFns>(
     s: &T,
@@ -437,13 +561,13 @@ fn view_children<T: Inject + Injector<I>, I: ViewFns>(
     context: &Context,
     ui: &mut Ui,
 ) -> ViewResponseNew {
-    let mut view_resp = ViewResponseNew::default();
+    let mut vr = ViewResponseNew::default();
     for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
-            view_resp.merge(e.view_new(vctx.with_id(i), context, ui));
+            vr.merge(e.view_new(vctx.with_id(i), context, ui));
         });
     }
-    view_resp
+    vr
 }
 
 impl ViewChildren for Expression {

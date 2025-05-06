@@ -360,3 +360,16 @@ pub fn new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui, view_ctx: ViewCon
         None
     }
 }
+
+pub fn new_new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui) -> Option<T> {
+    if format!("add [b {}]", T::kind_s())
+        .cstr()
+        .button(ui)
+        .clicked()
+    {
+        let n = T::default();
+        Some(n)
+    } else {
+        None
+    }
+}

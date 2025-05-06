@@ -443,6 +443,52 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
 
+                impl ViewChildren for #struct_ident {
+                    fn view_children(
+                        &self,
+                        vctx: ViewContextNew,
+                        context: &Context,
+                        ui: &mut Ui,
+                    ) -> ViewResponseNew {
+                        let mut vr = ViewResponseNew::default();
+                        #(
+                            if let Some(d) = self.#component_fields_load(context) {
+                                vr.merge(d.view_with_children(vctx, context, ui));
+                            }
+                        )*
+                        #(
+                            for (i, d) in self.#child_fields_load(context).into_iter().enumerate() {
+                                vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
+                            }
+                        )*
+                        vr
+                    }
+                    fn view_children_mut(
+                        &mut self,
+                        vctx: ViewContextNew,
+                        context: &Context,
+                        ui: &mut Ui,
+                    ) -> ViewResponseNew {
+                        let mut vr = ViewResponseNew::default();
+                        #(
+                            if let Some(d) = &mut self.#one_fields {
+                                let mut child_resp = d.view_with_children_mut(vctx, context, ui);
+                                if child_resp.take_delete_me() {
+                                    self.#one_fields = None;
+                                }
+                                vr.merge(child_resp);
+                            } else if let Some(mut d) = new_new_node_btn::<#one_types>(ui) {
+                                vr.changed = true;
+                                self.#one_fields = Some(d);
+                            }
+                        )*
+                        #(
+                            vr.merge(self.#many_fields.view_with_children_mut(vctx, context, ui));
+                        )*
+                        vr
+                    }
+                }
+
                 impl DataView for #struct_ident {
                     fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
                         self.show(context, ui);

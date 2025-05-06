@@ -23,6 +23,25 @@ where
             s.show(context, ui);
         })
     }
+    fn fn_view_data_mut(
+    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+        Some(|s, _, context, ui| {
+            let mut vr = ViewResponseNew::default();
+            vr.changed = s.show_mut(context, ui);
+            vr
+        })
+    }
+    fn fn_view_context_menu_extra_mut(
+    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+        Some(|s, _, _, ui| {
+            let mut vr = ViewResponseNew::default();
+            if "[red delete]".cstr().button(ui).clicked() {
+                vr.delete_me = true;
+                ui.close_menu();
+            }
+            vr
+        })
+    }
 }
 
 impl NodeViewFns for NCore {}
