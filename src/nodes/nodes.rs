@@ -313,7 +313,7 @@ pub fn core<'a>(context: &'a Context) -> &'a NCore {
     NCore::get_by_id(ID_CORE, context).unwrap()
 }
 
-pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -> Option<T> {
+pub fn node_menu<T: Node + NodeExt + ViewFns>(ui: &mut Ui, context: &Context) -> Option<T> {
     let mut result = None;
     ui.menu_button("core", |ui| {
         ScrollArea::vertical()
@@ -322,17 +322,17 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
                 let Ok(entity) = context.entity(ID_CORE) else {
                     return;
                 };
-                let view_ctx = ViewContext::new(ui);
+                let vctx = ViewContext::new(ui);
                 for d in entity
                     .id(context)
                     .and_then(|id| context.collect_children_components_recursive::<T>(id))
                     .unwrap_or_default()
                 {
-                    let name = d.title_cstr(view_ctx, context);
+                    let name = d.title_cstr(vctx, context);
                     if ui
                         .menu_button(name.widget(1.0, ui.style()), |ui| {
                             ScrollArea::both().show(ui, |ui| {
-                                d.view(view_ctx, context, ui);
+                                d.view(vctx, context, ui);
                             });
                         })
                         .response
@@ -346,22 +346,7 @@ pub fn node_menu<T: Node + NodeExt + DataView>(ui: &mut Ui, context: &Context) -
     });
     result
 }
-
-pub fn new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui, view_ctx: ViewContext) -> Option<T> {
-    if format!("add [b {}]", T::kind_s())
-        .cstr()
-        .button(ui)
-        .clicked()
-    {
-        let n = T::default();
-        view_ctx.merge_state(&n, ui).collapsed(false).save_state(ui);
-        Some(n)
-    } else {
-        None
-    }
-}
-
-pub fn new_new_node_btn<T: Node + NodeExt + DataView>(ui: &mut Ui) -> Option<T> {
+pub fn new_node_btn<T: Node + NodeExt + ViewFns>(ui: &mut Ui) -> Option<T> {
     if format!("add [b {}]", T::kind_s())
         .cstr()
         .button(ui)

@@ -1,46 +1,30 @@
 use super::*;
 
 pub trait NodeViewFns: NodeExt {
-    fn view_node(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) {
+    fn view_node(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            self.title_cstr(vctx, context).label(ui);
-            if let Some(f) = Self::fn_view_data() {
-                f(self, vctx, context, ui);
-            }
+            self.node_title_cstr(vctx, context).label(ui);
+            self.view_data(vctx, context, ui);
         });
     }
-}
-
-impl<T> ViewFns for T
-where
-    T: NodeExt,
-{
-    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr {
+    fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
-    fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
-        Some(|s, _, context, ui| {
-            s.show(context, ui);
-        })
+    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
+        self.show(context, ui);
     }
-    fn fn_view_data_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
-        Some(|s, _, context, ui| {
-            let mut vr = ViewResponseNew::default();
-            vr.changed = s.show_mut(context, ui);
-            vr
-        })
+    fn view_data_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut vr = ViewResponse::default();
+        vr.changed = self.show_mut(context, ui);
+        vr
     }
-    fn fn_view_context_menu_extra_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
-        Some(|s, _, _, ui| {
-            let mut vr = ViewResponseNew::default();
-            if "[red delete]".cstr().button(ui).clicked() {
-                vr.delete_me = true;
-                ui.close_menu();
-            }
-            vr
-        })
+    fn view_context_menu_extra_mut(
+        &mut self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        default()
     }
 }
 

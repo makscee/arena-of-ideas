@@ -314,7 +314,7 @@ impl BattlePlugin {
                 };
 
                 if team
-                    .view_with_children_mut(ViewContextNew::new(ui), context, ui)
+                    .view_with_children_mut(ViewContext::new(ui), context, ui)
                     .changed
                     || team.view_mut(ViewContext::new(ui), context, ui).changed
                 {

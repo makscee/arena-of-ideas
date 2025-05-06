@@ -11,7 +11,7 @@ impl<T: NodeViewFns> NodeExplorer<T> {
         Self { pd: PhantomData }
     }
     pub fn ui(&mut self, context: &mut Context, ui: &mut Ui) -> Result<(), ExpressionError> {
-        let vctx = ViewContextNew::new(ui);
+        let vctx = ViewContext::new(ui);
         for n in context.world_mut()?.query::<&T>().iter(context.world()?) {
             n.view_node(vctx, context, ui);
         }

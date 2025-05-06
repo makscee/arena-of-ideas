@@ -20,11 +20,11 @@ pub enum Action {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
 #[serde(deny_unknown_fields)]
-pub struct Actions(pub Vec<Box<Action>>);
+pub struct Actions(pub Vec<Action>);
 
 impl From<Vec<Action>> for Actions {
     fn from(value: Vec<Action>) -> Self {
-        Self(value.into_iter().map(|v| Box::new(v)).collect())
+        Self(value.into_iter().collect())
     }
 }
 

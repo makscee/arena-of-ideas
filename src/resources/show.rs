@@ -304,7 +304,7 @@ impl Show for Vec<u64> {
 impl Show for Actions {
     fn show(&self, context: &Context, ui: &mut Ui) {
         for action in &self.0 {
-            action.show_title(ViewContext::new(ui).non_interactible(true), context, ui);
+            action.view_title(ViewContext::new(ui).non_interactible(true), context, ui);
         }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
@@ -317,24 +317,24 @@ impl Show for Reaction {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
                 self.trigger
-                    .show_title(ViewContext::new(ui).non_interactible(true), context, ui);
+                    .view_title(ViewContext::new(ui).non_interactible(true), context, ui);
             });
             self.actions.show(context, ui);
         });
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui).changed
+        self.view_with_children_mut(ViewContext::new(ui), context, ui)
+            .changed
     }
 }
 
 impl Show for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        for reaction in self {
-            reaction.show(context, ui);
-        }
+        self.view_with_children(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui).changed
+        self.view_with_children_mut(ViewContext::new(ui), context, ui)
+            .changed
     }
 }
 

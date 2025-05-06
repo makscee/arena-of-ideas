@@ -35,7 +35,6 @@ impl NFusion {
             .0
             .get(ar.action as usize)
             .to_e_not_found()
-            .map(|a| a.as_ref())
     }
     pub fn react(
         &self,

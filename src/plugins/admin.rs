@@ -14,7 +14,7 @@ impl AdminPlugin {
             .data_mut(|w| w.get_persisted_mut_or_default::<Expression>(id).clone());
 
         Context::from_world(world, |context| {
-            if e.view_with_children_mut(ViewContextNew::new(ui), context, ui)
+            if e.view_with_children_mut(ViewContext::new(ui), context, ui)
                 .changed
             {
                 ui.ctx().data_mut(|w| w.insert_persisted(id, e))
@@ -66,9 +66,9 @@ impl AdminPlugin {
         if "World Inspector".cstr().button(ui).clicked() {
             Window::new("world Inspector", |ui, world| {
                 Context::from_world_r(world, |context| {
-                    let view_ctx = ViewContext::new(ui).collapsed(true);
-                    NCore::get_by_id(ID_CORE, context)?.view(view_ctx, context, ui);
-                    NPlayers::get_by_id(ID_PLAYERS, context)?.view(view_ctx, context, ui);
+                    let vctx = ViewContext::new(ui);
+                    NCore::get_by_id(ID_CORE, context)?.view(vctx, context, ui);
+                    NPlayers::get_by_id(ID_PLAYERS, context)?.view(vctx, context, ui);
                     Ok(())
                 })
                 .unwrap();

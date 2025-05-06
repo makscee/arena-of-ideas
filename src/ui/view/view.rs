@@ -3,26 +3,32 @@ use serde::de::DeserializeOwned;
 use super::*;
 
 #[derive(Copy, Clone)]
-pub struct ViewContextNew {
+pub struct ViewContext {
     pub id: Id,
     pub non_interactible: bool,
     pub one_line: bool,
     pub separate_contex_menu_btn: bool,
+    pub can_delete: bool,
     pub parent_rect: Option<Rect>,
 }
 
-impl ViewContextNew {
+impl ViewContext {
     pub fn new(ui: &mut Ui) -> Self {
         Self {
             id: ui.id(),
             non_interactible: false,
             one_line: false,
             separate_contex_menu_btn: false,
+            can_delete: false,
             parent_rect: None,
         }
     }
     pub fn with_id(mut self, h: impl Hash) -> Self {
         self.id = self.id.with(h);
+        self
+    }
+    pub fn non_interactible(mut self, value: bool) -> Self {
+        self.non_interactible = value;
         self
     }
     pub fn context_btn(mut self) -> Self {
@@ -33,16 +39,20 @@ impl ViewContextNew {
         self.parent_rect = Some(rect);
         self
     }
+    pub fn can_delete(mut self) -> Self {
+        self.can_delete = true;
+        self
+    }
 }
 
 #[derive(Copy, Clone, Default)]
-pub struct ViewResponseNew {
+pub struct ViewResponse {
     pub changed: bool,
     pub title_clicked: bool,
     pub delete_me: bool,
 }
 
-impl ViewResponseNew {
+impl ViewResponse {
     pub fn merge(&mut self, other: Self) {
         self.changed |= other.changed;
         self.delete_me |= other.delete_me;
@@ -73,13 +83,8 @@ fn circle_btn(r: &Response, ui: &mut Ui) -> Response {
 }
 
 pub trait View: Sized + ViewFns {
-    fn view_mut_new(
-        &mut self,
-        vctx: ViewContextNew,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> ViewResponseNew {
-        let mut vr = ViewResponseNew::default();
+    fn view_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut vr = ViewResponse::default();
         ui.horizontal(|ui| {
             let mut r = self.view_title(vctx, context, ui);
             if Self::fn_view_context_menu().is_some() || Self::fn_view_context_menu_mut().is_some()
@@ -117,8 +122,8 @@ pub trait View: Sized + ViewFns {
         }
         vr
     }
-    fn view_new(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> ViewResponseNew {
-        let mut response = ViewResponseNew::default();
+    fn view(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut response = ViewResponse::default();
         ui.horizontal(|ui| {
             let r = self.view_title(vctx, context, ui);
             if let Some(f) = Self::fn_view_context_menu() {
@@ -148,19 +153,20 @@ impl<T> View for T where T: ViewFns {}
 pub trait ViewChildren: View {
     fn view_with_children_mut(
         &mut self,
-        vctx: ViewContextNew,
+        vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew {
+    ) -> ViewResponse {
         ui.horizontal(|ui| {
-            let mut vr = self.view_mut_new(vctx, context, ui);
+            let mut vr = self.view_mut(vctx, context, ui);
             if let Some(rect) = vctx.parent_rect {
+                const OFFSET: egui::Vec2 = egui::vec2(0.0, LINE_HEIGHT * 0.5);
                 ui.painter().line_segment(
-                    [rect.right_top(), ui.min_rect().left_top()],
+                    [rect.right_top() + OFFSET, ui.min_rect().left_top() + OFFSET],
                     ui.visuals().weak_text_color().stroke(),
                 );
             }
-            let vctx = vctx.with_parent_rect(ui.min_rect());
+            let vctx = vctx.with_parent_rect(ui.min_rect()).can_delete();
             ui.vertical(|ui| {
                 vr.merge(self.view_children_mut(vctx, context, ui));
             });
@@ -170,12 +176,12 @@ pub trait ViewChildren: View {
     }
     fn view_with_children(
         &self,
-        vctx: ViewContextNew,
+        vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew {
+    ) -> ViewResponse {
         ui.horizontal(|ui| {
-            let r = self.view_new(vctx, context, ui);
+            let r = self.view(vctx, context, ui);
             ui.vertical(|ui| {
                 self.view_children(vctx, context, ui);
             });
@@ -183,26 +189,29 @@ pub trait ViewChildren: View {
         })
         .inner
     }
-    fn view_children(
-        &self,
-        vctx: ViewContextNew,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> ViewResponseNew;
+    fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse;
     fn view_children_mut(
         &mut self,
-        vctx: ViewContextNew,
+        vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew;
+    ) -> ViewResponse;
 }
 
-impl<T> ViewFns for Vec<T>
+impl<T> ViewChildren for Box<T>
 where
-    T: ViewFns + StringData + Serialize + DeserializeOwned,
+    T: ViewChildren + ViewFns + StringData + Serialize + DeserializeOwned,
 {
-    fn title_cstr(&self, _: ViewContextNew, _: &Context) -> Cstr {
-        format!("{} ({})", type_name_short::<T>(), self.len())
+    fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        self.as_ref().view_children(vctx, context, ui)
+    }
+    fn view_children_mut(
+        &mut self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        self.as_mut().view_children_mut(vctx, context, ui)
     }
 }
 
@@ -210,29 +219,24 @@ impl<T> ViewChildren for Vec<T>
 where
     T: ViewChildren + StringData + Serialize + DeserializeOwned,
 {
-    fn view_children(
-        &self,
-        vctx: ViewContextNew,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> ViewResponseNew {
+    fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         for (i, v) in self.into_iter().enumerate() {
             v.view_with_children(vctx.with_id(i), context, ui);
         }
         default()
     }
-
     fn view_children_mut(
         &mut self,
-        vctx: ViewContextNew,
+        mut vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew {
-        let mut vr = ViewResponseNew::default();
+    ) -> ViewResponse {
+        let mut vr = ViewResponse::default();
         let mut to_remove = None;
         let mut swap = None;
         let len = self.len();
         let size = egui::Vec2::splat(8.0);
+        vctx.parent_rect = None;
         for (i, v) in self.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 if RectButton::new_size(size)
@@ -297,25 +301,24 @@ where
 }
 
 pub trait ViewFns: Sized + Clone + StringData + Default {
-    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr;
-    fn view_title(&self, vctx: ViewContextNew, context: &Context, ui: &mut Ui) -> Response {
+    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr;
+    fn view_title(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         if vctx.non_interactible {
             self.title_cstr(vctx, context).label(ui)
         } else {
             self.title_cstr(vctx, context).button(ui)
         }
     }
-    fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+    fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
         None
     }
-    fn fn_view_data_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         None
     }
-    fn fn_view_type() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+    fn fn_view_type() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
         None
     }
-    fn fn_view_value() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+    fn fn_view_value() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
         None
     }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
@@ -327,7 +330,7 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     fn fn_move_inner() -> Option<fn(&mut Self, &mut Self)> {
         None
     }
-    fn fn_view_context_menu() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
+    fn fn_view_context_menu() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
         Some(|s, vctx, context, ui| {
             if ui.button("copy").clicked() {
                 clipboard_set(s.get_data());
@@ -337,20 +340,20 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     }
     fn fn_paste_preview(
         &mut self,
-        vctx: ViewContextNew,
+        vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew {
-        self.view_mut_new(vctx, context, ui)
+    ) -> ViewResponse {
+        self.view_mut(vctx, context, ui)
     }
     fn fn_view_context_menu_extra_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         None
     }
     fn fn_view_context_menu_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
+    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         Some(|s, vctx, context, ui| {
-            let mut vr = ViewResponseNew::default();
+            let mut vr = ViewResponse::default();
             if let Some(f) = Self::fn_replace_options() {
                 let lookup_id = Id::new("lookup text");
                 if ui
@@ -447,6 +450,12 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
                     ui.close_menu();
                 }
             }
+            if vctx.can_delete {
+                if "[red delete]".cstr().button(ui).clicked() {
+                    vr.delete_me = true;
+                    ui.close_menu();
+                }
+            }
             if let Some(f) = Self::fn_view_context_menu_extra_mut() {
                 vr.merge(f(s, vctx, context, ui));
             }
@@ -455,140 +464,114 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     }
 }
 
-impl ViewFns for Expression {
-    fn title_cstr(&self, vctx: ViewContextNew, context: &Context) -> Cstr {
-        self.cstr()
+impl<T> ViewFns for Vec<T>
+where
+    T: ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        format!("{} ({})", type_name_short::<T>(), self.len())
     }
-    fn fn_wrap() -> Option<fn(Self) -> Self> {
-        Some(|s| Self::abs(Box::new(s)))
+}
+
+impl<T> ViewFns for Box<T>
+where
+    T: ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+        self.as_ref().title_cstr(vctx, context)
     }
     fn fn_replace_options() -> Option<fn() -> Vec<Self>> {
-        Some(|| Self::iter().collect())
+        if T::fn_replace_options().is_some() {
+            Some(|| {
+                T::fn_replace_options().unwrap()()
+                    .into_iter()
+                    .map(|o| Box::new(o))
+                    .collect()
+            })
+        } else {
+            None
+        }
     }
     fn fn_move_inner() -> Option<fn(&mut Self, &mut Self)> {
-        Some(|s, source| {
-            <Expression as Injector<Expression>>::inject_inner(s, source);
-            <Expression as Injector<f32>>::inject_inner(s, source);
-            <Expression as Injector<VarName>>::inject_inner(s, source);
-        })
+        if T::fn_move_inner().is_some() {
+            Some(|s, source| T::fn_move_inner().unwrap()(s.as_mut(), source.as_mut()))
+        } else {
+            None
+        }
     }
-    fn fn_view_value() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
-        Some(|s, _, context, ui| match s.get_value(context) {
-            Ok(v) => {
-                ui.horizontal(|ui| {
-                    v.as_ref()
-                        .cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
-                        .label(ui);
-                    v.show(context, ui);
-                });
-            }
-            Err(e) => e.show(context, ui),
-        })
+    fn view_title(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
+        self.as_ref().view_title(vctx, context, ui)
+    }
+    fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+        if T::fn_view_data().is_some() {
+            Some(|s, vctx, context, ui| T::fn_view_data().unwrap()(s.as_ref(), vctx, context, ui))
+        } else {
+            None
+        }
+    }
+    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+        if T::fn_view_data_mut().is_some() {
+            Some(|s, vctx, context, ui| {
+                T::fn_view_data_mut().unwrap()(s.as_mut(), vctx, context, ui)
+            })
+        } else {
+            None
+        }
+    }
+    fn fn_view_type() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+        if T::fn_view_type().is_some() {
+            Some(|s, vctx, context, ui| T::fn_view_type().unwrap()(s.as_ref(), vctx, context, ui))
+        } else {
+            None
+        }
+    }
+    fn fn_view_value() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+        if T::fn_view_value().is_some() {
+            Some(|s, vctx, context, ui| T::fn_view_value().unwrap()(s, vctx, context, ui))
+        } else {
+            None
+        }
+    }
+    fn fn_wrap() -> Option<fn(Self) -> Self> {
+        if T::fn_wrap().is_some() {
+            Some(|s| Box::new(T::fn_wrap().unwrap()(*s)))
+        } else {
+            None
+        }
+    }
+    fn fn_view_context_menu() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+        if T::fn_view_context_menu().is_some() {
+            Some(|s, vctx, context, ui| T::fn_view_context_menu().unwrap()(s, vctx, context, ui))
+        } else {
+            None
+        }
     }
     fn fn_paste_preview(
         &mut self,
-        vctx: ViewContextNew,
+        vctx: ViewContext,
         context: &Context,
         ui: &mut Ui,
-    ) -> ViewResponseNew {
-        self.view_with_children_mut(vctx, context, ui)
+    ) -> ViewResponse {
+        self.as_mut().fn_paste_preview(vctx, context, ui)
     }
-}
-impl ViewFns for f32 {
-    fn title_cstr(&self, _: ViewContextNew, _: &Context) -> Cstr {
-        type_name_of_val_short(self).cstr()
+    fn fn_view_context_menu_extra_mut(
+    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+        if T::fn_view_context_menu_extra_mut().is_some() {
+            Some(|s, vctx, context, ui| {
+                T::fn_view_context_menu_extra_mut().unwrap()(s, vctx, context, ui)
+            })
+        } else {
+            None
+        }
     }
-    fn fn_view_data() -> Option<fn(&Self, ViewContextNew, &Context, &mut Ui)> {
-        Some(|s, _, _, ui| {
-            s.cstr().label(ui);
-        })
-    }
-    fn fn_view_data_mut(
-    ) -> Option<fn(&mut Self, ViewContextNew, &Context, &mut Ui) -> ViewResponseNew> {
-        Some(|s, _, context, ui| {
-            let mut vr = ViewResponseNew::default();
-            vr.changed = s.show_mut(context, ui);
-            vr
-        })
-    }
-}
-
-fn view_children_recursive_mut<T: Inject + Injector<I>, I: ViewChildren>(
-    s: &mut T,
-    vctx: ViewContextNew,
-    context: &Context,
-    ui: &mut Ui,
-) -> ViewResponseNew {
-    let mut vr = ViewResponseNew::default();
-    for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
-        ui.horizontal(|ui| {
-            vr.merge(e.view_with_children_mut(vctx.with_id(i), context, ui));
-        });
-    }
-    vr
-}
-fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren>(
-    s: &T,
-    vctx: ViewContextNew,
-    context: &Context,
-    ui: &mut Ui,
-) -> ViewResponseNew {
-    let mut vr = ViewResponseNew::default();
-    for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
-        ui.horizontal(|ui| {
-            vr.merge(e.view_new(vctx.with_id(i), context, ui));
-        });
-    }
-    vr
-}
-fn view_children_mut<T: Inject + Injector<I>, I: ViewFns>(
-    s: &mut T,
-    vctx: ViewContextNew,
-    context: &Context,
-    ui: &mut Ui,
-) -> ViewResponseNew {
-    let mut vr = ViewResponseNew::default();
-    for (i, e) in <T as Injector<I>>::get_inner_mut(s).into_iter().enumerate() {
-        ui.horizontal(|ui| {
-            vr.merge(e.view_mut_new(vctx.with_id(i), context, ui));
-        });
-    }
-    vr
-}
-fn view_children<T: Inject + Injector<I>, I: ViewFns>(
-    s: &T,
-    vctx: ViewContextNew,
-    context: &Context,
-    ui: &mut Ui,
-) -> ViewResponseNew {
-    let mut vr = ViewResponseNew::default();
-    for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
-        ui.horizontal(|ui| {
-            vr.merge(e.view_new(vctx.with_id(i), context, ui));
-        });
-    }
-    vr
-}
-
-impl ViewChildren for Expression {
-    fn view_children(
-        &self,
-        vctx: ViewContextNew,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> ViewResponseNew {
-        let mut vr = view_children_recursive::<_, Self>(self, vctx, context, ui);
-        vr.merge(view_children::<_, f32>(self, vctx, context, ui));
-        vr
-    }
-    fn view_children_mut(
-        &mut self,
-        vctx: ViewContextNew,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> ViewResponseNew {
-        let mut vr = view_children_recursive_mut::<_, Self>(self, vctx, context, ui);
-        vr.merge(view_children_mut::<_, f32>(self, vctx, context, ui));
-        vr
+    fn fn_view_context_menu_mut(
+    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+        if T::fn_view_context_menu_mut().is_some() {
+            Some(|s, vctx, context, ui| {
+                T::fn_view_context_menu_mut().unwrap()(s, vctx, context, ui)
+            })
+        } else {
+            None
+        }
     }
 }

@@ -443,14 +443,29 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
 
+                impl ViewFns for #struct_ident {
+                    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+                        self.node_title_cstr(vctx, context)
+                    }
+                    fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+                        Some(Self::view_data)
+                    }
+                    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+                        Some(Self::view_data_mut)
+                    }
+                    fn fn_view_context_menu_extra_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+                        Some(Self::view_context_menu_extra_mut)
+                    }
+                }
+
                 impl ViewChildren for #struct_ident {
                     fn view_children(
                         &self,
-                        vctx: ViewContextNew,
+                        vctx: ViewContext,
                         context: &Context,
                         ui: &mut Ui,
-                    ) -> ViewResponseNew {
-                        let mut vr = ViewResponseNew::default();
+                    ) -> ViewResponse {
+                        let mut vr = ViewResponse::default();
                         #(
                             if let Some(d) = self.#component_fields_load(context) {
                                 vr.merge(d.view_with_children(vctx, context, ui));
@@ -465,11 +480,11 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn view_children_mut(
                         &mut self,
-                        vctx: ViewContextNew,
+                        vctx: ViewContext,
                         context: &Context,
                         ui: &mut Ui,
-                    ) -> ViewResponseNew {
-                        let mut vr = ViewResponseNew::default();
+                    ) -> ViewResponse {
+                        let mut vr = ViewResponse::default();
                         #(
                             if let Some(d) = &mut self.#one_fields {
                                 let mut child_resp = d.view_with_children_mut(vctx, context, ui);
@@ -477,7 +492,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                     self.#one_fields = None;
                                 }
                                 vr.merge(child_resp);
-                            } else if let Some(mut d) = new_new_node_btn::<#one_types>(ui) {
+                            } else if let Some(mut d) = new_node_btn::<#one_types>(ui) {
                                 vr.changed = true;
                                 self.#one_fields = Some(d);
                             }
@@ -486,88 +501,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             vr.merge(self.#many_fields.view_with_children_mut(vctx, context, ui));
                         )*
                         vr
-                    }
-                }
-
-                impl DataView for #struct_ident {
-                    fn show_value(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-                        self.show(context, ui);
-                    }
-                    fn show_title(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
-                        self.node_title(context, ui)
-                    }
-                    fn show_collapsed(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
-                        self.node_collapsed(context, ui)
-                    }
-                    fn show_value_mut(
-                        &mut self,
-                        view_ctx: ViewContext,
-                        context: &Context,
-                        ui: &mut Ui,
-                    ) -> bool {
-                        self.show_mut(context, ui)
-                    }
-                    fn context_menu_extra(&self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) {
-                        ui.menu_button("publish to incubator", |ui| {
-
-                        });
-                    }
-                    fn context_menu_extra_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
-                        let mut view_resp = ViewResponse::default();
-                        if let Some(d) = self.replace_context_menu(context, ui) {
-                            *self = d;
-                            view_resp.changed = true;
-                        }
-                        view_resp
-                    }
-                    fn view_children(
-                        &self,
-                        view_ctx: ViewContext,
-                        context: &Context,
-                        ui: &mut Ui,
-                    ) -> ViewResponse {
-                        let mut view_resp = ViewResponse::default();
-                        #(
-                            if let Some(d) = self.#component_fields_load(context) {
-                                view_resp.merge(d.view(view_ctx, context, ui));
-                            }
-                        )*
-                        #(
-                            for (i, d) in self.#child_fields_load(context).into_iter().enumerate() {
-                                view_resp.merge(d.view(view_ctx.with_id(i), context, ui));
-                            }
-                        )*
-                        view_resp
-                    }
-                    fn view_children_mut(&mut self, view_ctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
-                        let mut view_resp = ViewResponse::default();
-                        #(
-                            if let Some(d) = &mut self.#one_fields {
-                                let mut child_resp = d.view_mut(view_ctx.collapsed(true).can_delete(true), context, ui);
-                                if child_resp.take_delete_me() {
-                                    self.#one_fields = None;
-                                }
-                                view_resp.merge(child_resp);
-                            } else if let Some(mut d) = new_node_btn::<#one_types>(ui, view_ctx) {
-                                view_resp.changed = true;
-                                self.#one_fields = Some(d);
-                            }
-                        )*
-                        #(
-                            view_resp.merge(self.#many_fields.view_mut(view_ctx.collapsed(true), context, ui));
-                        )*
-                        view_resp
-                    }
-                    fn merge_state(
-                        &self,
-                        view_ctx: ViewContext,
-                        context: &mut Context,
-                        ui: &mut Ui,
-                    ) -> ViewContext {
-                        for (var, value) in self.get_vars(&context) {
-                            context.set_var(var, value);
-                        }
-                        view_ctx.merge_state(self, ui)
                     }
                 }
                 impl From<&str> for #struct_ident {

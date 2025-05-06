@@ -29,7 +29,7 @@ impl TagCardContext {
 }
 
 fn show_frame(
-    node: &impl DataView,
+    node: &impl ViewFns,
     name: &str,
     color: Color32,
     context: &Context,
@@ -251,16 +251,16 @@ impl NFusion {
                         continue;
                     }
                     let trigger = NFusion::get_trigger(context, tr)?;
-                    let view_ctx = ViewContext::new(ui).non_interactible(true);
+                    let vctx = ViewContext::new(ui).non_interactible(true);
                     ui.horizontal(|ui| {
                         Icon::Lightning.show(ui);
-                        trigger.show_title(view_ctx, context, ui);
+                        trigger.view_title(vctx, context, ui);
                     });
                     for ar in actions {
                         let action = NFusion::get_action(context, ar)?.clone();
                         context
                             .with_owner(context.entity(ar.unit)?, |context| {
-                                action.show_title(view_ctx, context, ui);
+                                action.view_title(vctx, context, ui);
                                 Ok(())
                             })
                             .ui(ui);
