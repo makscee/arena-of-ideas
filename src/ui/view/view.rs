@@ -5,6 +5,7 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct ViewContext {
     pub id: Id,
+    pub collapsed: bool,
     pub non_interactible: bool,
     pub one_line: bool,
     pub separate_contex_menu_btn: bool,
@@ -16,6 +17,7 @@ impl ViewContext {
     pub fn new(ui: &mut Ui) -> Self {
         Self {
             id: ui.id(),
+            collapsed: false,
             non_interactible: false,
             one_line: false,
             separate_contex_menu_btn: false,
@@ -23,8 +25,22 @@ impl ViewContext {
             parent_rect: None,
         }
     }
+    pub fn merge_state(mut self, view: &impl ViewFns, ui: &mut Ui) -> Self {
+        self.id = self.id.with(type_name_of_val_short(view));
+        if let Some(state) = ui.data(|r| r.get_temp::<ViewContext>(self.id)) {
+            self.collapsed = state.collapsed;
+        }
+        self
+    }
+    pub fn save_state(self, ui: &mut Ui) {
+        ui.data_mut(|w| w.insert_temp(self.id, self));
+    }
     pub fn with_id(mut self, h: impl Hash) -> Self {
         self.id = self.id.with(h);
+        self
+    }
+    pub fn collapsed(mut self, value: bool) -> Self {
+        self.collapsed = value;
         self
     }
     pub fn non_interactible(mut self, value: bool) -> Self {
@@ -81,12 +97,26 @@ fn circle_btn(r: &Response, ui: &mut Ui) -> Response {
             );
         })
 }
+fn collapse_btn(r: &Response, ui: &mut Ui) -> Response {
+    let rect = Rect::from_min_max(
+        r.rect.right_top() - egui::vec2(LINE_HEIGHT, 0.0),
+        r.rect.right_top() + egui::vec2(0.0, LINE_HEIGHT),
+    );
+    RectButton::new_rect(rect).ui(ui, |color, mut rect, _, ui| {
+        rect.min.y += LINE_HEIGHT * 0.6;
+        ui.painter().rect_filled(rect.shrink(2.0), 0, color);
+    })
+}
 
 pub trait View: Sized + ViewFns {
     fn view_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();
+        let vctx = vctx.merge_state(self, ui);
         ui.horizontal(|ui| {
             let mut r = self.view_title(vctx, context, ui);
+            if ui.rect_contains_pointer(r.rect) && collapse_btn(&r, ui).clicked() {
+                vctx.collapsed(!vctx.collapsed).save_state(ui);
+            }
             if Self::fn_view_context_menu().is_some() || Self::fn_view_context_menu_mut().is_some()
             {
                 if vctx.separate_contex_menu_btn {
@@ -115,6 +145,9 @@ pub trait View: Sized + ViewFns {
                 vr.title_clicked = true;
             }
         });
+        if vctx.collapsed {
+            return vr;
+        }
         if let Some(f) = Self::fn_view_data_mut() {
             vr.merge(f(self, vctx, context, ui));
         } else if let Some(f) = Self::fn_view_data() {
@@ -159,6 +192,13 @@ pub trait ViewChildren: View {
     ) -> ViewResponse {
         ui.horizontal(|ui| {
             let mut vr = self.view_mut(vctx, context, ui);
+            let vctx = vctx.merge_state(self, ui);
+            if vctx.collapsed {
+                if "[tw ...]".cstr().button(ui).clicked() {
+                    vctx.collapsed(false).save_state(ui);
+                }
+                return vr;
+            }
             if let Some(rect) = vctx.parent_rect {
                 const OFFSET: egui::Vec2 = egui::vec2(0.0, LINE_HEIGHT * 0.5);
                 ui.painter().line_segment(
