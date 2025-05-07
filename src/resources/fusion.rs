@@ -47,15 +47,8 @@ impl NFusion {
                     for ar in actions {
                         let action = Self::get_action(context, ar)?;
                         let action = action.clone();
-                        context
-                            .with_layer_r(
-                                ContextLayer::Caster(context.entity(ar.unit)?),
-                                |context| {
-                                    battle_actions.extend(action.process(context)?);
-                                    Ok(())
-                                },
-                            )
-                            .log();
+                        context.add_caster(context.entity(ar.unit)?);
+                        battle_actions.extend(action.process(context)?);
                     }
                 }
             }
@@ -139,14 +132,19 @@ impl NFusion {
                         if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
                             continue;
                         }
-                        if action
-                            .title_cstr(ViewContext::new(ui), context)
-                            .button(ui)
-                            .clicked()
-                        {
-                            self.behavior.get_mut(0).unwrap().1.push(ar);
-                            changed = true;
-                        }
+                        context
+                            .with_owner_ref(unit.entity(), |context| {
+                                if action
+                                    .title_cstr(ViewContext::new(ui), context)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    self.behavior.get_mut(0).unwrap().1.push(ar);
+                                    changed = true;
+                                }
+                                Ok(())
+                            })
+                            .ui(ui);
                     }
                 }
             }

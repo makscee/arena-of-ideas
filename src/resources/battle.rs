@@ -521,9 +521,8 @@ impl BattleSimulation {
         Context::from_battle_simulation_r(self, |context| {
             for entity in context.battle_simulation()?.all_units() {
                 let dmg = context.get::<NFusion>(entity)?.dmg;
-                dbg!(dmg);
                 context.with_owner(entity, |context| {
-                    if dbg!(context.sum_var(VarName::hp)?.get_i32()?) <= dmg {
+                    if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
                         actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
                         actions.push_back(BattleAction::death(entity));
                     }
@@ -611,7 +610,7 @@ impl BattleSimulation {
     }
     pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, ExpressionError> {
         let left = self.left_units();
-        let right = self.left_units();
+        let right = self.right_units();
         if left.contains(&entity) {
             return Ok(right);
         } else if right.contains(&entity) {

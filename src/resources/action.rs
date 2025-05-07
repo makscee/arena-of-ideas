@@ -35,7 +35,12 @@ impl ActionImpl for Action {
                 context.set_value_var(x.get_value(context)?);
             }
             Action::add_value(x) => {
-                context.set_value_var(context.get_value()?.add(&x.get_value(context)?)?);
+                context.set_value_var(
+                    context
+                        .get_value()
+                        .unwrap_or_default()
+                        .add(&x.get_value(context)?)?,
+                );
             }
             Action::subtract_value(x) => {
                 context.set_value_var(context.get_value()?.sub(&x.get_value(context)?)?);
@@ -72,7 +77,7 @@ impl ActionImpl for Action {
                 let name = &ability.ability_name;
                 let entity = ability.entity().id(context)?;
                 let ability_actions = context
-                    .first_child_recursive::<NAbilityEffect>(entity)?
+                    .first_parent_recursive::<NAbilityEffect>(entity)?
                     .actions
                     .clone();
                 let color = context
@@ -101,9 +106,9 @@ impl ActionImpl for Action {
                 let entity = status.entity().id(context)?;
                 let mut status = status.clone();
                 let mut description = context
-                    .first_child_recursive::<NStatusDescription>(entity)?
+                    .first_parent_recursive::<NStatusDescription>(entity)?
                     .clone();
-                let behavior = context.first_child_recursive::<NBehavior>(entity)?.clone();
+                let behavior = context.first_parent_recursive::<NBehavior>(entity)?.clone();
                 let color = context
                     .first_parent_recursive::<NHouseColor>(caster)?
                     .color

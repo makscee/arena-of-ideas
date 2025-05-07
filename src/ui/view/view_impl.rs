@@ -127,7 +127,7 @@ impl ViewFns for Action {
             <Self as Injector<Expression>>::inject_inner(s, source);
         })
     }
-    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _: ViewContext, context: &Context) -> Cstr {
         match self {
             Action::use_ability => {
                 let mut r = self.cstr();

@@ -258,8 +258,10 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
                         let mut changed = false;
                         #(
-                            VarName::#var_fields.cstr().label(ui);
-                            changed |= self.#var_fields.show_mut(context, ui);
+                            ui.vertical(|ui| {
+                                VarName::#var_fields.cstr().label(ui);
+                                changed |= self.#var_fields.show_mut(context, ui);
+                            });
                         )*
                         #(
                             changed |= self.#data_fields.show_mut(context, ui);

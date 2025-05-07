@@ -70,7 +70,9 @@ impl Input {
             if self.char_limit > 0 {
                 te = te.char_limit(self.char_limit);
             }
-            te.ui(ui)
+            te.ui(ui).on_hover_ui(|ui| {
+                value.label(ui);
+            })
         })
         .inner
     }
