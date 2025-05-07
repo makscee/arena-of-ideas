@@ -339,10 +339,11 @@ impl Show for Vec<Reaction> {
 
 impl Show for Material {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view(ViewContext::new(ui), context, ui);
+        self.view_with_children(ViewContext::new(ui), context, ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui).changed
+        self.view_with_children_mut(ViewContext::new(ui), context, ui)
+            .changed
     }
 }
 
