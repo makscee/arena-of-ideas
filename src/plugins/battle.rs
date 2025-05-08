@@ -87,6 +87,63 @@ impl BattlePlugin {
             });
         }
     }
+    pub fn open_world_inspector_window(world: &mut World) {
+        let mut selected: Option<Entity> = None;
+        Window::new("battle world inspector", move |ui, world| {
+            let Some(mut bd) = world.get_resource_mut::<BattleData>() else {
+                "BattleData not found".cstr().label(ui);
+                return;
+            };
+            let world = &mut bd.simulation.world;
+            Context::from_world_r(world, |context| {
+                if let Some(entity) = selected {
+                    ui.horizontal(|ui| {
+                        format!("selected {entity}").label(ui);
+                        if "clear".cstr().button(ui).clicked() {
+                            selected = None;
+                        }
+                    });
+                    for (var, state) in &context.get::<NodeState>(entity)?.vars {
+                        ui.horizontal(|ui| {
+                            var.cstr().label(ui);
+                            state.value.cstr().label(ui);
+                        });
+                    }
+                    ui.columns_const(|[ui1, ui2]| -> Result<(), ExpressionError> {
+                        "parents".cstr().label(ui1);
+                        "children".cstr().label(ui2);
+                        for parent in context.parents_entity(entity)? {
+                            let kind = context.get::<NodeState>(parent)?.kind;
+                            if format!("{kind} {parent}").button(ui1).clicked() {
+                                selected = Some(parent);
+                            }
+                        }
+                        for child in context.children_entity(entity)? {
+                            let kind = context.get::<NodeState>(child)?.kind;
+                            if format!("{kind} {child}").button(ui2).clicked() {
+                                selected = Some(child);
+                            }
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
+                } else {
+                    for (entity, ns) in context
+                        .world_mut()?
+                        .query::<(Entity, &NodeState)>()
+                        .iter(context.world()?)
+                    {
+                        if format!("{} {}", ns.kind, entity).button(ui).clicked() {
+                            selected = Some(entity);
+                        }
+                    }
+                }
+                Ok(())
+            })
+            .ui(ui);
+        })
+        .push(world);
+    }
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut data = world
             .remove_resource::<BattleData>()

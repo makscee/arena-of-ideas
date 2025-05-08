@@ -496,8 +496,9 @@ impl BattleSimulation {
                 }
             }
         }
-        let entity = context.world_mut()?.spawn_empty().set_parent(target).id();
+        let entity = context.world_mut()?.spawn_empty().id();
         status.unpack_entity(context, entity)?;
+        context.link_parent_child_entity(target, entity)?;
 
         let mut state = context.get_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());

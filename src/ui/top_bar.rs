@@ -30,6 +30,10 @@ impl TopBar {
                     BattlePlugin::load_from_client_state(world);
                     ui.close_menu();
                 }
+                if "world inspector".cstr().button(ui).clicked() {
+                    BattlePlugin::open_world_inspector_window(world);
+                    ui.close_menu();
+                }
             });
             ui.menu_button("settings", |ui| {
                 if "theme".cstr().button(ui).clicked() {

@@ -346,7 +346,10 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
         if vctx.non_interactible {
             self.title_cstr(vctx, context).label(ui)
         } else {
-            self.title_cstr(vctx, context).button(ui)
+            self.title_cstr(vctx, context)
+                .as_button()
+                .min_width(50.0)
+                .ui(ui)
         }
     }
     fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {

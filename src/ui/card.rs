@@ -206,6 +206,12 @@ impl TagCard for NStatusMagic {
 }
 impl NFusion {
     pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        ui.horizontal(|ui| {
+            self.entity()
+                .to_string()
+                .cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
+                .label(ui);
+        });
         let units = self.units(context)?;
         context.with_owner_ref(self.entity(), |context| {
             let pwr = context.get_var(VarName::pwr)?;
