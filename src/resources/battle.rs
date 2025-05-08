@@ -131,7 +131,7 @@ impl BattleAction {
                     let position = context.with_layer_r(ContextLayer::Owner(*a), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    add_actions.extend(context.battle_simulation_mut()?.die(*a));
+                    add_actions.extend(BattleSimulation::die(context, *a)?);
                     add_actions.push(BattleAction::vfx(
                         HashMap::from_iter([(VarName::position, position)]),
                         "death_vfx".into(),
@@ -218,7 +218,6 @@ impl BattleAction {
                     let t = context.t()?;
                     let mut ns = context.get_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
-                        debug!("updated {var} {}", ns.kind);
                         ns.kind.set_var(context, *entity, *var, value.clone());
                         true
                     } else {
@@ -365,7 +364,9 @@ impl BattleSimulation {
                     .kind
                     .get_vars(context, entity);
                 for (var, value) in vars {
+                    debug!("before {var} {value}");
                     let value = Self::send_update_event(context, entity, var, value);
+                    debug!("after {var} {value}");
                     let t = context.t()?;
                     context
                         .get_mut::<NodeState>(entity)?
@@ -407,24 +408,30 @@ impl BattleSimulation {
                 // if let Ok(fusion) = context.get::<NFusion>(entity) {
                 //     fusion.react(event, context).log();
                 // }
-                for b in context
-                    .collect_children_components_recursive::<NBehavior>(context.id(entity)?)?
+                for status in context
+                    .collect_children_components_recursive::<NStatusMagic>(context.id(entity)?)?
+                    .into_iter()
+                    .cloned()
+                    .collect_vec()
                 {
                     let mut value = context.get_value()?;
-                    context
-                        .with_layer_ref_r(ContextLayer::Owner(b.entity()), |context| {
-                            if let Some(actions) = b.react(event, context) {
-                                match actions.process(context) {
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        return Err(e);
+                    if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(status.id) {
+                        context
+                            .with_layer_ref_r(ContextLayer::Owner(status.entity()), |context| {
+                                if let Some(actions) = behavior.react(event, context) {
+                                    match actions.process(context) {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            return Err(e);
+                                        }
                                     }
                                 }
-                            }
-                            value = context.get_value()?;
-                            Ok(())
-                        })
-                        .log();
+                                value = context.get_value()?;
+                                Ok(())
+                            })
+                            .log();
+                        context.set_value_var(value);
+                    }
                 }
                 context.get_value()
             },
@@ -536,28 +543,36 @@ impl BattleSimulation {
         actions
     }
     #[must_use]
-    fn die(&mut self, entity: Entity) -> Vec<BattleAction> {
-        self.world.entity_mut(entity).insert(Corpse);
+    fn die(context: &mut Context, entity: Entity) -> Result<Vec<BattleAction>, ExpressionError> {
+        context.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
-        if let Some(p) = self.fusions_left.iter().position(|u| *u == entity) {
-            self.fusions_left.remove(p);
+        let bs = context.battle_simulation_mut()?;
+        if let Some(p) = bs.fusions_left.iter().position(|u| *u == entity) {
+            bs.fusions_left.remove(p);
             died = true;
         }
-        if let Some(p) = self.fusions_right.iter().position(|u| *u == entity) {
-            self.fusions_right.remove(p);
+        if let Some(p) = bs.fusions_right.iter().position(|u| *u == entity) {
+            bs.fusions_right.remove(p);
             died = true;
         }
         if died {
-            if self.ended() {
-                self.duration += 1.0;
+            if bs.ended() {
+                bs.duration += 1.0;
             }
-            [
-                BattleAction::var_set(entity, VarName::visible, false.into()),
-                BattleAction::wait(ANIMATION),
-            ]
-            .into()
+
+            let mut actions = [BattleAction::var_set(
+                entity,
+                VarName::visible,
+                false.into(),
+            )]
+            .to_vec();
+            for child in context.children_entity(entity)? {
+                actions.push(BattleAction::var_set(child, VarName::visible, false.into()));
+            }
+            actions.push(BattleAction::wait(ANIMATION));
+            Ok(actions)
         } else {
-            default()
+            Ok(default())
         }
     }
     #[must_use]

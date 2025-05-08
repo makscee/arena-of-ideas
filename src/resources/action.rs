@@ -103,13 +103,13 @@ impl ActionImpl for Action {
                 }
                 let status = context.first_parent_recursive::<NStatusMagic>(caster)?;
                 let name = &status.status_name;
-                let entity = status.entity().id(context)?;
-                todo!("replace status copy with link + state");
                 let mut status = status.clone();
                 let mut description = context
-                    .first_parent_recursive::<NStatusDescription>(entity)?
+                    .first_parent_recursive::<NStatusDescription>(status.id)?
                     .clone();
-                let behavior = context.first_parent_recursive::<NBehavior>(entity)?.clone();
+                let mut behavior = context
+                    .first_parent_recursive::<NBehavior>(status.id)?
+                    .clone();
                 let color = context.get_color(VarName::color)?;
                 let text = format!("apply [{} [b {name}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
@@ -121,9 +121,16 @@ impl ActionImpl for Action {
                     "text".into(),
                 ));
                 let representation = context
-                    .first_child_recursive::<NRepresentation>(entity)
+                    .first_child_recursive::<NRepresentation>(status.id)
                     .ok()
-                    .cloned();
+                    .cloned()
+                    .map(|mut r| {
+                        r.id = 0;
+                        r
+                    });
+                status.id = 0;
+                description.id = 0;
+                behavior.id = 0;
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;

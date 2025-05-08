@@ -88,7 +88,7 @@ impl BattleCamera {
             }
             let world = context.world_mut()?;
             for entity in world
-                .query_filtered::<Entity, With<Vfx>>()
+                .query_filtered::<Entity, With<NRepresentation>>()
                 .iter(world)
                 .collect_vec()
             {

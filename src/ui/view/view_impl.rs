@@ -71,6 +71,7 @@ impl ViewFns for Expression {
         Some(|s, source| {
             <Expression as Injector<Expression>>::inject_inner(s, source);
             <Expression as Injector<f32>>::inject_inner(s, source);
+            <Expression as Injector<i32>>::inject_inner(s, source);
             <Expression as Injector<VarName>>::inject_inner(s, source);
             <Expression as Injector<HexColor>>::inject_inner(s, source);
         })
@@ -101,6 +102,7 @@ impl ViewChildren for Expression {
     fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = view_children_recursive::<_, Self>(self, vctx, context, ui);
         vr.merge(view_children::<_, f32>(self, vctx, context, ui));
+        vr.merge(view_children::<_, i32>(self, vctx, context, ui));
         vr.merge(view_children::<_, HexColor>(self, vctx, context, ui));
         vr
     }
@@ -112,6 +114,7 @@ impl ViewChildren for Expression {
     ) -> ViewResponse {
         let mut vr = view_children_recursive_mut::<_, Self>(self, vctx, context, ui);
         vr.merge(view_children_mut::<_, f32>(self, vctx, context, ui));
+        vr.merge(view_children_mut::<_, i32>(self, vctx, context, ui));
         vr.merge(view_children_mut::<_, HexColor>(self, vctx, context, ui));
         vr
     }
@@ -336,6 +339,24 @@ impl ViewFns for VarName {
 }
 
 impl ViewFns for f32 {
+    fn title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        type_name_of_val_short(self).cstr()
+    }
+    fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+        Some(|s, _, _, ui| {
+            s.cstr().label(ui);
+        })
+    }
+    fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+        Some(|s, _, context, ui| {
+            let mut vr = ViewResponse::default();
+            vr.changed = s.show_mut(context, ui);
+            vr
+        })
+    }
+}
+
+impl ViewFns for i32 {
     fn title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         type_name_of_val_short(self).cstr()
     }

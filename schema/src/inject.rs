@@ -206,6 +206,20 @@ impl Injector<f32> for Expression {
         }
     }
 }
+impl Injector<i32> for Expression {
+    fn get_inner_mut(&mut self) -> Vec<&mut i32> {
+        match self {
+            Expression::i32(v) => [v].into(),
+            _ => default(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&i32> {
+        match self {
+            Expression::i32(v) => [v].into(),
+            _ => default(),
+        }
+    }
+}
 impl Injector<VarName> for Expression {
     fn get_inner_mut(&mut self) -> Vec<&mut VarName> {
         match self {
