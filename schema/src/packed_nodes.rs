@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use super::*;
 
 #[derive(Default, Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -23,6 +25,9 @@ pub struct NodeLink {
 }
 
 impl PackedNodes {
+    pub fn kind(&self) -> &String {
+        &self.nodes.get(&self.root).unwrap().kind
+    }
     pub fn get<'a>(&'a self, id: u64) -> Option<&'a NodeData> {
         self.nodes.get(&id)
     }
@@ -80,5 +85,28 @@ impl PackedNodes {
                 },
             )
             .collect()
+    }
+    pub fn reassign_ids(&mut self, next_id: &mut u64) {
+        let mut remap: HashMap<u64, u64> = default();
+        for (id, data) in self.nodes.drain().collect_vec() {
+            let new_id = *next_id;
+            *next_id += 1;
+            remap.insert(id, new_id);
+            self.nodes.insert(new_id, data);
+        }
+        for NodeLink {
+            parent,
+            child,
+            parent_kind: _,
+            child_kind: _,
+        } in &mut self.links
+        {
+            if let Some(id) = remap.get(parent) {
+                *parent = *id;
+            }
+            if let Some(id) = remap.get(child) {
+                *child = *id;
+            }
+        }
     }
 }

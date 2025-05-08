@@ -605,6 +605,21 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
+                    pub fn view_pack_with_children_mut(self, context: &Context, ui: &mut Ui, pack: &mut PackedNodes) -> Result<ViewResponse, ExpressionError> {
+                        match self {
+                            Self::None => unimplemented!(),
+                            #(
+                                Self::#variants => {
+                                    let mut n = #variants::unpack_id(pack.root, pack).to_custom_e("Failed to unpack")?;
+                                    let vr = n.view_with_children_mut(ViewContext::new(ui), context, ui);
+                                    if vr.changed {
+                                        *pack = n.pack();
+                                    }
+                                    Ok(vr)
+                                }
+                            )*
+                        }
+                    }
                 }
             }.into()
         }

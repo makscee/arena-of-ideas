@@ -1,6 +1,5 @@
 mod admin;
 mod audio;
-mod background;
 mod battle;
 mod connect;
 mod game_timer;
@@ -18,7 +17,6 @@ mod ui;
 use super::*;
 pub use admin::*;
 pub use audio::*;
-pub use background::*;
 pub use battle::*;
 pub use connect::*;
 pub use game_timer::*;

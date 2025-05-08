@@ -24,6 +24,26 @@ pub trait NodeViewFns: NodeExt {
         context: &Context,
         ui: &mut Ui,
     ) -> ViewResponse {
+        if ui.button("publish").clicked() {
+            let mut pack = self.pack();
+            op(move |world| {
+                Window::new("publish node", move |ui, world| {
+                    if "publish".cstr().button(ui).clicked() {
+                        cn().reducers.core_publish(to_ron_string(&pack)).unwrap();
+                        WindowPlugin::close_current(world);
+                    }
+                    Context::from_world(world, |context| {
+                        pack.kind()
+                            .to_kind()
+                            .view_pack_with_children_mut(context, ui, &mut pack)
+                            .ui(ui);
+                    });
+                })
+                .expand()
+                .push(world);
+            });
+            ui.close_menu();
+        }
         default()
     }
 }

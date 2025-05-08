@@ -30,18 +30,33 @@ pub struct TNodeLink {
 }
 
 impl TNodeLink {
-    pub fn add(ctx: &ReducerContext, child: &TNode, parent: &TNode) -> Result<(), String> {
+    pub fn add_by_id(
+        ctx: &ReducerContext,
+        parent: u64,
+        child: u64,
+        parent_kind: String,
+        child_kind: String,
+    ) -> Result<(), String> {
         ctx.db
             .node_links()
             .try_insert(Self {
-                child: child.id,
-                parent: parent.id,
-                child_kind: child.kind.clone(),
-                parent_kind: parent.kind.clone(),
+                child,
+                parent,
+                child_kind,
+                parent_kind,
                 score: 0,
             })
             .map_err(|e| e.to_string())?;
         Ok(())
+    }
+    pub fn add(ctx: &ReducerContext, child: &TNode, parent: &TNode) -> Result<(), String> {
+        Self::add_by_id(
+            ctx,
+            parent.id,
+            child.id,
+            parent.kind.clone(),
+            child.kind.clone(),
+        )
     }
     pub fn kind_parents(ctx: &ReducerContext, id: u64, kind: NodeKind) -> Vec<Self> {
         let kind = kind.to_string();
@@ -230,6 +245,9 @@ impl TNode {
             data,
             score: 0,
         }
+    }
+    pub fn insert(self, ctx: &ReducerContext) {
+        ctx.db.nodes_world().insert(self);
     }
 }
 

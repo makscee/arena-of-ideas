@@ -101,7 +101,7 @@ impl Window {
         let mut w = egui::Window::new(&self.id)
             .default_width(self.default_width)
             .default_height(self.default_height)
-            .resizable([false, false])
+            // .resizable([false, false])
             .title_bar(false)
             .frame(if self.no_frame {
                 Frame::new()
@@ -132,9 +132,11 @@ impl Window {
             let rect = CollapsingHeader::new(&self.id)
                 .default_open(true)
                 .show_unindented(ui, |ui| {
-                    ScrollArea::both().show(ui, |ui| {
-                        (self.content)(ui, world);
-                    });
+                    ScrollArea::both()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            (self.content)(ui, world);
+                        });
                 })
                 .header_response
                 .rect;

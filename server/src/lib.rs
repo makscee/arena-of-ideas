@@ -1,3 +1,4 @@
+mod content;
 mod daily_updater;
 mod global_data;
 mod global_settings;

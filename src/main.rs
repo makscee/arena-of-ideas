@@ -86,7 +86,6 @@ fn main() {
             RepresentationPlugin,
             GameTimerPlugin,
             WindowPlugin,
-            BackgroundPlugin,
             StdbSyncPlugin,
             MatchPlugin,
             PersistentDataPlugin,

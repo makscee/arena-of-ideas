@@ -6,6 +6,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
+pub mod core_publish_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
@@ -43,6 +44,7 @@ pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
 };
+pub use core_publish_reducer::{core_publish, set_flags_for_core_publish, CorePublishCallbackId};
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
 };
@@ -102,6 +104,9 @@ pub enum Reducer {
     AdminDeleteNodeRecursive {
         id: u64,
     },
+    CorePublish {
+        pack: String,
+    },
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
     },
@@ -155,6 +160,7 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
+            Reducer::CorePublish { .. } => "core_publish",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::Login { .. } => "login",
@@ -190,6 +196,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
+            "core_publish" => Ok(
+                __sdk::parse_reducer_args::<core_publish_reducer::CorePublishArgs>(
+                    "core_publish",
+                    &value.args,
+                )?
+                .into(),
+            ),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,
             >("daily_update_reducer", &value.args)?

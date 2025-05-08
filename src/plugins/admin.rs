@@ -54,7 +54,7 @@ impl AdminPlugin {
         }
         if "Inspect Nodes".cstr().button(ui).clicked() {
             Window::new("Nodes Inspector", |ui, world| {
-                show_node_with_children(0, ui, world);
+                show_node_with_children(1, ui, world);
             })
             .expand()
             .push(world);
