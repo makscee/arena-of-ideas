@@ -6,6 +6,7 @@ use super::*;
 pub struct ViewContext {
     pub id: Id,
     pub collapsed: bool,
+    pub selected: bool,
     pub non_interactible: bool,
     pub one_line: bool,
     pub separate_contex_menu_btn: bool,
@@ -18,6 +19,7 @@ impl ViewContext {
         Self {
             id: ui.id(),
             collapsed: false,
+            selected: false,
             non_interactible: false,
             one_line: false,
             separate_contex_menu_btn: false,
@@ -45,6 +47,10 @@ impl ViewContext {
     }
     pub fn non_interactible(mut self, value: bool) -> Self {
         self.non_interactible = value;
+        self
+    }
+    pub fn one_line(mut self, value: bool) -> Self {
+        self.one_line = value;
         self
     }
     pub fn context_btn(mut self) -> Self {
@@ -156,28 +162,44 @@ pub trait View: Sized + ViewFns {
         vr
     }
     fn view(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
-        let mut response = ViewResponse::default();
+        let mut vr = ViewResponse::default();
+        let vctx = vctx.merge_state(self, ui);
         ui.horizontal(|ui| {
-            let r = self.view_title(vctx, context, ui);
-            if let Some(f) = Self::fn_view_context_menu() {
+            let mut r = self.view_title(vctx, context, ui);
+            if ui.rect_contains_pointer(r.rect) && collapse_btn(&r, ui).clicked() {
+                vctx.collapsed(!vctx.collapsed).save_state(ui);
+            }
+            if Self::fn_view_context_menu().is_some() {
                 if vctx.separate_contex_menu_btn {
                     circle_btn(&r, ui)
                 } else {
                     r.clone()
                 }
                 .bar_menu(|ui| {
-                    f(self, vctx, context, ui);
+                    if let Some(f) = Self::fn_view_context_menu() {
+                        f(self, vctx, context, ui);
+                    }
                 });
             }
             if let Some(f) = Self::fn_view_type() {
                 f(self, vctx, context, ui);
             }
-            response.title_clicked |= r.clicked();
+            if let Some(f) = Self::fn_view_value() {
+                r = r.on_hover_ui(|ui| {
+                    f(self, vctx, context, ui);
+                });
+            }
+            if r.clicked() {
+                vr.title_clicked = true;
+            }
         });
+        if vctx.collapsed {
+            return vr;
+        }
         if let Some(f) = Self::fn_view_data() {
             f(self, vctx, context, ui);
         }
-        response
+        vr
     }
 }
 

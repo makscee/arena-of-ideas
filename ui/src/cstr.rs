@@ -22,6 +22,7 @@ pub trait CstrTrait {
     fn job(&self, a: f32, style: &Style) -> LayoutJob;
     fn label(&self, ui: &mut Ui) -> Response;
     fn label_w(&self, ui: &mut Ui) -> Response;
+    fn label_t(&self, ui: &mut Ui) -> Response;
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response;
     fn as_label(&self, style: &Style) -> Label;
     fn as_label_alpha(&self, a: f32, style: &Style) -> Label;
@@ -50,6 +51,9 @@ impl CstrTrait for Cstr {
     }
     fn label_w(&self, ui: &mut Ui) -> Response {
         self.as_label(ui.style()).wrap().ui(ui)
+    }
+    fn label_t(&self, ui: &mut Ui) -> Response {
+        self.as_label(ui.style()).truncate().ui(ui)
     }
     fn label_alpha(&self, a: f32, ui: &mut Ui) -> Response {
         self.as_label_alpha(a, ui.style()).ui(ui)
@@ -596,6 +600,6 @@ impl ToCstr for ExpressionError {
 }
 impl ToCstr for Reaction {
     fn cstr(&self) -> Cstr {
-        format!("{}", self.trigger.cstr())
+        format!("{}->[th {}]", self.trigger.cstr(), self.actions.len())
     }
 }

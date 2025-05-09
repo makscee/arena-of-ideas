@@ -595,12 +595,12 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
-                    pub fn show_explorer(self, context: &mut Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+                    pub fn show_explorer(self, context: &mut Context, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
                         match self {
-                            Self::None => unimplemented!(),
+                            Self::None => Ok(None),
                             #(
                                 Self::#variants => {
-                                    NodeExplorer::<#variants>::new().ui(context, ui)
+                                    NodesListWidget::<#variants>::new().ui(context, ui, ids, selected)
                                 }
                             )*
                         }
@@ -616,6 +616,16 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                                         *pack = n.pack();
                                     }
                                     Ok(vr)
+                                }
+                            )*
+                        }
+                    }
+                    pub fn query_all_ids(self, world: &mut World) -> Vec<u64> {
+                        match self {
+                            Self::None => default(),
+                            #(
+                                Self::#variants => {
+                                    world.query::<&#variants>().iter(world).map(|n| n.id()).collect()
                                 }
                             )*
                         }

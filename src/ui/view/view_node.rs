@@ -1,11 +1,21 @@
 use super::*;
 
-pub trait NodeViewFns: NodeExt {
-    fn view_node(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
+pub trait NodeViewFns: NodeExt + ViewFns {
+    fn view_node(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        let mut vr = ViewResponse::default();
         ui.horizontal(|ui| {
-            self.node_title_cstr(vctx, context).label(ui);
+            if vctx.selected {
+                ui.painter().rect_filled(
+                    ui.available_rect_before_wrap(),
+                    0,
+                    ui.visuals().widgets.hovered.bg_fill,
+                );
+            }
+            vr.title_clicked = self.view_title(vctx, context, ui).clicked();
+            self.id().label(ui);
             self.view_data(vctx, context, ui);
         });
+        vr
     }
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
@@ -65,10 +75,51 @@ impl NodeViewFns for NMatch {}
 impl NodeViewFns for NShopCaseUnit {}
 impl NodeViewFns for NFusion {}
 impl NodeViewFns for NUnit {}
-impl NodeViewFns for NUnitDescription {}
+impl NodeViewFns for NUnitDescription {
+    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
+        if vctx.one_line {
+            self.description.label_t(ui);
+        } else {
+            self.show(context, ui);
+        }
+    }
+}
 impl NodeViewFns for NUnitStats {}
-impl NodeViewFns for NBehavior {}
-impl NodeViewFns for NRepresentation {}
+impl NodeViewFns for NBehavior {
+    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
+        if vctx.one_line {
+            let s = self
+                .reactions
+                .iter()
+                .map(|r| {
+                    format!(
+                        "{} ({})",
+                        r.trigger.cstr(),
+                        r.actions.iter().map(|a| a.cstr()).join(", ")
+                    )
+                })
+                .join(" ");
+            s.label_t(ui);
+        } else {
+            self.show(context, ui);
+        }
+    }
+}
+impl NodeViewFns for NRepresentation {
+    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
+        if vctx.one_line {
+            RectButton::new_size(LINE_HEIGHT.v2())
+                .ui(ui, |_, rect, _, ui| {
+                    RepresentationPlugin::paint_rect(rect, context, &self.material, ui).ui(ui);
+                })
+                .on_hover_ui(|ui| {
+                    self.view_with_children(vctx.one_line(false), context, ui);
+                });
+        } else {
+            self.show(context, ui);
+        }
+    }
+}
 impl NodeViewFns for NArena {}
 impl NodeViewFns for NFloorPool {}
 impl NodeViewFns for NFloorBoss {}

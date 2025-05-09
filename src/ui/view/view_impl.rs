@@ -23,7 +23,7 @@ fn view_children_recursive<T: Inject + Injector<I>, I: ViewChildren>(
     let mut vr = ViewResponse::default();
     for (i, e) in <T as Injector<I>>::get_inner(s).into_iter().enumerate() {
         ui.horizontal(|ui| {
-            vr.merge(e.view(vctx.with_id(i), context, ui));
+            vr.merge(e.view_with_children(vctx.with_id(i), context, ui));
         });
     }
     vr

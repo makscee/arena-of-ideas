@@ -90,6 +90,7 @@ fn main() {
             MatchPlugin,
             PersistentDataPlugin,
             BattlePlugin,
+            NodeExplorerPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

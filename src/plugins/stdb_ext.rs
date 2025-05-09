@@ -78,10 +78,28 @@ impl ReducerEventContext {
 
 pub trait NodeIdExt {
     fn get_node(self) -> Option<TNode>;
+    fn kind(self) -> Result<NodeKind, ExpressionError>;
+    fn label(self, ui: &mut Ui) -> Response;
 }
 
 impl NodeIdExt for u64 {
     fn get_node(self) -> Option<TNode> {
         cn().db.nodes_world().id().find(&self)
+    }
+    fn kind(self) -> Result<NodeKind, ExpressionError> {
+        Ok(cn()
+            .db
+            .nodes_world()
+            .id()
+            .find(&self)
+            .to_e_not_found()?
+            .kind())
+    }
+    fn label(self, ui: &mut Ui) -> Response {
+        format!("[s [tw #]{}]", self % 10000)
+            .label(ui)
+            .on_hover_ui(|ui| {
+                format!("[tw #]{self}").label(ui);
+            })
     }
 }

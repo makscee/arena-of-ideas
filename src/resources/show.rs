@@ -157,7 +157,7 @@ impl Show for Vec2 {
 }
 impl Show for String {
     fn show(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label_w(ui);
+        self.cstr().label_t(ui);
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Input::new("").ui_string(self, ui).changed()

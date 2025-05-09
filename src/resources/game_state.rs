@@ -25,6 +25,7 @@ pub enum GameState {
     Error,
     Query,
     Editor,
+    Explorer,
 }
 
 const TREE_ID: &str = "tree";
@@ -53,6 +54,15 @@ impl GameState {
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
             }
+            GameState::Explorer => Tree::new_horizontal(
+                TREE_ID,
+                [
+                    Pane::Explorer(ExplorerPane::Parents),
+                    Pane::Explorer(ExplorerPane::Selected),
+                    Pane::Explorer(ExplorerPane::Children),
+                ]
+                .into(),
+            ),
             GameState::Shop => {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
@@ -94,6 +104,7 @@ pub enum Pane {
 
     Admin,
     WorldInspector,
+    Explorer(ExplorerPane),
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -111,6 +122,12 @@ pub enum ShopPane {
     Roster,
     Team,
     Info,
+}
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum ExplorerPane {
+    Selected,
+    Parents,
+    Children,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -154,6 +171,12 @@ impl Pane {
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
                 BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
+            },
+
+            Pane::Explorer(pane) => match pane {
+                ExplorerPane::Selected => NodeExplorerPlugin::pane_selected(ui, world)?,
+                ExplorerPane::Parents => NodeExplorerPlugin::pane_parents(ui, world)?,
+                ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),

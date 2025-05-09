@@ -35,6 +35,7 @@ impl TopBar {
                     ui.close_menu();
                 }
             });
+            Self::state_btn(GameState::Explorer, ui, world, |_, _| {});
             ui.menu_button("settings", |ui| {
                 if "theme".cstr().button(ui).clicked() {
                     Window::new("theme Editor", |ui, _| {
