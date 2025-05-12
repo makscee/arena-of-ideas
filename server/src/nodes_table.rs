@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use super::*;
 
-#[table(public, name = nodes_world)]
+#[table(public, name = nodes_world, index(name = kind_owner, btree(columns = [kind, owner])))]
 #[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]
@@ -85,6 +85,7 @@ impl TNodeLink {
 }
 
 pub trait NodeIdExt {
+    fn get(self, ctx: &ReducerContext) -> Option<TNode>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
     fn parents(self, ctx: &ReducerContext, id: u64) -> Vec<u64>;
     fn children(self, ctx: &ReducerContext, id: u64) -> Vec<u64>;
@@ -94,12 +95,17 @@ pub trait NodeIdExt {
     fn get_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn find_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn find_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
-    fn collect_kind_parents(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64>;
-    fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64>;
+    fn collect_kind_parents(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<(u64, i32)>;
+    fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<(u64, i32)>;
     fn collect_parents_recursive(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn collect_children_recursive(self, ctx: &ReducerContext) -> HashSet<u64>;
+    fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
+    fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
 }
 impl NodeIdExt for u64 {
+    fn get(self, ctx: &ReducerContext) -> Option<TNode> {
+        ctx.db.nodes_world().id().find(self)
+    }
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind> {
         ctx.db.nodes_world().id().find(self).map(|v| v.kind())
     }
@@ -175,16 +181,16 @@ impl NodeIdExt for u64 {
         }
         None
     }
-    fn collect_kind_parents(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64> {
+    fn collect_kind_parents(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<(u64, i32)> {
         TNodeLink::kind_parents(ctx, self, kind)
             .into_iter()
-            .map(|l| l.parent)
+            .map(|l| (l.parent, l.score))
             .collect()
     }
-    fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64> {
+    fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<(u64, i32)> {
         TNodeLink::kind_children(ctx, self, kind)
             .into_iter()
-            .map(|l| l.child)
+            .map(|l| (l.child, l.score))
             .collect()
     }
     fn collect_parents_recursive(self, ctx: &ReducerContext) -> HashSet<u64> {
@@ -210,6 +216,30 @@ impl NodeIdExt for u64 {
             }
         }
         result
+    }
+    fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
+        let (child, _) = self.collect_kind_children(ctx, kind).get(0).copied()?;
+        let (parent, _) = child
+            .collect_kind_parents(ctx, self.kind(ctx)?)
+            .get(0)
+            .copied()?;
+        if parent == self {
+            Some(child)
+        } else {
+            None
+        }
+    }
+    fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
+        let (parent, _) = self.collect_kind_parents(ctx, kind).get(0).copied()?;
+        let (child, _) = parent
+            .collect_kind_children(ctx, self.kind(ctx)?)
+            .get(0)
+            .copied()?;
+        if child == self {
+            Some(parent)
+        } else {
+            None
+        }
     }
 }
 
@@ -248,6 +278,9 @@ impl TNode {
     }
     pub fn insert(self, ctx: &ReducerContext) {
         ctx.db.nodes_world().insert(self);
+    }
+    pub fn update(self, ctx: &ReducerContext) {
+        ctx.db.nodes_world().id().update(self);
     }
 }
 

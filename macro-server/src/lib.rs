@@ -152,7 +152,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #one_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #one_types, String> {
                             let id = self.id();
                             if self.#one_fields.is_none() {
-                                self.#one_fields = Some(self.find_child::<#one_types>(ctx)?);
+                                self.#one_fields = self.top_parent::<#one_types>(ctx);
                             }
                             self.#one_fields
                                 .as_mut()
@@ -162,7 +162,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #(
                         pub fn #many_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#many_types>, String> {
                             if self.#many_fields.is_empty() {
-                                self.#many_fields = #many_types::collect_children_of_id(ctx, self.id());
+                                self.#many_fields = self.collect_top_children::<#many_types>(ctx);
                             }
                             if self.#many_fields.is_empty() {
                                 return Err(format!("No {} children found for {}", #many_types::kind_s(), self.id()));
@@ -229,6 +229,20 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         d
+                    }
+                    fn collect_ids(&self) -> Vec<u64> {
+                        let mut v = [self.id].to_vec();
+                        #(
+                            if let Some(n) = self.#one_fields.as_ref() {
+                                v.extend(n.collect_ids());
+                            }
+                        )*
+                        #(
+                            for n in &self.#many_fields {
+                                v.extend(n.collect_ids());
+                            }
+                        )*
+                        v
                     }
                 }
             }

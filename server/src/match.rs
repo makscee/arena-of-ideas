@@ -175,7 +175,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     if let Some(team) = pool_id
         .collect_kind_parents(ctx, NodeKind::NTeam)
         .choose(&mut ctx.rng())
-        .and_then(|id| NTeam::get(ctx, *id))
+        .and_then(|(id, score)| NTeam::get(ctx, *id))
     {
         let player_team_id = player_team.clone_ids_remap(ctx, pool_id)?.id;
         NBattle::new(

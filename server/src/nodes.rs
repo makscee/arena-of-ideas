@@ -26,6 +26,7 @@ pub trait Node: Default + Sized {
     fn clone(&self, ctx: &ReducerContext, remap: &mut HashMap<u64, u64>) -> Self;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
+    fn collect_ids(&self) -> Vec<u64>;
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
@@ -36,15 +37,20 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
-    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
+    fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
+    fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
+    fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn insert_self(&self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
     fn delete_self(&self, ctx: &ReducerContext);
     fn delete_recursive(&self, ctx: &ReducerContext);
     fn tnode_collect_kind(ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode>;
     fn collect_kind(ctx: &ReducerContext) -> Vec<Self>;
-    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self>;
-    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
+    fn collect_kind_by_owner(ctx: &ReducerContext, owner: u64) -> Vec<Self>;
+    fn collect_parents_of_id(ctx: &ReducerContext, parent: u64) -> Vec<(Self, i32)>;
+    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<(Self, i32)>;
+    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<(P, i32)>;
+    fn collect_top_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
 }
 
 impl<T> NodeExt for T
@@ -94,15 +100,33 @@ where
             .filter_map(|d| d.to_node::<T>().ok())
             .collect()
     }
-    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<Self> {
+    fn collect_kind_by_owner(ctx: &ReducerContext, owner: u64) -> Vec<Self> {
+        let kind = Self::kind_s().to_string();
+        ctx.db
+            .nodes_world()
+            .kind_owner()
+            .filter((&kind, owner))
+            .sorted_by_key(|n| -n.score)
+            .filter_map(|n| n.to_node().ok())
+            .collect()
+    }
+    fn collect_parents_of_id(ctx: &ReducerContext, child: u64) -> Vec<(Self, i32)> {
+        child
+            .collect_kind_parents(ctx, Self::kind_s())
+            .into_iter()
+            .filter_map(|(id, score)| Self::get(ctx, id).map(|n| (n, score)))
+            .sorted_by_key(|(n, score)| (-*score, n.id()))
+            .collect()
+    }
+    fn collect_children_of_id(ctx: &ReducerContext, parent: u64) -> Vec<(Self, i32)> {
         parent
             .collect_kind_children(ctx, Self::kind_s())
             .into_iter()
-            .filter_map(|id| Self::get(ctx, id))
-            .sorted_by_key(|n| n.id())
+            .filter_map(|(id, score)| Self::get(ctx, id).map(|n| (n, score)))
+            .sorted_by_key(|(n, score)| (-*score, n.id()))
             .collect()
     }
-    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
+    fn collect_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<(P, i32)> {
         P::collect_children_of_id(ctx, self.id())
     }
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self> {
@@ -114,23 +138,43 @@ where
         P::find_parent_of_id(ctx, self.id())
             .to_custom_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
     }
-    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
-        let mut c = P::collect_children_of_id(ctx, self.id());
-        if c.len() > 1 {
-            return Err(format!(
-                "More than 1 child of {} kind {} found",
-                self.id(),
-                P::kind_s()
-            ));
-        }
+    fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        let mut c = P::collect_parents_of_id(ctx, self.id());
         if c.is_empty() {
-            return Err(format!(
-                "No children of {} kind {} found",
-                self.id(),
-                P::kind_s()
-            ));
+            None
+        } else {
+            Some(c.remove(0).0)
         }
-        Ok(c.remove(0))
+    }
+    fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        let mut c = P::collect_children_of_id(ctx, self.id());
+        if c.is_empty() {
+            None
+        } else {
+            Some(c.remove(0).0)
+        }
+    }
+    fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        self.id()
+            .mutual_top_parent(ctx, P::kind_s())?
+            .get(ctx)?
+            .to_node()
+            .ok()
+    }
+    fn collect_top_children<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
+        self.collect_children::<P>(ctx)
+            .into_iter()
+            .filter_map(|(child, _)| {
+                if child
+                    .find_parent::<Self>(ctx)
+                    .is_ok_and(|p| p.id() == self.id())
+                {
+                    Some(child)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 

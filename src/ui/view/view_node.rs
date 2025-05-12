@@ -39,7 +39,9 @@ pub trait NodeViewFns: NodeExt + ViewFns {
             op(move |world| {
                 Window::new("publish node", move |ui, world| {
                     if "publish".cstr().button(ui).clicked() {
-                        cn().reducers.core_publish(to_ron_string(&pack)).unwrap();
+                        cn().reducers
+                            .content_publish_node(to_ron_string(&pack))
+                            .unwrap();
                         WindowPlugin::close_current(world);
                     }
                     Context::from_world(world, |context| {

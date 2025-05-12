@@ -6,7 +6,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
-pub mod core_publish_reducer;
+pub mod content_publish_node_reducer;
+pub mod content_rotation_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
@@ -44,7 +45,12 @@ pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
 };
-pub use core_publish_reducer::{core_publish, set_flags_for_core_publish, CorePublishCallbackId};
+pub use content_publish_node_reducer::{
+    content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
+};
+pub use content_rotation_reducer::{
+    content_rotation, set_flags_for_content_rotation, ContentRotationCallbackId,
+};
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
 };
@@ -104,9 +110,10 @@ pub enum Reducer {
     AdminDeleteNodeRecursive {
         id: u64,
     },
-    CorePublish {
+    ContentPublishNode {
         pack: String,
     },
+    ContentRotation,
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
     },
@@ -160,7 +167,8 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
-            Reducer::CorePublish { .. } => "core_publish",
+            Reducer::ContentPublishNode { .. } => "content_publish_node",
+            Reducer::ContentRotation => "content_rotation",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::Login { .. } => "login",
@@ -196,13 +204,14 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
-            "core_publish" => Ok(
-                __sdk::parse_reducer_args::<core_publish_reducer::CorePublishArgs>(
-                    "core_publish",
-                    &value.args,
-                )?
-                .into(),
-            ),
+            "content_publish_node" => Ok(__sdk::parse_reducer_args::<
+                content_publish_node_reducer::ContentPublishNodeArgs,
+            >("content_publish_node", &value.args)?
+            .into()),
+            "content_rotation" => Ok(__sdk::parse_reducer_args::<
+                content_rotation_reducer::ContentRotationArgs,
+            >("content_rotation", &value.args)?
+            .into()),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,
             >("daily_update_reducer", &value.args)?

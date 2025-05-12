@@ -210,7 +210,7 @@ pub fn table_conversions(
     quote! {
         fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
-                self.#one_fields = self.find_child::<#one_types>(ctx).ok()
+                self.#one_fields = self.top_parent::<#one_types>(ctx)
                     .map(|mut d| std::mem::take(d.with_components(ctx)
                         .with_children(ctx))
                     );
@@ -219,7 +219,7 @@ pub fn table_conversions(
         }
         fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
             #(
-                self.#many_fields = self.collect_children::<#many_types>(ctx)
+                self.#many_fields = self.collect_top_children::<#many_types>(ctx)
                     .into_iter()
                     .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
                     .collect();
