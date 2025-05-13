@@ -387,7 +387,9 @@ impl __sdk::DbUpdate for DbUpdate {
             cache.apply_diff_to_table::<GlobalData>("global_data", &self.global_data);
         diff.global_settings =
             cache.apply_diff_to_table::<GlobalSettings>("global_settings", &self.global_settings);
-        diff.node_links = cache.apply_diff_to_table::<TNodeLink>("node_links", &self.node_links);
+        diff.node_links = cache
+            .apply_diff_to_table::<TNodeLink>("node_links", &self.node_links)
+            .with_updates_by_pk(|row| &row.id);
         diff.nodes_world = cache
             .apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world)
             .with_updates_by_pk(|row| &row.id);

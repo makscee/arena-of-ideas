@@ -81,6 +81,23 @@ impl<'ctx> __sdk::Table for NodeLinksTableHandle<'ctx> {
 #[doc(hidden)]
 pub(super) fn register_table(client_cache: &mut __sdk::ClientCache<super::RemoteModule>) {
     let _table = client_cache.get_or_make_table::<TNodeLink>("node_links");
+    _table.add_unique_constraint::<u64>("id", |row| &row.id);
+}
+pub struct NodeLinksUpdateCallbackId(__sdk::CallbackId);
+
+impl<'ctx> __sdk::TableWithPrimaryKey for NodeLinksTableHandle<'ctx> {
+    type UpdateCallbackId = NodeLinksUpdateCallbackId;
+
+    fn on_update(
+        &self,
+        callback: impl FnMut(&Self::EventContext, &Self::Row, &Self::Row) + Send + 'static,
+    ) -> NodeLinksUpdateCallbackId {
+        NodeLinksUpdateCallbackId(self.imp.on_update(Box::new(callback)))
+    }
+
+    fn remove_on_update(&self, callback: NodeLinksUpdateCallbackId) {
+        self.imp.remove_on_update(callback.0)
+    }
 }
 
 #[doc(hidden)]
@@ -92,4 +109,34 @@ pub(super) fn parse_table_update(
             .with_cause(e)
             .into()
     })
+}
+
+/// Access to the `id` unique index on the table `node_links`,
+/// which allows point queries on the field of the same name
+/// via the [`NodeLinksIdUnique::find`] method.
+///
+/// Users are encouraged not to explicitly reference this type,
+/// but to directly chain method calls,
+/// like `ctx.db.node_links().id().find(...)`.
+pub struct NodeLinksIdUnique<'ctx> {
+    imp: __sdk::UniqueConstraintHandle<TNodeLink, u64>,
+    phantom: std::marker::PhantomData<&'ctx super::RemoteTables>,
+}
+
+impl<'ctx> NodeLinksTableHandle<'ctx> {
+    /// Get a handle on the `id` unique index on the table `node_links`.
+    pub fn id(&self) -> NodeLinksIdUnique<'ctx> {
+        NodeLinksIdUnique {
+            imp: self.imp.get_unique_constraint::<u64>("id"),
+            phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<'ctx> NodeLinksIdUnique<'ctx> {
+    /// Find the subscribed row whose `id` column value is equal to `col_val`,
+    /// if such a row is present in the client cache.
+    pub fn find(&self, col_val: &u64) -> Option<TNodeLink> {
+        self.imp.find(col_val)
+    }
 }

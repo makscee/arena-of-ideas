@@ -1,5 +1,4 @@
-use spacetimedb_lib::Identity;
-use spacetimedb_sdk::{DbContext, Table};
+use spacetimedb_sdk::Table;
 
 use crate::login;
 
@@ -42,7 +41,7 @@ impl LoginPlugin {
                 });
             });
         });
-        cn().reducers.on_login(|e, name, _| {
+        cn().reducers.on_login(|e, _, _| {
             if !e.check_identity() {
                 return;
             }
@@ -72,8 +71,8 @@ impl LoginPlugin {
                 .db
                 .node_links()
                 .iter()
-                .find(|link| link.child == identity_node.id)
-                .and_then(|link| NPlayer::load(link.parent))
+                .find(|link| link.parent == identity_node.id)
+                .and_then(|link| NPlayer::load(link.child))
             {
                 dbg!(&player);
                 let mut cs = pd().client_state.clone();

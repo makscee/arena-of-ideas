@@ -27,6 +27,7 @@ pub trait Node: Default + Sized {
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;
+    fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String>;
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
@@ -36,7 +37,9 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
+    fn find_child_of_id(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
+    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String>;
     fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
@@ -134,9 +137,18 @@ where
         id.find_kind_parent(ctx, kind)
             .and_then(|id| Self::get(ctx, id))
     }
+    fn find_child_of_id(ctx: &ReducerContext, id: u64) -> Option<Self> {
+        let kind = Self::kind_s();
+        id.find_kind_child(ctx, kind)
+            .and_then(|id| Self::get(ctx, id))
+    }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
         P::find_parent_of_id(ctx, self.id())
             .to_custom_e_s_fn(|| format!("Failed to find parent {}#{}", P::kind_s(), self.id()))
+    }
+    fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Result<P, String> {
+        P::find_child_of_id(ctx, self.id())
+            .to_custom_e_s_fn(|| format!("Failed to find child {}#{}", P::kind_s(), self.id()))
     }
     fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         let mut c = P::collect_parents_of_id(ctx, self.id());

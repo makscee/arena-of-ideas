@@ -105,5 +105,11 @@ impl AdminPlugin {
             "notify test".notify(world);
             "notify error test".notify_error(world);
         }
+        if "Rotate Content".cstr().button(ui).clicked() {
+            cn().reducers.on_content_rotation(|c| {
+                c.event.notify_error();
+            });
+            cn().reducers.content_rotation().unwrap();
+        }
     }
 }

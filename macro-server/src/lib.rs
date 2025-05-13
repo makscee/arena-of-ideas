@@ -136,7 +136,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     #(
                         pub fn #one_link_fields_set(&mut self, ctx: &ReducerContext, mut #one_fields: #one_types) -> Result<&mut Self, String> {
-                            self.id.add_child(ctx, #one_fields.id)?;
+                            self.id.add_parent(ctx, #one_fields.id)?;
                             self.#one_fields = Some(#one_fields);
                             Ok(self)
                         }
@@ -243,6 +243,21 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         v
+                    }
+                    fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String> {
+                        #(
+                            if let Some(n) = &self.#one_fields {
+                                TNodeLink::solidify(ctx, n.id, self.id)?;
+                                n.solidify_links(ctx);
+                            }
+                        )*
+                        #(
+                            for n in &self.#many_fields {
+                                TNodeLink::solidify(ctx, self.id, n.id)?;
+                                n.solidify_links(ctx);
+                            }
+                        )*
+                        Ok(())
                     }
                 }
             }

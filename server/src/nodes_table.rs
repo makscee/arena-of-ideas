@@ -2,7 +2,9 @@ use std::collections::VecDeque;
 
 use super::*;
 
-#[table(public, name = nodes_world, index(name = kind_owner, btree(columns = [kind, owner])))]
+#[table(public, name = nodes_world,
+    index(name = kind_owner, btree(columns = [kind, owner])),
+    index(name = kind_data, btree(columns = [kind, data])))]
 #[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]
@@ -16,17 +18,21 @@ pub struct TNode {
     pub score: i32,
 }
 
-#[table(public, name = node_links, index(name = node_ids, btree(columns = [child, parent])))]
+#[table(public, name = node_links, index(name = parent_child, btree(columns = [parent, child])))]
 pub struct TNodeLink {
-    #[index(btree)]
-    pub child: u64,
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
     #[index(btree)]
     pub parent: u64,
     #[index(btree)]
-    pub child_kind: String,
+    pub child: u64,
     #[index(btree)]
     pub parent_kind: String,
+    #[index(btree)]
+    pub child_kind: String,
     pub score: i32,
+    pub solid: bool,
 }
 
 impl TNodeLink {
@@ -36,27 +42,58 @@ impl TNodeLink {
         child: u64,
         parent_kind: String,
         child_kind: String,
+        solid: bool,
     ) -> Result<(), String> {
-        ctx.db
+        if ctx
+            .db
             .node_links()
-            .try_insert(Self {
-                child,
-                parent,
-                child_kind,
-                parent_kind,
-                score: 0,
-            })
-            .map_err(|e| e.to_string())?;
+            .parent_child()
+            .filter((&parent, &child))
+            .next()
+            .is_some()
+        {
+            return Err("Link already present".into());
+        }
+        ctx.db.node_links().insert(Self {
+            id: 0,
+            child,
+            parent,
+            child_kind,
+            parent_kind,
+            score: 0,
+            solid,
+        });
         Ok(())
     }
-    pub fn add(ctx: &ReducerContext, child: &TNode, parent: &TNode) -> Result<(), String> {
+    pub fn add(
+        ctx: &ReducerContext,
+        child: &TNode,
+        parent: &TNode,
+        solid: bool,
+    ) -> Result<(), String> {
         Self::add_by_id(
             ctx,
             parent.id,
             child.id,
             parent.kind.clone(),
             child.kind.clone(),
+            solid,
         )
+    }
+    pub fn solidify(ctx: &ReducerContext, parent: u64, child: u64) -> Result<(), String> {
+        let mut link = ctx
+            .db
+            .node_links()
+            .parent_child()
+            .filter((&parent, &child))
+            .exactly_one()
+            .map_err(|e| e.to_string())?;
+        if link.solid {
+            return Err("Link is already solid".into());
+        }
+        link.solid = true;
+        ctx.db.node_links().id().update(link);
+        Ok(())
     }
     pub fn kind_parents(ctx: &ReducerContext, id: u64, kind: NodeKind) -> Vec<Self> {
         let kind = kind.to_string();
@@ -126,7 +163,7 @@ impl NodeIdExt for u64 {
             TNode::find(ctx, self).to_custom_e_s_fn(|| format!("Link child#{self} not found"))?;
         let parent = TNode::find(ctx, parent)
             .to_custom_e_s_fn(|| format!("Link parent#{parent} not found"))?;
-        TNodeLink::add(ctx, &child, &parent)?;
+        TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
     fn add_child(self, ctx: &ReducerContext, child: u64) -> Result<(), String> {
@@ -134,7 +171,7 @@ impl NodeIdExt for u64 {
             TNode::find(ctx, self).to_custom_e_s_fn(|| format!("Link parent#{self} not found"))?;
         let child =
             TNode::find(ctx, child).to_custom_e_s_fn(|| format!("Link child#{child} not found"))?;
-        TNodeLink::add(ctx, &child, &parent)?;
+        TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {

@@ -70,9 +70,13 @@ impl Input {
             if self.char_limit > 0 {
                 te = te.char_limit(self.char_limit);
             }
-            te.ui(ui).on_hover_ui(|ui| {
-                value.label(ui);
-            })
+            let response = te.ui(ui);
+            if !self.password && !value.is_empty() {
+                response.clone().on_hover_ui(|ui| {
+                    value.label(ui);
+                });
+            }
+            response
         })
         .inner
     }
