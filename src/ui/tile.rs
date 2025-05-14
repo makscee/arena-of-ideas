@@ -23,7 +23,6 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         dark_frame().show(ui, |ui| {
             ScrollArea::both()
                 .scroll_bar_visibility(AlwaysHidden)
-                .stick_to_right(true)
                 .show(ui, |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     if let Some(world) = self.world.as_mut() {

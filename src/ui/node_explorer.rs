@@ -1,5 +1,7 @@
 use std::marker::PhantomData;
 
+use bevy_egui::egui::Grid;
+
 use super::*;
 
 pub struct NodesListWidget<T: NodeViewFns> {
@@ -113,6 +115,26 @@ impl NodeExplorerPlugin {
         });
         world.insert_resource(ned);
         r
+    }
+    pub fn pane_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let ned = world.get_resource::<NodeExplorerData>().to_e_not_found()?;
+        let Some(id) = ned.selected else {
+            return Ok(());
+        };
+        Context::from_world_r(world, |context| {
+            format!("[tl #]{id} [tl e:]{}", context.entity(id)?)
+                .cstr()
+                .label(ui);
+            let ns = context.get_by_id::<NodeState>(id)?;
+            Grid::new("vars").show(ui, |ui| {
+                for (var, state) in &ns.vars {
+                    var.cstr().label(ui);
+                    state.value.cstr().label(ui);
+                    ui.end_row();
+                }
+            });
+            Ok(())
+        })
     }
     pub fn pane_parents(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Self::pane_relations(ui, world, true)

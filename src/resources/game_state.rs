@@ -54,15 +54,16 @@ impl GameState {
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 Tree::new(TREE_ID, root, tiles)
             }
-            GameState::Explorer => Tree::new_horizontal(
-                TREE_ID,
-                [
-                    Pane::Explorer(ExplorerPane::Parents),
-                    Pane::Explorer(ExplorerPane::Selected),
-                    Pane::Explorer(ExplorerPane::Children),
-                ]
-                .into(),
-            ),
+            GameState::Explorer => {
+                let mut tiles = Tiles::default();
+                let parents = tiles.insert_pane(Pane::Explorer(ExplorerPane::Parents));
+                let children = tiles.insert_pane(Pane::Explorer(ExplorerPane::Children));
+                let selected = tiles.insert_pane(Pane::Explorer(ExplorerPane::Selected));
+                let node = tiles.insert_pane(Pane::Explorer(ExplorerPane::Node));
+                let mid = tiles.insert_vertical_tile([selected, node].into());
+                let root = tiles.insert_horizontal_tile([parents, mid, children].into());
+                Tree::new(TREE_ID, root, tiles)
+            }
             GameState::Shop => {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
@@ -128,6 +129,7 @@ pub enum ExplorerPane {
     Selected,
     Parents,
     Children,
+    Node,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -177,6 +179,7 @@ impl Pane {
                 ExplorerPane::Selected => NodeExplorerPlugin::pane_selected(ui, world)?,
                 ExplorerPane::Parents => NodeExplorerPlugin::pane_parents(ui, world)?,
                 ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
+                ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
             },
 
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),

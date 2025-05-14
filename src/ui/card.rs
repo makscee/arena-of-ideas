@@ -115,9 +115,9 @@ impl TagCard for NUnit {
                     TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
                     TagWidget::new_var_value(VarName::hp, hp).ui(ui);
                 });
-                if let Some(description) = self.description_load(context) {
+                if let Ok(description) = self.description_load(context) {
                     description.description.label_w(ui);
-                    if let Some(behavior) = description.behavior_load(context) {
+                    if let Ok(behavior) = description.behavior_load(context) {
                         behavior.show(context, ui);
                     }
                 }
@@ -139,10 +139,10 @@ impl TagCard for NHouse {
             context,
             ui,
             |ui| {
-                if let Some(ability) = self.ability_magic_load(context) {
+                if let Ok(ability) = self.ability_magic_load(context) {
                     ability.tag_card(default(), context, ui).ui(ui);
                 }
-                if let Some(status) = self.status_magic_load(context) {
+                if let Ok(status) = self.status_magic_load(context) {
                     status.tag_card(default(), context, ui).ui(ui);
                 }
                 for unit in self.units_load(context) {
@@ -170,9 +170,9 @@ impl TagCard for NAbilityMagic {
             context,
             ui,
             |ui| {
-                if let Some(description) = self.description_load(context) {
+                if let Ok(description) = self.description_load(context) {
                     description.description.label_w(ui);
-                    if let Some(effect) = description.effect_load(context) {
+                    if let Ok(effect) = description.effect_load(context) {
                         effect.show(context, ui);
                     }
                 }
@@ -194,9 +194,9 @@ impl TagCard for NStatusMagic {
             context,
             ui,
             |ui| {
-                if let Some(description) = self.description_load(context) {
+                if let Ok(description) = self.description_load(context) {
                     description.description.label_w(ui);
-                    if let Some(behavior) = description.behavior_load(context) {
+                    if let Ok(behavior) = description.behavior_load(context) {
                         behavior.show(context, ui);
                     }
                 }

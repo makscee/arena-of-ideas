@@ -14,7 +14,7 @@ impl Plugin for MatchPlugin {
 impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
             if let Some(last) = m.battles_load(context).last() {
                 if last.result.is_none() {
                     MatchPlugin::load_battle(context).notify(context.world_mut()?);
@@ -25,7 +25,7 @@ impl MatchPlugin {
     }
     pub fn check_active(world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
             if !m.active {
                 GameState::MatchOver.set_next(context.world_mut()?);
             }
@@ -40,17 +40,21 @@ impl MatchPlugin {
         }
         Self::check_battles(world).log();
     }
-    fn show_unit(unit: &NUnit, rect: Rect, context: &Context, ui: &mut Ui) -> Option<()> {
+    fn show_unit(
+        unit: &NUnit,
+        rect: Rect,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
         let d = unit.description_load(context)?;
-        if let Some(r) = d.representation_load(context) {
+        if let Ok(r) = d.representation_load(context) {
             r.paint(rect, context, ui).ui(ui);
         }
-        unit_rep().paint(rect, context, ui).ui(ui);
-        Some(())
+        unit_rep().paint(rect, context, ui)
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
             let slots = m.shop_case_load(context);
             if slots.is_empty() {
                 return Err("Shop case slots are empty".into());
@@ -90,11 +94,8 @@ impl MatchPlugin {
                                             ContextLayer::Owner(unit.entity()),
                                             |context| {
                                                 slot_rect_button(ui, |rect, ui| {
-                                                    if Self::show_unit(&unit, rect, context, ui)
-                                                        .is_none()
-                                                    {
-                                                        "Failed to show unit".cstr_c(RED).label(ui);
-                                                    }
+                                                    Self::show_unit(&unit, rect, context, ui)
+                                                        .ui(ui);
                                                 })
                                                 .on_hover_ui(|ui| {
                                                     unit.show_card(context, ui).ui(ui);
@@ -115,7 +116,7 @@ impl MatchPlugin {
     }
     pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
             Grid::new("shop info").show(ui, |ui| {
                 "g".cstr().label(ui);
                 m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
@@ -135,8 +136,8 @@ impl MatchPlugin {
     }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
-            let team = m.team_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
+            let team = m.team_load(context)?;
             for house in team.houses_load(context) {
                 house
                     .tag_card(TagCardContext::new().expanded(true), context, ui)
@@ -147,8 +148,8 @@ impl MatchPlugin {
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
-            let team = m.team_err(context)?.entity();
+            let m = player(context)?.active_match_load(context)?;
+            let team = m.team_load(context)?.entity();
             NFusion::slots_editor(
                 team,
                 context,
@@ -174,7 +175,7 @@ impl MatchPlugin {
     }
     pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_err(context)?;
+            let m = player(context)?.active_match_load(context)?;
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
                 if m.lives > 0 {
@@ -198,7 +199,7 @@ impl MatchPlugin {
     pub fn load_battle(context: &mut Context) -> Result<(), ExpressionError> {
         GameState::Battle.set_next(context.world_mut()?);
         let battles = player(context)?
-            .active_match_err(context)?
+            .active_match_load(context)?
             .battles_load(context);
         if battles.is_empty() {
             return Err("No battles in current match".into());

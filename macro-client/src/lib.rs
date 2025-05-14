@@ -96,10 +96,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
                 .collect_vec();
-            let component_fields_load_err = one_fields
-                .iter()
-                .map(|i| Ident::new(&format!("{i}_err"), Span::call_site()))
-                .collect_vec();
             let child_fields_load = many_fields
                 .iter()
                 .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
@@ -131,17 +127,12 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl #struct_ident {
                     #(
-                        pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Option<&'a #one_types> {
-                            self.#one_fields.as_ref().or_else(|| {
-                                self.entity
-                                    .and_then(|e| context.get::<#one_types>(e).ok())
-                            })
-                        }
-                        pub fn #component_fields_load_err<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
-                            self.#one_fields.as_ref().or_else(|| {
-                                self.entity
-                                    .and_then(|e| context.get::<#one_types>(e).ok())
-                            }).to_custom_e_fn(|| format!("Failed to load {} of {}", #one_fields_str, self.kind()))
+                        pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
+                            if let Some(n) = self.#one_fields.as_ref() {
+                                Ok(n)
+                            } else {
+                                context.first_parent::<#one_types>(self.id)
+                            }
                         }
                     )*
                     #(
@@ -469,7 +460,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     ) -> ViewResponse {
                         let mut vr = ViewResponse::default();
                         #(
-                            if let Some(d) = self.#component_fields_load(context) {
+                            if let Ok(d) = self.#component_fields_load(context) {
                                 vr.merge(d.view_with_children(vctx, context, ui));
                             }
                         )*

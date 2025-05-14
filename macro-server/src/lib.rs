@@ -217,12 +217,16 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         remap.insert(self.id, d.id);
                         #(
                             if let Some(n) = self.#one_fields.as_ref() {
-                                d.#one_fields = Some(n.clone(ctx, remap));
+                                let n = n.clone(ctx, remap);
+                                d.id.add_parent(ctx, n.id).unwrap();
+                                d.#one_fields = Some(n);
                             }
                         )*
                         #(
                             for n in &self.#many_fields {
-                                d.#many_fields.push(n.clone(ctx, remap));
+                                let n = n.clone(ctx, remap);
+                                d.id.add_child(ctx, n.id).unwrap();
+                                d.#many_fields.push(n);
                             }
                         )*
                         d
