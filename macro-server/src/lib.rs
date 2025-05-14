@@ -45,8 +45,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &parent_fields,
                 &parent_types,
             );
-            let table_conversions =
-                table_conversions(&one_fields, &one_types, &many_fields, &many_types);
             if let Fields::Named(ref mut fields) = fields {
                 fields
                     .named
@@ -162,7 +160,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     #(
                         pub fn #many_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#many_types>, String> {
                             if self.#many_fields.is_empty() {
-                                self.#many_fields = self.collect_top_children::<#many_types>(ctx);
+                                self.#many_fields = self.collect_children::<#many_types>(ctx);
                             }
                             if self.#many_fields.is_empty() {
                                 return Err(format!("No {} children found for {}", #many_types::kind_s(), self.id()));
@@ -194,7 +192,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 }
                 impl Node for #struct_ident {
                     #strings_conversions
-                    #table_conversions
                     #common_trait
                     fn id(&self) -> u64 {
                         self.id
@@ -258,6 +255,37 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                         )*
                         Ok(())
+                    }
+                    fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
+                        #(
+                            self.#one_fields = self.top_parent::<#one_types>(ctx)
+                                .map(|mut d| std::mem::take(d.with_components(ctx)
+                                    .with_children(ctx))
+                                );
+                        )*
+                        self
+                    }
+                    fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
+                        #(
+                            self.#many_fields = self.collect_children::<#many_types>(ctx)
+                                .into_iter()
+                                .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
+                                .collect();
+                        )*
+                        self
+                    }
+                    fn save(mut self, ctx: &ReducerContext) {
+                        self.update_self(ctx);
+                        #(
+                            if let Some(mut d) = self.#one_fields.take() {
+                                d.save(ctx);
+                            }
+                        )*
+                        #(
+                            for mut d in std::mem::take(&mut self.#many_fields) {
+                                d.save(ctx);
+                            }
+                        )*
                     }
                 }
             }

@@ -201,46 +201,6 @@ pub fn strings_conversions(
     }
 }
 
-pub fn table_conversions(
-    one_fields: &Vec<Ident>,
-    one_types: &Vec<TokenStream>,
-    many_fields: &Vec<Ident>,
-    many_types: &Vec<TokenStream>,
-) -> TokenStream {
-    quote! {
-        fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
-            #(
-                self.#one_fields = self.top_parent::<#one_types>(ctx)
-                    .map(|mut d| std::mem::take(d.with_components(ctx)
-                        .with_children(ctx))
-                    );
-            )*
-            self
-        }
-        fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
-            #(
-                self.#many_fields = self.collect_top_children::<#many_types>(ctx)
-                    .into_iter()
-                    .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
-                    .collect();
-            )*
-            self
-        }
-        fn save(mut self, ctx: &ReducerContext) {
-            self.update_self(ctx);
-            #(
-                if let Some(mut d) = self.#one_fields.take() {
-                    d.save(ctx);
-                }
-            )*
-            #(
-                for mut d in std::mem::take(&mut self.#many_fields) {
-                    d.save(ctx);
-                }
-            )*
-        }
-    }
-}
 pub fn common_node_fns(
     struct_ident: &Ident,
     all_data_fields: &Vec<Ident>,

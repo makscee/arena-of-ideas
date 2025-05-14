@@ -26,7 +26,9 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         .with_children(ctx)
         .with_components(ctx)
         .take();
-    let mut house = unit.find_parent::<NHouse>(ctx)?;
+    let mut house = unit
+        .find_parent::<NHouse>(ctx)
+        .to_custom_e_s("Failed to find House parent of Unit")?;
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);
     let houses = &mut team.houses;
@@ -125,8 +127,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     if let Ok(m) = player.active_match_load(ctx) {
         m.delete_recursive(ctx);
     }
-    let mut core = NCore::load(ctx);
-    let units = core.all_units(ctx)?;
+    let units = NUnit::collect_owner(ctx, ID_CORE);
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
@@ -175,7 +176,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     if let Some(team) = pool_id
         .collect_kind_parents(ctx, NodeKind::NTeam)
         .choose(&mut ctx.rng())
-        .and_then(|(id, score)| NTeam::get(ctx, *id))
+        .and_then(|id| id.to_node::<NTeam>(ctx))
     {
         let player_team_id = player_team.clone_ids_remap(ctx, pool_id)?.id;
         NBattle::new(

@@ -134,7 +134,10 @@ impl GetPlayer for ReducerContext {
     fn player(&self) -> Result<NPlayer, String> {
         let identity = NPlayer::find_identity(self, &self.sender)
             .to_custom_e_s("NPlayerIdentity not found")?;
-        let id = identity.find_child::<NPlayer>(self)?.id;
+        let id = identity
+            .id
+            .find_kind_child(self, NodeKind::NPlayer)
+            .to_custom_e_s("Failed to find Player by Identity")?;
         NPlayer::get(self, id).to_custom_e_s("Identity exists but Player does not")
     }
 }

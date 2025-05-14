@@ -58,7 +58,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         n.update(ctx);
     }
 
-    let mut units = NUnit::collect_kind_by_owner(ctx, 0);
+    let mut units = NUnit::collect_owner(ctx, 0);
     info!("initial units {}", units.len());
     units.retain_mut(|unit| {
         let Some(mut description) = unit.top_parent::<NUnitDescription>(ctx) else {
@@ -95,7 +95,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         .into_group_map();
     info!("units with house {}", units.len());
 
-    let mut houses = VecDeque::from_iter(NHouse::collect_kind_by_owner(ctx, 0).into_iter());
+    let mut houses: VecDeque<NHouse> = VecDeque::from_iter(NHouse::collect_owner(ctx, 0));
     while let Some(mut house) = houses.pop_front() {
         info!("start house {}", house.house_name);
         if let Some(color) = house.mutual_top_parent::<NHouseColor>(ctx) {
