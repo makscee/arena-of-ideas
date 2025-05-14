@@ -1,33 +1,33 @@
 use super::*;
 
 struct NCore {
-    pub houses: NodeChildren<NHouse>,
+    pub houses: ChildComponents<NHouse>,
 }
 
 struct NPlayers {
-    pub players: NodeChildren<NPlayer>,
+    pub players: ChildComponents<NPlayer>,
 }
 
 struct NArena {
-    pub floor_pools: NodeChildren<NFloorPool>,
-    pub floor_bosses: NodeChildren<NFloorBoss>,
+    pub floor_pools: ChildComponents<NFloorPool>,
+    pub floor_bosses: ChildComponents<NFloorBoss>,
 }
 
 struct NFloorPool {
     pub floor: i32,
-    pub teams: NodeChildren<NTeam>,
+    pub teams: ChildComponents<NTeam>,
 }
 
 struct NFloorBoss {
     pub floor: i32,
-    pub team: NodeComponent<NTeam>,
+    pub team: ParentComponent<NTeam>,
 }
 
 struct NPlayer {
     pub player_name: String,
-    pub player_data: NodeComponent<NPlayerData>,
-    pub identity: NodeComponent<NPlayerIdentity>,
-    pub active_match: NodeComponent<NMatch>,
+    pub player_data: ParentComponent<NPlayerData>,
+    pub identity: ParentComponent<NPlayerIdentity>,
+    pub active_match: ParentComponent<NMatch>,
 }
 
 struct NPlayerData {
@@ -42,10 +42,10 @@ struct NPlayerIdentity {
 
 struct NHouse {
     pub house_name: String,
-    pub color: NodeComponent<NHouseColor>,
-    pub ability_magic: NodeComponent<NAbilityMagic>,
-    pub status_magic: NodeComponent<NStatusMagic>,
-    pub units: NodeChildren<NUnit>,
+    pub color: ParentComponent<NHouseColor>,
+    pub ability_magic: ParentComponent<NAbilityMagic>,
+    pub status_magic: ParentComponent<NStatusMagic>,
+    pub units: ChildComponents<NUnit>,
 }
 
 struct NHouseColor {
@@ -54,12 +54,12 @@ struct NHouseColor {
 
 struct NAbilityMagic {
     pub ability_name: String,
-    pub description: NodeComponent<NAbilityDescription>,
+    pub description: ParentComponent<NAbilityDescription>,
 }
 
 struct NAbilityDescription {
     pub description: String,
-    pub effect: NodeComponent<NAbilityEffect>,
+    pub effect: ParentComponent<NAbilityEffect>,
 }
 
 struct NAbilityEffect {
@@ -68,18 +68,18 @@ struct NAbilityEffect {
 
 struct NStatusMagic {
     pub status_name: String,
-    pub description: NodeComponent<NStatusDescription>,
-    pub representation: NodeComponent<NRepresentation>,
+    pub description: ParentComponent<NStatusDescription>,
+    pub representation: ParentComponent<NRepresentation>,
 }
 
 struct NStatusDescription {
     pub description: String,
-    pub behavior: NodeComponent<NBehavior>,
+    pub behavior: ParentComponent<NBehavior>,
 }
 
 struct NTeam {
-    pub houses: NodeChildren<NHouse>,
-    pub fusions: NodeChildren<NFusion>,
+    pub houses: ChildComponents<NHouse>,
+    pub fusions: ChildComponents<NFusion>,
 }
 
 struct NBattle {
@@ -96,9 +96,9 @@ struct NMatch {
     pub round: i32,
     pub lives: i32,
     pub active: bool,
-    pub shop_case: NodeChildren<NShopCaseUnit>,
-    pub team: NodeComponent<NTeam>,
-    pub battles: NodeChildren<NBattle>,
+    pub team: ParentComponent<NTeam>,
+    pub shop_case: ChildComponents<NShopCaseUnit>,
+    pub battles: ChildComponents<NBattle>,
 }
 
 struct NShopCaseUnit {
@@ -118,14 +118,14 @@ struct NFusion {
 
 struct NUnit {
     pub unit_name: String,
-    pub description: NodeComponent<NUnitDescription>,
-    pub stats: NodeComponent<NUnitStats>,
+    pub description: ParentComponent<NUnitDescription>,
+    pub stats: ParentComponent<NUnitStats>,
 }
 
 struct NUnitDescription {
     pub description: String,
-    pub representation: NodeComponent<NRepresentation>,
-    pub behavior: NodeComponent<NBehavior>,
+    pub representation: ParentComponent<NRepresentation>,
+    pub behavior: ParentComponent<NBehavior>,
 }
 
 struct NUnitStats {

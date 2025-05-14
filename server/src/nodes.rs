@@ -28,6 +28,7 @@ pub trait Node: Default + Sized {
     fn children_kinds() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;
     fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String>;
+    fn delete_with_components(&self, ctx: &ReducerContext);
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
@@ -39,6 +40,8 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn insert_self(&self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
     fn delete_self(&self, ctx: &ReducerContext);
+    fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
+    fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn collect_parents<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P>;
@@ -80,6 +83,16 @@ where
     }
     fn delete_self(&self, ctx: &ReducerContext) {
         TNode::delete_by_id(ctx, self.id());
+    }
+    fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        self.id()
+            .get_kind_parent(ctx, P::kind_s())
+            .and_then(|id| id.to_node(ctx))
+    }
+    fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
+        self.id()
+            .get_kind_child(ctx, P::kind_s())
+            .and_then(|id| id.to_node(ctx))
     }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()

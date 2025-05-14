@@ -53,7 +53,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "NodeChildren" {
+                if type_ident == "ChildComponents" || type_ident == "ParentComponents" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
@@ -63,7 +63,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                         }
                         _ => {}
                     }
-                } else if type_ident == "NodeComponent" {
+                } else if type_ident == "ParentComponent" || type_ident == "ChildComponent" {
                     one_fields_str.push(field_ident.to_string());
                     one_fields.push(field_ident);
                     one_types.push(inner_type(type_path).to_token_stream());
@@ -179,7 +179,7 @@ pub fn strings_conversions(
                     .collect();
             )*
             #(
-                d.#parent_fields = parent_link(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
+                d.#parent_fields = parent_links(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
             )*
             Some(d)
         }

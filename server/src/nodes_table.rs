@@ -21,7 +21,7 @@ pub struct TNode {
 #[table(public, name = node_links,
     index(name = parent_child, btree(columns = [parent, child, solid])),
     index(name = parent_child_kind, btree(columns = [parent, child_kind, solid])),
-    index(name = child_parent_kind, btree(columns = [parent, child_kind, solid])),
+    index(name = child_parent_kind, btree(columns = [child, parent_kind, solid])),
 )]
 pub struct TNodeLink {
     #[primary_key]

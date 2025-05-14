@@ -55,7 +55,7 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
         .into_iter()
         .find(|u| u.unit_name == name)
         .to_custom_e_s_fn(|| format!("Failed to find unit {name}"))?;
-    unit.delete_recursive(ctx);
+    unit.delete_with_components(ctx);
     player.save(ctx);
     Ok(())
 }
@@ -125,15 +125,15 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     if let Ok(m) = player.active_match_load(ctx) {
-        m.delete_recursive(ctx);
+        m.delete_with_components(ctx);
     }
     let units = NUnit::collect_owner(ctx, ID_CORE);
     let gs = ctx.global_settings();
     let price = gs.match_g.unit_buy;
     let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
-    m.id.add_parent(ctx, player.id)?;
+    m.id.add_child(ctx, player.id)?;
     let team = NTeam::new(ctx, pid);
-    team.id.add_parent(ctx, m.id)?;
+    team.id.add_child(ctx, m.id)?;
     m.team = Some(team);
     m.shop_case = (0..3)
         .map(|_| {
@@ -241,7 +241,7 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
     if m.active {
         Err("Match is still active".into())
     } else {
-        m.delete_recursive(ctx);
+        m.delete_with_components(ctx);
         Ok(())
     }
 }

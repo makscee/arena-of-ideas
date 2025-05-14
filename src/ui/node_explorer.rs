@@ -92,6 +92,18 @@ impl NodeExplorerPlugin {
             if Selector::new("kind").ui_enum(&mut kind, ui) {
                 Self::select_kind(context.world_mut()?, &mut ned, kind);
             }
+            if let Some(selected) = ned.selected {
+                if format!("[red delete] #{selected}")
+                    .cstr()
+                    .button(ui)
+                    .clicked()
+                {
+                    cn().reducers.on_content_delete_node(|e, _| {
+                        e.event.notify_error();
+                    });
+                    cn().reducers.content_delete_node(selected).unwrap();
+                }
+            }
             if let Some(selected) =
                 kind.show_explorer(context, ui, &ned.selected_ids, ned.selected)?
             {

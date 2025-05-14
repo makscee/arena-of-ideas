@@ -65,8 +65,10 @@ where
     }
 }
 
-pub type NodeChildren<T> = Vec<T>;
-pub type NodeComponent<T> = Option<T>;
+pub type ChildComponent<T> = Option<T>;
+pub type ChildComponents<T> = Vec<T>;
+pub type ParentComponent<T> = Option<T>;
+pub type ParentComponents<T> = Vec<T>;
 
 #[derive(Default, Debug, Clone, Hash)]
 pub struct ParentLinks<T> {
@@ -74,7 +76,7 @@ pub struct ParentLinks<T> {
     t: PhantomData<T>,
 }
 
-pub fn parent_link<T>(ids: Vec<u64>) -> ParentLinks<T> {
+pub fn parent_links<T>(ids: Vec<u64>) -> ParentLinks<T> {
     ParentLinks {
         ids,
         t: PhantomData::<T>,

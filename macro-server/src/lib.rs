@@ -150,7 +150,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         pub fn #one_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #one_types, String> {
                             let id = self.id();
                             if self.#one_fields.is_none() {
-                                self.#one_fields = self.top_parent::<#one_types>(ctx);
+                                self.#one_fields = self.parent::<#one_types>(ctx);
                             }
                             self.#one_fields
                                 .as_mut()
@@ -258,7 +258,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     }
                     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
                         #(
-                            self.#one_fields = self.top_parent::<#one_types>(ctx)
+                            self.#one_fields = self.parent::<#one_types>(ctx)
                                 .map(|mut d| std::mem::take(d.with_components(ctx)
                                     .with_children(ctx))
                                 );
@@ -286,6 +286,19 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 d.save(ctx);
                             }
                         )*
+                    }
+                    fn delete_with_components(&self, ctx: &ReducerContext) {
+                        #(
+                            if let Some(n) = self.parent::<#one_types>(ctx) {
+                                n.delete_with_components(ctx);
+                            }
+                        )*
+                        #(
+                            for n in self.collect_children::<#many_types>(ctx) {
+                                n.delete_with_components(ctx);
+                            }
+                        )*
+                        self.delete_self(ctx);
                     }
                 }
             }
@@ -323,6 +336,17 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             }
                             )*
                         }
+                    }
+                    pub fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+                        match self {
+                            Self::None => unreachable!(),
+                            #(
+                                Self::#variants => {
+                                    #variants::get(ctx, id).to_custom_e_s_fn(|| format!("Failed to get {self}#{id}"))?.delete_with_components(ctx);
+                                }
+                            )*
+                        }
+                        Ok(())
                     }
                 }
             }

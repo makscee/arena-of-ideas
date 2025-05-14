@@ -399,7 +399,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .into_iter()
                                 .map(|n| n.id)
                                 .collect_vec();
-                            s.#parent_fields = parent_link::<#parent_types>(ids);
+                            s.#parent_fields = parent_links::<#parent_types>(ids);
                         )*
                         Ok(s)
                     }

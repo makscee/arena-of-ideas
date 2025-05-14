@@ -6,6 +6,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
+pub mod content_delete_node_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_rotation_reducer;
 pub mod daily_update_reducer_reducer;
@@ -44,6 +45,9 @@ pub use admin_daily_update_reducer::{
 pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
+};
+pub use content_delete_node_reducer::{
+    content_delete_node, set_flags_for_content_delete_node, ContentDeleteNodeCallbackId,
 };
 pub use content_publish_node_reducer::{
     content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
@@ -110,6 +114,9 @@ pub enum Reducer {
     AdminDeleteNodeRecursive {
         id: u64,
     },
+    ContentDeleteNode {
+        id: u64,
+    },
     ContentPublishNode {
         pack: String,
     },
@@ -167,6 +174,7 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
+            Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
             Reducer::ContentRotation => "content_rotation",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
@@ -204,6 +212,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
+            "content_delete_node" => Ok(__sdk::parse_reducer_args::<
+                content_delete_node_reducer::ContentDeleteNodeArgs,
+            >("content_delete_node", &value.args)?
+            .into()),
             "content_publish_node" => Ok(__sdk::parse_reducer_args::<
                 content_publish_node_reducer::ContentPublishNodeArgs,
             >("content_publish_node", &value.args)?
