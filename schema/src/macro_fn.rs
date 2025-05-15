@@ -21,7 +21,7 @@ pub struct ParsedNodeFields {
     pub all_data_fields: Vec<Ident>,
     pub all_data_types: Vec<Type>,
     pub parent_fields: Vec<Ident>,
-    pub parent_types: Vec<proc_macro2::TokenStream>,
+    pub parent_types: Vec<Type>,
 }
 
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
@@ -37,7 +37,7 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut data_fields_str = Vec::default();
     let mut data_types = Vec::default();
     let mut parent_fields = Vec::default();
-    let mut parent_types: Vec<proc_macro2::TokenStream> = Vec::default();
+    let mut parent_types = Vec::default();
     fn inner_type(type_path: &TypePath) -> Type {
         match &type_path.path.segments.first().unwrap().arguments {
             PathArguments::AngleBracketed(arg) => match arg.args.first().unwrap() {
@@ -47,6 +47,8 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
             _ => unimplemented!(),
         }
     }
+    let mut all_data_fields: Vec<Ident> = Vec::default();
+    let mut all_data_types: Vec<Type> = Vec::default();
     for field in fields.iter() {
         let ty = &field.ty;
         let field_ident = field.ident.clone().unwrap();
@@ -68,8 +70,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     one_fields.push(field_ident);
                     one_types.push(inner_type(type_path).to_token_stream());
                 } else if type_ident == "ParentLinks" {
-                    parent_fields.push(field_ident);
-                    parent_types.push(inner_type(type_path).to_token_stream());
+                    parent_fields.push(field_ident.clone());
+                    parent_types.push(inner_type(type_path));
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
                 } else if type_ident == "i32"
                     || type_ident == "f32"
                     || type_ident == "String"
@@ -87,9 +91,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
             _ => unimplemented!(),
         }
     }
-    let mut all_data_fields = var_fields.clone();
+    all_data_fields.append(&mut var_fields.clone());
     all_data_fields.append(&mut data_fields.clone());
-    let mut all_data_types = var_types.clone();
+
+    all_data_types.append(&mut var_types.clone());
     all_data_types.append(&mut data_types.clone());
 
     let data_type_ident = quote! { (#(#all_data_types),*) };
@@ -121,7 +126,7 @@ pub fn strings_conversions(
     _child_fields_str: &Vec<String>,
     many_types: &Vec<TokenStream>,
     parent_fields: &Vec<Ident>,
-    parent_types: &Vec<proc_macro2::TokenStream>,
+    parent_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
         fn pack_fill(&self, pn: &mut PackedNodes) {

@@ -23,6 +23,7 @@ pub struct TNode {
     index(name = parent_child_kind, btree(columns = [parent, child_kind, solid])),
     index(name = child_parent_kind, btree(columns = [child, parent_kind, solid])),
 )]
+#[derive(Debug)]
 pub struct TNodeLink {
     #[primary_key]
     #[auto_inc]

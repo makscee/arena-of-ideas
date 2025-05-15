@@ -20,6 +20,7 @@ pub mod identity_disconnected_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_add_fusion_unit_reducer;
 pub mod match_buy_fusion_reducer;
 pub mod match_buy_reducer;
 pub mod match_complete_reducer;
@@ -72,6 +73,9 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_add_fusion_unit_reducer::{
+    match_add_fusion_unit, set_flags_for_match_add_fusion_unit, MatchAddFusionUnitCallbackId,
+};
 pub use match_buy_fusion_reducer::{
     match_buy_fusion, set_flags_for_match_buy_fusion, MatchBuyFusionCallbackId,
 };
@@ -131,6 +135,10 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
+    MatchAddFusionUnit {
+        fusion_id: u64,
+        unit_id: u64,
+    },
     MatchBuy {
         id: u64,
     },
@@ -182,6 +190,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
+            Reducer::MatchAddFusionUnit { .. } => "match_add_fusion_unit",
             Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchBuyFusion => "match_buy_fusion",
             Reducer::MatchComplete => "match_complete",
@@ -245,6 +254,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 "logout",
                 &value.args,
             )?
+            .into()),
+            "match_add_fusion_unit" => Ok(__sdk::parse_reducer_args::<
+                match_add_fusion_unit_reducer::MatchAddFusionUnitArgs,
+            >("match_add_fusion_unit", &value.args)?
             .into()),
             "match_buy" => Ok(
                 __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(

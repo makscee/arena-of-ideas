@@ -89,7 +89,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = NFusion::new(ctx, pid, i32::MAX, 0, 0, 0, default());
+    let fusion = NFusion::new(ctx, pid, default(), i32::MAX, 0, 0, 0, default());
     fusion.id.add_parent(ctx, team.id())?;
     team.fusions.push(fusion);
     for (i, fusion) in team
@@ -117,6 +117,34 @@ fn match_edit_fusion(ctx: &ReducerContext, fusion: TNode) -> Result<(), String> 
         }
     }
     player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    if !m.roster_units_load(ctx)?.iter().any(|u| u.id == unit_id) {
+        return Err(format!("Unit#{unit_id} not found"));
+    }
+    let team = m.team_load(ctx)?;
+    debug!("{:?}", team);
+    debug!("{:?}", TNodeLink::children(ctx, team.id));
+    debug!("{:?}", team.collect_children::<NFusion>(ctx));
+    let fusions = m.team_load(ctx)?.fusions_load(ctx)?;
+    if let Some(f) = fusions
+        .iter()
+        .find(|f| f.units.ids.iter().any(|id| *id == unit_id))
+    {
+        return Err(format!("Fusion#{} already contains Unit#{unit_id}", f.id));
+    }
+    let fusion = fusions
+        .into_iter()
+        .find(|f| f.id == fusion_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
+    fusion.units.ids.push(unit_id);
+    player.save(ctx);
+    debug!("fusion#{fusion_id} added {unit_id}");
     Ok(())
 }
 

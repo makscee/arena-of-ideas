@@ -111,9 +111,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                             entity: None,
                             owner: 0,
                             #(
-                                #parent_fields: default(),
-                            )*
-                            #(
                                 #one_fields: None,
                             )*
                             #(

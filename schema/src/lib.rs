@@ -70,10 +70,19 @@ pub type ChildComponents<T> = Vec<T>;
 pub type ParentComponent<T> = Option<T>;
 pub type ParentComponents<T> = Vec<T>;
 
-#[derive(Default, Debug, Clone, Hash)]
+#[derive(Default, Debug, Hash, Serialize, Deserialize)]
 pub struct ParentLinks<T> {
     pub ids: Vec<u64>,
     t: PhantomData<T>,
+}
+
+impl<T> Clone for ParentLinks<T> {
+    fn clone(&self) -> Self {
+        Self {
+            ids: self.ids.clone(),
+            t: self.t.clone(),
+        }
+    }
 }
 
 pub fn parent_links<T>(ids: Vec<u64>) -> ParentLinks<T> {
