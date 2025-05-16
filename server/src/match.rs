@@ -4,6 +4,32 @@ use rand::seq::SliceRandom;
 
 use super::*;
 
+impl NMatch {
+    fn fill_shop_case(&mut self, ctx: &ReducerContext) {
+        if let Ok(sc) = self.shop_case_load(ctx) {
+            for sc in sc {
+                sc.delete_self(ctx);
+            }
+        }
+        let gs = ctx.global_settings();
+        let price = gs.match_g.unit_buy;
+        let units = NUnit::collect_owner(ctx, ID_CORE);
+        self.shop_case = (0..3)
+            .map(|_| {
+                let n = NShopCaseUnit::new(
+                    ctx,
+                    self.owner,
+                    price,
+                    units.choose(&mut ctx.rng()).unwrap().id,
+                    false,
+                );
+                n.id.add_parent(ctx, self.id).unwrap();
+                n
+            })
+            .collect_vec();
+    }
+}
+
 #[reducer]
 fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let mut player = ctx.player()?;
@@ -69,13 +95,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
         return Err("Not enough g".into());
     }
     m.g -= cost;
-    let sc = m.shop_case_load(ctx)?;
-    let mut core = NCore::load(ctx);
-    let units = core.all_units(ctx)?;
-    for c in sc {
-        c.sold = false;
-        c.unit = units.choose(&mut ctx.rng()).unwrap().id;
-    }
+    m.fill_shop_case(ctx);
     player.save(ctx);
     Ok(())
 }
@@ -190,27 +210,13 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     if let Ok(m) = player.active_match_load(ctx) {
         m.delete_with_components(ctx);
     }
-    let units = NUnit::collect_owner(ctx, ID_CORE);
     let gs = ctx.global_settings();
-    let price = gs.match_g.unit_buy;
     let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
     m.id.add_child(ctx, player.id)?;
     let team = NTeam::new(ctx, pid);
     team.id.add_child(ctx, m.id)?;
     m.team = Some(team);
-    m.shop_case = (0..3)
-        .map(|_| {
-            let n = NShopCaseUnit::new(
-                ctx,
-                pid,
-                price,
-                units.choose(&mut ctx.rng()).unwrap().id,
-                false,
-            );
-            n.id.add_parent(ctx, m.id).unwrap();
-            n
-        })
-        .collect_vec();
+    m.fill_shop_case(ctx);
     player.active_match = Some(m);
     player.save(ctx);
     Ok(())
