@@ -159,6 +159,31 @@ fn match_remove_fusion_unit(
 }
 
 #[reducer]
+fn match_reorder_fusions(ctx: &ReducerContext, fusions: Vec<u64>) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let fusions_n = m.team_load(ctx)?.fusions_load(ctx)?;
+    if fusions.len() != fusions_n.len() {
+        return Err("Wrong fusions amount".into());
+    }
+    if let Some(id) = fusions.iter().duplicates().next() {
+        return Err(format!("Duplicate Fusion id#{id}"));
+    }
+    if let Some(f) = fusions_n.iter().find(|f| !fusions.contains(&f.id)) {
+        return Err(format!("Fusion#{} is absent in order array", f.id));
+    }
+    for (i, f) in fusions_n
+        .iter_mut()
+        .sorted_by_key(|f| fusions.iter().position(|id| f.id.eq(id)).unwrap())
+        .enumerate()
+    {
+        f.slot = i as i32;
+    }
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;

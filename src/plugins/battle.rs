@@ -412,6 +412,7 @@ impl BattlePlugin {
                     |fusion, unit| {
                         remove_unit = Some((fusion.id, unit));
                     },
+                    |_| {},
                 )
                 .ui(ui);
                 if add_fusion {

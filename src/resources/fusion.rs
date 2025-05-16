@@ -279,6 +279,7 @@ impl NFusion {
         on_edited: impl FnOnce(NFusion),
         mut on_add_unit: impl FnMut(NFusion, u64),
         mut on_remove_unit: impl FnMut(NFusion, u64),
+        mut on_reorder: impl FnMut(Vec<u64>),
     ) -> Result<(), ExpressionError> {
         let team = context.get::<NTeam>(team)?;
         let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
@@ -295,6 +296,30 @@ impl NFusion {
                     let response = slot_rect_button(ui, |rect, ui| {
                         fusion.paint(rect, context, ui).ui(ui);
                     });
+                    if response.dragged() {
+                        if let Some(pos) = ui.ctx().pointer_latest_pos() {
+                            let origin = response.rect.center();
+                            ui.painter().arrow(
+                                origin,
+                                pos - origin,
+                                ui.visuals().widgets.hovered.fg_stroke,
+                            );
+                        }
+                    }
+                    response.dnd_set_drag_payload(i);
+                    if let Some(j) = response.dnd_release_payload::<usize>() {
+                        if i == *j {
+                            continue;
+                        }
+                        let mut fusions = fusions
+                            .iter()
+                            .sorted_by_key(|(i, _)| **i)
+                            .map(|(_, f)| f.id)
+                            .collect_vec();
+                        let id = fusions.remove(*j);
+                        fusions.insert(i, id);
+                        on_reorder(fusions);
+                    }
                     match fusion.editor(context, response, &mut on_add_unit, &mut on_remove_unit) {
                         Ok(edited) => {
                             if let Some(fusion) = edited {

@@ -129,9 +129,14 @@ impl NodeKind {
 
         match self {
             NodeKind::NFusion => {
-                let rep_entity = context.world_mut()?.spawn_empty().id();
-                unit_rep().clone().unpack_entity(context, rep_entity)?;
-                context.link_parent_child_entity(entity, rep_entity)?;
+                if context
+                    .first_child::<NRepresentation>(context.id(entity)?)
+                    .is_err()
+                {
+                    let rep_entity = context.world_mut()?.spawn_empty().id();
+                    unit_rep().clone().unpack_entity(context, rep_entity)?;
+                    context.link_parent_child_entity(entity, rep_entity)?;
+                }
                 context.get_mut::<NodeState>(entity)?.init_vars(
                     [
                         (VarName::pwr, 0.into()),

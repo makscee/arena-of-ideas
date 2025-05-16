@@ -49,7 +49,7 @@ impl RectButton {
             ui.disable();
         }
         let sense = if self.enabled {
-            Sense::click()
+            Sense::click_and_drag()
         } else {
             Sense::hover()
         };

@@ -28,6 +28,7 @@ pub mod match_edit_fusion_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
 pub mod match_remove_fusion_unit_reducer;
+pub mod match_reorder_fusions_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
 pub mod match_start_battle_reducer;
@@ -93,6 +94,9 @@ pub use match_remove_fusion_unit_reducer::{
     match_remove_fusion_unit, set_flags_for_match_remove_fusion_unit,
     MatchRemoveFusionUnitCallbackId,
 };
+pub use match_reorder_fusions_reducer::{
+    match_reorder_fusions, set_flags_for_match_reorder_fusions, MatchReorderFusionsCallbackId,
+};
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
 pub use match_start_battle_reducer::{
@@ -157,6 +161,9 @@ pub enum Reducer {
         fusion_id: u64,
         unit_id: u64,
     },
+    MatchReorderFusions {
+        fusions: Vec<u64>,
+    },
     MatchReroll,
     MatchSell {
         name: String,
@@ -206,6 +213,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchRemoveFusionUnit { .. } => "match_remove_fusion_unit",
+            Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
             Reducer::MatchStartBattle => "match_start_battle",
@@ -301,6 +309,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("match_remove_fusion_unit", &value.args)?
                 .into())
             }
+            "match_reorder_fusions" => Ok(__sdk::parse_reducer_args::<
+                match_reorder_fusions_reducer::MatchReorderFusionsArgs,
+            >("match_reorder_fusions", &value.args)?
+            .into()),
             "match_reroll" => Ok(
                 __sdk::parse_reducer_args::<match_reroll_reducer::MatchRerollArgs>(
                     "match_reroll",

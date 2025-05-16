@@ -172,6 +172,9 @@ impl MatchPlugin {
                         .match_remove_fusion_unit(fusion.id, id)
                         .unwrap()
                 },
+                |fusions| {
+                    cn().reducers.match_reorder_fusions(fusions).unwrap();
+                },
             )
             .ui(ui);
             Ok(())
