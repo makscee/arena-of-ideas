@@ -167,7 +167,11 @@ impl MatchPlugin {
                         .notify_op();
                 },
                 |fusion, id| cn().reducers.match_add_fusion_unit(fusion.id, id).unwrap(),
-                |fusion, id| todo!(),
+                |fusion, id| {
+                    cn().reducers
+                        .match_remove_fusion_unit(fusion.id, id)
+                        .unwrap()
+                },
             )
             .ui(ui);
             Ok(())

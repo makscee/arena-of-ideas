@@ -53,6 +53,35 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
     fn mutual_top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
 }
 
+impl NFusion {
+    fn add(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+        if self.units.ids.contains(&id) {
+            return Err(format!(
+                "{}#{} already has parent#{id}",
+                self.kind(),
+                self.id
+            ));
+        }
+        self.units.ids.push(id);
+        self.id.add_parent(ctx, id)?;
+        self.update_self(ctx);
+        Ok(())
+    }
+    fn remove(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+        let Some(i) = self.units.ids.iter().position(|u| *u == id) else {
+            return Err(format!(
+                "{}#{} does not have parent#{id}",
+                self.kind(),
+                self.id
+            ));
+        };
+        self.units.ids.remove(i);
+        self.id.remove_parent(ctx, id)?;
+        self.update_self(ctx);
+        Ok(())
+    }
+}
+
 impl<T> NodeExt for T
 where
     T: Node + GetNodeKind + GetNodeKindSelf + StringData,

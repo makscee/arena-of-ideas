@@ -148,6 +148,8 @@ pub trait NodeIdExt {
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
     fn add_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
     fn add_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
+    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
+    fn remove_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn get_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn find_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
@@ -185,6 +187,32 @@ impl NodeIdExt for u64 {
         let child =
             TNode::find(ctx, child).to_custom_e_s_fn(|| format!("Link child#{child} not found"))?;
         TNodeLink::add(ctx, &child, &parent, true)?;
+        Ok(())
+    }
+    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+        let l = ctx
+            .db
+            .node_links()
+            .parent_child()
+            .filter((id, self))
+            .next()
+            .to_custom_e_s_fn(|| {
+                format!("Failed to remove parent#{id} of #{self}: link not found")
+            })?;
+        ctx.db.node_links().id().delete(l.id);
+        Ok(())
+    }
+    fn remove_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+        let l = ctx
+            .db
+            .node_links()
+            .parent_child()
+            .filter((self, id))
+            .next()
+            .to_custom_e_s_fn(|| {
+                format!("Failed to remove child#{id} of #{self}: link not found")
+            })?;
+        ctx.db.node_links().id().delete(l.id);
         Ok(())
     }
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {

@@ -127,10 +127,6 @@ fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> 
     if !m.roster_units_load(ctx)?.iter().any(|u| u.id == unit_id) {
         return Err(format!("Unit#{unit_id} not found"));
     }
-    let team = m.team_load(ctx)?;
-    debug!("{:?}", team);
-    debug!("{:?}", TNodeLink::children(ctx, team.id));
-    debug!("{:?}", team.collect_children::<NFusion>(ctx));
     let fusions = m.team_load(ctx)?.fusions_load(ctx)?;
     if let Some(f) = fusions
         .iter()
@@ -142,10 +138,24 @@ fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> 
         .into_iter()
         .find(|f| f.id == fusion_id)
         .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
-    fusion.units.ids.push(unit_id);
-    player.save(ctx);
-    debug!("fusion#{fusion_id} added {unit_id}");
-    Ok(())
+    fusion.units_add(ctx, unit_id)
+}
+
+#[reducer]
+fn match_remove_fusion_unit(
+    ctx: &ReducerContext,
+    fusion_id: u64,
+    unit_id: u64,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let fusion = m
+        .team_load(ctx)?
+        .fusions_load(ctx)?
+        .into_iter()
+        .find(|f| f.id == fusion_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
+    fusion.units_remove(ctx, unit_id)
 }
 
 #[reducer]
