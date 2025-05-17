@@ -483,6 +483,7 @@ impl ToCstr for Expression {
                 Ok(color) => c.cstr_c(color),
                 Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
             },
+            Expression::lua_i32(code) | Expression::lua_f32(code) => code.cstr(),
             Expression::sin(x)
             | Expression::cos(x)
             | Expression::even(x)

@@ -1,5 +1,6 @@
 use std::f32::consts::PI;
 
+use mlua::Lua;
 use rand::{seq::SliceRandom, thread_rng};
 
 use super::*;
@@ -169,6 +170,22 @@ impl ExpressionImpl for Expression {
                 } else {
                     el.get_value(context)
                 }
+            }
+            Expression::lua_f32(code) => {
+                let lua = Lua::new();
+                let v: f32 = lua
+                    .load(code)
+                    .eval::<f32>()
+                    .map_err(|e| format!("lua error: {e}"))?;
+                Ok(v.into())
+            }
+            Expression::lua_i32(code) => {
+                let lua = Lua::new();
+                let v: i32 = lua
+                    .load(code)
+                    .eval::<i32>()
+                    .map_err(|e| format!("lua error: {e}"))?;
+                Ok(v.into())
             }
         }
     }

@@ -94,6 +94,8 @@ impl Injector<Self> for Expression {
             | Expression::i32(..)
             | Expression::bool(..)
             | Expression::vec2(..)
+            | Expression::lua_i32(..)
+            | Expression::lua_f32(..)
             | Expression::color(..) => default(),
             Expression::sin(x)
             | Expression::cos(x)
@@ -154,6 +156,8 @@ impl Injector<Self> for Expression {
             | Expression::i32(..)
             | Expression::bool(..)
             | Expression::vec2(..)
+            | Expression::lua_i32(..)
+            | Expression::lua_f32(..)
             | Expression::color(..) => default(),
             Expression::sin(x)
             | Expression::cos(x)
@@ -202,6 +206,20 @@ impl Injector<f32> for Expression {
         match self {
             Expression::f32_slider(v) | Expression::f32(v) => [v].into(),
             Expression::vec2(x, y) => [x, y].into(),
+            _ => default(),
+        }
+    }
+}
+impl Injector<String> for Expression {
+    fn get_inner_mut(&mut self) -> Vec<&mut String> {
+        match self {
+            Expression::lua_f32(v) | Expression::lua_i32(v) => [v].into(),
+            _ => default(),
+        }
+    }
+    fn get_inner(&self) -> Vec<&String> {
+        match self {
+            Expression::lua_f32(v) | Expression::lua_i32(v) => [v].into(),
             _ => default(),
         }
     }

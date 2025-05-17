@@ -81,6 +81,7 @@ egui_colors = { version = "0.8.0", features = ["serde"] }
 egui_double_slider = "0.7.0"
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.74"
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
 
 [dependencies]
 ui = { path = "ui" }
@@ -121,6 +122,7 @@ color-hex = { workspace = true }
 egui_tiles = { workspace = true }
 egui_colors = { workspace = true }
 backtrace = { workspace = true }
+mlua = {workspace = true }
 
 
 bevy_asset_loader = { version = "0.22.0", features = [

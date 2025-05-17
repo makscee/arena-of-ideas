@@ -37,6 +37,8 @@ pub enum Expression {
     bool(bool),
     vec2(f32, f32),
     color(HexColor),
+    lua_i32(String),
+    lua_f32(String),
 
     state_var(Box<Expression>, VarName),
 
@@ -105,6 +107,8 @@ impl std::hash::Hash for Expression {
                 x.to_bits().hash(state);
                 y.to_bits().hash(state);
             }
+            Expression::lua_i32(code) => code.hash(state),
+            Expression::lua_f32(code) => code.hash(state),
 
             Expression::state_var(e, v) => {
                 e.hash(state);

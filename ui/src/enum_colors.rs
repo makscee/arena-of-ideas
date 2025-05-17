@@ -69,6 +69,8 @@ impl EnumColor for Expression {
             | Expression::bool(..)
             | Expression::vec2(..)
             | Expression::value(..)
+            | Expression::lua_i32(..)
+            | Expression::lua_f32(..)
             | Expression::color(..) => tokens_global().high_contrast_text(),
             Expression::var(var) | Expression::var_sum(var) => var.color(),
             Expression::state_var(_x, _)
