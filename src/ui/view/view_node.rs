@@ -12,6 +12,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 );
             }
             vr.title_clicked = self.view_title(vctx, context, ui).clicked();
+            self.node_view_rating(vctx, ui);
             self.id().label(ui);
             self.view_data(vctx, context, ui);
         });
@@ -19,6 +20,31 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     }
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
+    }
+    fn node_view_rating(&self, vctx: ViewContext, ui: &mut Ui) {
+        let Some(node) = cn().db.nodes_world().id().find(&self.id()) else {
+            "[red Node not found]".cstr().label(ui);
+            return;
+        };
+        let r = node.rating;
+        let s = if r > 0 {
+            format!("[b [green {r}]]")
+        } else if r < 0 {
+            format!("[b [red {r}]]")
+        } else {
+            format!("[b {r}]")
+        }
+        .cstr();
+        s.button(ui).bar_menu(|ui| {
+            ui.horizontal(|ui| {
+                if "[red [b -]]".cstr().button(ui).clicked() {
+                    cn().reducers.content_vote_node(node.id, false).notify_op();
+                }
+                if "[green [b +]]".cstr().button(ui).clicked() {
+                    cn().reducers.content_vote_node(node.id, true).notify_op();
+                }
+            });
+        });
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.show(context, ui);

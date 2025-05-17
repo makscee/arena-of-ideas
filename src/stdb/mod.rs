@@ -9,6 +9,7 @@ pub mod admin_delete_node_recursive_reducer;
 pub mod content_delete_node_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_rotation_reducer;
+pub mod content_vote_node_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
@@ -57,6 +58,9 @@ pub use content_publish_node_reducer::{
 };
 pub use content_rotation_reducer::{
     content_rotation, set_flags_for_content_rotation, ContentRotationCallbackId,
+};
+pub use content_vote_node_reducer::{
+    content_vote_node, set_flags_for_content_vote_node, ContentVoteNodeCallbackId,
 };
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
@@ -134,6 +138,10 @@ pub enum Reducer {
         pack: String,
     },
     ContentRotation,
+    ContentVoteNode {
+        id: u64,
+        vote: bool,
+    },
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
     },
@@ -201,6 +209,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
             Reducer::ContentRotation => "content_rotation",
+            Reducer::ContentVoteNode { .. } => "content_vote_node",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::Login { .. } => "login",
@@ -250,6 +259,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "content_rotation" => Ok(__sdk::parse_reducer_args::<
                 content_rotation_reducer::ContentRotationArgs,
             >("content_rotation", &value.args)?
+            .into()),
+            "content_vote_node" => Ok(__sdk::parse_reducer_args::<
+                content_vote_node_reducer::ContentVoteNodeArgs,
+            >("content_vote_node", &value.args)?
             .into()),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,

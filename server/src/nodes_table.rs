@@ -144,7 +144,8 @@ impl TNodeLink {
 
 pub trait NodeIdExt {
     fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Option<T>;
-    fn get(self, ctx: &ReducerContext) -> Option<TNode>;
+    fn find(self, ctx: &ReducerContext) -> Option<TNode>;
+    fn find_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
     fn add_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
     fn add_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
@@ -165,10 +166,14 @@ pub trait NodeIdExt {
 }
 impl NodeIdExt for u64 {
     fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Option<T> {
-        self.get(ctx)?.to_node().ok()
+        self.find(ctx)?.to_node().ok()
     }
-    fn get(self, ctx: &ReducerContext) -> Option<TNode> {
+    fn find(self, ctx: &ReducerContext) -> Option<TNode> {
         ctx.db.nodes_world().id().find(self)
+    }
+    fn find_err(self, ctx: &ReducerContext) -> Result<TNode, String> {
+        self.find(ctx)
+            .to_custom_e_s_fn(|| format!("Failed to find TNode#{self}"))
     }
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind> {
         ctx.db.nodes_world().id().find(self).map(|v| v.kind())

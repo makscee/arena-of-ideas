@@ -152,7 +152,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
 
         info!("solidifying house {}", house.house_name);
         for id in house.collect_ids() {
-            let mut node = id.get(ctx).unwrap();
+            let mut node = id.find(ctx).unwrap();
             node.owner = ID_CORE;
             node.update(ctx);
         }
@@ -167,4 +167,14 @@ fn content_delete_node(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     ctx.is_admin()?;
     let kind = id.kind(ctx).to_custom_e_s("Failed to get kind")?;
     kind.delete_with_components(ctx, id)
+}
+
+#[reducer]
+fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), String> {
+    let player = ctx.player()?;
+    let mut node = id.find_err(ctx)?;
+    let vote = if vote { 1 } else { -1 };
+    node.rating += vote;
+    node.update(ctx);
+    Ok(())
 }
