@@ -12,7 +12,7 @@ pub struct TNodeLink {
     pub child: u64,
     pub parent_kind: String,
     pub child_kind: String,
-    pub score: i32,
+    pub rating: i32,
     pub solid: bool,
 }
 

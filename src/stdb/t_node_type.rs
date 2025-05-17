@@ -11,7 +11,7 @@ pub struct TNode {
     pub owner: u64,
     pub kind: String,
     pub data: String,
-    pub score: i32,
+    pub rating: i32,
 }
 
 impl __sdk::InModule for TNode {

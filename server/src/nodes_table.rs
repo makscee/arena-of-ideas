@@ -15,7 +15,7 @@ pub struct TNode {
     pub kind: String,
     #[index(btree)]
     pub data: String,
-    pub score: i32,
+    pub rating: i32,
 }
 
 #[table(public, name = node_links,
@@ -36,7 +36,7 @@ pub struct TNodeLink {
     pub parent_kind: String,
     #[index(btree)]
     pub child_kind: String,
-    pub score: i32,
+    pub rating: i32,
     pub solid: bool,
 }
 
@@ -46,7 +46,7 @@ pub trait TopLink {
 
 impl TopLink for Vec<TNodeLink> {
     fn top(&self) -> Option<&TNodeLink> {
-        self.into_iter().sorted_by_key(|l| l.score).next()
+        self.into_iter().sorted_by_key(|l| l.rating).next()
     }
 }
 
@@ -75,7 +75,7 @@ impl TNodeLink {
             parent,
             child_kind,
             parent_kind,
-            score: 0,
+            rating: 0,
             solid,
         });
         Ok(())
@@ -363,7 +363,7 @@ impl TNode {
             owner,
             kind: kind.to_string(),
             data,
-            score: 0,
+            rating: 0,
         }
     }
     pub fn insert(self, ctx: &ReducerContext) {

@@ -61,7 +61,7 @@ where
             owner: self.owner(),
             kind: self.kind().to_string(),
             data: self.get_data(),
-            score: 0,
+            rating: 0,
         }
     }
     fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError> {
