@@ -67,8 +67,19 @@ fn subscribe_table_updates() {
         debug!("add link {link:?}");
         let parent = link.parent;
         let child = link.child;
+        let rating = link.rating;
         op(move |world| {
             world.link_parent_child(parent, child);
+            world.set_link_rating(parent, child, rating);
+        });
+    });
+    db.node_links().on_update(|_, _, link| {
+        debug!("update link {link:?}");
+        let parent = link.parent;
+        let child = link.child;
+        let rating = link.rating;
+        op(move |world| {
+            world.set_link_rating(parent, child, rating);
         });
     });
     db.node_links().on_delete(|_, link| {

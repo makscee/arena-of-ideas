@@ -45,6 +45,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 }
             });
         });
+        if let Some((parent, id)) = vctx.link_rating {}
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.show(context, ui);

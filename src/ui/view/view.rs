@@ -12,6 +12,7 @@ pub struct ViewContext {
     pub separate_contex_menu_btn: bool,
     pub can_delete: bool,
     pub parent_rect: Option<Rect>,
+    pub link_rating: Option<(bool, u64)>,
 }
 
 impl ViewContext {
@@ -25,6 +26,7 @@ impl ViewContext {
             separate_contex_menu_btn: false,
             can_delete: false,
             parent_rect: None,
+            link_rating: None,
         }
     }
     pub fn merge_state(mut self, view: &impl ViewFns, ui: &mut Ui) -> Self {
@@ -63,6 +65,10 @@ impl ViewContext {
     }
     pub fn can_delete(mut self) -> Self {
         self.can_delete = true;
+        self
+    }
+    pub fn link_rating(mut self, parent: bool, id: u64) -> Self {
+        self.link_rating = Some((parent, id));
         self
     }
 }

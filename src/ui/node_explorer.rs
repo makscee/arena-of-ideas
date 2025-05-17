@@ -15,11 +15,11 @@ impl<T: NodeViewFns> NodesListWidget<T> {
     pub fn ui(
         &mut self,
         context: &mut Context,
+        mut vctx: ViewContext,
         ui: &mut Ui,
         ids: &Vec<u64>,
         selected: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
-        let mut vctx = ViewContext::new(ui).one_line(true);
         let mut new_selected: Option<u64> = None;
         for n in ids
             .into_iter()
@@ -106,9 +106,13 @@ impl NodeExplorerPlugin {
                     cn().reducers.content_delete_node(selected).unwrap();
                 }
             }
-            if let Some(selected) =
-                kind.show_explorer(context, ui, &ned.selected_ids, ned.selected)?
-            {
+            if let Some(selected) = kind.show_explorer(
+                context,
+                ViewContext::new(ui).one_line(true),
+                ui,
+                &ned.selected_ids,
+                ned.selected,
+            )? {
                 Self::select_id(context, &mut ned, selected)?;
             }
             Ok(())
@@ -156,7 +160,11 @@ impl NodeExplorerPlugin {
                 ui.vertical_centered_justified(|ui| {
                     kind.cstr().label(ui);
                 });
-                if let Some(id) = kind.show_explorer(context, ui, ids, ned.selected)? {
+                let mut vctx = ViewContext::new(ui).one_line(true);
+                if let Some(selected) = ned.selected {
+                    vctx = vctx.link_rating(!parents, selected);
+                }
+                if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
                     selected = Some(id);
                 }
             }

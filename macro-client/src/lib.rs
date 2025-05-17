@@ -583,12 +583,12 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
-                    pub fn show_explorer(self, context: &mut Context, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
+                    pub fn show_explorer(self, context: &mut Context, vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
                         match self {
                             Self::None => Ok(None),
                             #(
                                 Self::#variants => {
-                                    NodesListWidget::<#variants>::new().ui(context, ui, ids, selected)
+                                    NodesListWidget::<#variants>::new().ui(context, vctx, ui, ids, selected)
                                 }
                             )*
                         }
