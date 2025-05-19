@@ -1,3 +1,5 @@
+use std::any::type_name_of_val;
+
 use serde::de::DeserializeOwned;
 
 use super::*;
@@ -19,18 +21,20 @@ impl ViewContext {
     pub fn new(ui: &mut Ui) -> Self {
         Self {
             id: ui.id(),
+
             collapsed: false,
             selected: false,
             non_interactible: false,
             one_line: false,
             separate_contex_menu_btn: false,
             can_delete: false,
+
             parent_rect: None,
             link_rating: None,
         }
     }
     pub fn merge_state(mut self, view: &impl ViewFns, ui: &mut Ui) -> Self {
-        self.id = self.id.with(type_name_of_val_short(view));
+        self.id = self.id.with(type_name_of_val(view));
         if let Some(state) = ui.data(|r| r.get_temp::<ViewContext>(self.id)) {
             self.collapsed = state.collapsed;
         }
@@ -470,7 +474,6 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
                                         .collect()
                                 };
                                 for mut opt in opts {
-                                    let text = opt.title_cstr(vctx, context);
                                     let resp = opt.title_cstr(vctx, context).button(ui);
                                     if resp.clicked() || resp.gained_focus() {
                                         if let Some(f) = Self::fn_move_inner() {
