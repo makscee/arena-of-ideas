@@ -167,6 +167,10 @@ impl NodeExplorerPlugin {
             ) {
                 ui.ctx().data_mut(|w| w.insert_temp(ui.id(), selected_kind));
             }
+            let mut vctx = ViewContext::new(ui).one_line(true);
+            if let Some(selected) = ned.selected {
+                vctx = vctx.link_rating(!parents, selected);
+            }
             for (kind, ids) in ids {
                 if selected_kind != NodeKind::None && selected_kind != *kind {
                     continue;
@@ -174,16 +178,28 @@ impl NodeExplorerPlugin {
                 ui.vertical_centered_justified(|ui| {
                     kind.cstr().label(ui);
                 });
-                let mut vctx = ViewContext::new(ui).one_line(true);
-                if let Some(selected) = ned.selected {
-                    vctx = vctx.link_rating(!parents, selected);
-                }
                 if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
+                    selected = Some(id);
+                }
+            }
+            if selected_kind != NodeKind::None {
+                let mut all_ids = selected_kind.query_all_ids(context.world_mut()?);
+                if let Some(ids) = ids.get(&selected_kind) {
+                    for id in ids {
+                        if let Some(i) = all_ids.iter().position(|d| *d == *id) {
+                            all_ids.remove(i);
+                        }
+                    }
+                }
+                if let Some(id) =
+                    selected_kind.show_explorer(context, vctx, ui, &all_ids, ned.selected)?
+                {
                     selected = Some(id);
                 }
             }
             if let Some(selected) = selected {
                 Self::select_id(context, &mut ned, selected)?;
+                ui.ctx().data_mut(|w| w.remove_by_type::<NodeKind>());
             }
             Ok(())
         })?;
