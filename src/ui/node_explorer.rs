@@ -156,7 +156,21 @@ impl NodeExplorerPlugin {
             .to_e_not_found()?;
         Context::from_world_r(world, |context| {
             let mut selected: Option<u64> = None;
-            for (kind, ids) in if parents { &ned.parents } else { &ned.children } {
+            let ids = if parents { &ned.parents } else { &ned.children };
+            let mut selected_kind = ui
+                .ctx()
+                .data_mut(|w| w.get_temp_mut_or_default::<NodeKind>(ui.id()).clone());
+            if EnumSwitcher::new().show_iter(
+                &mut selected_kind,
+                [NodeKind::None].iter().chain(ids.keys()),
+                ui,
+            ) {
+                ui.ctx().data_mut(|w| w.insert_temp(ui.id(), selected_kind));
+            }
+            for (kind, ids) in ids {
+                if selected_kind != NodeKind::None && selected_kind != *kind {
+                    continue;
+                }
                 ui.vertical_centered_justified(|ui| {
                     kind.cstr().label(ui);
                 });

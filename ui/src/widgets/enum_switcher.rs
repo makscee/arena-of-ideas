@@ -26,17 +26,10 @@ impl EnumSwitcher {
         self.columns = true;
         self
     }
-    pub fn show<E: ToCstr + IntoEnumIterator + Clone + PartialEq>(
+    pub fn show_iter<'a, E: ToCstr + Clone + PartialEq + 'a>(
         self,
         value: &mut E,
-        ui: &mut Ui,
-    ) -> bool {
-        self.show_iter(value, E::iter(), ui)
-    }
-    pub fn show_iter<E: ToCstr + Clone + PartialEq>(
-        self,
-        value: &mut E,
-        iter: impl IntoIterator<Item = E>,
+        iter: impl IntoIterator<Item = &'a E>,
         ui: &mut Ui,
     ) -> bool {
         let mut clicked = false;
@@ -62,20 +55,20 @@ impl EnumSwitcher {
                     ui[i].vertical_centered_justified(|ui| {
                         if Button::new(c).active(active, ui).ui(ui).clicked() && !active {
                             clicked = true;
-                            *value = e;
+                            *value = e.clone();
                         }
                     });
                 }
             })
         } else {
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 for e in iter {
                     let mut c = e.cstr();
                     modify_c(&self, &mut c);
                     let active = e.eq(value);
                     if Button::new(c).active(active, ui).ui(ui).clicked() && !active {
                         clicked = true;
-                        *value = e;
+                        *value = e.clone();
                     }
                 }
             });
