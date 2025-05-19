@@ -12,7 +12,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 );
             }
             vr.title_clicked = self.view_title(vctx, context, ui).clicked();
-            self.node_view_rating(vctx, ui);
+            self.node_view_rating(vctx, context, ui);
             self.id().label(ui);
             self.view_data(vctx, context, ui);
         });
@@ -21,7 +21,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
-    fn node_view_rating(&self, vctx: ViewContext, ui: &mut Ui) {
+    fn node_view_rating(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         let Some(node) = cn().db.nodes_world().id().find(&self.id()) else {
             "[red Node not found]".cstr().label(ui);
             return;
@@ -45,7 +45,20 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 }
             });
         });
-        if let Some((parent, id)) = vctx.link_rating {}
+        if let Some((parent, id)) = vctx.link_rating {
+            if let Ok(world) = context.world() {
+                let (parent, child) = if !parent {
+                    (self.id(), id)
+                } else {
+                    (id, self.id())
+                };
+                if let Some(r) = world.get_link_rating(parent, child) {
+                    r.cstr().button(ui);
+                } else {
+                    "[tw _]".cstr().label(ui);
+                }
+            }
+        }
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.show(context, ui);

@@ -40,12 +40,7 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         .on_applied(move |_| {
             info!("Subscription applied");
             on_success();
-            op(|world| {
-                let q = &mut world.resource_mut::<StdbData>().nodes_queue;
-                for node in cn().db.nodes_world().iter() {
-                    q.push(node);
-                }
-            });
+            op(|world| {});
         })
         .subscribe_to_all_tables();
 }
