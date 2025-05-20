@@ -1,1 +1,33 @@
 use super::*;
+
+pub trait Tier {
+    fn tier(&self) -> u8;
+}
+
+impl Tier for Action {
+    fn tier(&self) -> u8 {
+        match self {
+            Action::noop | Action::debug(..) => 0,
+            Action::set_value(..)
+            | Action::add_value(..)
+            | Action::subtract_value(..)
+            | Action::add_target(..)
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::use_ability
+            | Action::apply_status
+            | Action::repeat(..) => 1,
+        }
+    }
+}
+
+impl Tier for NBehavior {
+    fn tier(&self) -> u8 {
+        let action_tiers = self
+            .reactions
+            .iter()
+            .map(|r| r.actions.iter().map(|a| a.tier()).sum::<u8>())
+            .sum::<u8>();
+        action_tiers / 2 + 1
+    }
+}
