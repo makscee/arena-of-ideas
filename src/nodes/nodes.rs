@@ -320,19 +320,20 @@ pub fn core<'a>(context: &'a Context) -> &'a NCore {
 
 pub fn node_menu<T: Node + NodeExt + ViewFns>(ui: &mut Ui, context: &Context) -> Option<T> {
     let mut result = None;
-    ui.menu_button("core", |ui| {
+    fn show_node_list<T: Node + NodeExt + ViewFns>(
+        context: &Context,
+        ui: &mut Ui,
+        ids: Vec<u64>,
+    ) -> Option<T> {
+        let mut result: Option<T> = None;
         ScrollArea::vertical()
             .min_scrolled_height(500.0)
             .show(ui, |ui| {
-                let Ok(entity) = context.entity(ID_CORE) else {
+                let vctx = ViewContext::new(ui);
+                let Ok(nodes) = context.collect_components::<T>(ids) else {
                     return;
                 };
-                let vctx = ViewContext::new(ui);
-                for d in entity
-                    .id(context)
-                    .and_then(|id| context.collect_children_components_recursive::<T>(id))
-                    .unwrap_or_default()
-                {
+                for d in nodes {
                     let name = d.title_cstr(vctx, context);
                     if ui
                         .menu_button(name.widget(1.0, ui.style()), |ui| {
@@ -347,7 +348,30 @@ pub fn node_menu<T: Node + NodeExt + ViewFns>(ui: &mut Ui, context: &Context) ->
                         ui.close_menu();
                     }
                 }
-            })
+            });
+        result
+    }
+    ui.menu_button("core", |ui| {
+        result = show_node_list(
+            context,
+            ui,
+            cn().db
+                .nodes_world()
+                .iter()
+                .filter_map(|n| if n.owner == ID_CORE { Some(n.id) } else { None })
+                .collect_vec(),
+        );
+    });
+    ui.menu_button("all", |ui| {
+        result = show_node_list(
+            context,
+            ui,
+            cn().db
+                .nodes_world()
+                .iter()
+                .filter_map(|n| if n.owner == 0 { Some(n.id) } else { None })
+                .collect_vec(),
+        );
     });
     result
 }

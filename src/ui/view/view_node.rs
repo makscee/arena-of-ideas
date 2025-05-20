@@ -74,6 +74,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
         context: &Context,
         ui: &mut Ui,
     ) -> ViewResponse {
+        let mut vr = ViewResponse::default();
         if ui.button("publish").clicked() {
             let mut pack = self.pack();
             op(move |world| {
@@ -96,7 +97,13 @@ pub trait NodeViewFns: NodeExt + ViewFns {
             });
             ui.close_menu();
         }
-        default()
+        ui.menu_button("replace", |ui| {
+            if let Some(n) = node_menu::<Self>(ui, context) {
+                *self = n;
+                vr.changed = true;
+            }
+        });
+        vr
     }
 }
 
