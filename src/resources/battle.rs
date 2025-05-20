@@ -505,6 +505,9 @@ impl BattleSimulation {
         }
         let entity = context.world_mut()?.spawn_empty().id();
         status.unpack_entity(context, entity)?;
+        let rep_entity = context.world_mut()?.spawn_empty().id();
+        status_rep().clone().unpack_entity(context, rep_entity)?;
+        context.link_parent_child_entity(entity, rep_entity)?;
         context.link_parent_child_entity(target, entity)?;
 
         let mut state = context.get_mut::<NodeState>(entity)?;

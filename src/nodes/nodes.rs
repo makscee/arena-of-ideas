@@ -146,11 +146,6 @@ impl NodeKind {
                     .into(),
                 );
             }
-            NodeKind::NStatusMagic => {
-                let rep_entity = context.world_mut()?.spawn_empty().id();
-                status_rep().clone().unpack_entity(context, rep_entity)?;
-                context.link_parent_child_entity(entity, rep_entity)?;
-            }
             _ => {}
         }
         Ok(())

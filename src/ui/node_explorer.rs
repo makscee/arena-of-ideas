@@ -130,6 +130,36 @@ impl NodeExplorerPlugin {
                 .cstr()
                 .label(ui);
             let ns = context.get_by_id::<NodeState>(id)?;
+            match ns.kind {
+                NodeKind::NHouse => context
+                    .get_by_id::<NHouse>(id)?
+                    .tag_card(default(), context, ui)
+                    .ui(ui),
+                NodeKind::NAbilityMagic => context
+                    .get_by_id::<NAbilityMagic>(id)?
+                    .tag_card(default(), context, ui)
+                    .ui(ui),
+                NodeKind::NStatusMagic => context
+                    .get_by_id::<NStatusMagic>(id)?
+                    .tag_card(default(), context, ui)
+                    .ui(ui),
+                NodeKind::NFusion => context
+                    .get_by_id::<NFusion>(id)?
+                    .show_card(context, ui)
+                    .ui(ui),
+                NodeKind::NUnit => context
+                    .get_by_id::<NUnit>(id)?
+                    .tag_card(default(), context, ui)
+                    .ui(ui),
+                NodeKind::NRepresentation => {
+                    context.get_by_id::<NRepresentation>(id)?.view(
+                        ViewContext::new(ui),
+                        context,
+                        ui,
+                    );
+                }
+                _ => {}
+            }
             Grid::new("vars").show(ui, |ui| {
                 for (var, state) in &ns.vars {
                     var.cstr().label(ui);

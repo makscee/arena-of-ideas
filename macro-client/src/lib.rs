@@ -608,6 +608,17 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
+                    pub fn view_id_with_children(self, context: &Context, ui: &mut Ui, id: u64) -> Result<ViewResponse, ExpressionError> {
+                        match self {
+                            Self::None => unimplemented!(),
+                            #(
+                                Self::#variants => {
+                                    let n = context.get_by_id::<#variants>(id)?;
+                                    Ok(n.view_node(ViewContext::new(ui), context, ui))
+                                }
+                            )*
+                        }
+                    }
                     pub fn query_all_ids(self, world: &mut World) -> Vec<u64> {
                         match self {
                             Self::None => default(),
