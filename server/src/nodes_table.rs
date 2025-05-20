@@ -140,6 +140,36 @@ impl TNodeLink {
             .filter((&id, &kind.to_string(), &solid))
             .collect()
     }
+    pub fn update(self, ctx: &ReducerContext) {
+        ctx.db.node_links().id().update(self);
+    }
+    pub fn insert(self, ctx: &ReducerContext) {
+        ctx.db.node_links().insert(self);
+    }
+    pub fn vote(ctx: &ReducerContext, parent: &TNode, child: &TNode, vote: bool) {
+        let vote = if vote { 1 } else { -1 };
+        if let Some(mut link) = ctx
+            .db
+            .node_links()
+            .parent_child()
+            .filter((&parent.id, &child.id))
+            .next()
+        {
+            link.rating += vote;
+            link.update(ctx);
+        } else {
+            Self {
+                id: 0,
+                parent: parent.id,
+                child: child.id,
+                parent_kind: parent.kind.clone(),
+                child_kind: child.kind.clone(),
+                rating: vote,
+                solid: false,
+            }
+            .insert(ctx);
+        }
+    }
 }
 
 pub trait NodeIdExt {

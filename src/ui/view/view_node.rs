@@ -27,24 +27,31 @@ pub trait NodeViewFns: NodeExt + ViewFns {
             return;
         };
         let r = node.rating;
-        let s = if r > 0 {
-            format!("[b [green {r}]]")
-        } else if r < 0 {
-            format!("[b [red {r}]]")
-        } else {
-            format!("[b {r}]")
+        fn rating_text(r: i32) -> String {
+            if r > 0 {
+                format!("[b [green {r}]]")
+            } else if r < 0 {
+                format!("[b [red {r}]]")
+            } else {
+                format!("[b {r}]")
+            }
+            .cstr()
         }
-        .cstr();
-        s.button(ui).bar_menu(|ui| {
-            ui.horizontal(|ui| {
-                if "[red [b -]]".cstr().button(ui).clicked() {
-                    cn().reducers.content_vote_node(node.id, false).notify_op();
-                }
-                if "[green [b +]]".cstr().button(ui).clicked() {
-                    cn().reducers.content_vote_node(node.id, true).notify_op();
-                }
+        format!("[tw [s n:]]{}", rating_text(r))
+            .button(ui)
+            .bar_menu(|ui| {
+                ui.vertical(|ui| {
+                    "Node rating vote".cstr().label(ui);
+                    ui.horizontal(|ui| {
+                        if "[red [b -]]".cstr().button(ui).clicked() {
+                            cn().reducers.content_vote_node(node.id, false).notify_op();
+                        }
+                        if "[green [b +]]".cstr().button(ui).clicked() {
+                            cn().reducers.content_vote_node(node.id, true).notify_op();
+                        }
+                    });
+                });
             });
-        });
         if let Some((parent, id)) = vctx.link_rating {
             if let Ok(world) = context.world() {
                 let (parent, child) = if !parent {
@@ -52,11 +59,28 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 } else {
                     (id, self.id())
                 };
-                if let Some(r) = world.get_link_rating(parent, child) {
-                    r.cstr().button(ui);
+                let r_text = if let Some(r) = world.get_link_rating(parent, child) {
+                    rating_text(r).cstr()
                 } else {
-                    "[tw _]".cstr().label(ui);
-                }
+                    "[tw _]".cstr()
+                };
+                format!("[s [tw l:]]{r_text}").button(ui).bar_menu(|ui| {
+                    ui.vertical(|ui| {
+                        "Link rating vote".cstr().label(ui);
+                        ui.horizontal(|ui| {
+                            if "[red [b -]]".cstr().button(ui).clicked() {
+                                cn().reducers
+                                    .content_vote_link(parent, child, false)
+                                    .notify_op();
+                            }
+                            if "[green [b +]]".cstr().button(ui).clicked() {
+                                cn().reducers
+                                    .content_vote_link(parent, child, true)
+                                    .notify_op();
+                            }
+                        });
+                    });
+                });
             }
         }
     }

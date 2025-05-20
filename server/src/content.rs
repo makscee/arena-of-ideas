@@ -171,10 +171,24 @@ fn content_delete_node(ctx: &ReducerContext, id: u64) -> Result<(), String> {
 
 #[reducer]
 fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), String> {
-    let player = ctx.player()?;
+    let _ = ctx.player()?;
     let mut node = id.find_err(ctx)?;
     let vote = if vote { 1 } else { -1 };
     node.rating += vote;
     node.update(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn content_vote_link(
+    ctx: &ReducerContext,
+    parent: u64,
+    child: u64,
+    vote: bool,
+) -> Result<(), String> {
+    let _ = ctx.player()?;
+    let parent = parent.find_err(ctx)?;
+    let child = child.find_err(ctx)?;
+    TNodeLink::vote(ctx, &parent, &child, vote);
     Ok(())
 }

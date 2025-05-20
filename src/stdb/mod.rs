@@ -9,6 +9,7 @@ pub mod admin_delete_node_recursive_reducer;
 pub mod content_delete_node_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_rotation_reducer;
+pub mod content_vote_link_reducer;
 pub mod content_vote_node_reducer;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
@@ -58,6 +59,9 @@ pub use content_publish_node_reducer::{
 };
 pub use content_rotation_reducer::{
     content_rotation, set_flags_for_content_rotation, ContentRotationCallbackId,
+};
+pub use content_vote_link_reducer::{
+    content_vote_link, set_flags_for_content_vote_link, ContentVoteLinkCallbackId,
 };
 pub use content_vote_node_reducer::{
     content_vote_node, set_flags_for_content_vote_node, ContentVoteNodeCallbackId,
@@ -138,6 +142,11 @@ pub enum Reducer {
         pack: String,
     },
     ContentRotation,
+    ContentVoteLink {
+        parent: u64,
+        child: u64,
+        vote: bool,
+    },
     ContentVoteNode {
         id: u64,
         vote: bool,
@@ -209,6 +218,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
             Reducer::ContentRotation => "content_rotation",
+            Reducer::ContentVoteLink { .. } => "content_vote_link",
             Reducer::ContentVoteNode { .. } => "content_vote_node",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
@@ -259,6 +269,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "content_rotation" => Ok(__sdk::parse_reducer_args::<
                 content_rotation_reducer::ContentRotationArgs,
             >("content_rotation", &value.args)?
+            .into()),
+            "content_vote_link" => Ok(__sdk::parse_reducer_args::<
+                content_vote_link_reducer::ContentVoteLinkArgs,
+            >("content_vote_link", &value.args)?
             .into()),
             "content_vote_node" => Ok(__sdk::parse_reducer_args::<
                 content_vote_node_reducer::ContentVoteNodeArgs,

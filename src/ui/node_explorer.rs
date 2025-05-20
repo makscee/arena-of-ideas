@@ -176,7 +176,7 @@ impl NodeExplorerPlugin {
                     continue;
                 }
                 ui.vertical_centered_justified(|ui| {
-                    kind.cstr().label(ui);
+                    kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
                 });
                 if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
                     selected = Some(id);
