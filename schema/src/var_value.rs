@@ -219,6 +219,14 @@ impl VarValue {
             _ => Err(ExpressionError::not_supported_single("Abs", self.clone())),
         }
     }
+    pub fn neg(self) -> Result<Self, ExpressionError> {
+        match self {
+            VarValue::f32(x) => Ok(VarValue::f32(-x)),
+            VarValue::i32(x) => Ok(VarValue::i32(-x)),
+            VarValue::Vec2(x) => Ok(VarValue::Vec2(-x)),
+            _ => Err(ExpressionError::not_supported_single("Neg", self.clone())),
+        }
+    }
 }
 
 impl Default for VarValue {

@@ -85,7 +85,8 @@ impl EnumColor for Expression {
             | Expression::unit_vec(_x)
             | Expression::rand(_x)
             | Expression::random_unit(_x)
-            | Expression::to_f32(_x) => YELLOW,
+            | Expression::to_f32(_x)
+            | Expression::neg(_x) => YELLOW,
             Expression::vec2_ee(_a, _b)
             | Expression::str_macro(_a, _b)
             | Expression::sum(_a, _b)

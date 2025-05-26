@@ -109,7 +109,8 @@ impl Injector<Self> for Expression {
             | Expression::random_unit(x)
             | Expression::to_f32(x)
             | Expression::state_var(x, _)
-            | Expression::sqr(x) => [x.as_mut()].into(),
+            | Expression::sqr(x)
+            | Expression::neg(x) => [x.as_mut()].into(),
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)
             | Expression::sum(a, b)
@@ -171,7 +172,8 @@ impl Injector<Self> for Expression {
             | Expression::random_unit(x)
             | Expression::to_f32(x)
             | Expression::state_var(x, _)
-            | Expression::sqr(x) => [x.as_ref()].into(),
+            | Expression::sqr(x)
+            | Expression::neg(x) => [x.as_ref()].into(),
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)
             | Expression::sum(a, b)

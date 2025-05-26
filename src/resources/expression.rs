@@ -126,6 +126,7 @@ impl ExpressionImpl for Expression {
                 .choose(&mut thread_rng())
                 .map(|e| e.to_value())
                 .to_custom_e("No units found"),
+            Expression::neg(x) => x.get_value(context)?.neg(),
             Expression::str_macro(s, v) => {
                 let s = s.get_string(context)?;
                 let v = v.get_string(context)?;

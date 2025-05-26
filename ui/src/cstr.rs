@@ -495,7 +495,8 @@ impl ToCstr for Expression {
             | Expression::rand(x)
             | Expression::random_unit(x)
             | Expression::to_f32(x)
-            | Expression::sqr(x) => x.cstr_expanded(),
+            | Expression::sqr(x)
+            | Expression::neg(x) => x.cstr_expanded(),
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)
             | Expression::sum(a, b)
