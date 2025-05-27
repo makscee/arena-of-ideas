@@ -100,11 +100,11 @@ impl Button {
             title.label(ui);
         }
         let mut job = self.name.job(1.0, ui.style());
-        let mut replace_color = |c: Color32| {
-            job.sections[0].format.color = c;
-            job.sections[0].byte_range = 0..job.text.len();
-            job.sections.truncate(1);
-        };
+        // let mut replace_color = |c: Color32| {
+        //     job.sections[0].format.color = c;
+        //     job.sections[0].byte_range = 0..job.text.len();
+        //     job.sections.truncate(1);
+        // };
         // if !self.enabled {
         //     style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
         //     style.visuals.widgets.noninteractive.fg_stroke.color = tokens_global().low_contrast_text();

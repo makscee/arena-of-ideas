@@ -8,6 +8,16 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        Context::from_world_r(world, |context| {
+            let world = context.world_mut()?;
+            let units = world.query::<&NUnit>().iter(world).cloned().collect_vec();
+            Table::from_owned(units)
+                .column_cstr("name", |_, unit| format!("{} {}", unit.unit_name, unit.id))
+                .ui(context, ui);
+            Ok(())
+        })
+        .ui(ui);
+
         let id = "exp_test".into();
         let mut e = ui
             .ctx()
