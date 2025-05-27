@@ -28,6 +28,6 @@ impl Tier for NBehavior {
             .iter()
             .map(|r| r.actions.iter().map(|a| a.tier()).sum::<u8>())
             .sum::<u8>();
-        action_tiers / 2 + 1
+        (action_tiers + 1) / 2
     }
 }

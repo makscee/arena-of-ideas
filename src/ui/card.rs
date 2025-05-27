@@ -89,13 +89,19 @@ pub trait TagCard: Node {
 
 impl TagCard for NUnit {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
+        let tier = if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(self.id) {
+            behavior.tier()
+        } else {
+            0
+        };
         Ok(TagWidget::new_name_value(
             context.get_string(VarName::unit_name)?,
             context.get_color(VarName::color)?,
             format!(
-                "[b {} {}]",
+                "[b {} {} [tw T]{}]",
                 context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
-                context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color())
+                context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color()),
+                (tier as i32).cstr_c(VarName::tier.color())
             ),
         )
         .ui(ui))
@@ -104,6 +110,11 @@ impl TagCard for NUnit {
         let color = context.color(ui);
         let pwr = context.get_var(VarName::pwr)?;
         let hp = context.get_var(VarName::hp)?;
+        let tier = if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(self.id) {
+            behavior.tier()
+        } else {
+            0
+        };
         Ok(show_frame(
             self,
             &self.unit_name,
@@ -114,6 +125,7 @@ impl TagCard for NUnit {
                 ui.horizontal(|ui| {
                     TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
                     TagWidget::new_var_value(VarName::hp, hp).ui(ui);
+                    TagWidget::new_var_value(VarName::tier, (tier as i32).into()).ui(ui);
                 });
                 if let Ok(description) = self.description_load(context) {
                     description.description.label_w(ui);
@@ -216,9 +228,16 @@ impl NFusion {
         context.with_owner_ref(self.entity(), |context| {
             let pwr = context.get_var(VarName::pwr)?;
             let hp = context.get_var(VarName::hp)?;
+            let lvl = context.get_var(VarName::lvl)?;
             ui.horizontal(|ui| {
                 TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
                 TagWidget::new_var_value(VarName::hp, hp).ui(ui);
+                TagWidget::new_var_value(VarName::lvl, lvl).ui(ui);
+                ui.label(format!(
+                    "Actions: {}/{}",
+                    self.get_action_count(),
+                    self.get_action_limit()
+                ));
             });
             ui.vertical(|ui| -> Result<(), ExpressionError> {
                 "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);

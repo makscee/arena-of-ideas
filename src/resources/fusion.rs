@@ -7,6 +7,32 @@ impl NFusion {
             ars.retain(|ar| ar.unit != id);
         }
     }
+
+    /// Returns the total number of actions currently in this fusion's behavior
+    pub fn get_action_count(&self) -> usize {
+        self.behavior.iter().map(|(_, actions)| actions.len()).sum()
+    }
+
+    /// Returns the maximum number of actions allowed based on fusion level
+    /// Base limit is 5, with +2 actions per level
+    pub fn get_action_limit(&self) -> usize {
+        self.lvl as usize * 2
+    }
+
+    /// Returns true if more actions can be added to this fusion
+    pub fn can_add_action(&self) -> bool {
+        self.get_action_count() < self.get_action_limit()
+    }
+
+    /// Helper function to get a unit's tier through the context
+    /// Tier is calculated from the unit's NBehavior based on action complexity
+    pub fn get_unit_tier(context: &Context, unit_id: u64) -> Result<u8, ExpressionError> {
+        if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(unit_id) {
+            Ok(behavior.tier())
+        } else {
+            Ok(0)
+        }
+    }
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
         context.collect_parents_components::<NUnit>(self.id)
     }
@@ -120,33 +146,58 @@ impl NFusion {
             if self.behavior.is_empty() {
                 return Ok(());
             }
-            for unit in &units {
-                let b = Self::get_behavior(context, unit.id)?;
-                for (ti, r) in b.reactions.iter().enumerate() {
-                    for (ai, action) in r.actions.iter().enumerate() {
-                        let ar = UnitActionRef {
-                            unit: unit.id,
-                            trigger: ti as u8,
-                            action: ai as u8,
-                        };
-                        if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
-                            continue;
+
+            // Display action count and limit with level controls
+            ui.horizontal(|ui| {
+                ui.label(format!(
+                    "Actions: {}/{}",
+                    self.get_action_count(),
+                    self.get_action_limit()
+                ));
+                ui.separator();
+                ui.label("Level:");
+                if ui.button("-").clicked() && self.lvl > 0 {
+                    self.lvl -= 1;
+                    changed = true;
+                }
+                ui.label(format!("{}", self.lvl));
+                if ui.button("+").clicked() {
+                    self.lvl += 1;
+                    changed = true;
+                }
+            });
+
+            if self.can_add_action() {
+                for unit in &units {
+                    let b = Self::get_behavior(context, unit.id)?;
+                    for (ti, r) in b.reactions.iter().enumerate() {
+                        for (ai, action) in r.actions.iter().enumerate() {
+                            let ar = UnitActionRef {
+                                unit: unit.id,
+                                trigger: ti as u8,
+                                action: ai as u8,
+                            };
+                            if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
+                                continue;
+                            }
+                            context
+                                .with_owner_ref(unit.entity(), |context| {
+                                    if action
+                                        .title_cstr(ViewContext::new(ui), context)
+                                        .button(ui)
+                                        .clicked()
+                                    {
+                                        self.behavior.get_mut(0).unwrap().1.push(ar);
+                                        changed = true;
+                                    }
+                                    Ok(())
+                                })
+                                .ui(ui);
                         }
-                        context
-                            .with_owner_ref(unit.entity(), |context| {
-                                if action
-                                    .title_cstr(ViewContext::new(ui), context)
-                                    .button(ui)
-                                    .clicked()
-                                {
-                                    self.behavior.get_mut(0).unwrap().1.push(ar);
-                                    changed = true;
-                                }
-                                Ok(())
-                            })
-                            .ui(ui);
                     }
                 }
+            } else {
+                ui.label("Action limit reached! Increase fusion level to add more actions.");
             }
             Ok(())
         })

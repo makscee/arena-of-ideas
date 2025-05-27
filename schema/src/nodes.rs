@@ -114,6 +114,7 @@ struct NFusion {
     pub pwr: i32,
     pub hp: i32,
     pub dmg: i32,
+    pub lvl: i32,
 }
 
 struct NUnit {
