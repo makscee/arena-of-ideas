@@ -5,14 +5,14 @@ use super::*;
 
 pub struct Table<'a, T> {
     row_getter: RowGetter<'a, T>,
-    columns: Vec<TableColumn<T>>,
+    columns: Vec<TableColumn<'a, T>>,
 }
 
 enum RowGetter<'a, T> {
     Data(&'a Vec<T>),
     FnRow(
         usize,
-        Box<dyn Fn(&Context, usize) -> Option<&'a T> + Send + Sync>,
+        Box<dyn Fn(&Context, usize) -> Option<&'a T> + 'a + Send + Sync>,
     ),
 }
 
@@ -22,10 +22,10 @@ pub struct TableState {
     sorting: Option<(usize, bool)>,
 }
 
-pub struct TableColumn<T> {
+pub struct TableColumn<'a, T> {
     name: String,
-    show: Box<dyn Fn(&Context, &mut Ui, &T)>,
-    value: Option<Box<dyn Fn(&Context, &T) -> VarValue>>,
+    show: Box<dyn FnMut(&Context, &mut Ui, &T) + 'a + Send + Sync>,
+    value: Option<Box<dyn FnMut(&Context, &T) -> VarValue + 'a + Send + Sync>>,
 }
 
 impl<'a, T> RowGetter<'a, T> {
@@ -53,17 +53,17 @@ impl TableState {
         }
     }
 
-    fn sort<T>(&mut self, table: &Table<T>, context: &Context, column_index: usize) {
+    fn sort<T>(&mut self, table: &mut Table<T>, context: &Context, column_index: usize) {
         let ascending = match self.sorting {
             Some((idx, asc)) if idx == column_index => !asc,
             _ => true,
         };
 
-        if let Some(column) = table.columns.get(column_index) {
-            if let Some(value_fn) = &column.value {
-                self.indices.sort_by(|&a, &b| {
-                    let item_a = table.row_getter.get(context, a);
-                    let item_b = table.row_getter.get(context, b);
+        if let Some(column) = table.columns.get_mut(column_index) {
+            if let Some(value_fn) = &mut column.value {
+                self.indices.sort_by(|a, b| {
+                    let item_a = table.row_getter.get(context, *a);
+                    let item_b = table.row_getter.get(context, *b);
 
                     match (item_a, item_b) {
                         (Some(a), Some(b)) => {
@@ -103,7 +103,7 @@ impl<'a, T> Table<'a, T> {
 
     pub fn from_fn_row(
         len: usize,
-        getter: impl Fn(&Context, usize) -> Option<&'a T> + Send + Sync + 'static,
+        getter: impl Fn(&Context, usize) -> Option<&'a T> + Send + Sync + 'a,
     ) -> Self {
         Self {
             row_getter: RowGetter::FnRow(len, Box::new(getter)),
@@ -114,7 +114,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_cstr(
         self,
         name: impl Into<String>,
-        f: impl Fn(&Context, &T) -> String + 'static + Send + Sync + Clone,
+        f: impl Fn(&Context, &T) -> String + 'a + Send + Sync + Clone,
     ) -> Self {
         let f_clone = f.clone();
         self.column(
@@ -129,8 +129,8 @@ impl<'a, T> Table<'a, T> {
     pub fn column(
         mut self,
         name: impl Into<String>,
-        show_fn: impl Fn(&Context, &mut Ui, &T) + 'static + Send + Sync,
-        value_fn: impl Fn(&Context, &T) -> VarValue + 'static + Send + Sync,
+        show_fn: impl FnMut(&Context, &mut Ui, &T) + 'a + Send + Sync,
+        value_fn: impl FnMut(&Context, &T) -> VarValue + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -143,7 +143,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_no_sort(
         mut self,
         name: impl Into<String>,
-        show_fn: impl Fn(&Context, &mut Ui, &T) + 'static + Send + Sync,
+        show_fn: impl Fn(&Context, &mut Ui, &T) + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -153,10 +153,10 @@ impl<'a, T> Table<'a, T> {
         self
     }
 
-    fn show_row(&self, context: &Context, state: &mut TableState, row: &mut TableRow) {
+    fn show_row(&mut self, context: &Context, state: &mut TableState, row: &mut TableRow) {
         let i = *state.indices.get(row.index()).unwrap();
         if let Some(data) = self.row_getter.get(context, i) {
-            for column in self.columns.iter() {
+            for column in self.columns.iter_mut() {
                 row.col(|ui| {
                     ui.push_id(i, |ui| {
                         (column.show)(context, ui, data);
@@ -166,23 +166,27 @@ impl<'a, T> Table<'a, T> {
         }
     }
 
-    pub fn ui(self, context: &Context, ui: &mut Ui) {
+    pub fn ui(mut self, context: &Context, ui: &mut Ui) {
         let table_id = ui.id();
         let mut state = ui
             .ctx()
             .data(|r| r.get_temp::<TableState>(table_id))
             .unwrap_or_else(|| TableState::new(&self));
+        if state.indices.len() != self.row_getter.len() {
+            state = TableState::new(&self);
+        }
 
         TableBuilder::new(ui)
             .columns(Column::auto(), self.columns.len())
             .auto_shrink([false, true])
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
             .header(24.0, |mut row| {
+                let mut need_sort = None;
                 for (column_index, column) in self.columns.iter().enumerate() {
                     row.col(|ui| {
                         let response = ui.button(&column.name);
                         if response.clicked() && column.value.is_some() {
-                            state.sort(&self, context, column_index);
+                            need_sort = Some(column_index);
                         }
 
                         // Show sort indicator
@@ -193,6 +197,9 @@ impl<'a, T> Table<'a, T> {
                         }
                     });
                 }
+                if let Some(column_index) = need_sort {
+                    state.sort(&mut self, context, column_index);
+                }
             })
             .body(|mut body| {
                 for _ in 0..state.indices.len() {
@@ -202,7 +209,6 @@ impl<'a, T> Table<'a, T> {
                 }
             });
 
-        // Save state
         ui.ctx().data_mut(|w| w.insert_temp(table_id, state));
     }
 }

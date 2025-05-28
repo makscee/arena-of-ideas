@@ -70,15 +70,21 @@ impl<T> ErrorExt for Result<T, ExpressionError> {
     #[track_caller]
     fn ui(self, ui: &mut Ui) {
         if let Err(e) = self {
-            let error_text = format!("{}\n[s {}]", e.cstr(), std::panic::Location::caller());
-            error_text.clone().button(ui).bar_menu(|ui| {
-                ScrollArea::vertical().show(ui, |ui| {
-                    let mut b = e.bt;
-                    b.resolve();
-                    error_text.cstr().label(ui);
-                    format!("[s {b:?}]").label(ui);
-                });
-            });
+            e.ui(ui);
         }
+    }
+}
+
+impl ErrorExt for ExpressionError {
+    fn ui(self, ui: &mut Ui) {
+        let error_text = format!("{}\n[s {}]", self.cstr(), std::panic::Location::caller());
+        error_text.clone().button(ui).bar_menu(|ui| {
+            ScrollArea::vertical().show(ui, |ui| {
+                let mut b = self.bt;
+                b.resolve();
+                error_text.cstr().label(ui);
+                format!("[s {b:?}]").label(ui);
+            });
+        });
     }
 }

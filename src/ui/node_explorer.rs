@@ -21,15 +21,23 @@ impl<T: NodeViewFns> NodesListWidget<T> {
         selected: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
         let mut new_selected: Option<u64> = None;
-        for n in ids
-            .into_iter()
-            .filter_map(|id| context.get_by_id::<T>(*id).ok())
-        {
-            vctx.selected = selected.is_some_and(|id| id == n.id());
-            if n.view_node(vctx, context, ui).title_clicked {
-                new_selected = Some(n.id());
-            }
-        }
+        ui.push_id(vctx.id, |ui| {
+            ids.table()
+                .column(
+                    "node",
+                    |context, ui, node_id| match context.get_by_id::<T>(*node_id) {
+                        Ok(node) => {
+                            vctx.selected = selected.is_some_and(|id| id == *node_id);
+                            if node.view_node(vctx, context, ui).title_clicked {
+                                new_selected = Some(*node_id);
+                            }
+                        }
+                        Err(e) => e.ui(ui),
+                    },
+                    |_, node| (*node).into(),
+                )
+                .ui(context, ui);
+        });
         Ok(new_selected)
     }
 }
@@ -201,26 +209,18 @@ impl NodeExplorerPlugin {
             if let Some(selected) = ned.selected {
                 vctx = vctx.link_rating(!parents, selected);
             }
-            for (kind, ids) in ids {
-                if selected_kind != NodeKind::None && selected_kind != *kind {
-                    continue;
-                }
-                ui.vertical_centered_justified(|ui| {
-                    kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
-                });
-                if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
-                    selected = Some(id);
-                }
-            }
-            if selected_kind != NodeKind::None {
-                let mut all_ids = selected_kind.query_all_ids(context.world_mut()?);
-                if let Some(ids) = ids.get(&selected_kind) {
-                    for id in ids {
-                        if let Some(i) = all_ids.iter().position(|d| *d == *id) {
-                            all_ids.remove(i);
-                        }
+
+            if selected_kind == NodeKind::None {
+                for (kind, ids) in ids {
+                    ui.vertical_centered_justified(|ui| {
+                        kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    });
+                    if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
+                        selected = Some(id);
                     }
                 }
+            } else {
+                let all_ids = selected_kind.query_all_ids(context.world_mut()?);
                 if let Some(id) =
                     selected_kind.show_explorer(context, vctx, ui, &all_ids, ned.selected)?
                 {

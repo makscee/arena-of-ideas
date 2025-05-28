@@ -583,7 +583,8 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                             )*
                         }
                     }
-                    pub fn show_explorer(self, context: &mut Context, vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
+                    pub fn show_explorer(self, context: &mut Context, mut vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
+                        vctx = vctx.with_id(self);
                         match self {
                             Self::None => Ok(None),
                             #(
