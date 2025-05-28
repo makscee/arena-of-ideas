@@ -318,7 +318,9 @@ impl Show for Reaction {
                 Icon::Lightning.show(ui);
                 self.trigger.view_title(vctx, context, ui);
             });
-            self.actions.view(vctx, context, ui);
+            for a in self.actions.iter() {
+                a.view_title(vctx, context, ui);
+            }
         });
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
@@ -329,7 +331,9 @@ impl Show for Reaction {
 
 impl Show for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view_with_children(ViewContext::new(ui), context, ui);
+        for r in self {
+            r.show(context, ui);
+        }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)

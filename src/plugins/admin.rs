@@ -11,8 +11,21 @@ impl AdminPlugin {
         Context::from_world_r(world, |context| {
             let world = context.world_mut()?;
             let units = world.query::<&NUnit>().iter(world).cloned().collect_vec();
-            Table::from_owned(units)
-                .column_cstr("name", |_, unit| format!("{} {}", unit.unit_name, unit.id))
+            let units = [units.clone()].into_iter().flatten().collect_vec();
+            units
+                .table()
+                .column(
+                    "node",
+                    |context, ui, unit| unit.tag_card(default(), context, ui).ui(ui),
+                    |context, unit| unit.unit_name.clone().into(),
+                )
+                .column(
+                    "id",
+                    |context, ui, unit| {
+                        unit.id.cstr().label(ui);
+                    },
+                    |context, unit| unit.id.into(),
+                )
                 .ui(context, ui);
             Ok(())
         })

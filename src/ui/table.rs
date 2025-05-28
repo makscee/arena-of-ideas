@@ -1,4 +1,5 @@
 use egui_extras::{Column, TableBuilder, TableRow};
+use std::cmp::Ordering;
 
 use super::*;
 
@@ -8,7 +9,7 @@ pub struct Table<'a, T> {
 }
 
 enum RowGetter<'a, T> {
-    Owned(Vec<T>),
+    Data(&'a Vec<T>),
     FnRow(
         usize,
         Box<dyn Fn(&Context, usize) -> Option<&'a T> + Send + Sync>,
@@ -30,14 +31,14 @@ pub struct TableColumn<T> {
 impl<'a, T> RowGetter<'a, T> {
     fn len(&self) -> usize {
         match self {
-            RowGetter::Owned(vec) => vec.len(),
+            RowGetter::Data(vec) => vec.len(),
             RowGetter::FnRow(len, _) => *len,
         }
     }
 
     fn get(&self, context: &Context, index: usize) -> Option<&T> {
         match self {
-            RowGetter::Owned(vec) => vec.get(index),
+            RowGetter::Data(vec) => vec.get(index),
             RowGetter::FnRow(_, getter) => getter(context, index),
         }
     }
@@ -51,15 +52,55 @@ impl TableState {
             sorting: None,
         }
     }
+
+    fn sort<T>(&mut self, table: &Table<T>, context: &Context, column_index: usize) {
+        let ascending = match self.sorting {
+            Some((idx, asc)) if idx == column_index => !asc,
+            _ => true,
+        };
+
+        if let Some(column) = table.columns.get(column_index) {
+            if let Some(value_fn) = &column.value {
+                self.indices.sort_by(|&a, &b| {
+                    let item_a = table.row_getter.get(context, a);
+                    let item_b = table.row_getter.get(context, b);
+
+                    match (item_a, item_b) {
+                        (Some(a), Some(b)) => {
+                            let val_a = value_fn(context, a);
+                            let val_b = value_fn(context, b);
+
+                            match VarValue::compare(&val_a, &val_b) {
+                                Ok(ord) => {
+                                    if ascending {
+                                        ord
+                                    } else {
+                                        ord.reverse()
+                                    }
+                                }
+                                Err(_) => Ordering::Equal,
+                            }
+                        }
+                        (Some(_), None) => Ordering::Less,
+                        (None, Some(_)) => Ordering::Greater,
+                        (None, None) => Ordering::Equal,
+                    }
+                });
+            }
+        }
+
+        self.sorting = Some((column_index, ascending));
+    }
 }
 
 impl<'a, T> Table<'a, T> {
-    pub fn from_owned(data: Vec<T>) -> Self {
+    pub fn from_data(data: &'a Vec<T>) -> Self {
         Self {
-            row_getter: RowGetter::Owned(data),
+            row_getter: RowGetter::Data(data),
             columns: Vec::new(),
         }
     }
+
     pub fn from_fn_row(
         len: usize,
         getter: impl Fn(&Context, usize) -> Option<&'a T> + Send + Sync + 'static,
@@ -69,49 +110,110 @@ impl<'a, T> Table<'a, T> {
             columns: Vec::new(),
         }
     }
+
     pub fn column_cstr(
         self,
         name: impl Into<String>,
-        f: impl Fn(&Context, &T) -> String + 'static + Send + Sync,
+        f: impl Fn(&Context, &T) -> String + 'static + Send + Sync + Clone,
     ) -> Self {
-        let mut table = self;
-        table.columns.push(TableColumn {
-            name: name.into(),
-            show: Box::new(move |context, ui, data| {
+        let f_clone = f.clone();
+        self.column(
+            name,
+            move |context, ui, data| {
                 ui.label(f(context, data));
-            }),
+            },
+            move |context, data| VarValue::String(f_clone(context, data)),
+        )
+    }
+
+    pub fn column(
+        mut self,
+        name: impl Into<String>,
+        show_fn: impl Fn(&Context, &mut Ui, &T) + 'static + Send + Sync,
+        value_fn: impl Fn(&Context, &T) -> VarValue + 'static + Send + Sync,
+    ) -> Self {
+        self.columns.push(TableColumn {
+            name: name.into(),
+            show: Box::new(show_fn),
+            value: Some(Box::new(value_fn)),
+        });
+        self
+    }
+
+    pub fn column_no_sort(
+        mut self,
+        name: impl Into<String>,
+        show_fn: impl Fn(&Context, &mut Ui, &T) + 'static + Send + Sync,
+    ) -> Self {
+        self.columns.push(TableColumn {
+            name: name.into(),
+            show: Box::new(show_fn),
             value: None,
         });
-        table
+        self
     }
+
     fn show_row(&self, context: &Context, state: &mut TableState, row: &mut TableRow) {
         let i = *state.indices.get(row.index()).unwrap();
-        let data = self.row_getter.get(context, i).unwrap();
-        for column in self.columns.iter() {
-            row.col(|ui| {
-                (column.show)(context, ui, data);
-            });
+        if let Some(data) = self.row_getter.get(context, i) {
+            for column in self.columns.iter() {
+                row.col(|ui| {
+                    ui.push_id(i, |ui| {
+                        (column.show)(context, ui, data);
+                    });
+                });
+            }
         }
     }
+
     pub fn ui(self, context: &Context, ui: &mut Ui) {
+        let table_id = ui.id();
         let mut state = ui
             .ctx()
-            .data(|r| r.get_temp::<TableState>(ui.id()))
+            .data(|r| r.get_temp::<TableState>(table_id))
             .unwrap_or_else(|| TableState::new(&self));
+
         TableBuilder::new(ui)
             .columns(Column::auto(), self.columns.len())
+            .auto_shrink([false, true])
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
             .header(24.0, |mut row| {
-                for column in self.columns.iter() {
+                for (column_index, column) in self.columns.iter().enumerate() {
                     row.col(|ui| {
-                        ui.label(&column.name);
+                        let response = ui.button(&column.name);
+                        if response.clicked() && column.value.is_some() {
+                            state.sort(&self, context, column_index);
+                        }
+
+                        // Show sort indicator
+                        if let Some((sorted_column, ascending)) = state.sorting {
+                            if sorted_column == column_index {
+                                ui.label(if ascending { "↑" } else { "↓" });
+                            }
+                        }
                     });
                 }
             })
-            .body(|body| {
-                body.rows(24.0, state.indices.len(), |mut row| {
-                    self.show_row(context, &mut state, &mut row);
-                });
+            .body(|mut body| {
+                for _ in 0..state.indices.len() {
+                    body.row(24.0, |mut row| {
+                        self.show_row(context, &mut state, &mut row);
+                    });
+                }
             });
+
+        // Save state
+        ui.ctx().data_mut(|w| w.insert_temp(table_id, state));
+    }
+}
+
+pub trait TableExt<T> {
+    /// Create a table widget from this vector
+    fn table(&self) -> Table<T>;
+}
+
+impl<T> TableExt<T> for Vec<T> {
+    fn table(&self) -> Table<T> {
+        Table::from_data(self)
     }
 }
