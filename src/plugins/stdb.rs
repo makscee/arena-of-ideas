@@ -7,15 +7,8 @@ pub struct StdbPlugin;
 
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<StdbData>()
-            .init_resource::<Events<StdbEvent>>();
+        app.init_resource::<Events<StdbEvent>>();
     }
-}
-
-#[derive(Resource, Default)]
-struct StdbData {
-    nodes_queue: Vec<TNode>,
-    on_empty: Vec<Operation>,
 }
 
 pub enum StdbChange {
@@ -63,9 +56,12 @@ fn subscribe_table_updates() {
         let parent = link.parent;
         let child = link.child;
         let rating = link.rating;
+        let solid = link.solid;
         op(move |world| {
-            world.link_parent_child(parent, child);
-            world.set_link_rating(parent, child, rating);
+            if solid {
+                world.link_parent_child(parent, child);
+            }
+            world.set_link_rating(parent, child, rating, solid);
         });
     });
     db.node_links().on_update(|_, _, link| {
@@ -73,17 +69,20 @@ fn subscribe_table_updates() {
         let parent = link.parent;
         let child = link.child;
         let rating = link.rating;
+        let solid = link.solid;
         op(move |world| {
-            world.set_link_rating(parent, child, rating);
+            world.set_link_rating(parent, child, rating, solid);
         });
     });
     db.node_links().on_delete(|_, link| {
         debug!("remove link {link:?}");
         let parent = link.parent;
         let child = link.child;
-        op(move |world| {
-            world.unlink_parent_child(parent, child);
-        });
+        if link.solid {
+            op(move |world| {
+                world.unlink_parent_child(parent, child);
+            });
+        }
     });
 }
 

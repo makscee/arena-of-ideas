@@ -7,8 +7,9 @@ pub trait WorldLinks {
     fn id_to_entity_map(&self) -> &HashMap<u64, Entity>;
     fn entity_to_id_map(&self) -> &HashMap<Entity, u64>;
     fn link_parent_child(&mut self, parent: u64, child: u64);
-    fn set_link_rating(&mut self, parent: u64, child: u64, rating: i32);
+    fn set_link_rating(&mut self, parent: u64, child: u64, rating: i32, solid: bool);
     fn get_link_rating(&self, parent: u64, child: u64) -> Option<i32>;
+    fn get_any_link_rating(&self, parent: u64, child: u64) -> Option<(i32, bool)>;
     fn unlink_parent_child(&mut self, parent: u64, child: u64) -> bool;
     fn id_entity(&self, id: u64) -> Option<Entity>;
     fn entity_id(&self, entity: Entity) -> Option<u64>;
@@ -20,6 +21,7 @@ struct WorldLinksResource {
     parent_to_child: HashMap<u64, HashSet<u64>>,
     child_to_parent: HashMap<u64, HashSet<u64>>,
     links_rating: HashMap<(u64, u64), i32>,
+    links_rating_all: HashMap<(u64, u64), (i32, bool)>,
     id_to_entity: HashMap<u64, Entity>,
     entity_to_id: HashMap<Entity, u64>,
 }
@@ -44,13 +46,24 @@ impl WorldLinks for World {
         r.parent_to_child.entry(parent).or_default().insert(child);
         r.child_to_parent.entry(child).or_default().insert(parent);
     }
-    fn set_link_rating(&mut self, parent: u64, child: u64, rating: i32) {
+    fn set_link_rating(&mut self, parent: u64, child: u64, rating: i32, solid: bool) {
         let mut r = self.resource_mut::<WorldLinksResource>();
-        r.links_rating.insert((parent, child), rating);
+        if solid {
+            r.links_rating.insert((parent, child), rating);
+        } else {
+            r.links_rating.remove(&(parent, child));
+        }
+        r.links_rating_all.insert((parent, child), (rating, solid));
     }
     fn get_link_rating(&self, parent: u64, child: u64) -> Option<i32> {
         self.resource::<WorldLinksResource>()
             .links_rating
+            .get(&(parent, child))
+            .copied()
+    }
+    fn get_any_link_rating(&self, parent: u64, child: u64) -> Option<(i32, bool)> {
+        self.resource::<WorldLinksResource>()
+            .links_rating_all
             .get(&(parent, child))
             .copied()
     }

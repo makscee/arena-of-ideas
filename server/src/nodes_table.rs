@@ -46,7 +46,7 @@ pub trait TopLink {
 
 impl TopLink for Vec<TNodeLink> {
     fn top(&self) -> Option<&TNodeLink> {
-        self.into_iter().sorted_by_key(|l| l.rating).next()
+        self.into_iter().sorted_by_key(|l| -l.rating).next()
     }
 }
 

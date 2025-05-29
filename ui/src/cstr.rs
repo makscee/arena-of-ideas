@@ -168,6 +168,7 @@ struct StyleState {
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
 pub enum CstrStyle {
     Color(Color32),
+    Normal,
     Bold,
     Small,
     Heading,
@@ -183,6 +184,7 @@ impl CstrStyle {
     }
     pub fn get_style(&self) -> Option<TextStyle> {
         match self {
+            Self::Normal => Some(TextStyle::Body),
             Self::Small => Some(TextStyle::Small),
             Self::Bold => Some(TextStyle::Name("Bold".into())),
             Self::Heading => Some(TextStyle::Heading),
@@ -202,6 +204,7 @@ pub fn init_style_map(colorix: &Colorix, style: &Style) {
     let pairs = [
         ("b", CstrStyle::Bold),
         ("s", CstrStyle::Small),
+        ("n", CstrStyle::Normal),
         ("h", CstrStyle::Heading),
         ("h2", CstrStyle::Heading2),
         ("red", CstrStyle::Color(RED)),

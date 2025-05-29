@@ -99,6 +99,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     while let Some(mut house) = houses.pop_front() {
         info!("start house {}", house.house_name);
         if let Some(color) = house.mutual_top_parent::<NHouseColor>(ctx) {
+            info!("color: {}", color.color.0);
             house.color = Some(color);
         } else {
             error!("color failed");

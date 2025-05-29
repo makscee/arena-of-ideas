@@ -21,22 +21,21 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
+    fn node_rating(&self) -> Option<i32> {
+        cn().db
+            .nodes_world()
+            .id()
+            .find(&self.id())
+            .map(|n| n.rating)
+    }
+    fn node_link_rating(&self, parent: u64) -> Option<i32> {
+        None
+    }
     fn node_view_rating(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
-        let Some(node) = cn().db.nodes_world().id().find(&self.id()) else {
+        let Some(r) = self.node_rating() else {
             "[red Node not found]".cstr().label(ui);
             return;
         };
-        let r = node.rating;
-        fn rating_text(r: i32) -> String {
-            if r > 0 {
-                format!("[b [green {r}]]")
-            } else if r < 0 {
-                format!("[b [red {r}]]")
-            } else {
-                format!("[b {r}]")
-            }
-            .cstr()
-        }
         format!("[tw [s n:]]{}", rating_text(r))
             .button(ui)
             .bar_menu(|ui| {
@@ -44,10 +43,12 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                     "Node rating vote".cstr().label(ui);
                     ui.horizontal(|ui| {
                         if "[red [b -]]".cstr().button(ui).clicked() {
-                            cn().reducers.content_vote_node(node.id, false).notify_op();
+                            cn().reducers
+                                .content_vote_node(self.id(), false)
+                                .notify_op();
                         }
                         if "[green [b +]]".cstr().button(ui).clicked() {
-                            cn().reducers.content_vote_node(node.id, true).notify_op();
+                            cn().reducers.content_vote_node(self.id(), true).notify_op();
                         }
                     });
                 });
@@ -59,8 +60,12 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 } else {
                     (id, self.id())
                 };
-                let r_text = if let Some(r) = world.get_link_rating(parent, child) {
-                    rating_text(r).cstr()
+                let r_text = if let Some((r, solid)) = world.get_any_link_rating(parent, child) {
+                    rating_text(r).cstr_s(if solid {
+                        CstrStyle::Bold
+                    } else {
+                        CstrStyle::Normal
+                    })
                 } else {
                     "[tw _]".cstr()
                 };
@@ -129,6 +134,17 @@ pub trait NodeViewFns: NodeExt + ViewFns {
         });
         vr
     }
+}
+
+fn rating_text(r: i32) -> String {
+    if r > 0 {
+        format!("[green {r}]")
+    } else if r < 0 {
+        format!("[red {r}]")
+    } else {
+        format!("{r}")
+    }
+    .cstr()
 }
 
 impl NodeViewFns for NCore {}
