@@ -112,7 +112,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = NFusion::new(ctx, pid, default(), i32::MAX, 0, 0, 0, 0, default());
+    let fusion = NFusion::new(ctx, pid, default(), i32::MAX, 0, 0, 0, 1, default());
     fusion.id.add_parent(ctx, team.id())?;
     team.fusions.push(fusion);
     for (i, fusion) in team

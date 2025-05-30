@@ -199,9 +199,25 @@ impl NTeam {
     pub fn clone_ids_remap(&self, ctx: &ReducerContext, parent: u64) -> Result<Self, String> {
         let mut remap: HashMap<u64, u64> = default();
         let mut new_team = self.clone(ctx, self.owner, &mut remap);
+        let child_kind = NodeKind::NFusion.to_string();
+        let parent_kind = NodeKind::NUnit.to_string();
         for fusion in &mut new_team.fusions {
-            todo!();
-            fusion.update_self(ctx);
+            fusion.units.ids = fusion
+                .units
+                .ids
+                .iter()
+                .map(|u| *remap.get(u).unwrap())
+                .collect();
+            for id in &fusion.units.ids {
+                TNodeLink::add_by_id(
+                    ctx,
+                    *id,
+                    fusion.id,
+                    parent_kind.clone(),
+                    child_kind.clone(),
+                    true,
+                )?;
+            }
         }
         new_team.id.add_parent(ctx, parent)?;
         Ok(new_team)
