@@ -71,6 +71,11 @@ fn subscribe_table_updates() {
         let rating = link.rating;
         let solid = link.solid;
         op(move |world| {
+            if solid {
+                world.link_parent_child(parent, child);
+            } else {
+                world.unlink_parent_child(parent, child);
+            }
             world.set_link_rating(parent, child, rating, solid);
         });
     });

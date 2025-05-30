@@ -15,28 +15,57 @@ impl<T: NodeViewFns> NodesListWidget<T> {
     pub fn ui(
         &mut self,
         context: &mut Context,
-        mut vctx: ViewContext,
+        vctx: ViewContext,
         ui: &mut Ui,
         ids: &Vec<u64>,
         selected: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
         let mut new_selected: Option<u64> = None;
         ui.push_id(vctx.id, |ui| {
-            ids.table()
+            let nodes = ids
+                .into_iter()
+                .filter_map(|id| context.get_by_id::<T>(*id).ok())
+                .collect_vec();
+            let mut table = nodes
+                .table()
                 .column(
                     "node",
-                    |context, ui, node_id| match context.get_by_id::<T>(*node_id) {
-                        Ok(node) => {
-                            vctx.selected = selected.is_some_and(|id| id == *node_id);
-                            if node.view_node(vctx, context, ui).title_clicked {
-                                new_selected = Some(*node_id);
-                            }
+                    |context, ui, node| {
+                        if node
+                            .view_node(
+                                vctx.selected(selected.is_some_and(|id| id == node.id())),
+                                context,
+                                ui,
+                            )
+                            .title_clicked
+                        {
+                            new_selected = Some(node.id());
                         }
-                        Err(e) => e.ui(ui),
                     },
-                    |_, node| (*node).into(),
+                    |_, node| node.id().into(),
                 )
-                .ui(context, ui);
+                .column(
+                    "rating",
+                    move |context, ui, node| {
+                        node.node_view_rating(vctx, context, ui);
+                    },
+                    |_, node| node.node_rating().unwrap_or_default().into(),
+                );
+            if let Some((is_parent, id)) = vctx.link_rating {
+                table = table.column(
+                    "link rating",
+                    move |context, ui, node| {
+                        node.node_view_link_rating(vctx, context, ui, is_parent, id);
+                    },
+                    move |context, node| {
+                        node.node_link_rating(context, is_parent, id)
+                            .unwrap_or_default()
+                            .0
+                            .into()
+                    },
+                )
+            }
+            table.ui(context, ui);
         });
         Ok(new_selected)
     }

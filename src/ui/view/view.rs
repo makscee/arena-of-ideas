@@ -59,6 +59,10 @@ impl ViewContext {
         self.one_line = value;
         self
     }
+    pub fn selected(mut self, value: bool) -> Self {
+        self.selected = value;
+        self
+    }
     pub fn context_btn(mut self) -> Self {
         self.separate_contex_menu_btn = true;
         self

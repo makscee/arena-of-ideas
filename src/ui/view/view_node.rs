@@ -12,7 +12,6 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 );
             }
             vr.title_clicked = self.view_title(vctx, context, ui).clicked();
-            self.node_view_rating(vctx, context, ui);
             self.id().label(ui);
             self.view_data(vctx, context, ui);
         });
@@ -22,72 +21,85 @@ pub trait NodeViewFns: NodeExt + ViewFns {
         self.cstr()
     }
     fn node_rating(&self) -> Option<i32> {
-        cn().db
-            .nodes_world()
-            .id()
-            .find(&self.id())
-            .map(|n| n.rating)
+        self.id().node_rating()
     }
-    fn node_link_rating(&self, parent: u64) -> Option<i32> {
-        None
+    fn node_link_rating(
+        &self,
+        context: &Context,
+        is_parent: bool,
+        id: u64,
+    ) -> Result<(i32, bool), ExpressionError> {
+        let (child, parent) = if is_parent {
+            (self.id(), id)
+        } else {
+            (id, self.id())
+        };
+        let (rating, solid) = context
+            .world()?
+            .get_any_link_rating(parent, child)
+            .to_e_not_found()?;
+        Ok((rating, solid))
+    }
+    fn node_view_link_rating(
+        &self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+        is_parent: bool,
+        id: u64,
+    ) {
+        let (text, solid) = if let Ok((r, solid)) = self.node_link_rating(context, is_parent, id) {
+            (r.cstr_expanded(), solid)
+        } else {
+            ("[tw _]".cstr(), false)
+        };
+        let (child, parent) = if is_parent {
+            (self.id(), id)
+        } else {
+            (id, self.id())
+        };
+        rating_button(
+            ui,
+            text,
+            solid,
+            |ui| {
+                "link rating vote".cstr().label(ui);
+            },
+            || {
+                cn().reducers
+                    .content_vote_link(parent, child, true)
+                    .notify_error_op()
+            },
+            || {
+                cn().reducers
+                    .content_vote_link(parent, child, false)
+                    .notify_error_op()
+            },
+        );
     }
     fn node_view_rating(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         let Some(r) = self.node_rating() else {
             "[red Node not found]".cstr().label(ui);
             return;
         };
-        format!("[tw [s n:]]{}", rating_text(r))
-            .button(ui)
-            .bar_menu(|ui| {
-                ui.vertical(|ui| {
-                    "Node rating vote".cstr().label(ui);
-                    ui.horizontal(|ui| {
-                        if "[red [b -]]".cstr().button(ui).clicked() {
-                            cn().reducers
-                                .content_vote_node(self.id(), false)
-                                .notify_op();
-                        }
-                        if "[green [b +]]".cstr().button(ui).clicked() {
-                            cn().reducers.content_vote_node(self.id(), true).notify_op();
-                        }
-                    });
-                });
-            });
-        if let Some((parent, id)) = vctx.link_rating {
-            if let Ok(world) = context.world() {
-                let (parent, child) = if !parent {
-                    (self.id(), id)
-                } else {
-                    (id, self.id())
-                };
-                let r_text = if let Some((r, solid)) = world.get_any_link_rating(parent, child) {
-                    rating_text(r).cstr_s(if solid {
-                        CstrStyle::Bold
-                    } else {
-                        CstrStyle::Normal
-                    })
-                } else {
-                    "[tw _]".cstr()
-                };
-                format!("[s [tw l:]]{r_text}").button(ui).bar_menu(|ui| {
-                    ui.vertical(|ui| {
-                        "Link rating vote".cstr().label(ui);
-                        ui.horizontal(|ui| {
-                            if "[red [b -]]".cstr().button(ui).clicked() {
-                                cn().reducers
-                                    .content_vote_link(parent, child, false)
-                                    .notify_op();
-                            }
-                            if "[green [b +]]".cstr().button(ui).clicked() {
-                                cn().reducers
-                                    .content_vote_link(parent, child, true)
-                                    .notify_op();
-                            }
-                        });
-                    });
-                });
-            }
-        }
+        rating_button(
+            ui,
+            r.cstr_expanded(),
+            false,
+            |ui| {
+                "node rating vote".cstr().label(ui);
+            },
+            || {
+                cn().reducers
+                    .content_vote_node(self.id(), true)
+                    .notify_error_op();
+            },
+            || {
+                cn().reducers
+                    .content_vote_node(self.id(), false)
+                    .notify_error_op();
+            },
+        );
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         self.show(context, ui);
@@ -136,15 +148,27 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     }
 }
 
-fn rating_text(r: i32) -> String {
-    if r > 0 {
-        format!("[green {r}]")
-    } else if r < 0 {
-        format!("[red {r}]")
-    } else {
-        format!("{r}")
-    }
-    .cstr()
+fn rating_button(
+    ui: &mut Ui,
+    text: String,
+    active: bool,
+    open: impl FnOnce(&mut Ui),
+    minus: impl FnOnce(),
+    plus: impl FnOnce(),
+) {
+    text.as_button().active(active, ui).ui(ui).bar_menu(|ui| {
+        ui.vertical(|ui| {
+            open(ui);
+            ui.horizontal(|ui| {
+                if "[red [b -]]".cstr().button(ui).clicked() {
+                    plus()
+                }
+                if "[green [b +]]".cstr().button(ui).clicked() {
+                    minus()
+                }
+            });
+        });
+    });
 }
 
 impl NodeViewFns for NCore {}

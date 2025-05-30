@@ -80,6 +80,7 @@ pub trait NodeIdExt {
     fn get_node(self) -> Option<TNode>;
     fn kind(self) -> Result<NodeKind, ExpressionError>;
     fn label(self, ui: &mut Ui) -> Response;
+    fn node_rating(self) -> Option<i32>;
 }
 
 impl NodeIdExt for u64 {
@@ -101,5 +102,8 @@ impl NodeIdExt for u64 {
             .on_hover_ui(|ui| {
                 format!("[tw #]{self}").label(ui);
             })
+    }
+    fn node_rating(self) -> Option<i32> {
+        cn().db.nodes_world().id().find(&self).map(|n| n.rating)
     }
 }

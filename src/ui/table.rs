@@ -56,7 +56,7 @@ impl TableState {
     fn sort<T>(&mut self, table: &mut Table<T>, context: &Context, column_index: usize) {
         let ascending = match self.sorting {
             Some((idx, asc)) if idx == column_index => !asc,
-            _ => true,
+            _ => false,
         };
 
         if let Some(column) = table.columns.get_mut(column_index) {
@@ -188,8 +188,6 @@ impl<'a, T> Table<'a, T> {
                         if response.clicked() && column.value.is_some() {
                             need_sort = Some(column_index);
                         }
-
-                        // Show sort indicator
                         if let Some((sorted_column, ascending)) = state.sorting {
                             if sorted_column == column_index {
                                 ui.label(if ascending { "↑" } else { "↓" });
