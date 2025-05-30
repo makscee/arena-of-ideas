@@ -33,6 +33,7 @@ impl NMatch {
 #[reducer]
 fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let mut player = ctx.player()?;
+    let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let g = m.g;
     let sc = m
@@ -59,11 +60,13 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let _ = team.houses_load(ctx);
     let houses = &mut team.houses;
     if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
-        unit.clone(ctx, &mut default()).id.add_parent(ctx, h.id)?;
+        unit.clone(ctx, pid, &mut default())
+            .id
+            .add_parent(ctx, h.id)?;
     } else {
-        let house = house.with_components(ctx).clone(ctx, &mut default());
+        let house = house.with_components(ctx).clone(ctx, pid, &mut default());
         house.id.add_parent(ctx, team.id)?;
-        unit.clone(ctx, &mut default())
+        unit.clone(ctx, pid, &mut default())
             .id
             .add_parent(ctx, house.id)?;
     }

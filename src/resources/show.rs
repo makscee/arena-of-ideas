@@ -303,7 +303,10 @@ impl Show for Vec<u64> {
 }
 impl Show for Vec<Action> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view_with_children(ViewContext::new(ui), context, ui);
+        let vctx = ViewContext::new(ui).non_interactible(true);
+        for a in self {
+            a.view_title(vctx, context, ui);
+        }
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)
@@ -318,9 +321,7 @@ impl Show for Reaction {
                 Icon::Lightning.show(ui);
                 self.trigger.view_title(vctx, context, ui);
             });
-            for a in self.actions.iter() {
-                a.view_title(vctx, context, ui);
-            }
+            self.actions.show(context, ui);
         });
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {

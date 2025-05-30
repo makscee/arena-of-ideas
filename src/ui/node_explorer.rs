@@ -117,7 +117,14 @@ impl NodeExplorerPlugin {
     }
     fn select_kind(world: &mut World, ned: &mut NodeExplorerData, kind: NodeKind) {
         ned.selected_kind = kind;
-        ned.selected_ids = kind.query_all_ids(world);
+        ned.selected_ids = kind
+            .query_all_ids(world)
+            .into_iter()
+            .filter(|id| {
+                id.get_node()
+                    .is_some_and(|node| node.owner == 0 || node.owner == ID_CORE)
+            })
+            .collect();
         ned.children.clear();
         ned.parents.clear();
         ned.selected = None;
@@ -162,10 +169,15 @@ impl NodeExplorerPlugin {
         let Some(id) = ned.selected else {
             return Ok(());
         };
+        let node = id.get_node().to_e_not_found()?;
         Context::from_world_r(world, |context| {
-            format!("[tl #]{id} [tl e:]{}", context.entity(id)?)
-                .cstr()
-                .label(ui);
+            format!(
+                "[tw #]{id} [tw e:]{} [tw owner:] {}",
+                context.entity(id)?,
+                node.owner
+            )
+            .cstr()
+            .label(ui);
             let ns = context.get_by_id::<NodeState>(id)?;
             match ns.kind {
                 NodeKind::NHouse => context

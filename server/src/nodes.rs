@@ -22,8 +22,8 @@ pub trait Node: Default + Sized {
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(self, ctx: &ReducerContext);
-    fn clone_self(&self, ctx: &ReducerContext) -> Self;
-    fn clone(&self, ctx: &ReducerContext, remap: &mut HashMap<u64, u64>) -> Self;
+    fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
+    fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;
@@ -198,7 +198,7 @@ impl NTeam {
     #[must_use]
     pub fn clone_ids_remap(&self, ctx: &ReducerContext, parent: u64) -> Result<Self, String> {
         let mut remap: HashMap<u64, u64> = default();
-        let mut new_team = self.clone(ctx, &mut remap);
+        let mut new_team = self.clone(ctx, self.owner, &mut remap);
         for fusion in &mut new_team.fusions {
             todo!();
             fusion.update_self(ctx);

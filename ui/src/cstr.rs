@@ -433,7 +433,7 @@ impl ToCstr for HexColor {
 }
 impl ToCstr for VarName {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_cs(self.color(), CstrStyle::Small)
+        self.as_ref().cstr_c(self.color())
     }
 }
 impl ToCstr for VarValue {
@@ -573,7 +573,15 @@ impl ToCstr for Material {
 }
 impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
-        self.as_ref().to_owned().cstr_c(self.color())
+        let mut s = self.as_ref().to_owned().cstr_c(self.color());
+        match self {
+            Trigger::ChangeStat(var_name) => {
+                s += " ";
+                s += &var_name.cstr();
+            }
+            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {}
+        }
+        s
     }
 }
 impl ToCstr for Action {

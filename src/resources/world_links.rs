@@ -81,6 +81,7 @@ impl WorldLinks for World {
         removed
     }
     fn despawn_entity(&mut self, entity: Entity) {
+        self.entity_mut(entity).despawn();
         let mut r = self.resource_mut::<WorldLinksResource>();
         if let Some(id) = r.entity_to_id.get(&entity).copied() {
             r.id_to_entity.remove(&id);

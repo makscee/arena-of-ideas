@@ -241,29 +241,29 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn owner(&self) -> u64 {
                         self.owner
                     }
-                    fn clone_self(&self, ctx: &ReducerContext) -> Self {
+                    fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self {
                         let mut d = Self::new(
                             ctx,
-                            self.owner,
+                            owner,
                             #(
                                 self.#all_data_fields.clone(),
                             )*
                         );
                         d
                     }
-                    fn clone(&self, ctx: &ReducerContext, remap: &mut HashMap<u64, u64>) -> Self {
-                        let mut d = self.clone_self(ctx);
+                    fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self {
+                        let mut d = self.clone_self(ctx, owner);
                         remap.insert(self.id, d.id);
                         #(
                             if let Some(n) = self.#one_fields.as_ref() {
-                                let n = n.clone(ctx, remap);
+                                let n = n.clone(ctx, owner, remap);
                                 d.id.add_parent(ctx, n.id).unwrap();
                                 d.#one_fields = Some(n);
                             }
                         )*
                         #(
                             for n in &self.#many_fields {
-                                let n = n.clone(ctx, remap);
+                                let n = n.clone(ctx, owner, remap);
                                 d.id.add_child(ctx, n.id).unwrap();
                                 d.#many_fields.push(n);
                             }
