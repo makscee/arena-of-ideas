@@ -246,7 +246,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         id
     };
     if let Some(team) = pool_id
-        .collect_kind_parents(ctx, NodeKind::NTeam)
+        .collect_kind_children(ctx, NodeKind::NTeam)
         .choose(&mut ctx.rng())
         .and_then(|id| id.to_node::<NTeam>(ctx))
     {

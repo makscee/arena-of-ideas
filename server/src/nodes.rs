@@ -22,7 +22,7 @@ pub trait Node: Default + Sized {
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self;
-    fn save(self, ctx: &ReducerContext);
+    fn save(&self, ctx: &ReducerContext);
     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self;
     fn component_kinds() -> HashSet<NodeKind>;
@@ -219,8 +219,15 @@ impl NTeam {
                     true,
                 )?;
             }
+            for (tr, ar) in fusion.behavior.iter_mut() {
+                tr.unit = *remap.get(&tr.unit).unwrap();
+                for a in ar {
+                    a.unit = *remap.get(&a.unit).unwrap();
+                }
+            }
         }
         new_team.id.add_parent(ctx, parent)?;
+        new_team.save(ctx);
         Ok(new_team)
     }
 }

@@ -33,7 +33,6 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         .on_applied(move |_| {
             info!("Subscription applied");
             on_success();
-            op(|world| {});
         })
         .subscribe_to_all_tables();
 }
@@ -176,17 +175,6 @@ pub fn subscribe_reducers() {
             return;
         }
         e.event.notify_error();
-    });
-    cn().reducers.on_match_start_battle(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.on_success(|| {
-            op(|world| {
-                MatchPlugin::check_active(world).notify(world);
-                MatchPlugin::check_battles(world).notify(world);
-            });
-        });
     });
     cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
         if !e.check_identity() {

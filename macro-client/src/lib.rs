@@ -342,7 +342,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                                 .db
                                 .nodes_world()
                                 .iter()
-                                .find(|n| d.id().is_parent_of(world, n.id) && n.kind == kind)
+                                .find(|n| n.kind == kind && d.id().is_child_of(world, n.id))
                                 .map(|n| n.id)
                             {
                                 d.#one_fields = #one_types::load_recursive(world, id);

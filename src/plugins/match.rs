@@ -1,3 +1,4 @@
+use bevy::ecs::event::EventReader;
 use bevy_egui::egui::Grid;
 use spacetimedb_sdk::DbContext;
 
@@ -7,7 +8,11 @@ pub struct MatchPlugin;
 
 impl Plugin for MatchPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Shop), Self::on_enter);
+        app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
+            .add_systems(
+                Update,
+                Self::on_match_update.run_if(in_state(GameState::Shop)),
+            );
     }
 }
 
@@ -39,6 +44,21 @@ impl MatchPlugin {
             return;
         }
         Self::check_battles(world).log();
+    }
+    fn on_match_update(mut events: EventReader<StdbEvent>) {
+        for event in events.read() {
+            if event.node.kind == "NMatch" && event.node.owner == player_id() {
+                op(|world| {
+                    Context::from_world_r(world, |context| {
+                        let world = context.world_mut()?;
+                        Self::check_active(world).notify(world);
+                        Self::check_battles(world).notify(world);
+                        Ok(())
+                    })
+                    .log();
+                });
+            }
+        }
     }
     fn show_unit(
         unit: &NUnit,

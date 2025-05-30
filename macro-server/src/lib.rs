@@ -320,15 +320,15 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                         )*
                         self
                     }
-                    fn save(mut self, ctx: &ReducerContext) {
+                    fn save(&self, ctx: &ReducerContext) {
                         self.update_self(ctx);
                         #(
-                            if let Some(mut d) = self.#one_fields.take() {
+                            if let Some(d) = &self.#one_fields {
                                 d.save(ctx);
                             }
                         )*
                         #(
-                            for mut d in std::mem::take(&mut self.#many_fields) {
+                            for d in &self.#many_fields {
                                 d.save(ctx);
                             }
                         )*
