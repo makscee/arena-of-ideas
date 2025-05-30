@@ -15,6 +15,7 @@ pub trait Node: Default + Sized {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;
+    fn set_owner(&mut self, id: u64);
     fn reassign_ids(&mut self, next_id: &mut u64);
     fn pack_fill(&self, pn: &mut PackedNodes);
     fn pack(&self) -> PackedNodes;

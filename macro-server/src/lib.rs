@@ -241,6 +241,9 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                     fn owner(&self) -> u64 {
                         self.owner
                     }
+                    fn set_owner(&mut self, id: u64) {
+                        self.owner = id;
+                    }
                     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self {
                         let mut d = Self::new(
                             ctx,

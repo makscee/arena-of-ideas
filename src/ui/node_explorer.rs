@@ -50,6 +50,13 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                         node.node_view_rating(vctx, context, ui);
                     },
                     |_, node| node.node_rating().unwrap_or_default().into(),
+                )
+                .column(
+                    "owner",
+                    |_, ui, node| {
+                        node.owner().cstr_s(CstrStyle::Small).label(ui);
+                    },
+                    |_, node| node.owner().into(),
                 );
             if let Some((is_parent, id)) = vctx.link_rating {
                 table = table.column(
@@ -80,6 +87,29 @@ pub struct NodeExplorerData {
     selected_ids: Vec<u64>,
     children: HashMap<NodeKind, Vec<u64>>,
     parents: HashMap<NodeKind, Vec<u64>>,
+    owner_filter: OwnerFilter,
+}
+
+#[derive(PartialEq, Eq, Clone, Copy, AsRefStr, Default, EnumIter)]
+enum OwnerFilter {
+    #[default]
+    All,
+    Core,
+    Content,
+}
+impl ToCstr for OwnerFilter {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+}
+impl OwnerFilter {
+    fn ids(self) -> HashSet<u64> {
+        match self {
+            OwnerFilter::All => default(),
+            OwnerFilter::Core => [ID_CORE].into(),
+            OwnerFilter::Content => [0, ID_CORE].into(),
+        }
+    }
 }
 
 impl Plugin for NodeExplorerPlugin {
@@ -117,12 +147,13 @@ impl NodeExplorerPlugin {
     }
     fn select_kind(world: &mut World, ned: &mut NodeExplorerData, kind: NodeKind) {
         ned.selected_kind = kind;
+        let filter_ids = ned.owner_filter.ids();
         ned.selected_ids = kind
             .query_all_ids(world)
             .into_iter()
             .filter(|id| {
                 id.get_node()
-                    .is_some_and(|node| node.owner == 0 || node.owner == ID_CORE)
+                    .is_some_and(|node| filter_ids.is_empty() || filter_ids.contains(&node.owner))
             })
             .collect();
         ned.children.clear();
@@ -134,8 +165,13 @@ impl NodeExplorerPlugin {
             .remove_resource::<NodeExplorerData>()
             .to_e_not_found()?;
         let r = Context::from_world_r(world, |context| {
+            let filter_changed = EnumSwitcher::new().show_iter(
+                &mut ned.owner_filter,
+                OwnerFilter::iter().collect_vec().iter(),
+                ui,
+            );
             let mut kind = ned.selected_kind;
-            if Selector::new("kind").ui_enum(&mut kind, ui) {
+            if Selector::new("kind").ui_enum(&mut kind, ui) || filter_changed {
                 Self::select_kind(context.world_mut()?, &mut ned, kind);
             }
             if let Some(selected) = ned.selected {

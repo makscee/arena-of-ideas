@@ -239,7 +239,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {
         pool.id
     } else {
-        let new_pool = NFloorPool::new(ctx, 0, floor);
+        let new_pool = NFloorPool::new(ctx, ID_ARENA, floor);
         new_pool.id.add_parent(ctx, arena.id)?;
         let id = new_pool.id;
         arena.floor_pools.push(new_pool);
@@ -264,7 +264,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .add_parent(ctx, m_id)?;
     } else {
         let _ = arena.floor_bosses_load(ctx);
-        let floor_boss = NFloorBoss::new(ctx, 0, floor);
+        let floor_boss = NFloorBoss::new(ctx, ID_ARENA, floor);
         floor_boss.id.add_parent(ctx, arena.id)?;
         player_team.clone_ids_remap(ctx, floor_boss.id)?;
         player_team.clone_ids_remap(ctx, pool_id)?;
