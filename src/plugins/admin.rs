@@ -10,23 +10,28 @@ impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
         Context::from_world_r(world, |context| {
             let world = context.world_mut()?;
-            let units = world.query::<&NUnit>().iter(world).cloned().collect_vec();
-            let units = [units.clone()].into_iter().flatten().collect_vec();
-            units
-                .table()
-                .column(
-                    "node",
-                    |context, ui, unit| unit.tag_card(default(), context, ui).ui(ui),
-                    |context, unit| unit.unit_name.clone().into(),
-                )
-                .column(
-                    "id",
-                    |context, ui, unit| {
-                        unit.id.cstr().label(ui);
-                    },
-                    |context, unit| unit.id.into(),
-                )
-                .ui(context, ui);
+            let units = world
+                .query::<&NUnit>()
+                .iter(world)
+                .filter(|u| u.owner == ID_CORE)
+                .cloned()
+                .collect_vec();
+            for (index, unit) in units.into_iter().enumerate() {
+                egui::Window::new(format!("{} {}", unit.unit_name, index))
+                    .title_bar(false)
+                    .show(ui.ctx(), |ui| {
+                        Context::with_owner(context, unit.entity(), |context| {
+                            unit.view_card(
+                                context,
+                                ViewContext::new(ui),
+                                ui,
+                                ui.available_rect_before_wrap(),
+                            );
+                            Ok(())
+                        })
+                        .ui(ui);
+                    });
+            }
             Ok(())
         })
         .ui(ui);

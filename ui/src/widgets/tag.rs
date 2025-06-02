@@ -20,6 +20,7 @@ const NUMBER_MARGIN: Margin = Margin {
     bottom: 0,
 };
 impl TagWidget {
+    #[must_use]
     pub fn new_name(name: impl ToString, color: Color32) -> Self {
         Self {
             name: name.to_string(),
@@ -29,6 +30,7 @@ impl TagWidget {
             value: None,
         }
     }
+    #[must_use]
     pub fn new_var_value(var: VarName, value: VarValue) -> Self {
         Self {
             name: var.to_string(),
@@ -38,6 +40,7 @@ impl TagWidget {
             number_galley: None,
         }
     }
+    #[must_use]
     pub fn new_name_value(name: impl ToString, color: Color32, value: Cstr) -> Self {
         Self {
             name: name.to_string(),

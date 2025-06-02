@@ -380,7 +380,7 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr;
     fn view_title(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> Response {
         if vctx.non_interactible {
-            self.title_cstr(vctx, context).label(ui)
+            self.title_cstr(vctx, context).label_w(ui)
         } else {
             self.title_cstr(vctx, context)
                 .as_button()

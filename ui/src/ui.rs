@@ -19,6 +19,7 @@ pub const GREEN: Color32 = hex_color_noa!("#64DD17");
 pub const PURPLE: Color32 = hex_color_noa!("#B50DA4");
 pub const LIGHT_PURPLE: Color32 = hex_color_noa!("#95408D");
 pub const CYAN: Color32 = hex_color_noa!("#00B8D4");
+pub const GRAY: Color32 = hex_color_noa!("#616161");
 
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
