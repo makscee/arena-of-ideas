@@ -66,10 +66,6 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
                 family: FontFamily::Proportional,
                 priority: FontPriority::Highest,
             },
-            InsertFontFamily {
-                family: FontFamily::Name("bold".into()),
-                priority: FontPriority::Highest,
-            },
         ]
         .into(),
     ));
@@ -78,6 +74,17 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         FontData::from_static(include_bytes!("../../assets/fonts/SometypeMono-Bold.ttf")),
         [InsertFontFamily {
             family: FontFamily::Name("bold".into()),
+            priority: FontPriority::Highest,
+        }]
+        .into(),
+    ));
+    ctx.add_font(FontInsert::new(
+        "heading",
+        FontData::from_static(include_bytes!(
+            "../../assets/fonts/Merriweather_24pt-Medium.ttf"
+        )),
+        [InsertFontFamily {
+            family: FontFamily::Name("heading".into()),
             priority: FontPriority::Highest,
         }]
         .into(),
@@ -107,11 +114,11 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         style.text_styles = [
             (
                 TextStyle::Heading,
-                FontId::new(26.0, FontFamily::Name("bold".into())),
+                FontId::new(28.0, FontFamily::Name("heading".into())),
             ),
             (
                 TextStyle::Name("Heading2".into()),
-                FontId::new(22.0, FontFamily::Monospace),
+                FontId::new(22.0, FontFamily::Name("heading".into())),
             ),
             (
                 TextStyle::Name("Bold".into()),
