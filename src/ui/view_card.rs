@@ -10,7 +10,7 @@ pub trait ViewCard: ViewFns {
     ) -> Result<(), ExpressionError>;
 }
 
-fn section(ui: &mut Ui, f: impl FnOnce(&mut Ui)) {
+fn section(ui: &mut Ui, f: impl FnOnce(&mut Ui) -> Result<(), ExpressionError>) {
     Frame {
         inner_margin: Margin::same(4),
         outer_margin: Margin::same(1),
@@ -21,7 +21,7 @@ fn section(ui: &mut Ui, f: impl FnOnce(&mut Ui)) {
     }
     .show(ui, |ui| {
         ui.expand_to_include_x(ui.available_rect_before_wrap().max.x);
-        f(ui);
+        f(ui).ui(ui);
     });
 }
 
@@ -38,6 +38,7 @@ impl ViewCard for NUnit {
             ui.vertical_centered_justified(|ui| {
                 self.unit_name.cstr_cs(color, CstrStyle::Heading).label(ui);
             });
+            Ok(())
         });
         let description = self.description_load(context)?;
         let behavior = description.behavior_load(context)?;
@@ -51,6 +52,7 @@ impl ViewCard for NUnit {
             rect = rect.shrink(3.0);
             rep.paint(rect, context, ui).ui(ui);
             unit_rep().paint(rect, context, ui).ui(ui);
+            Ok(())
         });
         section(ui, |ui| {
             ui.horizontal_wrapped(|ui| -> Result<(), ExpressionError> {
@@ -60,16 +62,15 @@ impl ViewCard for NUnit {
                 Ok(())
             })
             .inner
-            .ui(ui);
         });
         section(ui, |ui| {
             behavior.show(context, ui);
-        });
-        section(ui, |ui| {
+            ui.separator();
             description
                 .description
                 .cstr_c(ui.visuals().weak_text_color())
                 .label_w(ui);
+            Ok(())
         });
         Ok(())
     }
@@ -88,10 +89,11 @@ impl ViewCard for NHouse {
             ui.vertical_centered_justified(|ui| {
                 self.house_name.cstr_cs(color, CstrStyle::Heading).label(ui);
             });
+            Ok(())
         });
         section(ui, |ui| {
+            let ability = self.ability_magic_load(context)?;
             ui.vertical_centered_justified(|ui| -> Result<(), ExpressionError> {
-                let ability = self.ability_magic_load(context)?;
                 ability
                     .ability_name
                     .cstr_cs(color, CstrStyle::Heading2)
@@ -100,10 +102,18 @@ impl ViewCard for NHouse {
             })
             .inner
             .ui(ui);
+            let description = ability.description_load(context)?;
+            description.effect_load(context)?.show(context, ui);
+            ui.separator();
+            description
+                .description
+                .cstr_c(ui.visuals().weak_text_color())
+                .label_w(ui);
+            Ok(())
         });
-        section(ui, |ui| {
+        section(ui, |ui| -> Result<(), ExpressionError> {
+            let status = self.status_magic_load(context)?;
             ui.vertical_centered_justified(|ui| -> Result<(), ExpressionError> {
-                let status = self.status_magic_load(context)?;
                 status
                     .status_name
                     .cstr_cs(color, CstrStyle::Heading2)
@@ -112,6 +122,14 @@ impl ViewCard for NHouse {
             })
             .inner
             .ui(ui);
+            let description = status.description_load(context)?;
+            description.behavior_load(context)?.show(context, ui);
+            ui.separator();
+            description
+                .description
+                .cstr_c(ui.visuals().weak_text_color())
+                .label_w(ui);
+            Ok(())
         });
         Ok(())
     }
