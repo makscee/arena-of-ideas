@@ -28,6 +28,7 @@ pub trait ViewCard: ViewFns {
                     .stroke(GRAY.stroke())
                     .inner_margin(margin)
                     .corner_radius(6)
+                    .fill(tokens_global().subtle_background())
                     .show(ui, |ui| self.show_card_sections(context, ui))
                     .inner
             },
@@ -118,37 +119,39 @@ impl ViewCard for NUnit {
 impl ViewCard for NHouse {
     fn show_card_sections(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let color = context.color(ui);
-        section(ui, |ui| {
-            ui.vertical_centered_justified(|ui| {
-                self.house_name.cstr_cs(color, CstrStyle::Heading).label(ui);
+        ui.vertical(|ui| {
+            section(ui, |ui| {
+                ui.vertical_centered_justified(|ui| {
+                    self.house_name.cstr_cs(color, CstrStyle::Heading).label(ui);
+                });
+                Ok(())
             });
-            Ok(())
-        });
-        section(ui, |ui| {
-            let ability = self.ability_magic_load(context)?;
-            ability
-                .ability_name
-                .cstr_cs(color, CstrStyle::Heading2)
-                .label(ui);
-            ability
-                .description_load(context)?
-                .description
-                .cstr_c(ui.visuals().weak_text_color())
-                .label_w(ui);
-            Ok(())
-        });
-        section(ui, |ui| -> Result<(), ExpressionError> {
-            let status = self.status_magic_load(context)?;
-            status
-                .status_name
-                .cstr_cs(color, CstrStyle::Heading2)
-                .label(ui);
-            status
-                .description_load(context)?
-                .description
-                .cstr_c(ui.visuals().weak_text_color())
-                .label_w(ui);
-            Ok(())
+            section(ui, |ui| {
+                let ability = self.ability_magic_load(context)?;
+                ability
+                    .ability_name
+                    .cstr_cs(color, CstrStyle::Heading2)
+                    .label(ui);
+                ability
+                    .description_load(context)?
+                    .description
+                    .cstr_c(ui.visuals().weak_text_color())
+                    .label_w(ui);
+                Ok(())
+            });
+            section(ui, |ui| -> Result<(), ExpressionError> {
+                let status = self.status_magic_load(context)?;
+                status
+                    .status_name
+                    .cstr_cs(color, CstrStyle::Heading2)
+                    .label(ui);
+                status
+                    .description_load(context)?
+                    .description
+                    .cstr_c(ui.visuals().weak_text_color())
+                    .label_w(ui);
+                Ok(())
+            });
         });
         Ok(())
     }

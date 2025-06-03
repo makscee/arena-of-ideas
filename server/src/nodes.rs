@@ -117,22 +117,22 @@ where
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .get_kind_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .get_kind_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .find_kind_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .find_kind_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn collect_parents<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
         self.id()
@@ -150,22 +150,22 @@ where
     fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .top_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .top_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .mutual_top_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
     fn mutual_top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .mutual_top_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx))
+            .and_then(|id| id.to_node(ctx).ok())
     }
 }
 

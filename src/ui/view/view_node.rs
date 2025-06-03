@@ -185,7 +185,7 @@ impl NodeViewFns for NStatusMagic {}
 impl NodeViewFns for NStatusDescription {}
 impl NodeViewFns for NTeam {}
 impl NodeViewFns for NMatch {}
-impl NodeViewFns for NShopCaseUnit {}
+impl NodeViewFns for NShopOffer {}
 impl NodeViewFns for NFusion {}
 impl NodeViewFns for NUnit {}
 impl NodeViewFns for NUnitDescription {

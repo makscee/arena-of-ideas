@@ -370,3 +370,20 @@ impl Show for ExpressionError {
         false
     }
 }
+impl Show for CardKind {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        self.as_ref().cstr().label(ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}
+impl Show for Vec<(CardKind, u64)> {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        todo!()
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        todo!()
+    }
+}

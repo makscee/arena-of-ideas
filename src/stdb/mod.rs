@@ -29,6 +29,7 @@ pub mod match_complete_reducer;
 pub mod match_edit_fusion_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
+pub mod match_play_card_reducer;
 pub mod match_remove_fusion_unit_reducer;
 pub mod match_reorder_fusions_reducer;
 pub mod match_reroll_reducer;
@@ -98,6 +99,9 @@ pub use match_edit_fusion_reducer::{
 };
 pub use match_g_type::MatchG;
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
+pub use match_play_card_reducer::{
+    match_play_card, set_flags_for_match_play_card, MatchPlayCardCallbackId,
+};
 pub use match_remove_fusion_unit_reducer::{
     match_remove_fusion_unit, set_flags_for_match_remove_fusion_unit,
     MatchRemoveFusionUnitCallbackId,
@@ -174,6 +178,9 @@ pub enum Reducer {
         fusion: TNode,
     },
     MatchInsert,
+    MatchPlayCard {
+        i: u8,
+    },
     MatchRemoveFusionUnit {
         fusion_id: u64,
         unit_id: u64,
@@ -231,6 +238,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchComplete => "match_complete",
             Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
+            Reducer::MatchPlayCard { .. } => "match_play_card",
             Reducer::MatchRemoveFusionUnit { .. } => "match_remove_fusion_unit",
             Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
             Reducer::MatchReroll => "match_reroll",
@@ -330,6 +338,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "match_play_card" => Ok(__sdk::parse_reducer_args::<
+                match_play_card_reducer::MatchPlayCardArgs,
+            >("match_play_card", &value.args)?
+            .into()),
             "match_remove_fusion_unit" => {
                 Ok(__sdk::parse_reducer_args::<
                     match_remove_fusion_unit_reducer::MatchRemoveFusionUnitArgs,

@@ -9,6 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct MatchG {
     pub unit_buy: i32,
     pub unit_sell: i32,
+    pub house_buy: i32,
     pub reroll: i32,
     pub initial: i32,
 }

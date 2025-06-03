@@ -97,12 +97,14 @@ struct NMatch {
     pub lives: i32,
     pub active: bool,
     pub team: ParentComponent<NTeam>,
-    pub shop_case: ChildComponents<NShopCaseUnit>,
+    pub hand: Vec<(CardKind, u64)>,
+    pub shop_case: ChildComponents<NShopOffer>,
     pub battles: ChildComponents<NBattle>,
 }
 
-struct NShopCaseUnit {
-    pub unit: u64,
+struct NShopOffer {
+    pub node_id: u64,
+    pub card_kind: CardKind,
     pub price: i32,
     pub sold: bool,
 }

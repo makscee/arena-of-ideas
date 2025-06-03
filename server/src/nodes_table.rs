@@ -173,7 +173,7 @@ impl TNodeLink {
 }
 
 pub trait NodeIdExt {
-    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Option<T>;
+    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
     fn find(self, ctx: &ReducerContext) -> Option<TNode>;
     fn find_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
@@ -195,8 +195,10 @@ pub trait NodeIdExt {
     fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
 }
 impl NodeIdExt for u64 {
-    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Option<T> {
-        self.find(ctx)?.to_node().ok()
+    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String> {
+        self.find(ctx)
+            .to_custom_e_s_fn(|| format!("Node#{self} not found"))?
+            .to_node()
     }
     fn find(self, ctx: &ReducerContext) -> Option<TNode> {
         ctx.db.nodes_world().id().find(self)
@@ -434,7 +436,7 @@ pub trait IdVecExt {
 impl IdVecExt for Vec<u64> {
     fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T> {
         self.into_iter()
-            .filter_map(|n| n.to_node::<T>(ctx))
+            .filter_map(|n| n.to_node::<T>(ctx).ok())
             .collect()
     }
 }

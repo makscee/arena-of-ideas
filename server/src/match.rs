@@ -1,32 +1,65 @@
 use std::i32;
 
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom, Rng};
 
 use super::*;
 
 impl NMatch {
-    fn fill_shop_case(&mut self, ctx: &ReducerContext) {
+    fn fill_shop_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {
         if let Ok(sc) = self.shop_case_load(ctx) {
             for sc in sc {
                 sc.delete_self(ctx);
             }
         }
         let gs = ctx.global_settings();
-        let price = gs.match_g.unit_buy;
-        let units = NUnit::collect_owner(ctx, ID_CORE);
-        self.shop_case = (0..3)
+
+        let unit_price = gs.match_g.unit_buy;
+        let house_price = gs.match_g.house_buy;
+        let owned_houses: HashSet<String> = HashSet::from_iter(
+            self.team_load(ctx)?
+                .houses_load(ctx)
+                .map(|h| h.into_iter().map(|h| h.house_name.clone()).collect_vec())
+                .unwrap_or_default(),
+        );
+        let all_houses = NHouse::collect_owner(ctx, ID_CORE);
+        let not_owned_houses = all_houses
+            .iter()
+            .filter(|h| !owned_houses.contains(&h.house_name))
+            .map(|h| h.id)
+            .collect_vec();
+        let units_from_owned_houses = all_houses
+            .into_iter()
+            .filter(|h| owned_houses.contains(&h.house_name))
+            .flat_map(|h| h.id.collect_kind_children(ctx, NodeKind::NUnit))
+            .collect_vec();
+        self.shop_case = (0..4)
             .map(|_| {
-                let n = NShopCaseUnit::new(
-                    ctx,
-                    self.owner,
-                    price,
-                    units.choose(&mut ctx.rng()).unwrap().id,
-                    false,
-                );
+                let unit = ctx.rng().gen_bool(0.5);
+                let n =
+                    if unit && !units_from_owned_houses.is_empty() || not_owned_houses.is_empty() {
+                        NShopOffer::new(
+                            ctx,
+                            self.owner,
+                            unit_price,
+                            *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            CardKind::Unit,
+                            false,
+                        )
+                    } else {
+                        NShopOffer::new(
+                            ctx,
+                            self.owner,
+                            house_price,
+                            *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            CardKind::House,
+                            false,
+                        )
+                    };
                 n.id.add_parent(ctx, self.id).unwrap();
                 n
             })
             .collect_vec();
+        Ok(())
     }
 }
 
@@ -36,6 +69,9 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let g = m.g;
+    if m.hand.len() >= 10 {
+        return Err("Hand is full".into());
+    }
     let sc = m
         .shop_case_load(ctx)?
         .into_iter()
@@ -45,32 +81,59 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
         return Err("Not enough g".into());
     }
     sc.sold = true;
-    let unit = sc.unit;
     let price = sc.price;
+    let card_kind = sc.card_kind;
+    let id = sc.node_id;
+    m.hand.push((card_kind, id));
     m.g -= price;
-    let unit = NUnit::get(ctx, unit)
-        .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
-        .with_children(ctx)
-        .with_components(ctx)
-        .take();
-    let mut house = unit
-        .find_parent::<NHouse>(ctx)
-        .to_custom_e_s("Failed to find House parent of Unit")?;
-    let team = m.team_load(ctx)?;
-    let _ = team.houses_load(ctx);
-    let houses = &mut team.houses;
-    if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
-        unit.clone(ctx, pid, &mut default())
-            .id
-            .add_parent(ctx, h.id)?;
-    } else {
-        let house = house.with_components(ctx).clone(ctx, pid, &mut default());
-        house.id.add_parent(ctx, team.id)?;
-        unit.clone(ctx, pid, &mut default())
-            .id
-            .add_parent(ctx, house.id)?;
-    }
+    // let unit = sc.unit;
+    // let unit = NUnit::get(ctx, unit)
+    //     .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
+    //     .with_children(ctx)
+    //     .with_components(ctx)
+    //     .take();
+    // let mut house = unit
+    //     .find_parent::<NHouse>(ctx)
+    //     .to_custom_e_s("Failed to find House parent of Unit")?;
+    // let team = m.team_load(ctx)?;
+    // let _ = team.houses_load(ctx);
+    // let houses = &mut team.houses;
+    // if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
+    //     unit.clone(ctx, pid, &mut default())
+    //         .id
+    //         .add_parent(ctx, h.id)?;
+    // } else {
+    //     let house = house.with_components(ctx).clone(ctx, pid, &mut default());
+    //     house.id.add_parent(ctx, team.id)?;
+    //     unit.clone(ctx, pid, &mut default())
+    //         .id
+    //         .add_parent(ctx, house.id)?;
+    // }
     player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_play_card(ctx: &ReducerContext, i: u8) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let pid = player.id;
+    let m = player.active_match_load(ctx)?;
+    let i = i as usize;
+    let Some((card_kind, id)) = m.hand.get(i).copied() else {
+        return Err(format!("Card {i} not found in hand"));
+    };
+    m.hand.remove(i);
+    match card_kind {
+        CardKind::Unit => todo!(),
+        CardKind::House => {
+            let house =
+                id.to_node::<NHouse>(ctx)?
+                    .with_components(ctx)
+                    .clone(ctx, pid, &mut default());
+            house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
+        }
+    }
+    m.save(ctx);
     Ok(())
 }
 
@@ -214,7 +277,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         m.delete_with_components(ctx);
     }
     let gs = ctx.global_settings();
-    let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true);
+    let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true, default());
     m.id.add_child(ctx, player.id)?;
     let team = NTeam::new(ctx, pid);
     team.id.add_child(ctx, m.id)?;
@@ -248,7 +311,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     if let Some(team) = pool_id
         .collect_kind_children(ctx, NodeKind::NTeam)
         .choose(&mut ctx.rng())
-        .and_then(|id| id.to_node::<NTeam>(ctx))
+        .and_then(|id| id.to_node::<NTeam>(ctx).ok())
     {
         let player_team_id = player_team.clone_ids_remap(ctx, pool_id)?.id;
         NBattle::new(

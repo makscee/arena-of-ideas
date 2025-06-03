@@ -99,25 +99,29 @@ impl MatchPlugin {
                                     cn().reducers.match_buy(slot.id()).notify_op();
                                 }
                                 if !slot.sold {
-                                    if let Ok(unit) = NUnit::get_by_id(slot.unit, context) {
-                                        context.with_layer_ref(
-                                            ContextLayer::Owner(unit.entity()),
-                                            |context| {
-                                                ui.push_id(
-                                                    i,
-                                                    |ui| -> Result<(), ExpressionError> {
-                                                        let resp = unit.view_card(context, ui)?;
-                                                        resp.dnd_set_drag_payload(slot.clone());
-                                                        Ok(())
-                                                    },
-                                                )
-                                                .inner
-                                                .ui(ui);
-                                            },
-                                        );
-                                    } else {
-                                        "Core unit not found".cstr_c(RED).label(ui);
-                                    }
+                                    context.with_layer_ref(
+                                        ContextLayer::Owner(context.entity(slot.node_id).unwrap()),
+                                        |context| {
+                                            ui.push_id(i, |ui| -> Result<(), ExpressionError> {
+                                                let resp = match slot.card_kind {
+                                                    CardKind::Unit => {
+                                                        let unit = context
+                                                            .get_by_id::<NUnit>(slot.node_id)?;
+                                                        unit.view_card(context, ui)?
+                                                    }
+                                                    CardKind::House => {
+                                                        let house = context
+                                                            .get_by_id::<NHouse>(slot.node_id)?;
+                                                        house.view_card(context, ui)?
+                                                    }
+                                                };
+                                                resp.dnd_set_drag_payload(slot.clone());
+                                                Ok(())
+                                            })
+                                            .inner
+                                            .ui(ui);
+                                        },
+                                    );
                                 }
                             },
                         );
@@ -151,36 +155,54 @@ impl MatchPlugin {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
-            for house in team.houses_load(context) {
-                house
-                    .tag_card(TagCardContext::new().expanded(true), context, ui)
-                    .ui(ui);
+            let (_, card) = ui.dnd_drop_zone::<(usize, CardKind), Result<(), ExpressionError>>(
+                Frame::new(),
+                |ui| {
+                    ui.expand_to_include_rect(ui.available_rect_before_wrap());
+                    for house in team.houses_load(context) {
+                        house
+                            .tag_card(TagCardContext::new().expanded(true), context, ui)
+                            .ui(ui);
+                    }
+                    Ok(())
+                },
+            );
+            if let Some(card) = card {
+                cn().reducers.match_play_card(card.0 as u8).unwrap();
             }
             Ok(())
         })
     }
     pub fn pane_hand(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let (_, unit) = ui.dnd_drop_zone::<NShopCaseUnit, Result<(), ExpressionError>>(
-                Frame::new(),
-                |ui| {
+            let (_, unit) =
+                ui.dnd_drop_zone::<NShopOffer, Result<(), ExpressionError>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     let m = player(context)?.active_match_load(context)?;
-                    let team = m.team_load(context)?.id();
-                    let units = context.collect_children_components_recursive::<NUnit>(team)?;
                     ui.columns(10, |ui| {
-                        for (i, unit) in units.into_iter().enumerate() {
+                        for (i, (card_kind, id)) in m.hand.iter().enumerate() {
                             let ui = &mut ui[i];
-                            context
-                                .with_owner_ref(unit.entity(), |context| {
-                                    unit.view_card(context, ui)
-                                })
-                                .ui(ui);
+                            let entity = context.entity(*id).unwrap();
+                            match context.with_owner_ref(entity, |context| match card_kind {
+                                CardKind::Unit => {
+                                    context.get::<NUnit>(entity)?.view_card(context, ui)
+                                }
+                                CardKind::House => {
+                                    let house = context.get::<NHouse>(entity)?;
+                                    house.view_card(context, ui)
+                                }
+                            }) {
+                                Ok(r) => {
+                                    r.dnd_set_drag_payload((i, *card_kind));
+                                }
+                                Err(e) => {
+                                    e.ui(ui);
+                                }
+                            }
                         }
                     });
                     Ok(())
-                },
-            );
+                });
             if let Some(unit) = unit {
                 cn().reducers.match_buy(unit.id).unwrap();
             }

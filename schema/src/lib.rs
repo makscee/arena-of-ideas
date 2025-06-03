@@ -130,3 +130,10 @@ impl Into<Color32> for &HexColor {
         Color32::from_hex(&self.0).unwrap_or_default()
     }
 }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, AsRefStr)]
+pub enum CardKind {
+    #[default]
+    Unit,
+    House,
+}
