@@ -21,14 +21,7 @@ impl AdminPlugin {
                     .title_bar(false)
                     .show(ui.ctx(), |ui| {
                         context
-                            .with_owner(house.entity(), |context| {
-                                house.view_card(
-                                    context,
-                                    ViewContext::new(ui),
-                                    ui,
-                                    ui.available_rect_before_wrap(),
-                                )
-                            })
+                            .with_owner(house.entity(), |context| house.view_card(context, ui))
                             .ui(ui);
                     });
             }
@@ -44,14 +37,7 @@ impl AdminPlugin {
                     .title_bar(false)
                     .show(ui.ctx(), |ui| {
                         context
-                            .with_owner(unit.entity(), |context| {
-                                unit.view_card(
-                                    context,
-                                    ViewContext::new(ui),
-                                    ui,
-                                    ui.available_rect_before_wrap(),
-                                )
-                            })
+                            .with_owner(unit.entity(), |context| unit.view_card(context, ui))
                             .ui(ui);
                     });
             }

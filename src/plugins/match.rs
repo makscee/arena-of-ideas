@@ -113,12 +113,8 @@ impl MatchPlugin {
                                         context.with_layer_ref(
                                             ContextLayer::Owner(unit.entity()),
                                             |context| {
-                                                slot_rect_button(ui, |rect, ui| {
-                                                    Self::show_unit(&unit, rect, context, ui)
-                                                        .ui(ui);
-                                                })
-                                                .on_hover_ui(|ui| {
-                                                    unit.show_card(context, ui).ui(ui);
+                                                ui.push_id(i, |ui| {
+                                                    unit.view_card(context, ui).ui(ui);
                                                 });
                                             },
                                         );

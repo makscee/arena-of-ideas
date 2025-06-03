@@ -38,7 +38,6 @@ pub use bevy::{
         render_resource::{AsBindGroup, PolygonMode, RenderPipelineDescriptor},
         view::Visibility,
     },
-    sprite::Material2d,
     state::{
         condition::{in_state, state_changed},
         state::{NextState, OnEnter, OnExit, State, States},
