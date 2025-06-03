@@ -96,8 +96,10 @@ impl MatchPlugin {
                     for i in 0..slots.len() {
                         let ui = &mut ui[i];
                         let slot = &slots[i];
-                        ui.with_layout(
-                            Layout::bottom_up(Align::Center).with_cross_justify(true),
+                        ui.scope_builder(
+                            UiBuilder::new()
+                                .layout(Layout::bottom_up(Align::Center).with_cross_justify(true))
+                                .layer_id(egui::LayerId::new(Order::Foreground, Id::new("card"))),
                             |ui| {
                                 if "buy"
                                     .cstr()

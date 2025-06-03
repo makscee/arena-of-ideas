@@ -15,6 +15,11 @@ pub trait ViewCard: ViewFns {
             .ctx()
             .animate_bool(resp.id, resp.hovered() && !resp.is_pointer_button_down_on());
         rect = rect.expand(t * 4.0);
+        if resp.dragged() {
+            if let Some(pos) = ui.ctx().input(|r| r.pointer.latest_pos()) {
+                rect = rect.translate(pos - rect.center());
+            }
+        }
         let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
         ui.set_clip_rect(rect);
         let margin: Margin = 2.into();
