@@ -163,7 +163,7 @@ impl Pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
-                ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
+                ShopPane::Team => MatchPlugin::pane_hand(ui, world)?,
             },
 
             Pane::Battle(pane) => match pane {

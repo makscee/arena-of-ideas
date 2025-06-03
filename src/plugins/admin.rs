@@ -10,37 +10,6 @@ impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
         Context::from_world_r(world, |context| {
             let world = context.world_mut()?;
-            let houses = world
-                .query::<&NHouse>()
-                .iter(world)
-                .filter(|u| u.owner == ID_CORE)
-                .cloned()
-                .collect_vec();
-            for house in houses {
-                egui::Window::new(&house.house_name)
-                    .title_bar(false)
-                    .show(ui.ctx(), |ui| {
-                        context
-                            .with_owner(house.entity(), |context| house.view_card(context, ui))
-                            .ui(ui);
-                    });
-            }
-            let world = context.world_mut()?;
-            let units = world
-                .query::<&NUnit>()
-                .iter(world)
-                .filter(|u| u.owner == ID_CORE)
-                .cloned()
-                .collect_vec();
-            for (index, unit) in units.into_iter().enumerate() {
-                egui::Window::new(format!("{} {}", unit.unit_name, index))
-                    .title_bar(false)
-                    .show(ui.ctx(), |ui| {
-                        context
-                            .with_owner(unit.entity(), |context| unit.view_card(context, ui))
-                            .ui(ui);
-                    });
-            }
             Ok(())
         })
         .ui(ui);

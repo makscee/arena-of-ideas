@@ -60,18 +60,6 @@ impl MatchPlugin {
             }
         }
     }
-    fn show_unit(
-        unit: &NUnit,
-        rect: Rect,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
-        let d = unit.description_load(context)?;
-        if let Ok(r) = d.representation_load(context) {
-            r.paint(rect, context, ui).ui(ui);
-        }
-        unit_rep().paint(rect, context, ui)
-    }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
@@ -95,7 +83,7 @@ impl MatchPlugin {
                 ui.columns(slots.len(), |ui| {
                     for i in 0..slots.len() {
                         let ui = &mut ui[i];
-                        let slot = &slots[i];
+                        let slot = slots[i].clone();
                         ui.scope_builder(
                             UiBuilder::new()
                                 .layout(Layout::bottom_up(Align::Center).with_cross_justify(true))
@@ -115,9 +103,16 @@ impl MatchPlugin {
                                         context.with_layer_ref(
                                             ContextLayer::Owner(unit.entity()),
                                             |context| {
-                                                ui.push_id(i, |ui| {
-                                                    unit.view_card(context, ui).ui(ui);
-                                                });
+                                                ui.push_id(
+                                                    i,
+                                                    |ui| -> Result<(), ExpressionError> {
+                                                        let resp = unit.view_card(context, ui)?;
+                                                        resp.dnd_set_drag_payload(slot.clone());
+                                                        Ok(())
+                                                    },
+                                                )
+                                                .inner
+                                                .ui(ui);
                                             },
                                         );
                                     } else {
@@ -160,6 +155,34 @@ impl MatchPlugin {
                 house
                     .tag_card(TagCardContext::new().expanded(true), context, ui)
                     .ui(ui);
+            }
+            Ok(())
+        })
+    }
+    pub fn pane_hand(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        Context::from_world_r(world, |context| {
+            let (_, unit) = ui.dnd_drop_zone::<NShopCaseUnit, Result<(), ExpressionError>>(
+                Frame::new(),
+                |ui| {
+                    ui.expand_to_include_rect(ui.available_rect_before_wrap());
+                    let m = player(context)?.active_match_load(context)?;
+                    let team = m.team_load(context)?.id();
+                    let units = context.collect_children_components_recursive::<NUnit>(team)?;
+                    ui.columns(10, |ui| {
+                        for (i, unit) in units.into_iter().enumerate() {
+                            let ui = &mut ui[i];
+                            context
+                                .with_owner_ref(unit.entity(), |context| {
+                                    unit.view_card(context, ui)
+                                })
+                                .ui(ui);
+                        }
+                    });
+                    Ok(())
+                },
+            );
+            if let Some(unit) = unit {
+                cn().reducers.match_buy(unit.id).unwrap();
             }
             Ok(())
         })

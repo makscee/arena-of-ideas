@@ -1,10 +1,7 @@
-use bevy_egui::egui::LayerId;
-use glam::FloatExt;
-
 use super::*;
 
 pub trait ViewCard: ViewFns {
-    fn view_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+    fn view_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let mut rect = ui.available_rect_before_wrap();
         let resp = ui
             .allocate_rect(rect, Sense::click_and_drag())
@@ -15,20 +12,28 @@ pub trait ViewCard: ViewFns {
             .ctx()
             .animate_bool(resp.id, resp.hovered() && !resp.is_pointer_button_down_on());
         rect = rect.expand(t * 4.0);
+        let mut translation = egui::Vec2::ZERO;
         if resp.dragged() {
             if let Some(pos) = ui.ctx().input(|r| r.pointer.latest_pos()) {
-                rect = rect.translate(pos - rect.center());
+                translation = pos - rect.center();
             }
         }
-        let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
-        ui.set_clip_rect(rect);
-        let margin: Margin = 2.into();
-        Frame::new()
-            .stroke(GRAY.stroke())
-            .inner_margin(margin)
-            .corner_radius(6)
-            .show(ui, |ui| self.show_card_sections(context, ui))
-            .inner
+        ui.with_visual_transform(
+            TSTransform::from_translation(translation),
+            |ui| -> Result<(), ExpressionError> {
+                let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
+                ui.set_clip_rect(rect);
+                let margin: Margin = 2.into();
+                Frame::new()
+                    .stroke(GRAY.stroke())
+                    .inner_margin(margin)
+                    .corner_radius(6)
+                    .show(ui, |ui| self.show_card_sections(context, ui))
+                    .inner
+            },
+        )
+        .inner?;
+        Ok(resp)
     }
     fn show_card_sections(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError>;
     fn show_card_on_hover(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError>;
@@ -61,7 +66,7 @@ impl ViewCard for NUnit {
                 section(ui, |ui| {
                     description
                         .description
-                        .cstr_c(ui.visuals().weak_text_color())
+                        .cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
                         .label_w(ui);
                     Ok(())
                 });
