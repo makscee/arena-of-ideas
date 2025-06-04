@@ -99,7 +99,9 @@ impl ViewCard for NUnit {
                 rect.set_height(NAME_HEIGHT);
                 let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
                 ui.vertical_centered_justified(|ui| {
-                    self.unit_name.cstr_cs(color, CstrStyle::Heading).label(ui);
+                    self.unit_name
+                        .cstr_cs(color, CstrStyle::Heading)
+                        .label_t(ui);
                 });
                 Ok(())
             },
@@ -122,7 +124,9 @@ impl ViewCard for NHouse {
         ui.vertical(|ui| {
             section(ui, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    self.house_name.cstr_cs(color, CstrStyle::Heading).label(ui);
+                    self.house_name
+                        .cstr_cs(color, CstrStyle::Heading)
+                        .label_t(ui);
                 });
                 Ok(())
             });

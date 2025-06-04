@@ -69,7 +69,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let g = m.g;
-    if m.hand.len() >= 10 {
+    if m.hand.len() >= 7 {
         return Err("Hand is full".into());
     }
     let sc = m

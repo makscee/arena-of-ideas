@@ -80,6 +80,9 @@ impl MatchPlugin {
                     }
                     ui.expand_to_include_y(available_rect.max.y);
                 });
+                if ui.available_width() < 30.0 {
+                    return;
+                }
                 ui.columns(slots.len(), |ui| {
                     for i in 0..slots.len() {
                         let ui = &mut ui[i];
@@ -179,7 +182,10 @@ impl MatchPlugin {
                 ui.dnd_drop_zone::<NShopOffer, Result<(), ExpressionError>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     let m = player(context)?.active_match_load(context)?;
-                    ui.columns(10, |ui| {
+                    if ui.available_width() < 30.0 {
+                        return Ok(());
+                    }
+                    ui.columns(7, |ui| {
                         for (i, (card_kind, id)) in m.hand.iter().enumerate() {
                             let ui = &mut ui[i];
                             let entity = context.entity(*id).unwrap();

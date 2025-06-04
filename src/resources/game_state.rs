@@ -69,7 +69,7 @@ impl GameState {
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
                 let info = tiles.insert_pane(Pane::Shop(ShopPane::Info));
                 let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
-                let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
+                let team = tiles.insert_pane(Pane::Shop(ShopPane::Hand));
                 let horizontal = tiles.insert_horizontal_tile([roster, info, shop].into());
                 if let Tile::Container(h) = tiles.get_mut(horizontal).unwrap() {
                     if let Container::Linear(h) = h {
@@ -121,7 +121,7 @@ pub enum BattlePane {
 pub enum ShopPane {
     Shop,
     Roster,
-    Team,
+    Hand,
     Info,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -163,7 +163,7 @@ impl Pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
-                ShopPane::Team => MatchPlugin::pane_hand(ui, world)?,
+                ShopPane::Hand => MatchPlugin::pane_hand(ui, world)?,
             },
 
             Pane::Battle(pane) => match pane {
