@@ -114,7 +114,7 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_play_card(ctx: &ReducerContext, i: u8) -> Result<(), String> {
+fn match_play_house(ctx: &ReducerContext, i: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
@@ -123,16 +123,58 @@ fn match_play_card(ctx: &ReducerContext, i: u8) -> Result<(), String> {
         return Err(format!("Card {i} not found in hand"));
     };
     m.hand.remove(i);
-    match card_kind {
-        CardKind::Unit => todo!(),
-        CardKind::House => {
-            let house =
-                id.to_node::<NHouse>(ctx)?
-                    .with_components(ctx)
-                    .clone(ctx, pid, &mut default());
-            house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
-        }
+    if !matches!(card_kind, CardKind::House) {
+        return Err(format!("Card {i} is not a house"));
     }
+    let house = id
+        .to_node::<NHouse>(ctx)?
+        .with_components(ctx)
+        .clone(ctx, pid, &mut default());
+    house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
+    m.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let pid = player.id;
+    let m = player.active_match_load(ctx)?;
+    let i = i as usize;
+    let Some((card_kind, id)) = m.hand.get(i).copied() else {
+        return Err(format!("Card {i} not found in hand"));
+    };
+    m.hand.remove(i);
+    if !matches!(card_kind, CardKind::Unit) {
+        return Err(format!("Card {i} is not a unit"));
+    }
+    let unit = NUnit::get(ctx, id)
+        .to_custom_e_s_fn(|| format!("Failed to find Unit#{id}"))?
+        .with_children(ctx)
+        .with_components(ctx)
+        .take();
+    let team = m.team_load(ctx)?;
+    let _ = team.houses_load(ctx);
+    let house = unit
+        .find_parent::<NHouse>(ctx)
+        .to_custom_e_s("Failed to find House parent of Unit")?
+        .house_name;
+    let house_id = team
+        .houses
+        .iter()
+        .find(|h| h.house_name == house)
+        .map(|h| h.id)
+        .to_custom_e_s_fn(|| format!("Team house {house} not found"))?;
+    let unit_id = unit.clone(ctx, pid, &mut default()).id;
+    unit_id.add_parent(ctx, house_id)?;
+
+    let slot = slot as i32;
+    let fusions = team.fusions_load(ctx)?;
+    let fusion = fusions
+        .into_iter()
+        .find(|f| f.slot == slot)
+        .to_custom_e_s_fn(|| format!("Failed to find Fusion in slot {slot}"))?;
+    fusion.units_add(ctx, unit_id)?;
     m.save(ctx);
     Ok(())
 }
@@ -161,7 +203,7 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
         return Err("Not enough g".into());
     }
     m.g -= cost;
-    m.fill_shop_case(ctx);
+    m.fill_shop_case(ctx)?;
     player.save(ctx);
     Ok(())
 }
@@ -279,10 +321,15 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let gs = ctx.global_settings();
     let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true, default());
     m.id.add_child(ctx, player.id)?;
-    let team = NTeam::new(ctx, pid);
+    let mut team = NTeam::new(ctx, pid);
     team.id.add_child(ctx, m.id)?;
+    for i in 0..ctx.global_settings().team_slots as i32 {
+        let fusion = NFusion::new(ctx, pid, default(), i, 0, 0, 0, 1, default());
+        fusion.id.add_parent(ctx, team.id())?;
+        team.fusions.push(fusion);
+    }
     m.team = Some(team);
-    m.fill_shop_case(ctx);
+    m.fill_shop_case(ctx)?;
     player.active_match = Some(m);
     player.save(ctx);
     Ok(())

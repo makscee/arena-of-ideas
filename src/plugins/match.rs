@@ -171,7 +171,7 @@ impl MatchPlugin {
                 },
             );
             if let Some(card) = card {
-                cn().reducers.match_play_card(card.0 as u8).unwrap();
+                cn().reducers.match_play_house(card.0 as u8).unwrap();
             }
             Ok(())
         })
@@ -194,8 +194,7 @@ impl MatchPlugin {
                                     context.get::<NUnit>(entity)?.view_card(context, ui)
                                 }
                                 CardKind::House => {
-                                    let house = context.get::<NHouse>(entity)?;
-                                    house.view_card(context, ui)
+                                    context.get::<NHouse>(entity)?.view_card(context, ui)
                                 }
                             }) {
                                 Ok(r) => {
@@ -228,7 +227,14 @@ impl MatchPlugin {
             ui.columns(slots, |ui| {
                 for i in 0..slots {
                     let ui = &mut ui[i];
-                    slot_rect_button(ui, |rect, ui| {});
+                    let resp = slot_rect_button(ui, |rect, ui| {});
+                    if let Some(card) = resp.dnd_release_payload::<(usize, CardKind)>() {
+                        if card.1 == CardKind::Unit {
+                            cn().reducers
+                                .match_play_unit(card.0 as u8, i as u8)
+                                .unwrap();
+                        }
+                    }
                 }
             });
             return Ok(());
