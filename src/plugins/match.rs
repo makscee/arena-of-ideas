@@ -218,9 +218,22 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
-            let team = m.team_load(context)?.entity();
+            let team = m.team_load(context)?;
+            let team_entity = team.entity();
+
+            let slots = global_settings().team_slots as usize;
+            if ui.available_width() < 30.0 {
+                return Ok(());
+            }
+            ui.columns(slots, |ui| {
+                for i in 0..slots {
+                    let ui = &mut ui[i];
+                    slot_rect_button(ui, |rect, ui| {});
+                }
+            });
+            return Ok(());
             NFusion::slots_editor(
-                team,
+                team_entity,
                 context,
                 ui,
                 |ui| {

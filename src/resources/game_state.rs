@@ -69,14 +69,21 @@ impl GameState {
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
                 let info = tiles.insert_pane(Pane::Shop(ShopPane::Info));
                 let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
-                let team = tiles.insert_pane(Pane::Shop(ShopPane::Hand));
-                let horizontal = tiles.insert_horizontal_tile([roster, info, shop].into());
-                if let Tile::Container(h) = tiles.get_mut(horizontal).unwrap() {
+                let hand = tiles.insert_pane(Pane::Shop(ShopPane::Hand));
+                let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
+                let top = tiles.insert_horizontal_tile([shop, info].into());
+                if let Tile::Container(h) = tiles.get_mut(top).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(shop, 4.0);
                     }
                 }
-                let root = tiles.insert_vertical_tile([horizontal, team].into());
+                let mid = tiles.insert_horizontal_tile([team, roster].into());
+                if let Tile::Container(h) = tiles.get_mut(mid).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(team, 4.0);
+                    }
+                }
+                let root = tiles.insert_vertical_tile([top, mid, hand].into());
                 Tree::new(TREE_ID, root, tiles)
             }
             GameState::Battle => Tree::new_vertical(
@@ -122,6 +129,7 @@ pub enum ShopPane {
     Shop,
     Roster,
     Hand,
+    Team,
     Info,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -164,6 +172,7 @@ impl Pane {
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
                 ShopPane::Hand => MatchPlugin::pane_hand(ui, world)?,
+                ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },
 
             Pane::Battle(pane) => match pane {
