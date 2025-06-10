@@ -1,4 +1,5 @@
 use bevy_egui::egui::ScrollArea;
+use ecolor::linear_u8_from_linear_f32;
 use egui::{CornerRadius, Margin, Shadow};
 
 use super::*;
@@ -60,6 +61,16 @@ impl ToStroke for Color32 {
     }
     fn stroke_w(self, width: f32) -> Stroke {
         Stroke::new(width, self)
+    }
+}
+
+pub trait ColorAlphaExt {
+    fn alpha(self, a: f32) -> Self;
+}
+
+impl ColorAlphaExt for Color32 {
+    fn alpha(self, a: f32) -> Self {
+        Color32::from_rgba_premultiplied(self.r(), self.g(), self.b(), linear_u8_from_linear_f32(a))
     }
 }
 

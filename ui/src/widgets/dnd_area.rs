@@ -1,0 +1,72 @@
+use std::{any::Any, marker::PhantomData, sync::Arc};
+
+use bevy_egui::egui::DragAndDrop;
+
+use super::*;
+
+pub struct DndArea<T> {
+    pd: PhantomData<T>,
+    text: Option<String>,
+    rect: Rect,
+    id: Id,
+}
+
+impl<T: Any + Send + Sync> DndArea<T> {
+    pub fn new(rect: Rect) -> DndArea<T> {
+        Self {
+            pd: PhantomData,
+            text: None,
+            rect,
+            id: Id::NULL,
+        }
+    }
+    pub fn id(mut self, id: impl std::hash::Hash) -> Self {
+        self.id = Id::new(id);
+        self
+    }
+    pub fn text(mut self, text: impl ToString) -> Self {
+        self.text = Some(text.to_string());
+        self
+    }
+    pub fn text_fn(mut self, ui: &mut Ui, text: impl FnOnce(&T) -> String) -> Self {
+        if let Some(payload) = DragAndDrop::payload::<T>(ui.ctx()) {
+            self.text = Some(text(&payload));
+            self
+        } else {
+            self
+        }
+    }
+    pub fn ui(self, ui: &mut Ui) -> Option<Arc<T>> {
+        if !DragAndDrop::has_any_payload(ui.ctx())
+            || !DragAndDrop::has_payload_of_type::<T>(ui.ctx())
+        {
+            return None;
+        }
+        let resp = ui.allocate_rect(self.rect, Sense::drag());
+        let hovered = resp.contains_pointer();
+        let color = if hovered {
+            YELLOW
+        } else {
+            ui.visuals().widgets.active.fg_stroke.color
+        };
+        let t = ui.ctx().animate_bool(ui.id().with(self.id), hovered);
+        ui.painter().rect_filled(
+            self.rect,
+            CornerRadius::ZERO,
+            ui.visuals().faint_bg_color.alpha(0.8),
+        );
+        if let Some(text) = &self.text {
+            let galley = text.cstr_cs(color, CstrStyle::Bold).galley(1.0, ui);
+            let rect = Align2::CENTER_CENTER.anchor_size(self.rect.center(), galley.size());
+            ui.painter()
+                .galley(rect.min, galley, ui.visuals().text_color());
+        }
+        corners_rounded_rect(
+            self.rect,
+            25.0 + t * 10.0,
+            color.stroke_w(2.0 + t * 2.0),
+            ui,
+        );
+        resp.dnd_release_payload::<T>()
+    }
+}

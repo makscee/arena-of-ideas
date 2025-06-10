@@ -178,44 +178,56 @@ impl MatchPlugin {
     }
     pub fn pane_hand(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let (_, unit) =
-                ui.dnd_drop_zone::<NShopOffer, Result<(), ExpressionError>>(Frame::new(), |ui| {
-                    ui.expand_to_include_rect(ui.available_rect_before_wrap());
-                    let m = player(context)?.active_match_load(context)?;
-                    if ui.available_width() < 30.0 {
-                        return Ok(());
-                    }
-                    ui.columns(7, |ui| {
-                        for (i, (card_kind, id)) in m.hand.iter().enumerate() {
-                            let ui = &mut ui[i];
-                            let entity = context.entity(*id).unwrap();
-                            match context.with_owner_ref(entity, |context| match card_kind {
+            let rect = ui.available_rect_before_wrap();
+            let m = player(context)?.active_match_load(context)?;
+            if ui.available_width() < 30.0 {
+                return Ok(());
+            }
+            ui.columns(7, |ui| {
+                for (i, (card_kind, id)) in m.hand.iter().enumerate() {
+                    let ui = &mut ui[i];
+                    let entity = context.entity(*id).unwrap();
+                    context
+                        .with_owner_ref(entity, |context| {
+                            match card_kind {
                                 CardKind::Unit => {
-                                    context.get::<NUnit>(entity)?.view_card(context, ui)
+                                    let unit = context.get::<NUnit>(entity)?;
+                                    unit.view_card(context, ui)?
+                                        .dnd_set_drag_payload((i, unit.clone()));
                                 }
                                 CardKind::House => {
-                                    context.get::<NHouse>(entity)?.view_card(context, ui)
+                                    let house = context.get::<NHouse>(entity)?;
+                                    house
+                                        .view_card(context, ui)?
+                                        .dnd_set_drag_payload((i, house.clone()));
                                 }
-                            }) {
-                                Ok(r) => {
-                                    r.dnd_set_drag_payload((i, *card_kind));
-                                }
-                                Err(e) => {
-                                    e.ui(ui);
-                                }
-                            }
-                        }
-                    });
-                    Ok(())
-                });
-            if let Some(unit) = unit {
-                cn().reducers.match_buy(unit.id).unwrap();
+                            };
+                            Ok(())
+                        })
+                        .ui(ui);
+                }
+            });
+            if let Some(offer) = DndArea::<NShopOffer>::new(rect)
+                .text_fn(ui, |payload| {
+                    format!(
+                        "buy {} [yellow -{}g]",
+                        match payload.card_kind {
+                            CardKind::Unit => format!("unit"),
+                            CardKind::House => format!("house"),
+                        },
+                        payload.price
+                    )
+                })
+                .ui(ui)
+            {
+                cn().reducers.match_buy(offer.id).unwrap();
             }
             Ok(())
         })
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
+            let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
             let team_entity = team.entity();
@@ -228,15 +240,26 @@ impl MatchPlugin {
                 for i in 0..slots {
                     let ui = &mut ui[i];
                     let resp = slot_rect_button(ui, |rect, ui| {});
-                    if let Some(card) = resp.dnd_release_payload::<(usize, CardKind)>() {
-                        if card.1 == CardKind::Unit {
-                            cn().reducers
-                                .match_play_unit(card.0 as u8, i as u8)
-                                .unwrap();
-                        }
+                    if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
+                        .id(i)
+                        .text_fn(ui, |unit| format!("play [b {}]", unit.1.unit_name))
+                        .ui(ui)
+                    {
+                        cn().reducers
+                            .match_play_unit(unit.0 as u8, i as u8)
+                            .notify_error_op();
                     }
                 }
             });
+            if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
+                .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
+                .ui(ui)
+            {
+                cn().reducers
+                    .match_play_house(house.0 as u8)
+                    .notify_error_op();
+            }
+
             return Ok(());
             NFusion::slots_editor(
                 team_entity,
