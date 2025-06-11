@@ -261,15 +261,17 @@ impl NFusion {
         on_remove_unit: &mut impl FnMut(NFusion, u64),
     ) -> Result<Option<NFusion>, ExpressionError> {
         let mut edited: Option<NFusion> = None;
-        let team = context.first_parent_recursive::<NTeam>(self.id)?;
-        let roster = team.roster_units_load(context);
-        let units = self.units(context)?;
+        let team = context.first_parent::<NTeam>(self.id)?;
         response
             .on_hover_ui(|ui| {
                 self.show_card(context, ui).ui(ui);
             })
             .bar_menu(|ui| {
+                let Ok(units) = self.units(context) else {
+                    return;
+                };
                 ui.menu_button("add unit", |ui| {
+                    let roster = team.roster_units_load(context);
                     for unit in &roster {
                         if units.iter().any(|u| u.id == unit.id) {
                             continue;

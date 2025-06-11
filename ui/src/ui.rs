@@ -92,10 +92,11 @@ impl ErrorExt for ExpressionError {
         let error_text = format!("{}\n[s {}]", self.cstr(), std::panic::Location::caller());
         error_text.clone().button(ui).bar_menu(|ui| {
             ScrollArea::vertical().show(ui, |ui| {
-                let mut b = self.bt;
-                b.resolve();
-                error_text.cstr().label(ui);
-                format!("[s {b:?}]").label(ui);
+                if let Some(mut b) = self.bt {
+                    b.resolve();
+                    error_text.cstr().label(ui);
+                    format!("[s {b:?}]").label(ui);
+                }
             });
         });
     }

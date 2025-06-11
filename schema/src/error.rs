@@ -8,7 +8,7 @@ use super::*;
 #[derive(Error, Debug)]
 pub struct ExpressionError {
     pub source: ExpressionErrorVariants,
-    pub bt: Btrace,
+    pub bt: Option<Btrace>,
 }
 
 impl std::fmt::Display for ExpressionError {
@@ -146,7 +146,11 @@ impl Into<ExpressionError> for ExpressionErrorVariants {
     fn into(self) -> ExpressionError {
         ExpressionError {
             source: self,
-            bt: Btrace::new_unresolved(),
+            bt: if true {
+                None
+            } else {
+                Some(Btrace::new_unresolved())
+            },
         }
     }
 }

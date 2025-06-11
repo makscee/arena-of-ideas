@@ -279,9 +279,12 @@ impl BattleAction {
                 }
             }
             Err(e) => {
-                let mut bt = e.bt;
-                bt.resolve();
-                error!("BattleAction apply error: {}\n{bt:?}", e.source);
+                error!("BattleAction apply error: {}", e.source);
+                if let Some(mut bt) = e.bt {
+                    bt.resolve();
+                    error!("{bt:?}");
+                } else {
+                }
             }
         }
         add_actions
