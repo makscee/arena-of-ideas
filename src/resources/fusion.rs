@@ -326,7 +326,7 @@ impl NFusion {
         team: Entity,
         context: &Context,
         ui: &mut Ui,
-        on_empty: impl FnOnce(&mut Ui),
+        slot: impl Fn(&mut Ui, &Response, usize),
         on_edited: impl FnOnce(NFusion),
         mut on_add_unit: impl FnMut(NFusion, u64),
         mut on_remove_unit: impl FnMut(NFusion, u64),
@@ -338,55 +338,59 @@ impl NFusion {
                 .into_iter()
                 .map(|f| (f.slot as usize, f)),
         );
-        let team_slots = global_settings().team_slots as usize;
-        ui.columns(team_slots, |ui| {
-            for i in (0..team_slots).rev() {
+        if ui.available_width() < 30.0 {
+            return Ok(());
+        }
+        ui.columns(fusions.len(), |ui| {
+            for i in (0..fusions.len()).rev() {
                 let ui = &mut ui[i];
-                let i = team_slots - i - 1;
-                if let Some(fusion) = fusions.get(&i) {
-                    let response = slot_rect_button(ui, |rect, ui| {
-                        fusion.paint(rect, context, ui).ui(ui);
-                    });
-                    if response.dragged() {
-                        if let Some(pos) = ui.ctx().pointer_latest_pos() {
-                            let origin = response.rect.center();
-                            ui.painter().arrow(
-                                origin,
-                                pos - origin,
-                                ui.visuals().widgets.hovered.fg_stroke,
-                            );
-                        }
+                let i = fusions.len() - i - 1;
+                let fusion = fusions.get(&i).unwrap();
+                let resp = slot_rect_button(ui, |rect, ui| {
+                    if fusion.units.ids.is_empty() {
+                        return;
                     }
-                    response.dnd_set_drag_payload(i);
-                    if let Some(j) = response.dnd_release_payload::<usize>() {
-                        if i == *j {
-                            continue;
-                        }
-                        let mut fusions = fusions
-                            .iter()
-                            .sorted_by_key(|(i, _)| **i)
-                            .map(|(_, f)| f.id)
-                            .collect_vec();
-                        let id = fusions.remove(*j);
-                        fusions.insert(i, id);
-                        on_reorder(fusions);
+                    fusion.paint(rect, context, ui).ui(ui);
+                });
+
+                if resp.dragged() && !fusion.units.ids.is_empty() {
+                    if let Some(pos) = ui.ctx().pointer_latest_pos() {
+                        let origin = resp.rect.center();
+                        ui.painter().arrow(
+                            origin,
+                            pos - origin,
+                            ui.visuals().widgets.hovered.fg_stroke,
+                        );
                     }
-                    match fusion.editor(context, response, &mut on_add_unit, &mut on_remove_unit) {
-                        Ok(edited) => {
-                            if let Some(fusion) = edited {
-                                on_edited(fusion);
-                                return;
-                            }
-                        }
-                        Err(e) => {
-                            let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
-                            e.cstr().label_w(ui);
-                        }
-                    }
-                } else {
-                    on_empty(ui);
-                    return;
                 }
+                resp.dnd_set_drag_payload(i);
+                if let Some(j) = resp.dnd_release_payload::<usize>() {
+                    if i == *j {
+                        continue;
+                    }
+                    let mut fusions = fusions
+                        .iter()
+                        .sorted_by_key(|(i, _)| **i)
+                        .map(|(_, f)| f.id)
+                        .collect_vec();
+                    let id = fusions.remove(*j);
+                    fusions.insert(i, id);
+                    on_reorder(fusions);
+                }
+
+                match fusion.editor(context, resp.clone(), &mut on_add_unit, &mut on_remove_unit) {
+                    Ok(edited) => {
+                        if let Some(fusion) = edited {
+                            on_edited(fusion);
+                            return;
+                        }
+                    }
+                    Err(e) => {
+                        let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
+                        e.cstr().label_w(ui);
+                    }
+                }
+                slot(ui, &resp, i);
             }
         });
         Ok(())

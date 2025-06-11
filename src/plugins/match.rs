@@ -230,16 +230,11 @@ impl MatchPlugin {
             let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
-            let team_entity = team.entity();
-
-            let slots = global_settings().team_slots as usize;
-            if ui.available_width() < 30.0 {
-                return Ok(());
-            }
-            ui.columns(slots, |ui| {
-                for i in 0..slots {
-                    let ui = &mut ui[i];
-                    let resp = slot_rect_button(ui, |rect, ui| {});
+            NFusion::slots_editor(
+                team.entity(),
+                context,
+                ui,
+                |ui, resp, i| {
                     if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
                         .id(i)
                         .text_fn(ui, |unit| format!("play [b {}]", unit.1.unit_name))
@@ -249,28 +244,6 @@ impl MatchPlugin {
                             .match_play_unit(unit.0 as u8, i as u8)
                             .notify_error_op();
                     }
-                }
-            });
-            if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
-                .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
-                .ui(ui)
-            {
-                cn().reducers
-                    .match_play_house(house.0 as u8)
-                    .notify_error_op();
-            }
-
-            return Ok(());
-            NFusion::slots_editor(
-                team_entity,
-                context,
-                ui,
-                |ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        if "buy fusion".cstr().button(ui).clicked() {
-                            cn().reducers.match_buy_fusion().notify_op();
-                        }
-                    });
                 },
                 |fusion| {
                     cn().reducers
@@ -288,6 +261,15 @@ impl MatchPlugin {
                 },
             )
             .ui(ui);
+            if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
+                .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
+                .ui(ui)
+            {
+                cn().reducers
+                    .match_play_house(house.0 as u8)
+                    .notify_error_op();
+            }
+
             Ok(())
         })
     }

@@ -1,6 +1,6 @@
 use std::{any::Any, marker::PhantomData, sync::Arc};
 
-use bevy_egui::egui::DragAndDrop;
+use bevy_egui::egui::{DragAndDrop, LayerId};
 
 use super::*;
 
@@ -42,6 +42,11 @@ impl<T: Any + Send + Sync> DndArea<T> {
         {
             return None;
         }
+        let ui = &mut ui.new_child(
+            UiBuilder::new()
+                .max_rect(self.rect)
+                .layer_id(LayerId::new(Order::Foreground, ui.id())),
+        );
         let resp = ui.allocate_rect(self.rect, Sense::drag());
         let hovered = resp.contains_pointer();
         let color = if hovered {

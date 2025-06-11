@@ -226,8 +226,8 @@ impl NFusion {
         });
         let units = self.units(context)?;
         context.with_owner_ref(self.entity(), |context| {
-            let pwr = context.get_var(VarName::pwr)?;
-            let hp = context.get_var(VarName::hp)?;
+            let pwr = context.sum_var(VarName::pwr)?;
+            let hp = context.sum_var(VarName::hp)?;
             let lvl = context.get_var(VarName::lvl)?;
             ui.horizontal(|ui| {
                 TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);

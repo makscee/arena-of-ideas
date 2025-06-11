@@ -388,7 +388,6 @@ impl BattlePlugin {
             let mut changed = false;
             let team_entity = if left { *team_left } else { *team_right };
             let mut edited = None;
-            let mut add_fusion = false;
             let mut add_unit: Option<(u64, u64)> = None;
             let mut remove_unit: Option<(u64, u64)> = None;
             Context::from_world_r(teams_world, |context| {
@@ -396,13 +395,7 @@ impl BattlePlugin {
                     team_entity,
                     context,
                     ui,
-                    |ui| {
-                        ui.vertical_centered_justified(|ui| {
-                            if "add fusion".cstr().button(ui).clicked() {
-                                add_fusion = true;
-                            }
-                        });
-                    },
+                    |_, _, _| {},
                     |fusion| {
                         edited = Some(fusion);
                     },
@@ -415,16 +408,6 @@ impl BattlePlugin {
                     |_| {},
                 )
                 .ui(ui);
-                if add_fusion {
-                    let entity = context.world_mut().unwrap().spawn_empty().id();
-                    let team = NTeam::get(team_entity, context).unwrap();
-                    let slot = team.fusions_load(context).len() as i32;
-                    let mut fusion = NFusion::default();
-                    context.link_parent_child(team.id, fusion.id).log();
-                    fusion.slot = slot;
-                    fusion.unpack_entity(context, entity).log();
-                    changed = true;
-                }
                 if let Some(fusion) = edited {
                     context
                         .world_mut()
