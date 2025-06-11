@@ -183,7 +183,7 @@ pub enum Reducer {
         unit_id: u64,
     },
     MatchBuy {
-        id: u64,
+        i: u8,
     },
     MatchBuyFusion,
     MatchBuyFusionLvl {

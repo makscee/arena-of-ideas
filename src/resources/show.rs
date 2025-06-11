@@ -387,3 +387,12 @@ impl Show for Vec<(CardKind, u64)> {
         todo!()
     }
 }
+impl Show for Vec<ShopOffer> {
+    fn show(&self, context: &Context, ui: &mut Ui) {
+        "shop offers".cstr().label(ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}

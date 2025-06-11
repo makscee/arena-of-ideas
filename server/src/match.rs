@@ -6,11 +6,6 @@ use super::*;
 
 impl NMatch {
     fn fill_shop_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {
-        if let Ok(sc) = self.shop_case_load(ctx) {
-            for sc in sc {
-                sc.delete_self(ctx);
-            }
-        }
         let gs = ctx.global_settings();
 
         let unit_price = gs.match_g.unit_buy;
@@ -32,33 +27,35 @@ impl NMatch {
             .filter(|h| owned_houses.contains(&h.house_name))
             .flat_map(|h| h.id.collect_kind_children(ctx, NodeKind::NUnit))
             .collect_vec();
-        self.shop_case = (0..4)
+        let shop_case = (0..4)
             .map(|_| {
                 let unit = ctx.rng().gen_bool(0.5);
                 let n =
                     if unit && !units_from_owned_houses.is_empty() || not_owned_houses.is_empty() {
-                        NShopOffer::new(
-                            ctx,
-                            self.owner,
-                            unit_price,
-                            *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            CardKind::Unit,
-                            false,
-                        )
+                        ShopSlot {
+                            card_kind: CardKind::Unit,
+                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: unit_price,
+                            buy_text: None,
+                        }
                     } else {
-                        NShopOffer::new(
-                            ctx,
-                            self.owner,
-                            house_price,
-                            *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            CardKind::House,
-                            false,
-                        )
+                        ShopSlot {
+                            card_kind: CardKind::House,
+                            node_id: *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: house_price,
+                            buy_text: None,
+                        }
                     };
-                n.id.add_parent(ctx, self.id).unwrap();
                 n
             })
             .collect_vec();
+        self.shop_offers = [ShopOffer {
+            buy_limit: None,
+            case: shop_case,
+        }]
+        .into();
         Ok(())
     }
     fn get_slot_fusion(&mut self, ctx: &ReducerContext, slot: i32) -> Result<&mut NFusion, String> {
@@ -71,19 +68,18 @@ impl NMatch {
 }
 
 #[reducer]
-fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+fn match_buy(ctx: &ReducerContext, i: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
-    let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let g = m.g;
     if m.hand.len() >= 7 {
         return Err("Hand is full".into());
     }
-    let sc = m
-        .shop_case_load(ctx)?
-        .into_iter()
-        .find(|s| s.id() == id)
-        .to_custom_e_s_fn(|| format!("Shop case slot not found for #{id}"))?;
+    let offer = m
+        .shop_offers
+        .last_mut()
+        .to_custom_e_s_fn(|| format!("No shop offers found"))?;
+    let sc = offer.get_slot_mut(i)?;
     if sc.price > g {
         return Err("Not enough g".into());
     }
@@ -93,29 +89,12 @@ fn match_buy(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     let id = sc.node_id;
     m.hand.push((card_kind, id));
     m.g -= price;
-    // let unit = sc.unit;
-    // let unit = NUnit::get(ctx, unit)
-    //     .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit}"))?
-    //     .with_children(ctx)
-    //     .with_components(ctx)
-    //     .take();
-    // let mut house = unit
-    //     .find_parent::<NHouse>(ctx)
-    //     .to_custom_e_s("Failed to find House parent of Unit")?;
-    // let team = m.team_load(ctx)?;
-    // let _ = team.houses_load(ctx);
-    // let houses = &mut team.houses;
-    // if let Some(h) = houses.iter_mut().find(|h| h.house_name == house.house_name) {
-    //     unit.clone(ctx, pid, &mut default())
-    //         .id
-    //         .add_parent(ctx, h.id)?;
-    // } else {
-    //     let house = house.with_components(ctx).clone(ctx, pid, &mut default());
-    //     house.id.add_parent(ctx, team.id)?;
-    //     unit.clone(ctx, pid, &mut default())
-    //         .id
-    //         .add_parent(ctx, house.id)?;
-    // }
+    if let Some(limit) = &mut offer.buy_limit {
+        *limit -= 1;
+        if *limit == 0 {
+            m.shop_offers.remove(m.shop_offers.len() - 1);
+        }
+    }
     player.save(ctx);
     Ok(())
 }
@@ -138,6 +117,15 @@ fn match_play_house(ctx: &ReducerContext, i: u8) -> Result<(), String> {
         .with_components(ctx)
         .clone(ctx, pid, &mut default());
     house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
+    let house_units = id
+        .collect_kind_children(ctx, NodeKind::NUnit)
+        .choose_multiple(&mut ctx.rng(), 3)
+        .copied()
+        .collect_vec();
+    m.shop_offers.push(ShopOffer {
+        buy_limit: Some(1),
+        case: ShopSlot::units_from_ids(house_units, 0),
+    });
     m.save(ctx);
     Ok(())
 }
@@ -368,7 +356,17 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         m.delete_with_components(ctx);
     }
     let gs = ctx.global_settings();
-    let mut m = NMatch::new(ctx, pid, gs.match_g.initial, 0, 0, 3, true, default());
+    let mut m = NMatch::new(
+        ctx,
+        pid,
+        gs.match_g.initial,
+        0,
+        0,
+        3,
+        true,
+        default(),
+        default(),
+    );
     m.id.add_child(ctx, player.id)?;
     let mut team = NTeam::new(ctx, pid);
     team.id.add_child(ctx, m.id)?;

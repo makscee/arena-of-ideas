@@ -18,7 +18,7 @@ impl Default for GlobalSettings {
             match_g: MatchG {
                 unit_buy: 3,
                 unit_sell: 1,
-                house_buy: 2,
+                house_buy: 5,
                 fusion_lvl_mul: 1,
                 reroll: 1,
                 initial: 10,

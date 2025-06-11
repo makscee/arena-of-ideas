@@ -70,10 +70,7 @@ impl MatchPlugin {
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
-            let slots = m.shop_case_load(context);
-            if slots.is_empty() {
-                return Err("Shop case slots are empty".into());
-            }
+            let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -106,7 +103,7 @@ impl MatchPlugin {
                                     .ui(ui)
                                     .clicked()
                                 {
-                                    cn().reducers.match_buy(slot.id()).notify_op();
+                                    cn().reducers.match_buy(i as u8).notify_op();
                                 }
                                 if !slot.sold {
                                     context.with_layer_ref(
@@ -125,7 +122,7 @@ impl MatchPlugin {
                                                         house.view_card(context, ui)?
                                                     }
                                                 };
-                                                resp.dnd_set_drag_payload(slot.clone());
+                                                resp.dnd_set_drag_payload((i, slot.clone()));
                                                 Ok(())
                                             })
                                             .inner
@@ -214,20 +211,20 @@ impl MatchPlugin {
                         .ui(ui);
                 }
             });
-            if let Some(offer) = DndArea::<NShopOffer>::new(rect)
-                .text_fn(ui, |payload| {
+            if let Some(offer) = DndArea::<(usize, ShopSlot)>::new(rect)
+                .text_fn(ui, |(i, slot)| {
                     format!(
                         "buy {} [yellow -{}g]",
-                        match payload.card_kind {
+                        match slot.card_kind {
                             CardKind::Unit => format!("unit"),
                             CardKind::House => format!("house"),
                         },
-                        payload.price
+                        slot.price
                     )
                 })
                 .ui(ui)
             {
-                cn().reducers.match_buy(offer.id).unwrap();
+                cn().reducers.match_buy(offer.0 as u8).unwrap();
             }
             Ok(())
         })

@@ -5,6 +5,7 @@ mod expression;
 mod fusion;
 mod inject;
 mod macro_fn;
+mod r#match;
 #[allow(dead_code)]
 mod nodes;
 mod packed_nodes;
@@ -27,6 +28,7 @@ pub use inject::*;
 pub use macro_fn::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
+pub use r#match::*;
 pub use reaction::*;
 use ron::ser::{to_string_pretty, PrettyConfig};
 pub use tier::*;
