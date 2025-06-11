@@ -4,6 +4,7 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
+pub mod admin_add_gold_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
 pub mod content_delete_node_reducer;
@@ -47,6 +48,9 @@ pub mod t_node_link_type;
 pub mod t_node_type;
 pub mod update_links_reducer;
 
+pub use admin_add_gold_reducer::{
+    admin_add_gold, set_flags_for_admin_add_gold, AdminAddGoldCallbackId,
+};
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
 };
@@ -143,6 +147,7 @@ pub use update_links_reducer::{set_flags_for_update_links, update_links, UpdateL
 /// to indicate which reducer caused the event.
 
 pub enum Reducer {
+    AdminAddGold,
     AdminDailyUpdate,
     AdminDeleteNodeRecursive {
         id: u64,
@@ -235,6 +240,7 @@ impl __sdk::InModule for Reducer {
 impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
+            Reducer::AdminAddGold => "admin_add_gold",
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
@@ -273,6 +279,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
     type Error = __sdk::Error;
     fn try_from(value: __ws::ReducerCallInfo<__ws::BsatnFormat>) -> __sdk::Result<Self> {
         match &value.reducer_name[..] {
+            "admin_add_gold" => Ok(__sdk::parse_reducer_args::<
+                admin_add_gold_reducer::AdminAddGoldArgs,
+            >("admin_add_gold", &value.args)?
+            .into()),
             "admin_daily_update" => Ok(__sdk::parse_reducer_args::<
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?

@@ -1,4 +1,4 @@
-use bevy::ecs::event::EventReader;
+use bevy::{ecs::event::EventReader, input::common_conditions::input_just_pressed};
 use bevy_egui::egui::Grid;
 use spacetimedb_sdk::DbContext;
 
@@ -12,6 +12,10 @@ impl Plugin for MatchPlugin {
             .add_systems(
                 Update,
                 Self::on_match_update.run_if(in_state(GameState::Shop)),
+            )
+            .add_systems(
+                Update,
+                Self::add_g.run_if(input_just_pressed(KeyCode::KeyG)),
             );
     }
 }
@@ -44,6 +48,9 @@ impl MatchPlugin {
             return;
         }
         Self::check_battles(world).log();
+    }
+    fn add_g() {
+        cn().reducers.admin_add_gold().notify_op();
     }
     fn on_match_update(mut events: EventReader<StdbEvent>) {
         for event in events.read() {

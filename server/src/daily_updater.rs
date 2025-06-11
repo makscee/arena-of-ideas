@@ -40,8 +40,4 @@ pub fn daily_timer_init(ctx: &ReducerContext) {
     });
 }
 
-#[spacetimedb::reducer]
-fn admin_daily_update(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.is_admin()?;
-    daily_update(ctx)
-}
+

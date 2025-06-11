@@ -441,9 +441,4 @@ impl IdVecExt for Vec<u64> {
     }
 }
 
-#[reducer]
-fn admin_delete_node_recursive(ctx: &ReducerContext, id: u64) -> Result<(), String> {
-    ctx.is_admin()?;
-    TNode::delete_by_id_recursive(ctx, id);
-    Ok(())
-}
+

@@ -1,0 +1,205 @@
+use super::*;
+use itertools::Itertools;
+use log::{error, info};
+use spacetimedb::{reducer, Identity, ReducerContext};
+use std::collections::{HashMap, VecDeque};
+use std::str::FromStr;
+
+const ADMIN_IDENTITY_HEX: &str = "c2006040747a1f04c2cebab8453bcf8b06c18e17f09e34ff20fd7883e748ca8e";
+
+pub fn is_admin(identity: &Identity) -> Result<bool, String> {
+    Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
+        .map_err(|e| e.to_string())?
+        .eq(identity))
+}
+
+pub trait AdminCheck {
+    fn is_admin(self) -> Result<(), String>;
+}
+
+impl AdminCheck for &ReducerContext {
+    fn is_admin(self) -> Result<(), String> {
+        if is_admin(&self.sender)? {
+            Ok(())
+        } else {
+            Err("Need admin access".to_owned())
+        }
+    }
+}
+
+// Content admin reducers
+#[reducer]
+fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    info!("content rotation start");
+    for mut n in ctx.db.nodes_world().owner().filter(ID_CORE) {
+        n.owner = 0;
+        for mut l in ctx
+            .db
+            .node_links()
+            .parent()
+            .filter(n.id)
+            .chain(ctx.db.node_links().child().filter(n.id))
+        {
+            if !l.solid {
+                continue;
+            }
+            l.solid = false;
+            ctx.db.node_links().id().update(l);
+        }
+        n.update(ctx);
+    }
+
+    let mut units = NUnit::collect_owner(ctx, 0);
+    info!("initial units {}", units.len());
+    units.retain_mut(|unit| {
+        let Some(mut description) = unit.top_parent::<NUnitDescription>(ctx) else {
+            return false;
+        };
+        if let Some(behavior) = description.mutual_top_parent::<NBehavior>(ctx) {
+            description.behavior = Some(behavior);
+        } else {
+            return false;
+        }
+        if let Some(representation) = description.mutual_top_parent::<NRepresentation>(ctx) {
+            description.representation = Some(representation);
+        } else {
+            return false;
+        }
+        unit.description = Some(description);
+        if let Some(stats) = unit.top_parent::<NUnitStats>(ctx) {
+            unit.stats = Some(stats);
+        } else {
+            return false;
+        }
+        true
+    });
+    info!("retained units {}", units.len());
+    let mut units: HashMap<u64, Vec<NUnit>> = units
+        .into_iter()
+        .filter_map(|n| {
+            if let Some(house) = n.top_parent::<NHouse>(ctx) {
+                Some((house.id, n))
+            } else {
+                None
+            }
+        })
+        .into_group_map();
+    info!("units with house {}", units.len());
+
+    let mut houses: VecDeque<NHouse> = VecDeque::from_iter(NHouse::collect_owner(ctx, 0));
+    while let Some(mut house) = houses.pop_front() {
+        info!("start house {}", house.house_name);
+        if let Some(color) = house.mutual_top_parent::<NHouseColor>(ctx) {
+            info!("color: {}", color.color.0);
+            house.color = Some(color);
+        } else {
+            error!("color failed");
+            continue;
+        }
+        if let Some(mut ability_magic) = house.mutual_top_parent::<NAbilityMagic>(ctx) {
+            if let Some(mut description) =
+                ability_magic.mutual_top_parent::<NAbilityDescription>(ctx)
+            {
+                if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
+                    description.effect = Some(effect);
+                } else {
+                    error!("ability effect failed");
+                    continue;
+                }
+                ability_magic.description = Some(description);
+            } else {
+                error!("ability description failed");
+                continue;
+            }
+            house.ability_magic = Some(ability_magic);
+        } else {
+            error!("ability magic failed");
+            continue;
+        }
+        if let Some(mut status_magic) = house.mutual_top_parent::<NStatusMagic>(ctx) {
+            if let Some(mut description) = status_magic.mutual_top_parent::<NStatusDescription>(ctx)
+            {
+                if let Some(behavior) = description.mutual_top_parent::<NBehavior>(ctx) {
+                    description.behavior = Some(behavior);
+                } else {
+                    error!("status behavior failed");
+                    continue;
+                }
+                status_magic.description = Some(description);
+            } else {
+                error!("status description failed");
+                continue;
+            }
+            house.status_magic = Some(status_magic);
+        } else {
+            error!("status magic failed");
+            continue;
+        }
+        if let Some(units) = units.remove(&house.id) {
+            house.units = units;
+        } else {
+            error!("units failed");
+            continue;
+        }
+
+        info!("solidifying house {}", house.house_name);
+        for id in house.collect_ids() {
+            let mut node = id.find(ctx).unwrap();
+            node.owner = ID_CORE;
+            node.update(ctx);
+        }
+        house.solidify_links(ctx)?;
+    }
+
+    Ok(())
+}
+
+#[reducer]
+fn content_delete_node(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    ctx.is_admin()?;
+    let kind = id.kind(ctx).to_custom_e_s("Failed to get kind")?;
+    kind.delete_with_components(ctx, id)
+}
+
+#[reducer]
+fn admin_daily_update(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    crate::daily_updater::daily_update(ctx)
+}
+
+#[reducer]
+fn admin_delete_node_recursive(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    ctx.is_admin()?;
+    TNode::delete_by_id_recursive(ctx, id);
+    Ok(())
+}
+
+#[reducer]
+fn sync_assets(
+    ctx: &ReducerContext,
+    global_settings: GlobalSettings,
+    nodes: String,
+) -> Result<(), String> {
+    GlobalData::init(ctx);
+    ctx.is_admin()?;
+    global_settings.replace(ctx);
+
+    Ok(())
+}
+
+#[reducer]
+fn update_links(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    Ok(())
+}
+
+#[reducer]
+fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    m.g += 10;
+    player.save(ctx);
+    Ok(())
+}
