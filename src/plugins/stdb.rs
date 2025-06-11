@@ -170,6 +170,24 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_play_unit(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_play_house(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_buy_fusion_lvl(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_match_buy_fusion(|e| {
         if !e.check_identity() {
             return;

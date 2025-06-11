@@ -23,6 +23,7 @@ pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_add_fusion_unit_reducer;
+pub mod match_buy_fusion_lvl_reducer;
 pub mod match_buy_fusion_reducer;
 pub mod match_buy_reducer;
 pub mod match_complete_reducer;
@@ -87,6 +88,9 @@ pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
 pub use match_add_fusion_unit_reducer::{
     match_add_fusion_unit, set_flags_for_match_add_fusion_unit, MatchAddFusionUnitCallbackId,
+};
+pub use match_buy_fusion_lvl_reducer::{
+    match_buy_fusion_lvl, set_flags_for_match_buy_fusion_lvl, MatchBuyFusionLvlCallbackId,
 };
 pub use match_buy_fusion_reducer::{
     match_buy_fusion, set_flags_for_match_buy_fusion, MatchBuyFusionCallbackId,
@@ -177,6 +181,9 @@ pub enum Reducer {
         id: u64,
     },
     MatchBuyFusion,
+    MatchBuyFusionLvl {
+        slot: u8,
+    },
     MatchComplete,
     MatchEditFusion {
         fusion: TNode,
@@ -243,6 +250,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchAddFusionUnit { .. } => "match_add_fusion_unit",
             Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchBuyFusion => "match_buy_fusion",
+            Reducer::MatchBuyFusionLvl { .. } => "match_buy_fusion_lvl",
             Reducer::MatchComplete => "match_complete",
             Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
@@ -331,6 +339,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_buy_fusion" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_reducer::MatchBuyFusionArgs,
             >("match_buy_fusion", &value.args)?
+            .into()),
+            "match_buy_fusion_lvl" => Ok(__sdk::parse_reducer_args::<
+                match_buy_fusion_lvl_reducer::MatchBuyFusionLvlArgs,
+            >("match_buy_fusion_lvl", &value.args)?
             .into()),
             "match_complete" => Ok(__sdk::parse_reducer_args::<
                 match_complete_reducer::MatchCompleteArgs,

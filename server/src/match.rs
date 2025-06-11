@@ -61,6 +61,13 @@ impl NMatch {
             .collect_vec();
         Ok(())
     }
+    fn get_slot_fusion(&mut self, ctx: &ReducerContext, slot: i32) -> Result<&mut NFusion, String> {
+        self.team_load(ctx)?
+            .fusions_load(ctx)?
+            .into_iter()
+            .find(|f| f.slot == slot)
+            .to_custom_e_s_fn(|| format!("Failed to find Fusion in slot {slot}"))
+    }
 }
 
 #[reducer]
@@ -136,6 +143,21 @@ fn match_play_house(ctx: &ReducerContext, i: u8) -> Result<(), String> {
 }
 
 #[reducer]
+fn match_buy_fusion_lvl(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let fusion = m.get_slot_fusion(ctx, slot as i32)?;
+    fusion.lvl += 1;
+    let price = ctx.global_settings().match_g.fusion_lvl_mul * fusion.lvl;
+    if m.g < price {
+        return Err("Not enough g".into());
+    }
+    m.g -= price;
+    m.save(ctx);
+    Ok(())
+}
+
+#[reducer]
 fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
@@ -170,11 +192,10 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
     unit_id.add_parent(ctx, house_id)?;
 
     let slot = slot as i32;
-    let fusions = team.fusions_load(ctx)?;
-    let fusion = fusions
-        .into_iter()
-        .find(|f| f.slot == slot)
-        .to_custom_e_s_fn(|| format!("Failed to find Fusion in slot {slot}"))?;
+    let fusion = m.get_slot_fusion(ctx, slot)?;
+    if fusion.lvl <= fusion.units.ids.len() as i32 {
+        match_buy_fusion_lvl(ctx, slot as u8)?;
+    }
     fusion.units_add(ctx, unit_id)?;
     fusion.action_limit = fusion
         .action_limit

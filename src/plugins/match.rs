@@ -234,14 +234,22 @@ impl MatchPlugin {
                 team.entity(),
                 context,
                 ui,
-                |ui, resp, i| {
+                |ui, resp, fusion| {
+                    let cost = if fusion.units.ids.len() as i32 >= fusion.lvl {
+                        format!(
+                            "\n[yellow [b -{}g]]",
+                            (fusion.lvl + 1) * global_settings().match_g.fusion_lvl_mul
+                        )
+                    } else {
+                        default()
+                    };
                     if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
-                        .id(i)
-                        .text_fn(ui, |unit| format!("play [b {}]", unit.1.unit_name))
+                        .id(fusion.slot)
+                        .text_fn(ui, |unit| format!("play [b {}]{cost}", unit.1.unit_name))
                         .ui(ui)
                     {
                         cn().reducers
-                            .match_play_unit(unit.0 as u8, i as u8)
+                            .match_play_unit(unit.0 as u8, fusion.slot as u8)
                             .notify_error_op();
                     }
                 },

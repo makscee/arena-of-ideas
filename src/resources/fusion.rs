@@ -316,7 +316,7 @@ impl NFusion {
         team: Entity,
         context: &Context,
         ui: &mut Ui,
-        slot: impl Fn(&mut Ui, &Response, usize),
+        slot: impl Fn(&mut Ui, &Response, &NFusion),
         on_edited: impl FnOnce(NFusion),
         mut on_add_unit: impl FnMut(NFusion, u64),
         mut on_remove_unit: impl FnMut(NFusion, u64),
@@ -380,7 +380,7 @@ impl NFusion {
                         e.cstr().label_w(ui);
                     }
                 }
-                slot(ui, &resp, i);
+                slot(ui, &resp, fusion);
             }
         });
         Ok(())

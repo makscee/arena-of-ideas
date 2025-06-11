@@ -10,6 +10,7 @@ pub struct MatchG {
     pub unit_buy: i32,
     pub unit_sell: i32,
     pub house_buy: i32,
+    pub fusion_lvl_mul: i32,
     pub reroll: i32,
     pub initial: i32,
 }
