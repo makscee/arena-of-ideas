@@ -238,3 +238,14 @@ pub fn new_node_btn<T: Node + NodeExt + ViewFns>(ui: &mut Ui) -> Option<T> {
         None
     }
 }
+
+impl Tier for NBehavior {
+    fn tier(&self) -> u8 {
+        let action_tiers = self
+            .reactions
+            .iter()
+            .map(|r| r.actions.iter().map(|a| a.tier()).sum::<u8>())
+            .sum::<u8>();
+        (action_tiers + 1) / 2
+    }
+}

@@ -148,11 +148,12 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
     if !matches!(card_kind, CardKind::Unit) {
         return Err(format!("Card {i} is not a unit"));
     }
-    let unit = NUnit::get(ctx, id)
+    let mut unit = NUnit::get(ctx, id)
         .to_custom_e_s_fn(|| format!("Failed to find Unit#{id}"))?
         .with_children(ctx)
         .with_components(ctx)
         .take();
+    let unit_tier = unit.description_load(ctx)?.behavior_load(ctx)?.tier();
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);
     let house = unit
@@ -175,6 +176,33 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
         .find(|f| f.slot == slot)
         .to_custom_e_s_fn(|| format!("Failed to find Fusion in slot {slot}"))?;
     fusion.units_add(ctx, unit_id)?;
+    fusion.action_limit = fusion
+        .action_limit
+        .max(unit_tier as i32 * 2 + (fusion.lvl - 1) * 2);
+    if fusion.units.ids.len() == 1 {
+        let b = unit.description().behavior();
+        fusion.behavior = b
+            .reactions
+            .iter()
+            .enumerate()
+            .map(|(t, r)| {
+                (
+                    UnitTriggerRef {
+                        unit: unit.id,
+                        trigger: t as u8,
+                    },
+                    (0..r.actions.len() as u8)
+                        .into_iter()
+                        .map(|a| UnitActionRef {
+                            unit: unit.id,
+                            trigger: t as u8,
+                            action: a,
+                        })
+                        .collect_vec(),
+                )
+            })
+            .collect();
+    }
     m.save(ctx);
     Ok(())
 }
@@ -217,7 +245,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = NFusion::new(ctx, pid, default(), i32::MAX, 0, 0, 0, 1, default());
+    let fusion = NFusion::new(ctx, pid, default(), i32::MAX, 0, 0, 0, 1, 0, default());
     fusion.id.add_parent(ctx, team.id())?;
     team.fusions.push(fusion);
     for (i, fusion) in team
@@ -324,7 +352,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut team = NTeam::new(ctx, pid);
     team.id.add_child(ctx, m.id)?;
     for i in 0..ctx.global_settings().team_slots as i32 {
-        let fusion = NFusion::new(ctx, pid, default(), i, 0, 0, 0, 1, default());
+        let fusion = NFusion::new(ctx, pid, default(), i, 0, 0, 0, 1, 0, default());
         fusion.id.add_parent(ctx, team.id())?;
         team.fusions.push(fusion);
     }

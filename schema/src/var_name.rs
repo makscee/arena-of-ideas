@@ -52,6 +52,7 @@ pub enum VarName {
     unit,
     floor,
     round,
+    action_limit,
 }
 
 impl VarName {

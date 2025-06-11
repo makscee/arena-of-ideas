@@ -236,7 +236,7 @@ impl NFusion {
                 ui.label(format!(
                     "Actions: {}/{}",
                     self.get_action_count(),
-                    self.get_action_limit()
+                    self.action_limit
                 ));
             });
             ui.vertical(|ui| -> Result<(), ExpressionError> {
