@@ -239,17 +239,49 @@ impl MatchPlugin {
                 context,
                 ui,
                 |ui, resp, fusion| {
-                    let cost = if fusion.units.ids.len() as i32 >= fusion.lvl {
-                        format!(
-                            "\n[yellow [b -{}g]]",
-                            (fusion.lvl + 1) * global_settings().match_g.fusion_lvl_mul
-                        )
-                    } else {
-                        default()
-                    };
                     if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
                         .id(fusion.slot)
-                        .text_fn(ui, |unit| format!("play [b {}]{cost}", unit.1.unit_name))
+                        .text_fn(ui, |unit| {
+                            let lvl_increase = match fusion.units(context) {
+                                Ok(units) => {
+                                    if let Some(unit) =
+                                        units.iter().find(|u| u.unit_name == unit.1.unit_name)
+                                    {
+                                        let Ok(state) = unit.state_load(context) else {
+                                            return "\nstate error".to_owned();
+                                        };
+                                        if state.xp + 1 >= state.lvl {
+                                            format!(
+                                                "\n[n [tl increase lvl:]\n{} -> {}]",
+                                                state.lvl,
+                                                state.lvl + 1
+                                            )
+                                        } else {
+                                            format!(
+                                                "\n[n [tl increase xp:]\n{} -> {} ({})]",
+                                                state.xp,
+                                                state.xp + 1,
+                                                state.lvl
+                                            )
+                                        }
+                                    } else {
+                                        default()
+                                    }
+                                }
+                                Err(e) => e.cstr(),
+                            };
+                            let cost = if lvl_increase.is_empty()
+                                && fusion.units.ids.len() as i32 >= fusion.lvl
+                            {
+                                format!(
+                                    "\n[yellow [b -{}g]]",
+                                    (fusion.lvl + 1) * global_settings().match_g.fusion_lvl_mul
+                                )
+                            } else {
+                                default()
+                            };
+                            format!("play [b {}]{cost}{lvl_increase}", unit.1.unit_name)
+                        })
                         .ui(ui)
                     {
                         cn().reducers

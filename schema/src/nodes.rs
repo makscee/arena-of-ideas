@@ -117,6 +117,7 @@ struct NUnit {
     pub unit_name: String,
     pub description: ParentComponent<NUnitDescription>,
     pub stats: ParentComponent<NUnitStats>,
+    pub state: ParentComponent<NUnitState>,
 }
 
 struct NUnitDescription {
@@ -128,6 +129,12 @@ struct NUnitDescription {
 struct NUnitStats {
     pub pwr: i32,
     pub hp: i32,
+}
+
+struct NUnitState {
+    pub xp: i32,
+    pub lvl: i32,
+    pub rarity: i32,
 }
 
 struct NBehavior {

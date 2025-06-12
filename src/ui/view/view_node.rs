@@ -197,6 +197,7 @@ impl NodeViewFns for NUnitDescription {
     }
 }
 impl NodeViewFns for NUnitStats {}
+impl NodeViewFns for NUnitState {}
 impl NodeViewFns for NBehavior {
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         if vctx.one_line {

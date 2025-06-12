@@ -38,6 +38,7 @@ pub enum VarName {
     color,
     lvl,
     xp,
+    rarity,
     tier,
     visible,
     slot,

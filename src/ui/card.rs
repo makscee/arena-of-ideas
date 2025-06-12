@@ -94,11 +94,16 @@ impl TagCard for NUnit {
         } else {
             0
         };
+        let lvl = context.get_i32(VarName::lvl).unwrap_or_default();
+        let xp = match context.get_i32(VarName::xp) {
+            Ok(v) => format!(" [tw {v}]/[{} [b {lvl}]]", VarName::lvl.color().to_hex()),
+            Err(_) => default(),
+        };
         Ok(TagWidget::new_name_value(
             context.get_string(VarName::unit_name)?,
             context.get_color(VarName::color)?,
             format!(
-                "[b {} {} [tw T]{}]",
+                "[b {} {} [tw T]{}]{xp}",
                 context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
                 context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color()),
                 (tier as i32).cstr_c(VarName::tier.color())

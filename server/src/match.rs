@@ -77,6 +77,16 @@ impl NMatch {
     }
 }
 
+impl NFusion {
+    fn units_load(&self, ctx: &ReducerContext) -> Result<Vec<NUnit>, String> {
+        let mut result: Vec<NUnit> = default();
+        for id in &self.units.ids {
+            result.push(id.to_node(ctx)?);
+        }
+        Ok(result)
+    }
+}
+
 #[reducer]
 fn match_buy(ctx: &ReducerContext, i: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
@@ -180,42 +190,60 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
         .find(|h| h.house_name == house)
         .map(|h| h.id)
         .to_custom_e_s_fn(|| format!("Team house {house} not found"))?;
-    let unit_id = unit.clone(ctx, pid, &mut default()).id;
-    unit_id.add_parent(ctx, house_id)?;
 
     let slot = slot as i32;
     let fusion = m.get_slot_fusion(ctx, slot)?;
-    if fusion.lvl <= fusion.units.ids.len() as i32 {
-        m.buy_fusion_lvl(ctx, slot as usize)?;
-    }
-    let fusion = m.get_slot_fusion(ctx, slot)?;
-    fusion.units_add(ctx, unit_id)?;
-    fusion.action_limit = fusion
-        .action_limit
-        .max(unit_tier as i32 * 2 + (fusion.lvl - 1) * 2);
-    if fusion.units.ids.len() == 1 {
-        let b = unit.description().behavior();
-        fusion.behavior = b
-            .reactions
-            .iter()
-            .enumerate()
-            .map(|(t, r)| {
-                (
-                    UnitTriggerRef {
-                        unit: unit.id,
-                        trigger: t as u8,
-                    },
-                    (0..r.actions.len() as u8)
-                        .into_iter()
-                        .map(|a| UnitActionRef {
-                            unit: unit.id,
+    let duplicate_unit = fusion.units_load(ctx)?.into_iter().find_map(|u| {
+        if u.unit_name == unit.unit_name {
+            Some(u)
+        } else {
+            None
+        }
+    });
+    if let Some(mut unit) = duplicate_unit {
+        let state = unit.state_load(ctx)?;
+        state.xp += 1;
+        while state.xp >= state.lvl {
+            state.xp -= state.lvl;
+            state.lvl += 1;
+        }
+        state.save(ctx);
+    } else {
+        let unit_id = unit.clone(ctx, pid, &mut default()).id;
+        let mut unit = unit_id.to_node::<NUnit>(ctx)?;
+        unit_id.add_parent(ctx, house_id)?;
+        NUnitState::new(ctx, pid, 0, 1, 0)
+            .id
+            .add_child(ctx, unit_id)?;
+        let fusion = m.get_slot_fusion(ctx, slot)?;
+        fusion.units_add(ctx, unit_id)?;
+        fusion.action_limit = fusion
+            .action_limit
+            .max(unit_tier as i32 * 2 + (fusion.lvl - 1) * 2);
+        if fusion.units.ids.len() == 1 {
+            let b = unit.description_load(ctx)?.behavior_load(ctx)?;
+            fusion.behavior = b
+                .reactions
+                .iter()
+                .enumerate()
+                .map(|(t, r)| {
+                    (
+                        UnitTriggerRef {
+                            unit: unit_id,
                             trigger: t as u8,
-                            action: a,
-                        })
-                        .collect_vec(),
-                )
-            })
-            .collect();
+                        },
+                        (0..r.actions.len() as u8)
+                            .into_iter()
+                            .map(|a| UnitActionRef {
+                                unit: unit_id,
+                                trigger: t as u8,
+                                action: a,
+                            })
+                            .collect_vec(),
+                    )
+                })
+                .collect();
+        }
     }
     m.save(ctx);
     Ok(())
