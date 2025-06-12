@@ -136,6 +136,11 @@ impl ViewFns for Action {
         })
     }
     fn title_cstr(&self, _: ViewContext, context: &Context) -> Cstr {
+        fn add_lvl(r: &mut String, context: &Context) {
+            if let Ok(lvl) = context.get_i32(VarName::lvl) {
+                *r += &format!(" [tw [s lvl]][{} [b {lvl}]]", VarName::lvl.color().to_hex());
+            }
+        }
         match self {
             Action::use_ability => {
                 let mut r = self.cstr();
@@ -143,6 +148,7 @@ impl ViewFns for Action {
                     if let Ok(color) = context.get_color(VarName::color) {
                         r += " ";
                         r += &ability.cstr_cs(color, CstrStyle::Bold);
+                        add_lvl(&mut r, context);
                     }
                 }
                 r
@@ -153,6 +159,7 @@ impl ViewFns for Action {
                     if let Ok(color) = context.get_color(VarName::color) {
                         r += " ";
                         r += &status.cstr_cs(color, CstrStyle::Bold);
+                        add_lvl(&mut r, context);
                     }
                 }
                 r

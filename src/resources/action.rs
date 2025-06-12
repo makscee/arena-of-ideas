@@ -93,7 +93,15 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                actions.extend(ability_actions.process(context)?);
+                let lvl = context.get_i32(VarName::lvl)?;
+                let value = context.get_i32(VarName::value).unwrap_or_default();
+                context.with_layer_r(
+                    ContextLayer::Var(VarName::value, (value + lvl).into()),
+                    |context| {
+                        actions.extend(ability_actions.process(context)?);
+                        Ok(())
+                    },
+                )?;
             }
             Action::apply_status => {
                 let caster = context.caster_entity()?.id(context)?;
@@ -134,8 +142,15 @@ impl ActionImpl for Action {
                 description.behavior = Some(behavior);
                 status.description = Some(description);
                 status.representation = representation;
+                let lvl = context.get_i32(VarName::lvl)?;
+                let value = context.get_i32(VarName::value).unwrap_or_default();
                 for target in targets {
-                    actions.push(BattleAction::apply_status(target, status.clone(), 1, color));
+                    actions.push(BattleAction::apply_status(
+                        target,
+                        status.clone(),
+                        lvl + value,
+                        color,
+                    ));
                 }
             }
             Action::repeat(x, vec) => {
