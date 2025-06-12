@@ -5,6 +5,7 @@ pub struct RectButton {
     rect: Option<Rect>,
     active: bool,
     enabled: bool,
+    no_bar_check: bool,
     color_override: Option<Color32>,
 }
 
@@ -15,6 +16,7 @@ impl RectButton {
             rect: None,
             active: false,
             enabled: true,
+            no_bar_check: false,
             color_override: None,
         }
     }
@@ -24,6 +26,7 @@ impl RectButton {
             rect: Some(rect),
             active: false,
             enabled: true,
+            no_bar_check: false,
             color_override: None,
         }
     }
@@ -39,13 +42,17 @@ impl RectButton {
         self.enabled = value;
         self
     }
+    pub fn no_bar_check(mut self, value: bool) -> Self {
+        self.no_bar_check = value;
+        self
+    }
     #[must_use]
     pub fn ui(
         self,
         ui: &mut Ui,
         content: impl FnOnce(Color32, Rect, &Response, &mut Ui),
     ) -> Response {
-        if ui.any_bar_open() {
+        if !self.no_bar_check && ui.any_bar_open() {
             ui.disable();
         }
         let sense = if self.enabled {

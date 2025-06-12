@@ -1,3 +1,4 @@
+use bevy_egui::egui::epaint::{PathShape, PathStroke};
 use egui::epaint::CubicBezierShape;
 
 use super::*;
@@ -243,4 +244,19 @@ pub fn close_btn(rect: Rect, ui: &mut Ui) -> Response {
     ui.painter()
         .line_segment([rect.right_top(), rect.left_bottom()], stroke);
     close_btn_response
+}
+pub fn triangle(rect: Rect, color: Color32, direction: u8, ui: &mut Ui) {
+    ui.painter()
+        .add(egui::Shape::Path(PathShape::convex_polygon(
+            match direction {
+                0 => [rect.left_bottom(), rect.center_top(), rect.right_bottom()],
+                1 => [rect.left_top(), rect.right_center(), rect.left_bottom()],
+                2 => [rect.left_top(), rect.right_top(), rect.center_bottom()],
+                3 => [rect.right_top(), rect.right_bottom(), rect.left_center()],
+                _ => unreachable!(),
+            }
+            .into(),
+            color,
+            PathStroke::NONE,
+        )));
 }

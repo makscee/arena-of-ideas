@@ -65,6 +65,16 @@ impl NMatch {
             .find(|f| f.slot == slot)
             .to_custom_e_s_fn(|| format!("Failed to find Fusion in slot {slot}"))
     }
+    fn buy_fusion_lvl(&mut self, ctx: &ReducerContext, slot: usize) -> Result<(), String> {
+        let fusion = self.get_slot_fusion(ctx, slot as i32)?;
+        fusion.lvl += 1;
+        let price = ctx.global_settings().match_g.fusion_lvl_mul * fusion.lvl;
+        if self.g < price {
+            return Err("Not enough g".into());
+        }
+        self.g -= price;
+        Ok(())
+    }
 }
 
 #[reducer]
@@ -134,13 +144,7 @@ fn match_play_house(ctx: &ReducerContext, i: u8) -> Result<(), String> {
 fn match_buy_fusion_lvl(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
-    let fusion = m.get_slot_fusion(ctx, slot as i32)?;
-    fusion.lvl += 1;
-    let price = ctx.global_settings().match_g.fusion_lvl_mul * fusion.lvl;
-    if m.g < price {
-        return Err("Not enough g".into());
-    }
-    m.g -= price;
+    m.buy_fusion_lvl(ctx, slot as usize)?;
     m.save(ctx);
     Ok(())
 }
@@ -182,8 +186,9 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
     let slot = slot as i32;
     let fusion = m.get_slot_fusion(ctx, slot)?;
     if fusion.lvl <= fusion.units.ids.len() as i32 {
-        match_buy_fusion_lvl(ctx, slot as u8)?;
+        m.buy_fusion_lvl(ctx, slot as usize)?;
     }
+    let fusion = m.get_slot_fusion(ctx, slot)?;
     fusion.units_add(ctx, unit_id)?;
     fusion.action_limit = fusion
         .action_limit

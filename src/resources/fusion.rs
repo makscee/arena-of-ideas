@@ -109,146 +109,153 @@ impl NFusion {
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
         let mut changed = false;
         let units = self.units(context)?;
-
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
-            for unit in &units {
-                let b = Self::get_behavior(context, unit.id)?;
-                for (ti, r) in b.reactions.iter().enumerate() {
-                    if self
-                        .behavior
-                        .iter()
-                        .any(|(t, _)| t.unit == unit.id && t.trigger as usize == ti)
-                    {
-                        continue;
-                    }
-                    if r.trigger.cstr().button(ui).clicked() {
-                        self.behavior.push((
-                            UnitTriggerRef {
-                                unit: unit.id,
-                                trigger: ti as u8,
-                            },
-                            default(),
-                        ));
-                        changed = true;
-                    }
-                }
-            }
-            if self.behavior.is_empty() {
-                return Ok(());
-            }
-
-            // Display action count and limit with level controls
-            ui.horizontal(|ui| {
-                ui.label(format!(
-                    "Actions: {}/{}",
-                    self.get_action_count(),
-                    self.action_limit
-                ));
-                ui.separator();
-                ui.label("Level:");
-                if ui.button("-").clicked() && self.lvl > 0 {
-                    self.lvl -= 1;
-                    changed = true;
-                }
-                ui.label(format!("{}", self.lvl));
-                if ui.button("+").clicked() {
-                    self.lvl += 1;
-                    changed = true;
-                }
-            });
-
-            if self.can_add_action() {
+        ui.horizontal(|ui| {
+            ui.vertical(|ui| -> Result<(), ExpressionError> {
                 for unit in &units {
                     let b = Self::get_behavior(context, unit.id)?;
                     for (ti, r) in b.reactions.iter().enumerate() {
-                        for (ai, action) in r.actions.iter().enumerate() {
-                            let ar = UnitActionRef {
-                                unit: unit.id,
-                                trigger: ti as u8,
-                                action: ai as u8,
-                            };
-                            if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
-                                continue;
-                            }
-                            context
-                                .with_owner_ref(unit.entity(), |context| {
-                                    if action
-                                        .title_cstr(ViewContext::new(ui), context)
-                                        .button(ui)
-                                        .clicked()
-                                    {
-                                        self.behavior.get_mut(0).unwrap().1.push(ar);
-                                        changed = true;
-                                    }
-                                    Ok(())
-                                })
-                                .ui(ui);
+                        if self
+                            .behavior
+                            .iter()
+                            .any(|(t, _)| t.unit == unit.id && t.trigger as usize == ti)
+                        {
+                            continue;
+                        }
+                        if r.trigger.cstr().button(ui).clicked() {
+                            self.behavior.push((
+                                UnitTriggerRef {
+                                    unit: unit.id,
+                                    trigger: ti as u8,
+                                },
+                                default(),
+                            ));
+                            changed = true;
                         }
                     }
                 }
-            } else {
-                ui.label("Action limit reached! Increase fusion level to add more actions.");
-            }
-            Ok(())
-        })
-        .inner?;
-        space(ui);
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
-            let mut new_behavior = None;
-            for (ti, (tr, actions)) in self.behavior.iter().enumerate() {
-                let trigger = Self::get_trigger(context, tr)?;
-                if trigger.cstr().button(ui).clicked() {
-                    let mut behavior = self.behavior.clone();
-                    behavior.remove(ti);
-                    new_behavior = Some(behavior);
+                if self.behavior.is_empty() {
+                    return Ok(());
                 }
-                for (ai, ar) in actions.iter().enumerate() {
-                    let action = Self::get_action(context, ar)?;
-                    ui.horizontal(|ui| -> Result<(), ExpressionError> {
-                        if ti + 1 < self.behavior.len() || ai + 1 < actions.len() {
-                            if "🔽".cstr().button(ui).clicked() {
-                                let mut behavior = self.behavior.clone();
-                                if ai == actions.len() - 1 {
-                                    behavior[ti].1.remove(ai);
-                                    behavior[ti + 1].1.insert(0, *ar);
-                                } else {
-                                    behavior[ti].1.swap(ai, ai + 1);
+
+                ui.horizontal(|ui| {
+                    ui.label(format!(
+                        "Actions: {}/{}",
+                        self.get_action_count(),
+                        self.action_limit
+                    ));
+                });
+
+                if self.can_add_action() {
+                    for unit in &units {
+                        let b = Self::get_behavior(context, unit.id)?;
+                        for (ti, r) in b.reactions.iter().enumerate() {
+                            for (ai, action) in r.actions.iter().enumerate() {
+                                let ar = UnitActionRef {
+                                    unit: unit.id,
+                                    trigger: ti as u8,
+                                    action: ai as u8,
+                                };
+                                if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
+                                    continue;
                                 }
-                                new_behavior = Some(behavior);
+                                context
+                                    .with_owner_ref(unit.entity(), |context| {
+                                        if action
+                                            .title_cstr(ViewContext::new(ui), context)
+                                            .button(ui)
+                                            .clicked()
+                                        {
+                                            self.behavior.last_mut().unwrap().1.push(ar);
+                                            changed = true;
+                                        }
+                                        Ok(())
+                                    })
+                                    .ui(ui);
                             }
                         }
-                        if ti > 0 || ai > 0 {
-                            if "🔼".cstr().button(ui).clicked() {
-                                let mut behavior = self.behavior.clone();
-                                if ai > 0 {
-                                    behavior[ti].1.swap(ai, ai - 1);
-                                } else {
-                                    behavior[ti].1.remove(ai);
-                                    behavior[ti - 1].1.push(*ar);
-                                }
-                                new_behavior = Some(behavior);
-                            }
-                        }
-                        context.with_owner_ref(context.entity(ar.unit)?, |context| {
-                            if action
-                                .title_cstr(ViewContext::new(ui), context)
-                                .button(ui)
-                                .clicked()
-                            {
-                                let mut behavior = self.behavior.clone();
-                                behavior[ti].1.remove(ai);
-                                new_behavior = Some(behavior);
-                            }
-                            Ok(())
-                        })
-                    });
+                    }
+                } else {
+                    ui.label("Action limit reached");
                 }
-            }
-            if let Some(mut new_behavior) = new_behavior {
-                mem::swap(&mut self.behavior, &mut new_behavior);
-                changed = true;
-            }
-            Ok(())
+                Ok(())
+            })
+            .inner?;
+            space(ui);
+            ui.vertical(|ui| -> Result<(), ExpressionError> {
+                let mut new_behavior = None;
+                for (ti, (tr, actions)) in self.behavior.iter().enumerate() {
+                    let trigger = Self::get_trigger(context, tr)?;
+                    if trigger.cstr().button(ui).clicked() {
+                        let mut behavior = self.behavior.clone();
+                        behavior.remove(ti);
+                        new_behavior = Some(behavior);
+                    }
+                    for (ai, ar) in actions.iter().enumerate() {
+                        let action = Self::get_action(context, ar)?;
+                        ui.horizontal(|ui| -> Result<(), ExpressionError> {
+                            ui.vertical(|ui| {
+                                let can_move_down =
+                                    ti + 1 < self.behavior.len() || ai + 1 < actions.len();
+                                let can_move_up = ti > 0 || ai > 0;
+                                let size = (LINE_HEIGHT * 0.5).v2();
+                                if RectButton::new_size(size)
+                                    .enabled(can_move_up)
+                                    .no_bar_check(true)
+                                    .ui(ui, |color, rect, _, ui| {
+                                        triangle(rect, color, 0, ui);
+                                    })
+                                    .clicked()
+                                {
+                                    let mut behavior = self.behavior.clone();
+                                    if ai > 0 {
+                                        behavior[ti].1.swap(ai, ai - 1);
+                                    } else {
+                                        behavior[ti].1.remove(ai);
+                                        behavior[ti - 1].1.push(*ar);
+                                    }
+                                    new_behavior = Some(behavior);
+                                }
+                                if RectButton::new_size(size)
+                                    .enabled(can_move_down)
+                                    .no_bar_check(true)
+                                    .ui(ui, |color, rect, _, ui| {
+                                        triangle(rect, color, 2, ui);
+                                    })
+                                    .clicked()
+                                {
+                                    let mut behavior = self.behavior.clone();
+                                    if ai == actions.len() - 1 {
+                                        behavior[ti].1.remove(ai);
+                                        behavior[ti + 1].1.insert(0, *ar);
+                                    } else {
+                                        behavior[ti].1.swap(ai, ai + 1);
+                                    }
+                                    new_behavior = Some(behavior);
+                                }
+                            });
+
+                            context.with_owner_ref(context.entity(ar.unit)?, |context| {
+                                if action
+                                    .title_cstr(ViewContext::new(ui), context)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    let mut behavior = self.behavior.clone();
+                                    behavior[ti].1.remove(ai);
+                                    new_behavior = Some(behavior);
+                                }
+                                Ok(())
+                            })
+                        });
+                    }
+                }
+                if let Some(mut new_behavior) = new_behavior {
+                    mem::swap(&mut self.behavior, &mut new_behavior);
+                    changed = true;
+                }
+                Ok(())
+            })
+            .inner
         })
         .inner?;
         Ok(changed)

@@ -177,23 +177,11 @@ impl BattlePlugin {
         let mut rect = ui.available_rect_before_wrap();
         let btn_size = 30.0;
         rect.set_height(btn_size);
-        fn triangle(rect: Rect, color: Color32, pointed_right: bool, ui: &mut Ui) {
-            ui.painter()
-                .add(egui::Shape::Path(PathShape::convex_polygon(
-                    if pointed_right {
-                        [rect.left_top(), rect.right_center(), rect.left_bottom()]
-                    } else {
-                        [rect.right_top(), rect.right_bottom(), rect.left_center()]
-                    }
-                    .into(),
-                    color,
-                    PathStroke::NONE,
-                )));
-        }
+
         if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
             .ui(ui, |color, rect, _, ui| {
                 if !*playing {
-                    triangle(rect, color, true, ui);
+                    triangle(rect, color, 1, ui);
                 } else {
                     let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
                     let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
@@ -219,7 +207,7 @@ impl BattlePlugin {
             let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
             let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
             let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(left, color, true, ui);
+            triangle(left, color, 1, ui);
             ui.painter().line_segment(
                 [right.center_top(), right.center_bottom()],
                 color.stroke_w(6.0),
@@ -237,7 +225,7 @@ impl BattlePlugin {
             let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
             let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
             let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(right, color, false, ui);
+            triangle(right, color, 3, ui);
             ui.painter().line_segment(
                 [left.center_top(), left.center_bottom()],
                 color.stroke_w(6.0),
@@ -298,8 +286,8 @@ impl BattlePlugin {
                     Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
                 let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
                 let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                triangle(left, color, true, ui);
-                triangle(right, color, true, ui);
+                triangle(left, color, 1, ui);
+                triangle(right, color, 1, ui);
             })
             .clicked()
             {
@@ -314,8 +302,8 @@ impl BattlePlugin {
                     Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
                 let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
                 let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                triangle(left, color, false, ui);
-                triangle(right, color, false, ui);
+                triangle(left, color, 3, ui);
+                triangle(right, color, 3, ui);
             })
             .clicked()
             {
