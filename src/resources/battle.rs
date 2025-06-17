@@ -308,7 +308,13 @@ impl BattleSimulation {
                     .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
                     .into_iter()
                     .sorted_by_key(|s| s.slot)
-                    .map(|n| n.entity())
+                    .filter_map(|n| {
+                        if !n.units.ids.is_empty() {
+                            Some(n.entity())
+                        } else {
+                            None
+                        }
+                    })
                     .collect_vec())
             })
             .unwrap()
@@ -345,7 +351,11 @@ impl BattleSimulation {
         match Context::from_battle_simulation_r(&mut self, |context| {
             Self::send_event(context, Event::BattleStart)
         }) {
-            Ok(a) => self.process_actions(a),
+            Ok(a) => {
+                self.process_actions(a);
+                let a = self.death_check();
+                self.process_actions(a);
+            }
             Err(e) => error!("BattleStart event error: {e}"),
         };
         self
@@ -531,7 +541,6 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
-        debug!("death check");
         Context::from_battle_simulation_r(self, |context| {
             for entity in context.battle_simulation()?.all_units() {
                 let dmg = context.get::<NFusion>(entity)?.dmg;
@@ -563,7 +572,7 @@ impl BattleSimulation {
         }
         if died {
             if bs.ended() {
-                bs.duration += 1.0;
+                bs.duration += 3.0;
             }
 
             let mut actions = [BattleAction::var_set(
