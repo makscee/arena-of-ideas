@@ -24,8 +24,15 @@ pub struct TableState {
 
 pub struct TableColumn<'a, T> {
     name: String,
-    show: Box<dyn FnMut(&Context, &mut Ui, &T) + 'a + Send + Sync>,
-    value: Option<Box<dyn FnMut(&Context, &T) -> VarValue + 'a + Send + Sync>>,
+    show: Box<
+        dyn FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+            + 'a
+            + Send
+            + Sync,
+    >,
+    value: Option<
+        Box<dyn FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
+    >,
 }
 
 impl<'a, T> RowGetter<'a, T> {
@@ -67,8 +74,8 @@ impl TableState {
 
                     match (item_a, item_b) {
                         (Some(a), Some(b)) => {
-                            let val_a = value_fn(context, a);
-                            let val_b = value_fn(context, b);
+                            let val_a = value_fn(context, a).unwrap_or_default();
+                            let val_b = value_fn(context, b).unwrap_or_default();
 
                             match VarValue::compare(&val_a, &val_b) {
                                 Ok(ord) => {
@@ -114,23 +121,33 @@ impl<'a, T> Table<'a, T> {
     pub fn column_cstr(
         self,
         name: impl Into<String>,
-        f: impl Fn(&Context, &T) -> String + 'a + Send + Sync + Clone,
+        f: impl Fn(&Context, &T) -> Result<String, ExpressionError> + 'a + Send + Sync + Clone,
     ) -> Self {
         let f_clone = f.clone();
         self.column(
             name,
-            move |context, ui, data| {
-                ui.label(f(context, data));
+            move |_context, ui, _data, value| match value {
+                VarValue::String(s) => {
+                    ui.label(s);
+                    Ok(())
+                }
+                _ => {
+                    ui.label("Invalid");
+                    Err(ExpressionErrorVariants::Custom("Type mismatch".to_string()).into())
+                }
             },
-            move |context, data| VarValue::String(f_clone(context, data)),
+            move |context, data| f_clone(context, data).map(VarValue::String),
         )
     }
 
     pub fn column(
         mut self,
         name: impl Into<String>,
-        show_fn: impl FnMut(&Context, &mut Ui, &T) + 'a + Send + Sync,
-        value_fn: impl FnMut(&Context, &T) -> VarValue + 'a + Send + Sync,
+        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+            + 'a
+            + Send
+            + Sync,
+        value_fn: impl FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -143,7 +160,10 @@ impl<'a, T> Table<'a, T> {
     pub fn column_no_sort(
         mut self,
         name: impl Into<String>,
-        show_fn: impl Fn(&Context, &mut Ui, &T) + 'a + Send + Sync,
+        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+            + 'a
+            + Send
+            + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -159,7 +179,18 @@ impl<'a, T> Table<'a, T> {
             for column in self.columns.iter_mut() {
                 row.col(|ui| {
                     ui.push_id(i, |ui| {
-                        (column.show)(context, ui, data);
+                        let value = if let Some(value_fn) = &mut column.value {
+                            match value_fn(context, data) {
+                                Ok(v) => v,
+                                Err(e) => {
+                                    e.ui(ui);
+                                    default()
+                                }
+                            }
+                        } else {
+                            VarValue::default()
+                        };
+                        (column.show)(context, ui, data, value).ui(ui);
                     });
                 });
             }

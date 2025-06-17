@@ -35,7 +35,10 @@ impl GameState {
             GameState::Connect => Tree::new_tabs(TREE_ID, Pane::Connect.into()),
             GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
             GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
-            GameState::Title => Tree::new_horizontal(TREE_ID, [Pane::Admin, Pane::MainMenu].into()),
+            GameState::Title => Tree::new_horizontal(
+                TREE_ID,
+                [Pane::Admin, Pane::MainMenu, Pane::Leaderboard].into(),
+            ),
             GameState::MatchOver => Tree::new_tabs(TREE_ID, Pane::MatchOver.into()),
             GameState::Editor => {
                 let mut tiles = Tiles::default();
@@ -109,6 +112,7 @@ pub enum Pane {
     Battle(BattlePane),
     Shop(ShopPane),
     MatchOver,
+    Leaderboard,
 
     Admin,
     WorldInspector,
@@ -166,6 +170,7 @@ impl Pane {
             Pane::Register => LoginPlugin::pane_register(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
+            Pane::Leaderboard => MatchPlugin::pane_leaderboard(ui, world)?,
             Pane::MatchOver => MatchPlugin::pane_match_over(ui, world)?,
             Pane::Shop(pane) => match pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
@@ -174,7 +179,6 @@ impl Pane {
                 ShopPane::Hand => MatchPlugin::pane_hand(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },
-
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
@@ -183,14 +187,12 @@ impl Pane {
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
                 BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
             },
-
             Pane::Explorer(pane) => match pane {
                 ExplorerPane::Selected => NodeExplorerPlugin::pane_selected(ui, world)?,
                 ExplorerPane::Parents => NodeExplorerPlugin::pane_parents(ui, world)?,
                 ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
                 ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
             },
-
             Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
         };
         Ok(())

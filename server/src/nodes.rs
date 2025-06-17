@@ -197,7 +197,7 @@ impl NMatch {
 
 impl NTeam {
     #[must_use]
-    pub fn clone_ids_remap(&self, ctx: &ReducerContext, parent: u64) -> Result<Self, String> {
+    pub fn clone_ids_remap(&self, ctx: &ReducerContext) -> Result<Self, String> {
         let mut remap: HashMap<u64, u64> = default();
         let mut new_team = self.clone(ctx, self.owner, &mut remap);
         let child_kind = NodeKind::NFusion.to_string();
@@ -226,7 +226,6 @@ impl NTeam {
                 }
             }
         }
-        new_team.id.add_parent(ctx, parent)?;
         new_team.save(ctx);
         Ok(new_team)
     }

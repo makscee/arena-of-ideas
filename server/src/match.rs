@@ -440,7 +440,8 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .choose(&mut ctx.rng())
         .and_then(|id| id.to_node::<NTeam>(ctx).ok())
     {
-        let player_team_id = player_team.clone_ids_remap(ctx, pool_id)?.id;
+        let player_team_id = player_team.clone_ids_remap(ctx)?.id;
+        player_team_id.add_parent(ctx, pool_id)?;
         NBattle::new(
             ctx,
             pid,
@@ -456,8 +457,14 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         let _ = arena.floor_bosses_load(ctx);
         let floor_boss = NFloorBoss::new(ctx, ID_ARENA, floor);
         floor_boss.id.add_parent(ctx, arena.id)?;
-        player_team.clone_ids_remap(ctx, floor_boss.id)?;
-        player_team.clone_ids_remap(ctx, pool_id)?;
+        player_team
+            .clone_ids_remap(ctx)?
+            .id
+            .add_child(ctx, floor_boss.id)?;
+        player_team
+            .clone_ids_remap(ctx)?
+            .id
+            .add_parent(ctx, pool_id)?;
         m.active = false;
     }
     player.save(ctx);

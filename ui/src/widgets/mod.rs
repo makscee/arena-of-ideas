@@ -15,7 +15,6 @@ mod notification;
 mod rect_button;
 mod selector;
 mod slider;
-mod table;
 mod tag;
 mod window;
 

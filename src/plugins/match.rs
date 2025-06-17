@@ -340,6 +340,53 @@ impl MatchPlugin {
             Ok(())
         })
     }
+    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        Context::from_world_r(world, |context| {
+            let world = context.world_mut()?;
+
+            let floors = world
+                .query::<&NFloorBoss>()
+                .iter(world)
+                .sorted_by_key(|b| -b.floor)
+                .cloned()
+                .collect_vec();
+            Table::from_data(&floors)
+                .column(
+                    "id",
+                    |_, ui, _, value| {
+                        value.get_u64()?.cstr().label(ui);
+                        Ok(())
+                    },
+                    |_, t| Ok(t.id.into()),
+                )
+                .column(
+                    "floor",
+                    |_, ui, _, value| {
+                        value.get_i32()?.cstr().label(ui);
+                        Ok(())
+                    },
+                    |_, t| Ok(t.floor.into()),
+                )
+                .column(
+                    "player",
+                    |context, ui, _, value| {
+                        let id = value.get_u64()?;
+                        context
+                            .get_by_id::<NPlayer>(id)?
+                            .player_name
+                            .cstr()
+                            .label(ui);
+                        Ok(())
+                    },
+                    |context, t| {
+                        let team = t.team_load(context)?;
+                        Ok(team.owner.into())
+                    },
+                )
+                .ui(context, ui);
+            Ok(())
+        })
+    }
     pub fn load_battle(context: &mut Context) -> Result<(), ExpressionError> {
         GameState::Battle.set_next(context.world_mut()?);
         let battles = player(context)?

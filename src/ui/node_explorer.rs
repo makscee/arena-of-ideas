@@ -30,7 +30,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                 .table()
                 .column(
                     "node",
-                    |context, ui, node| {
+                    |context, ui, node, _value| {
                         if node
                             .view_node(
                                 vctx.selected(selected.is_some_and(|id| id == node.id())),
@@ -41,36 +41,41 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                         {
                             new_selected = Some(node.id());
                         }
+                        Ok(())
                     },
-                    |_, node| node.id().into(),
+                    |_, node| Ok(VarValue::u64(node.id())),
                 )
                 .column(
                     "rating",
-                    move |context, ui, node| {
+                    move |context, ui, node, _value| {
                         node.node_view_rating(vctx, context, ui);
+                        Ok(())
                     },
-                    |_, node| node.node_rating().unwrap_or_default().into(),
+                    |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
                 )
                 .column(
                     "owner",
-                    |_, ui, node| {
+                    |_, ui, node, _value| {
                         node.owner().cstr_s(CstrStyle::Small).label(ui);
+                        Ok(())
                     },
-                    |_, node| node.owner().into(),
+                    |_, node| Ok(VarValue::u64(node.owner())),
                 );
             if let Some((is_parent, id)) = vctx.link_rating {
                 table = table.column(
                     "link rating",
-                    move |context, ui, node| {
+                    move |context, ui, node, _value| {
                         node.node_view_link_rating(vctx, context, ui, is_parent, id);
+                        Ok(())
                     },
                     move |context, node| {
-                        node.node_link_rating(context, is_parent, id)
-                            .unwrap_or_default()
-                            .0
-                            .into()
+                        Ok(VarValue::i32(
+                            node.node_link_rating(context, is_parent, id)
+                                .unwrap_or_default()
+                                .0,
+                        ))
                     },
-                )
+                );
             }
             table.ui(context, ui);
         });
