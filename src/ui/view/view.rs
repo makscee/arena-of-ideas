@@ -158,7 +158,9 @@ pub trait View: Sized + ViewFns {
             }
             if let Some(f) = Self::fn_view_value() {
                 r = r.on_hover_ui(|ui| {
-                    f(self, vctx, context, ui);
+                    context.with_layers_ref(default(), |context| {
+                        f(self, vctx, context, ui);
+                    });
                 });
             }
             if r.clicked() {
@@ -200,7 +202,9 @@ pub trait View: Sized + ViewFns {
             }
             if let Some(f) = Self::fn_view_value() {
                 r = r.on_hover_ui(|ui| {
-                    f(self, vctx, context, ui);
+                    context.with_layers_ref(default(), |context| {
+                        f(self, vctx, context, ui);
+                    });
                 });
             }
             if r.clicked() {
@@ -397,7 +401,7 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     fn fn_view_type() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
         None
     }
-    fn fn_view_value() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+    fn fn_view_value() -> Option<fn(&Self, ViewContext, &mut Context, &mut Ui)> {
         None
     }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
@@ -603,7 +607,7 @@ where
             None
         }
     }
-    fn fn_view_value() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+    fn fn_view_value() -> Option<fn(&Self, ViewContext, &mut Context, &mut Ui)> {
         if T::fn_view_value().is_some() {
             Some(|s, vctx, context, ui| T::fn_view_value().unwrap()(s, vctx, context, ui))
         } else {

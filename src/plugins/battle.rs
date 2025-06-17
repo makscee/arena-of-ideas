@@ -53,7 +53,7 @@ impl BattleData {
             battle,
             simulation,
             t: 0.0,
-            playing: false,
+            playing: true,
             playback_speed: 1.0,
             on_done: None,
         }

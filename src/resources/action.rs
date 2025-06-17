@@ -32,18 +32,16 @@ impl ActionImpl for Action {
                 dbg!(x.get_value(context))?;
             }
             Action::set_value(x) => {
-                context.set_value_var(x.get_value(context)?);
+                let value = x.get_value(context)?;
+                context.set_value_var(value);
             }
             Action::add_value(x) => {
-                context.set_value_var(
-                    context
-                        .get_value()
-                        .unwrap_or_default()
-                        .add(&x.get_value(context)?)?,
-                );
+                let value = x.get_value(context)?;
+                context.set_value_var(context.get_value().unwrap_or_default().add(&value)?);
             }
             Action::subtract_value(x) => {
-                context.set_value_var(context.get_value()?.sub(&x.get_value(context)?)?);
+                let value = x.get_value(context)?;
+                context.set_value_var(context.get_value()?.sub(&value)?);
             }
             Action::add_target(x) => match x.get_entity_list(context) {
                 Ok(entities) => {

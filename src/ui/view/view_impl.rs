@@ -76,7 +76,7 @@ impl ViewFns for Expression {
             <Expression as Injector<HexColor>>::inject_inner(s, source);
         })
     }
-    fn fn_view_value() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
+    fn fn_view_value() -> Option<fn(&Self, ViewContext, &mut Context, &mut Ui)> {
         Some(|s, _, context, ui| match s.get_value(context) {
             Ok(v) => {
                 ui.horizontal(|ui| {

@@ -1,10 +1,22 @@
 use super::*;
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Context<'w> {
     pub t: Option<f32>,
+    rng: ChaCha8Rng,
     sources: Vec<ContextSource<'w>>,
     layers: Vec<ContextLayer>,
+}
+
+impl Default for Context<'_> {
+    fn default() -> Self {
+        Self {
+            t: None,
+            rng: rng_seeded(now_micros() as u64),
+            sources: default(),
+            layers: default(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -67,7 +79,8 @@ impl<'w> Context<'w> {
         let mut context = Context {
             t: Some(t),
             sources: [ContextSource::BattleSimulation(mem::take(bs))].into(),
-            ..default()
+            rng: rng_seeded(bs.seed),
+            layers: default(),
         };
         let r = f(&mut context);
         let ContextSource::BattleSimulation(t) = context.sources.remove(0) else {
@@ -100,6 +113,9 @@ impl<'w> Context<'w> {
             }
         }
         Err(ExpressionErrorVariants::NotFound("World not set for Context".into()).into())
+    }
+    pub fn rng<'a>(&'a mut self) -> &'a mut impl Rng {
+        &mut self.rng
     }
     pub fn battle_simulation_mut<'a>(
         &'a mut self,
@@ -171,6 +187,7 @@ impl<'w> Context<'w> {
             t: self.t,
             sources: [ContextSource::Context(self)].into(),
             layers: all_layers,
+            rng: self.rng.clone(),
         };
         f(&mut context)
     }

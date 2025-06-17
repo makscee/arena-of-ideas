@@ -15,6 +15,7 @@ pub struct BattleSimulation {
     pub team_left: Entity,
     pub team_right: Entity,
     pub log: BattleLog,
+    pub seed: u64,
 }
 #[derive(Default, Debug)]
 pub struct BattleLog {
@@ -329,6 +330,7 @@ impl BattleSimulation {
             team_right,
             duration: 0.0,
             log: BattleLog::default(),
+            seed: battle.id,
         }
     }
     pub fn start(mut self) -> Self {
@@ -675,6 +677,7 @@ impl Default for BattleSimulation {
             team_left: Entity::PLACEHOLDER,
             team_right: Entity::PLACEHOLDER,
             log: default(),
+            seed: 0,
         }
     }
 }

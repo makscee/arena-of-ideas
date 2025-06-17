@@ -67,16 +67,16 @@ impl AnimAction {
                 *context.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = [x.get_entity(&context)?].into();
+                a.targets = [x.get_entity(context)?].into();
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_entity(&context)?);
+                a.targets.push(x.get_entity(context)?);
             }
             AnimAction::duration(x) => {
-                a.duration = x.get_f32(&context)?;
+                a.duration = x.get_f32(context)?;
             }
             AnimAction::timeframe(x) => {
-                a.timeframe = x.get_f32(&context)?;
+                a.timeframe = x.get_f32(context)?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
             AnimAction::list(vec) => {
