@@ -117,5 +117,16 @@ impl AdminPlugin {
             });
             cn().reducers.content_rotation().unwrap();
         }
+        if "Save Node Assets".cstr().button(ui).clicked() {
+            let mut manager = load_node_assets().unwrap();
+            // dbg!(manager);
+            for node in cn().db.nodes_world().iter() {
+                manager.add_node_from_tnode(&node);
+            }
+            for link in cn().db.node_links().iter() {
+                manager.add_link_from_tnode_link(&link);
+            }
+            manager.save_to_files().unwrap();
+        }
     }
 }

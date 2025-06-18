@@ -1,7 +1,9 @@
+mod node_assets;
 mod nodes;
 
 use super::*;
 
+pub use node_assets::*;
 pub use nodes::*;
 
 pub trait EntityConverter {
