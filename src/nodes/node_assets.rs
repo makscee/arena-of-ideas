@@ -439,9 +439,28 @@ impl NodeAssetsManager {
 
 // Convenience functions for global usage
 
-/// Load node assets from the default assets/nodes directory
+/// Get the default world repository path
+/// Checks for AOI_WORLD_PATH environment variable, falls back to default
+pub fn get_world_assets_path() -> PathBuf {
+    if let Ok(env_path) = std::env::var("AOI_WORLD_PATH") {
+        PathBuf::from(env_path).join("assets/nodes")
+    } else {
+        PathBuf::from("../arena-of-ideas-world/assets/nodes")
+    }
+}
+
+/// Load node assets from the arena-of-ideas-world repository directory
 pub fn load_node_assets() -> Result<NodeAssetsManager, Box<dyn std::error::Error>> {
-    let mut manager = NodeAssetsManager::new("assets/nodes");
+    let mut manager = NodeAssetsManager::new(get_world_assets_path());
+    manager.load_from_files()?;
+    Ok(manager)
+}
+
+/// Load node assets from a custom path
+pub fn load_node_assets_from_path<P: AsRef<Path>>(
+    path: P,
+) -> Result<NodeAssetsManager, Box<dyn std::error::Error>> {
+    let mut manager = NodeAssetsManager::new(path);
     manager.load_from_files()?;
     Ok(manager)
 }
@@ -449,4 +468,9 @@ pub fn load_node_assets() -> Result<NodeAssetsManager, Box<dyn std::error::Error
 /// Save node assets to files using the manager's configured path
 pub fn save_node_assets(manager: &NodeAssetsManager) -> Result<(), std::io::Error> {
     manager.save_to_files()
+}
+
+/// Create a new NodeAssetsManager with the default world repository path
+pub fn create_world_assets_manager() -> NodeAssetsManager {
+    NodeAssetsManager::new(get_world_assets_path())
 }
