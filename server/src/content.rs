@@ -34,10 +34,6 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
     Ok(())
 }
 
-
-
-
-
 #[reducer]
 fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), String> {
     let _ = ctx.player()?;

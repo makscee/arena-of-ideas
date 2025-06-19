@@ -6,6 +6,7 @@ mod fusion;
 mod inject;
 mod macro_fn;
 mod r#match;
+mod node_assets;
 #[allow(dead_code)]
 mod nodes;
 mod packed_nodes;
@@ -26,6 +27,7 @@ pub use expression::*;
 pub use fusion::*;
 pub use inject::*;
 pub use macro_fn::*;
+pub use node_assets::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use r#match::*;

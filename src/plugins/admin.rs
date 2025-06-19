@@ -117,9 +117,8 @@ impl AdminPlugin {
             });
             cn().reducers.content_rotation().unwrap();
         }
-        if "Save Node Assets".cstr().button(ui).clicked() {
+        if "Download Node Assets".cstr().button(ui).clicked() {
             let mut manager = load_node_assets().unwrap();
-            // dbg!(manager);
             for node in cn().db.nodes_world().iter() {
                 manager.add_node_from_tnode(&node);
             }
@@ -127,6 +126,31 @@ impl AdminPlugin {
                 manager.add_link_from_tnode_link(&link);
             }
             manager.save_to_files().unwrap();
+        }
+        if "Upload Node Assets".cstr().button(ui).clicked() {
+            let manager = load_node_assets().unwrap();
+            let mut all_nodes: Vec<(u64, String, NodeAsset)> = default();
+            let mut all_links: Vec<LinkAsset> = default();
+            for (kind, nodes) in manager.nodes {
+                let kind = kind.to_string();
+                for (id, node) in nodes {
+                    all_nodes.push((id, kind.clone(), node));
+                }
+            }
+            for link in manager.links {
+                all_links.push(link);
+            }
+            let all_nodes = all_nodes
+                .into_iter()
+                .map(|n| ron::to_string(&n).unwrap())
+                .collect_vec();
+            let all_links = all_links
+                .into_iter()
+                .map(|l| ron::to_string(&l).unwrap())
+                .collect_vec();
+            cn().reducers
+                .admin_upload_world(global_settings().clone(), all_nodes, all_links)
+                .unwrap();
         }
     }
 }

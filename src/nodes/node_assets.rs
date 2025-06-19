@@ -3,115 +3,6 @@ use ron::ser::PrettyConfig;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Represents a single node asset with its serialized data and metadata
-/// Stored as tuple: (data, owner_id, rating)
-pub type NodeAsset = (String, u64, i32);
-
-pub trait NodeAssetExt {
-    /// Create a new NodeAsset
-    fn new(data: String, owner_id: u64, rating: i32) -> Self;
-    /// Get the data field
-    fn data(&self) -> &String;
-    /// Get the owner_id field
-    fn owner_id(&self) -> u64;
-    /// Get the rating field
-    fn rating(&self) -> i32;
-    /// Set the rating field
-    fn set_rating(&mut self, rating: i32);
-}
-
-impl NodeAssetExt for NodeAsset {
-    fn new(data: String, owner_id: u64, rating: i32) -> Self {
-        (data, owner_id, rating)
-    }
-
-    fn data(&self) -> &String {
-        &self.0
-    }
-
-    fn owner_id(&self) -> u64 {
-        self.1
-    }
-
-    fn rating(&self) -> i32 {
-        self.2
-    }
-
-    fn set_rating(&mut self, rating: i32) {
-        self.2 = rating;
-    }
-}
-
-/// Represents a link between two nodes
-/// Stored as tuple: (parent_id, child_id, parent_kind, child_kind, rating)
-pub type LinkAsset = (u64, u64, String, String, i32);
-
-pub trait LinkAssetExt {
-    /// Create a new LinkAsset
-    fn new(
-        parent_id: u64,
-        child_id: u64,
-        parent_kind: String,
-        child_kind: String,
-        rating: i32,
-    ) -> Self;
-    /// Get the parent_id field
-    fn parent_id(&self) -> u64;
-    /// Get the child_id field
-    fn child_id(&self) -> u64;
-    /// Get the parent_kind field
-    fn parent_kind(&self) -> &String;
-    /// Get the child_kind field
-    fn child_kind(&self) -> &String;
-    /// Get the rating field
-    fn rating(&self) -> i32;
-    /// Set the rating field
-    fn set_rating(&mut self, rating: i32);
-}
-
-impl LinkAssetExt for LinkAsset {
-    fn new(
-        parent_id: u64,
-        child_id: u64,
-        parent_kind: String,
-        child_kind: String,
-        rating: i32,
-    ) -> Self {
-        (parent_id, child_id, parent_kind, child_kind, rating)
-    }
-
-    fn parent_id(&self) -> u64 {
-        self.0
-    }
-
-    fn child_id(&self) -> u64 {
-        self.1
-    }
-
-    fn parent_kind(&self) -> &String {
-        &self.2
-    }
-
-    fn child_kind(&self) -> &String {
-        &self.3
-    }
-
-    fn rating(&self) -> i32 {
-        self.4
-    }
-
-    fn set_rating(&mut self, rating: i32) {
-        self.4 = rating;
-    }
-}
-
-/// Main manager for node assets providing file-based storage and database integration
-///
-/// This manager stores all node types in a hierarchical structure:
-/// - Nodes are stored as HashMap<NodeKind, HashMap<u64, NodeAsset>>
-/// - Links are stored as Vec<LinkAsset>
-/// - Files are organized as: assets_path/{node_kind}/{node_id}.ron
-/// - All links are stored in a single file: assets_path/links.ron
 #[derive(Debug, Default)]
 pub struct NodeAssetsManager {
     /// All nodes organized by kind and ID
@@ -162,8 +53,9 @@ impl NodeAssetsManager {
         parent_kind: String,
         child_kind: String,
         rating: i32,
+        solid: bool,
     ) {
-        let link = LinkAsset::new(parent_id, child_id, parent_kind, child_kind, rating);
+        let link = LinkAsset::new(parent_id, child_id, parent_kind, child_kind, rating, solid);
         self.links.push(link);
     }
 
@@ -175,6 +67,7 @@ impl NodeAssetsManager {
             link.parent_kind.clone(),
             link.child_kind.clone(),
             link.rating,
+            link.solid,
         );
     }
 

@@ -8,7 +8,6 @@ mod r#match;
 mod nodes;
 mod nodes_table;
 mod player;
-mod sync;
 mod votes;
 
 use std::str::FromStr;
@@ -27,8 +26,6 @@ use std::collections::{HashMap, HashSet};
 pub fn next_id(ctx: &ReducerContext) -> u64 {
     GlobalData::next_id(ctx)
 }
-
-
 
 #[reducer(init)]
 fn init(ctx: &ReducerContext) -> Result<(), String> {

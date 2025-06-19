@@ -185,10 +185,7 @@ impl NodeExplorerPlugin {
                     .button(ui)
                     .clicked()
                 {
-                    cn().reducers.on_content_delete_node(|e, _| {
-                        e.event.notify_error();
-                    });
-                    cn().reducers.content_delete_node(selected).unwrap();
+                    cn().reducers.admin_delete_node(selected).unwrap();
                 }
             }
             if let Some(selected) = kind.show_explorer(

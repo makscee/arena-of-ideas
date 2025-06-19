@@ -7,7 +7,8 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub mod admin_add_gold_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
-pub mod content_delete_node_reducer;
+pub mod admin_delete_node_reducer;
+pub mod admin_upload_world_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_rotation_reducer;
 pub mod content_vote_link_reducer;
@@ -43,10 +44,8 @@ pub mod node_links_table;
 pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
-pub mod sync_assets_reducer;
 pub mod t_node_link_type;
 pub mod t_node_type;
-pub mod update_links_reducer;
 
 pub use admin_add_gold_reducer::{
     admin_add_gold, set_flags_for_admin_add_gold, AdminAddGoldCallbackId,
@@ -58,8 +57,11 @@ pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
 };
-pub use content_delete_node_reducer::{
-    content_delete_node, set_flags_for_content_delete_node, ContentDeleteNodeCallbackId,
+pub use admin_delete_node_reducer::{
+    admin_delete_node, set_flags_for_admin_delete_node, AdminDeleteNodeCallbackId,
+};
+pub use admin_upload_world_reducer::{
+    admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
 };
 pub use content_publish_node_reducer::{
     content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
@@ -134,10 +136,8 @@ pub use node_links_table::*;
 pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
-pub use sync_assets_reducer::{set_flags_for_sync_assets, sync_assets, SyncAssetsCallbackId};
 pub use t_node_link_type::TNodeLink;
 pub use t_node_type::TNode;
-pub use update_links_reducer::{set_flags_for_update_links, update_links, UpdateLinksCallbackId};
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -149,11 +149,16 @@ pub use update_links_reducer::{set_flags_for_update_links, update_links, UpdateL
 pub enum Reducer {
     AdminAddGold,
     AdminDailyUpdate,
+    AdminDeleteNode {
+        id: u64,
+    },
     AdminDeleteNodeRecursive {
         id: u64,
     },
-    ContentDeleteNode {
-        id: u64,
+    AdminUploadWorld {
+        global_settings: GlobalSettings,
+        nodes: Vec<String>,
+        links: Vec<String>,
     },
     ContentPublishNode {
         pack: String,
@@ -226,11 +231,6 @@ pub enum Reducer {
         old_pass: String,
         new_pass: String,
     },
-    SyncAssets {
-        global_settings: GlobalSettings,
-        nodes: String,
-    },
-    UpdateLinks,
 }
 
 impl __sdk::InModule for Reducer {
@@ -242,8 +242,9 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminAddGold => "admin_add_gold",
             Reducer::AdminDailyUpdate => "admin_daily_update",
+            Reducer::AdminDeleteNode { .. } => "admin_delete_node",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
-            Reducer::ContentDeleteNode { .. } => "content_delete_node",
+            Reducer::AdminUploadWorld { .. } => "admin_upload_world",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
             Reducer::ContentRotation => "content_rotation",
             Reducer::ContentVoteLink { .. } => "content_vote_link",
@@ -270,8 +271,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
-            Reducer::SyncAssets { .. } => "sync_assets",
-            Reducer::UpdateLinks => "update_links",
         }
     }
 }
@@ -287,15 +286,19 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?
             .into()),
+            "admin_delete_node" => Ok(__sdk::parse_reducer_args::<
+                admin_delete_node_reducer::AdminDeleteNodeArgs,
+            >("admin_delete_node", &value.args)?
+            .into()),
             "admin_delete_node_recursive" => {
                 Ok(__sdk::parse_reducer_args::<
                     admin_delete_node_recursive_reducer::AdminDeleteNodeRecursiveArgs,
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
-            "content_delete_node" => Ok(__sdk::parse_reducer_args::<
-                content_delete_node_reducer::ContentDeleteNodeArgs,
-            >("content_delete_node", &value.args)?
+            "admin_upload_world" => Ok(__sdk::parse_reducer_args::<
+                admin_upload_world_reducer::AdminUploadWorldArgs,
+            >("admin_upload_world", &value.args)?
             .into()),
             "content_publish_node" => Ok(__sdk::parse_reducer_args::<
                 content_publish_node_reducer::ContentPublishNodeArgs,
@@ -419,20 +422,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "set_password" => Ok(
                 __sdk::parse_reducer_args::<set_password_reducer::SetPasswordArgs>(
                     "set_password",
-                    &value.args,
-                )?
-                .into(),
-            ),
-            "sync_assets" => Ok(
-                __sdk::parse_reducer_args::<sync_assets_reducer::SyncAssetsArgs>(
-                    "sync_assets",
-                    &value.args,
-                )?
-                .into(),
-            ),
-            "update_links" => Ok(
-                __sdk::parse_reducer_args::<update_links_reducer::UpdateLinksArgs>(
-                    "update_links",
                     &value.args,
                 )?
                 .into(),
