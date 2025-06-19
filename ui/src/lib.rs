@@ -11,12 +11,13 @@ pub use colorix::*;
 pub use cstr::*;
 pub use descriptions::*;
 pub use enum_colors::*;
+use log::{debug, error, info, warn};
 pub use ui::*;
 pub use utils::*;
 pub use widgets::*;
 
 use ::utils::*;
-use bevy::utils::hashbrown::HashMap;
+use bevy::platform::collections::HashMap;
 use bevy::{
     app::{App, Plugin},
     prelude::{KeyCode, Mut, Resource, World},
@@ -25,9 +26,9 @@ use bevy_egui::egui;
 use bevy_egui::egui::UiBuilder;
 use colored::CustomColor;
 use egui::{
-    emath::Numeric, include_image, pos2, style::HandleShape, Align, Align2, Area, CollapsingHeader,
-    Color32, ComboBox, CornerRadius, FontId, Frame, Id, Image, Key, Layout, Margin, NumExt, Order,
-    Rect, Response, Sense, Shadow, Stroke, TextEdit, TextStyle, Ui, Widget, WidgetText,
+    Align, Align2, Area, CollapsingHeader, Color32, ComboBox, CornerRadius, FontId, Frame, Id,
+    Image, Key, Layout, Margin, NumExt, Order, Rect, Response, Sense, Shadow, Stroke, TextEdit,
+    TextStyle, Ui, Widget, WidgetText, emath::Numeric, include_image, pos2, style::HandleShape,
 };
 use indexmap::IndexMap;
 use itertools::Itertools;

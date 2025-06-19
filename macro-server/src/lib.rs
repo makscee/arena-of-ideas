@@ -45,7 +45,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 &parent_fields,
                 &parent_types,
             );
-            if let Fields::Named(ref mut fields) = fields {
+            if let Fields::Named(fields) = fields {
                 fields
                     .named
                     .push(Field::parse_named.parse2(quote! { pub id: u64 }).unwrap());

@@ -7,9 +7,9 @@ mod ui;
 mod utils;
 
 use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, state::app::AppExtStates};
-use clap::{command, Parser, ValueEnum};
+use bevy_egui::EguiPlugin;
+use clap::{Parser, ValueEnum, command};
 use include_dir::include_dir;
-use noisy_bevy::NoisyShaderPlugin;
 pub use prelude::*;
 
 #[derive(Parser, Debug, Default, Clone)]
@@ -63,7 +63,7 @@ fn main() {
     });
     app.add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)
-        .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin))
+        .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
         .add_loading_state(
             LoadingState::new(GameState::Loading)
                 .continue_to_state(GameState::Loaded)
@@ -73,11 +73,9 @@ fn main() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        .add_plugins((
-            bevy_egui::EguiPlugin,
-            bevy_inspector_egui::quick::WorldInspectorPlugin::new().run_if(|| false),
-            NoisyShaderPlugin,
-        ))
+        .add_plugins(EguiPlugin {
+            enable_multipass_for_primary_context: true,
+        })
         .add_plugins((
             UiPlugin,
             LoginPlugin,

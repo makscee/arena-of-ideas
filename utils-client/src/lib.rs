@@ -8,14 +8,11 @@ pub use game_timer::*;
 pub use operations::*;
 
 use bevy::{math::vec2, prelude::*};
-use bevy_egui::{
-    egui::{
-        self, epaint::PathShape, pos2, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui,
-    },
-    EguiContext,
+use bevy_egui::egui::{
+    self, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui, epaint::PathShape, pos2,
 };
 use parking_lot::{Mutex, MutexGuard};
-use ron::ser::{to_string_pretty, PrettyConfig};
+use ron::ser::{PrettyConfig, to_string_pretty};
 use schema::{ExpressionError, VarName, VarValue};
 use serde::Serialize;
 
@@ -62,13 +59,6 @@ pub fn right_mouse_just_released(world: &World) -> bool {
     world
         .resource::<ButtonInput<MouseButton>>()
         .just_released(MouseButton::Right)
-}
-pub fn egui_context(world: &mut World) -> Option<egui::Context> {
-    world
-        .query::<&mut EguiContext>()
-        .get_single_mut(world)
-        .map(|c| c.into_inner().get_mut().clone())
-        .ok()
 }
 pub fn draw_curve(
     p1: Pos2,
@@ -132,65 +122,36 @@ pub fn get_ctx_bool(ctx: &egui::Context, key: &str) -> Option<bool> {
 pub fn set_ctx_bool(ctx: &egui::Context, key: &str, value: bool) {
     set_ctx_bool_id(ctx, Id::new(key), value)
 }
-pub fn get_ctx_bool_world(world: &mut World, key: &str) -> Option<bool> {
+pub fn get_context_string(ctx: &egui::Context, key: &str) -> String {
     let id = Id::new(key);
-    get_ctx_bool_id_world(world, id)
+    ctx.data(|r| r.get_temp::<String>(id).unwrap_or_default())
 }
-pub fn set_ctx_bool_world(world: &mut World, key: &str, value: bool) {
+pub fn set_context_string(ctx: &egui::Context, key: &str, value: String) {
     let id = Id::new(key);
-    set_ctx_bool_id_world(world, id, value)
+    ctx.data_mut(|w| w.insert_temp(id, value))
 }
-pub fn get_ctx_bool_id_world(world: &mut World, id: Id) -> Option<bool> {
-    if let Some(ctx) = &egui_context(world) {
-        get_ctx_bool_id(ctx, id)
-    } else {
-        None
-    }
-}
-pub fn set_ctx_bool_id_world(world: &mut World, id: Id, value: bool) {
-    if let Some(ctx) = &egui_context(world) {
-        set_ctx_bool_id(ctx, id, value);
-    }
-}
-pub fn get_context_string(world: &mut World, key: &str) -> String {
+pub fn check_context_id(ctx: &egui::Context, key: &str, value: Id) -> bool {
     let id = Id::new(key);
-    if let Some(context) = egui_context(world) {
-        context.data(|r| r.get_temp::<String>(id).unwrap_or_default())
-    } else {
-        default()
-    }
-}
-pub fn set_context_string(world: &mut World, key: &str, value: String) {
-    let id = Id::new(key);
-    if let Some(context) = egui_context(world) {
-        context.data_mut(|w| w.insert_temp(id, value))
-    }
-}
-pub fn check_context_id(world: &mut World, key: &str, value: Id) -> bool {
-    let id = Id::new(key);
-    if let Some(context) = egui_context(world) {
-        context
-            .data(|r| r.get_temp::<Id>(id).and_then(|v| Some(v.eq(&value))))
+    ctx.data(|r| {
+        r.get_temp::<Id>(id)
+            .and_then(|v| Some(v.eq(&value)))
             .unwrap_or_default()
-    } else {
-        false
-    }
+    })
 }
-pub fn set_context_id(world: &mut World, key: &str, value: Id) {
+pub fn set_context_id(ctx: &egui::Context, key: &str, value: Id) {
     let id = Id::new(key);
-    if let Some(context) = egui_context(world) {
-        context.data_mut(|w| w.insert_temp(id, value))
-    }
+    ctx.data_mut(|w| w.insert_temp(id, value))
 }
-pub fn clear_context_id(world: &mut World, key: &str) {
+pub fn clear_context_id(ctx: &egui::Context, key: &str) {
     let id = Id::new(key);
-    if let Some(context) = egui_context(world) {
-        context.data_mut(|w| w.remove::<Id>(id));
-    }
+    ctx.data_mut(|w| w.remove::<Id>(id));
 }
 pub fn cursor_pos(world: &mut World) -> Option<Vec2> {
-    let window = world.query::<&bevy::window::Window>().single(world);
-    window.cursor_position()
+    world
+        .query::<&bevy::window::Window>()
+        .single(world)
+        .ok()?
+        .cursor_position()
 }
 pub trait ToC32 {
     fn c32(&self) -> Color32;
@@ -303,7 +264,7 @@ pub fn clipboard_get() -> Option<String> {
     Clipboard::new().and_then(|mut c| c.get_text()).ok()
 }
 pub fn clipboard_set(text: String) {
-    info!("Clipboard set:\n{text}");
+    log::info!("Clipboard set:\n{text}");
     Clipboard::new().unwrap().set_text(text).unwrap()
 }
 pub fn to_ron_string<T: Serialize>(value: &T) -> String {

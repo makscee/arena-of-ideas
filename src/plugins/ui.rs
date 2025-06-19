@@ -1,5 +1,8 @@
-use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
-use egui_colors::{tokens::ThemeColor, Theme};
+use bevy_egui::{
+    EguiContextPass, EguiContexts,
+    egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
+};
+use egui_colors::{Theme, tokens::ThemeColor};
 
 use super::*;
 

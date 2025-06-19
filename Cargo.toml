@@ -20,7 +20,7 @@ edition.workspace = true
 
 
 [workspace.dependencies]
-bevy = { version = "0.15.2", default-features = false, features = [
+bevy = { version = "0.16.1", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_winit",
     "bevy_audio",
@@ -30,6 +30,8 @@ bevy = { version = "0.15.2", default-features = false, features = [
     "bevy_ui",
     "default_font",
     "x11",
+    "bevy_state",
+    "bevy_log",
 ] }
 spacetimedb = { version = "1.0.0" }
 spacetimedb-sdk = "1.0.0"
@@ -45,7 +47,7 @@ thiserror = "2.0.3"
 convert_case = "0.7.1"
 bevy-trait-query = "0.7.0"
 once_cell = "1.19.0"
-bevy_egui = { version = "0.33.0", default-features = false, features = [
+bevy_egui = { version = "0.34.1", default-features = false, features = [
     "serde",
     "open_url",
     "render",
@@ -123,7 +125,7 @@ backtrace = { workspace = true }
 mlua = {workspace = true }
 
 
-bevy_asset_loader = { version = "0.22.0", features = [
+bevy_asset_loader = { version = "0.23.0", features = [
     "standard_dynamic_assets",
 ] }
 bevy_common_assets = { version = "0.12.0", features = ["ron"] }
@@ -132,12 +134,10 @@ anyhow = "1.0.75"
 clap = { version = "4.4.5", features = ["derive"] }
 hex = "0.4.3"
 home = "0.5.5"
-noisy_bevy = "0.8.0"
 egui_commonmark = "0.20.0"
-bevy_tasks = "0.15.2"
+bevy_tasks = "0.16.1"
 regex = "1.10.5"
-bevy_dylib = "0.15.2"
-bevy-inspector-egui = "0.30.0"
+bevy_dylib = "0.16.1"
 
 [dependencies.winit]
 version = "0.30.9"

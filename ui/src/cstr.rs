@@ -1,14 +1,13 @@
 use std::{ops::Deref, str::FromStr, sync::Arc};
 
+use bevy::platform::collections::HashMap;
 use bevy::{
     color::Color,
-    log::{debug, error, info},
-    math::{vec2, Vec2},
-    utils::hashbrown::HashMap,
+    math::{Vec2, vec2},
 };
 use colored::{Colorize, CustomColor};
 use ecolor::Hsva;
-use egui::{text::LayoutJob, Galley, Label, Response, Style, TextFormat, Widget, WidgetText};
+use egui::{Galley, Label, Response, Style, TextFormat, Widget, WidgetText, text::LayoutJob};
 use itertools::Itertools;
 use once_cell::sync::OnceCell;
 use utils_client::ToC32;

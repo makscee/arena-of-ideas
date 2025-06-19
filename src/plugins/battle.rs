@@ -1,6 +1,3 @@
-use bevy::app::FixedUpdate;
-use bevy_egui::egui::epaint::PathStroke;
-
 use super::*;
 
 pub struct BattlePlugin;

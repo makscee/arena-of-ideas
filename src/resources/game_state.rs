@@ -115,7 +115,6 @@ pub enum Pane {
     Leaderboard,
 
     Admin,
-    WorldInspector,
     Explorer(ExplorerPane),
 }
 
@@ -193,7 +192,6 @@ impl Pane {
                 ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
                 ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
             },
-            Pane::WorldInspector => bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui),
         };
         Ok(())
     }

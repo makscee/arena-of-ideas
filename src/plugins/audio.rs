@@ -71,8 +71,8 @@ static FX_QUEUE: Mutex<Vec<SoundEffect>> = Mutex::new(Vec::new());
 
 impl AudioPlugin {
     pub fn set_music_volume(value: f32, world: &mut World) {
-        if let Some((_, s)) = Self::background_sink(world) {
-            s.set_volume(value);
+        if let Some((_, mut s)) = Self::background_sink(world) {
+            s.set_volume(Volume::Linear(value));
         }
     }
     pub fn queue_sound(sfx: SoundEffect) {
@@ -83,15 +83,15 @@ impl AudioPlugin {
             AudioPlayer::new(source),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(pd().client_settings.fx_volume()),
+                volume: Volume::Linear(pd().client_settings.fx_volume()),
                 ..default()
             },
         ));
     }
-    fn background_sink(world: &mut World) -> Option<(Entity, &AudioSink)> {
+    fn background_sink(world: &mut World) -> Option<(Entity, Mut<AudioSink>)> {
         world
-            .query_filtered::<(Entity, &AudioSink), With<BackgroundAudioMarker>>()
-            .get_single(world)
+            .query_filtered::<(Entity, &mut AudioSink), With<BackgroundAudioMarker>>()
+            .single_mut(world)
             .ok()
     }
     fn play_next_bg(world: &mut World) {
@@ -105,7 +105,7 @@ impl AudioPlugin {
             AudioPlayer::new(bg),
             PlaybackSettings {
                 mode: bevy::audio::PlaybackMode::Despawn,
-                volume: Volume::new(pd().client_settings.music_volume()),
+                volume: Volume::Linear(pd().client_settings.music_volume()),
                 ..default()
             },
             BackgroundAudioMarker,

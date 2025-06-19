@@ -1,4 +1,3 @@
-use bevy::log::{error, info, warn};
 use bevy_egui::egui::Style;
 use egui_notify::{Toast, ToastLevel, Toasts};
 
@@ -54,9 +53,6 @@ impl Notification {
         OperationsPlugin::add(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
-        let Some(ctx) = &egui_context(world) else {
-            return;
-        };
         let text = self.text.to_colored();
         match self.level {
             ToastLevel::Info => info!("{}", text),
@@ -64,7 +60,7 @@ impl Notification {
             ToastLevel::Error => error!("{}", text),
             ToastLevel::Custom(_, _) | ToastLevel::None | ToastLevel::Success => info!("{}", text),
         }
-        rm(world).toasts.add(self.to_toast(ctx.style().as_ref()));
+        // rm(world).toasts.add(self.to_toast(ctx.style().as_ref()));
     }
 }
 

@@ -26,3 +26,4 @@ egui-notify = { workspace = true }
 egui_colors = { workspace = true }
 egui_double_slider = { workspace = true }
 spacetimedb-sdk = { workspace = true }
+log = { workspace = true }
