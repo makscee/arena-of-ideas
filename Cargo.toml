@@ -11,7 +11,7 @@ members = [
 
 [workspace.package]
 version = "1.8.2"
-edition = "2021"
+edition = "2024"
 
 [package]
 name = "arena-of-ideas"

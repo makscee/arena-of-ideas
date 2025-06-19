@@ -66,7 +66,7 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
                 NodeType::Name(ident) => quote! {self.#ident},
                 NodeType::Data | NodeType::OnlyData => quote! {""},
             };
-            if let Fields::Named(ref mut fields) = fields {
+            if let Fields::Named(fields) = fields {
                 fields.named.insert(
                     0,
                     Field::parse_named
