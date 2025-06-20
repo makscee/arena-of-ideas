@@ -7,8 +7,15 @@ pub trait BehaviorImpl {
 impl BehaviorImpl for NBehavior {
     fn react(&self, event: &Event, context: &Context) -> Option<&Vec<Action>> {
         for Reaction { trigger, actions } in self.reactions.iter() {
-            if trigger.fire(event, context) {
-                return Some(actions);
+            dbg!(trigger, event);
+
+            match trigger.fire(event, context) {
+                Ok(fired) => {
+                    if fired {
+                        return Some(actions);
+                    }
+                }
+                Err(e) => error!("trigger fire err: {e}"),
             }
         }
         None

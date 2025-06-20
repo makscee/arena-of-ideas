@@ -155,7 +155,11 @@ impl BattleAction {
                         .into(),
                         |context| curve.apply(context),
                     )?;
-                    if *x > 0 {
+                    let x = Event::OutgoingDamage(a.to_bits(), b.to_bits())
+                        .update_value(context, (*x).into(), *a)
+                        .get_i32()?
+                        .at_least(0);
+                    if x > 0 {
                         let pain = animations().get("pain_vfx").unwrap();
                         context.with_layer_r(
                             ContextLayer::Var(VarName::position, target_pos.clone()),
@@ -167,7 +171,7 @@ impl BattleAction {
                     let text = animations().get("text").unwrap();
                     context.with_layers_r(
                         [
-                            ContextLayer::Var(VarName::text, (-*x).to_string().into()),
+                            ContextLayer::Var(VarName::text, (-x).to_string().into()),
                             ContextLayer::Var(VarName::color, RED.into()),
                             ContextLayer::Var(VarName::position, target_pos),
                         ]

@@ -105,6 +105,7 @@ impl ViewChildren for Expression {
         vr.merge(view_children::<_, i32>(self, vctx, context, ui));
         vr.merge(view_children::<_, HexColor>(self, vctx, context, ui));
         vr.merge(view_children::<_, String>(self, vctx, context, ui));
+        vr.merge(view_children::<_, VarName>(self, vctx, context, ui));
         vr
     }
     fn view_children_mut(
@@ -118,6 +119,7 @@ impl ViewChildren for Expression {
         vr.merge(view_children_mut::<_, i32>(self, vctx, context, ui));
         vr.merge(view_children_mut::<_, HexColor>(self, vctx, context, ui));
         vr.merge(view_children_mut::<_, String>(self, vctx, context, ui));
+        vr.merge(view_children_mut::<_, VarName>(self, vctx, context, ui));
         vr
     }
 }

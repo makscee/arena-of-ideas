@@ -58,7 +58,17 @@ impl BattleData {
 }
 
 impl BattlePlugin {
-    pub fn load_teams(id: u64, left: NTeam, right: NTeam, world: &mut World) {
+    pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
+        let slots = global_settings().team_slots as usize;
+        for team in [&mut left, &mut right] {
+            while team.fusions.len() < slots {
+                let mut fusion = NFusion::default();
+                fusion.slot = team.fusions.len() as i32;
+                fusion.id = next_id();
+                fusion.owner = team.owner;
+                team.fusions.push(fusion);
+            }
+        }
         world.insert_resource(BattleData::load(Battle { left, right, id }));
     }
     pub fn load_from_client_state(world: &mut World) {

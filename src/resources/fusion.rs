@@ -59,7 +59,10 @@ impl NFusion {
         let mut battle_actions: Vec<BattleAction> = default();
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
             for (tr, actions) in &self.behavior {
-                if Self::get_trigger(context, tr)?.fire(event, context) {
+                if Self::get_trigger(context, tr)?
+                    .fire(event, context)
+                    .unwrap_or_default()
+                {
                     for ar in actions {
                         let action = Self::get_action(context, ar)?;
                         let action = action.clone();
