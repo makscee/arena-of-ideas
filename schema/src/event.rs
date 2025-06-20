@@ -20,4 +20,6 @@ pub enum Event {
     TurnEnd,
     UpdateStat(VarName),
     Death(u64),
+    OutgoingDamage(u64, u64),
+    IncomingDamage(u64, u64),
 }

@@ -31,6 +31,18 @@ impl TriggerImpl for Trigger {
                     return true;
                 }
             }
+            Event::OutgoingDamage(source, _) => {
+                let source = source.to_e();
+                let Ok(owner) = context.owner_entity() else {
+                    return false;
+                };
+                if matches!(self, Trigger::ChangeOutgoingDamage) && owner == source {
+                    return true;
+                }
+            }
+            Event::IncomingDamage(source, target) => {
+                todo!()
+            }
         }
         false
     }

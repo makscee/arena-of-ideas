@@ -201,9 +201,11 @@ impl ViewFns for Trigger {
 impl ViewChildren for Trigger {
     fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         match self {
-            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {
-                ViewResponse::default()
-            }
+            Trigger::BattleStart
+            | Trigger::TurnEnd
+            | Trigger::BeforeDeath
+            | Trigger::ChangeOutgoingDamage
+            | Trigger::ChangeIncomingDamage => ViewResponse::default(),
             Trigger::ChangeStat(var) => var.view(vctx, context, ui),
         }
     }
@@ -214,9 +216,11 @@ impl ViewChildren for Trigger {
         ui: &mut Ui,
     ) -> ViewResponse {
         match self {
-            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {
-                ViewResponse::default()
-            }
+            Trigger::BattleStart
+            | Trigger::TurnEnd
+            | Trigger::BeforeDeath
+            | Trigger::ChangeOutgoingDamage
+            | Trigger::ChangeIncomingDamage => ViewResponse::default(),
             Trigger::ChangeStat(var) => var.view_mut(vctx, context, ui),
         }
     }

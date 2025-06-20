@@ -380,7 +380,7 @@ impl BattleSimulation {
                     .get_vars(context, entity);
                 for (var, value) in vars {
                     debug!("before {var} {value}");
-                    let value = Self::send_update_event(context, entity, var, value);
+                    let value = Event::UpdateStat(var).update_value(context, value, entity);
                     debug!("after {var} {value}");
                     let t = context.t()?;
                     context
@@ -405,58 +405,6 @@ impl BattleSimulation {
     }
     pub fn ended(&self) -> bool {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
-    }
-    fn send_update_event(
-        context: &mut Context,
-        entity: Entity,
-        var: VarName,
-        value: VarValue,
-    ) -> VarValue {
-        match context.with_layers_r(
-            [
-                ContextLayer::Owner(entity),
-                ContextLayer::Var(VarName::value, value.clone()),
-            ]
-            .into(),
-            |context| {
-                let event = &Event::UpdateStat(var);
-                // if let Ok(fusion) = context.get::<NFusion>(entity) {
-                //     fusion.react(event, context).log();
-                // }
-                for status in context
-                    .collect_children_components_recursive::<NStatusMagic>(context.id(entity)?)?
-                    .into_iter()
-                    .cloned()
-                    .collect_vec()
-                {
-                    let mut value = context.get_value()?;
-                    if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(status.id) {
-                        context
-                            .with_layer_ref_r(ContextLayer::Owner(status.entity()), |context| {
-                                if let Some(actions) = behavior.react(event, context) {
-                                    match actions.process(context) {
-                                        Ok(_) => {}
-                                        Err(e) => {
-                                            return Err(e);
-                                        }
-                                    }
-                                }
-                                value = context.get_value()?;
-                                Ok(())
-                            })
-                            .log();
-                        context.set_value_var(value);
-                    }
-                }
-                context.get_value()
-            },
-        ) {
-            Ok(value) => value,
-            Err(e) => {
-                error!("Update event for {var} {entity} failed: {e}");
-                value
-            }
-        }
     }
     #[must_use]
     fn send_event(

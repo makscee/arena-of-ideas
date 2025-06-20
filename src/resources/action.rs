@@ -56,7 +56,9 @@ impl ActionImpl for Action {
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
                     for target in context.collect_targets() {
-                        actions.push(BattleAction::damage(owner, target, value));
+                        let value = Event::OutgoingDamage(owner.to_bits(), target.to_bits())
+                            .update_value(context, value.into(), owner);
+                        actions.push(BattleAction::damage(owner, target, value.get_i32()?));
                     }
                 }
             }

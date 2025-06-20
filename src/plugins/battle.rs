@@ -78,6 +78,7 @@ impl BattlePlugin {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
             *data = BattleData::load(data.battle.clone());
+            data.playing = false;
             pd_mut(|pd| {
                 pd.client_state
                     .set_battle_test_teams(&data.battle.left, &data.battle.right);

@@ -578,7 +578,11 @@ impl ToCstr for Trigger {
                 s += " ";
                 s += &var_name.cstr();
             }
-            Trigger::BattleStart | Trigger::TurnEnd | Trigger::BeforeDeath => {}
+            Trigger::BattleStart
+            | Trigger::TurnEnd
+            | Trigger::BeforeDeath
+            | Trigger::ChangeOutgoingDamage
+            | Trigger::ChangeIncomingDamage => {}
         }
         s
     }
