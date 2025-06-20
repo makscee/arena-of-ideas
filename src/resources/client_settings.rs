@@ -1,8 +1,8 @@
 use bevy::{
     ecs::event::EventReader,
-    window::{PresentMode, WindowResized},
+    window::{PresentMode, VideoModeSelection, WindowResized},
 };
-use egui_colors::{tokens::ThemeColor, Theme};
+use egui_colors::{Theme, tokens::ThemeColor};
 
 use super::*;
 
@@ -80,9 +80,10 @@ impl ClientSettings {
         {
             window.mode = match self.window_mode {
                 WindowMode::Windowed => bevy::window::WindowMode::Windowed,
-                WindowMode::FullScreen => {
-                    bevy::window::WindowMode::Fullscreen(bevy::window::MonitorSelection::Current)
-                }
+                WindowMode::FullScreen => bevy::window::WindowMode::Fullscreen(
+                    bevy::window::MonitorSelection::Current,
+                    VideoModeSelection::Current,
+                ),
                 WindowMode::BorderlessFullScreen => bevy::window::WindowMode::BorderlessFullscreen(
                     bevy::window::MonitorSelection::Current,
                 ),

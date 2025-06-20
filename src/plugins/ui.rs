@@ -1,5 +1,5 @@
 use bevy_egui::{
-    EguiContextPass, EguiContexts,
+    EguiFullOutput, EguiInput,
     egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
 };
 use egui_colors::{Theme, tokens::ThemeColor};
@@ -16,13 +16,18 @@ impl Plugin for UiPlugin {
 }
 
 fn setup_colorix(world: &mut World) {
-    let ctx = &egui_context(world).unwrap();
+    let ctx = world
+        .query::<&EguiContext>()
+        .single(world)
+        .unwrap()
+        .get()
+        .clone();
     let theme_main = pd().client_settings.theme;
     let theme_error: Theme = [ThemeColor::Red; 12];
     let theme_success: Theme = [ThemeColor::Green; 12];
     let theme_warning: Theme = [ThemeColor::Orange; 12];
     let theme_info: Theme = [ThemeColor::Custom([YELLOW.r(), YELLOW.g(), YELLOW.b()]); 12];
-    let global = egui_colors::Colorix::global(ctx, theme_main);
+    let global = egui_colors::Colorix::global(&ctx, theme_main);
     let semantics = [
         global,
         egui_colors::Colorix::local_from_style(theme_error, true),
@@ -35,26 +40,35 @@ fn setup_colorix(world: &mut World) {
     world.insert_resource(bevy::render::camera::ClearColor(
         colorix.tokens_global().app_background().to_color(),
     ));
-    colorix.apply(ctx);
+    colorix.apply(&ctx);
     colorix.save();
 }
 
 impl UiPlugin {
     fn ui(world: &mut World) {
-        let Some(ctx) = &egui_context(world) else {
-            return;
-        };
-        TopBottomPanel::top("top_bar").show(ctx, |ui| {
+        let (ctx, mut egui_input) = world
+            .query::<(&mut EguiContext, &mut EguiInput)>()
+            .single_mut(world)
+            .unwrap();
+        let ctx = ctx.get().clone();
+        ctx.begin_pass(egui_input.take());
+        TopBottomPanel::top("top_bar").show(&ctx, |ui| {
             TopBar::ui(ui, world);
         });
-        TilePlugin::ui(ctx, world);
-        WindowPlugin::show_all(ctx, world);
-        Confirmation::show_current(ctx, world);
-        NotificationsPlugin::ui(ctx, world);
+        TilePlugin::ui(&ctx, world);
+        WindowPlugin::show_all(&ctx, world);
+        Confirmation::show_current(&ctx, world);
+        NotificationsPlugin::ui(&ctx, world);
+        let new_output = ctx.end_pass();
+        let mut output = world
+            .query::<&mut EguiFullOutput>()
+            .single_mut(world)
+            .unwrap();
+        **output = Some(new_output);
     }
 }
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
-    let ctx = ctx.single_mut().into_inner().get_mut();
+    let ctx = ctx.single_mut().unwrap().get().clone();
     ctx.add_font(FontInsert::new(
         "mono_regular",
         FontData::from_static(include_bytes!(

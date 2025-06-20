@@ -1,3 +1,5 @@
+use bevy::ecs::component::Mutable;
+
 use super::*;
 
 #[derive(Debug)]
@@ -352,13 +354,19 @@ impl<'w> Context<'w> {
     pub fn get<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
         self.world()?.get::<T>(entity).to_e_not_found()
     }
-    pub fn get_mut<T: Component>(&mut self, entity: Entity) -> Result<Mut<T>, ExpressionError> {
+    pub fn get_mut<T: Component<Mutability = Mutable>>(
+        &mut self,
+        entity: Entity,
+    ) -> Result<Mut<T>, ExpressionError> {
         self.world_mut()?.get_mut::<T>(entity).to_e_not_found()
     }
     pub fn get_by_id<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         self.get::<T>(self.entity(id)?)
     }
-    pub fn get_by_id_mut<T: Component>(&mut self, id: u64) -> Result<Mut<T>, ExpressionError> {
+    pub fn get_by_id_mut<T: Component<Mutability = Mutable>>(
+        &mut self,
+        id: u64,
+    ) -> Result<Mut<T>, ExpressionError> {
         self.get_mut::<T>(self.entity(id)?)
     }
     pub fn ids_to_entities(

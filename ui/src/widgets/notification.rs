@@ -1,4 +1,4 @@
-use bevy_egui::egui::Style;
+use bevy_egui::{EguiContext, egui::Style};
 use egui_notify::{Toast, ToastLevel, Toasts};
 
 use super::*;
@@ -60,7 +60,13 @@ impl Notification {
             ToastLevel::Error => error!("{}", text),
             ToastLevel::Custom(_, _) | ToastLevel::None | ToastLevel::Success => info!("{}", text),
         }
-        // rm(world).toasts.add(self.to_toast(ctx.style().as_ref()));
+        let style = world
+            .query::<&EguiContext>()
+            .single(world)
+            .unwrap()
+            .get()
+            .style();
+        rm(world).toasts.add(self.to_toast(style.as_ref()));
     }
 }
 

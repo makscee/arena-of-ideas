@@ -6,8 +6,8 @@ mod stdb;
 mod ui;
 mod utils;
 
-use bevy::{diagnostic::FrameTimeDiagnosticsPlugin, state::app::AppExtStates};
-use bevy_egui::EguiPlugin;
+use bevy::{app::PreStartup, diagnostic::FrameTimeDiagnosticsPlugin, state::app::AppExtStates};
+use bevy_egui::{EguiContextSettings, EguiPlugin, EguiStartupSet};
 use clap::{Parser, ValueEnum, command};
 use include_dir::include_dir;
 pub use prelude::*;
@@ -74,8 +74,12 @@ fn main() {
                 ),
         )
         .add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: true,
+            enable_multipass_for_primary_context: false,
         })
+        .add_systems(
+            PreStartup,
+            configure_context.after(EguiStartupSet::InitContexts),
+        )
         .add_plugins((
             UiPlugin,
             LoginPlugin,
@@ -108,12 +112,15 @@ fn main() {
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn setup(world: &mut World) {
-    if let Some(ctx) = egui_context(world) {
-        egui_extras::install_image_loaders(&ctx);
-    }
+    let ctx = world.query::<&EguiContext>().single(world).unwrap().get();
+    egui_extras::install_image_loaders(&ctx);
     world.init_links();
 }
 
 fn on_error_state(world: &mut World) {
     app_exit(world)
+}
+
+fn configure_context(mut egui_settings: Query<&mut EguiContextSettings>) {
+    egui_settings.single_mut().unwrap().run_manually = true;
 }

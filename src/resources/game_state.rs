@@ -288,9 +288,6 @@ impl Plugin for GameStatePlugin {
 
 static PREVIOUS_STATE: Mutex<GameState> = Mutex::new(GameState::Loading);
 fn on_change(world: &mut World) {
-    if let Some(ctx) = egui_context(world) {
-        ctx.data_mut(|w| w.clear());
-    }
     let from = *PREVIOUS_STATE.lock();
     let to = cur_state(world);
     *PREVIOUS_STATE.lock() = to;
