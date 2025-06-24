@@ -6,3 +6,11 @@ edition.workspace = true
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 schema = { path = "../schema" }
+strum = { version = "0.26", features = ["derive"] }
+strum_macros = "0.26"
+
+[build-dependencies]
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+prettyplease = "0.2"

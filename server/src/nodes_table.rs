@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 
 use super::*;
 
+use raw_nodes::NodeKind;
+
 #[table(public, name = nodes_world,
     index(name = kind_owner, btree(columns = [kind, owner])),
     index(name = kind_data, btree(columns = [kind, data])))]

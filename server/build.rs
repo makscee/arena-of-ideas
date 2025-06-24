@@ -10,13 +10,13 @@ use syn::parse::Parser;
 use syn::*;
 
 fn main() {
-    println!("cargo:rerun-if-changed=../nodes/src/raw_nodes.rs");
+    println!("cargo:rerun-if-changed=../raw-nodes/src/raw_nodes.rs");
     println!("cargo::rerun-if-changed=build.rs");
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("server_impls.rs");
 
-    // Read the raw nodes file from the nodes crate
+    // Read the raw nodes file from the raw-nodes crate
     let input =
         fs::read_to_string("../raw-nodes/src/raw_nodes.rs").expect("Failed to read raw_nodes.rs");
     let syntax_tree = parse_file(&input).expect("Failed to parse raw_nodes.rs");
@@ -29,14 +29,14 @@ fn main() {
             structs.push(item_struct);
         }
     }
-    let node_kind_impls = generate_node_kinds(names);
+    let server_trait_impls = generate_server_trait_impls(&names);
     let server_impls: Vec<_> = structs
         .into_iter()
         .map(|item| generate_impl(item))
         .collect();
     let output = quote! {
         #(#server_impls)*
-        #node_kind_impls
+        #server_trait_impls
     };
 
     // Parse the generated code and format it
@@ -54,27 +54,17 @@ fn main() {
     fs::write(&dest_path, formatted_code).expect("Failed to write server implementations file");
 }
 
-fn generate_node_kinds(names: Vec<Ident>) -> TokenStream {
+fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
     quote! {
-        #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize, Display, EnumIter, PartialEq, Eq, PartialOrd, Ord, strum_macros::EnumString, strum_macros::AsRefStr, Hash)]
-        pub enum NodeKind {
-            #[default]
-            None,
-            #(
-                #names,
-            )*
-        }
-        pub trait NodeKindExt {
-            fn to_kind(&self) -> NodeKind;
+        pub trait ServerNodeKind {
+            fn component_kinds(self) -> HashSet<NodeKind>;
+            fn children_kinds(self) -> HashSet<NodeKind>;
+            fn convert(self, data: &str) -> Result<TNode, ExpressionError>;
+            fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
         }
 
-        impl NodeKindExt for String {
-            fn to_kind(&self) -> NodeKind {
-                NodeKind::from_str(self).unwrap()
-            }
-        }
-        impl NodeKind {
-            pub fn component_kinds(self) -> HashSet<Self> {
+        impl ServerNodeKind for NodeKind {
+            fn component_kinds(self) -> HashSet<Self> {
                 match self {
                     NodeKind::None => default(),
                     #(
@@ -84,7 +74,7 @@ fn generate_node_kinds(names: Vec<Ident>) -> TokenStream {
                     )*
                 }
             }
-            pub fn children_kinds(self) -> HashSet<Self> {
+            fn children_kinds(self) -> HashSet<Self> {
                 match self {
                     NodeKind::None => default(),
                     #(
@@ -94,7 +84,7 @@ fn generate_node_kinds(names: Vec<Ident>) -> TokenStream {
                     )*
                 }
             }
-            pub fn convert(self, data: &str) -> Result<TNode, ExpressionError> {
+            fn convert(self, data: &str) -> Result<TNode, ExpressionError> {
                 match self {
                     Self::None => Err("Can't convert None kind".into()),
                     #(Self::#names => {
@@ -105,7 +95,7 @@ fn generate_node_kinds(names: Vec<Ident>) -> TokenStream {
                     )*
                 }
             }
-            pub fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+            fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
                 match self {
                     Self::None => unreachable!(),
                     #(

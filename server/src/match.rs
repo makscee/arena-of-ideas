@@ -1,8 +1,10 @@
 use std::i32;
 
-use rand::{seq::SliceRandom, Rng};
+use rand::{Rng, seq::SliceRandom};
 
 use super::*;
+
+use raw_nodes::NodeKind;
 
 impl NMatch {
     fn fill_shop_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {

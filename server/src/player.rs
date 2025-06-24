@@ -4,6 +4,8 @@ use schema::OptionExpressionCustomError;
 
 use super::*;
 
+use raw_nodes::NodeKind;
+
 #[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
     let name = NPlayer::validate_name(ctx, name)?;

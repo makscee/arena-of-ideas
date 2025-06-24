@@ -1,5 +1,7 @@
 use super::*;
 
+use raw_nodes::NodeKindExt;
+
 #[reducer]
 fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
     let _ = ctx.player()?;
