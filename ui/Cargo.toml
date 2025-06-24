@@ -7,6 +7,7 @@ edition.workspace = true
 schema = { path = "../schema" }
 utils = { path = "../utils" }
 utils-client = { path = "../utils-client" }
+raw-nodes = { path = "../raw-nodes" }
 bevy = { workspace = true }
 bevy_egui = { workspace = true }
 ecolor = { workspace = true }

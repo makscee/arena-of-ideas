@@ -92,7 +92,7 @@ ui = { path = "ui" }
 utils = { path = "utils" }
 schema = { path = "schema" }
 macro-schema = { path = "macro-schema" }
-macro-client = { path = "macro-client" }
+raw-nodes = { path = "raw-nodes" }
 utils-client = { path = "utils-client" }
 
 spacetimedb-sdk = { workspace = true }
@@ -142,6 +142,14 @@ egui_commonmark = "0.20.0"
 bevy_tasks = "0.16.1"
 regex = "1.10.5"
 bevy_dylib = "0.16.1"
+
+[build-dependencies]
+schema = { path = "schema" }
+itertools = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
+prettyplease = { workspace = true }
 
 [dependencies.winit]
 version = "0.30.9"

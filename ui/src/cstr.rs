@@ -619,3 +619,8 @@ impl ToCstr for Reaction {
         format!("{}->[th {}]", self.trigger.cstr(), self.actions.len())
     }
 }
+impl ToCstr for raw_nodes::NodeKind {
+    fn cstr(&self) -> Cstr {
+        self.to_string()
+    }
+}

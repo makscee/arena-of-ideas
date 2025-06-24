@@ -1,14 +1,19 @@
-use include_dir::{DirEntry, File};
-use macro_client::*;
+use include_dir::{Dir, DirEntry};
+
+use super::*;
 use serde::{
     de::{self, Visitor},
     ser::SerializeTuple,
 };
+use spacetimedb_sats::serde::SerdeWrapper;
 use std::fmt::Debug;
 
-macro_schema::nodes!();
+// Generated code will include its own imports
 
-pub trait GetVar: GetNodeKind + Debug {
+// Include the generated client implementations
+include!(concat!(env!("OUT_DIR"), "/client_impls.rs"));
+
+pub trait GetVar: Debug {
     fn get_own_var(&self, var: VarName) -> Option<VarValue>;
     fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
     fn get_own_vars(&self) -> Vec<(VarName, VarValue)>;
@@ -17,7 +22,7 @@ pub trait GetVar: GetNodeKind + Debug {
 }
 
 pub trait Node:
-    Default + Component + Sized + GetVar + Show + Debug + Hash + StringData + Clone + ToCstr
+    Default + Component + Sized + GetVar + Show + Debug + std::hash::Hash + StringData + Clone + ToCstr
 {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
@@ -40,9 +45,15 @@ pub trait Node:
     fn egui_id(&self) -> Id {
         Id::new(self.id())
     }
+    fn kind(&self) -> NodeKind {
+        NodeKind::from_str(type_name_of_val_short(self)).unwrap()
+    }
+    fn kind_s() -> NodeKind {
+        NodeKind::from_str(type_name_short::<Self>()).unwrap()
+    }
 }
 
-pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
+pub trait NodeExt: Sized + Node {
     fn view_id(&self) -> Id {
         Id::new(self.get_entity()).with(self.id()).with(self.kind())
     }
@@ -53,7 +64,7 @@ pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf {
 }
 impl<T> NodeExt for T
 where
-    T: Node + GetNodeKind + GetNodeKindSelf + StringData,
+    T: Node + StringData,
 {
     fn to_tnode(&self) -> TNode {
         TNode {
@@ -97,13 +108,11 @@ impl TNode {
     }
 }
 
-impl ToCstr for NodeKind {
-    fn cstr(&self) -> Cstr {
-        self.to_string()
-    }
+pub trait NodeKindOnUnpack {
+    fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
 }
 
-impl NodeKind {
+impl NodeKindOnUnpack for NodeKind {
     fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
         let vars = self.get_vars(context, entity);
         let mut emut = context.world_mut()?.entity_mut(entity);
@@ -238,7 +247,6 @@ pub fn new_node_btn<T: Node + NodeExt + ViewFns>(ui: &mut Ui) -> Option<T> {
         None
     }
 }
-
 impl Tier for NBehavior {
     fn tier(&self) -> u8 {
         let action_tiers = self

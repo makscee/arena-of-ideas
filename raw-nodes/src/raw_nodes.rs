@@ -144,9 +144,3 @@ struct NBehavior {
 struct NRepresentation {
     pub material: Material,
 }
-
-struct NTestNode {
-    pub test_field: String,
-    pub test_number: i32,
-    pub test_optional: Option<String>,
-}
