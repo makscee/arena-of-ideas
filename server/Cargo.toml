@@ -9,7 +9,6 @@ crate-type = ["cdylib"]
 [dependencies]
 schema = { path = "../schema" }
 macro-schema = { path = "../macro-schema" }
-macro-server = { path = "../macro-server" }
 raw-nodes = { path = "../raw-nodes" }
 utils = { path = "../utils", features = ["server"] }
 spacetimedb = { workspace = true }
