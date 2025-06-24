@@ -2,10 +2,8 @@
 members = [
     "macro-schema",
     "macro-server",
-    "nodes",
+    "raw-nodes",
     "nodes-client",
-    "nodes-server",
-    "nodes-example",
     "schema",
     "server",
     "ui",
@@ -76,6 +74,7 @@ syn = "2.0.89"
 darling = "0.20.10"
 proc-macro2 = "1.0.92"
 quote = "1.0.37"
+prettyplease = "0.2"
 tween = "2.0.1"
 arboard = "3.4.1"
 log = "0.4.19"

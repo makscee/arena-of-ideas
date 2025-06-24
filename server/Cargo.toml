@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 schema = { path = "../schema" }
 macro-schema = { path = "../macro-schema" }
 macro-server = { path = "../macro-server" }
+raw-nodes = { path = "../raw-nodes" }
 utils = { path = "../utils", features = ["server"] }
 spacetimedb = { workspace = true }
 strum = { workspace = true }
@@ -25,3 +26,11 @@ rand = { version = "0.8.5", default-features = false }
 rand_seeder = "0.2.3"
 rand_pcg = "0.3.1"
 bcrypt-no-getrandom = "0.16.0"
+
+[build-dependencies]
+schema = { path = "../schema" }
+syn = { workspace = true, features = ["full", "parsing"] }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
+itertools = { workspace = true }
+prettyplease = { workspace = true }

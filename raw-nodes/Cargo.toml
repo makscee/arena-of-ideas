@@ -1,7 +1,8 @@
 [package]
-name = "nodes"
+name = "raw-nodes"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
+schema = { path = "../schema" }

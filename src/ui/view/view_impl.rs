@@ -258,7 +258,7 @@ impl ViewFns for Material {
         self.cstr()
     }
     fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
-        Some(|s, vctx, context, ui| {
+        Some(|s, _, context, ui| {
             let size_id = ui.id().with("view size");
             let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
             if DragValue::new(&mut size).ui(ui).changed() {

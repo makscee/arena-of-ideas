@@ -356,7 +356,6 @@ pub fn node(_: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = parse_macro_input!(item as syn::DeriveInput);
-    let struct_ident = &input.ident;
     match &mut input.data {
         Data::Enum(DataEnum {
             enum_token: _,
@@ -375,7 +374,7 @@ pub fn node_kinds(_: TokenStream, item: TokenStream) -> TokenStream {
                     pub fn convert(self, data: &str) -> Result<TNode, ExpressionError> {
                         match self {
                             Self::None => Err("Can't convert None kind".into()),
-                            #(#struct_ident::#variants => {
+                            #(Self::#variants => {
                                 let mut d = #variants::default();
                                 d.inject_data(data)?;
                                 Ok(d.to_tnode())

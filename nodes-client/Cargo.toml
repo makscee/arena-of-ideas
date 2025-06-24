@@ -6,7 +6,7 @@ edition.workspace = true
 
 
 [dependencies]
-nodes = { path = "../nodes" }
+raw-nodes = { path = "../raw-nodes" }
 serde = { workspace = true, features = ["derive"] }
 
 [build-dependencies]

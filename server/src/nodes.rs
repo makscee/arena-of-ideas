@@ -1,15 +1,14 @@
 use super::*;
 
-use macro_server::*;
 use schema::*;
+use serde::{Deserialize, Serialize};
 use serde::{
     de::{self, Visitor},
     ser::SerializeTuple,
 };
-use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumIter};
 
-macro_schema::nodes!();
+include!(concat!(env!("OUT_DIR"), "/server_impls.rs"));
 
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
@@ -30,12 +29,18 @@ pub trait Node: Default + Sized {
     fn collect_ids(&self) -> Vec<u64>;
     fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String>;
     fn delete_with_components(&self, ctx: &ReducerContext);
+    fn kind(&self) -> NodeKind {
+        NodeKind::from_str(type_name_of_val_short(self)).unwrap()
+    }
+    fn kind_s() -> NodeKind {
+        NodeKind::from_str(type_name_short::<Self>()).unwrap()
+    }
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
 }
 
-pub trait NodeExt: Sized + Node + GetNodeKind + GetNodeKindSelf + StringData {
+pub trait NodeExt: Sized + Node + StringData {
     fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn insert_self(&self, ctx: &ReducerContext);
@@ -85,7 +90,7 @@ impl NFusion {
 
 impl<T> NodeExt for T
 where
-    T: Node + GetNodeKind + GetNodeKindSelf + StringData,
+    T: Node + StringData,
 {
     fn to_tnode(&self) -> TNode {
         TNode::new(self.id(), self.owner(), self.kind(), self.get_data())
