@@ -40,9 +40,4 @@ impl GlobalData {
     pub fn get(ctx: &ReducerContext) -> Self {
         ctx.db.global_data().always_zero().find(0).unwrap()
     }
-    pub fn register_sync(ctx: &ReducerContext) {
-        let mut gd = Self::get(ctx);
-        gd.last_sync = ctx.timestamp;
-        ctx.db.global_data().always_zero().update(gd);
-    }
 }

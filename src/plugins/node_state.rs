@@ -3,7 +3,7 @@ use super::*;
 pub struct NodeStatePlugin;
 
 impl Plugin for NodeStatePlugin {
-    fn build(&self, app: &mut App) {
+    fn build(&self, _app: &mut App) {
         // app.add_systems(PreUpdate, Self::inject_vars);
     }
 }

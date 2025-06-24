@@ -1,5 +1,6 @@
 use super::*;
 
+#[allow(unused)]
 pub trait NodeViewFns: NodeExt + ViewFns {
     fn view_node(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();

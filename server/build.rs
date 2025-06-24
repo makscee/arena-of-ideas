@@ -134,7 +134,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_fields: _,
         data_fields_str: _,
         data_types: _,
-        data_type_ident,
+        data_type_ident: _,
         all_data_fields,
         all_data_types,
         parent_fields,

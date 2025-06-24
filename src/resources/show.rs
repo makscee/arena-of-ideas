@@ -59,9 +59,10 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show(context, ui),
             VarValue::Color32(v) => v.show(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(context, ui),
-            VarValue::list(v) => {}
-        })
-        .inner
+            VarValue::list(v) => {
+                format!("List({})", v.len()).cstr().label(ui);
+            }
+        });
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| match self {
@@ -73,7 +74,7 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show_mut(context, ui),
             VarValue::Color32(v) => v.show_mut(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(context, ui),
-            VarValue::list(v) => false,
+            VarValue::list(_) => false,
         })
         .inner
     }
@@ -183,7 +184,7 @@ impl Show for Color32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
             let mut hsva = self.clone().into();
             let r = ui.color_edit_button_hsva(&mut hsva).changed();
@@ -199,7 +200,7 @@ impl Show for HexColor {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut err = None;
         ui.horizontal(|ui| {
@@ -271,8 +272,8 @@ impl Show for Vec<UnitActionRef> {
     }
 }
 impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
-    fn show(&self, _: &Context, ui: &mut Ui) {}
-    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+    fn show(&self, _: &Context, _: &mut Ui) {}
+    fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
         false
     }
 }
@@ -362,7 +363,7 @@ impl Show for VarName {
 }
 
 impl Show for ExpressionError {
-    fn show(&self, context: &Context, ui: &mut Ui) {
+    fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
@@ -371,7 +372,7 @@ impl Show for ExpressionError {
     }
 }
 impl Show for CardKind {
-    fn show(&self, context: &Context, ui: &mut Ui) {
+    fn show(&self, _: &Context, ui: &mut Ui) {
         self.as_ref().cstr().label(ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
@@ -380,15 +381,15 @@ impl Show for CardKind {
     }
 }
 impl Show for Vec<(CardKind, u64)> {
-    fn show(&self, context: &Context, ui: &mut Ui) {
+    fn show(&self, _: &Context, _: &mut Ui) {
         todo!()
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
         todo!()
     }
 }
 impl Show for Vec<ShopOffer> {
-    fn show(&self, context: &Context, ui: &mut Ui) {
+    fn show(&self, _: &Context, ui: &mut Ui) {
         "shop offers".cstr().label(ui);
     }
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {

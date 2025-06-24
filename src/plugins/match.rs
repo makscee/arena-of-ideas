@@ -212,7 +212,7 @@ impl MatchPlugin {
                 }
             });
             if let Some(offer) = DndArea::<(usize, ShopSlot)>::new(rect)
-                .text_fn(ui, |(i, slot)| {
+                .text_fn(ui, |(_, slot)| {
                     format!(
                         "buy {} [yellow -{}g]",
                         match slot.card_kind {

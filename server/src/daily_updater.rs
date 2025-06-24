@@ -14,7 +14,8 @@ pub struct DailyUpdateTimer {
 fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
     log::info!("Daily update called");
     daily_update(ctx)?;
-    let next_day = (ctx.timestamp
+    let next_day = (ctx
+        .timestamp
         .duration_since(Timestamp::UNIX_EPOCH)
         .unwrap()
         .as_secs()
@@ -29,15 +30,13 @@ fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Resul
     Ok(())
 }
 
-pub fn daily_update(ctx: &ReducerContext) -> Result<(), String> {
+pub fn daily_update(_ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-pub fn daily_timer_init(ctx: &ReducerContext) {
+pub fn _daily_timer_init(ctx: &ReducerContext) {
     ctx.db.daily_update_timer().insert(DailyUpdateTimer {
         scheduled_id: 0,
         scheduled_at: ctx.timestamp.into(),
     });
 }
-
-

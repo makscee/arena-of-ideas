@@ -30,7 +30,6 @@ use egui::{
     Image, Key, Layout, Margin, NumExt, Order, Rect, Response, Sense, Shadow, Stroke, TextEdit,
     TextStyle, Ui, Widget, WidgetText, emath::Numeric, include_image, pos2, style::HandleShape,
 };
-use indexmap::IndexMap;
 use itertools::Itertools;
 use parking_lot::Mutex;
 use schema::*;

@@ -57,6 +57,7 @@ fn view_children<T: Inject + Injector<I>, I: ViewFns>(
     vr
 }
 
+#[allow(unused)]
 impl ViewFns for Expression {
     fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
@@ -196,7 +197,7 @@ impl ViewFns for Trigger {
     fn fn_replace_options() -> Option<fn() -> Vec<Self>> {
         Some(|| Self::iter().collect())
     }
-    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
         self.cstr()
     }
 }
@@ -254,7 +255,7 @@ impl ViewChildren for Reaction {
 }
 
 impl ViewFns for Material {
-    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
         self.cstr()
     }
     fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
@@ -290,7 +291,7 @@ impl ViewChildren for Material {
 }
 
 impl ViewFns for PainterAction {
-    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
         self.cstr()
     }
     fn fn_wrap() -> Option<fn(Self) -> Self> {
@@ -345,7 +346,7 @@ impl ViewChildren for PainterAction {
 }
 
 impl ViewFns for VarName {
-    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
         self.cstr()
     }
     fn fn_replace_options() -> Option<fn() -> Vec<Self>> {

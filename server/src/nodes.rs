@@ -10,6 +10,7 @@ use strum_macros::{Display, EnumIter};
 
 include!(concat!(env!("OUT_DIR"), "/server_impls.rs"));
 
+#[allow(unused)]
 pub trait Node: Default + Sized {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
@@ -40,6 +41,7 @@ pub trait Node: Default + Sized {
     }
 }
 
+#[allow(dead_code)]
 pub trait NodeExt: Sized + Node + StringData {
     fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
@@ -57,35 +59,6 @@ pub trait NodeExt: Sized + Node + StringData {
     fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn mutual_top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
-}
-
-impl NFusion {
-    fn add(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
-        if self.units.ids.contains(&id) {
-            return Err(format!(
-                "{}#{} already has parent#{id}",
-                self.kind(),
-                self.id
-            ));
-        }
-        self.units.ids.push(id);
-        self.id.add_parent(ctx, id)?;
-        self.update_self(ctx);
-        Ok(())
-    }
-    fn remove(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
-        let Some(i) = self.units.ids.iter().position(|u| *u == id) else {
-            return Err(format!(
-                "{}#{} does not have parent#{id}",
-                self.kind(),
-                self.id
-            ));
-        };
-        self.units.ids.remove(i);
-        self.id.remove_parent(ctx, id)?;
-        self.update_self(ctx);
-        Ok(())
-    }
 }
 
 impl<T> NodeExt for T
@@ -171,20 +144,6 @@ where
         self.id()
             .mutual_top_child(ctx, P::kind_s())
             .and_then(|id| id.to_node(ctx).ok())
-    }
-}
-
-impl NCore {
-    pub fn load(ctx: &ReducerContext) -> Self {
-        NCore::get(ctx, ID_CORE).unwrap()
-    }
-    pub fn all_units<'a>(&'a mut self, ctx: &ReducerContext) -> Result<Vec<&'a mut NUnit>, String> {
-        Ok(self
-            .houses_load(ctx)?
-            .into_iter()
-            .filter_map(|h| h.units_load(ctx).ok())
-            .flatten()
-            .collect_vec())
     }
 }
 

@@ -43,7 +43,7 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
             }
-            Event::IncomingDamage(source, target) => {
+            Event::IncomingDamage(_source, _target) => {
                 todo!()
             }
         }

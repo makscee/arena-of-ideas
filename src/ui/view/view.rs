@@ -414,7 +414,7 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
         None
     }
     fn fn_view_context_menu() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
-        Some(|s, vctx, context, ui| {
+        Some(|s, _, _, ui| {
             if ui.button("copy").clicked() {
                 clipboard_set(s.get_data());
                 ui.close_menu();
@@ -429,12 +429,12 @@ pub trait ViewFns: Sized + Clone + StringData + Default {
     ) -> ViewResponse {
         self.view_mut(vctx, context, ui)
     }
-    fn fn_view_context_menu_extra_mut(
-    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+    fn fn_view_context_menu_extra_mut()
+    -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         None
     }
-    fn fn_view_context_menu_mut(
-    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+    fn fn_view_context_menu_mut()
+    -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         Some(|s, vctx, context, ui| {
             let mut vr = ViewResponse::default();
             if let Some(f) = Self::fn_replace_options() {
@@ -636,8 +636,8 @@ where
     ) -> ViewResponse {
         self.as_mut().fn_paste_preview(vctx, context, ui)
     }
-    fn fn_view_context_menu_extra_mut(
-    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+    fn fn_view_context_menu_extra_mut()
+    -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         if T::fn_view_context_menu_extra_mut().is_some() {
             Some(|s, vctx, context, ui| {
                 T::fn_view_context_menu_extra_mut().unwrap()(s, vctx, context, ui)
@@ -646,8 +646,8 @@ where
             None
         }
     }
-    fn fn_view_context_menu_mut(
-    ) -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
+    fn fn_view_context_menu_mut()
+    -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
         if T::fn_view_context_menu_mut().is_some() {
             Some(|s, vctx, context, ui| {
                 T::fn_view_context_menu_mut().unwrap()(s, vctx, context, ui)

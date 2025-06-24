@@ -1,4 +1,4 @@
-use spacetimedb_sdk::{Event, ReducerEvent, Table};
+use spacetimedb_sdk::{ReducerEvent, Table};
 
 use super::*;
 

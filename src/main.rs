@@ -88,7 +88,6 @@ fn main() {
             RepresentationPlugin,
             GameTimerPlugin,
             WindowPlugin,
-            StdbSyncPlugin,
             MatchPlugin,
             PersistentDataPlugin,
             BattlePlugin,

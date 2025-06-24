@@ -172,6 +172,7 @@ impl TNodeLink {
     }
 }
 
+#[allow(unused)]
 pub trait NodeIdExt {
     fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
     fn find(self, ctx: &ReducerContext) -> Option<TNode>;
@@ -349,11 +350,7 @@ impl NodeIdExt for u64 {
         let parent = TNodeLink::parents_of_kind(ctx, child, self.kind(ctx)?, false)
             .top()?
             .parent;
-        if parent == self {
-            Some(child)
-        } else {
-            None
-        }
+        if parent == self { Some(child) } else { None }
     }
     fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
         let parent = TNodeLink::parents_of_kind(ctx, self, kind, false)
@@ -362,11 +359,7 @@ impl NodeIdExt for u64 {
         let child = TNodeLink::children_of_kind(ctx, parent, self.kind(ctx)?, false)
             .top()?
             .child;
-        if child == self {
-            Some(parent)
-        } else {
-            None
-        }
+        if child == self { Some(parent) } else { None }
     }
 }
 
@@ -440,5 +433,3 @@ impl IdVecExt for Vec<u64> {
             .collect()
     }
 }
-
-

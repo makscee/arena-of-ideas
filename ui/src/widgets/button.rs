@@ -62,11 +62,7 @@ impl Button {
         self
     }
     pub fn set_bg(self, value: bool, ui: &mut Ui) -> Self {
-        if value {
-            self.bg(ui)
-        } else {
-            self
-        }
+        if value { self.bg(ui) } else { self }
     }
     pub fn title(mut self, text: String) -> Self {
         self.title = Some(text);
@@ -99,7 +95,7 @@ impl Button {
         if let Some(title) = self.title {
             title.label(ui);
         }
-        let mut job = self.name.job(1.0, ui.style());
+        let job = self.name.job(1.0, ui.style());
         // let mut replace_color = |c: Color32| {
         //     job.sections[0].format.color = c;
         //     job.sections[0].byte_range = 0..job.text.len();
