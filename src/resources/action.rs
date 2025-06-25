@@ -55,8 +55,17 @@ impl ActionImpl for Action {
                 let owner = context.owner_entity()?;
                 let value = context.get_value()?.get_i32()?;
                 if value > 0 {
-                    for target in context.collect_targets() {
-                        actions.push(BattleAction::damage(owner, target, value));
+                    let targets = context.collect_targets();
+                    if targets.is_empty() {
+                        error!("No targets found for deal_damage");
+                    } else {
+                        for target in targets {
+                            debug!(
+                                "deal_damage: owner={}, target={}, value={}",
+                                owner, target, value
+                            );
+                            actions.push(BattleAction::damage(owner, target, value));
+                        }
                     }
                 }
             }
@@ -82,7 +91,9 @@ impl ActionImpl for Action {
                     .first_parent_recursive::<NHouseColor>(caster)?
                     .color
                     .c32();
-                let text = format!("use ability [{} [b {name}]]", color.to_hex());
+                let lvl = context.get_i32(VarName::lvl)?;
+                let value = context.get_i32(VarName::value).unwrap_or_default() + lvl;
+                let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
                         (VarName::text, text.into()),
@@ -91,10 +102,8 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                let lvl = context.get_i32(VarName::lvl)?;
-                let value = context.get_i32(VarName::value).unwrap_or_default();
                 context.with_layer_r(
-                    ContextLayer::Var(VarName::value, (value + lvl).into()),
+                    ContextLayer::Var(VarName::value, value.into()),
                     |context| {
                         actions.extend(ability_actions.process(context)?);
                         Ok(())

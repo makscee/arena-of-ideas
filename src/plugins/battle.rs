@@ -414,6 +414,7 @@ impl BattlePlugin {
                     changed = true;
                 }
                 if let Some((fusion, unit)) = add_unit {
+                    context.get_by_id_mut::<NFusion>(fusion)?.action_limit += 10;
                     context.link_parent_child(unit, fusion)?;
                     changed = true;
                 }
@@ -426,7 +427,6 @@ impl BattlePlugin {
                 if changed {
                     world.resource_mut::<ReloadData>().reload_requested = true;
                     let updated_team = NTeam::pack_entity(context, team_entity).unwrap();
-                    dbg!(&updated_team);
                     let team = if left {
                         &mut battle.left
                     } else {

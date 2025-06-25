@@ -103,6 +103,23 @@ impl BattleCamera {
                     })
                     .ui(ui);
             }
+            let world = context.world_mut()?;
+            for entity in world
+                .query_filtered::<Entity, With<NStatusRepresentation>>()
+                .iter(world)
+                .collect_vec()
+            {
+                context
+                    .with_owner(entity, |context| {
+                        if !context.get_bool(VarName::visible)? {
+                            return Ok(());
+                        }
+                        let rep = context.get::<NStatusRepresentation>(entity)?;
+                        let rect = cam.rect_from_context(context)?;
+                        rep.material.paint(rect, context, ui)
+                    })
+                    .ui(ui);
+            }
             Ok(())
         })
         .ui(ui);

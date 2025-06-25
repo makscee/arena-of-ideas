@@ -383,9 +383,7 @@ impl BattleSimulation {
                     .kind
                     .get_vars(context, entity);
                 for (var, value) in vars {
-                    debug!("before {var} {value}");
                     let value = Event::UpdateStat(var).update_value(context, value, entity);
-                    debug!("after {var} {value}");
                     let t = context.t()?;
                     context
                         .get_mut::<NodeState>(entity)?
