@@ -1,8 +1,6 @@
 [workspace]
 members = [
-    "macro-schema",
     "raw-nodes",
-    "nodes-client",
     "schema",
     "server",
     "ui",
@@ -91,7 +89,6 @@ mlua = { version = "0.10", features = ["lua54", "vendored"] }
 ui = { path = "ui" }
 utils = { path = "utils" }
 schema = { path = "schema" }
-macro-schema = { path = "macro-schema" }
 raw-nodes = { path = "raw-nodes" }
 utils-client = { path = "utils-client" }
 
