@@ -23,10 +23,12 @@ impl EventImpl for Event {
                     .collect_vec()
                 {
                     let mut value = context.get_value()?;
-                    if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(status.id) {
+                    if let Ok(behavior) =
+                        context.first_parent_recursive::<NStatusBehavior>(status.id)
+                    {
                         context
                             .with_layer_ref_r(ContextLayer::Owner(status.entity()), |context| {
-                                if let Some(actions) = behavior.react(self, context) {
+                                if let Some(actions) = behavior.reactions.react(self, context) {
                                     match actions.process(context) {
                                         Ok(_) => {}
                                         Err(e) => {

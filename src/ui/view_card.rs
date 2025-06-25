@@ -78,8 +78,8 @@ impl ViewCard for NUnit {
                     ui.expand_to_include_rect(rect);
                     rect.max.y += rect.height();
                     rect = rect.shrink(3.0);
-                    rep.paint(rect, context, ui).ui(ui);
-                    unit_rep().paint(rect, context, ui).ui(ui);
+                    rep.material.paint(rect, context, ui).ui(ui);
+                    unit_rep().material.paint(rect, context, ui).ui(ui);
                 }
                 {
                     rect.min.y += NAME_HEIGHT;
@@ -88,8 +88,11 @@ impl ViewCard for NUnit {
                         TagWidget::new_var_value(VarName::pwr, context.get_var(VarName::pwr)?)
                             .ui(ui);
                         TagWidget::new_var_value(VarName::hp, context.get_var(VarName::hp)?).ui(ui);
-                        TagWidget::new_var_value(VarName::tier, (behavior.tier() as i32).into())
-                            .ui(ui);
+                        TagWidget::new_var_value(
+                            VarName::tier,
+                            (behavior.reactions.tier() as i32).into(),
+                        )
+                        .ui(ui);
                         Ok(())
                     })
                     .inner

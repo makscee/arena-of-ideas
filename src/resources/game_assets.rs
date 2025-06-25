@@ -2,16 +2,16 @@ use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;
 
-static UNIT_REP: OnceCell<NRepresentation> = OnceCell::new();
-static STATUS_REP: OnceCell<NRepresentation> = OnceCell::new();
+static UNIT_REP: OnceCell<NUnitRepresentation> = OnceCell::new();
+static STATUS_REP: OnceCell<NStatusRepresentation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
-pub fn unit_rep() -> &'static NRepresentation {
+pub fn unit_rep() -> &'static NUnitRepresentation {
     UNIT_REP.get().unwrap()
 }
-pub fn status_rep() -> &'static NRepresentation {
+pub fn status_rep() -> &'static NStatusRepresentation {
     STATUS_REP.get().unwrap()
 }
 pub fn animations() -> &'static HashMap<String, Anim> {
@@ -69,10 +69,10 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     UNIT_REP
-        .set(NRepresentation::from_dir("unit_rep".to_owned(), assets()).unwrap())
+        .set(NUnitRepresentation::from_dir("unit_rep".to_owned(), assets()).unwrap())
         .unwrap();
     STATUS_REP
-        .set(NRepresentation::from_dir("status_rep".to_owned(), assets()).unwrap())
+        .set(NStatusRepresentation::from_dir("status_rep".to_owned(), assets()).unwrap())
         .unwrap();
     let mut animations = HashMap::default();
     for f in assets().get_dir("animation").unwrap().files() {

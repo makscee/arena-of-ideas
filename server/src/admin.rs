@@ -1,7 +1,7 @@
 use super::*;
 use itertools::Itertools;
 use log::{error, info};
-use spacetimedb::{reducer, Identity, ReducerContext};
+use spacetimedb::{Identity, ReducerContext, reducer};
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
@@ -56,12 +56,12 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         let Some(mut description) = unit.top_parent::<NUnitDescription>(ctx) else {
             return false;
         };
-        if let Some(behavior) = description.mutual_top_parent::<NBehavior>(ctx) {
+        if let Some(behavior) = description.mutual_top_parent::<NUnitBehavior>(ctx) {
             description.behavior = Some(behavior);
         } else {
             return false;
         }
-        if let Some(representation) = description.mutual_top_parent::<NRepresentation>(ctx) {
+        if let Some(representation) = description.mutual_top_parent::<NUnitRepresentation>(ctx) {
             description.representation = Some(representation);
         } else {
             return false;
@@ -120,7 +120,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         if let Some(mut status_magic) = house.mutual_top_parent::<NStatusMagic>(ctx) {
             if let Some(mut description) = status_magic.mutual_top_parent::<NStatusDescription>(ctx)
             {
-                if let Some(behavior) = description.mutual_top_parent::<NBehavior>(ctx) {
+                if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
                     description.behavior = Some(behavior);
                 } else {
                     error!("status behavior failed");

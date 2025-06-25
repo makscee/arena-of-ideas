@@ -179,7 +179,11 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
         .with_children(ctx)
         .with_components(ctx)
         .take();
-    let unit_tier = unit.description_load(ctx)?.behavior_load(ctx)?.tier();
+    let unit_tier = unit
+        .description_load(ctx)?
+        .behavior_load(ctx)?
+        .reactions
+        .tier();
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);
     let house = unit

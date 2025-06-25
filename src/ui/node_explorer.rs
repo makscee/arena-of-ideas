@@ -238,8 +238,8 @@ impl NodeExplorerPlugin {
                     .get_by_id::<NUnit>(id)?
                     .tag_card(default(), context, ui)
                     .ui(ui),
-                NodeKind::NRepresentation => {
-                    context.get_by_id::<NRepresentation>(id)?.view(
+                NodeKind::NUnitRepresentation => {
+                    context.get_by_id::<NUnitRepresentation>(id)?.view(
                         ViewContext::new(ui),
                         context,
                         ui,

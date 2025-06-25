@@ -139,7 +139,7 @@ impl NodeKindOnUnpack for NodeKind {
         match self {
             NodeKind::NFusion => {
                 if context
-                    .first_child::<NRepresentation>(context.id(entity)?)
+                    .first_child::<NUnitRepresentation>(context.id(entity)?)
                     .is_err()
                 {
                     let rep_entity = context.world_mut()?.spawn_empty().id();
@@ -245,15 +245,5 @@ pub fn new_node_btn<T: Node + NodeExt + ViewFns>(ui: &mut Ui) -> Option<T> {
         Some(n)
     } else {
         None
-    }
-}
-impl Tier for NBehavior {
-    fn tier(&self) -> u8 {
-        let action_tiers = self
-            .reactions
-            .iter()
-            .map(|r| r.actions.iter().map(|a| a.tier()).sum::<u8>())
-            .sum::<u8>();
-        (action_tiers + 1) / 2
     }
 }

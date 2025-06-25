@@ -17,8 +17,8 @@ impl NFusion {
     }
 
     pub fn get_unit_tier(context: &Context, unit_id: u64) -> Result<u8, ExpressionError> {
-        if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(unit_id) {
-            Ok(behavior.tier())
+        if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
+            Ok(behavior.reactions.tier())
         } else {
             Ok(0)
         }
@@ -26,8 +26,11 @@ impl NFusion {
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
         context.collect_parents_components::<NUnit>(self.id)
     }
-    fn get_behavior<'a>(context: &'a Context, unit: u64) -> Result<&'a NBehavior, ExpressionError> {
-        context.first_parent_recursive::<NBehavior>(unit)
+    fn get_behavior<'a>(
+        context: &'a Context,
+        unit: u64,
+    ) -> Result<&'a NUnitBehavior, ExpressionError> {
+        context.first_parent_recursive::<NUnitBehavior>(unit)
     }
     pub fn get_trigger<'a>(
         context: &'a Context,
@@ -80,7 +83,7 @@ impl NFusion {
         let units = self.units(context)?;
         for unit in units {
             let unit_entity = unit.entity();
-            let Ok(rep) = context.first_parent_recursive::<NRepresentation>(unit.id) else {
+            let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };
             context
@@ -89,7 +92,7 @@ impl NFusion {
                 })
                 .ui(ui);
         }
-        if let Ok(reps) = context.collect_children_components::<NRepresentation>(self.id) {
+        if let Ok(reps) = context.collect_children_components::<NStatusRepresentation>(self.id) {
             for rep in reps {
                 context
                     .with_owner_ref(entity, |context| {

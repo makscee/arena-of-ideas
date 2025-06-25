@@ -69,12 +69,20 @@ struct NAbilityEffect {
 struct NStatusMagic {
     pub status_name: String,
     pub description: ParentComponent<NStatusDescription>,
-    pub representation: ParentComponent<NRepresentation>,
+    pub representation: ParentComponent<NStatusRepresentation>,
 }
 
 struct NStatusDescription {
     pub description: String,
-    pub behavior: ParentComponent<NBehavior>,
+    pub behavior: ParentComponent<NStatusBehavior>,
+}
+
+struct NStatusBehavior {
+    pub reactions: Vec<Reaction>,
+}
+
+struct NStatusRepresentation {
+    pub material: Material,
 }
 
 struct NTeam {
@@ -122,8 +130,8 @@ struct NUnit {
 
 struct NUnitDescription {
     pub description: String,
-    pub representation: ParentComponent<NRepresentation>,
-    pub behavior: ParentComponent<NBehavior>,
+    pub representation: ParentComponent<NUnitRepresentation>,
+    pub behavior: ParentComponent<NUnitBehavior>,
 }
 
 struct NUnitStats {
@@ -137,10 +145,10 @@ struct NUnitState {
     pub rarity: i32,
 }
 
-struct NBehavior {
+struct NUnitBehavior {
     pub reactions: Vec<Reaction>,
 }
 
-struct NRepresentation {
+struct NUnitRepresentation {
     pub material: Material,
 }

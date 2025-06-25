@@ -114,7 +114,7 @@ impl ActionImpl for Action {
                     .first_parent_recursive::<NStatusDescription>(status.id)?
                     .clone();
                 let mut behavior = context
-                    .first_parent_recursive::<NBehavior>(status.id)?
+                    .first_parent_recursive::<NStatusBehavior>(status.id)?
                     .clone();
                 let color = context.get_color(VarName::color)?;
                 let text = format!("apply [{} [b {name}]]", color.to_hex());
@@ -127,7 +127,7 @@ impl ActionImpl for Action {
                     "text".into(),
                 ));
                 let representation = context
-                    .first_child_recursive::<NRepresentation>(status.id)
+                    .first_child_recursive::<NStatusRepresentation>(status.id)
                     .ok()
                     .cloned()
                     .map(|mut r| {

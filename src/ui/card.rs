@@ -89,8 +89,8 @@ pub trait TagCard: Node {
 
 impl TagCard for NUnit {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let tier = if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(self.id) {
-            behavior.tier()
+        let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
+            behavior.reactions.tier()
         } else {
             0
         };
@@ -115,8 +115,8 @@ impl TagCard for NUnit {
         let color = context.color(ui);
         let pwr = context.get_var(VarName::pwr)?;
         let hp = context.get_var(VarName::hp)?;
-        let tier = if let Ok(behavior) = context.first_parent_recursive::<NBehavior>(self.id) {
-            behavior.tier()
+        let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
+            behavior.reactions.tier()
         } else {
             0
         };

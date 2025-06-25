@@ -88,7 +88,7 @@ impl BattleCamera {
             }
             let world = context.world_mut()?;
             for entity in world
-                .query_filtered::<Entity, With<NRepresentation>>()
+                .query_filtered::<Entity, With<NUnitRepresentation>>()
                 .iter(world)
                 .collect_vec()
             {
@@ -97,9 +97,9 @@ impl BattleCamera {
                         if !context.get_bool(VarName::visible)? {
                             return Ok(());
                         }
-                        let rep = context.get::<NRepresentation>(entity)?;
+                        let rep = context.get::<NUnitRepresentation>(entity)?;
                         let rect = cam.rect_from_context(context)?;
-                        rep.paint(rect, context, ui)
+                        rep.material.paint(rect, context, ui)
                     })
                     .ui(ui);
             }

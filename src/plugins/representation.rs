@@ -25,11 +25,16 @@ impl RepresentationPlugin {
     }
 }
 
-impl NRepresentation {
-    pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
-        RepresentationPlugin::paint_rect(rect, context, &self.material, ui)
+pub trait MaterialPaint {
+    fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError>;
+    fn pain_or_show_err(&self, rect: Rect, context: &Context, ui: &mut Ui);
+}
+
+impl MaterialPaint for Material {
+    fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        RepresentationPlugin::paint_rect(rect, context, self, ui)
     }
-    pub fn pain_or_show_err(&self, rect: Rect, context: &Context, ui: &mut Ui) {
+    fn pain_or_show_err(&self, rect: Rect, context: &Context, ui: &mut Ui) {
         match self.paint(rect, context, ui) {
             Ok(_) => {}
             Err(e) => {

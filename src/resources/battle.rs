@@ -430,11 +430,11 @@ impl BattleSimulation {
         }
         for (r, s) in context
             .world_mut()?
-            .query::<(&NBehavior, &NStatusMagic)>()
+            .query::<(&NStatusBehavior, &NStatusMagic)>()
             .iter(context.world()?)
         {
             context.with_layer_ref_r(ContextLayer::Owner(s.entity()), |context| {
-                if let Some(actions) = r.react(&event, &context) {
+                if let Some(actions) = r.reactions.react(&event, &context) {
                     match actions.process(context) {
                         Ok(a) => battle_actions.extend(a),
                         Err(e) => {

@@ -184,6 +184,8 @@ impl NodeViewFns for NAbilityDescription {}
 impl NodeViewFns for NAbilityEffect {}
 impl NodeViewFns for NStatusMagic {}
 impl NodeViewFns for NStatusDescription {}
+impl NodeViewFns for NStatusBehavior {}
+impl NodeViewFns for NStatusRepresentation {}
 impl NodeViewFns for NTeam {}
 impl NodeViewFns for NMatch {}
 impl NodeViewFns for NFusion {}
@@ -199,7 +201,7 @@ impl NodeViewFns for NUnitDescription {
 }
 impl NodeViewFns for NUnitStats {}
 impl NodeViewFns for NUnitState {}
-impl NodeViewFns for NBehavior {
+impl NodeViewFns for NUnitBehavior {
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         if vctx.one_line {
             let s = self
@@ -219,7 +221,7 @@ impl NodeViewFns for NBehavior {
         }
     }
 }
-impl NodeViewFns for NRepresentation {
+impl NodeViewFns for NUnitRepresentation {
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         if vctx.one_line {
             RectButton::new_size(LINE_HEIGHT.v2())

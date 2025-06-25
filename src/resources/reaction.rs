@@ -4,11 +4,9 @@ pub trait BehaviorImpl {
     fn react(&self, event: &Event, context: &Context) -> Option<&Vec<Action>>;
 }
 
-impl BehaviorImpl for NBehavior {
+impl BehaviorImpl for Vec<Reaction> {
     fn react(&self, event: &Event, context: &Context) -> Option<&Vec<Action>> {
-        for Reaction { trigger, actions } in self.reactions.iter() {
-            dbg!(trigger, event);
-
+        for Reaction { trigger, actions } in self.iter() {
             match trigger.fire(event, context) {
                 Ok(fired) => {
                     if fired {
