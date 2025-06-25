@@ -66,6 +66,7 @@ impl BattlePlugin {
                 fusion.slot = team.fusions.len() as i32;
                 fusion.id = next_id();
                 fusion.owner = team.owner;
+                fusion.lvl = 1;
                 team.fusions.push(fusion);
             }
         }

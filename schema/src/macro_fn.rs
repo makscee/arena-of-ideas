@@ -1,8 +1,8 @@
 use itertools::Itertools;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
-use quote::quote;
 use quote::ToTokens;
+use quote::quote;
 use syn::{Fields, GenericArgument, Ident, PathArguments, Type, TypePath};
 
 pub struct ParsedNodeFields {
@@ -223,6 +223,9 @@ pub fn common_node_fns(
         .collect_vec();
     let fields_len = all_data_fields.len();
     quote! {
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl #struct_ident {
             #(
                 pub fn #one_fields(&self) -> &#one_types {
@@ -254,6 +257,9 @@ pub fn common_node_fns(
                 }
             }
         }
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl Serialize for #struct_ident {
             fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
             where
@@ -266,6 +272,9 @@ pub fn common_node_fns(
                 tup.end()
             }
         }
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl<'de> Deserialize<'de> for #struct_ident {
             fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
             where

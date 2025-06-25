@@ -8,9 +8,6 @@ use serde::{
 use spacetimedb_sats::serde::SerdeWrapper;
 use std::fmt::Debug;
 
-// Generated code will include its own imports
-
-// Include the generated client implementations
 include!(concat!(env!("OUT_DIR"), "/client_impls.rs"));
 
 pub trait GetVar: Debug {

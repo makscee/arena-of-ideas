@@ -37,9 +37,10 @@ fn main() {
         .collect();
 
     let output = quote! {
-
         #node_kinds_impl
-        #(#client_impls)*
+        #(
+            #client_impls
+        )*
     };
 
     // Parse the generated code and format it
@@ -72,6 +73,9 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
             fn query_all_ids(self, world: &mut World) -> Vec<u64>;
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl ClientNodeKind for NodeKind {
             fn set_var(self, context: &mut Context, entity: Entity, var: VarName, value: VarValue) {
                 match self {
@@ -276,6 +280,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl #struct_ident {
             #(
                 pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
@@ -330,6 +337,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl GetVar for #struct_ident {
             fn get_own_var(&self, var: VarName) -> Option<VarValue> {
                 match var {
@@ -392,6 +402,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl Show for #struct_ident {
             fn show(&self, context: &Context, ui: &mut Ui) {
                 for (var, value) in self.get_own_vars() {
@@ -416,6 +429,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl Node for #struct_ident {
             #strings_conversions
             #common_trait
@@ -592,6 +608,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl ViewFns for #struct_ident {
             fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
                 self.node_title_cstr(vctx, context)
@@ -607,6 +626,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
         }
 
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl ViewChildren for #struct_ident {
             fn view_children(
                 &self,
@@ -641,7 +663,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                             self.#one_fields = None;
                         }
                         vr.merge(child_resp);
-                    } else if let Some(mut d) = new_node_btn::<#one_types>(ui) {
+                    } else if let Some(d) = new_node_btn::<#one_types>(ui) {
                         vr.changed = true;
                         self.#one_fields = Some(d);
                     }
@@ -656,7 +678,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl From<&str> for #struct_ident {
             fn from(value: &str) -> Self {
                 let mut d = Self::default();
-                d.inject_data(value);
+                let _ = d.inject_data(value);
                 d
             }
         }

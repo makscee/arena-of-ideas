@@ -92,7 +92,7 @@ impl NFusion {
                 })
                 .ui(ui);
         }
-        if let Ok(reps) = context.collect_children_components::<NStatusRepresentation>(self.id) {
+        if let Ok(reps) = context.collect_children_components::<NUnitRepresentation>(self.id) {
             for rep in reps {
                 context
                     .with_owner_ref(entity, |context| {
