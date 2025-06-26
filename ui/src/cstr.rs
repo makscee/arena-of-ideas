@@ -6,6 +6,7 @@ use bevy::{
     math::{Vec2, vec2},
 };
 use colored::{Colorize, CustomColor};
+use convert_case::Casing;
 use ecolor::Hsva;
 use egui::{Galley, Label, Response, Style, TextFormat, Widget, WidgetText, text::LayoutJob};
 use itertools::Itertools;
@@ -621,6 +622,10 @@ impl ToCstr for Reaction {
 }
 impl ToCstr for raw_nodes::NodeKind {
     fn cstr(&self) -> Cstr {
-        self.to_string()
+        self.as_ref()
+            .split_at(1)
+            .1
+            .cstr()
+            .to_case(convert_case::Case::Title)
     }
 }

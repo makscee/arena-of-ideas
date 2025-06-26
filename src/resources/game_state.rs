@@ -72,11 +72,16 @@ impl GameState {
 
                 let categories = NodeKindCategory::iter()
                     .map(|c| {
-                        // let tile = tiles.insert_pane(Pane::ExplorerCategories(c));
                         let kinds = c
                             .kinds()
                             .into_iter()
-                            .map(|k| tiles.insert_pane(Pane::ExplorerList(k)))
+                            .filter_map(|k| {
+                                if k == NodeKind::None {
+                                    None
+                                } else {
+                                    Some(tiles.insert_pane(Pane::ExplorerList(k)))
+                                }
+                            })
                             .collect_vec();
                         let tile = tiles.insert_horizontal_tile(kinds);
                         tile_tree.behavior.tile_names.insert(tile, c.to_string());
@@ -216,7 +221,10 @@ impl Pane {
                 ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
                 ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
             },
-            Pane::ExplorerList(node_kind) => {}
+            Pane::ExplorerList(kind) => {
+                kind.cstr_s(CstrStyle::Heading2).label(ui);
+                NodeExplorerPluginNew::pane_kind_list(ui, world, kind)?
+            }
         };
         Ok(())
     }

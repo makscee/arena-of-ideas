@@ -14,7 +14,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
     }
     pub fn ui(
         &mut self,
-        context: &mut Context,
+        context: &Context,
         vctx: ViewContext,
         ui: &mut Ui,
         ids: &Vec<u64>,
