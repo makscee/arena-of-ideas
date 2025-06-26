@@ -5,7 +5,7 @@ pub struct ClientState {
     pub last_logged_in: Option<(String, Identity)>,
     pub edit_anim: Option<Anim>,
     pub battle_test: (PackedNodes, PackedNodes),
-    pub tile_states: HashMap<GameState, Tree<Pane>>,
+    pub tile_states: HashMap<GameState, (Tree<Pane>, HashMap<TileId, String>)>,
 }
 
 impl PersistentData for ClientState {

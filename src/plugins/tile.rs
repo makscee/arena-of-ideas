@@ -42,11 +42,7 @@ impl TilePlugin {
                 .iter()
                 .filter_map(|tile| {
                     if let Tile::Pane(pane) = tile.1 {
-                        if predicate(pane) {
-                            Some(*tile.0)
-                        } else {
-                            None
-                        }
+                        if predicate(pane) { Some(*tile.0) } else { None }
                     } else {
                         None
                     }
@@ -62,18 +58,20 @@ impl TilePlugin {
             rm(world).save_requested = Some(state);
         });
     }
-    fn save_tree(state: GameState, tree: Tree<Pane>) {
+    fn save_tree(state: GameState, tree: Tree<Pane>, names: HashMap<TileId, String>) {
         pd_mut(|data| {
-            data.client_state.tile_states.insert(state, tree);
+            data.client_state.tile_states.insert(state, (tree, names));
         });
     }
     pub fn load_state_tree(state: GameState, world: &mut World) {
         info!("Load state tree for {}", state.cstr().to_colored());
-        let tree = &mut rm(world).tree.tree;
-        if let Some(state) = pd().client_state.tile_states.get(&state) {
-            *tree = state.clone();
+        let tile_tree = &mut rm(world).tree;
+        if let Some((tree, names)) = pd().client_state.tile_states.get(&state).cloned() {
+            tile_tree.tree = tree;
+            tile_tree.behavior.tile_names = names;
         } else {
-            *tree = state.load_tree();
+            tile_tree.behavior.tile_names.clear();
+            state.load_tree(tile_tree);
         }
     }
     pub fn set_active(pane: Pane) {
@@ -92,7 +90,11 @@ impl TilePlugin {
             if let Some(state) = d.save_requested {
                 if !left_mouse_pressed(world) {
                     d.save_requested = None;
-                    Self::save_tree(state, d.tree.tree.clone());
+                    Self::save_tree(
+                        state,
+                        d.tree.tree.clone(),
+                        d.tree.behavior.tile_names.clone(),
+                    );
                 }
             }
         });

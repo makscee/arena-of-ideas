@@ -8,7 +8,20 @@ mod raw_nodes;
 
 include!(concat!(env!("OUT_DIR"), "/node_kind.rs"));
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, AsRefStr, Display, EnumIter, EnumString)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    AsRefStr,
+    Display,
+    EnumIter,
+    EnumString,
+    Serialize,
+    Deserialize,
+)]
 pub enum NodeKindCategory {
     Unit,
     House,

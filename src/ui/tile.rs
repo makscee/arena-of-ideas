@@ -6,6 +6,7 @@ use super::*;
 #[derive(Default)]
 pub struct TreeBehavior {
     pub world: Option<World>,
+    pub tile_names: HashMap<TileId, String>,
 }
 
 static CURRENT_TILE_ID: Mutex<u64> = Mutex::new(0);
@@ -36,7 +37,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
     fn simplification_options(&self) -> SimplificationOptions {
         SimplificationOptions {
-            all_panes_must_have_tabs: true,
+            all_panes_must_have_tabs: false,
             ..default()
         }
     }
@@ -128,6 +129,19 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             }
         }
         true
+    }
+    fn tab_title_for_tile(&mut self, tiles: &Tiles<Pane>, tile_id: TileId) -> WidgetText {
+        if let Some(name) = self.tile_names.get(&tile_id) {
+            return name.into();
+        }
+        if let Some(tile) = tiles.get(tile_id) {
+            match tile {
+                Tile::Pane(pane) => self.tab_title_for_pane(pane),
+                Tile::Container(container) => format!("{:?}", container.kind()).into(),
+            }
+        } else {
+            "MISSING TILE".into()
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 mod card;
 mod node_explorer;
+mod node_explorer_new;
 mod table;
 mod tile;
 mod top_bar;
@@ -10,6 +11,7 @@ use super::*;
 
 pub use card::*;
 pub use node_explorer::*;
+pub use node_explorer_new::*;
 pub use table::*;
 pub use tile::*;
 pub use top_bar::*;

@@ -30,16 +30,26 @@ pub enum GameState {
 
 const TREE_ID: &str = "tree";
 impl GameState {
-    pub fn load_tree(self) -> Tree<Pane> {
+    pub fn load_tree(self, tile_tree: &mut TileTree) {
         match self {
-            GameState::Connect => Tree::new_tabs(TREE_ID, Pane::Connect.into()),
-            GameState::Login => Tree::new_tabs(TREE_ID, Pane::Login.into()),
-            GameState::Register => Tree::new_tabs(TREE_ID, Pane::Register.into()),
-            GameState::Title => Tree::new_horizontal(
-                TREE_ID,
-                [Pane::Admin, Pane::MainMenu, Pane::Leaderboard].into(),
-            ),
-            GameState::MatchOver => Tree::new_tabs(TREE_ID, Pane::MatchOver.into()),
+            GameState::Connect => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Connect.into());
+            }
+            GameState::Login => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Login.into());
+            }
+            GameState::Register => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Register.into());
+            }
+            GameState::Title => {
+                tile_tree.tree = Tree::new_horizontal(
+                    TREE_ID,
+                    [Pane::Admin, Pane::MainMenu, Pane::Leaderboard].into(),
+                );
+            }
+            GameState::MatchOver => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::MatchOver.into());
+            }
             GameState::Editor => {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
@@ -55,17 +65,26 @@ impl GameState {
                 let edit = tiles.insert_tab_tile([edit_left, edit_right].into());
                 let vertical = tiles.insert_vertical_tile([view, controls].into());
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
-                Tree::new(TREE_ID, root, tiles)
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Explorer => {
                 let mut tiles = Tiles::default();
-                let parents = tiles.insert_pane(Pane::Explorer(ExplorerPane::Parents));
-                let children = tiles.insert_pane(Pane::Explorer(ExplorerPane::Children));
-                let selected = tiles.insert_pane(Pane::Explorer(ExplorerPane::Selected));
-                let node = tiles.insert_pane(Pane::Explorer(ExplorerPane::Node));
-                let mid = tiles.insert_vertical_tile([selected, node].into());
-                let root = tiles.insert_horizontal_tile([parents, mid, children].into());
-                Tree::new(TREE_ID, root, tiles)
+
+                let categories = NodeKindCategory::iter()
+                    .map(|c| {
+                        // let tile = tiles.insert_pane(Pane::ExplorerCategories(c));
+                        let kinds = c
+                            .kinds()
+                            .into_iter()
+                            .map(|k| tiles.insert_pane(Pane::ExplorerList(k)))
+                            .collect_vec();
+                        let tile = tiles.insert_horizontal_tile(kinds);
+                        tile_tree.behavior.tile_names.insert(tile, c.to_string());
+                        tile
+                    })
+                    .collect_vec();
+                let root = tiles.insert_tab_tile(categories);
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Shop => {
                 let mut tiles = Tiles::default();
@@ -87,18 +106,22 @@ impl GameState {
                     }
                 }
                 let root = tiles.insert_vertical_tile([top, mid, hand].into());
-                Tree::new(TREE_ID, root, tiles)
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
-            GameState::Battle => Tree::new_vertical(
-                TREE_ID,
-                [
-                    Pane::Battle(BattlePane::View),
-                    Pane::Battle(BattlePane::Controls),
-                ]
-                .into(),
-            ),
-            _ => Tree::empty(TREE_ID),
-        }
+            GameState::Battle => {
+                tile_tree.tree = Tree::new_vertical(
+                    TREE_ID,
+                    [
+                        Pane::Battle(BattlePane::View),
+                        Pane::Battle(BattlePane::Controls),
+                    ]
+                    .into(),
+                );
+            }
+            _ => {
+                tile_tree.tree = Tree::empty(TREE_ID);
+            }
+        };
     }
 }
 
@@ -115,7 +138,8 @@ pub enum Pane {
     Leaderboard,
 
     Admin,
-    Explorer(ExplorerPane),
+    ExplorerList(NodeKind),
+    ExplorerInspect(ExplorerPane),
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -186,12 +210,13 @@ impl Pane {
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
                 BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
             },
-            Pane::Explorer(pane) => match pane {
+            Pane::ExplorerInspect(pane) => match pane {
                 ExplorerPane::Selected => NodeExplorerPlugin::pane_selected(ui, world)?,
                 ExplorerPane::Parents => NodeExplorerPlugin::pane_parents(ui, world)?,
                 ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
                 ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
             },
+            Pane::ExplorerList(node_kind) => {}
         };
         Ok(())
     }
