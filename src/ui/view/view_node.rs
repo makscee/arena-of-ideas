@@ -13,7 +13,6 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                 );
             }
             vr.title_clicked = self.view_title(vctx, context, ui).clicked();
-            self.id().label(ui);
             self.view_data(vctx, context, ui);
         });
         vr
@@ -103,7 +102,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
         );
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
-        self.show(context, ui);
+        // self.show(context, ui);
     }
     fn view_data_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();
@@ -174,22 +173,50 @@ fn rating_button(
 
 impl NodeViewFns for NCore {}
 impl NodeViewFns for NPlayers {}
-impl NodeViewFns for NPlayer {}
+impl NodeViewFns for NPlayer {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.player_name.cstr()
+    }
+}
 impl NodeViewFns for NPlayerData {}
 impl NodeViewFns for NPlayerIdentity {}
-impl NodeViewFns for NHouse {}
-impl NodeViewFns for NHouseColor {}
-impl NodeViewFns for NAbilityMagic {}
-impl NodeViewFns for NAbilityDescription {}
+impl NodeViewFns for NHouse {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.house_name.cstr()
+    }
+}
+impl NodeViewFns for NHouseColor {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.color.cstr()
+    }
+}
+impl NodeViewFns for NAbilityMagic {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.ability_name.cstr()
+    }
+}
+impl NodeViewFns for NAbilityDescription {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.description.cstr()
+    }
+}
 impl NodeViewFns for NAbilityEffect {}
 impl NodeViewFns for NStatusMagic {}
-impl NodeViewFns for NStatusDescription {}
+impl NodeViewFns for NStatusDescription {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.description.cstr()
+    }
+}
 impl NodeViewFns for NStatusBehavior {}
 impl NodeViewFns for NStatusRepresentation {}
 impl NodeViewFns for NTeam {}
 impl NodeViewFns for NMatch {}
 impl NodeViewFns for NFusion {}
-impl NodeViewFns for NUnit {}
+impl NodeViewFns for NUnit {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.unit_name.cstr()
+    }
+}
 impl NodeViewFns for NUnitDescription {
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         if vctx.one_line {
@@ -198,30 +225,31 @@ impl NodeViewFns for NUnitDescription {
             self.show(context, ui);
         }
     }
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.description.cstr()
+    }
 }
-impl NodeViewFns for NUnitStats {}
+impl NodeViewFns for NUnitStats {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        format!(
+            "[{} {}]/[{} {}]",
+            VarName::pwr.color().to_hex(),
+            self.pwr,
+            VarName::hp.color().to_hex(),
+            self.hp
+        )
+    }
+}
 impl NodeViewFns for NUnitState {}
 impl NodeViewFns for NUnitBehavior {
-    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
-        if vctx.one_line {
-            let s = self
-                .reactions
-                .iter()
-                .map(|r| {
-                    format!(
-                        "{} ({})",
-                        r.trigger.cstr(),
-                        r.actions.iter().map(|a| a.cstr()).join(", ")
-                    )
-                })
-                .join(" ");
-            s.label_t(ui);
-        } else {
-            self.show(context, ui);
-        }
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.reactions.iter().map(|r| r.cstr()).join("\n")
     }
 }
 impl NodeViewFns for NUnitRepresentation {
+    fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+        self.material.cstr_expanded()
+    }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         if vctx.one_line {
             RectButton::new_size(LINE_HEIGHT.v2())

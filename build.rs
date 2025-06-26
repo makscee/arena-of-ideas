@@ -333,7 +333,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
 
         impl ToCstr for #struct_ident {
             fn cstr(&self) -> Cstr {
-                format!("[tw {self}] [th {}]", self.kind())
+                format!("[tw {self}]")
             }
         }
 

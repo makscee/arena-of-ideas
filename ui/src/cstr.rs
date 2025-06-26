@@ -563,14 +563,6 @@ impl ToCstr for PainterAction {
         format!("{}({inner})", self.cstr())
     }
 }
-impl ToCstr for Material {
-    fn cstr(&self) -> Cstr {
-        format!("Material([th {}])", self.0.len())
-    }
-    fn cstr_expanded(&self) -> Cstr {
-        format!("({})", self.0.iter().map(|a| a.cstr_expanded()).join(", "))
-    }
-}
 impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
         let mut s = self.as_ref().to_owned().cstr_c(self.color());
@@ -617,7 +609,23 @@ impl ToCstr for ExpressionError {
 }
 impl ToCstr for Reaction {
     fn cstr(&self) -> Cstr {
-        format!("{}->[th {}]", self.trigger.cstr(), self.actions.len())
+        let mut s = String::new();
+        s += &self.trigger.cstr();
+        s += "\n";
+        s += &self
+            .actions
+            .iter()
+            .map(|a| format!("  {}", a.cstr()))
+            .join("\n");
+        s
+    }
+}
+impl ToCstr for Material {
+    fn cstr(&self) -> Cstr {
+        format!("Material([th {}])", self.0.len())
+    }
+    fn cstr_expanded(&self) -> Cstr {
+        self.0.iter().map(|a| a.cstr()).join("\n")
     }
 }
 impl ToCstr for raw_nodes::NodeKind {

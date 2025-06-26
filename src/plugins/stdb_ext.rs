@@ -97,7 +97,7 @@ impl NodeIdExt for u64 {
             .kind())
     }
     fn label(self, ui: &mut Ui) -> Response {
-        format!("[s [tw #]{}]", self % 10000)
+        format!("[s [tw #]{}]", self % 100000)
             .label(ui)
             .on_hover_ui(|ui| {
                 format!("[tw #]{self}").label(ui);

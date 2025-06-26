@@ -31,16 +31,19 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                 .column(
                     "node",
                     |context, ui, node, _value| {
-                        if node
-                            .view_node(
-                                vctx.selected(selected.is_some_and(|id| id == node.id())),
-                                context,
-                                ui,
-                            )
-                            .title_clicked
-                        {
-                            new_selected = Some(node.id());
-                        }
+                        ui.horizontal(|ui| {
+                            if node
+                                .view_title(
+                                    vctx.selected(selected.is_some_and(|id| id == node.id())),
+                                    context,
+                                    ui,
+                                )
+                                .clicked()
+                            {
+                                new_selected = Some(node.id());
+                            }
+                            node.view_data(vctx.one_line(true), context, ui);
+                        });
                         Ok(())
                     },
                     |_, node| Ok(VarValue::u64(node.id())),
