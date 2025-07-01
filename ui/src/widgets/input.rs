@@ -61,7 +61,7 @@ impl Input {
             if let Some(color) = self.override_color {
                 te = te.text_color(color);
                 if Rgba::from(color).intensity() < 0.05 {
-                    te = te.background_color(tokens_global().high_contrast_text());
+                    te = te.background_color(high_contrast_text());
                 }
             }
             if let Some(id) = self.id {

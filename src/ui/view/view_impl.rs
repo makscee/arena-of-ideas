@@ -270,7 +270,7 @@ impl ViewFns for Material {
             ui.painter().rect_stroke(
                 rect,
                 0,
-                Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+                Stroke::new(1.0, subtle_borders_and_separators()),
                 egui::StrokeKind::Middle,
             );
         })

@@ -247,7 +247,7 @@ impl NodeViewFns for NUnitBehavior {
     }
 }
 impl NodeViewFns for NUnitRepresentation {
-    fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn node_title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
         self.material.cstr_expanded()
     }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {

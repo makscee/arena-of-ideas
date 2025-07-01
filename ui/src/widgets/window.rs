@@ -111,8 +111,8 @@ impl Window {
                     outer_margin: Margin::ZERO,
                     corner_radius: ROUNDING,
                     shadow: SHADOW,
-                    fill: tokens_global().subtle_background(),
-                    stroke: Stroke::new(1.0, tokens_global().subtle_borders_and_separators()),
+                    fill: subtle_background(),
+                    stroke: Stroke::new(1.0, subtle_borders_and_separators()),
                 }
             })
             .scroll([self.expand, self.expand])

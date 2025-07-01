@@ -252,8 +252,7 @@ impl Show for Entity {
 
 impl Show for Event {
     fn show(&self, _: &Context, ui: &mut Ui) {
-        self.cstr_cs(tokens_info().low_contrast_text(), CstrStyle::Bold)
-            .label(ui);
+        self.cstr_cs(low_contrast_text(), CstrStyle::Bold).label(ui);
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)

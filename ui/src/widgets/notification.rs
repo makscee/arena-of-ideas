@@ -34,7 +34,7 @@ impl NotificationsPlugin {
 
 impl Notification {
     pub fn new_string(text: String) -> Self {
-        Self::new(text.cstr_c(tokens_global().high_contrast_text()))
+        Self::new(text.cstr_c(high_contrast_text()))
     }
     pub fn new(text: Cstr) -> Self {
         Self {

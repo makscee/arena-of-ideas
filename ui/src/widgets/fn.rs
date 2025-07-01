@@ -10,7 +10,7 @@ pub fn br(ui: &mut Ui) {
             [rect.left_top(), rect.right_top()],
             Stroke {
                 width: 1.0,
-                color: tokens_global().subtle_borders_and_separators(),
+                color: subtle_borders_and_separators(),
             },
         );
     });
@@ -88,7 +88,7 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
         let bottom = rect.bottom() - 6.0;
         let line = egui::Shape::dotted_line(
             &[[left, bottom].into(), [right, bottom].into()],
-            tokens_global().subtle_borders_and_separators(),
+            subtle_borders_and_separators(),
             12.0,
             0.5,
         );
@@ -154,9 +154,9 @@ pub fn show_slot(i: usize, slots: usize, bottom: bool, ui: &mut Ui) -> Response 
     let mut stroke = Stroke::new(
         1.0,
         if r.hovered() {
-            tokens_global().hovered_ui_element_border()
+            hovered_ui_element_border()
         } else {
-            tokens_global().ui_element_border_and_focus_rings()
+            ui_element_border_and_focus_rings()
         },
     );
     let t = ui.ctx().animate_bool(r.id, r.hovered());

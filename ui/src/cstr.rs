@@ -211,14 +211,8 @@ pub fn init_style_map(colorix: &Colorix, style: &Style) {
         ("green", CstrStyle::Color(GREEN)),
         ("yellow", CstrStyle::Color(YELLOW)),
         ("tw", CstrStyle::Color(style.visuals.weak_text_color())),
-        (
-            "tl",
-            CstrStyle::Color(colorix.tokens_global().low_contrast_text()),
-        ),
-        (
-            "th",
-            CstrStyle::Color(colorix.tokens_global().high_contrast_text()),
-        ),
+        ("tl", CstrStyle::Color(colorix.low_contrast_text())),
+        ("th", CstrStyle::Color(colorix.high_contrast_text())),
     ];
     *STRING_STYLE_MAP
         .get_or_init(|| Mutex::new(default()))

@@ -17,7 +17,7 @@ impl Painter {
     pub fn new(rect: Rect, ctx: &egui::Context) -> Self {
         Self {
             rect,
-            color: tokens_global().high_contrast_text(),
+            color: high_contrast_text(),
             mesh: egui::Mesh::default(),
             tesselator: new_tesselator(0.0, ctx),
             hollow: None,
@@ -45,7 +45,7 @@ fn new_tesselator(feathering: f32, ctx: &egui::Context) -> Tessellator {
 
 pub trait Paint {
     fn paint(&self, context: &Context, p: &mut Painter, ui: &mut Ui)
-        -> Result<(), ExpressionError>;
+    -> Result<(), ExpressionError>;
 }
 
 impl Paint for PainterAction {

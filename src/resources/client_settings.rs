@@ -2,7 +2,6 @@ use bevy::{
     ecs::event::EventReader,
     window::{PresentMode, VideoModeSelection, WindowResized},
 };
-use egui_colors::{Theme, tokens::ThemeColor};
 
 use super::*;
 
@@ -22,7 +21,7 @@ pub struct ClientSettings {
     pub volume_music: f32,
     pub volume_fx: f32,
 
-    pub theme: Theme,
+    pub theme: Colorix,
 }
 
 impl Default for ClientSettings {
@@ -42,7 +41,7 @@ impl Default for ClientSettings {
             volume_master: 0.6,
             volume_music: 0.5,
             volume_fx: 1.0,
-            theme: [ThemeColor::Gray; 12],
+            theme: Colorix::new(GRAY, true),
         }
     }
 }

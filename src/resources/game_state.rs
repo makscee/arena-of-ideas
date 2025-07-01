@@ -186,7 +186,7 @@ impl Pane {
                     ui.add_space(ui.available_height() * 0.3);
                     ui.set_width(350.0.at_most(ui.available_width()));
                     if "Open Match"
-                        .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
+                        .cstr_cs(high_contrast_text(), CstrStyle::Bold)
                         .button(ui)
                         .clicked()
                     {

@@ -74,7 +74,7 @@ impl Selector {
                         let grayed_out =
                             !lookup.is_empty() && !e.as_ref().to_lowercase().contains(&lookup);
                         let text = if grayed_out {
-                            e.as_ref().cstr_c(tokens_global().low_contrast_text())
+                            e.as_ref().cstr_c(low_contrast_text())
                         } else {
                             e.cstr()
                         }

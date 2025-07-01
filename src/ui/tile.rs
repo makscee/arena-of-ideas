@@ -49,11 +49,11 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         state: &egui_tiles::TabState,
     ) -> Color32 {
         if state.active {
-            tokens_global().high_contrast_text()
+            high_contrast_text()
         } else if state.is_being_dragged {
-            tokens_global().hovered_ui_element_border()
+            hovered_ui_element_border()
         } else {
-            tokens_global().low_contrast_text()
+            low_contrast_text()
         }
     }
     fn tab_bar_color(&self, _: &egui::Visuals) -> Color32 {
@@ -81,11 +81,9 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         match resize_state {
             egui_tiles::ResizeState::Idle => Stroke::NONE,
             egui_tiles::ResizeState::Hovering => {
-                Stroke::new(1.0, tokens_global().ui_element_border_and_focus_rings())
+                Stroke::new(1.0, ui_element_border_and_focus_rings())
             }
-            egui_tiles::ResizeState::Dragging => {
-                Stroke::new(1.0, tokens_global().hovered_ui_element_border())
-            }
+            egui_tiles::ResizeState::Dragging => Stroke::new(1.0, hovered_ui_element_border()),
         }
     }
     fn on_edit(&mut self, action: egui_tiles::EditAction) {
@@ -164,7 +162,7 @@ impl Default for TileTree {
 impl TileTree {
     pub fn show(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            colorix().global().draw_background(ctx, false);
+            // Apply global colorix background
             self.tree.ui(&mut self.behavior, ui);
         });
     }

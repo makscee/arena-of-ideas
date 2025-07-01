@@ -12,7 +12,7 @@ impl EnumColor for VarName {
             VarName::lvl => PURPLE,
             VarName::xp => LIGHT_PURPLE,
             VarName::tier => GRAY,
-            _ => tokens_global().low_contrast_text(),
+            _ => low_contrast_text(),
         }
     }
 }
@@ -20,12 +20,12 @@ impl EnumColor for VarName {
 impl EnumColor for Action {
     fn color(&self) -> Color32 {
         match self {
-            Action::noop => tokens_global().low_contrast_text(),
+            Action::noop => low_contrast_text(),
             Action::deal_damage => RED,
             Action::heal_damage => GREEN,
             Action::apply_status => ORANGE,
             Action::use_ability => ORANGE,
-            Action::debug(..) => tokens_global().high_contrast_text(),
+            Action::debug(..) => high_contrast_text(),
             Action::set_value(..)
             | Action::add_value(..)
             | Action::subtract_value(..)
@@ -75,7 +75,7 @@ impl EnumColor for Expression {
             | Expression::value(..)
             | Expression::lua_i32(..)
             | Expression::lua_f32(..)
-            | Expression::color(..) => tokens_global().high_contrast_text(),
+            | Expression::color(..) => high_contrast_text(),
             Expression::var(var) | Expression::var_sum(var) => var.color(),
             Expression::state_var(_x, _)
             | Expression::sin(_x)

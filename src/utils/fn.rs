@@ -36,8 +36,7 @@ pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let til_refresh = (now / 86400 + 1) * 86400 - now;
     format!(
         "Refresh in {}",
-        format_duration(til_refresh as u64)
-            .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
+        format_duration(til_refresh as u64).cstr_cs(high_contrast_text(), CstrStyle::Bold)
     )
     .label(ui);
 }

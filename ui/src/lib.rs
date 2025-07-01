@@ -1,4 +1,4 @@
-mod colorix;
+pub mod colorix;
 mod cstr;
 mod descriptions;
 mod enum_colors;

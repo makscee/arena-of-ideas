@@ -53,7 +53,7 @@ impl TagWidget {
     fn name_size(&mut self, ui: &mut Ui) -> egui::Vec2 {
         let galley = self
             .name
-            .cstr_cs(tokens_global().app_background(), CstrStyle::Bold)
+            .cstr_cs(app_background(), CstrStyle::Bold)
             .galley(1.0, ui);
         let size = galley.size();
         self.text_galley = Some(galley);
@@ -64,7 +64,7 @@ impl TagWidget {
             return default();
         };
         let galley = number
-            .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold)
+            .cstr_cs(high_contrast_text(), CstrStyle::Bold)
             .galley(1.0, ui);
         let mut size = galley.size();
         size += NUMBER_MARGIN.sum();
@@ -98,7 +98,7 @@ impl TagWidget {
                     .fill(if hovered {
                         ui.visuals().widgets.hovered.bg_fill
                     } else {
-                        tokens_global().app_background()
+                        app_background()
                     })
                     .paint(rect.shrink2(OUTER_MARGIN.sum() * 0.5)),
             );
@@ -112,14 +112,14 @@ impl TagWidget {
         ui.painter().galley(
             rect.shrink2(margin_size * 0.5).left_top(),
             self.text_galley.unwrap(),
-            tokens_global().high_contrast_text(),
+            high_contrast_text(),
         );
         if let Some(number) = self.number_galley {
             ui.painter().galley(
                 rect.shrink2(margin_size * 0.5).right_top()
                     - egui::vec2(number_size.x - NUMBER_MARGIN.left as f32, 0.0),
                 number,
-                tokens_global().high_contrast_text(),
+                high_contrast_text(),
             );
         }
         response
@@ -144,7 +144,7 @@ impl TagsWidget {
             color,
             number
                 .to_string()
-                .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Bold),
+                .cstr_cs(high_contrast_text(), CstrStyle::Bold),
         ));
     }
     pub fn add_name_value(&mut self, text: impl ToString, color: Color32, number: Cstr) {

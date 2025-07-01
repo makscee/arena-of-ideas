@@ -28,7 +28,7 @@ pub trait ViewCard: ViewFns {
                     .stroke(GRAY.stroke())
                     .inner_margin(margin)
                     .corner_radius(6)
-                    .fill(tokens_global().subtle_background())
+                    .fill(subtle_background())
                     .show(ui, |ui| self.show_card_sections(context, ui))
                     .inner
             },

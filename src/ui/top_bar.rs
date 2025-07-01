@@ -39,10 +39,19 @@ impl TopBar {
             ui.menu_button("settings", |ui| {
                 if "theme".cstr().button(ui).clicked() {
                     Window::new("theme Editor", |ui, _| {
-                        let mut colorix = colorix();
-                        colorix.ui_mut(ui);
-                        let theme = colorix.global().theme().clone();
-                        pd_mut(|d| d.client_settings.theme = theme);
+                        let mut colorix = colorix().clone();
+                        let mut color = colorix.raw_colors[0];
+                        if ui.color_edit_button_srgba(&mut color).changed() {
+                            for c in &mut colorix.raw_colors {
+                                *c = color;
+                            }
+                            colorix.generate_scale();
+                            colorix.apply(ui.ctx());
+                            pd_mut(|d| {
+                                d.client_settings.theme = colorix.clone();
+                            });
+                            colorix.save();
+                        }
                     })
                     .push(world);
                     ui.close_menu();
@@ -67,7 +76,7 @@ impl TopBar {
                 VERSION.cstr().label(ui);
                 current_server()
                     .1
-                    .cstr_cs(tokens_global().low_contrast_text(), CstrStyle::Bold)
+                    .cstr_cs(low_contrast_text(), CstrStyle::Bold)
                     .label(ui);
             })
         });

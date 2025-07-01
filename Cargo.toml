@@ -79,7 +79,7 @@ glam = { version = "0.29.2", features = ["serde"] }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 color-hex = "0.2.0"
-egui_colors = { version = "0.8.0", features = ["serde"] }
+
 egui_double_slider = "0.7.0"
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.74"
@@ -121,7 +121,7 @@ parking_lot = { workspace = true }
 tween = { workspace = true }
 color-hex = { workspace = true }
 egui_tiles = { workspace = true }
-egui_colors = { workspace = true }
+
 backtrace = { workspace = true }
 mlua = {workspace = true }
 

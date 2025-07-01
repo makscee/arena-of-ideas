@@ -1,4 +1,4 @@
-use spacetimedb_lib::{de::Deserialize, ser::Serialize, Identity};
+use spacetimedb_lib::{Identity, de::Deserialize, ser::Serialize};
 use spacetimedb_sdk::credentials;
 
 use super::*;
@@ -60,7 +60,7 @@ impl ConnectPlugin {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.5 - 25.0);
             format!("Connecting{}", (0..(gt().secs() % 4)).map(|_| ".").join(""))
-                .cstr_cs(tokens_global().high_contrast_text(), CstrStyle::Heading)
+                .cstr_cs(high_contrast_text(), CstrStyle::Heading)
                 .label(ui);
         });
     }

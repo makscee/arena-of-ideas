@@ -2,7 +2,6 @@ use bevy_egui::{
     EguiFullOutput, EguiInput,
     egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
 };
-use egui_colors::{Theme, tokens::ThemeColor};
 
 use super::*;
 
@@ -11,37 +10,8 @@ pub struct UiPlugin;
 impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, Self::ui)
-            .add_systems(Startup, (setup_ui, setup_colorix));
+            .add_systems(Startup, setup_ui);
     }
-}
-
-fn setup_colorix(world: &mut World) {
-    let ctx = world
-        .query::<&EguiContext>()
-        .single(world)
-        .unwrap()
-        .get()
-        .clone();
-    let theme_main = pd().client_settings.theme;
-    let theme_error: Theme = [ThemeColor::Red; 12];
-    let theme_success: Theme = [ThemeColor::Green; 12];
-    let theme_warning: Theme = [ThemeColor::Orange; 12];
-    let theme_info: Theme = [ThemeColor::Custom([YELLOW.r(), YELLOW.g(), YELLOW.b()]); 12];
-    let global = egui_colors::Colorix::global(&ctx, theme_main);
-    let semantics = [
-        global,
-        egui_colors::Colorix::local_from_style(theme_error, true),
-        egui_colors::Colorix::local_from_style(theme_success, true),
-        egui_colors::Colorix::local_from_style(theme_warning, true),
-        egui_colors::Colorix::local_from_style(theme_info, true),
-    ]
-    .to_vec();
-    let mut colorix = Colorix { semantics };
-    world.insert_resource(bevy::render::camera::ClearColor(
-        colorix.tokens_global().app_background().to_color(),
-    ));
-    colorix.apply(&ctx);
-    colorix.save();
 }
 
 impl UiPlugin {
@@ -69,6 +39,10 @@ impl UiPlugin {
 }
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let ctx = ctx.single_mut().unwrap().get().clone();
+    let mut colorix = pd().client_settings.theme.clone();
+    colorix.generate_scale();
+    colorix.apply(&ctx);
+    colorix.save();
     ctx.add_font(FontInsert::new(
         "mono_regular",
         FontData::from_static(include_bytes!(

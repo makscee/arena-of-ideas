@@ -45,8 +45,8 @@ pub fn dark_frame() -> Frame {
         outer_margin: Margin::same(5),
         corner_radius: ROUNDING,
         shadow: Shadow::NONE,
-        fill: tokens_global().subtle_background(),
-        stroke: tokens_global().subtle_borders_and_separators().stroke(),
+        fill: subtle_background(),
+        stroke: subtle_borders_and_separators().stroke(),
     }
 }
 

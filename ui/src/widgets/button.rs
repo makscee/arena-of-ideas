@@ -43,26 +43,23 @@ impl Button {
     }
     pub fn gray(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = tokens_global().subtle_background();
+        style.visuals.widgets.inactive.weak_bg_fill = subtle_background();
         self
     }
-    pub fn red(mut self, ui: &mut Ui) -> Self {
-        self.save_style(ui);
-        let stroke = Stroke::new(1.0, RED);
-        ui.style_mut().visuals.widgets.inactive.fg_stroke = stroke;
-        ui.style_mut().visuals.widgets.hovered.fg_stroke = stroke;
+    pub fn red(self, ui: &mut Ui) -> Self {
+        let stroke = Stroke::new(2.0, RED);
         ui.style_mut().visuals.widgets.inactive.bg_stroke = stroke;
         ui.style_mut().visuals.widgets.hovered.bg_stroke = stroke;
         self
     }
-    pub fn bg(self, ui: &mut Ui) -> Self {
+    pub fn danger(self, ui: &mut Ui) -> Self {
         let style = ui.style_mut();
-        style.visuals.widgets.inactive.weak_bg_fill = tokens_global().subtle_background();
-        style.visuals.widgets.hovered.weak_bg_fill = tokens_global().solid_backgrounds();
+        style.visuals.widgets.inactive.weak_bg_fill = subtle_background();
+        style.visuals.widgets.hovered.weak_bg_fill = solid_backgrounds();
         self
     }
     pub fn set_bg(self, value: bool, ui: &mut Ui) -> Self {
-        if value { self.bg(ui) } else { self }
+        if value { self.danger(ui) } else { self }
     }
     pub fn title(mut self, text: String) -> Self {
         self.title = Some(text);
@@ -101,12 +98,7 @@ impl Button {
         //     job.sections[0].byte_range = 0..job.text.len();
         //     job.sections.truncate(1);
         // };
-        // if !self.enabled {
-        //     style.visuals.widgets.noninteractive.bg_stroke.color = TRANSPARENT;
-        //     style.visuals.widgets.noninteractive.fg_stroke.color = tokens_global().low_contrast_text();
-        //     replace_color(tokens_global().low_contrast_text());
-        // } else if self.active {
-        //     style.visuals.widgets.inactive.fg_stroke.color = YELLOW;
+        // Color styling handled by colorix
         //     style.visuals.widgets.hovered.fg_stroke.color = YELLOW;
         //     style.visuals.widgets.inactive.bg_stroke.color = YELLOW;
         //     style.visuals.widgets.hovered.bg_stroke.color = YELLOW;
