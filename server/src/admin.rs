@@ -97,12 +97,12 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             error!("color failed");
             continue;
         }
-        if let Some(mut ability) = house.mutual_top_parent::<NActionAbility>(ctx) {
-            if let Some(mut description) = ability.mutual_top_parent::<NActionDescription>(ctx) {
+        if let Some(mut action) = house.mutual_top_parent::<NActionAbility>(ctx) {
+            if let Some(mut description) = action.mutual_top_parent::<NActionDescription>(ctx) {
                 if let Some(effect) = description.mutual_top_parent::<NActionEffect>(ctx) {
                     description.effect = Some(effect);
-                    ability.description = Some(description);
-                    house.ability = Some(ability);
+                    action.description = Some(description);
+                    house.action = Some(action);
                 } else {
                     error!("ability effect failed");
                 }
@@ -110,7 +110,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 error!("ability description failed");
             }
         };
-        if house.ability.is_none() {
+        if house.action.is_none() {
             if let Some(mut status) = house.mutual_top_parent::<NStatusAbility>(ctx) {
                 if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
                     if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
@@ -127,7 +127,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 error!("status magic failed");
             }
             if house.status.is_none() {
-                error!("failed to get ability or status for house");
+                error!("failed to get ability for house");
                 continue;
             }
         }

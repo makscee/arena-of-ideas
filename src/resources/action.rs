@@ -85,7 +85,7 @@ impl ActionImpl for Action {
                 let name: String;
                 let lvl = context.get_i32(VarName::lvl)?;
                 let value = context.get_i32(VarName::value).unwrap_or_default() + lvl;
-                if let Ok(ability) = house.ability_load(context) {
+                if let Ok(ability) = house.action_load(context) {
                     name = ability.ability_name.clone();
                     let effect = ability
                         .description_load(context)?

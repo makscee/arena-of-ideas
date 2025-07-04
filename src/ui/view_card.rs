@@ -133,61 +133,63 @@ impl ViewCard for NHouse {
                 });
                 Ok(())
             });
+            if let Ok(action) = self.action_load(context) {
+                section(ui, |ui| {
+                    action
+                        .ability_name
+                        .cstr_cs(color, CstrStyle::Heading2)
+                        .label(ui);
+                    action
+                        .description_load(context)?
+                        .description
+                        .cstr_c(ui.visuals().weak_text_color())
+                        .label_w(ui);
+                    Ok(())
+                });
+            } else if let Ok(status) = self.status_load(context) {
+                section(ui, |ui| -> Result<(), ExpressionError> {
+                    status
+                        .status_name
+                        .cstr_cs(color, CstrStyle::Heading2)
+                        .label(ui);
+                    status
+                        .description_load(context)?
+                        .description
+                        .cstr_c(ui.visuals().weak_text_color())
+                        .label_w(ui);
+                    Ok(())
+                });
+            }
+        });
+        Ok(())
+    }
+    fn show_card_on_hover(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        let color = context.color(ui);
+        if let Ok(action) = self.action_load(context) {
             section(ui, |ui| {
-                let ability = self.ability_load(context)?;
-                ability
+                action
                     .ability_name
                     .cstr_cs(color, CstrStyle::Heading2)
                     .label(ui);
-                ability
+                action
                     .description_load(context)?
-                    .description
-                    .cstr_c(ui.visuals().weak_text_color())
-                    .label_w(ui);
+                    .effect_load(context)?
+                    .show(context, ui);
                 Ok(())
             });
+        } else if let Ok(status) = self.status_load(context) {
             section(ui, |ui| -> Result<(), ExpressionError> {
-                let status = self.status_load(context)?;
                 status
                     .status_name
                     .cstr_cs(color, CstrStyle::Heading2)
                     .label(ui);
                 status
                     .description_load(context)?
-                    .description
-                    .cstr_c(ui.visuals().weak_text_color())
-                    .label_w(ui);
+                    .behavior_load(context)?
+                    .show(context, ui);
                 Ok(())
             });
-        });
-        Ok(())
-    }
-    fn show_card_on_hover(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
-        let color = context.color(ui);
-        section(ui, |ui| {
-            let ability = self.ability_load(context)?;
-            ability
-                .ability_name
-                .cstr_cs(color, CstrStyle::Heading2)
-                .label(ui);
-            ability
-                .description_load(context)?
-                .effect_load(context)?
-                .show(context, ui);
-            Ok(())
-        });
-        section(ui, |ui| -> Result<(), ExpressionError> {
-            let status = self.status_load(context)?;
-            status
-                .status_name
-                .cstr_cs(color, CstrStyle::Heading2)
-                .label(ui);
-            status
-                .description_load(context)?
-                .behavior_load(context)?
-                .show(context, ui);
-            Ok(())
-        });
+        }
         Ok(())
     }
 }

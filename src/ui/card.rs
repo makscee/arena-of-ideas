@@ -156,8 +156,8 @@ impl TagCard for NHouse {
             context,
             ui,
             |ui| {
-                if let Ok(ability) = self.ability_load(context) {
-                    ability.tag_card(default(), context, ui).ui(ui);
+                if let Ok(action) = self.action_load(context) {
+                    action.tag_card(default(), context, ui).ui(ui);
                 }
                 if let Ok(status) = self.status_load(context) {
                     status.tag_card(default(), context, ui).ui(ui);

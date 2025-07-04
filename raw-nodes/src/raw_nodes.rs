@@ -43,7 +43,7 @@ struct NPlayerIdentity {
 struct NHouse {
     pub house_name: String,
     pub color: ParentComponent<NHouseColor>,
-    pub ability: ParentComponent<NActionAbility>,
+    pub action: ParentComponent<NActionAbility>,
     pub status: ParentComponent<NStatusAbility>,
     pub units: ChildComponents<NUnit>,
 }
