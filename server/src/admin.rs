@@ -97,44 +97,39 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             error!("color failed");
             continue;
         }
-        if let Some(mut ability_magic) = house.mutual_top_parent::<NAbilityMagic>(ctx) {
-            if let Some(mut description) =
-                ability_magic.mutual_top_parent::<NAbilityDescription>(ctx)
-            {
-                if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
+        if let Some(mut ability) = house.mutual_top_parent::<NActionAbility>(ctx) {
+            if let Some(mut description) = ability.mutual_top_parent::<NActionDescription>(ctx) {
+                if let Some(effect) = description.mutual_top_parent::<NActionEffect>(ctx) {
                     description.effect = Some(effect);
+                    ability.description = Some(description);
+                    house.ability = Some(ability);
                 } else {
                     error!("ability effect failed");
-                    continue;
                 }
-                ability_magic.description = Some(description);
             } else {
                 error!("ability description failed");
-                continue;
             }
-            house.ability_magic = Some(ability_magic);
-        } else {
-            error!("ability magic failed");
-            continue;
-        }
-        if let Some(mut status_magic) = house.mutual_top_parent::<NStatusMagic>(ctx) {
-            if let Some(mut description) = status_magic.mutual_top_parent::<NStatusDescription>(ctx)
-            {
-                if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
-                    description.behavior = Some(behavior);
+        };
+        if house.ability.is_none() {
+            if let Some(mut status) = house.mutual_top_parent::<NStatusAbility>(ctx) {
+                if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
+                    if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
+                        description.behavior = Some(behavior);
+                        status.description = Some(description);
+                        house.status = Some(status);
+                    } else {
+                        error!("status behavior failed");
+                    }
                 } else {
-                    error!("status behavior failed");
-                    continue;
+                    error!("status description failed");
                 }
-                status_magic.description = Some(description);
             } else {
-                error!("status description failed");
+                error!("status magic failed");
+            }
+            if house.status.is_none() {
+                error!("failed to get ability or status for house");
                 continue;
             }
-            house.status_magic = Some(status_magic);
-        } else {
-            error!("status magic failed");
-            continue;
         }
         if let Some(units) = units.remove(&house.id) {
             house.units = units;

@@ -14,6 +14,5 @@ pub enum Action {
     deal_damage,
     heal_damage,
     use_ability,
-    apply_status,
     repeat(Box<Expression>, Vec<Box<Action>>),
 }

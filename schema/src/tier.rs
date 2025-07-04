@@ -15,7 +15,6 @@ impl Tier for Action {
             | Action::deal_damage
             | Action::heal_damage
             | Action::use_ability
-            | Action::apply_status
             | Action::repeat(..) => 1,
         }
     }

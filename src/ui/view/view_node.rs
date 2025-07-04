@@ -190,18 +190,18 @@ impl NodeViewFns for NHouseColor {
         self.color.cstr()
     }
 }
-impl NodeViewFns for NAbilityMagic {
+impl NodeViewFns for NActionAbility {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.ability_name.cstr()
     }
 }
-impl NodeViewFns for NAbilityDescription {
+impl NodeViewFns for NActionDescription {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.description.cstr()
     }
 }
-impl NodeViewFns for NAbilityEffect {}
-impl NodeViewFns for NStatusMagic {}
+impl NodeViewFns for NActionEffect {}
+impl NodeViewFns for NStatusAbility {}
 impl NodeViewFns for NStatusDescription {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.description.cstr()

@@ -156,10 +156,10 @@ impl TagCard for NHouse {
             context,
             ui,
             |ui| {
-                if let Ok(ability) = self.ability_magic_load(context) {
+                if let Ok(ability) = self.ability_load(context) {
                     ability.tag_card(default(), context, ui).ui(ui);
                 }
-                if let Ok(status) = self.status_magic_load(context) {
+                if let Ok(status) = self.status_load(context) {
                     status.tag_card(default(), context, ui).ui(ui);
                 }
                 for unit in self.units_load(context) {
@@ -173,7 +173,7 @@ impl TagCard for NHouse {
         ))
     }
 }
-impl TagCard for NAbilityMagic {
+impl TagCard for NActionAbility {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(TagWidget::new_name(&self.ability_name, color).ui(ui))
@@ -197,7 +197,7 @@ impl TagCard for NAbilityMagic {
         ))
     }
 }
-impl TagCard for NStatusMagic {
+impl TagCard for NStatusAbility {
     fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(TagWidget::new_name(&self.status_name, color).ui(ui))
@@ -253,7 +253,7 @@ impl NFusion {
                         })
                         .ui(ui);
                 }
-                let statuses = context.collect_children_components::<NStatusMagic>(self.id)?;
+                let statuses = context.collect_children_components::<NStatusAbility>(self.id)?;
                 if !statuses.is_empty() {
                     "statuses:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                     for status in statuses {

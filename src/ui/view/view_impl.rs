@@ -147,21 +147,13 @@ impl ViewFns for Action {
         match self {
             Action::use_ability => {
                 let mut r = self.cstr();
-                if let Ok(ability) = context.get_string(VarName::ability_name) {
+                if let Ok(ability) = context
+                    .get_string(VarName::ability_name)
+                    .or_else(|_| context.get_string(VarName::status_name))
+                {
                     if let Ok(color) = context.get_color(VarName::color) {
                         r += " ";
                         r += &ability.cstr_cs(color, CstrStyle::Bold);
-                        add_lvl(&mut r, context);
-                    }
-                }
-                r
-            }
-            Action::apply_status => {
-                let mut r = self.cstr();
-                if let Ok(status) = context.get_string(VarName::status_name) {
-                    if let Ok(color) = context.get_color(VarName::color) {
-                        r += " ";
-                        r += &status.cstr_cs(color, CstrStyle::Bold);
                         add_lvl(&mut r, context);
                     }
                 }

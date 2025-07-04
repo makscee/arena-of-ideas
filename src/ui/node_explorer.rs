@@ -225,12 +225,12 @@ impl NodeExplorerPlugin {
                     .get_by_id::<NHouse>(id)?
                     .tag_card(default(), context, ui)
                     .ui(ui),
-                NodeKind::NAbilityMagic => context
-                    .get_by_id::<NAbilityMagic>(id)?
+                NodeKind::NActionAbility => context
+                    .get_by_id::<NActionAbility>(id)?
                     .tag_card(default(), context, ui)
                     .ui(ui),
-                NodeKind::NStatusMagic => context
-                    .get_by_id::<NStatusMagic>(id)?
+                NodeKind::NStatusAbility => context
+                    .get_by_id::<NStatusAbility>(id)?
                     .tag_card(default(), context, ui)
                     .ui(ui),
                 NodeKind::NFusion => context

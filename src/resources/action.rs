@@ -80,19 +80,57 @@ impl ActionImpl for Action {
             }
             Action::use_ability => {
                 let caster = context.caster_entity()?.id(context)?;
-                let ability = context.first_parent_recursive::<NAbilityMagic>(caster)?;
-                let name = &ability.ability_name;
-                let entity = ability.entity().id(context)?;
-                let ability_actions = context
-                    .first_parent_recursive::<NAbilityEffect>(entity)?
-                    .actions
-                    .clone();
-                let color = context
-                    .first_parent_recursive::<NHouseColor>(caster)?
-                    .color
-                    .c32();
+                let house = context.first_parent_recursive::<NHouse>(caster)?;
+                let color = house.color_load(context)?.color.c32();
+                let name: String;
                 let lvl = context.get_i32(VarName::lvl)?;
                 let value = context.get_i32(VarName::value).unwrap_or_default() + lvl;
+                if let Ok(ability) = house.ability_load(context) {
+                    name = ability.ability_name.clone();
+                    let effect = ability
+                        .description_load(context)?
+                        .effect_load(context)?
+                        .actions
+                        .clone();
+                    context.with_layer_r(
+                        ContextLayer::Var(VarName::value, value.into()),
+                        |context| {
+                            actions.extend(effect.process(context)?);
+                            Ok(())
+                        },
+                    )?;
+                } else if let Ok(status) = house.status_load(context) {
+                    name = status.status_name.clone();
+                    let mut status = status.clone();
+                    let mut description = status.description_load(context)?.clone();
+                    let mut behavior = description.behavior_load(context)?.clone();
+                    let representation =
+                        status
+                            .representation_load(context)
+                            .ok()
+                            .cloned()
+                            .map(|mut r| {
+                                r.id = 0;
+                                r
+                            });
+                    status.id = 0;
+                    description.id = 0;
+                    behavior.id = 0;
+                    description.behavior = Some(behavior.clone());
+                    status.description = Some(description.clone());
+                    status.representation = representation;
+                    let targets = context.collect_targets();
+                    for target in targets {
+                        actions.push(BattleAction::apply_status(
+                            target,
+                            status.clone(),
+                            lvl + value,
+                            color,
+                        ));
+                    }
+                } else {
+                    return Err("Ability not found".into());
+                }
                 let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
                 actions.push(BattleAction::vfx(
                     HashMap::from_iter([
@@ -102,63 +140,6 @@ impl ActionImpl for Action {
                     ]),
                     "text".into(),
                 ));
-                context.with_layer_r(
-                    ContextLayer::Var(VarName::value, value.into()),
-                    |context| {
-                        actions.extend(ability_actions.process(context)?);
-                        Ok(())
-                    },
-                )?;
-            }
-            Action::apply_status => {
-                let caster = context.caster_entity()?.id(context)?;
-                let targets = context.collect_targets();
-                if targets.is_empty() {
-                    return Err("No targets".into());
-                }
-                let status = context.first_parent_recursive::<NStatusMagic>(caster)?;
-                let name = &status.status_name;
-                let mut status = status.clone();
-                let mut description = context
-                    .first_parent_recursive::<NStatusDescription>(status.id)?
-                    .clone();
-                let mut behavior = context
-                    .first_parent_recursive::<NStatusBehavior>(status.id)?
-                    .clone();
-                let color = context.get_color(VarName::color)?;
-                let text = format!("apply [{} [b {name}]]", color.to_hex());
-                actions.push(BattleAction::vfx(
-                    HashMap::from_iter([
-                        (VarName::text, text.into()),
-                        (VarName::color, high_contrast_text().into()),
-                        (VarName::position, context.get_var(VarName::position)?),
-                    ]),
-                    "text".into(),
-                ));
-                let representation = context
-                    .first_child_recursive::<NStatusRepresentation>(status.id)
-                    .ok()
-                    .cloned()
-                    .map(|mut r| {
-                        r.id = 0;
-                        r
-                    });
-                status.id = 0;
-                description.id = 0;
-                behavior.id = 0;
-                description.behavior = Some(behavior);
-                status.description = Some(description);
-                status.representation = representation;
-                let lvl = context.get_i32(VarName::lvl)?;
-                let value = context.get_i32(VarName::value).unwrap_or_default();
-                for target in targets {
-                    actions.push(BattleAction::apply_status(
-                        target,
-                        status.clone(),
-                        lvl + value,
-                        color,
-                    ));
-                }
             }
             Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {

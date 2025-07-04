@@ -134,7 +134,7 @@ impl ViewCard for NHouse {
                 Ok(())
             });
             section(ui, |ui| {
-                let ability = self.ability_magic_load(context)?;
+                let ability = self.ability_load(context)?;
                 ability
                     .ability_name
                     .cstr_cs(color, CstrStyle::Heading2)
@@ -147,7 +147,7 @@ impl ViewCard for NHouse {
                 Ok(())
             });
             section(ui, |ui| -> Result<(), ExpressionError> {
-                let status = self.status_magic_load(context)?;
+                let status = self.status_load(context)?;
                 status
                     .status_name
                     .cstr_cs(color, CstrStyle::Heading2)
@@ -165,7 +165,7 @@ impl ViewCard for NHouse {
     fn show_card_on_hover(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let color = context.color(ui);
         section(ui, |ui| {
-            let ability = self.ability_magic_load(context)?;
+            let ability = self.ability_load(context)?;
             ability
                 .ability_name
                 .cstr_cs(color, CstrStyle::Heading2)
@@ -177,7 +177,7 @@ impl ViewCard for NHouse {
             Ok(())
         });
         section(ui, |ui| -> Result<(), ExpressionError> {
-            let status = self.status_magic_load(context)?;
+            let status = self.status_load(context)?;
             status
                 .status_name
                 .cstr_cs(color, CstrStyle::Heading2)

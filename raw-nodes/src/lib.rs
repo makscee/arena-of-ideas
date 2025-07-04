@@ -39,10 +39,10 @@ impl NodeKind {
             | NodeKind::NUnitRepresentation
             | NodeKind::NUnitBehavior => NodeKindCategory::Unit,
             NodeKind::NHouse | NodeKind::NHouseColor => NodeKindCategory::House,
-            NodeKind::NAbilityMagic | NodeKind::NAbilityDescription | NodeKind::NAbilityEffect => {
+            NodeKind::NActionAbility | NodeKind::NActionDescription | NodeKind::NActionEffect => {
                 NodeKindCategory::Ability
             }
-            NodeKind::NStatusMagic
+            NodeKind::NStatusAbility
             | NodeKind::NStatusDescription
             | NodeKind::NStatusBehavior
             | NodeKind::NStatusRepresentation => NodeKindCategory::Status,
