@@ -7,8 +7,6 @@ mod inject;
 mod macro_fn;
 mod r#match;
 mod node_assets;
-// #[allow(dead_code)]
-// mod nodes;
 mod packed_nodes;
 mod painter_action;
 mod reaction;
