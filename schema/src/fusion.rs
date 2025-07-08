@@ -2,7 +2,6 @@ use super::*;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Default, Hash)]
 pub struct UnitActionRef {
-    pub unit: u64,
     pub trigger: u8,
     pub start: u8,
     pub length: u8,

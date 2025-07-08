@@ -184,9 +184,6 @@ impl NTeam {
                 )?;
             }
             fusion.trigger.unit = *remap.get(&fusion.trigger.unit).unwrap();
-            for ar in fusion.behavior.iter_mut() {
-                ar.unit = *remap.get(&ar.unit).unwrap();
-            }
         }
         new_team.save(ctx);
         Ok(new_team)

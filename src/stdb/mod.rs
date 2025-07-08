@@ -39,6 +39,7 @@ pub mod match_reorder_fusion_units_reducer;
 pub mod match_reorder_fusions_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
+pub mod match_set_fusion_unit_action_range_reducer;
 pub mod match_start_battle_reducer;
 pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
@@ -130,6 +131,10 @@ pub use match_reorder_fusions_reducer::{
 };
 pub use match_reroll_reducer::{match_reroll, set_flags_for_match_reroll, MatchRerollCallbackId};
 pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCallbackId};
+pub use match_set_fusion_unit_action_range_reducer::{
+    match_set_fusion_unit_action_range, set_flags_for_match_set_fusion_unit_action_range,
+    MatchSetFusionUnitActionRangeCallbackId,
+};
 pub use match_start_battle_reducer::{
     match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
 };
@@ -226,6 +231,11 @@ pub enum Reducer {
     MatchSell {
         name: String,
     },
+    MatchSetFusionUnitActionRange {
+        unit_id: u64,
+        actions_start: u8,
+        actions_len: u8,
+    },
     MatchStartBattle,
     MatchSubmitBattleResult {
         id: u64,
@@ -277,6 +287,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
+            Reducer::MatchSetFusionUnitActionRange { .. } => "match_set_fusion_unit_action_range",
             Reducer::MatchStartBattle => "match_start_battle",
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
@@ -420,6 +431,12 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
+            "match_set_fusion_unit_action_range" => {
+                Ok(__sdk::parse_reducer_args::<
+                    match_set_fusion_unit_action_range_reducer::MatchSetFusionUnitActionRangeArgs,
+                >("match_set_fusion_unit_action_range", &value.args)?
+                .into())
+            }
             "match_start_battle" => Ok(__sdk::parse_reducer_args::<
                 match_start_battle_reducer::MatchStartBattleArgs,
             >("match_start_battle", &value.args)?

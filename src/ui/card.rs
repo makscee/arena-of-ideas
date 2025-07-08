@@ -282,15 +282,20 @@ impl NFusion {
                     Icon::Lightning.show(ui);
                     trigger.view_title(vctx, context, ui);
                 });
-                for ar in &self.behavior {
-                    for i in 0..ar.length as usize {
-                        let action = NFusion::get_action(context, ar, i)?.clone();
-                        context
-                            .with_owner(context.entity(ar.unit)?, |context| {
-                                action.view_title(vctx, context, ui);
-                                Ok(())
-                            })
-                            .ui(ui);
+
+                let units = self.units(context)?;
+                let unit_ids: Vec<u64> = units.iter().map(|u| u.id).collect();
+                for (unit_index, ar) in self.behavior.iter().enumerate() {
+                    if let Some(unit_id) = unit_ids.get(unit_index) {
+                        for i in 0..ar.length as usize {
+                            let action = NFusion::get_action(context, *unit_id, ar, i)?.clone();
+                            context
+                                .with_owner(context.entity(*unit_id)?, |context| {
+                                    action.view_title(vctx, context, ui);
+                                    Ok(())
+                                })
+                                .ui(ui);
+                        }
                     }
                 }
                 Ok(())

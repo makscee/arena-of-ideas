@@ -316,17 +316,26 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
         if fusion.units.ids.len() == 1 {
             fusion.trigger.unit = unit.id;
             let b = unit.description_load(ctx)?.behavior_load(ctx)?;
-            fusion.behavior = b
-                .reactions
-                .iter()
-                .enumerate()
-                .map(|(t, r)| UnitActionRef {
-                    unit: unit_id,
-                    trigger: t as u8,
+            // Find the index of the unit in this fusion
+            let units = fusion.units_load(ctx)?;
+            if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
+                // Ensure behavior vector has the same length as units
+                fusion.behavior.resize(
+                    units.len(),
+                    UnitActionRef {
+                        trigger: 0,
+                        start: 0,
+                        length: 0,
+                    },
+                );
+
+                // Update the behavior for this unit at the corresponding index
+                fusion.behavior[unit_index] = UnitActionRef {
+                    trigger: 0, // Use first trigger for now
                     start: 0,
-                    length: r.actions.len() as u8,
-                })
-                .collect();
+                    length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
+                };
+            }
         }
     }
     m.save(ctx);
@@ -432,7 +441,20 @@ fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> 
         .into_iter()
         .find(|f| f.id == fusion_id)
         .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
-    fusion.units_add(ctx, unit_id)
+
+    fusion.units_add(ctx, unit_id)?;
+
+    let units = fusion.units_load(ctx)?;
+    fusion.behavior.resize(
+        units.len(),
+        UnitActionRef {
+            trigger: 0,
+            start: 0,
+            length: 0,
+        },
+    );
+
+    Ok(())
 }
 
 #[reducer]
@@ -449,6 +471,14 @@ fn match_remove_fusion_unit(
         .into_iter()
         .find(|f| f.id == fusion_id)
         .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
+
+    let units = fusion.units_load(ctx)?;
+    if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
+        if unit_index < fusion.behavior.len() {
+            fusion.behavior.remove(unit_index);
+        }
+    }
+
     fusion.units_remove(ctx, unit_id)
 }
 
@@ -512,7 +542,24 @@ fn match_reorder_fusion_units(
     }
 
     // Update the fusion with the new unit order
-    fusion.units.ids = unit_ids;
+    fusion.units.ids = unit_ids.clone();
+
+    let old_behavior = fusion.behavior.clone();
+    fusion.behavior.clear();
+
+    for unit_id in &unit_ids {
+        if let Some(old_index) = current_units.iter().position(|id| id == unit_id) {
+            let behavior = old_behavior
+                .get(old_index)
+                .cloned()
+                .unwrap_or(UnitActionRef {
+                    trigger: 0,
+                    start: 0,
+                    length: 0,
+                });
+            fusion.behavior.push(behavior);
+        }
+    }
 
     player.save(ctx);
     Ok(())
@@ -636,6 +683,76 @@ fn match_submit_battle_result(
     }
     m.g += ctx.global_settings().match_g.initial;
     match_reroll(ctx)?;
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_set_fusion_unit_action_range(
+    ctx: &ReducerContext,
+    unit_id: u64,
+    actions_start: u8,
+    actions_len: u8,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let team = m.team_load(ctx)?;
+
+    // Find the fusion containing this unit
+    let mut fusion_found = false;
+    for fusion in team.fusions_load(ctx)? {
+        let mut units = fusion.units_load(ctx)?;
+
+        // Find the index of the unit in this fusion
+        if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
+            let unit = &mut units[unit_index];
+            let description = unit.description_load(ctx)?;
+            let unit_behavior = description.behavior_load(ctx)?;
+
+            // Find the maximum number of actions available for any trigger
+            let max_actions = unit_behavior
+                .reactions
+                .iter()
+                .map(|r| r.actions.len() as u8)
+                .max()
+                .unwrap_or(0);
+
+            // Validate range bounds
+            if actions_start >= max_actions {
+                return Err(format!(
+                    "Start index {} exceeds available actions {}",
+                    actions_start, max_actions
+                ));
+            }
+
+            let adjusted_len = if actions_start + actions_len > max_actions {
+                max_actions.saturating_sub(actions_start)
+            } else {
+                actions_len
+            };
+
+            // Ensure behavior vector has the same length as units
+            fusion.behavior.resize(
+                units.len(),
+                UnitActionRef {
+                    trigger: 0,
+                    start: 0,
+                    length: 0,
+                },
+            );
+
+            // Update the action range for this unit at the corresponding index
+            fusion.behavior[unit_index].start = actions_start;
+            fusion.behavior[unit_index].length = adjusted_len;
+            fusion_found = true;
+            break;
+        }
+    }
+
+    if !fusion_found {
+        return Err("Unit not found in any fusion".into());
+    }
+
     player.save(ctx);
     Ok(())
 }

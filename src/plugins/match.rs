@@ -435,27 +435,31 @@ impl MatchPlugin {
                             fusion.get_action_count(),
                             fusion.action_limit
                         ));
-                        format!("{} {}", fusion.trigger.trigger, fusion.trigger.unit).label(ui);
-                        match NFusion::get_trigger(context, &fusion.trigger) {
-                            Ok(trigger) => {
-                                let vctx = ViewContext::new(ui).non_interactible(true);
-                                ui.horizontal(|ui| {
-                                    Icon::Lightning.show(ui);
-                                    trigger.view_title(vctx, context, ui);
-                                });
-                                for action_ref in &fusion.behavior {
+                        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+                            let vctx = ViewContext::new(ui).non_interactible(true);
+                            ui.horizontal(|ui| {
+                                Icon::Lightning.show(ui);
+                                trigger.view_title(vctx, context, ui);
+                            });
+                            let units = fusion.units(context).unwrap_or_default();
+                            for (unit_index, action_ref) in fusion.behavior.iter().enumerate() {
+                                if let Some(unit) = units.get(unit_index) {
                                     for i in 0..action_ref.length as usize {
                                         if let Ok(action) =
-                                            NFusion::get_action(context, action_ref, i)
+                                            NFusion::get_action(context, unit.id, action_ref, i)
                                         {
-                                            if let Ok(_entity) = context.entity(action_ref.unit) {
-                                                action.view(vctx, context, ui);
+                                            if let Ok(entity) = context.entity(unit.id) {
+                                                context
+                                                    .with_owner_ref(entity, |context| {
+                                                        action.view(vctx, context, ui);
+                                                        Ok(())
+                                                    })
+                                                    .ui(ui);
                                             }
                                         }
                                     }
                                 }
                             }
-                            Err(e) => e.ui(ui),
                         }
                     });
                 }
@@ -474,28 +478,152 @@ impl MatchPlugin {
 
                             for slot_idx in 0..max_slots {
                                 if let Some(unit) = units.get(slot_idx) {
-                                    let resp = slot_rect_button(
-                                        egui::Vec2::new(60.0, 60.0),
-                                        ui,
-                                        |rect, ui| {
-                                            if let Ok(rep) = context
-                                                .first_parent_recursive::<NUnitRepresentation>(
-                                                    unit.id,
-                                                )
-                                            {
-                                                context
-                                                    .with_owner_ref(unit.entity(), |ctx| {
-                                                        RepresentationPlugin::paint_rect(
-                                                            rect,
-                                                            ctx,
-                                                            &rep.material,
-                                                            ui,
-                                                        )
-                                                    })
-                                                    .ui(ui);
-                                            }
-                                        },
-                                    );
+                                    let resp = ui
+                                        .horizontal(|ui| {
+                                            let resp = slot_rect_button(
+                                                egui::Vec2::new(60.0, 60.0),
+                                                ui,
+                                                |rect, ui| {
+                                                    if let Ok(rep) = context
+                                                    .first_parent_recursive::<NUnitRepresentation>(
+                                                        unit.id,
+                                                    )
+                                                {
+                                                    context
+                                                        .with_owner_ref(unit.entity(), |ctx| {
+                                                            RepresentationPlugin::paint_rect(
+                                                                rect,
+                                                                ctx,
+                                                                &rep.material,
+                                                                ui,
+                                                            )
+                                                        })
+                                                        .ui(ui);
+                                                }
+                                                },
+                                            );
+
+                                            // Get current action range for this unit by index
+                                            let current_start = fusion
+                                                .behavior
+                                                .get(slot_idx)
+                                                .map(|ar| ar.start)
+                                                .unwrap_or(0);
+                                            let current_len = fusion
+                                                .behavior
+                                                .get(slot_idx)
+                                                .map(|ar| ar.length)
+                                                .unwrap_or(0);
+
+                                            // Get unit's available actions count
+                                            let max_actions = if let Ok(behavior) = context
+                                                .first_parent_recursive::<NUnitBehavior>(
+                                                unit.id,
+                                            ) {
+                                                behavior
+                                                    .reactions
+                                                    .iter()
+                                                    .map(|r| r.actions.len() as u8)
+                                                    .max()
+                                                    .unwrap_or(0)
+                                            } else {
+                                                0
+                                            };
+
+                                            // Action range controls
+                                            ui.vertical(|ui| {
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Start:");
+
+                                                    // Start decrease button
+                                                    let can_decrease_start = current_start > 0;
+                                                    let start_decrease_btn = ui.add_enabled(
+                                                        can_decrease_start,
+                                                        egui::Button::new("-"),
+                                                    );
+                                                    if start_decrease_btn.clicked()
+                                                        && can_decrease_start
+                                                    {
+                                                        let new_start = current_start - 1;
+                                                        cn().reducers
+                                                            .match_set_fusion_unit_action_range(
+                                                                unit.id,
+                                                                new_start,
+                                                                current_len,
+                                                            )
+                                                            .notify_error_op();
+                                                    }
+
+                                                    ui.label(format!("{}", current_start));
+
+                                                    // Start increase button
+                                                    let can_increase_start =
+                                                        current_start + current_len < max_actions;
+                                                    let start_increase_btn = ui.add_enabled(
+                                                        can_increase_start,
+                                                        egui::Button::new("+"),
+                                                    );
+                                                    if start_increase_btn.clicked()
+                                                        && can_increase_start
+                                                    {
+                                                        let new_start = current_start + 1;
+                                                        // Adjust length if it goes out of bounds
+                                                        let max_len =
+                                                            max_actions.saturating_sub(new_start);
+                                                        let new_len = current_len.min(max_len);
+                                                        cn().reducers
+                                                            .match_set_fusion_unit_action_range(
+                                                                unit.id, new_start, new_len,
+                                                            )
+                                                            .notify_error_op();
+                                                    }
+                                                });
+                                                ui.horizontal(|ui| {
+                                                    ui.label("Len:");
+
+                                                    // Length decrease button
+                                                    let can_decrease_len = current_len > 0;
+                                                    let len_decrease_btn = ui.add_enabled(
+                                                        can_decrease_len,
+                                                        egui::Button::new("-"),
+                                                    );
+                                                    if len_decrease_btn.clicked()
+                                                        && can_decrease_len
+                                                    {
+                                                        cn().reducers
+                                                            .match_set_fusion_unit_action_range(
+                                                                unit.id,
+                                                                current_start,
+                                                                current_len - 1,
+                                                            )
+                                                            .notify_error_op();
+                                                    }
+
+                                                    ui.label(format!("{}", current_len));
+
+                                                    // Length increase button
+                                                    let can_increase_len =
+                                                        current_start + current_len < max_actions;
+                                                    let len_increase_btn = ui.add_enabled(
+                                                        can_increase_len,
+                                                        egui::Button::new("+"),
+                                                    );
+                                                    if len_increase_btn.clicked()
+                                                        && can_increase_len
+                                                    {
+                                                        cn().reducers
+                                                            .match_set_fusion_unit_action_range(
+                                                                unit.id,
+                                                                current_start,
+                                                                current_len + 1,
+                                                            )
+                                                            .notify_error_op();
+                                                    }
+                                                });
+                                            });
+                                            resp
+                                        })
+                                        .inner;
                                     if resp.dragged() {
                                         resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
                                         if let Some(pos) = ui.ctx().pointer_latest_pos() {

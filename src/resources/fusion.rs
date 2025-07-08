@@ -1,11 +1,21 @@
 use super::*;
 
 impl NFusion {
-    pub fn remove_unit(&mut self, id: u64) {
+    pub fn remove_unit(&mut self, context: &Context, id: u64) -> Result<(), ExpressionError> {
         if self.trigger.unit == id {
             self.trigger = Default::default();
         }
-        self.behavior.retain(|ar| ar.unit != id);
+
+        // Find the index of the unit being removed
+        let units = self.units(context)?;
+        if let Some(unit_index) = units.iter().position(|u| u.id == id) {
+            // Remove the behavior at the corresponding index
+            if unit_index < self.behavior.len() {
+                self.behavior.remove(unit_index);
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_action_count(&self) -> usize {
@@ -44,10 +54,11 @@ impl NFusion {
     }
     pub fn get_action<'a>(
         context: &'a Context,
+        unit_id: u64,
         ar: &UnitActionRef,
         index: usize,
     ) -> Result<&'a Action, ExpressionError> {
-        Self::get_behavior(context, ar.unit)?
+        Self::get_behavior(context, unit_id)?
             .reactions
             .get(ar.trigger as usize)
             .to_e_not_found()?
@@ -66,12 +77,16 @@ impl NFusion {
                 .fire(event, context)
                 .unwrap_or_default()
             {
-                for ar in &self.behavior {
-                    for i in 0..ar.length as usize {
-                        let action = Self::get_action(context, ar, i)?;
-                        let action = action.clone();
-                        context.add_caster(context.entity(ar.unit)?);
-                        battle_actions.extend(action.process(context)?);
+                let units = self.units(context)?;
+                let unit_ids: Vec<u64> = units.iter().map(|u| u.id).collect();
+                for (unit_index, ar) in self.behavior.iter().enumerate() {
+                    if let Some(unit_id) = unit_ids.get(unit_index) {
+                        for i in 0..ar.length as usize {
+                            let action = Self::get_action(context, *unit_id, ar, i)?;
+                            let action = action.clone();
+                            context.add_caster(context.entity(*unit_id)?);
+                            battle_actions.extend(action.process(context)?);
+                        }
                     }
                 }
             }
@@ -114,7 +129,7 @@ impl NFusion {
     pub fn show_editor(&mut self, context: &Context, ui: &mut Ui) -> Result<bool, ExpressionError> {
         let mut changed = false;
         let units = self.units(context)?;
-        ui.horizontal(|ui| {
+        ui.horizontal(|ui| -> Result<(), ExpressionError> {
             ui.vertical(|ui| -> Result<(), ExpressionError> {
                 // Select trigger
                 ui.label("Select Trigger:");
@@ -150,7 +165,7 @@ impl NFusion {
                 });
 
                 if self.can_add_action() {
-                    for unit in &units {
+                    for (unit_index, unit) in units.iter().enumerate() {
                         let b = Self::get_behavior(context, unit.id)?;
                         for (ti, r) in b.reactions.iter().enumerate() {
                             if r.actions.is_empty() {
@@ -161,19 +176,21 @@ impl NFusion {
                                 for start in 0..r.actions.len() {
                                     for length in 1..=(r.actions.len() - start) {
                                         let ar = UnitActionRef {
-                                            unit: unit.id,
                                             trigger: ti as u8,
                                             start: start as u8,
                                             length: length as u8,
                                         };
 
-                                        // Check if this range overlaps with existing ones
-                                        let overlaps = self.behavior.iter().any(|existing| {
-                                            existing.unit == ar.unit
-                                                && existing.trigger == ar.trigger
-                                                && (existing.start < ar.start + ar.length
-                                                    && ar.start < existing.start + existing.length)
-                                        });
+                                        // Check if this range overlaps with existing ones at this unit index
+                                        let overlaps = self.behavior.get(unit_index).map_or(
+                                            false,
+                                            |existing| {
+                                                existing.trigger == ar.trigger
+                                                    && (existing.start < ar.start + ar.length
+                                                        && ar.start
+                                                            < existing.start + existing.length)
+                                            },
+                                        );
 
                                         if !overlaps {
                                             let range_text = if length == 1 {
@@ -183,8 +200,26 @@ impl NFusion {
                                             };
 
                                             if ui.button(range_text).clicked() {
-                                                self.behavior.push(ar);
-                                                changed = true;
+                                                // Ensure behavior vector has the same length as units
+                                                match self.units(context) {
+                                                    Ok(units) => {
+                                                        self.behavior.resize(
+                                                            units.len(),
+                                                            UnitActionRef {
+                                                                trigger: 0,
+                                                                start: 0,
+                                                                length: 0,
+                                                            },
+                                                        );
+
+                                                        // Update the behavior at the unit index
+                                                        if unit_index < self.behavior.len() {
+                                                            self.behavior[unit_index] = ar;
+                                                            changed = true;
+                                                        }
+                                                    }
+                                                    Err(_) => {}
+                                                }
                                             }
                                         }
                                     }
@@ -248,11 +283,11 @@ impl NFusion {
                         });
 
                         let range_text = if ar.length == 1 {
-                            format!("Unit {} Action {}", ar.unit, ar.start)
+                            format!("Unit {} Action {}", i, ar.start)
                         } else {
                             format!(
                                 "Unit {} Actions {}-{}",
-                                ar.unit,
+                                i,
                                 ar.start,
                                 ar.start + ar.length - 1
                             )

@@ -419,7 +419,22 @@ impl BattlePlugin {
                     changed = true;
                 }
                 if let Some((fusion, unit)) = remove_unit {
-                    context.get_by_id_mut::<NFusion>(fusion)?.remove_unit(unit);
+                    // First get the unit index
+                    let unit_index = {
+                        let fusion_ref = context.get_by_id::<NFusion>(fusion)?;
+                        let units = fusion_ref.units(context)?;
+                        units.iter().position(|u| u.id == unit)
+                    };
+
+                    // Then remove from fusion behavior
+                    if let Some(unit_index) = unit_index {
+                        let mut fusion_ref = context.get_by_id_mut::<NFusion>(fusion)?;
+                        if unit_index < fusion_ref.behavior.len() {
+                            fusion_ref.behavior.remove(unit_index);
+                        }
+                    }
+
+                    // Finally unlink the unit
                     context.unlink_parent_child(unit, fusion)?;
                     changed = true;
                 }
