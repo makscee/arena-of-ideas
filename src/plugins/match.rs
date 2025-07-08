@@ -416,6 +416,7 @@ impl MatchPlugin {
 
     pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
+            let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
             let fusions = team.fusions_load(context);
@@ -443,7 +444,7 @@ impl MatchPlugin {
                                 });
                                 for action_ref in action_refs {
                                     if let Ok(action) = NFusion::get_action(context, action_ref) {
-                                        if let Ok(entity) = context.entity(action_ref.unit) {
+                                        if let Ok(_entity) = context.entity(action_ref.unit) {
                                             action.view(vctx, context, ui);
                                         }
                                     }
@@ -457,17 +458,17 @@ impl MatchPlugin {
             ui.add_space(5.0);
 
             ui.columns(fusions.len(), |columns| {
-                for (i, fusion) in fusions.iter().enumerate() {
-                    let ui = &mut columns[i];
+                for (fusion_idx, fusion) in fusions.iter().enumerate() {
+                    let ui = &mut columns[fusion_idx];
                     let result = ui
                         .vertical(|ui| -> Result<(), ExpressionError> {
                             // Fusion slots
                             let units = fusion.units(context).unwrap_or_default();
                             let max_slots = fusion.lvl as usize;
 
-                            for i in 0..max_slots {
-                                if let Some(unit) = units.get(i) {
-                                    slot_rect_button(
+                            for slot_idx in 0..max_slots {
+                                if let Some(unit) = units.get(slot_idx) {
+                                    let resp = slot_rect_button(
                                         egui::Vec2::new(60.0, 60.0),
                                         ui,
                                         |rect, ui| {
@@ -489,14 +490,162 @@ impl MatchPlugin {
                                             }
                                         },
                                     );
+
+                                    // Make unit draggable
+                                    if resp.dragged() {
+                                        resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
+                                        debug!("dragged");
+                                        if let Some(pos) = ui.ctx().pointer_latest_pos() {
+                                            let origin = resp.rect.center();
+                                            let painter =
+                                                ui.ctx().layer_painter(egui::LayerId::new(
+                                                    egui::Order::Foreground,
+                                                    egui::Id::new("drag_arrow"),
+                                                ));
+                                            painter.arrow(
+                                                origin,
+                                                pos - origin,
+                                                ui.visuals().widgets.hovered.fg_stroke,
+                                            );
+                                        }
+                                    }
+                                    if resp.hovered() {
+                                        ui.painter().rect_stroke(
+                                            resp.rect.shrink(1.0),
+                                            CornerRadius::ZERO,
+                                            YELLOW.alpha(0.5).stroke(),
+                                            egui::StrokeKind::Outside,
+                                        );
+                                    }
+                                    if let Some(payload) =
+                                        DndArea::<(u64, usize, u64)>::new(resp.rect)
+                                            .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
+                                            .text_fn(ui, |(_, _, unit_id)| {
+                                                if let Ok(unit) =
+                                                    context.get_by_id::<NUnit>(*unit_id)
+                                                {
+                                                    format!("Swap with {}", unit.unit_name)
+                                                } else {
+                                                    "Swap units".to_string()
+                                                }
+                                            })
+                                            .ui(ui)
+                                    {
+                                        let (source_fusion_id, source_slot_idx, _source_unit_id) =
+                                            payload.as_ref();
+                                        if *source_fusion_id == fusion.id
+                                            && *source_slot_idx != slot_idx
+                                        {
+                                            // Reorder within same fusion by removing and re-adding units
+                                            // This is a workaround until proper reordering is implemented
+                                            let current_units =
+                                                fusion.units(context).unwrap_or_default();
+
+                                            if *source_slot_idx < current_units.len()
+                                                && slot_idx < current_units.len()
+                                            {
+                                                // Reorder within same fusion by swapping units
+                                                let mut unit_ids: Vec<u64> =
+                                                    current_units.iter().map(|u| u.id).collect();
+
+                                                // Swap the units in the vector
+                                                unit_ids.swap(*source_slot_idx, slot_idx);
+
+                                                // Call the reorder reducer
+                                                cn().reducers
+                                                    .match_reorder_fusion_units(fusion.id, unit_ids)
+                                                    .notify_error_op();
+                                            }
+                                        }
+                                    }
                                 } else {
-                                    slot_rect_button(
+                                    let resp = slot_rect_button(
                                         egui::Vec2::new(60.0, 60.0),
                                         ui,
-                                        |_rect, _ui| {
-                                            // Empty slot - no rendering
+                                        |rect, ui| {
+                                            // Empty slot - show dashed border
+                                            ui.painter().rect_stroke(
+                                                rect.shrink(4.0),
+                                                CornerRadius::ZERO,
+                                                ui.visuals().weak_text_color().stroke(),
+                                                egui::StrokeKind::Outside,
+                                            );
                                         },
                                     );
+
+                                    // Show drop area feedback for empty slot (reordering existing units)
+                                    if let Some(payload) =
+                                        DndArea::<(u64, usize, u64)>::new(resp.rect)
+                                            .id(format!("empty_slot_{}_{}", fusion_idx, slot_idx))
+                                            .text_fn(ui, |(_, _, unit_id)| {
+                                                if let Ok(unit) =
+                                                    context.get_by_id::<NUnit>(*unit_id)
+                                                {
+                                                    format!("Move {} here", unit.unit_name)
+                                                } else {
+                                                    "Move unit here".to_string()
+                                                }
+                                            })
+                                            .ui(ui)
+                                    {
+                                        let (source_fusion_id, source_slot_idx, _source_unit_id) =
+                                            payload.as_ref();
+                                        if *source_fusion_id == fusion.id {
+                                            // Move unit to empty slot within same fusion
+                                            let current_units =
+                                                fusion.units(context).unwrap_or_default();
+
+                                            if *source_slot_idx < current_units.len()
+                                                && slot_idx < fusion.lvl as usize
+                                            {
+                                                // Move unit to empty slot within same fusion
+                                                let mut unit_ids: Vec<u64> =
+                                                    current_units.iter().map(|u| u.id).collect();
+
+                                                // Move the unit to the target slot
+                                                let moved_unit = unit_ids.remove(*source_slot_idx);
+
+                                                // Insert at target position, or append if target is at end
+                                                if slot_idx >= unit_ids.len() {
+                                                    unit_ids.push(moved_unit);
+                                                } else {
+                                                    unit_ids.insert(slot_idx, moved_unit);
+                                                }
+
+                                                // Call the reorder reducer
+                                                cn().reducers
+                                                    .match_reorder_fusion_units(fusion.id, unit_ids)
+                                                    .notify_error_op();
+                                            }
+                                        }
+                                    }
+                                    if let Some(payload) =
+                                        egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx())
+                                    {
+                                        if payload.1.card_kind == CardKind::Unit {
+                                            if let Some(shop_item) =
+                                                DndArea::<(usize, ShopSlot)>::new(resp.rect)
+                                                    .id(format!(
+                                                        "unit_buy_empty_slot_{}_{}",
+                                                        fusion_idx, slot_idx
+                                                    ))
+                                                    .text_fn(ui, |(_, slot)| {
+                                                        format!(
+                                                            "play unit [yellow -{}g]",
+                                                            slot.price
+                                                        )
+                                                    })
+                                                    .ui(ui)
+                                            {
+                                                cn().reducers
+                                                    .match_play_unit(
+                                                        shop_item.0 as u8,
+                                                        fusion.slot as u8,
+                                                    )
+                                                    .notify_error_op();
+                                            }
+                                        }
+                                    }
                                 }
                             }
 
@@ -511,11 +660,27 @@ impl MatchPlugin {
                             Ok(())
                         })
                         .inner;
+
                     if let Err(e) = result {
                         ui.label(format!("Error: {}", e));
                     }
                 }
             });
+
+            if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
+                if payload.1.card_kind == CardKind::House {
+                    if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(rect)
+                        .text_fn(ui, |(_, slot)| {
+                            format!("play house [yellow -{}g]", slot.price)
+                        })
+                        .ui(ui)
+                    {
+                        cn().reducers
+                            .match_play_house(shop_item.0 as u8)
+                            .notify_error_op();
+                    }
+                }
+            }
 
             Ok(())
         })

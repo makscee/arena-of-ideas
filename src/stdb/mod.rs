@@ -35,6 +35,7 @@ pub mod match_insert_reducer;
 pub mod match_play_house_reducer;
 pub mod match_play_unit_reducer;
 pub mod match_remove_fusion_unit_reducer;
+pub mod match_reorder_fusion_units_reducer;
 pub mod match_reorder_fusions_reducer;
 pub mod match_reroll_reducer;
 pub mod match_sell_reducer;
@@ -119,6 +120,10 @@ pub use match_play_unit_reducer::{
 pub use match_remove_fusion_unit_reducer::{
     match_remove_fusion_unit, set_flags_for_match_remove_fusion_unit,
     MatchRemoveFusionUnitCallbackId,
+};
+pub use match_reorder_fusion_units_reducer::{
+    match_reorder_fusion_units, set_flags_for_match_reorder_fusion_units,
+    MatchReorderFusionUnitsCallbackId,
 };
 pub use match_reorder_fusions_reducer::{
     match_reorder_fusions, set_flags_for_match_reorder_fusions, MatchReorderFusionsCallbackId,
@@ -210,6 +215,10 @@ pub enum Reducer {
         fusion_id: u64,
         unit_id: u64,
     },
+    MatchReorderFusionUnits {
+        fusion_id: u64,
+        unit_ids: Vec<u64>,
+    },
     MatchReorderFusions {
         fusions: Vec<u64>,
     },
@@ -264,6 +273,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchPlayHouse { .. } => "match_play_house",
             Reducer::MatchPlayUnit { .. } => "match_play_unit",
             Reducer::MatchRemoveFusionUnit { .. } => "match_remove_fusion_unit",
+            Reducer::MatchReorderFusionUnits { .. } => "match_reorder_fusion_units",
             Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
             Reducer::MatchReroll => "match_reroll",
             Reducer::MatchSell { .. } => "match_sell",
@@ -384,6 +394,12 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 Ok(__sdk::parse_reducer_args::<
                     match_remove_fusion_unit_reducer::MatchRemoveFusionUnitArgs,
                 >("match_remove_fusion_unit", &value.args)?
+                .into())
+            }
+            "match_reorder_fusion_units" => {
+                Ok(__sdk::parse_reducer_args::<
+                    match_reorder_fusion_units_reducer::MatchReorderFusionUnitsArgs,
+                >("match_reorder_fusion_units", &value.args)?
                 .into())
             }
             "match_reorder_fusions" => Ok(__sdk::parse_reducer_args::<

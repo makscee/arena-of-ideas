@@ -40,6 +40,8 @@ impl<T: Any + Send + Sync> DndArea<T> {
         if !DragAndDrop::has_any_payload(ui.ctx())
             || !DragAndDrop::has_payload_of_type::<T>(ui.ctx())
         {
+            // to keep auto_ids order since ui.new_child() increments it by 1
+            ui.skip_ahead_auto_ids(1);
             return None;
         }
         let ui = &mut ui.new_child(

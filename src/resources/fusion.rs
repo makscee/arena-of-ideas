@@ -24,7 +24,7 @@ impl NFusion {
         }
     }
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
-        context.collect_parents_components::<NUnit>(self.id)
+        context.collect_components::<NUnit>(self.units.ids.iter().copied())
     }
     fn get_behavior<'a>(
         context: &'a Context,

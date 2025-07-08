@@ -164,6 +164,12 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_reorder_fusion_units(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_match_buy(|e, _| {
         if !e.check_identity() {
             return;

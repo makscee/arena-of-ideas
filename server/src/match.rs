@@ -127,8 +127,51 @@ fn match_play_house(ctx: &ReducerContext, i: u8) -> Result<(), String> {
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let i = i as usize;
+
+    // First try to get from shop
+    if let Some(offer) = m.shop_offers.last_mut() {
+        if let Ok(shop_slot) = offer.get_slot_mut(i as u8) {
+            if !shop_slot.sold && shop_slot.card_kind == CardKind::House {
+                // Buy and play from shop
+                let g = m.g;
+                if shop_slot.price > g {
+                    return Err("Not enough g".into());
+                }
+                shop_slot.sold = true;
+                let price = shop_slot.price;
+                let id = shop_slot.node_id;
+                m.g -= price;
+
+                if let Some(limit) = &mut offer.buy_limit {
+                    *limit -= 1;
+                    if *limit == 0 {
+                        m.shop_offers.remove(m.shop_offers.len() - 1);
+                    }
+                }
+
+                let house =
+                    id.to_node::<NHouse>(ctx)?
+                        .with_components(ctx)
+                        .clone(ctx, pid, &mut default());
+                house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
+                let house_units = id
+                    .collect_kind_children(ctx, NodeKind::NUnit)
+                    .choose_multiple(&mut ctx.rng(), 3)
+                    .copied()
+                    .collect_vec();
+                m.shop_offers.push(ShopOffer {
+                    buy_limit: Some(1),
+                    case: ShopSlot::units_from_ids(house_units, 0),
+                });
+                m.save(ctx);
+                return Ok(());
+            }
+        }
+    }
+
+    // Fallback to playing from hand
     let Some((card_kind, id)) = m.hand.get(i).copied() else {
-        return Err(format!("Card {i} not found in hand"));
+        return Err(format!("Card {i} not found in hand or shop"));
     };
     m.hand.remove(i);
     if !matches!(card_kind, CardKind::House) {
@@ -167,10 +210,54 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let i = i as usize;
-    let Some((card_kind, id)) = m.hand.get(i).copied() else {
-        return Err(format!("Card {i} not found in hand"));
+
+    // First try to get from shop
+    let (card_kind, id) = if let Some(offer) = m.shop_offers.last_mut() {
+        if let Ok(shop_slot) = offer.get_slot_mut(i as u8) {
+            if !shop_slot.sold && shop_slot.card_kind == CardKind::Unit {
+                // Buy from shop
+                let g = m.g;
+                if shop_slot.price > g {
+                    return Err("Not enough g".into());
+                }
+                shop_slot.sold = true;
+                let price = shop_slot.price;
+                let id = shop_slot.node_id;
+                m.g -= price;
+
+                if let Some(limit) = &mut offer.buy_limit {
+                    *limit -= 1;
+                    if *limit == 0 {
+                        m.shop_offers.remove(m.shop_offers.len() - 1);
+                    }
+                }
+
+                (CardKind::Unit, id)
+            } else {
+                // Fallback to playing from hand
+                let Some((card_kind, id)) = m.hand.get(i).copied() else {
+                    return Err(format!("Card {i} not found in hand or shop"));
+                };
+                m.hand.remove(i);
+                (card_kind, id)
+            }
+        } else {
+            // Fallback to playing from hand
+            let Some((card_kind, id)) = m.hand.get(i).copied() else {
+                return Err(format!("Card {i} not found in hand or shop"));
+            };
+            m.hand.remove(i);
+            (card_kind, id)
+        }
+    } else {
+        // Fallback to playing from hand
+        let Some((card_kind, id)) = m.hand.get(i).copied() else {
+            return Err(format!("Card {i} not found in hand or shop"));
+        };
+        m.hand.remove(i);
+        (card_kind, id)
     };
-    m.hand.remove(i);
+
     if !matches!(card_kind, CardKind::Unit) {
         return Err(format!("Card {i} is not a unit"));
     }
@@ -383,6 +470,47 @@ fn match_reorder_fusions(ctx: &ReducerContext, fusions: Vec<u64>) -> Result<(), 
     {
         f.slot = i as i32;
     }
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_reorder_fusion_units(
+    ctx: &ReducerContext,
+    fusion_id: u64,
+    unit_ids: Vec<u64>,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let fusion = m
+        .team_load(ctx)?
+        .fusions_load(ctx)?
+        .into_iter()
+        .find(|f| f.id == fusion_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
+
+    let current_units = fusion.units.ids.clone();
+
+    // Validate that the provided unit_ids match the current units
+    if unit_ids.len() != current_units.len() {
+        return Err("Wrong number of units provided".into());
+    }
+
+    // Check for duplicates
+    if let Some(id) = unit_ids.iter().duplicates().next() {
+        return Err(format!("Duplicate unit id#{id}"));
+    }
+
+    // Check that all provided units are currently in the fusion
+    for unit_id in &unit_ids {
+        if !current_units.contains(unit_id) {
+            return Err(format!("Unit#{unit_id} is not in Fusion#{fusion_id}"));
+        }
+    }
+
+    // Update the fusion with the new unit order
+    fusion.units.ids = unit_ids;
+
     player.save(ctx);
     Ok(())
 }

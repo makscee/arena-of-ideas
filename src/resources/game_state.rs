@@ -96,7 +96,6 @@ impl GameState {
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
                 let info = tiles.insert_pane(Pane::Shop(ShopPane::Info));
                 let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
-                let hand = tiles.insert_pane(Pane::Shop(ShopPane::Hand));
                 let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
                 let fusion = tiles.insert_pane(Pane::Shop(ShopPane::Fusion));
                 let top = tiles.insert_horizontal_tile([shop, info].into());
