@@ -94,7 +94,7 @@ impl MatchPlugin {
                         ui.scope_builder(
                             UiBuilder::new()
                                 .layout(Layout::bottom_up(Align::Center).with_cross_justify(true))
-                                .layer_id(egui::LayerId::new(Order::Foreground, Id::new("card"))),
+                                .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
                             |ui| {
                                 if "buy"
                                     .cstr()
@@ -412,5 +412,112 @@ impl MatchPlugin {
             world,
         );
         Ok(())
+    }
+
+    pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+        Context::from_world_ref_r(world, |context| {
+            let m = player(context)?.active_match_load(context)?;
+            let team = m.team_load(context)?;
+            let fusions = team.fusions_load(context);
+
+            if fusions.is_empty() {
+                ui.label("No fusion units available");
+                return Ok(());
+            }
+            ui.columns(fusions.len(), |columns| {
+                for (i, fusion) in fusions.iter().enumerate() {
+                    let ui = &mut columns[i];
+
+                    ui.vertical(|ui| {
+                        ui.label(format!(
+                            "{}/{}",
+                            fusion.get_action_count(),
+                            fusion.action_limit
+                        ));
+                        for (trigger_ref, action_refs) in &fusion.behavior {
+                            if let Ok(trigger) = NFusion::get_trigger(context, trigger_ref) {
+                                let vctx = ViewContext::new(ui).non_interactible(true);
+                                ui.horizontal(|ui| {
+                                    Icon::Lightning.show(ui);
+                                    trigger.view_title(vctx, context, ui);
+                                });
+                                for action_ref in action_refs {
+                                    if let Ok(action) = NFusion::get_action(context, action_ref) {
+                                        if let Ok(entity) = context.entity(action_ref.unit) {
+                                            action.view(vctx, context, ui);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            ui.add_space(5.0);
+
+            ui.columns(fusions.len(), |columns| {
+                for (i, fusion) in fusions.iter().enumerate() {
+                    let ui = &mut columns[i];
+                    let result = ui
+                        .vertical(|ui| -> Result<(), ExpressionError> {
+                            // Fusion slots
+                            let units = fusion.units(context).unwrap_or_default();
+                            let max_slots = fusion.lvl as usize;
+
+                            for i in 0..max_slots {
+                                if let Some(unit) = units.get(i) {
+                                    slot_rect_button(
+                                        egui::Vec2::new(60.0, 60.0),
+                                        ui,
+                                        |rect, ui| {
+                                            if let Ok(rep) = context
+                                                .first_parent_recursive::<NUnitRepresentation>(
+                                                    unit.id,
+                                                )
+                                            {
+                                                context
+                                                    .with_owner_ref(unit.entity(), |ctx| {
+                                                        RepresentationPlugin::paint_rect(
+                                                            rect,
+                                                            ctx,
+                                                            &rep.material,
+                                                            ui,
+                                                        )
+                                                    })
+                                                    .ui(ui);
+                                            }
+                                        },
+                                    );
+                                } else {
+                                    slot_rect_button(
+                                        egui::Vec2::new(60.0, 60.0),
+                                        ui,
+                                        |_rect, _ui| {
+                                            // Empty slot - no rendering
+                                        },
+                                    );
+                                }
+                            }
+
+                            ui.add_space(5.0);
+
+                            if "buy slot".cstr().button(ui).clicked() {
+                                cn().reducers
+                                    .match_buy_fusion_lvl(fusion.slot as u8)
+                                    .notify_error_op();
+                            }
+
+                            Ok(())
+                        })
+                        .inner;
+                    if let Err(e) = result {
+                        ui.label(format!("Error: {}", e));
+                    }
+                }
+            });
+
+            Ok(())
+        })
     }
 }

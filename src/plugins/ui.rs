@@ -1,6 +1,9 @@
 use bevy_egui::{
     EguiFullOutput, EguiInput,
-    egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily},
+    egui::{
+        LayerId,
+        epaint::text::{FontInsert, FontPriority, InsertFontFamily},
+    },
 };
 
 use super::*;
@@ -23,7 +26,12 @@ impl UiPlugin {
         let ctx = ctx.get().clone();
         ctx.begin_pass(egui_input.take());
         TopBottomPanel::top("top_bar").show(&ctx, |ui| {
-            TopBar::ui(ui, world);
+            ui.scope_builder(
+                UiBuilder::new().layer_id(LayerId::new(Order::Foreground, Id::new("settings"))),
+                |ui| {
+                    TopBar::ui(ui, world);
+                },
+            );
         });
         TilePlugin::ui(&ctx, world);
         WindowPlugin::show_all(&ctx, world);

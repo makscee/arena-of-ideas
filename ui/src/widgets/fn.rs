@@ -136,8 +136,12 @@ pub fn cursor_window_frame(
         });
 }
 
-pub fn slot_rect_button(ui: &mut Ui, content: impl FnOnce(Rect, &mut Ui)) -> Response {
-    RectButton::new_size(ui.available_size()).ui(ui, |color, rect, _, ui| {
+pub fn slot_rect_button(
+    size: egui::Vec2,
+    ui: &mut Ui,
+    content: impl FnOnce(Rect, &mut Ui),
+) -> Response {
+    RectButton::new_size(size).ui(ui, |color, rect, _, ui| {
         let rect = rect.shrink(5.0);
         corners_rounded_rect(rect, rect.width() * 0.1, color.stroke(), ui);
         content(rect, ui);

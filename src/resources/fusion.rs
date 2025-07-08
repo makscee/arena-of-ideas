@@ -349,7 +349,7 @@ impl NFusion {
                 let ui = &mut ui[i];
                 let i = fusions.len() - i - 1;
                 let fusion = fusions.get(&i).unwrap();
-                let resp = slot_rect_button(ui, |rect, ui| {
+                let resp = slot_rect_button(ui.available_size(), ui, |rect, ui| {
                     if fusion.units.ids.is_empty() {
                         return;
                     }

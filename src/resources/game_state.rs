@@ -98,19 +98,20 @@ impl GameState {
                 let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
                 let hand = tiles.insert_pane(Pane::Shop(ShopPane::Hand));
                 let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
+                let fusion = tiles.insert_pane(Pane::Shop(ShopPane::Fusion));
                 let top = tiles.insert_horizontal_tile([shop, info].into());
                 if let Tile::Container(h) = tiles.get_mut(top).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(shop, 4.0);
                     }
                 }
-                let mid = tiles.insert_horizontal_tile([team, roster].into());
+                let mid = tiles.insert_horizontal_tile([team, roster, fusion].into());
                 if let Tile::Container(h) = tiles.get_mut(mid).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(team, 4.0);
                     }
                 }
-                let root = tiles.insert_vertical_tile([top, mid, hand].into());
+                let root = tiles.insert_vertical_tile([top, fusion].into());
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Battle => {
@@ -163,6 +164,7 @@ pub enum ShopPane {
     Hand,
     Team,
     Info,
+    Fusion,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ExplorerPane {
@@ -206,6 +208,7 @@ impl Pane {
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
                 ShopPane::Hand => MatchPlugin::pane_hand(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
+                ShopPane::Fusion => MatchPlugin::pane_fusion(ui, world)?,
             },
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
