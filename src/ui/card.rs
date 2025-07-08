@@ -276,18 +276,15 @@ impl NFusion {
                     }
                 }
                 "behavior:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                for (tr, actions) in &self.behavior {
-                    if actions.is_empty() {
-                        continue;
-                    }
-                    let trigger = NFusion::get_trigger(context, tr)?;
-                    let vctx = ViewContext::new(ui).non_interactible(true);
-                    ui.horizontal(|ui| {
-                        Icon::Lightning.show(ui);
-                        trigger.view_title(vctx, context, ui);
-                    });
-                    for ar in actions {
-                        let action = NFusion::get_action(context, ar)?.clone();
+                let trigger = NFusion::get_trigger(context, &self.trigger)?;
+                let vctx = ViewContext::new(ui).non_interactible(true);
+                ui.horizontal(|ui| {
+                    Icon::Lightning.show(ui);
+                    trigger.view_title(vctx, context, ui);
+                });
+                for ar in &self.behavior {
+                    for i in 0..ar.length as usize {
+                        let action = NFusion::get_action(context, ar, i)?.clone();
                         context
                             .with_owner(context.entity(ar.unit)?, |context| {
                                 action.view_title(vctx, context, ui);

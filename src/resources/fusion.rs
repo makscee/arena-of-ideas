@@ -2,14 +2,14 @@ use super::*;
 
 impl NFusion {
     pub fn remove_unit(&mut self, id: u64) {
-        self.behavior.retain(|(t, _)| t.unit != id);
-        for (_, ars) in &mut self.behavior {
-            ars.retain(|ar| ar.unit != id);
+        if self.trigger.unit == id {
+            self.trigger = Default::default();
         }
+        self.behavior.retain(|ar| ar.unit != id);
     }
 
     pub fn get_action_count(&self) -> usize {
-        self.behavior.iter().map(|(_, actions)| actions.len()).sum()
+        self.behavior.iter().map(|ar| ar.length as usize).sum()
     }
 
     pub fn can_add_action(&self) -> bool {
@@ -45,13 +45,14 @@ impl NFusion {
     pub fn get_action<'a>(
         context: &'a Context,
         ar: &UnitActionRef,
+        index: usize,
     ) -> Result<&'a Action, ExpressionError> {
         Self::get_behavior(context, ar.unit)?
             .reactions
             .get(ar.trigger as usize)
             .to_e_not_found()?
             .actions
-            .get(ar.action as usize)
+            .get(ar.start as usize + index)
             .to_e_not_found()
     }
     pub fn react(
@@ -61,13 +62,13 @@ impl NFusion {
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
-            for (tr, actions) in &self.behavior {
-                if Self::get_trigger(context, tr)?
-                    .fire(event, context)
-                    .unwrap_or_default()
-                {
-                    for ar in actions {
-                        let action = Self::get_action(context, ar)?;
+            if Self::get_trigger(context, &self.trigger)?
+                .fire(event, context)
+                .unwrap_or_default()
+            {
+                for ar in &self.behavior {
+                    for i in 0..ar.length as usize {
+                        let action = Self::get_action(context, ar, i)?;
                         let action = action.clone();
                         context.add_caster(context.entity(ar.unit)?);
                         battle_actions.extend(action.process(context)?);
@@ -115,32 +116,31 @@ impl NFusion {
         let units = self.units(context)?;
         ui.horizontal(|ui| {
             ui.vertical(|ui| -> Result<(), ExpressionError> {
+                // Select trigger
+                ui.label("Select Trigger:");
                 for unit in &units {
                     let b = Self::get_behavior(context, unit.id)?;
                     for (ti, r) in b.reactions.iter().enumerate() {
-                        if self
-                            .behavior
-                            .iter()
-                            .any(|(t, _)| t.unit == unit.id && t.trigger as usize == ti)
-                        {
+                        let trigger_ref = UnitTriggerRef {
+                            unit: unit.id,
+                            trigger: ti as u8,
+                        };
+                        if self.trigger == trigger_ref {
                             continue;
                         }
                         if r.trigger.cstr().button(ui).clicked() {
-                            self.behavior.push((
-                                UnitTriggerRef {
-                                    unit: unit.id,
-                                    trigger: ti as u8,
-                                },
-                                default(),
-                            ));
+                            self.trigger = trigger_ref;
                             changed = true;
                         }
                     }
                 }
-                if self.behavior.is_empty() {
+
+                if self.trigger.unit == 0 {
                     return Ok(());
                 }
 
+                ui.separator();
+                ui.label("Add Action Ranges:");
                 ui.horizontal(|ui| {
                     ui.label(format!(
                         "Actions: {}/{}",
@@ -153,29 +153,43 @@ impl NFusion {
                     for unit in &units {
                         let b = Self::get_behavior(context, unit.id)?;
                         for (ti, r) in b.reactions.iter().enumerate() {
-                            for (ai, action) in r.actions.iter().enumerate() {
-                                let ar = UnitActionRef {
-                                    unit: unit.id,
-                                    trigger: ti as u8,
-                                    action: ai as u8,
-                                };
-                                if self.behavior.iter().any(|(_, ars)| ars.contains(&ar)) {
-                                    continue;
-                                }
-                                context
-                                    .with_owner_ref(unit.entity(), |context| {
-                                        if action
-                                            .title_cstr(ViewContext::new(ui), context)
-                                            .button(ui)
-                                            .clicked()
-                                        {
-                                            self.behavior.last_mut().unwrap().1.push(ar);
-                                            changed = true;
-                                        }
-                                        Ok(())
-                                    })
-                                    .ui(ui);
+                            if r.actions.is_empty() {
+                                continue;
                             }
+                            ui.label(format!("Unit {} Trigger {}", unit.id, ti));
+                            ui.horizontal(|ui| {
+                                for start in 0..r.actions.len() {
+                                    for length in 1..=(r.actions.len() - start) {
+                                        let ar = UnitActionRef {
+                                            unit: unit.id,
+                                            trigger: ti as u8,
+                                            start: start as u8,
+                                            length: length as u8,
+                                        };
+
+                                        // Check if this range overlaps with existing ones
+                                        let overlaps = self.behavior.iter().any(|existing| {
+                                            existing.unit == ar.unit
+                                                && existing.trigger == ar.trigger
+                                                && (existing.start < ar.start + ar.length
+                                                    && ar.start < existing.start + existing.length)
+                                        });
+
+                                        if !overlaps {
+                                            let range_text = if length == 1 {
+                                                format!("Action {}", start)
+                                            } else {
+                                                format!("Actions {}-{}", start, start + length - 1)
+                                            };
+
+                                            if ui.button(range_text).clicked() {
+                                                self.behavior.push(ar);
+                                                changed = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            });
                         }
                     }
                 } else {
@@ -186,73 +200,73 @@ impl NFusion {
             .inner?;
             space(ui);
             ui.vertical(|ui| -> Result<(), ExpressionError> {
-                let mut new_behavior = None;
-                for (ti, (tr, actions)) in self.behavior.iter().enumerate() {
-                    let trigger = Self::get_trigger(context, tr)?;
+                // Show current trigger
+                if self.trigger.unit != 0 {
+                    let trigger = Self::get_trigger(context, &self.trigger)?;
+                    ui.label("Current Trigger:");
                     if trigger.cstr().button(ui).clicked() {
-                        let mut behavior = self.behavior.clone();
-                        behavior.remove(ti);
-                        new_behavior = Some(behavior);
-                    }
-                    for (ai, ar) in actions.iter().enumerate() {
-                        let action = Self::get_action(context, ar)?;
-                        ui.horizontal(|ui| -> Result<(), ExpressionError> {
-                            ui.vertical(|ui| {
-                                let can_move_down =
-                                    ti + 1 < self.behavior.len() || ai + 1 < actions.len();
-                                let can_move_up = ti > 0 || ai > 0;
-                                let size = (LINE_HEIGHT * 0.5).v2();
-                                if RectButton::new_size(size)
-                                    .enabled(can_move_up)
-                                    .no_bar_check(true)
-                                    .ui(ui, |color, rect, _, ui| {
-                                        triangle(rect, color, 0, ui);
-                                    })
-                                    .clicked()
-                                {
-                                    let mut behavior = self.behavior.clone();
-                                    if ai > 0 {
-                                        behavior[ti].1.swap(ai, ai - 1);
-                                    } else {
-                                        behavior[ti].1.remove(ai);
-                                        behavior[ti - 1].1.push(*ar);
-                                    }
-                                    new_behavior = Some(behavior);
-                                }
-                                if RectButton::new_size(size)
-                                    .enabled(can_move_down)
-                                    .no_bar_check(true)
-                                    .ui(ui, |color, rect, _, ui| {
-                                        triangle(rect, color, 2, ui);
-                                    })
-                                    .clicked()
-                                {
-                                    let mut behavior = self.behavior.clone();
-                                    if ai == actions.len() - 1 {
-                                        behavior[ti].1.remove(ai);
-                                        behavior[ti + 1].1.insert(0, *ar);
-                                    } else {
-                                        behavior[ti].1.swap(ai, ai + 1);
-                                    }
-                                    new_behavior = Some(behavior);
-                                }
-                            });
-
-                            context.with_owner_ref(context.entity(ar.unit)?, |context| {
-                                if action
-                                    .title_cstr(ViewContext::new(ui), context)
-                                    .button(ui)
-                                    .clicked()
-                                {
-                                    let mut behavior = self.behavior.clone();
-                                    behavior[ti].1.remove(ai);
-                                    new_behavior = Some(behavior);
-                                }
-                                Ok(())
-                            })
-                        });
+                        self.trigger = Default::default();
+                        self.behavior.clear();
+                        changed = true;
                     }
                 }
+
+                ui.separator();
+                ui.label("Action Ranges:");
+
+                let mut new_behavior = None;
+                for (i, ar) in self.behavior.iter().enumerate() {
+                    ui.horizontal(|ui| -> Result<(), ExpressionError> {
+                        ui.vertical(|ui| {
+                            let can_move_up = i > 0;
+                            let can_move_down = i < self.behavior.len() - 1;
+                            let size = (LINE_HEIGHT * 0.5).v2();
+                            if RectButton::new_size(size)
+                                .enabled(can_move_up)
+                                .no_bar_check(true)
+                                .ui(ui, |color, rect, _, ui| {
+                                    triangle(rect, color, 0, ui);
+                                })
+                                .clicked()
+                            {
+                                let mut behavior = self.behavior.clone();
+                                behavior.swap(i, i - 1);
+                                new_behavior = Some(behavior);
+                            }
+                            if RectButton::new_size(size)
+                                .enabled(can_move_down)
+                                .no_bar_check(true)
+                                .ui(ui, |color, rect, _, ui| {
+                                    triangle(rect, color, 2, ui);
+                                })
+                                .clicked()
+                            {
+                                let mut behavior = self.behavior.clone();
+                                behavior.swap(i, i + 1);
+                                new_behavior = Some(behavior);
+                            }
+                        });
+
+                        let range_text = if ar.length == 1 {
+                            format!("Unit {} Action {}", ar.unit, ar.start)
+                        } else {
+                            format!(
+                                "Unit {} Actions {}-{}",
+                                ar.unit,
+                                ar.start,
+                                ar.start + ar.length - 1
+                            )
+                        };
+
+                        if ui.button(range_text).clicked() {
+                            let mut behavior = self.behavior.clone();
+                            behavior.remove(i);
+                            new_behavior = Some(behavior);
+                        }
+                        Ok(())
+                    });
+                }
+
                 if let Some(mut new_behavior) = new_behavior {
                     mem::swap(&mut self.behavior, &mut new_behavior);
                     changed = true;

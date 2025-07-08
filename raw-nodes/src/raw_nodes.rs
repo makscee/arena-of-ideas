@@ -112,7 +112,8 @@ struct NMatch {
 
 struct NFusion {
     pub units: ParentLinks<NUnit>,
-    pub behavior: Vec<(UnitTriggerRef, Vec<UnitActionRef>)>,
+    pub trigger: UnitTriggerRef,
+    pub behavior: Vec<UnitActionRef>,
     pub slot: i32,
     pub pwr: i32,
     pub hp: i32,

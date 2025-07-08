@@ -435,21 +435,27 @@ impl MatchPlugin {
                             fusion.get_action_count(),
                             fusion.action_limit
                         ));
-                        for (trigger_ref, action_refs) in &fusion.behavior {
-                            if let Ok(trigger) = NFusion::get_trigger(context, trigger_ref) {
+                        format!("{} {}", fusion.trigger.trigger, fusion.trigger.unit).label(ui);
+                        match NFusion::get_trigger(context, &fusion.trigger) {
+                            Ok(trigger) => {
                                 let vctx = ViewContext::new(ui).non_interactible(true);
                                 ui.horizontal(|ui| {
                                     Icon::Lightning.show(ui);
                                     trigger.view_title(vctx, context, ui);
                                 });
-                                for action_ref in action_refs {
-                                    if let Ok(action) = NFusion::get_action(context, action_ref) {
-                                        if let Ok(_entity) = context.entity(action_ref.unit) {
-                                            action.view(vctx, context, ui);
+                                for action_ref in &fusion.behavior {
+                                    for i in 0..action_ref.length as usize {
+                                        if let Ok(action) =
+                                            NFusion::get_action(context, action_ref, i)
+                                        {
+                                            if let Ok(_entity) = context.entity(action_ref.unit) {
+                                                action.view(vctx, context, ui);
+                                            }
                                         }
                                     }
                                 }
                             }
+                            Err(e) => e.ui(ui),
                         }
                     });
                 }
@@ -490,11 +496,8 @@ impl MatchPlugin {
                                             }
                                         },
                                     );
-
-                                    // Make unit draggable
                                     if resp.dragged() {
                                         resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
-                                        debug!("dragged");
                                         if let Some(pos) = ui.ctx().pointer_latest_pos() {
                                             let origin = resp.rect.center();
                                             let painter =
@@ -508,14 +511,6 @@ impl MatchPlugin {
                                                 ui.visuals().widgets.hovered.fg_stroke,
                                             );
                                         }
-                                    }
-                                    if resp.hovered() {
-                                        ui.painter().rect_stroke(
-                                            resp.rect.shrink(1.0),
-                                            CornerRadius::ZERO,
-                                            YELLOW.alpha(0.5).stroke(),
-                                            egui::StrokeKind::Outside,
-                                        );
                                     }
                                     if let Some(payload) =
                                         DndArea::<(u64, usize, u64)>::new(resp.rect)
@@ -562,15 +557,7 @@ impl MatchPlugin {
                                     let resp = slot_rect_button(
                                         egui::Vec2::new(60.0, 60.0),
                                         ui,
-                                        |rect, ui| {
-                                            // Empty slot - show dashed border
-                                            ui.painter().rect_stroke(
-                                                rect.shrink(4.0),
-                                                CornerRadius::ZERO,
-                                                ui.visuals().weak_text_color().stroke(),
-                                                egui::StrokeKind::Outside,
-                                            );
-                                        },
+                                        |_, _| {},
                                     );
 
                                     // Show drop area feedback for empty slot (reordering existing units)

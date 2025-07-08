@@ -4,7 +4,8 @@ use super::*;
 pub struct UnitActionRef {
     pub unit: u64,
     pub trigger: u8,
-    pub action: u8,
+    pub start: u8,
+    pub length: u8,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
