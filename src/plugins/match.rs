@@ -425,49 +425,7 @@ impl MatchPlugin {
                 ui.label("No fusion units available");
                 return Ok(());
             }
-            ui.columns(fusions.len(), |columns| {
-                for (i, fusion) in fusions.iter().enumerate() {
-                    let ui = &mut columns[i];
-
-                    ui.vertical(|ui| {
-                        ui.label(format!(
-                            "{}/{}",
-                            fusion.get_action_count(),
-                            fusion.action_limit
-                        ));
-                        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
-                            let vctx = ViewContext::new(ui).non_interactible(true);
-                            ui.horizontal(|ui| {
-                                Icon::Lightning.show(ui);
-                                trigger.view_title(vctx, context, ui);
-                            });
-                            let units = fusion.units(context).unwrap_or_default();
-                            for (unit_index, action_ref) in fusion.behavior.iter().enumerate() {
-                                if let Some(unit) = units.get(unit_index) {
-                                    for i in 0..action_ref.length as usize {
-                                        if let Ok(action) =
-                                            NFusion::get_action(context, unit.id, action_ref, i)
-                                        {
-                                            if let Ok(entity) = context.entity(unit.id) {
-                                                context
-                                                    .with_owner_ref(entity, |context| {
-                                                        action.view(vctx, context, ui);
-                                                        Ok(())
-                                                    })
-                                                    .ui(ui);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    });
-                }
-            });
-
-            ui.add_space(5.0);
-
-            // Fusion rendering section
+            // Fusion rendering section at the top
             ui.columns(fusions.len(), |columns| {
                 for (fusion_idx, fusion) in fusions.iter().enumerate() {
                     let ui = &mut columns[fusion_idx];
@@ -489,8 +447,20 @@ impl MatchPlugin {
 
                     mat_rect.unit_rep_with_default(fusion.id).ui(ui, context);
 
-                    ui.label(format!("Level {}", fusion.lvl));
-                    ui.label(format!("Slot {}", fusion.slot));
+                    ui.label(format!(
+                        "{}/{}",
+                        fusion.get_action_count(),
+                        fusion.action_limit
+                    ));
+
+                    // Show trigger
+                    if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+                        ui.horizontal(|ui| {
+                            Icon::Lightning.show(ui);
+                            let vctx = ViewContext::new(ui).non_interactible(true);
+                            trigger.view_title(vctx, context, ui);
+                        });
+                    }
                 }
             });
 
@@ -501,14 +471,14 @@ impl MatchPlugin {
                     let ui = &mut columns[fusion_idx];
                     let result = ui
                         .vertical(|ui| -> Result<(), ExpressionError> {
-                            // Fusion slots
                             let units = fusion.units(context).unwrap_or_default();
                             let max_slots = fusion.lvl as usize;
 
                             for slot_idx in 0..max_slots {
                                 if let Some(unit) = units.get(slot_idx) {
                                     let resp = ui
-                                        .horizontal(|ui| {
+                                        .horizontal(|ui| -> Result<Response, ExpressionError> {
+                                            // Unit representation
                                             let resp = if let Ok(rep) = context
                                                 .first_parent_recursive::<NUnitRepresentation>(
                                                     unit.id,
@@ -522,127 +492,193 @@ impl MatchPlugin {
                                                     .ui(ui, context)
                                             };
 
-                                            // Get current action range for this unit by index
-                                            let current_start = fusion
-                                                .behavior
-                                                .get(slot_idx)
-                                                .map(|ar| ar.start)
-                                                .unwrap_or(0);
-                                            let current_len = fusion
-                                                .behavior
-                                                .get(slot_idx)
-                                                .map(|ar| ar.length)
-                                                .unwrap_or(0);
+                                            // Actions column with range buttons
+                                            ui.vertical(|ui| -> Result<(), ExpressionError> {
+                                                if let Ok(behavior) = context
+                                                    .first_parent_recursive::<NUnitBehavior>(
+                                                        unit.id,
+                                                    )
+                                                {
+                                                    let current_action_ref =
+                                                        fusion.behavior.get(slot_idx);
+                                                    let current_start = current_action_ref
+                                                        .map(|ar| ar.start)
+                                                        .unwrap_or(0);
+                                                    let current_len = current_action_ref
+                                                        .map(|ar| ar.length)
+                                                        .unwrap_or(0);
+                                                    let current_end = current_start + current_len;
 
-                                            // Get unit's available actions count
-                                            let max_actions = if let Ok(behavior) = context
-                                                .first_parent_recursive::<NUnitBehavior>(
-                                                unit.id,
-                                            ) {
-                                                behavior
-                                                    .reactions
-                                                    .iter()
-                                                    .map(|r| r.actions.len() as u8)
-                                                    .max()
-                                                    .unwrap_or(0)
-                                            } else {
-                                                0
-                                            };
-
-                                            // Action range controls
-                                            ui.vertical(|ui| {
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Start:");
-
-                                                    // Start decrease button
-                                                    let can_decrease_start = current_start > 0;
-                                                    let start_decrease_btn = ui.add_enabled(
-                                                        can_decrease_start,
-                                                        egui::Button::new("-"),
-                                                    );
-                                                    if start_decrease_btn.clicked()
-                                                        && can_decrease_start
+                                                    let max_actions = if let Some(reaction) =
+                                                        behavior
+                                                            .reactions
+                                                            .get(fusion.trigger.trigger as usize)
                                                     {
-                                                        let new_start = current_start - 1;
-                                                        cn().reducers
-                                                            .match_set_fusion_unit_action_range(
-                                                                unit.id,
-                                                                new_start,
-                                                                current_len,
+                                                        reaction.actions.len() as u8
+                                                    } else {
+                                                        0
+                                                    };
+
+                                                    // Start range buttons (top)
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("Start:");
+                                                        // Start decrease
+                                                        let can_decrease_start = current_start > 0;
+                                                        if ui
+                                                            .add_enabled(
+                                                                can_decrease_start,
+                                                                egui::Button::new("🔽"),
                                                             )
-                                                            .notify_error_op();
+                                                            .clicked()
+                                                        {
+                                                            cn().reducers
+                                                                .match_set_fusion_unit_action_range(
+                                                                    unit.id,
+                                                                    current_start - 1,
+                                                                    current_len,
+                                                                )
+                                                                .notify_error_op();
+                                                        }
+                                                        ui.label(format!("{}", current_start));
+                                                        // Start increase
+                                                        let can_increase_start = current_start
+                                                            + current_len
+                                                            < max_actions;
+                                                        if ui
+                                                            .add_enabled(
+                                                                can_increase_start,
+                                                                egui::Button::new("🔼"),
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            let new_start = current_start + 1;
+                                                            let max_len = max_actions
+                                                                .saturating_sub(new_start);
+                                                            let new_len = current_len.min(max_len);
+                                                            cn().reducers
+                                                                .match_set_fusion_unit_action_range(
+                                                                    unit.id, new_start, new_len,
+                                                                )
+                                                                .notify_error_op();
+                                                        }
+                                                    });
+
+                                                    // Show all actions for the unit's trigger
+                                                    if let Some(reaction) = behavior
+                                                        .reactions
+                                                        .get(fusion.trigger.trigger as usize)
+                                                    {
+                                                        for (action_idx, action) in
+                                                            reaction.actions.iter().enumerate()
+                                                        {
+                                                            let action_idx = action_idx as u8;
+                                                            let is_in_range = action_idx
+                                                                >= current_start
+                                                                && action_idx < current_end;
+
+                                                            let vctx = ViewContext::new(ui)
+                                                                .non_interactible(true);
+
+                                                            if is_in_range {
+                                                                // Normal rendering for actions in range
+                                                                if let Ok(entity) =
+                                                                    context.entity(unit.id)
+                                                                {
+                                                                    context
+                                                                        .with_owner_ref(
+                                                                            entity,
+                                                                            |context| {
+                                                                                action.view(
+                                                                                    vctx, context,
+                                                                                    ui,
+                                                                                );
+                                                                                Ok(())
+                                                                            },
+                                                                        )
+                                                                        .ui(ui);
+                                                                }
+                                                            } else {
+                                                                // Grey out actions not in range
+                                                                let old_style =
+                                                                    ui.visuals().clone();
+                                                                ui.visuals_mut()
+                                                                    .override_text_color =
+                                                                    Some(egui::Color32::GRAY);
+
+                                                                if let Ok(entity) =
+                                                                    context.entity(unit.id)
+                                                                {
+                                                                    context
+                                                                        .with_owner_ref(
+                                                                            entity,
+                                                                            |context| {
+                                                                                action.view(
+                                                                                    vctx, context,
+                                                                                    ui,
+                                                                                );
+                                                                                Ok(())
+                                                                            },
+                                                                        )
+                                                                        .ui(ui);
+                                                                }
+
+                                                                *ui.visuals_mut() = old_style;
+                                                            }
+                                                        }
                                                     }
 
-                                                    ui.label(format!("{}", current_start));
-
-                                                    // Start increase button
-                                                    let can_increase_start =
-                                                        current_start + current_len < max_actions;
-                                                    let start_increase_btn = ui.add_enabled(
-                                                        can_increase_start,
-                                                        egui::Button::new("+"),
-                                                    );
-                                                    if start_increase_btn.clicked()
-                                                        && can_increase_start
-                                                    {
-                                                        let new_start = current_start + 1;
-                                                        // Adjust length if it goes out of bounds
-                                                        let max_len =
-                                                            max_actions.saturating_sub(new_start);
-                                                        let new_len = current_len.min(max_len);
-                                                        cn().reducers
-                                                            .match_set_fusion_unit_action_range(
-                                                                unit.id, new_start, new_len,
+                                                    // End range buttons (bottom)
+                                                    ui.horizontal(|ui| {
+                                                        ui.label("End:");
+                                                        // End decrease
+                                                        let can_decrease_end = current_len > 0;
+                                                        if ui
+                                                            .add_enabled(
+                                                                can_decrease_end,
+                                                                egui::Button::new("🔽"),
                                                             )
-                                                            .notify_error_op();
-                                                    }
-                                                });
-                                                ui.horizontal(|ui| {
-                                                    ui.label("Len:");
-
-                                                    // Length decrease button
-                                                    let can_decrease_len = current_len > 0;
-                                                    let len_decrease_btn = ui.add_enabled(
-                                                        can_decrease_len,
-                                                        egui::Button::new("-"),
-                                                    );
-                                                    if len_decrease_btn.clicked()
-                                                        && can_decrease_len
-                                                    {
-                                                        cn().reducers
-                                                            .match_set_fusion_unit_action_range(
-                                                                unit.id,
-                                                                current_start,
-                                                                current_len - 1,
+                                                            .clicked()
+                                                        {
+                                                            cn().reducers
+                                                                .match_set_fusion_unit_action_range(
+                                                                    unit.id,
+                                                                    current_start,
+                                                                    current_len - 1,
+                                                                )
+                                                                .notify_error_op();
+                                                        }
+                                                        ui.label(format!(
+                                                            "{}",
+                                                            current_start + current_len
+                                                        ));
+                                                        // End increase
+                                                        let can_increase_end = current_start
+                                                            + current_len
+                                                            < max_actions;
+                                                        if ui
+                                                            .add_enabled(
+                                                                can_increase_end,
+                                                                egui::Button::new("🔼"),
                                                             )
-                                                            .notify_error_op();
-                                                    }
+                                                            .clicked()
+                                                        {
+                                                            cn().reducers
+                                                                .match_set_fusion_unit_action_range(
+                                                                    unit.id,
+                                                                    current_start,
+                                                                    current_len + 1,
+                                                                )
+                                                                .notify_error_op();
+                                                        }
+                                                    });
+                                                }
+                                                Ok(())
+                                            })
+                                            .inner?;
 
-                                                    ui.label(format!("{}", current_len));
-
-                                                    // Length increase button
-                                                    let can_increase_len =
-                                                        current_start + current_len < max_actions;
-                                                    let len_increase_btn = ui.add_enabled(
-                                                        can_increase_len,
-                                                        egui::Button::new("+"),
-                                                    );
-                                                    if len_increase_btn.clicked()
-                                                        && can_increase_len
-                                                    {
-                                                        cn().reducers
-                                                            .match_set_fusion_unit_action_range(
-                                                                unit.id,
-                                                                current_start,
-                                                                current_len + 1,
-                                                            )
-                                                            .notify_error_op();
-                                                    }
-                                                });
-                                            });
-                                            resp
+                                            Ok(resp)
                                         })
-                                        .inner;
+                                        .inner?;
                                     if resp.dragged() {
                                         resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
                                         if let Some(pos) = ui.ctx().pointer_latest_pos() {
