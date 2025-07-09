@@ -467,6 +467,35 @@ impl MatchPlugin {
 
             ui.add_space(5.0);
 
+            // Fusion rendering section
+            ui.columns(fusions.len(), |columns| {
+                for (fusion_idx, fusion) in fusions.iter().enumerate() {
+                    let ui = &mut columns[fusion_idx];
+
+                    // Render fusion using MatRect
+                    let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
+
+                    // Add fusion-specific representations
+                    if let Ok(units) = context.collect_parents_components::<NUnit>(fusion.id) {
+                        for unit in units {
+                            if let Ok(rep) = unit
+                                .description_load(context)
+                                .and_then(|d| d.representation_load(context))
+                            {
+                                mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+                            }
+                        }
+                    }
+
+                    mat_rect.unit_rep_with_default(fusion.id).ui(ui, context);
+
+                    ui.label(format!("Level {}", fusion.lvl));
+                    ui.label(format!("Slot {}", fusion.slot));
+                }
+            });
+
+            ui.add_space(5.0);
+
             ui.columns(fusions.len(), |columns| {
                 for (fusion_idx, fusion) in fusions.iter().enumerate() {
                     let ui = &mut columns[fusion_idx];
