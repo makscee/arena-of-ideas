@@ -398,12 +398,33 @@ impl NFusion {
                 let ui = &mut ui[i];
                 let i = fusions.len() - i - 1;
                 let fusion = fusions.get(&i).unwrap();
-                let resp = slot_rect_button(ui.available_size(), ui, |rect, ui| {
-                    if fusion.units.ids.is_empty() {
-                        return;
+                let resp = if fusion.units.ids.is_empty() {
+                    MatRect::new(ui.available_size()).ui(ui, context)
+                } else {
+                    // Get all unit representations
+                    let units = fusion.units(context).unwrap_or_default();
+                    let mut mat_rect = MatRect::new(ui.available_size());
+
+                    // Add unit representations
+                    for unit in units {
+                        if let Ok(rep) =
+                            context.first_parent_recursive::<NUnitRepresentation>(unit.id)
+                        {
+                            mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+                        }
                     }
-                    fusion.paint(rect, context, ui).ui(ui);
-                });
+
+                    // Add fusion-specific representations
+                    if let Ok(fusion_reps) =
+                        context.collect_children_components::<NUnitRepresentation>(fusion.id)
+                    {
+                        for rep in fusion_reps {
+                            mat_rect = mat_rect.add_mat(&rep.material, fusion.id);
+                        }
+                    }
+
+                    mat_rect.unit_rep_with_default(fusion.id).ui(ui, context)
+                };
 
                 if resp.dragged() && !fusion.units.ids.is_empty() {
                     if let Some(pos) = ui.ctx().pointer_latest_pos() {

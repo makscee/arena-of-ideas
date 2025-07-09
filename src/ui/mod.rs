@@ -1,4 +1,5 @@
 mod card;
+mod mat_rect;
 mod node_explorer;
 mod node_explorer_new;
 mod table;
@@ -10,6 +11,7 @@ mod view_card;
 use super::*;
 
 pub use card::*;
+pub use mat_rect::*;
 pub use node_explorer::*;
 pub use node_explorer_new::*;
 pub use table::*;

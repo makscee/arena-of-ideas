@@ -480,28 +480,18 @@ impl MatchPlugin {
                                 if let Some(unit) = units.get(slot_idx) {
                                     let resp = ui
                                         .horizontal(|ui| {
-                                            let resp = slot_rect_button(
-                                                egui::Vec2::new(60.0, 60.0),
-                                                ui,
-                                                |rect, ui| {
-                                                    if let Ok(rep) = context
-                                                    .first_parent_recursive::<NUnitRepresentation>(
-                                                        unit.id,
-                                                    )
-                                                {
-                                                    context
-                                                        .with_owner_ref(unit.entity(), |ctx| {
-                                                            RepresentationPlugin::paint_rect(
-                                                                rect,
-                                                                ctx,
-                                                                &rep.material,
-                                                                ui,
-                                                            )
-                                                        })
-                                                        .ui(ui);
-                                                }
-                                                },
-                                            );
+                                            let resp = if let Ok(rep) = context
+                                                .first_parent_recursive::<NUnitRepresentation>(
+                                                    unit.id,
+                                                ) {
+                                                MatRect::new(egui::Vec2::new(60.0, 60.0))
+                                                    .add_mat(&rep.material, unit.id)
+                                                    .unit_rep_with_default(unit.id)
+                                                    .ui(ui, context)
+                                            } else {
+                                                MatRect::new(egui::Vec2::new(60.0, 60.0))
+                                                    .ui(ui, context)
+                                            };
 
                                             // Get current action range for this unit by index
                                             let current_start = fusion
@@ -682,11 +672,8 @@ impl MatchPlugin {
                                         }
                                     }
                                 } else {
-                                    let resp = slot_rect_button(
-                                        egui::Vec2::new(60.0, 60.0),
-                                        ui,
-                                        |_, _| {},
-                                    );
+                                    let resp =
+                                        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
 
                                     // Show drop area feedback for empty slot (reordering existing units)
                                     if let Some(payload) =
