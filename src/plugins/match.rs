@@ -425,431 +425,459 @@ impl MatchPlugin {
                 ui.label("No fusion units available");
                 return Ok(());
             }
-            // Fusion rendering section at the top
-            ui.columns(fusions.len(), |columns| {
-                for (fusion_idx, fusion) in fusions.iter().enumerate() {
-                    let ui = &mut columns[fusion_idx];
 
-                    // Render fusion using MatRect
-                    let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
-
-                    // Add fusion-specific representations
-                    if let Ok(units) = context.collect_parents_components::<NUnit>(fusion.id) {
-                        for unit in units {
-                            if let Ok(rep) = unit
-                                .description_load(context)
-                                .and_then(|d| d.representation_load(context))
-                            {
-                                mat_rect = mat_rect.add_mat(&rep.material, unit.id);
-                            }
-                        }
-                    }
-
-                    mat_rect.unit_rep_with_default(fusion.id).ui(ui, context);
-
-                    ui.label(format!(
-                        "{}/{}",
-                        fusion.get_action_count(),
-                        fusion.action_limit
-                    ));
-
-                    // Show trigger
-                    if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
-                        ui.horizontal(|ui| {
-                            Icon::Lightning.show(ui);
-                            let vctx = ViewContext::new(ui).non_interactible(true);
-                            trigger.view_title(vctx, context, ui);
-                        });
-                    }
-                }
-            });
-
+            Self::render_fusion_headers(ui, context, &fusions)?;
             ui.add_space(5.0);
-
-            ui.columns(fusions.len(), |columns| {
-                for (fusion_idx, fusion) in fusions.iter().enumerate() {
-                    let ui = &mut columns[fusion_idx];
-                    let result = ui
-                        .vertical(|ui| -> Result<(), ExpressionError> {
-                            let units = fusion.units(context).unwrap_or_default();
-                            let max_slots = fusion.lvl as usize;
-
-                            for slot_idx in 0..max_slots {
-                                if let Some(unit) = units.get(slot_idx) {
-                                    let resp = ui
-                                        .horizontal(|ui| -> Result<Response, ExpressionError> {
-                                            // Unit representation
-                                            let resp = if let Ok(rep) = context
-                                                .first_parent_recursive::<NUnitRepresentation>(
-                                                    unit.id,
-                                                ) {
-                                                MatRect::new(egui::Vec2::new(60.0, 60.0))
-                                                    .add_mat(&rep.material, unit.id)
-                                                    .unit_rep_with_default(unit.id)
-                                                    .ui(ui, context)
-                                            } else {
-                                                MatRect::new(egui::Vec2::new(60.0, 60.0))
-                                                    .ui(ui, context)
-                                            };
-
-                                            // Actions column with range buttons
-                                            ui.vertical(|ui| -> Result<(), ExpressionError> {
-                                                if let Ok(behavior) = context
-                                                    .first_parent_recursive::<NUnitBehavior>(
-                                                        unit.id,
-                                                    )
-                                                {
-                                                    let current_action_ref =
-                                                        fusion.behavior.get(slot_idx);
-                                                    let current_start = current_action_ref
-                                                        .map(|ar| ar.start)
-                                                        .unwrap_or(0);
-                                                    let current_len = current_action_ref
-                                                        .map(|ar| ar.length)
-                                                        .unwrap_or(0);
-                                                    let current_end = current_start + current_len;
-
-                                                    let max_actions = if let Some(reaction) =
-                                                        behavior
-                                                            .reactions
-                                                            .get(fusion.trigger.trigger as usize)
-                                                    {
-                                                        reaction.actions.len() as u8
-                                                    } else {
-                                                        0
-                                                    };
-
-                                                    // Start range buttons (top)
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("Start:");
-                                                        // Start decrease
-                                                        let can_decrease_start = current_start > 0;
-                                                        if ui
-                                                            .add_enabled(
-                                                                can_decrease_start,
-                                                                egui::Button::new("🔽"),
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            cn().reducers
-                                                                .match_set_fusion_unit_action_range(
-                                                                    unit.id,
-                                                                    current_start - 1,
-                                                                    current_len,
-                                                                )
-                                                                .notify_error_op();
-                                                        }
-                                                        ui.label(format!("{}", current_start));
-                                                        // Start increase
-                                                        let can_increase_start = current_start
-                                                            + current_len
-                                                            < max_actions;
-                                                        if ui
-                                                            .add_enabled(
-                                                                can_increase_start,
-                                                                egui::Button::new("🔼"),
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            let new_start = current_start + 1;
-                                                            let max_len = max_actions
-                                                                .saturating_sub(new_start);
-                                                            let new_len = current_len.min(max_len);
-                                                            cn().reducers
-                                                                .match_set_fusion_unit_action_range(
-                                                                    unit.id, new_start, new_len,
-                                                                )
-                                                                .notify_error_op();
-                                                        }
-                                                    });
-
-                                                    // Show all actions for the unit's trigger
-                                                    if let Some(reaction) = behavior
-                                                        .reactions
-                                                        .get(fusion.trigger.trigger as usize)
-                                                    {
-                                                        for (action_idx, action) in
-                                                            reaction.actions.iter().enumerate()
-                                                        {
-                                                            let action_idx = action_idx as u8;
-                                                            let is_in_range = action_idx
-                                                                >= current_start
-                                                                && action_idx < current_end;
-
-                                                            let vctx = ViewContext::new(ui)
-                                                                .non_interactible(true);
-
-                                                            if is_in_range {
-                                                                // Normal rendering for actions in range
-                                                                if let Ok(entity) =
-                                                                    context.entity(unit.id)
-                                                                {
-                                                                    context
-                                                                        .with_owner_ref(
-                                                                            entity,
-                                                                            |context| {
-                                                                                action.view(
-                                                                                    vctx, context,
-                                                                                    ui,
-                                                                                );
-                                                                                Ok(())
-                                                                            },
-                                                                        )
-                                                                        .ui(ui);
-                                                                }
-                                                            } else {
-                                                                // Grey out actions not in range
-                                                                let old_style =
-                                                                    ui.visuals().clone();
-                                                                ui.visuals_mut()
-                                                                    .override_text_color =
-                                                                    Some(egui::Color32::GRAY);
-
-                                                                if let Ok(entity) =
-                                                                    context.entity(unit.id)
-                                                                {
-                                                                    context
-                                                                        .with_owner_ref(
-                                                                            entity,
-                                                                            |context| {
-                                                                                action.view(
-                                                                                    vctx, context,
-                                                                                    ui,
-                                                                                );
-                                                                                Ok(())
-                                                                            },
-                                                                        )
-                                                                        .ui(ui);
-                                                                }
-
-                                                                *ui.visuals_mut() = old_style;
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // End range buttons (bottom)
-                                                    ui.horizontal(|ui| {
-                                                        ui.label("End:");
-                                                        // End decrease
-                                                        let can_decrease_end = current_len > 0;
-                                                        if ui
-                                                            .add_enabled(
-                                                                can_decrease_end,
-                                                                egui::Button::new("🔽"),
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            cn().reducers
-                                                                .match_set_fusion_unit_action_range(
-                                                                    unit.id,
-                                                                    current_start,
-                                                                    current_len - 1,
-                                                                )
-                                                                .notify_error_op();
-                                                        }
-                                                        ui.label(format!(
-                                                            "{}",
-                                                            current_start + current_len
-                                                        ));
-                                                        // End increase
-                                                        let can_increase_end = current_start
-                                                            + current_len
-                                                            < max_actions;
-                                                        if ui
-                                                            .add_enabled(
-                                                                can_increase_end,
-                                                                egui::Button::new("🔼"),
-                                                            )
-                                                            .clicked()
-                                                        {
-                                                            cn().reducers
-                                                                .match_set_fusion_unit_action_range(
-                                                                    unit.id,
-                                                                    current_start,
-                                                                    current_len + 1,
-                                                                )
-                                                                .notify_error_op();
-                                                        }
-                                                    });
-                                                }
-                                                Ok(())
-                                            })
-                                            .inner?;
-
-                                            Ok(resp)
-                                        })
-                                        .inner?;
-                                    if resp.dragged() {
-                                        resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
-                                        if let Some(pos) = ui.ctx().pointer_latest_pos() {
-                                            let origin = resp.rect.center();
-                                            let painter =
-                                                ui.ctx().layer_painter(egui::LayerId::new(
-                                                    egui::Order::Foreground,
-                                                    egui::Id::new("drag_arrow"),
-                                                ));
-                                            painter.arrow(
-                                                origin,
-                                                pos - origin,
-                                                ui.visuals().widgets.hovered.fg_stroke,
-                                            );
-                                        }
-                                    }
-                                    if let Some(payload) =
-                                        DndArea::<(u64, usize, u64)>::new(resp.rect)
-                                            .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
-                                            .text_fn(ui, |(_, _, unit_id)| {
-                                                if let Ok(unit) =
-                                                    context.get_by_id::<NUnit>(*unit_id)
-                                                {
-                                                    format!("Swap with {}", unit.unit_name)
-                                                } else {
-                                                    "Swap units".to_string()
-                                                }
-                                            })
-                                            .ui(ui)
-                                    {
-                                        let (source_fusion_id, source_slot_idx, _source_unit_id) =
-                                            payload.as_ref();
-                                        if *source_fusion_id == fusion.id
-                                            && *source_slot_idx != slot_idx
-                                        {
-                                            // Reorder within same fusion by removing and re-adding units
-                                            // This is a workaround until proper reordering is implemented
-                                            let current_units =
-                                                fusion.units(context).unwrap_or_default();
-
-                                            if *source_slot_idx < current_units.len()
-                                                && slot_idx < current_units.len()
-                                            {
-                                                // Reorder within same fusion by swapping units
-                                                let mut unit_ids: Vec<u64> =
-                                                    current_units.iter().map(|u| u.id).collect();
-
-                                                // Swap the units in the vector
-                                                unit_ids.swap(*source_slot_idx, slot_idx);
-
-                                                // Call the reorder reducer
-                                                cn().reducers
-                                                    .match_reorder_fusion_units(fusion.id, unit_ids)
-                                                    .notify_error_op();
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    let resp =
-                                        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
-
-                                    // Show drop area feedback for empty slot (reordering existing units)
-                                    if let Some(payload) =
-                                        DndArea::<(u64, usize, u64)>::new(resp.rect)
-                                            .id(format!("empty_slot_{}_{}", fusion_idx, slot_idx))
-                                            .text_fn(ui, |(_, _, unit_id)| {
-                                                if let Ok(unit) =
-                                                    context.get_by_id::<NUnit>(*unit_id)
-                                                {
-                                                    format!("Move {} here", unit.unit_name)
-                                                } else {
-                                                    "Move unit here".to_string()
-                                                }
-                                            })
-                                            .ui(ui)
-                                    {
-                                        let (source_fusion_id, source_slot_idx, _source_unit_id) =
-                                            payload.as_ref();
-                                        if *source_fusion_id == fusion.id {
-                                            // Move unit to empty slot within same fusion
-                                            let current_units =
-                                                fusion.units(context).unwrap_or_default();
-
-                                            if *source_slot_idx < current_units.len()
-                                                && slot_idx < fusion.lvl as usize
-                                            {
-                                                // Move unit to empty slot within same fusion
-                                                let mut unit_ids: Vec<u64> =
-                                                    current_units.iter().map(|u| u.id).collect();
-
-                                                // Move the unit to the target slot
-                                                let moved_unit = unit_ids.remove(*source_slot_idx);
-
-                                                // Insert at target position, or append if target is at end
-                                                if slot_idx >= unit_ids.len() {
-                                                    unit_ids.push(moved_unit);
-                                                } else {
-                                                    unit_ids.insert(slot_idx, moved_unit);
-                                                }
-
-                                                // Call the reorder reducer
-                                                cn().reducers
-                                                    .match_reorder_fusion_units(fusion.id, unit_ids)
-                                                    .notify_error_op();
-                                            }
-                                        }
-                                    }
-                                    if let Some(payload) =
-                                        egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx())
-                                    {
-                                        if payload.1.card_kind == CardKind::Unit {
-                                            if let Some(shop_item) =
-                                                DndArea::<(usize, ShopSlot)>::new(resp.rect)
-                                                    .id(format!(
-                                                        "unit_buy_empty_slot_{}_{}",
-                                                        fusion_idx, slot_idx
-                                                    ))
-                                                    .text_fn(ui, |(_, slot)| {
-                                                        format!(
-                                                            "play unit [yellow -{}g]",
-                                                            slot.price
-                                                        )
-                                                    })
-                                                    .ui(ui)
-                                            {
-                                                cn().reducers
-                                                    .match_play_unit(
-                                                        shop_item.0 as u8,
-                                                        fusion.slot as u8,
-                                                    )
-                                                    .notify_error_op();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            ui.add_space(5.0);
-
-                            if "buy slot".cstr().button(ui).clicked() {
-                                cn().reducers
-                                    .match_buy_fusion_lvl(fusion.slot as u8)
-                                    .notify_error_op();
-                            }
-
-                            Ok(())
-                        })
-                        .inner;
-
-                    if let Err(e) = result {
-                        ui.label(format!("Error: {}", e));
-                    }
-                }
-            });
-
-            if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
-                if payload.1.card_kind == CardKind::House {
-                    if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(rect)
-                        .text_fn(ui, |(_, slot)| {
-                            format!("play house [yellow -{}g]", slot.price)
-                        })
-                        .ui(ui)
-                    {
-                        cn().reducers
-                            .match_play_house(shop_item.0 as u8)
-                            .notify_error_op();
-                    }
-                }
-            }
+            Self::render_fusion_units(ui, context, &fusions)?;
+            Self::handle_house_drops(ui, rect);
 
             Ok(())
         })
+    }
+
+    fn render_fusion_headers(
+        ui: &mut Ui,
+        context: &Context,
+        fusions: &[&NFusion],
+    ) -> Result<(), ExpressionError> {
+        ui.columns(fusions.len(), |columns| {
+            for (fusion_idx, fusion) in fusions.iter().enumerate() {
+                let ui = &mut columns[fusion_idx];
+                Self::render_fusion_header(ui, context, fusion);
+            }
+        });
+        Ok(())
+    }
+
+    fn render_fusion_header(ui: &mut Ui, context: &Context, fusion: &NFusion) {
+        let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
+
+        if let Ok(units) = context.collect_parents_components::<NUnit>(fusion.id) {
+            for unit in units {
+                if let Ok(rep) = unit
+                    .description_load(context)
+                    .and_then(|d| d.representation_load(context))
+                {
+                    mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+                }
+            }
+        }
+
+        mat_rect.unit_rep_with_default(fusion.id).ui(ui, context);
+        ui.label(format!(
+            "{}/{}",
+            fusion.get_action_count(),
+            fusion.action_limit
+        ));
+
+        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+            ui.horizontal(|ui| {
+                Icon::Lightning.show(ui);
+                let vctx = ViewContext::new(ui).non_interactible(true);
+                trigger.view_title(vctx, context, ui);
+            });
+        }
+    }
+
+    fn render_fusion_units(
+        ui: &mut Ui,
+        context: &Context,
+        fusions: &[&NFusion],
+    ) -> Result<(), ExpressionError> {
+        ui.columns(fusions.len(), |columns| {
+            for (fusion_idx, fusion) in fusions.iter().enumerate() {
+                let ui = &mut columns[fusion_idx];
+                let result = Self::render_fusion_column(ui, context, fusion, fusion_idx);
+                if let Err(e) = result {
+                    e.ui(ui);
+                }
+            }
+        });
+        Ok(())
+    }
+
+    fn render_fusion_column(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        fusion_idx: usize,
+    ) -> Result<(), ExpressionError> {
+        ui.vertical(|ui| -> Result<(), ExpressionError> {
+            let units = fusion.units(context).unwrap_or_default();
+            let max_slots = fusion.lvl as usize;
+
+            for slot_idx in 0..max_slots {
+                if let Some(unit) = units.get(slot_idx) {
+                    Self::render_unit_slot(ui, context, fusion, unit, fusion_idx, slot_idx)?;
+                } else {
+                    Self::render_empty_slot(ui, context, fusion, fusion_idx, slot_idx);
+                }
+            }
+
+            ui.add_space(5.0);
+            if "buy slot".cstr().button(ui).clicked() {
+                cn().reducers
+                    .match_buy_fusion_lvl(fusion.slot as u8)
+                    .notify_error_op();
+            }
+            Ok(())
+        })
+        .inner
+    }
+
+    fn render_unit_slot(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        unit: &NUnit,
+        fusion_idx: usize,
+        slot_idx: usize,
+    ) -> Result<(), ExpressionError> {
+        ui.horizontal(|ui| -> Result<(), ExpressionError> {
+            let resp = Self::render_unit_icon(ui, context, unit);
+            Self::render_unit_actions(ui, context, fusion, unit, slot_idx)?;
+            Self::handle_unit_drag_drop(ui, context, fusion, unit, fusion_idx, slot_idx, resp);
+            Ok(())
+        })
+        .inner?;
+        ui.add_space(5.0);
+        Ok(())
+    }
+
+    fn render_unit_icon(ui: &mut Ui, context: &Context, unit: &NUnit) -> Response {
+        if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
+            MatRect::new(egui::Vec2::new(60.0, 60.0))
+                .add_mat(&rep.material, unit.id)
+                .unit_rep_with_default(unit.id)
+                .ui(ui, context)
+        } else {
+            MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+        }
+    }
+
+    fn render_unit_actions(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        unit: &NUnit,
+        slot_idx: usize,
+    ) -> Result<(), ExpressionError> {
+        ui.vertical(|ui| -> Result<(), ExpressionError> {
+            if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id) {
+                let action_range = Self::get_action_range(fusion, slot_idx);
+                let max_actions = Self::get_max_actions(&behavior, &fusion.trigger);
+
+                Self::render_start_range_controls(ui, unit, action_range, max_actions);
+                Self::render_actions_list(
+                    ui,
+                    context,
+                    &behavior,
+                    unit,
+                    &fusion.trigger,
+                    action_range,
+                )?;
+                Self::render_end_range_controls(ui, unit, action_range, max_actions);
+            }
+            Ok(())
+        })
+        .inner
+    }
+
+    fn get_action_range(fusion: &NFusion, slot_idx: usize) -> (u8, u8) {
+        let current_action_ref = fusion.behavior.get(slot_idx);
+        let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
+        let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
+        (current_start, current_len)
+    }
+
+    fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
+        behavior
+            .reactions
+            .get(trigger.trigger as usize)
+            .map(|reaction| reaction.actions.len() as u8)
+            .unwrap_or(0)
+    }
+
+    fn render_start_range_controls(
+        ui: &mut Ui,
+        unit: &NUnit,
+        action_range: (u8, u8),
+        max_actions: u8,
+    ) {
+        let (current_start, current_len) = action_range;
+        ui.horizontal(|ui| {
+            ui.label("Start:");
+            let can_decrease_start = current_start > 0;
+            if ui
+                .add_enabled(can_decrease_start, egui::Button::new("🔽"))
+                .clicked()
+            {
+                cn().reducers
+                    .match_set_fusion_unit_action_range(unit.id, current_start - 1, current_len)
+                    .notify_error_op();
+            }
+            ui.label(format!("{}", current_start));
+            let can_increase_start = current_start + current_len < max_actions;
+            if ui
+                .add_enabled(can_increase_start, egui::Button::new("🔼"))
+                .clicked()
+            {
+                let new_start = current_start + 1;
+                let max_len = max_actions.saturating_sub(new_start);
+                let new_len = current_len.min(max_len);
+                cn().reducers
+                    .match_set_fusion_unit_action_range(unit.id, new_start, new_len)
+                    .notify_error_op();
+            }
+        });
+    }
+
+    fn render_end_range_controls(
+        ui: &mut Ui,
+        unit: &NUnit,
+        action_range: (u8, u8),
+        max_actions: u8,
+    ) {
+        let (current_start, current_len) = action_range;
+        ui.horizontal(|ui| {
+            ui.label("End:");
+            let can_decrease_end = current_len > 0;
+            if ui
+                .add_enabled(can_decrease_end, egui::Button::new("🔽"))
+                .clicked()
+            {
+                cn().reducers
+                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len - 1)
+                    .notify_error_op();
+            }
+            ui.label(format!("{}", current_start + current_len));
+            let can_increase_end = current_start + current_len < max_actions;
+            if ui
+                .add_enabled(can_increase_end, egui::Button::new("🔼"))
+                .clicked()
+            {
+                cn().reducers
+                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len + 1)
+                    .notify_error_op();
+            }
+        });
+    }
+
+    fn render_actions_list(
+        ui: &mut Ui,
+        context: &Context,
+        behavior: &NUnitBehavior,
+        unit: &NUnit,
+        trigger: &UnitTriggerRef,
+        action_range: (u8, u8),
+    ) -> Result<(), ExpressionError> {
+        let (current_start, current_len) = action_range;
+        let current_end = current_start + current_len;
+
+        if let Some(reaction) = behavior.reactions.get(trigger.trigger as usize) {
+            for (action_idx, action) in reaction.actions.iter().enumerate() {
+                let action_idx = action_idx as u8;
+                let is_in_range = action_idx >= current_start && action_idx < current_end;
+                let vctx = ViewContext::new(ui).non_interactible(true);
+
+                if is_in_range {
+                    Self::render_action_normal(ui, context, unit, action, vctx);
+                } else {
+                    Self::render_action_greyed(ui, context, unit, action, vctx);
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn render_action_normal(
+        ui: &mut Ui,
+        context: &Context,
+        unit: &NUnit,
+        action: &Action,
+        vctx: ViewContext,
+    ) {
+        if let Ok(entity) = context.entity(unit.id) {
+            context
+                .with_owner_ref(entity, |context| {
+                    action.title_cstr(vctx, context).label_w(ui);
+                    Ok(())
+                })
+                .ui(ui);
+        }
+    }
+
+    fn render_action_greyed(
+        ui: &mut Ui,
+        context: &Context,
+        unit: &NUnit,
+        action: &Action,
+        vctx: ViewContext,
+    ) {
+        let old_style = ui.visuals().clone();
+        ui.visuals_mut().override_text_color = Some(egui::Color32::GRAY);
+
+        if let Ok(entity) = context.entity(unit.id) {
+            context
+                .with_owner_ref(entity, |context| {
+                    action
+                        .title_cstr(vctx, context)
+                        .as_label_alpha(0.5, ui.style())
+                        .wrap()
+                        .ui(ui);
+                    Ok(())
+                })
+                .ui(ui);
+        }
+
+        *ui.visuals_mut() = old_style;
+    }
+
+    fn handle_unit_drag_drop(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        unit: &NUnit,
+        fusion_idx: usize,
+        slot_idx: usize,
+        resp: Response,
+    ) {
+        if resp.dragged() {
+            resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
+            if let Some(pos) = ui.ctx().pointer_latest_pos() {
+                let origin = resp.rect.center();
+                let painter = ui.ctx().layer_painter(egui::LayerId::new(
+                    egui::Order::Foreground,
+                    egui::Id::new("drag_arrow"),
+                ));
+                painter.arrow(origin, pos - origin, ui.visuals().widgets.hovered.fg_stroke);
+            }
+        }
+
+        if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
+            .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
+            .text_fn(ui, |(_, _, unit_id)| {
+                if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
+                    format!("Swap with {}", unit.unit_name)
+                } else {
+                    "Swap units".to_string()
+                }
+            })
+            .ui(ui)
+        {
+            Self::handle_unit_swap(context, fusion, &payload, slot_idx);
+        }
+    }
+
+    fn handle_unit_swap(
+        context: &Context,
+        fusion: &NFusion,
+        payload: &(u64, usize, u64),
+        slot_idx: usize,
+    ) {
+        let (source_fusion_id, source_slot_idx, _source_unit_id) = payload;
+        if *source_fusion_id == fusion.id && *source_slot_idx != slot_idx {
+            let current_units = fusion.units(context).unwrap_or_default();
+            if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
+                let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
+                unit_ids.swap(*source_slot_idx, slot_idx);
+                cn().reducers
+                    .match_reorder_fusion_units(fusion.id, unit_ids)
+                    .notify_error_op();
+            }
+        }
+    }
+
+    fn render_empty_slot(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        fusion_idx: usize,
+        slot_idx: usize,
+    ) {
+        let resp = MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
+        Self::handle_empty_slot_drops(ui, context, fusion, fusion_idx, slot_idx, resp);
+    }
+
+    fn handle_empty_slot_drops(
+        ui: &mut Ui,
+        context: &Context,
+        fusion: &NFusion,
+        fusion_idx: usize,
+        slot_idx: usize,
+        resp: Response,
+    ) {
+        // Handle unit reordering drops
+        if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
+            .id(format!("empty_slot_{}_{}", fusion_idx, slot_idx))
+            .text_fn(ui, |(_, _, unit_id)| {
+                if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
+                    format!("Move {} here", unit.unit_name)
+                } else {
+                    "Move unit here".to_string()
+                }
+            })
+            .ui(ui)
+        {
+            Self::handle_unit_move_to_empty(context, fusion, &payload, slot_idx);
+        }
+
+        // Handle shop unit purchases
+        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
+            if payload.1.card_kind == CardKind::Unit {
+                if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
+                    .id(format!("unit_buy_empty_slot_{}_{}", fusion_idx, slot_idx))
+                    .text_fn(ui, |(_, slot)| {
+                        format!("play unit [yellow -{}g]", slot.price)
+                    })
+                    .ui(ui)
+                {
+                    cn().reducers
+                        .match_play_unit(shop_item.0 as u8, fusion.slot as u8)
+                        .notify_error_op();
+                }
+            }
+        }
+    }
+
+    fn handle_unit_move_to_empty(
+        context: &Context,
+        fusion: &NFusion,
+        payload: &(u64, usize, u64),
+        slot_idx: usize,
+    ) {
+        let (source_fusion_id, source_slot_idx, _source_unit_id) = payload;
+        if *source_fusion_id == fusion.id {
+            let current_units = fusion.units(context).unwrap_or_default();
+            if *source_slot_idx < current_units.len() && slot_idx < fusion.lvl as usize {
+                let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
+                let moved_unit = unit_ids.remove(*source_slot_idx);
+                if slot_idx >= unit_ids.len() {
+                    unit_ids.push(moved_unit);
+                } else {
+                    unit_ids.insert(slot_idx, moved_unit);
+                }
+                cn().reducers
+                    .match_reorder_fusion_units(fusion.id, unit_ids)
+                    .notify_error_op();
+            }
+        }
+    }
+
+    fn handle_house_drops(ui: &mut Ui, rect: egui::Rect) {
+        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
+            if payload.1.card_kind == CardKind::House {
+                if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(rect)
+                    .text_fn(ui, |(_, slot)| {
+                        format!("play house [yellow -{}g]", slot.price)
+                    })
+                    .ui(ui)
+                {
+                    cn().reducers
+                        .match_play_house(shop_item.0 as u8)
+                        .notify_error_op();
+                }
+            }
+        }
     }
 }
