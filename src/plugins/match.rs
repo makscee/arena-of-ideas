@@ -463,7 +463,12 @@ impl MatchPlugin {
             }
         }
 
-        mat_rect.unit_rep_with_default(fusion.id).ui(ui, context);
+        mat_rect
+            .unit_rep_with_default(fusion.id)
+            .ui(ui, context)
+            .on_hover_ui(|ui| {
+                fusion.show_card(context, ui).ui(ui);
+            });
         ui.label(format!(
             "{}/{}",
             fusion.get_action_count(),
