@@ -33,6 +33,7 @@ pub struct TableColumn<'a, T> {
     value: Option<
         Box<dyn FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
     >,
+    initial_width: Option<f32>,
 }
 
 impl<'a, T> RowGetter<'a, T> {
@@ -144,15 +145,16 @@ impl<'a, T> Table<'a, T> {
         mut self,
         name: impl Into<String>,
         show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-            + 'a
-            + Send
-            + Sync,
+        + 'a
+        + Send
+        + Sync,
         value_fn: impl FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
             show: Box::new(show_fn),
             value: Some(Box::new(value_fn)),
+            initial_width: None,
         });
         self
     }
@@ -161,15 +163,23 @@ impl<'a, T> Table<'a, T> {
         mut self,
         name: impl Into<String>,
         show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-            + 'a
-            + Send
-            + Sync,
+        + 'a
+        + Send
+        + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
             show: Box::new(show_fn),
             value: None,
+            initial_width: None,
         });
+        self
+    }
+
+    pub fn column_initial_width(mut self, max_width: f32) -> Self {
+        if let Some(last_column) = self.columns.last_mut() {
+            last_column.initial_width = Some(max_width);
+        }
         self
     }
 
@@ -207,8 +217,18 @@ impl<'a, T> Table<'a, T> {
             state = TableState::new(&self);
         }
 
-        TableBuilder::new(ui)
-            .columns(Column::auto(), self.columns.len())
+        let mut table_builder = TableBuilder::new(ui);
+        for column in &self.columns {
+            let col = if let Some(initial_width) = column.initial_width {
+                Column::initial(initial_width)
+            } else {
+                Column::auto()
+            }
+            .resizable(true);
+            table_builder = table_builder.column(col);
+        }
+
+        table_builder
             .auto_shrink([false, true])
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
             .header(24.0, |mut row| {

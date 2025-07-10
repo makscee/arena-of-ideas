@@ -29,6 +29,22 @@ impl<T: NodeViewFns> NodesListWidget<T> {
             let mut table = nodes
                 .table()
                 .column(
+                    "r",
+                    move |context, ui, node, _value| {
+                        node.node_view_rating(vctx, context, ui);
+                        Ok(())
+                    },
+                    |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
+                )
+                .column(
+                    "owner",
+                    |_, ui, node, _value| {
+                        node.owner().cstr_s(CstrStyle::Small).label(ui);
+                        Ok(())
+                    },
+                    |_, node| Ok(VarValue::u64(node.owner())),
+                )
+                .column(
                     "node",
                     |context, ui, node, _value| {
                         ui.horizontal(|ui| {
@@ -48,22 +64,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     },
                     |_, node| Ok(VarValue::u64(node.id())),
                 )
-                .column(
-                    "rating",
-                    move |context, ui, node, _value| {
-                        node.node_view_rating(vctx, context, ui);
-                        Ok(())
-                    },
-                    |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
-                )
-                .column(
-                    "owner",
-                    |_, ui, node, _value| {
-                        node.owner().cstr_s(CstrStyle::Small).label(ui);
-                        Ok(())
-                    },
-                    |_, node| Ok(VarValue::u64(node.owner())),
-                );
+                .column_initial_width(200.0);
             if let Some((is_parent, id)) = vctx.link_rating {
                 table = table.column(
                     "link rating",

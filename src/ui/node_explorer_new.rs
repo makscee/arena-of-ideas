@@ -17,6 +17,9 @@ impl NodeExplorerPluginNew {
     pub fn load_kinds(world: &mut World) {
         let mut nodes: HashMap<NodeKind, Vec<u64>> = HashMap::new();
         for node in cn().db.nodes_world().iter() {
+            if node.owner != ID_CORE {
+                continue;
+            }
             nodes
                 .entry(node.kind())
                 .or_insert_with(Vec::new)
@@ -31,7 +34,11 @@ impl NodeExplorerPluginNew {
     ) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
             let data = context.world()?.resource::<NodeExplorerData>();
-            let nodes = data.nodes.get(&kind).to_e_not_found()?;
+            let Some(nodes) = data.nodes.get(&kind) else {
+                return Err(
+                    ExpressionErrorVariants::NotFound(format!("No nodes of kind {kind}")).into(),
+                );
+            };
             kind.show_explorer(context, ViewContext::new(ui), ui, nodes, None)?;
             Ok(())
         })

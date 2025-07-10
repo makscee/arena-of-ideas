@@ -34,7 +34,7 @@ pub enum ExpressionErrorVariants {
     IdNotFound(u32, u32),
     #[error("Id#{0} not liked to Entity")]
     EntityNotFound(u64),
-    #[error("Not found {0}")]
+    #[error("Not found: {0}")]
     NotFound(String),
 }
 

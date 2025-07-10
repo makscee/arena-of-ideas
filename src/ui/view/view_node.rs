@@ -218,13 +218,7 @@ impl NodeViewFns for NUnit {
     }
 }
 impl NodeViewFns for NUnitDescription {
-    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
-        if vctx.one_line {
-            self.description.label_t(ui);
-        } else {
-            self.show(context, ui);
-        }
-    }
+    fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {}
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.description.cstr()
     }

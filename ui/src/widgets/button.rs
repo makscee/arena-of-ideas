@@ -113,7 +113,7 @@ impl Button {
             egui::ImageButton::new(icon.image()).sense(sense).ui(ui)
         } else {
             egui::Button::new(WidgetText::LayoutJob(job))
-                .wrap_mode(egui::TextWrapMode::Extend)
+                .wrap_mode(egui::TextWrapMode::Wrap)
                 .sense(sense)
                 .min_size(egui::vec2(self.min_width, 0.0))
                 .ui(ui)
