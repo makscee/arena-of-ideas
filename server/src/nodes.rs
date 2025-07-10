@@ -167,6 +167,9 @@ impl NTeam {
         let child_kind = NodeKind::NFusion.to_string();
         let parent_kind = NodeKind::NUnit.to_string();
         for fusion in &mut new_team.fusions {
+            if fusion.units.ids.is_empty() {
+                continue;
+            }
             fusion.units.ids = fusion
                 .units
                 .ids

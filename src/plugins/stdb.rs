@@ -200,6 +200,19 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers
+        .on_match_set_fusion_unit_action_range(|e, _, _, _| {
+            if !e.check_identity() {
+                return;
+            }
+            e.event.notify_error();
+        });
+    cn().reducers.on_match_start_battle(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
         if !e.check_identity() {
             return;

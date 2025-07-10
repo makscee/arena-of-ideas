@@ -567,7 +567,6 @@ impl MatchPlugin {
                 let action_range = Self::get_action_range(fusion, slot_idx);
                 let max_actions = Self::get_max_actions(&behavior, &fusion.trigger);
 
-                Self::render_start_range_controls(ui, unit, action_range, max_actions);
                 Self::render_actions_list(
                     ui,
                     context,
@@ -576,7 +575,11 @@ impl MatchPlugin {
                     &fusion.trigger,
                     action_range,
                 )?;
-                Self::render_end_range_controls(ui, unit, action_range, max_actions);
+                if ui.ui_contains_pointer() {
+                    let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
+                    Self::render_start_range_controls(ui, unit, action_range, max_actions);
+                    Self::render_end_range_controls(ui, unit, action_range, max_actions);
+                }
             }
             Ok(())
         })
@@ -606,25 +609,22 @@ impl MatchPlugin {
     ) {
         let (current_start, current_len) = action_range;
         ui.horizontal(|ui| {
-            ui.label("Start:");
             let can_decrease_start = current_start > 0;
             if ui
-                .add_enabled(can_decrease_start, egui::Button::new("🔽"))
+                .add_enabled(can_decrease_start, egui::Button::new("🔼"))
                 .clicked()
             {
                 cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, current_start - 1, current_len)
+                    .match_set_fusion_unit_action_range(unit.id, current_start - 1, current_len + 1)
                     .notify_error_op();
             }
-            ui.label(format!("{}", current_start));
-            let can_increase_start = current_start + current_len < max_actions;
+            let can_increase_start = current_start < max_actions - 1;
             if ui
-                .add_enabled(can_increase_start, egui::Button::new("🔼"))
+                .add_enabled(can_increase_start, egui::Button::new("🔽"))
                 .clicked()
             {
                 let new_start = current_start + 1;
-                let max_len = max_actions.saturating_sub(new_start);
-                let new_len = current_len.min(max_len);
+                let new_len = current_len.saturating_sub(1);
                 cn().reducers
                     .match_set_fusion_unit_action_range(unit.id, new_start, new_len)
                     .notify_error_op();
@@ -640,24 +640,22 @@ impl MatchPlugin {
     ) {
         let (current_start, current_len) = action_range;
         ui.horizontal(|ui| {
-            ui.label("End:");
-            let can_decrease_end = current_len > 0;
-            if ui
-                .add_enabled(can_decrease_end, egui::Button::new("🔽"))
-                .clicked()
-            {
-                cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len - 1)
-                    .notify_error_op();
-            }
-            ui.label(format!("{}", current_start + current_len));
             let can_increase_end = current_start + current_len < max_actions;
             if ui
-                .add_enabled(can_increase_end, egui::Button::new("🔼"))
+                .add_enabled(can_increase_end, egui::Button::new("🔽"))
                 .clicked()
             {
                 cn().reducers
                     .match_set_fusion_unit_action_range(unit.id, current_start, current_len + 1)
+                    .notify_error_op();
+            }
+            let can_decrease_end = current_len > 0;
+            if ui
+                .add_enabled(can_decrease_end, egui::Button::new("🔼"))
+                .clicked()
+            {
+                cn().reducers
+                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len - 1)
                     .notify_error_op();
             }
         });
