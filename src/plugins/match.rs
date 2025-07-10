@@ -135,6 +135,28 @@ impl MatchPlugin {
                     }
                 });
             });
+
+            // Handle fusion unit selling with DndArea
+            if let Some(payload) = DndArea::<(u64, usize, u64)>::new(available_rect)
+                .text_fn(ui, |(_, _, unit_id)| {
+                    if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
+                        format!(
+                            "sell {} [green +{}g]",
+                            unit.unit_name,
+                            global_settings().match_g.unit_sell
+                        )
+                    } else {
+                        format!("[red unit get error]")
+                    }
+                })
+                .ui(ui)
+            {
+                let (fusion_id, _slot_idx, unit_id) = payload.as_ref();
+                cn().reducers
+                    .match_sell_fusion_unit(*fusion_id, *unit_id)
+                    .notify_op();
+            }
+
             Ok(())
         })
     }

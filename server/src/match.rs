@@ -358,6 +358,46 @@ fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
 }
 
 #[reducer]
+fn match_sell_fusion_unit(
+    ctx: &ReducerContext,
+    fusion_id: u64,
+    unit_id: u64,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+
+    // Give the player sell gold
+    m.g += ctx.global_settings().match_g.unit_sell;
+
+    // Find the fusion and remove the unit
+    let fusion = m
+        .team_load(ctx)?
+        .fusions_load(ctx)?
+        .into_iter()
+        .find(|f| f.id == fusion_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
+
+    let units = fusion.units_load(ctx)?;
+    if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
+        if unit_index < fusion.behavior.len() {
+            fusion.behavior.remove(unit_index);
+        }
+    }
+
+    fusion.units_remove(ctx, unit_id)?;
+
+    // Delete the unit completely
+    let unit = units
+        .into_iter()
+        .find(|u| u.id == unit_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit_id}"))?;
+    unit.delete_with_components(ctx);
+
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
 fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
