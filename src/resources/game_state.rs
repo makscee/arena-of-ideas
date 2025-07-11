@@ -83,7 +83,42 @@ impl GameState {
                                 }
                             })
                             .collect_vec();
-                        let tile = tiles.insert_horizontal_tile(kinds);
+
+                        let tile = match kinds.len() {
+                            0 => tiles.insert_pane(Pane::ExplorerList(NodeKind::None)),
+                            1 => kinds[0],
+                            2 => tiles.insert_horizontal_tile(kinds),
+                            3 => tiles.insert_horizontal_tile(kinds),
+                            4 => {
+                                let top = tiles.insert_horizontal_tile([kinds[0], kinds[1]].into());
+                                let bottom =
+                                    tiles.insert_horizontal_tile([kinds[2], kinds[3]].into());
+                                tiles.insert_vertical_tile([top, bottom].into())
+                            }
+                            5 => {
+                                let top = tiles.insert_horizontal_tile([kinds[0], kinds[1]].into());
+                                let bottom = tiles
+                                    .insert_horizontal_tile([kinds[2], kinds[3], kinds[4]].into());
+                                tiles.insert_vertical_tile([top, bottom].into())
+                            }
+                            6 => {
+                                let top = tiles
+                                    .insert_horizontal_tile([kinds[0], kinds[1], kinds[2]].into());
+                                let bottom = tiles
+                                    .insert_horizontal_tile([kinds[3], kinds[4], kinds[5]].into());
+                                tiles.insert_vertical_tile([top, bottom].into())
+                            }
+                            _ => {
+                                // For 7 or more, arrange in rows of max 3 columns
+                                let mut rows = Vec::new();
+                                for chunk in kinds.chunks(3) {
+                                    let row = tiles.insert_horizontal_tile(chunk.to_vec());
+                                    rows.push(row);
+                                }
+                                tiles.insert_vertical_tile(rows)
+                            }
+                        };
+
                         tile_tree.behavior.tile_names.insert(tile, c.to_string());
                         tile
                     })
