@@ -5,6 +5,7 @@ use std::cmp::Ordering;
 pub struct Table<'a, T> {
     row_getter: RowGetter<'a, T>,
     columns: Vec<TableColumn<'a, T>>,
+    default_sort: Option<(usize, bool)>, // (column_index, ascending)
 }
 
 enum RowGetter<'a, T> {
@@ -61,12 +62,13 @@ impl TableState {
         }
     }
 
-    fn sort<T>(&mut self, table: &mut Table<T>, context: &Context, column_index: usize) {
-        let ascending = match self.sorting {
-            Some((idx, asc)) if idx == column_index => !asc,
-            _ => false,
-        };
-
+    fn apply_sorting<T>(
+        &mut self,
+        table: &mut Table<T>,
+        context: &Context,
+        column_index: usize,
+        ascending: bool,
+    ) {
         if let Some(column) = table.columns.get_mut(column_index) {
             if let Some(value_fn) = &mut column.value {
                 self.indices.sort_by(|a, b| {
@@ -74,30 +76,40 @@ impl TableState {
                     let item_b = table.row_getter.get(context, *b);
 
                     match (item_a, item_b) {
-                        (Some(a), Some(b)) => {
-                            let val_a = value_fn(context, a).unwrap_or_default();
-                            let val_b = value_fn(context, b).unwrap_or_default();
+                        (Some(data_a), Some(data_b)) => {
+                            let val_a = value_fn(context, data_a).unwrap_or_default();
+                            let val_b = value_fn(context, data_b).unwrap_or_default();
 
                             match VarValue::compare(&val_a, &val_b) {
                                 Ok(ord) => {
-                                    if ascending {
-                                        ord
+                                    let primary_ord = if ascending { ord } else { ord.reverse() };
+
+                                    // If primary values are equal, sort by index (stable sort)
+                                    if primary_ord == Ordering::Equal {
+                                        a.cmp(b)
                                     } else {
-                                        ord.reverse()
+                                        primary_ord
                                     }
                                 }
-                                Err(_) => Ordering::Equal,
+                                Err(_) => a.cmp(b), // Fall back to index comparison
                             }
                         }
                         (Some(_), None) => Ordering::Less,
                         (None, Some(_)) => Ordering::Greater,
-                        (None, None) => Ordering::Equal,
+                        (None, None) => a.cmp(b),
                     }
                 });
             }
         }
-
         self.sorting = Some((column_index, ascending));
+    }
+
+    fn sort<T>(&mut self, table: &mut Table<T>, context: &Context, column_index: usize) {
+        let ascending = match self.sorting {
+            Some((idx, asc)) if idx == column_index => !asc,
+            _ => false,
+        };
+        self.apply_sorting(table, context, column_index, ascending);
     }
 }
 
@@ -106,6 +118,7 @@ impl<'a, T> Table<'a, T> {
         Self {
             row_getter: RowGetter::Data(data),
             columns: Vec::new(),
+            default_sort: None,
         }
     }
 
@@ -116,6 +129,7 @@ impl<'a, T> Table<'a, T> {
         Self {
             row_getter: RowGetter::FnRow(len, Box::new(getter)),
             columns: Vec::new(),
+            default_sort: None,
         }
     }
 
@@ -200,6 +214,17 @@ impl<'a, T> Table<'a, T> {
         self
     }
 
+    /// Sets the default sorting for the table.
+    /// The table will be sorted by the specified column on initial display.
+    ///
+    /// # Arguments
+    /// * `column_index` - Index of the column to sort by (0-based)
+    /// * `ascending` - True for ascending order, false for descending
+    pub fn default_sort(mut self, column_index: usize, ascending: bool) -> Self {
+        self.default_sort = Some((column_index, ascending));
+        self
+    }
+
     fn show_row(&mut self, context: &Context, state: &mut TableState, row: &mut TableRow) {
         let i = *state.indices.get(row.index()).unwrap();
         if let Some(data) = self.row_getter.get(context, i) {
@@ -225,13 +250,28 @@ impl<'a, T> Table<'a, T> {
     }
 
     pub fn ui(mut self, context: &Context, ui: &mut Ui) {
-        let table_id = ui.id();
+        let table_id = ui
+            .id()
+            .with("table")
+            .with(self.columns.len())
+            .with(self.default_sort);
         let mut state = ui
             .ctx()
             .data(|r| r.get_temp::<TableState>(table_id))
             .unwrap_or_else(|| TableState::new(&self));
-        if state.indices.len() != self.row_getter.len() {
+
+        let data_changed = state.indices.len() != self.row_getter.len();
+        if data_changed {
             state = TableState::new(&self);
+        }
+
+        // Apply default sorting if this is a new table state or if data has changed
+        if let Some((column_index, ascending)) = self.default_sort {
+            if state.sorting.is_none() || data_changed {
+                if column_index < self.columns.len() {
+                    state.apply_sorting(&mut self, context, column_index, ascending);
+                }
+            }
         }
 
         let mut table_builder = TableBuilder::new(ui);

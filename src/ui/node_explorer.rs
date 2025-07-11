@@ -36,6 +36,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     },
                     |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
                 )
+                .default_sort(0, false) // Sort by rating column (index 0) in descending order
                 .column(
                     "owner",
                     |_, ui, node, _value| {

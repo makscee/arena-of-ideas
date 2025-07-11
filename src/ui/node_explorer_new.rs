@@ -32,6 +32,10 @@ impl NodeExplorerPluginNew {
                 .or_insert_with(Vec::new)
                 .push(node.id);
         }
+        // Sort each vector by node.id
+        for vec in nodes.values_mut() {
+            vec.sort();
+        }
         world.insert_resource(NodeExplorerData {
             nodes,
             new_node_states: HashMap::new(),
