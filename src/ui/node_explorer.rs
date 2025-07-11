@@ -64,7 +64,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     },
                     |_, node| Ok(VarValue::u64(node.id())),
                 )
-                .column_initial_width(200.0);
+                .column_remainder();
             if let Some((is_parent, id)) = vctx.link_rating {
                 table = table.column(
                     "link rating",

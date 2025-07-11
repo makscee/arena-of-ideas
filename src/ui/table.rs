@@ -1,7 +1,6 @@
+use super::*;
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
-
-use super::*;
 
 pub struct Table<'a, T> {
     row_getter: RowGetter<'a, T>,
@@ -34,6 +33,7 @@ pub struct TableColumn<'a, T> {
         Box<dyn FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
     >,
     initial_width: Option<f32>,
+    remainder: bool,
 }
 
 impl<'a, T> RowGetter<'a, T> {
@@ -155,6 +155,7 @@ impl<'a, T> Table<'a, T> {
             show: Box::new(show_fn),
             value: Some(Box::new(value_fn)),
             initial_width: None,
+            remainder: false,
         });
         self
     }
@@ -172,6 +173,7 @@ impl<'a, T> Table<'a, T> {
             show: Box::new(show_fn),
             value: None,
             initial_width: None,
+            remainder: false,
         });
         self
     }
@@ -179,6 +181,21 @@ impl<'a, T> Table<'a, T> {
     pub fn column_initial_width(mut self, max_width: f32) -> Self {
         if let Some(last_column) = self.columns.last_mut() {
             last_column.initial_width = Some(max_width);
+        }
+        self
+    }
+
+    /// Makes the last added column take up all remaining available space.
+    /// This is useful for columns that should expand to fill the table width.
+    ///
+    /// # Examples
+    /// ```
+    /// table.column("name", show_fn, value_fn)
+    ///      .column_remainder(); // "name" column takes remaining space
+    /// ```
+    pub fn column_remainder(mut self) -> Self {
+        if let Some(last_column) = self.columns.last_mut() {
+            last_column.remainder = true;
         }
         self
     }
@@ -219,7 +236,9 @@ impl<'a, T> Table<'a, T> {
 
         let mut table_builder = TableBuilder::new(ui);
         for column in &self.columns {
-            let col = if let Some(initial_width) = column.initial_width {
+            let col = if column.remainder {
+                Column::remainder()
+            } else if let Some(initial_width) = column.initial_width {
                 Column::initial(initial_width)
             } else {
                 Column::auto()
