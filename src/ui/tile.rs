@@ -49,7 +49,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
         state: &egui_tiles::TabState,
     ) -> Color32 {
         if state.active {
-            high_contrast_text()
+            YELLOW
         } else if state.is_being_dragged {
             hovered_ui_element_border()
         } else {
