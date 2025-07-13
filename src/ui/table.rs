@@ -20,6 +20,7 @@ enum RowGetter<'a, T> {
 pub struct TableState {
     indices: Vec<usize>,
     sorting: Option<(usize, bool)>,
+    filters: Vec<(usize, String)>, // (column_index, filter_text)
 }
 
 pub struct TableColumn<'a, T> {
@@ -59,6 +60,7 @@ impl TableState {
         Self {
             indices,
             sorting: None,
+            filters: Vec::new(),
         }
     }
 
@@ -110,6 +112,60 @@ impl TableState {
             _ => false,
         };
         self.apply_sorting(table, context, column_index, ascending);
+    }
+
+    fn apply_filters<T>(&mut self, table: &mut Table<T>, context: &Context) {
+        if self.filters.is_empty() {
+            return;
+        }
+
+        self.indices = (0..table.row_getter.len())
+            .filter(|&index| {
+                if let Some(data) = table.row_getter.get(context, index) {
+                    for (column_index, filter_text) in &self.filters {
+                        if let Some(column) = table.columns.get_mut(*column_index) {
+                            if let Some(value_fn) = &mut column.value {
+                                if let Ok(value) = value_fn(context, data) {
+                                    let value_str = match value {
+                                        VarValue::String(s) => s,
+                                        VarValue::i32(n) => n.to_string(),
+                                        VarValue::f32(n) => n.to_string(),
+                                        VarValue::u64(n) => n.to_string(),
+                                        VarValue::bool(b) => b.to_string(),
+                                        _ => continue,
+                                    };
+                                    if !value_str
+                                        .to_lowercase()
+                                        .contains(&filter_text.to_lowercase())
+                                    {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    true
+                } else {
+                    false
+                }
+            })
+            .collect();
+    }
+
+    fn add_filter(&mut self, column_index: usize, filter_text: String) {
+        // Remove existing filter for this column
+        self.filters.retain(|(idx, _)| *idx != column_index);
+        if !filter_text.is_empty() {
+            self.filters.push((column_index, filter_text));
+        }
+    }
+
+    fn remove_filter(&mut self, column_index: usize) {
+        self.filters.retain(|(idx, _)| *idx != column_index);
+    }
+
+    fn clear_sorting(&mut self) {
+        self.sorting = None;
     }
 }
 
@@ -250,11 +306,7 @@ impl<'a, T> Table<'a, T> {
     }
 
     pub fn ui(mut self, context: &Context, ui: &mut Ui) {
-        let table_id = ui
-            .id()
-            .with("table")
-            .with(self.columns.len())
-            .with(self.default_sort);
+        let table_id = ui.id().with("table");
         let mut state = ui
             .ctx()
             .data(|r| r.get_temp::<TableState>(table_id))
@@ -262,15 +314,86 @@ impl<'a, T> Table<'a, T> {
 
         let data_changed = state.indices.len() != self.row_getter.len();
         if data_changed {
-            state = TableState::new(&self);
+            state.indices = (0..self.row_getter.len()).collect();
         }
 
-        // Apply default sorting if this is a new table state or if data has changed
+        // Apply default sorting only if this is a new table state (no existing sorting)
         if let Some((column_index, ascending)) = self.default_sort {
-            if state.sorting.is_none() || data_changed {
-                if column_index < self.columns.len() {
-                    state.apply_sorting(&mut self, context, column_index, ascending);
+            if state.sorting.is_none()
+                && state.filters.is_empty()
+                && column_index < self.columns.len()
+            {
+                state.apply_sorting(&mut self, context, column_index, ascending);
+            }
+        }
+
+        // Display current sorting and filters above the table
+        ui.horizontal(|ui| {
+            let mut actions = Vec::new();
+
+            // Show current sorting
+            if let Some((column_index, ascending)) = state.sorting {
+                if let Some(column) = self.columns.get(column_index) {
+                    ui.label(format!(
+                        "Sorted by: {} {}",
+                        column.name,
+                        if ascending { "↑" } else { "↓" }
+                    ));
+                    if ui.button("✕").clicked() {
+                        actions.push(("clear_sort", column_index, String::new()));
+                    }
                 }
+            }
+
+            // Show current filters
+            for (column_index, filter_text) in &state.filters {
+                if let Some(column) = self.columns.get(*column_index) {
+                    ui.label(format!("Filter {}: '{}'", column.name, filter_text));
+                    if ui.button("✕").clicked() {
+                        actions.push(("remove_filter", *column_index, String::new()));
+                    }
+                }
+            }
+
+            // Process actions
+            for (action, column_index, _) in actions {
+                match action {
+                    "clear_sort" => {
+                        state.clear_sorting();
+                        // Rebuild indices and reapply filters
+                        state.indices = (0..self.row_getter.len()).collect();
+                        state.apply_filters(&mut self, context);
+                    }
+                    "remove_filter" => {
+                        // Clear the filter text from UI data
+                        let filter_id = ui.id().with("filter").with(column_index);
+                        ui.data_mut(|data| {
+                            data.remove::<String>(filter_id);
+                        });
+                        state.remove_filter(column_index);
+                        // Rebuild indices and reapply remaining filters
+                        state.indices = (0..self.row_getter.len()).collect();
+                        state.apply_filters(&mut self, context);
+                        // Reapply sorting if it exists
+                        if let Some((sort_column, ascending)) = state.sorting {
+                            state.apply_sorting(&mut self, context, sort_column, ascending);
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        });
+
+        // Apply filters to current data
+        if data_changed || !state.filters.is_empty() {
+            if data_changed {
+                state.indices = (0..self.row_getter.len()).collect();
+            }
+            state.apply_filters(&mut self, context);
+
+            // Reapply sorting after filtering
+            if let Some((column_index, ascending)) = state.sorting {
+                state.apply_sorting(&mut self, context, column_index, ascending);
             }
         }
 
@@ -287,26 +410,45 @@ impl<'a, T> Table<'a, T> {
             table_builder = table_builder.column(col);
         }
 
+        // Collect filter updates and sort request outside the closure
+        let mut filter_updates = Vec::new();
+        let mut sort_request = None;
+
         table_builder
             .auto_shrink([false, true])
             .cell_layout(Layout::centered_and_justified(egui::Direction::TopDown))
             .header(24.0, |mut row| {
-                let mut need_sort = None;
                 for (column_index, column) in self.columns.iter().enumerate() {
                     row.col(|ui| {
-                        let response = ui.button(&column.name);
-                        if response.clicked() && column.value.is_some() {
-                            need_sort = Some(column_index);
-                        }
-                        if let Some((sorted_column, ascending)) = state.sorting {
-                            if sorted_column == column_index {
-                                ui.label(if ascending { "↑" } else { "↓" });
+                        ui.vertical(|ui| {
+                            // Column header button
+                            let response = ui.button(&column.name);
+                            if response.clicked() && column.value.is_some() {
+                                sort_request = Some(column_index);
                             }
-                        }
+                            if let Some((sorted_column, ascending)) = state.sorting {
+                                if sorted_column == column_index {
+                                    ui.label(if ascending { "↑" } else { "↓" });
+                                }
+                            }
+
+                            // Filter input (only for columns with value function)
+                            if column.value.is_some() {
+                                let filter_id = ui.id().with("filter").with(column_index);
+                                let mut filter_text = ui.data_mut(|data| {
+                                    data.get_temp_mut_or_default::<String>(filter_id).clone()
+                                });
+
+                                let response = ui.text_edit_singleline(&mut filter_text);
+                                if response.changed() {
+                                    ui.data_mut(|data| {
+                                        data.insert_temp(filter_id, filter_text.clone());
+                                    });
+                                    filter_updates.push((column_index, filter_text));
+                                }
+                            }
+                        });
                     });
-                }
-                if let Some(column_index) = need_sort {
-                    state.sort(&mut self, context, column_index);
                 }
             })
             .body(|mut body| {
@@ -316,6 +458,23 @@ impl<'a, T> Table<'a, T> {
                     });
                 }
             });
+
+        // Process filter updates after the table is built
+        for (column_index, filter_text) in filter_updates {
+            state.add_filter(column_index, filter_text);
+            // Rebuild indices and apply all filters
+            state.indices = (0..self.row_getter.len()).collect();
+            state.apply_filters(&mut self, context);
+            // Reapply sorting if it exists
+            if let Some((sort_column, ascending)) = state.sorting {
+                state.apply_sorting(&mut self, context, sort_column, ascending);
+            }
+        }
+
+        // Process sort request after the table is built
+        if let Some(column_index) = sort_request {
+            state.sort(&mut self, context, column_index);
+        }
 
         ui.ctx().data_mut(|w| w.insert_temp(table_id, state));
     }

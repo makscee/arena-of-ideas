@@ -22,10 +22,21 @@ impl<T: NodeViewFns> NodesListWidget<T> {
     ) -> Result<Option<u64>, ExpressionError> {
         let mut new_selected: Option<u64> = None;
         ui.push_id(vctx.id, |ui| {
-            let nodes = ids
+            let mut nodes = ids
                 .into_iter()
                 .filter_map(|id| context.get_by_id::<T>(*id).ok())
                 .collect_vec();
+
+            // Sort by rating (descending) then by node_id (ascending)
+            nodes.sort_by(|a, b| {
+                let rating_a = a.node_rating().unwrap_or_default();
+                let rating_b = b.node_rating().unwrap_or_default();
+                match rating_b.cmp(&rating_a) {
+                    // descending rating
+                    std::cmp::Ordering::Equal => a.id().cmp(&b.id()), // ascending id
+                    other => other,
+                }
+            });
             let mut table = nodes
                 .table()
                 .column(
@@ -36,7 +47,6 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     },
                     |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
                 )
-                .default_sort(0, false) // Sort by rating column (index 0) in descending order
                 .column(
                     "owner",
                     |_, ui, node, _value| {
@@ -63,7 +73,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                         });
                         Ok(())
                     },
-                    |_, node| Ok(VarValue::u64(node.id())),
+                    |_, node| Ok(VarValue::String(node.get_data())),
                 )
                 .column_remainder();
             if let Some((is_parent, id)) = vctx.link_rating {

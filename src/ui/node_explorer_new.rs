@@ -32,9 +32,17 @@ impl NodeExplorerPluginNew {
                 .or_insert_with(Vec::new)
                 .push(node.id);
         }
-        // Sort each vector by node.id
+        // Sort each vector by rating (descending) then by node.id (ascending)
         for vec in nodes.values_mut() {
-            vec.sort();
+            vec.sort_by(|a, b| {
+                let rating_a = a.node_rating().unwrap_or_default();
+                let rating_b = b.node_rating().unwrap_or_default();
+                match rating_b.cmp(&rating_a) {
+                    // descending rating
+                    std::cmp::Ordering::Equal => a.cmp(b), // ascending id
+                    other => other,
+                }
+            });
         }
         world.insert_resource(NodeExplorerData {
             nodes,
