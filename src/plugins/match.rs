@@ -594,18 +594,43 @@ impl MatchPlugin {
                 let action_range = Self::get_action_range(fusion, slot_idx);
                 let max_actions = Self::get_max_actions(&behavior, &fusion.trigger);
 
-                Self::render_actions_list(
-                    ui,
-                    context,
-                    &behavior,
-                    unit,
-                    &fusion.trigger,
-                    action_range,
-                )?;
-                if ui.ui_contains_pointer() {
-                    let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
-                    Self::render_start_range_controls(ui, unit, action_range, max_actions);
-                    Self::render_end_range_controls(ui, unit, action_range, max_actions);
+                if max_actions > 0 {
+                    let (current_start, current_len) = action_range;
+
+                    let range_selector = RangeSelector::new(max_actions)
+                        .range(current_start, current_len)
+                        .border_thickness(3.0)
+                        .drag_threshold(12.0)
+                        .show_drag_hints(false)
+                        .show_debug_info(false)
+                        .id(egui::Id::new(format!("range_selector_{}", unit.id)));
+
+                    let (_, range_changed) =
+                        range_selector.ui(ui, context, |item_ui, ctx, action_idx, is_in_range| {
+                            if let Some(reaction) =
+                                behavior.reactions.get(fusion.trigger.trigger as usize)
+                            {
+                                if let Some(action) = reaction.actions.get(action_idx) {
+                                    let vctx = ViewContext::new(item_ui).non_interactible(true);
+                                    if is_in_range {
+                                        Self::render_action_normal(
+                                            item_ui, ctx, unit, action, vctx,
+                                        );
+                                    } else {
+                                        Self::render_action_greyed(
+                                            item_ui, ctx, unit, action, vctx,
+                                        );
+                                    }
+                                }
+                            }
+                            Ok(())
+                        });
+
+                    if let Some((new_start, new_length)) = range_changed {
+                        cn().reducers
+                            .match_set_fusion_unit_action_range(unit.id, new_start, new_length)
+                            .notify_error_op();
+                    }
                 }
             }
             Ok(())
@@ -626,93 +651,6 @@ impl MatchPlugin {
             .get(trigger.trigger as usize)
             .map(|reaction| reaction.actions.len() as u8)
             .unwrap_or(0)
-    }
-
-    fn render_start_range_controls(
-        ui: &mut Ui,
-        unit: &NUnit,
-        action_range: (u8, u8),
-        max_actions: u8,
-    ) {
-        let (current_start, current_len) = action_range;
-        ui.horizontal(|ui| {
-            let can_decrease_start = current_start > 0;
-            if ui
-                .add_enabled(can_decrease_start, egui::Button::new("🔼"))
-                .clicked()
-            {
-                cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, current_start - 1, current_len + 1)
-                    .notify_error_op();
-            }
-            let can_increase_start = current_start < max_actions - 1;
-            if ui
-                .add_enabled(can_increase_start, egui::Button::new("🔽"))
-                .clicked()
-            {
-                let new_start = current_start + 1;
-                let new_len = current_len.saturating_sub(1);
-                cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, new_start, new_len)
-                    .notify_error_op();
-            }
-        });
-    }
-
-    fn render_end_range_controls(
-        ui: &mut Ui,
-        unit: &NUnit,
-        action_range: (u8, u8),
-        max_actions: u8,
-    ) {
-        let (current_start, current_len) = action_range;
-        ui.horizontal(|ui| {
-            let can_increase_end = current_start + current_len < max_actions;
-            if ui
-                .add_enabled(can_increase_end, egui::Button::new("🔽"))
-                .clicked()
-            {
-                cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len + 1)
-                    .notify_error_op();
-            }
-            let can_decrease_end = current_len > 0;
-            if ui
-                .add_enabled(can_decrease_end, egui::Button::new("🔼"))
-                .clicked()
-            {
-                cn().reducers
-                    .match_set_fusion_unit_action_range(unit.id, current_start, current_len - 1)
-                    .notify_error_op();
-            }
-        });
-    }
-
-    fn render_actions_list(
-        ui: &mut Ui,
-        context: &Context,
-        behavior: &NUnitBehavior,
-        unit: &NUnit,
-        trigger: &UnitTriggerRef,
-        action_range: (u8, u8),
-    ) -> Result<(), ExpressionError> {
-        let (current_start, current_len) = action_range;
-        let current_end = current_start + current_len;
-
-        if let Some(reaction) = behavior.reactions.get(trigger.trigger as usize) {
-            for (action_idx, action) in reaction.actions.iter().enumerate() {
-                let action_idx = action_idx as u8;
-                let is_in_range = action_idx >= current_start && action_idx < current_end;
-                let vctx = ViewContext::new(ui).non_interactible(true);
-
-                if is_in_range {
-                    Self::render_action_normal(ui, context, unit, action, vctx);
-                } else {
-                    Self::render_action_greyed(ui, context, unit, action, vctx);
-                }
-            }
-        }
-        Ok(())
     }
 
     fn render_action_normal(
