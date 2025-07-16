@@ -106,14 +106,6 @@ impl TableState {
         self.sorting = Some((column_index, ascending));
     }
 
-    fn sort<T>(&mut self, table: &mut Table<T>, context: &Context, column_index: usize) {
-        let ascending = match self.sorting {
-            Some((idx, asc)) if idx == column_index => !asc,
-            _ => false,
-        };
-        self.apply_sorting(table, context, column_index, ascending);
-    }
-
     fn apply_filters<T>(&mut self, table: &mut Table<T>, context: &Context) {
         if self.filters.is_empty() {
             return;
@@ -339,23 +331,21 @@ impl<'a, T> Table<'a, T> {
                         column.name,
                         if ascending { "↑" } else { "↓" }
                     ));
-                    if ui.button("✕").clicked() {
+                    if ui.button("❌").clicked() {
                         actions.push(("clear_sort", column_index, String::new()));
                     }
                 }
             }
 
-            // Show current filters
             for (column_index, filter_text) in &state.filters {
                 if let Some(column) = self.columns.get(*column_index) {
                     ui.label(format!("Filter {}: '{}'", column.name, filter_text));
-                    if ui.button("✕").clicked() {
+                    if ui.button("❌").clicked() {
                         actions.push(("remove_filter", *column_index, String::new()));
                     }
                 }
             }
 
-            // Process actions
             for (action, column_index, _) in actions {
                 match action {
                     "clear_sort" => {
@@ -384,14 +374,11 @@ impl<'a, T> Table<'a, T> {
             }
         });
 
-        // Apply filters to current data
         if data_changed || !state.filters.is_empty() {
             if data_changed {
                 state.indices = (0..self.row_getter.len()).collect();
             }
             state.apply_filters(&mut self, context);
-
-            // Reapply sorting after filtering
             if let Some((column_index, ascending)) = state.sorting {
                 state.apply_sorting(&mut self, context, column_index, ascending);
             }
@@ -410,9 +397,8 @@ impl<'a, T> Table<'a, T> {
             table_builder = table_builder.column(col);
         }
 
-        // Collect filter updates and sort request outside the closure
         let mut filter_updates = Vec::new();
-        let mut sort_request = None;
+        let mut sort: Option<(usize, bool)> = None;
 
         table_builder
             .auto_shrink([false, true])
@@ -420,32 +406,56 @@ impl<'a, T> Table<'a, T> {
             .header(24.0, |mut row| {
                 for (column_index, column) in self.columns.iter().enumerate() {
                     row.col(|ui| {
-                        ui.vertical(|ui| {
-                            // Column header button
-                            let response = ui.button(&column.name);
-                            if response.clicked() && column.value.is_some() {
-                                sort_request = Some(column_index);
-                            }
+                        ui.horizontal(|ui| {
+                            let mut header_text = column.name.clone();
                             if let Some((sorted_column, ascending)) = state.sorting {
                                 if sorted_column == column_index {
-                                    ui.label(if ascending { "↑" } else { "↓" });
+                                    header_text += if ascending { " ↑" } else { " ↓" };
                                 }
                             }
 
-                            // Filter input (only for columns with value function)
+                            let response = ui.button(&header_text);
                             if column.value.is_some() {
-                                let filter_id = ui.id().with("filter").with(column_index);
-                                let mut filter_text = ui.data_mut(|data| {
-                                    data.get_temp_mut_or_default::<String>(filter_id).clone()
-                                });
+                                response.bar_menu(|ui| {
+                                    ui.vertical(|ui| {
+                                        // Sort controls
+                                        ui.label("Sort:");
+                                        ui.horizontal(|ui| {
+                                            if ui.button("↑").clicked() {
+                                                // Force ascending sort
+                                                sort = Some((column_index, true));
+                                            }
+                                            if ui.button("↓").clicked() {
+                                                // Force descending sort
+                                                sort = Some((column_index, false));
+                                            }
+                                        });
 
-                                let response = ui.text_edit_singleline(&mut filter_text);
-                                if response.changed() {
-                                    ui.data_mut(|data| {
-                                        data.insert_temp(filter_id, filter_text.clone());
+                                        ui.separator();
+
+                                        ui.label("Filter:");
+                                        let filter_id = ui.id().with("filter").with(column_index);
+                                        let mut filter_text = ui.data_mut(|data| {
+                                            data.get_temp_mut_or_default::<String>(filter_id)
+                                                .clone()
+                                        });
+
+                                        let response = ui.text_edit_singleline(&mut filter_text);
+                                        if response.changed() {
+                                            ui.data_mut(|data| {
+                                                data.insert_temp(filter_id, filter_text.clone());
+                                            });
+                                            filter_updates.push((column_index, filter_text));
+                                        }
+
+                                        if ui.button("Clear Filter").clicked() {
+                                            ui.data_mut(|data| {
+                                                data.insert_temp(filter_id, String::new());
+                                            });
+                                            filter_updates.push((column_index, String::new()));
+                                        }
                                     });
-                                    filter_updates.push((column_index, filter_text));
-                                }
+                                });
                             }
                         });
                     });
@@ -459,21 +469,17 @@ impl<'a, T> Table<'a, T> {
                 }
             });
 
-        // Process filter updates after the table is built
         for (column_index, filter_text) in filter_updates {
             state.add_filter(column_index, filter_text);
-            // Rebuild indices and apply all filters
             state.indices = (0..self.row_getter.len()).collect();
             state.apply_filters(&mut self, context);
-            // Reapply sorting if it exists
             if let Some((sort_column, ascending)) = state.sorting {
                 state.apply_sorting(&mut self, context, sort_column, ascending);
             }
         }
 
-        // Process sort request after the table is built
-        if let Some(column_index) = sort_request {
-            state.sort(&mut self, context, column_index);
+        if let Some((column_index, ascending)) = sort {
+            state.apply_sorting(&mut self, context, column_index, ascending);
         }
 
         ui.ctx().data_mut(|w| w.insert_temp(table_id, state));
@@ -481,7 +487,6 @@ impl<'a, T> Table<'a, T> {
 }
 
 pub trait TableExt<T> {
-    /// Create a table widget from this vector
     fn table(&self) -> Table<T>;
 }
 

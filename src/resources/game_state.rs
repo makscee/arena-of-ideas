@@ -26,6 +26,7 @@ pub enum GameState {
     Query,
     Editor,
     Explorer,
+    Inspector,
 }
 
 const TREE_ID: &str = "tree";
@@ -158,6 +159,21 @@ impl GameState {
                     .into(),
                 );
             }
+            GameState::Inspector => {
+                let mut tiles = Tiles::default();
+
+                let parents = tiles.insert_pane(Pane::Inspector(InspectorPane::Parents));
+                let children = tiles.insert_pane(Pane::Inspector(InspectorPane::Children));
+                let same_kind = tiles.insert_pane(Pane::Inspector(InspectorPane::SameKind));
+                let inspector_node = tiles.insert_pane(Pane::Inspector(InspectorPane::Node));
+
+                // Create 2x2 layout: top row (parents | children), bottom row (same_kind | inspector_node)
+                let top_row = tiles.insert_horizontal_tile([parents, children].into());
+                let bottom_row = tiles.insert_horizontal_tile([same_kind, inspector_node].into());
+                let root = tiles.insert_vertical_tile([top_row, bottom_row].into());
+
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
+            }
             _ => {
                 tile_tree.tree = Tree::empty(TREE_ID);
             }
@@ -179,7 +195,7 @@ pub enum Pane {
 
     Admin,
     ExplorerList(NodeKind),
-    ExplorerInspect(ExplorerPane),
+    Inspector(InspectorPane),
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -201,10 +217,10 @@ pub enum ShopPane {
     Fusion,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
-pub enum ExplorerPane {
-    Selected,
+pub enum InspectorPane {
     Parents,
     Children,
+    SameKind,
     Node,
 }
 
@@ -252,11 +268,39 @@ impl Pane {
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
                 BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
             },
-            Pane::ExplorerInspect(pane) => match pane {
-                ExplorerPane::Selected => NodeExplorerPlugin::pane_selected(ui, world)?,
-                ExplorerPane::Parents => NodeExplorerPlugin::pane_parents(ui, world)?,
-                ExplorerPane::Children => NodeExplorerPlugin::pane_children(ui, world)?,
-                ExplorerPane::Node => NodeExplorerPlugin::pane_node(ui, world)?,
+            Pane::Inspector(pane) => match pane {
+                InspectorPane::Parents => {
+                    "Parents".cstr_s(CstrStyle::Heading2).label(ui);
+                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                        NodeExplorerPlugin::pane_parents(ui, world)?
+                    } else {
+                        ui.label("No node selected for inspection");
+                    }
+                }
+                InspectorPane::Children => {
+                    "Children".cstr_s(CstrStyle::Heading2).label(ui);
+                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                        NodeExplorerPlugin::pane_children(ui, world)?
+                    } else {
+                        ui.label("No node selected for inspection");
+                    }
+                }
+                InspectorPane::SameKind => {
+                    "Same Kind".cstr_s(CstrStyle::Heading2).label(ui);
+                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                        NodeExplorerPlugin::pane_selected(ui, world)?
+                    } else {
+                        ui.label("No node selected for inspection");
+                    }
+                }
+                InspectorPane::Node => {
+                    "Node Details".cstr_s(CstrStyle::Heading2).label(ui);
+                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                        NodeExplorerPlugin::pane_node(ui, world)?
+                    } else {
+                        ui.label("No node selected for inspection");
+                    }
+                }
             },
             Pane::ExplorerList(kind) => {
                 kind.cstr_s(CstrStyle::Heading2).label(ui);

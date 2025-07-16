@@ -37,16 +37,31 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     other => other,
                 }
             });
-            let mut table = nodes
-                .table()
-                .column(
-                    "r",
+            let mut table = nodes.table().column(
+                "r",
+                move |context, ui, node, _value| {
+                    node.node_view_rating(vctx, context, ui);
+                    Ok(())
+                },
+                |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
+            );
+            if let Some((is_parent, id)) = vctx.link_rating {
+                table = table.column(
+                    "lr",
                     move |context, ui, node, _value| {
-                        node.node_view_rating(vctx, context, ui);
+                        node.node_view_link_rating(vctx, context, ui, is_parent, id);
                         Ok(())
                     },
-                    |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
-                )
+                    move |context, node| {
+                        Ok(VarValue::i32(
+                            node.node_link_rating(context, is_parent, id)
+                                .unwrap_or_default()
+                                .0,
+                        ))
+                    },
+                );
+            }
+            table = table
                 .column(
                     "owner",
                     |_, ui, node, _value| {
@@ -76,22 +91,6 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     |_, node| Ok(VarValue::String(node.get_data())),
                 )
                 .column_remainder();
-            if let Some((is_parent, id)) = vctx.link_rating {
-                table = table.column(
-                    "link rating",
-                    move |context, ui, node, _value| {
-                        node.node_view_link_rating(vctx, context, ui, is_parent, id);
-                        Ok(())
-                    },
-                    move |context, node| {
-                        Ok(VarValue::i32(
-                            node.node_link_rating(context, is_parent, id)
-                                .unwrap_or_default()
-                                .0,
-                        ))
-                    },
-                );
-            }
             table.ui(context, ui);
         });
         Ok(new_selected)
@@ -100,61 +99,21 @@ impl<T: NodeViewFns> NodesListWidget<T> {
 
 pub struct NodeExplorerPlugin;
 
-#[derive(Resource, Clone, Default)]
-pub struct NodeExplorerData {
-    selected: Option<u64>,
-    selected_kind: NodeKind,
-    selected_ids: Vec<u64>,
-    children: HashMap<NodeKind, Vec<u64>>,
-    parents: HashMap<NodeKind, Vec<u64>>,
-    owner_filter: OwnerFilter,
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, AsRefStr, Default, EnumIter)]
-enum OwnerFilter {
-    #[default]
-    All,
-    Core,
-    Content,
-}
-impl ToCstr for OwnerFilter {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
-    }
-}
-impl OwnerFilter {
-    fn ids(self) -> HashSet<u64> {
-        match self {
-            OwnerFilter::All => default(),
-            OwnerFilter::Core => [ID_CORE].into(),
-            OwnerFilter::Content => [0, ID_CORE].into(),
-        }
-    }
-}
-
 impl Plugin for NodeExplorerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Explorer), |world: &mut World| {
-            let kind = NodeKind::NHouse;
-            let mut ned = NodeExplorerData {
-                selected_kind: kind,
-                ..default()
-            };
-            ned.selected_ids = kind.query_all_ids(world);
-            world.insert_resource(ned);
-        });
+    fn build(&self, _app: &mut App) {
+        // No longer needed - using shared initialization from node_explorer_new
     }
 }
 
 impl NodeExplorerPlugin {
     fn select_id(
         context: &mut Context,
-        ned: &mut NodeExplorerData,
+        ned: &mut NodeExplorerDataNew,
         id: u64,
     ) -> Result<(), ExpressionError> {
         let kind = context.get_by_id::<NodeState>(id)?.kind;
         Self::select_kind(context.world_mut()?, ned, kind);
-        ned.selected = Some(id);
+        ned.inspected_node = Some(id);
         for child in context.children(id) {
             let kind = child.kind()?;
             ned.children.entry(kind).or_default().push(child);
@@ -165,7 +124,7 @@ impl NodeExplorerPlugin {
         }
         Ok(())
     }
-    fn select_kind(world: &mut World, ned: &mut NodeExplorerData, kind: NodeKind) {
+    fn select_kind(world: &mut World, ned: &mut NodeExplorerDataNew, kind: NodeKind) {
         ned.selected_kind = kind;
         let filter_ids = ned.owner_filter.ids();
         ned.selected_ids = kind
@@ -178,37 +137,20 @@ impl NodeExplorerPlugin {
             .collect();
         ned.children.clear();
         ned.parents.clear();
-        ned.selected = None;
+        ned.inspected_node = None;
     }
     pub fn pane_selected(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut ned = world
-            .remove_resource::<NodeExplorerData>()
+            .remove_resource::<NodeExplorerDataNew>()
             .to_e_not_found()?;
         let r = Context::from_world_r(world, |context| {
-            let filter_changed = EnumSwitcher::new().show_iter(
-                &mut ned.owner_filter,
-                OwnerFilter::iter().collect_vec().iter(),
-                ui,
-            );
-            let mut kind = ned.selected_kind;
-            if Selector::new("kind").ui_enum(&mut kind, ui) || filter_changed {
-                Self::select_kind(context.world_mut()?, &mut ned, kind);
-            }
-            if let Some(selected) = ned.selected {
-                if format!("[red delete] #{selected}")
-                    .cstr()
-                    .button(ui)
-                    .clicked()
-                {
-                    cn().reducers.admin_delete_node(selected).unwrap();
-                }
-            }
+            let kind = ned.selected_kind;
             if let Some(selected) = kind.show_explorer(
                 context,
                 ViewContext::new(ui).one_line(true),
                 ui,
                 &ned.selected_ids,
-                ned.selected,
+                ned.inspected_node,
             )? {
                 Self::select_id(context, &mut ned, selected)?;
             }
@@ -218,8 +160,10 @@ impl NodeExplorerPlugin {
         r
     }
     pub fn pane_node(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let ned = world.get_resource::<NodeExplorerData>().to_e_not_found()?;
-        let Some(id) = ned.selected else {
+        let ned = world
+            .get_resource::<NodeExplorerDataNew>()
+            .to_e_not_found()?;
+        let Some(id) = ned.inspected_node else {
             return Ok(());
         };
         let node = id.get_node().to_e_not_found()?;
@@ -231,6 +175,10 @@ impl NodeExplorerPlugin {
             )
             .cstr()
             .label(ui);
+
+            if format!("[red delete] #{id}").cstr().button(ui).clicked() {
+                cn().reducers.admin_delete_node(id).unwrap();
+            }
             let ns = context.get_by_id::<NodeState>(id)?;
             match ns.kind {
                 NodeKind::NHouse => context
@@ -284,11 +232,16 @@ impl NodeExplorerPlugin {
         parents: bool,
     ) -> Result<(), ExpressionError> {
         let mut ned = world
-            .remove_resource::<NodeExplorerData>()
+            .remove_resource::<NodeExplorerDataNew>()
             .to_e_not_found()?;
         Context::from_world_r(world, |context| {
             let mut selected: Option<u64> = None;
             let ids = if parents { &ned.parents } else { &ned.children };
+            if ids.is_empty() {
+                let label_text = if parents { "No parents" } else { "No children" };
+                ui.label(label_text);
+                return Ok(());
+            }
             let mut selected_kind = ui
                 .ctx()
                 .data_mut(|w| w.get_temp_mut_or_default::<NodeKind>(ui.id()).clone());
@@ -300,23 +253,24 @@ impl NodeExplorerPlugin {
                 ui.ctx().data_mut(|w| w.insert_temp(ui.id(), selected_kind));
             }
             let mut vctx = ViewContext::new(ui).one_line(true);
-            if let Some(selected) = ned.selected {
+            if let Some(selected) = ned.inspected_node {
                 vctx = vctx.link_rating(!parents, selected);
             }
-
             if selected_kind == NodeKind::None {
                 for (kind, ids) in ids {
                     ui.vertical_centered_justified(|ui| {
                         kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
                     });
-                    if let Some(id) = kind.show_explorer(context, vctx, ui, ids, ned.selected)? {
+                    if let Some(id) =
+                        kind.show_explorer(context, vctx, ui, ids, ned.inspected_node)?
+                    {
                         selected = Some(id);
                     }
                 }
             } else {
                 let all_ids = selected_kind.query_all_ids(context.world_mut()?);
                 if let Some(id) =
-                    selected_kind.show_explorer(context, vctx, ui, &all_ids, ned.selected)?
+                    selected_kind.show_explorer(context, vctx, ui, &all_ids, ned.inspected_node)?
                 {
                     selected = Some(id);
                 }

@@ -624,6 +624,9 @@ impl ToCstr for Material {
 }
 impl ToCstr for raw_nodes::NodeKind {
     fn cstr(&self) -> Cstr {
+        if matches!(self, raw_nodes::NodeKind::None) {
+            return "All".to_owned();
+        }
         self.as_ref()
             .split_at(1)
             .1
