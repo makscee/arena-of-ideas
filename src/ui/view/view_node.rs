@@ -200,14 +200,26 @@ impl NodeViewFns for NActionDescription {
         self.description.cstr()
     }
 }
-impl NodeViewFns for NActionEffect {}
-impl NodeViewFns for NStatusAbility {}
+impl NodeViewFns for NActionEffect {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.actions.iter().map(|r| r.cstr()).join("\n")
+    }
+}
+impl NodeViewFns for NStatusAbility {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.status_name.cstr()
+    }
+}
 impl NodeViewFns for NStatusDescription {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.description.cstr()
     }
 }
-impl NodeViewFns for NStatusBehavior {}
+impl NodeViewFns for NStatusBehavior {
+    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
+        self.reactions.iter().map(|r| r.cstr()).join("\n")
+    }
+}
 impl NodeViewFns for NStatusRepresentation {}
 impl NodeViewFns for NTeam {}
 impl NodeViewFns for NMatch {}

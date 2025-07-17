@@ -5,7 +5,7 @@ use spacetimedb::{Identity, ReducerContext, reducer};
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
-const ADMIN_IDENTITY_HEX: &str = "c2006040747a1f04c2cebab8453bcf8b06c18e17f09e34ff20fd7883e748ca8e";
+const ADMIN_IDENTITY_HEX: &str = "c200ef827a902b03c6c49d77435af70cad0003fc322d23cf338142fa883b2dcf";
 
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)

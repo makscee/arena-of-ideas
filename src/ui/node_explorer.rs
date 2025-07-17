@@ -74,16 +74,16 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                     "node",
                     |context, ui, node, _value| {
                         ui.horizontal(|ui| {
-                            if node
-                                .view_title(
-                                    vctx.selected(selected.is_some_and(|id| id == node.id())),
-                                    context,
-                                    ui,
-                                )
-                                .clicked()
-                            {
-                                new_selected = Some(node.id());
-                            }
+                            let response = node.view_title(
+                                vctx.selected(selected.is_some_and(|id| id == node.id())),
+                                context,
+                                ui,
+                            );
+                            response.bar_menu(|ui| {
+                                if "open in inspector".cstr().button(ui).clicked() {
+                                    new_selected = Some(node.id());
+                                }
+                            });
                             node.view_data(vctx.one_line(true), context, ui);
                         });
                         Ok(())
