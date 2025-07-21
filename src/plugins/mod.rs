@@ -1,6 +1,7 @@
 mod admin;
 mod audio;
 mod battle;
+mod battle_editor;
 mod connect;
 mod game_timer;
 mod login;
@@ -17,6 +18,7 @@ use super::*;
 pub use admin::*;
 pub use audio::*;
 pub use battle::*;
+pub use battle_editor::*;
 pub use connect::*;
 pub use game_timer::*;
 pub use login::*;

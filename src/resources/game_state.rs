@@ -59,11 +59,12 @@ impl GameState {
                 let edit_left_slots = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftSlots));
                 let edit_right_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
                 let edit_right_slots = tiles.insert_pane(Pane::Battle(BattlePane::EditRightSlots));
+                let battle_editor = tiles.insert_pane(Pane::Battle(BattlePane::BattleEditor));
                 let edit_left =
                     tiles.insert_vertical_tile([edit_left_slots, edit_left_graph].into());
                 let edit_right =
                     tiles.insert_vertical_tile([edit_right_slots, edit_right_graph].into());
-                let edit = tiles.insert_tab_tile([edit_left, edit_right].into());
+                let edit = tiles.insert_tab_tile([edit_left, edit_right, battle_editor].into());
                 let vertical = tiles.insert_vertical_tile([view, controls].into());
                 let root = tiles.insert_horizontal_tile([edit, vertical].into());
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
@@ -206,6 +207,7 @@ pub enum BattlePane {
     EditLeftSlots,
     EditRightGraph,
     EditRightSlots,
+    BattleEditor,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ShopPane {
@@ -267,6 +269,7 @@ impl Pane {
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
                 BattlePane::EditRightSlots => BattlePlugin::pane_edit_slots(false, ui, world),
+                BattlePane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
             },
             Pane::Inspector(pane) => match pane {
                 InspectorPane::Parents => {

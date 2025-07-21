@@ -92,6 +92,7 @@ fn main() {
             PersistentDataPlugin,
             BattlePlugin,
             NodeExplorerPluginNew,
+            BattleEditorPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

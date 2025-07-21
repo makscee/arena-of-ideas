@@ -82,6 +82,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                             response.bar_menu(|ui| {
                                 if "open in inspector".cstr().button(ui).clicked() {
                                     new_selected = Some(node.id());
+                                    ui.close_menu();
                                 }
                             });
                             node.view_data(vctx.one_line(true), context, ui);

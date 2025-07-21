@@ -14,22 +14,22 @@ impl Plugin for BattlePlugin {
 }
 
 #[derive(Resource)]
-struct BattleData {
-    teams_world: World,
-    team_left: Entity,
-    team_right: Entity,
-    battle: Battle,
-    simulation: BattleSimulation,
-    t: f32,
-    playback_speed: f32,
-    playing: bool,
-    on_done: Option<Box<dyn Fn(u64, bool, u64) + Sync + Send>>,
+pub struct BattleData {
+    pub teams_world: World,
+    pub team_left: Entity,
+    pub team_right: Entity,
+    pub battle: Battle,
+    pub simulation: BattleSimulation,
+    pub t: f32,
+    pub playback_speed: f32,
+    pub playing: bool,
+    pub on_done: Option<Box<dyn Fn(u64, bool, u64) + Sync + Send>>,
 }
 
 #[derive(Resource, Default)]
-struct ReloadData {
-    reload_requested: bool,
-    last_reload: f64,
+pub struct ReloadData {
+    pub reload_requested: bool,
+    pub last_reload: f64,
 }
 
 impl BattleData {
@@ -88,8 +88,18 @@ impl BattlePlugin {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
-            *data = BattleData::load(data.battle.clone());
+            // *data = BattleData::load(data.battle.clone());
+            let (left, right) = (data.team_left, data.team_right);
+            let (left, right) = Context::from_world_r(&mut data.teams_world, |context| {
+                let left = NTeam::pack_entity(context, left)?;
+                let right = NTeam::pack_entity(context, right)?;
+                Ok((left, right))
+            })
+            .unwrap();
+            data.battle.left = left;
+            data.battle.right = right;
             data.playing = false;
+            data.t = 0.0;
             pd_mut(|pd| {
                 pd.client_state
                     .set_battle_test_teams(&data.battle.left, &data.battle.right);
