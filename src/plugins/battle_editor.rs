@@ -45,11 +45,31 @@ impl BattleEditorPlugin {
                 ui.label("Editing:");
                 if ui.selectable_label(is_left, "Left Team").clicked() {
                     world.resource_mut::<BattleEditorState>().is_left_team = true;
-                    navigation_action = Some(BattleEditorAction::Reset);
+
+                    let mut battle_data = world.remove_resource::<BattleData>().unwrap();
+                    let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
+                        context.id(battle_data.team_left)
+                    })
+                    .unwrap_or(0);
+                    world.insert_resource(battle_data);
+
+                    navigation_action = Some(BattleEditorAction::SetCurrent(
+                        BattleEditorNode::Team(team_id),
+                    ));
                 }
                 if ui.selectable_label(!is_left, "Right Team").clicked() {
                     world.resource_mut::<BattleEditorState>().is_left_team = false;
-                    navigation_action = Some(BattleEditorAction::Reset);
+
+                    let mut battle_data = world.remove_resource::<BattleData>().unwrap();
+                    let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
+                        context.id(battle_data.team_right)
+                    })
+                    .unwrap_or(0);
+                    world.insert_resource(battle_data);
+
+                    navigation_action = Some(BattleEditorAction::SetCurrent(
+                        BattleEditorNode::Team(team_id),
+                    ));
                 }
             });
 
@@ -159,6 +179,7 @@ impl BattleEditorPlugin {
             };
 
             if let Ok(team) = context.get::<NTeam>(team_entity) {
+                let team_id = team.id();
                 ui.label(format!("Team: {}", team.id));
                 if ui.button("Edit Team").clicked() {
                     action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
@@ -187,6 +208,15 @@ impl BattleEditorPlugin {
 
                 for entity in houses_to_delete {
                     context.despawn(entity).log();
+                    changed = true;
+                }
+
+                if ui.button("➕ Add Empty House").clicked() {
+                    let mut house = NHouse::default();
+                    house.house_name = "New House".into();
+                    let entity = context.world_mut()?.spawn_empty().id();
+                    house.unpack_entity(context, entity)?;
+                    context.link_parent_child(team_id, context.id(entity)?)?;
                     changed = true;
                 }
             }
@@ -223,6 +253,13 @@ impl BattleEditorPlugin {
                     ui.separator();
                     ui.heading("Houses");
 
+                    if ui.button("➕ Add Empty House").clicked() {
+                        Self::create_and_link_component::<NHouse>(context, entity, team.id);
+                        changed = true;
+                    }
+
+                    ui.separator();
+
                     let houses = team.houses_load(context);
                     let mut houses_to_delete = Vec::new();
                     for house in houses {
@@ -241,6 +278,35 @@ impl BattleEditorPlugin {
 
                     for entity in houses_to_delete {
                         context.despawn(entity).log();
+                        changed = true;
+                    }
+
+                    ui.separator();
+                    ui.heading("Fusions");
+
+                    let fusions = team.fusions_load(context);
+                    let mut fusions_to_delete = Vec::new();
+                    for fusion in fusions {
+                        ui.horizontal(|ui| {
+                            if ui.button("Edit Fusion").clicked() {
+                                action = Some(BattleEditorAction::Navigate(
+                                    BattleEditorNode::Fusion(fusion.id()),
+                                ));
+                            }
+
+                            if ui.button("🗑 Delete").clicked() {
+                                fusions_to_delete.push(fusion.entity());
+                            }
+                        });
+                    }
+
+                    for entity in fusions_to_delete {
+                        context.despawn(entity).log();
+                        changed = true;
+                    }
+
+                    if ui.button("➕ Add Fusion").clicked() {
+                        Self::create_and_link_component::<NFusion>(context, entity, team.id);
                         changed = true;
                     }
                 } else {
@@ -282,167 +348,114 @@ impl BattleEditorPlugin {
                     ui.separator();
 
                     ui.collapsing("Color", |ui| {
-                        if Self::show_node_editor::<NHouseColor>(
-                            entity,
-                            context,
-                            ui,
-                            "Color",
-                            house.owner,
-                        )
-                        .unwrap_or(false)
+                        if let Ok((color_changed, _)) =
+                            Self::show_node_editor::<NHouseColor>(entity, context, ui, house.owner)
                         {
-                            changed = true;
+                            changed |= color_changed;
                         }
                     });
 
                     ui.collapsing("Abilities", |ui| {
                         ui.label("House can have either Action Ability OR Status Ability:");
 
-                        if let Ok(action_ref) = house.action_load(context) {
-                            ui.label("Action Ability:");
-                            let action_entity = action_ref.entity();
-                            if let Ok(mut action_ability) =
-                                context.get::<NActionAbility>(action_entity).cloned()
+                        ui.collapsing("Action Ability", |ui| {
+                            if let Ok((action_changed, action_entity)) =
+                                Self::show_node_editor::<NActionAbility>(
+                                    entity,
+                                    context,
+                                    ui,
+                                    house.owner,
+                                )
                             {
-                                ui.group(|ui| {
-                                    if action_ability
-                                        .view_mut(ViewContext::new(ui), context, ui)
-                                        .changed
-                                    {
-                                        action_ability
-                                            .clone()
-                                            .unpack_entity(context, action_entity)
-                                            .log();
-                                        changed = true;
-                                    }
-                                });
+                                changed |= action_changed;
 
-                                ui.collapsing("Action Description", |ui| {
-                                    if Self::show_node_editor::<NActionDescription>(
-                                        action_entity,
-                                        context,
-                                        ui,
-                                        "Action Description",
-                                        house.owner,
-                                    )
-                                    .unwrap_or(false)
-                                    {
-                                        changed = true;
-                                    }
-
-                                    if let Ok(desc_ref) = action_ability.description_load(context) {
-                                        let desc_entity = desc_ref.entity();
-                                        ui.collapsing("Action Effect", |ui| {
-                                            if Self::show_node_editor::<NActionEffect>(
-                                                desc_entity,
+                                if let Some(action_entity) = action_entity {
+                                    ui.collapsing("Action Description", |ui| {
+                                        if let Ok((desc_changed, desc_entity)) =
+                                            Self::show_node_editor::<NActionDescription>(
+                                                action_entity,
                                                 context,
                                                 ui,
-                                                "Action Effect",
                                                 house.owner,
                                             )
-                                            .unwrap_or(false)
-                                            {
-                                                changed = true;
-                                            }
-                                        });
-                                    }
-                                });
+                                        {
+                                            changed |= desc_changed;
 
-                                if ui.button("🗑 Remove Action Ability").clicked() {
-                                    context.despawn(action_entity).log();
-                                    changed = true;
+                                            if let Some(desc_entity) = desc_entity {
+                                                ui.collapsing("Action Effect", |ui| {
+                                                    if let Ok((effect_changed, _)) =
+                                                        Self::show_node_editor::<NActionEffect>(
+                                                            desc_entity,
+                                                            context,
+                                                            ui,
+                                                            house.owner,
+                                                        )
+                                                    {
+                                                        changed |= effect_changed;
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    });
                                 }
                             }
-                        } else if let Ok(status_ref) = house.status_load(context) {
-                            ui.label("Status Ability:");
-                            let status_entity = status_ref.entity();
-                            if let Ok(mut status_ability) =
-                                context.get::<NStatusAbility>(status_entity).cloned()
+                        });
+
+                        ui.collapsing("Status Ability", |ui| {
+                            if let Ok((status_changed, status_entity)) =
+                                Self::show_node_editor::<NStatusAbility>(
+                                    entity,
+                                    context,
+                                    ui,
+                                    house.owner,
+                                )
                             {
-                                ui.group(|ui| {
-                                    if status_ability
-                                        .view_mut(ViewContext::new(ui), context, ui)
-                                        .changed
-                                    {
-                                        status_ability
-                                            .clone()
-                                            .unpack_entity(context, status_entity)
-                                            .log();
-                                        changed = true;
-                                    }
-                                });
+                                changed |= status_changed;
 
-                                ui.collapsing("Status Description", |ui| {
-                                    if Self::show_node_editor::<NStatusDescription>(
-                                        status_entity,
-                                        context,
-                                        ui,
-                                        "Status Description",
-                                        house.owner,
-                                    )
-                                    .unwrap_or(false)
-                                    {
-                                        changed = true;
-                                    }
-
-                                    if let Ok(desc_ref) = status_ability.description_load(context) {
-                                        let desc_entity = desc_ref.entity();
-                                        ui.collapsing("Status Behavior", |ui| {
-                                            if Self::show_node_editor::<NStatusBehavior>(
-                                                desc_entity,
+                                if let Some(status_entity) = status_entity {
+                                    ui.collapsing("Status Description", |ui| {
+                                        if let Ok((desc_changed, desc_entity)) =
+                                            Self::show_node_editor::<NStatusDescription>(
+                                                status_entity,
                                                 context,
                                                 ui,
-                                                "Status Behavior",
                                                 house.owner,
                                             )
-                                            .unwrap_or(false)
-                                            {
-                                                changed = true;
+                                        {
+                                            changed |= desc_changed;
+
+                                            if let Some(desc_entity) = desc_entity {
+                                                ui.collapsing("Status Behavior", |ui| {
+                                                    if let Ok((behavior_changed, _)) =
+                                                        Self::show_node_editor::<NStatusBehavior>(
+                                                            desc_entity,
+                                                            context,
+                                                            ui,
+                                                            house.owner,
+                                                        )
+                                                    {
+                                                        changed |= behavior_changed;
+                                                    }
+                                                });
                                             }
-                                        });
-                                    }
-                                });
+                                        }
+                                    });
 
-                                ui.collapsing("Status Representation", |ui| {
-                                    if Self::show_node_editor::<NStatusRepresentation>(
-                                        status_entity,
-                                        context,
-                                        ui,
-                                        "Status Representation",
-                                        house.owner,
-                                    )
-                                    .unwrap_or(false)
-                                    {
-                                        changed = true;
-                                    }
-                                });
-
-                                if ui.button("🗑 Remove Status Ability").clicked() {
-                                    context.despawn(status_entity).log();
-                                    changed = true;
+                                    ui.collapsing("Status Representation", |ui| {
+                                        if let Ok((repr_changed, _)) =
+                                            Self::show_node_editor::<NStatusRepresentation>(
+                                                status_entity,
+                                                context,
+                                                ui,
+                                                house.owner,
+                                            )
+                                        {
+                                            changed |= repr_changed;
+                                        }
+                                    });
                                 }
                             }
-                        } else {
-                            ui.label("No ability set");
-                            ui.horizontal(|ui| {
-                                if ui.button("➕ Add Action Ability").clicked() {
-                                    Self::create_and_link_component::<NActionAbility>(
-                                        context,
-                                        entity,
-                                        house.owner,
-                                    );
-                                    changed = true;
-                                }
-                                if ui.button("➕ Add Status Ability").clicked() {
-                                    Self::create_and_link_component::<NStatusAbility>(
-                                        context,
-                                        entity,
-                                        house.owner,
-                                    );
-                                    changed = true;
-                                }
-                            });
-                        }
+                        });
                     });
 
                     ui.separator();
@@ -528,36 +541,56 @@ impl BattleEditorPlugin {
                     ui.separator();
 
                     ui.collapsing("Stats", |ui| {
-                        if Self::show_node_editor::<NUnitStats>(
-                            entity, context, ui, "Stats", unit.owner,
-                        )
-                        .unwrap_or(false)
+                        if let Ok((stats_changed, _)) =
+                            Self::show_node_editor::<NUnitStats>(entity, context, ui, unit.owner)
                         {
-                            changed = true;
+                            changed |= stats_changed;
                         }
                     });
 
                     ui.collapsing("State", |ui| {
-                        if Self::show_node_editor::<NUnitState>(
-                            entity, context, ui, "State", unit.owner,
-                        )
-                        .unwrap_or(false)
+                        if let Ok((state_changed, _)) =
+                            Self::show_node_editor::<NUnitState>(entity, context, ui, unit.owner)
                         {
-                            changed = true;
+                            changed |= state_changed;
                         }
                     });
 
                     ui.collapsing("Description", |ui| {
-                        if Self::show_node_editor::<NUnitDescription>(
-                            entity,
-                            context,
-                            ui,
-                            "Description",
-                            unit.owner,
-                        )
-                        .unwrap_or(false)
+                        if let Ok((desc_changed, desc_entity)) =
+                            Self::show_node_editor::<NUnitDescription>(
+                                entity, context, ui, unit.owner,
+                            )
                         {
-                            changed = true;
+                            changed |= desc_changed;
+
+                            if let Some(desc_entity) = desc_entity {
+                                ui.collapsing("Unit Behavior", |ui| {
+                                    if let Ok((behavior_changed, _)) =
+                                        Self::show_node_editor::<NUnitBehavior>(
+                                            desc_entity,
+                                            context,
+                                            ui,
+                                            unit.owner,
+                                        )
+                                    {
+                                        changed |= behavior_changed;
+                                    }
+                                });
+
+                                ui.collapsing("Unit Representation", |ui| {
+                                    if let Ok((repr_changed, _)) =
+                                        Self::show_node_editor::<NUnitRepresentation>(
+                                            desc_entity,
+                                            context,
+                                            ui,
+                                            unit.owner,
+                                        )
+                                    {
+                                        changed |= repr_changed;
+                                    }
+                                });
+                            }
                         }
                     });
 
@@ -617,19 +650,21 @@ impl BattleEditorPlugin {
         child_entity: Entity,
         context: &mut Context,
         ui: &mut Ui,
-        component_name: &str,
         owner: u64,
-    ) -> Result<bool, ExpressionError>
+    ) -> Result<(bool, Option<Entity>), ExpressionError>
     where
         T: Node + 'static + View,
     {
         let mut changed = false;
+        let mut found_entity = None;
 
         if let Ok(mut node) = context
             .first_parent::<T>(context.id(child_entity)?)
             .cloned()
         {
             let entity = node.entity();
+            found_entity = Some(entity);
+
             ui.group(|ui| {
                 if node.view_mut(ViewContext::new(ui), context, ui).changed {
                     changed = true;
@@ -640,14 +675,18 @@ impl BattleEditorPlugin {
                 node.unpack_entity(context, entity).log();
             }
 
-            if ui.button(format!("🗑 Remove {}", component_name)).clicked() {
+            if ui
+                .button(format!("🗑 Remove {}", T::kind_s().cstr()))
+                .clicked()
+            {
                 context.despawn(entity).log();
                 changed = true;
+                found_entity = None;
             }
         } else {
-            ui.label(format!("{} not set", component_name));
+            ui.label(format!("{} not set", T::kind_s().cstr()));
             if ui
-                .button(format!("➕ Add Default {}", component_name))
+                .button(format!("➕ Add Default {}", T::kind_s().cstr()))
                 .clicked()
             {
                 Self::create_and_link_component::<T>(context, child_entity, owner);
@@ -655,7 +694,7 @@ impl BattleEditorPlugin {
             }
         }
 
-        Ok(changed)
+        Ok((changed, found_entity))
     }
 
     fn create_and_link_component<T>(context: &mut Context, child_entity: Entity, owner: u64)
