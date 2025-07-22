@@ -282,7 +282,7 @@ impl BattleEditorPlugin {
                     ui.separator();
 
                     ui.collapsing("Color", |ui| {
-                        if Self::show_component_editor::<NHouseColor>(
+                        if Self::show_node_editor::<NHouseColor>(
                             entity,
                             context,
                             ui,
@@ -318,7 +318,7 @@ impl BattleEditorPlugin {
                                 });
 
                                 ui.collapsing("Action Description", |ui| {
-                                    if Self::show_component_editor::<NActionDescription>(
+                                    if Self::show_node_editor::<NActionDescription>(
                                         action_entity,
                                         context,
                                         ui,
@@ -333,7 +333,7 @@ impl BattleEditorPlugin {
                                     if let Ok(desc_ref) = action_ability.description_load(context) {
                                         let desc_entity = desc_ref.entity();
                                         ui.collapsing("Action Effect", |ui| {
-                                            if Self::show_component_editor::<NActionEffect>(
+                                            if Self::show_node_editor::<NActionEffect>(
                                                 desc_entity,
                                                 context,
                                                 ui,
@@ -373,7 +373,7 @@ impl BattleEditorPlugin {
                                 });
 
                                 ui.collapsing("Status Description", |ui| {
-                                    if Self::show_component_editor::<NStatusDescription>(
+                                    if Self::show_node_editor::<NStatusDescription>(
                                         status_entity,
                                         context,
                                         ui,
@@ -388,7 +388,7 @@ impl BattleEditorPlugin {
                                     if let Ok(desc_ref) = status_ability.description_load(context) {
                                         let desc_entity = desc_ref.entity();
                                         ui.collapsing("Status Behavior", |ui| {
-                                            if Self::show_component_editor::<NStatusBehavior>(
+                                            if Self::show_node_editor::<NStatusBehavior>(
                                                 desc_entity,
                                                 context,
                                                 ui,
@@ -404,7 +404,7 @@ impl BattleEditorPlugin {
                                 });
 
                                 ui.collapsing("Status Representation", |ui| {
-                                    if Self::show_component_editor::<NStatusRepresentation>(
+                                    if Self::show_node_editor::<NStatusRepresentation>(
                                         status_entity,
                                         context,
                                         ui,
@@ -528,7 +528,7 @@ impl BattleEditorPlugin {
                     ui.separator();
 
                     ui.collapsing("Stats", |ui| {
-                        if Self::show_component_editor::<NUnitStats>(
+                        if Self::show_node_editor::<NUnitStats>(
                             entity, context, ui, "Stats", unit.owner,
                         )
                         .unwrap_or(false)
@@ -538,7 +538,7 @@ impl BattleEditorPlugin {
                     });
 
                     ui.collapsing("State", |ui| {
-                        if Self::show_component_editor::<NUnitState>(
+                        if Self::show_node_editor::<NUnitState>(
                             entity, context, ui, "State", unit.owner,
                         )
                         .unwrap_or(false)
@@ -548,7 +548,7 @@ impl BattleEditorPlugin {
                     });
 
                     ui.collapsing("Description", |ui| {
-                        if Self::show_component_editor::<NUnitDescription>(
+                        if Self::show_node_editor::<NUnitDescription>(
                             entity,
                             context,
                             ui,
@@ -613,7 +613,7 @@ impl BattleEditorPlugin {
         Ok((action, changed))
     }
 
-    fn show_component_editor<T>(
+    fn show_node_editor<T>(
         child_entity: Entity,
         context: &mut Context,
         ui: &mut Ui,
@@ -625,29 +625,24 @@ impl BattleEditorPlugin {
     {
         let mut changed = false;
 
-        if let Ok(component_ref) = context.first_parent::<T>(context.id(child_entity)?) {
-            let component_entity = component_ref.entity();
-            if let Ok(mut component) = context.get::<T>(component_entity).cloned() {
-                ui.group(|ui| {
-                    if component
-                        .view_mut(ViewContext::new(ui), context, ui)
-                        .changed
-                    {
-                        changed = true;
-                    }
-                });
-
-                if changed {
-                    component
-                        .clone()
-                        .unpack_entity(context, component_entity)
-                        .log();
-                }
-
-                if ui.button(format!("🗑 Remove {}", component_name)).clicked() {
-                    context.despawn(component_entity).log();
+        if let Ok(mut node) = context
+            .first_parent::<T>(context.id(child_entity)?)
+            .cloned()
+        {
+            let entity = node.entity();
+            ui.group(|ui| {
+                if node.view_mut(ViewContext::new(ui), context, ui).changed {
                     changed = true;
                 }
+            });
+
+            if changed {
+                node.unpack_entity(context, entity).log();
+            }
+
+            if ui.button(format!("🗑 Remove {}", component_name)).clicked() {
+                context.despawn(entity).log();
+                changed = true;
             }
         } else {
             ui.label(format!("{} not set", component_name));
