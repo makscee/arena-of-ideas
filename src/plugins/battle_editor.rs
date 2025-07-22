@@ -40,11 +40,9 @@ impl BattleEditorPlugin {
         let mut navigation_action: Option<BattleEditorAction> = None;
         let mut changed = false;
 
-        // Render UI and collect navigation actions
         {
             let is_left = world.resource::<BattleEditorState>().is_left_team;
 
-            // Team selector
             ui.horizontal(|ui| {
                 ui.label("Editing:");
                 if ui.selectable_label(is_left, "Left Team").clicked() {
@@ -59,7 +57,6 @@ impl BattleEditorPlugin {
 
             ui.separator();
 
-            // Navigation bar
             let state = world.resource::<BattleEditorState>();
             ui.horizontal(|ui| {
                 if !state.navigation_stack.is_empty() {
@@ -69,7 +66,6 @@ impl BattleEditorPlugin {
                     ui.separator();
                 }
 
-                // Show current node path
                 if let Some(current) = &state.current_node {
                     match current {
                         BattleEditorNode::Team(id) => {
@@ -92,7 +88,6 @@ impl BattleEditorPlugin {
 
             ui.separator();
 
-            // Main content area
             let current_node = world.resource::<BattleEditorState>().current_node.clone();
             ScrollArea::vertical().show(ui, |ui| {
                 let result = if let Some(current) = &current_node {
@@ -114,7 +109,6 @@ impl BattleEditorPlugin {
             });
         }
 
-        // Apply navigation action if any
         if let Some(action) = navigation_action {
             let mut state = world.resource_mut::<BattleEditorState>();
             match action {
@@ -140,7 +134,6 @@ impl BattleEditorPlugin {
             }
         }
 
-        // If any changes were made, request reload
         if changed {
             world.resource_mut::<ReloadData>().reload_requested = true;
         }
@@ -153,145 +146,37 @@ impl BattleEditorPlugin {
         world: &mut World,
     ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
         let mut action = None;
-        let mut changed = false;
-        let mut add_house = false;
-        let mut team_id = 0u64;
-        let mut team_owner = 0u64;
+        let is_left = world.resource::<BattleEditorState>().is_left_team;
 
-        world.resource_scope(|world, mut data: Mut<BattleData>| {
-            let is_left = world.resource::<BattleEditorState>().is_left_team;
-            let team_entity = if is_left {
+        let team_entity = {
+            let data = world.resource::<BattleData>();
+            if is_left {
                 data.team_left
             } else {
                 data.team_right
-            };
+            }
+        };
 
+        world.resource_scope(|_world, mut data: Mut<BattleData>| {
             let _ = Context::from_world_r(&mut data.teams_world, |context| {
+                ui.heading(if is_left { "Left Team" } else { "Right Team" });
+                ui.separator();
+
                 if let Ok(team) = context.get::<NTeam>(team_entity) {
-                    ui.heading(format!("{} Team", if is_left { "Left" } else { "Right" }));
-                    ui.separator();
-
-                    // Store team data before any UI operations
-                    team_id = team.id;
-                    team_owner = team.owner;
-
-                    // Edit the team directly
-                    if let Ok(mut team_data) = NTeam::pack_entity(context, team_entity) {
-                        ui.group(|ui| {
-                            if team_data
-                                .view_mut(ViewContext::new(ui), context, ui)
-                                .changed
-                            {
-                                changed = true;
-                            }
-                        });
-
-                        if changed {
-                            team_data.unpack_entity(context, team_entity).log();
-                        }
+                    if ui.button(&format!("Team #{}", team.id)).clicked() {
+                        action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
+                            team.id,
+                        )));
                     }
-
-                    ui.separator();
-
-                    // Navigation to children
-                    if let Ok(team) = context.get::<NTeam>(team_entity) {
-                        // Houses section
-                        ui.collapsing("Houses", |ui| {
-                            // Add new house button
-                            if ui.button("➕ Add New House").clicked() {
-                                add_house = true;
-                            }
-
-                            ui.separator();
-
-                            let houses = team.houses_load(context);
-                            for house in houses {
-                                ui.horizontal(|ui| {
-                                    if ui.button(format!("Edit {}", house.house_name)).clicked() {
-                                        action = Some(BattleEditorAction::SetCurrent(
-                                            BattleEditorNode::House(house.id()),
-                                        ));
-                                    }
-
-                                    // Show house preview
-                                    if let Ok(color) = house.color_load(context) {
-                                        let egui_color = egui::Color32::from_hex(&color.color.0)
-                                            .unwrap_or(egui::Color32::WHITE);
-                                        ui.colored_label(egui_color, "■");
-                                    }
-
-                                    let units = house.units_load(context);
-                                    ui.label(format!("Units: {}", units.len()));
-                                });
-                            }
-                        });
-
-                        // Fusions section
-                        ui.collapsing("Fusions", |ui| {
-                            let fusions = team.fusions_load(context);
-                            for fusion in fusions {
-                                ui.horizontal(|ui| {
-                                    if ui.button(format!("Edit Fusion #{}", fusion.id())).clicked()
-                                    {
-                                        action = Some(BattleEditorAction::SetCurrent(
-                                            BattleEditorNode::Fusion(fusion.id()),
-                                        ));
-                                    }
-
-                                    ui.label(format!(
-                                        "Units: {}, Slot: {}, Level: {}",
-                                        fusion.units.ids.len(),
-                                        fusion.slot,
-                                        fusion.lvl
-                                    ));
-                                });
-                            }
-                        });
-                    }
-                }
-
-                // Create new house after UI if needed
-                if add_house {
-                    let mut new_house = NHouse::default();
-                    new_house.id = next_id();
-                    new_house.owner = team_owner;
-                    new_house.house_name = format!("House {}", new_house.id);
-
-                    // Create default color
-                    let mut color = NHouseColor::default();
-                    color.id = next_id();
-                    color.owner = team_owner;
-                    color.color = HexColor("#808080".to_string());
-
-                    // Create and link entities
-                    let house_entity = context.world_mut().unwrap().spawn_empty().id();
-                    let color_entity = context.world_mut().unwrap().spawn_empty().id();
-
-                    let color_id = color.id;
-                    let house_id = new_house.id;
-
-                    color.unpack_entity(context, color_entity).log();
-                    new_house.color = Some(NHouseColor {
-                        id: color_id,
-                        owner: team_owner,
-                        entity: Some(color_entity),
-                        color: HexColor("#808080".to_string()),
-                    });
-                    new_house.unpack_entity(context, house_entity).log();
-
-                    context
-                        .link_parent_child_entity(house_entity, color_entity)
-                        .log();
-                    context.link_parent_child(team_id, house_id).log();
-
-                    changed = true;
+                } else {
+                    ui.label("Team not found");
                 }
 
                 Ok(())
             });
         });
 
-        Ok((action, changed))
+        Ok((action, false))
     }
 
     fn render_team_editor(
@@ -309,8 +194,8 @@ impl BattleEditorPlugin {
                     ui.heading("Team Editor");
                     ui.separator();
 
-                    // Edit team
-                    if let Ok(mut team_data) = NTeam::pack_entity(context, entity) {
+                    if let Ok(team) = context.get::<NTeam>(entity) {
+                        let mut team_data = team.clone();
                         ui.group(|ui| {
                             if team_data
                                 .view_mut(ViewContext::new(ui), context, ui)
@@ -321,24 +206,20 @@ impl BattleEditorPlugin {
                         });
 
                         if changed {
-                            team_data.unpack_entity(context, entity).log();
+                            team_data.clone().unpack_entity(context, entity).log();
                         }
                     }
 
                     ui.separator();
 
-                    // Store team data before UI operations
                     let (team_id, team_owner) = if let Ok(team) = context.get_by_id::<NTeam>(id) {
                         (team.id, team.owner)
                     } else {
                         (0, 0)
                     };
 
-                    // Navigation to children
                     if let Ok(team) = context.get_by_id::<NTeam>(id) {
-                        // Houses section
                         ui.collapsing("Houses", |ui| {
-                            // Add new house button
                             if ui.button("➕ Add New House").clicked() {
                                 add_house = true;
                             }
@@ -354,7 +235,6 @@ impl BattleEditorPlugin {
                                         ));
                                     }
 
-                                    // Show house preview
                                     if let Ok(color) = house.color_load(context) {
                                         let egui_color = egui::Color32::from_hex(&color.color.0)
                                             .unwrap_or(egui::Color32::WHITE);
@@ -367,7 +247,6 @@ impl BattleEditorPlugin {
                             }
                         });
 
-                        // Fusions section
                         ui.collapsing("Fusions", |ui| {
                             let fusions = team.fusions_load(context);
                             for fusion in fusions {
@@ -390,20 +269,17 @@ impl BattleEditorPlugin {
                         });
                     }
 
-                    // Create new house after UI if needed
                     if add_house {
                         let mut new_house = NHouse::default();
                         new_house.id = next_id();
                         new_house.owner = team_owner;
                         new_house.house_name = format!("House {}", new_house.id);
 
-                        // Create default color
                         let mut color = NHouseColor::default();
                         color.id = next_id();
                         color.owner = team_owner;
                         color.color = HexColor("#808080".to_string());
 
-                        // Create and link entities
                         let house_entity = context.world_mut().unwrap().spawn_empty().id();
                         let color_entity = context.world_mut().unwrap().spawn_empty().id();
 
@@ -426,6 +302,11 @@ impl BattleEditorPlugin {
 
                         changed = true;
                     }
+                } else {
+                    ui.label("Team not found");
+                    if ui.button("Add Default Team").clicked() {
+                        changed = true;
+                    }
                 }
 
                 Ok(())
@@ -443,12 +324,14 @@ impl BattleEditorPlugin {
         let mut action = None;
         let mut changed = false;
         let mut add_unit = false;
+        let mut add_action = false;
+        let mut add_status = false;
+        let mut add_color = false;
         let mut house_owner = 0u64;
 
         world.resource_scope(|_world, mut data: Mut<BattleData>| {
             let _ = Context::from_world_r(&mut data.teams_world, |context| {
                 if let Ok(entity) = context.entity(id) {
-                    // Get house data first
                     let (house_name, house_owner_temp) =
                         if let Ok(house) = context.get::<NHouse>(entity) {
                             (house.house_name.clone(), house.owner)
@@ -460,7 +343,38 @@ impl BattleEditorPlugin {
                     ui.heading(format!("House: {}", house_name));
                     ui.separator();
 
-                    if let Ok(mut house_data) = NHouse::pack_entity(context, entity) {
+                    if let Ok(house) = context.get::<NHouse>(entity).cloned() {
+                        let mut house_data = house.clone();
+
+                        // Collect all component data as owned values first
+                        let color_data = house.color_load(context).ok().and_then(|c| {
+                            context.entity(c.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NHouseColor>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+                        let action_data = house.action_load(context).ok().and_then(|a| {
+                            context.entity(a.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NActionAbility>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+                        let status_data = house.status_load(context).ok().and_then(|s| {
+                            context.entity(s.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NStatusAbility>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+
                         ui.group(|ui| {
                             if house_data
                                 .view_mut(ViewContext::new(ui), context, ui)
@@ -471,102 +385,221 @@ impl BattleEditorPlugin {
                         });
 
                         if changed {
-                            house_data.unpack_entity(context, entity).log();
+                            house_data.clone().unpack_entity(context, entity).log();
                         }
-                    }
 
-                    ui.separator();
+                        ui.separator();
 
-                    // Get child component IDs first to avoid borrow conflicts
-                    let (color_id, action_id, status_id) =
-                        if let Ok(house) = context.get::<NHouse>(entity) {
-                            (
-                                house.color.as_ref().map(|c| c.id),
-                                house.action.as_ref().map(|a| a.id),
-                                house.status.as_ref().map(|s| s.id),
-                            )
-                        } else {
-                            (None, None, None)
-                        };
-
-                    // Color
-                    if let Some(color_id) = color_id {
                         ui.collapsing("Color", |ui| {
-                            if let Ok(color_entity) = context.entity(color_id) {
-                                if let Ok(mut color_data) =
-                                    NHouseColor::pack_entity(context, color_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if color_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
-                                        {
-                                            changed = true;
-                                        }
-                                    });
-
-                                    if changed {
-                                        color_data.unpack_entity(context, color_entity).log();
+                            if let Some((color_entity, mut color)) = color_data.clone() {
+                                ui.group(|ui| {
+                                    if color.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        color.clone().unpack_entity(context, color_entity).log();
                                     }
+                                });
+                            } else {
+                                ui.label("Color not set");
+                                if ui.button("➕ Add Default Color").clicked() {
+                                    add_color = true;
                                 }
                             }
                         });
-                    }
 
-                    // Action ability
-                    if let Some(action_id) = action_id {
-                        ui.collapsing("Action Ability", |ui| {
-                            if let Ok(action_entity) = context.entity(action_id) {
-                                if let Ok(mut action_data) =
-                                    NActionAbility::pack_entity(context, action_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if action_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
+                        ui.collapsing("Abilities", |ui| {
+                            ui.label("House can have either Action Ability OR Status Ability:");
+
+                            if let Some((action_entity, mut action)) = action_data.clone() {
+                                ui.label("Action Ability:");
+                                ui.group(|ui| {
+                                    if action.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        action.clone().unpack_entity(context, action_entity).log();
+                                    }
+                                });
+
+                                // Show inner components of action ability
+                                if let Ok(action_ref) = house.action_load(context) {
+                                    let action_desc_data =
+                                        action_ref.description_load(context).ok().and_then(|d| {
+                                            context.entity(d.id()).ok().and_then(|e| {
+                                                context
+                                                    .get::<NActionDescription>(e)
+                                                    .cloned()
+                                                    .ok()
+                                                    .map(|data| (e, data))
+                                            })
+                                        });
+
+                                    ui.collapsing("Action Description", |ui| {
+                                        if let Some((desc_entity, mut desc)) =
+                                            action_desc_data.clone()
                                         {
-                                            changed = true;
+                                            ui.group(|ui| {
+                                                if desc
+                                                    .view_mut(ViewContext::new(ui), context, ui)
+                                                    .changed
+                                                {
+                                                    desc.clone()
+                                                        .unpack_entity(context, desc_entity)
+                                                        .log();
+                                                }
+                                            });
+
+                                            // Show action effect
+                                            if let Some((_, desc_data)) = action_desc_data.clone() {
+                                                let effect_data = desc_data.effect_load(context).ok().and_then(|e| {
+                                                    context.entity(e.id()).ok().and_then(|ent| {
+                                                        context.get::<NActionEffect>(ent).cloned().ok().map(|data| (ent, data))
+                                                    })
+                                                });
+
+                                                ui.collapsing("Action Effect", |ui| {
+                                                    if let Some((effect_entity, mut effect)) = effect_data.clone() {
+                                                        ui.group(|ui| {
+                                                            if effect.view_mut(ViewContext::new(ui), context, ui).changed {
+                                                                effect.clone().unpack_entity(context, effect_entity).log();
+                                                            }
+                                                        });
+                                                    } else {
+                                                        ui.label("Action Effect not set");
+                                                        if ui.button("➕ Add Default Action Effect").clicked() {
+                                                            Self::create_and_link_component::<NActionEffect>(context, desc_entity, house_owner);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        } else {
+                                            ui.label("Action Description not set");
+                                            if ui.button("➕ Add Default Action Description").clicked() {
+                                                Self::create_and_link_component::<NActionDescription>(context, action_entity, house_owner);
+                                            }
+                                        }
+                                    });
+                                }
+
+                                if ui.button("🗑 Remove Action Ability").clicked() {
+                                    // Will be handled below
+                                }
+                            } else if let Some((status_entity, mut status)) = status_data.clone() {
+                                ui.label("Status Ability:");
+                                ui.group(|ui| {
+                                    if status.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        status.clone().unpack_entity(context, status_entity).log();
+                                    }
+                                });
+
+                                // Show inner components of status ability
+                                if let Ok(status_ref) = house.status_load(context) {
+                                    let status_desc_data =
+                                        status_ref.description_load(context).ok().and_then(|d| {
+                                            context.entity(d.id()).ok().and_then(|e| {
+                                                context
+                                                    .get::<NStatusDescription>(e)
+                                                    .cloned()
+                                                    .ok()
+                                                    .map(|data| (e, data))
+                                            })
+                                        });
+                                    let status_rep_data = status_ref
+                                        .representation_load(context)
+                                        .ok()
+                                        .and_then(|r| {
+                                            context.entity(r.id()).ok().and_then(|e| {
+                                                context
+                                                    .get::<NStatusRepresentation>(e)
+                                                    .cloned()
+                                                    .ok()
+                                                    .map(|data| (e, data))
+                                            })
+                                        });
+
+                                    ui.collapsing("Status Description", |ui| {
+                                        if let Some((desc_entity, mut desc)) =
+                                            status_desc_data.clone()
+                                        {
+                                            ui.group(|ui| {
+                                                if desc
+                                                    .view_mut(ViewContext::new(ui), context, ui)
+                                                    .changed
+                                                {
+                                                    desc.clone()
+                                                        .unpack_entity(context, desc_entity)
+                                                        .log();
+                                                }
+                                            });
+
+                                            // Show status behavior
+                                            if let Some((_, desc_data)) = status_desc_data.clone() {
+                                                let behavior_data = desc_data.behavior_load(context).ok().and_then(|b| {
+                                                    context.entity(b.id()).ok().and_then(|ent| {
+                                                        context.get::<NStatusBehavior>(ent).cloned().ok().map(|data| (ent, data))
+                                                    })
+                                                });
+
+                                                ui.collapsing("Status Behavior", |ui| {
+                                                    if let Some((behavior_entity, mut behavior)) = behavior_data.clone() {
+                                                        ui.group(|ui| {
+                                                            if behavior.view_mut(ViewContext::new(ui), context, ui).changed {
+                                                                behavior.clone().unpack_entity(context, behavior_entity).log();
+                                                            }
+                                                        });
+                                                    } else {
+                                                        ui.label("Status Behavior not set");
+                                                        if ui.button("➕ Add Default Status Behavior").clicked() {
+                                                            Self::create_and_link_component::<NStatusBehavior>(context, desc_entity, house_owner);
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        } else {
+                                            ui.label("Status Description not set");
+                                            if ui.button("➕ Add Default Status Description").clicked() {
+                                                Self::create_and_link_component::<NStatusDescription>(context, status_entity, house_owner);
+                                            }
                                         }
                                     });
 
-                                    if changed {
-                                        action_data.unpack_entity(context, action_entity).log();
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    // Status ability
-                    if let Some(status_id) = status_id {
-                        ui.collapsing("Status Ability", |ui| {
-                            if let Ok(status_entity) = context.entity(status_id) {
-                                if let Ok(mut status_data) =
-                                    NStatusAbility::pack_entity(context, status_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if status_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
+                                    ui.collapsing("Status Representation", |ui| {
+                                        if let Some((rep_entity, mut rep)) = status_rep_data.clone()
                                         {
-                                            changed = true;
+                                            ui.group(|ui| {
+                                                if rep
+                                                    .view_mut(ViewContext::new(ui), context, ui)
+                                                    .changed
+                                                {
+                                                    rep.clone()
+                                                        .unpack_entity(context, rep_entity)
+                                                        .log();
+                                                }
+                                            });
+                                        } else {
+                                            ui.label("Status Representation not set");
+                                            if ui.button("➕ Add Default Status Representation").clicked() {
+                                                Self::create_and_link_component::<NStatusRepresentation>(context, status_entity, house_owner);
+                                            }
                                         }
                                     });
-
-                                    if changed {
-                                        status_data.unpack_entity(context, status_entity).log();
-                                    }
                                 }
+
+                                if ui.button("🗑 Remove Status Ability").clicked() {
+                                    // Will be handled below
+                                }
+                            } else {
+                                ui.label("No ability set");
+                                ui.horizontal(|ui| {
+                                    if ui.button("➕ Add Action Ability").clicked() {
+                                        add_action = true;
+                                    }
+                                    if ui.button("➕ Add Status Ability").clicked() {
+                                        add_status = true;
+                                    }
+                                });
                             }
                         });
                     }
 
                     ui.separator();
-
-                    // Units section
                     ui.heading("Units");
 
-                    // Add new unit button
                     if ui.button("➕ Add New Unit").clicked() {
                         add_unit = true;
                     }
@@ -583,7 +616,6 @@ impl BattleEditorPlugin {
                                     ));
                                 }
 
-                                // Show unit preview
                                 if let Ok(stats) = unit.stats_load(context) {
                                     ui.label(format!("PWR: {}, HP: {}", stats.pwr, stats.hp));
                                 }
@@ -597,86 +629,45 @@ impl BattleEditorPlugin {
                             });
                         }
                     }
+
+                    if add_color {
+                        println!("Adding color to house");
+                        Self::create_and_link_component::<NHouseColor>(
+                            context,
+                            entity,
+                            house_owner,
+                        );
+                        changed = true;
+                    }
+
+                    if add_action {
+                        println!("Adding action ability to house");
+                        Self::create_and_link_component::<NActionAbility>(
+                            context,
+                            entity,
+                            house_owner,
+                        );
+                        changed = true;
+                    }
+
+                    if add_status {
+                        println!("Adding status ability to house");
+                        Self::create_and_link_component::<NStatusAbility>(
+                            context,
+                            entity,
+                            house_owner,
+                        );
+                        changed = true;
+                    }
+                } else {
+                    ui.label("House not found");
+                    if ui.button("Add Default House").clicked() {
+                        changed = true;
+                    }
                 }
 
-                // Create new unit after UI if needed
                 if add_unit {
-                    let mut new_unit = NUnit::default();
-                    new_unit.id = next_id();
-                    new_unit.owner = house_owner;
-                    new_unit.unit_name = format!("Unit {}", new_unit.id);
-
-                    // Create default components
-                    let mut stats = NUnitStats::default();
-                    stats.id = next_id();
-                    stats.owner = house_owner;
-                    stats.pwr = 1;
-                    stats.hp = 1;
-
-                    let mut state = NUnitState::default();
-                    state.id = next_id();
-                    state.owner = house_owner;
-                    state.lvl = 1;
-                    state.xp = 0;
-                    state.rarity = 0;
-
-                    let mut description = NUnitDescription::default();
-                    description.id = next_id();
-                    description.owner = house_owner;
-
-                    // Create entities
-                    let unit_entity = context.world_mut().unwrap().spawn_empty().id();
-                    let stats_entity = context.world_mut().unwrap().spawn_empty().id();
-                    let state_entity = context.world_mut().unwrap().spawn_empty().id();
-                    let desc_entity = context.world_mut().unwrap().spawn_empty().id();
-
-                    let stats_id = stats.id;
-                    let state_id = state.id;
-                    let desc_id = description.id;
-                    let unit_id = new_unit.id;
-
-                    stats.unpack_entity(context, stats_entity).log();
-                    state.unpack_entity(context, state_entity).log();
-                    description.unpack_entity(context, desc_entity).log();
-
-                    // Set references
-                    new_unit.stats = Some(NUnitStats {
-                        id: stats_id,
-                        owner: house_owner,
-                        entity: Some(stats_entity),
-                        pwr: 1,
-                        hp: 1,
-                    });
-                    new_unit.state = Some(NUnitState {
-                        id: state_id,
-                        owner: house_owner,
-                        entity: Some(state_entity),
-                        lvl: 1,
-                        xp: 0,
-                        rarity: 0,
-                    });
-                    new_unit.description = Some(NUnitDescription {
-                        id: desc_id,
-                        owner: house_owner,
-                        entity: Some(desc_entity),
-                        description: String::new(),
-                        representation: None,
-                        behavior: None,
-                    });
-                    new_unit.unpack_entity(context, unit_entity).log();
-
-                    // Link entities
-                    context
-                        .link_parent_child_entity(unit_entity, stats_entity)
-                        .log();
-                    context
-                        .link_parent_child_entity(unit_entity, state_entity)
-                        .log();
-                    context
-                        .link_parent_child_entity(unit_entity, desc_entity)
-                        .log();
-                    context.link_parent_child(id, unit_id).log();
-
+                    Self::create_default_unit(context, id, house_owner);
                     changed = true;
                 }
 
@@ -694,11 +685,12 @@ impl BattleEditorPlugin {
     ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
         let action = None;
         let mut changed = false;
+        let mut add_representation = false;
+        let mut add_behavior = false;
 
         world.resource_scope(|_world, mut data: Mut<BattleData>| {
             let _ = Context::from_world_r(&mut data.teams_world, |context| {
                 if let Ok(entity) = context.entity(id) {
-                    // Get unit name first
                     let unit_name = context
                         .get::<NUnit>(entity)
                         .ok()
@@ -707,8 +699,61 @@ impl BattleEditorPlugin {
                     ui.heading(format!("Unit: {}", unit_name));
                     ui.separator();
 
-                    // Edit unit
-                    if let Ok(mut unit_data) = NUnit::pack_entity(context, entity) {
+                    if let Ok(unit) = context.get::<NUnit>(entity).cloned() {
+                        let mut unit_data = unit.clone();
+                        let unit_owner = unit.owner;
+
+                        // Collect all component data as owned values first
+                        let desc_data = unit.description_load(context).ok().and_then(|d| {
+                            context.entity(d.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NUnitDescription>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+                        let rep_data = desc_data.as_ref().and_then(|(_, desc)| {
+                            desc.representation_load(context).ok().and_then(|r| {
+                                context.entity(r.id()).ok().and_then(|e| {
+                                    context
+                                        .get::<NUnitRepresentation>(e)
+                                        .cloned()
+                                        .ok()
+                                        .map(|data| (e, data))
+                                })
+                            })
+                        });
+                        let behavior_data = desc_data.as_ref().and_then(|(_, desc)| {
+                            desc.behavior_load(context).ok().and_then(|b| {
+                                context.entity(b.id()).ok().and_then(|e| {
+                                    context
+                                        .get::<NUnitBehavior>(e)
+                                        .cloned()
+                                        .ok()
+                                        .map(|data| (e, data))
+                                })
+                            })
+                        });
+                        let stats_data = unit.stats_load(context).ok().and_then(|s| {
+                            context.entity(s.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NUnitStats>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+                        let state_data = unit.state_load(context).ok().and_then(|s| {
+                            context.entity(s.id()).ok().and_then(|e| {
+                                context
+                                    .get::<NUnitState>(e)
+                                    .cloned()
+                                    .ok()
+                                    .map(|data| (e, data))
+                            })
+                        });
+
                         ui.group(|ui| {
                             if unit_data
                                 .view_mut(ViewContext::new(ui), context, ui)
@@ -719,163 +764,129 @@ impl BattleEditorPlugin {
                         });
 
                         if changed {
-                            unit_data.unpack_entity(context, entity).log();
+                            unit_data.clone().unpack_entity(context, entity).log();
                         }
-                    }
 
-                    ui.separator();
+                        ui.separator();
 
-                    // Get child component IDs first to avoid borrow conflicts
-                    let (desc_id, stats_id, state_id) =
-                        if let Ok(unit) = context.get::<NUnit>(entity) {
-                            (
-                                unit.description.as_ref().map(|d| d.id),
-                                unit.stats.as_ref().map(|s| s.id),
-                                unit.state.as_ref().map(|s| s.id),
-                            )
-                        } else {
-                            (None, None, None)
-                        };
-
-                    // Description and its children
-                    if let Some(desc_id) = desc_id {
                         ui.collapsing("Description", |ui| {
-                            if let Ok(desc_entity) = context.entity(desc_id) {
-                                // First, get the child IDs
-                                let (rep_id, behavior_id) = if let Ok(desc) =
-                                    context.get::<NUnitDescription>(desc_entity)
-                                {
-                                    (
-                                        desc.representation.as_ref().map(|r| r.id),
-                                        desc.behavior.as_ref().map(|b| b.id),
-                                    )
-                                } else {
-                                    (None, None)
-                                };
-
-                                // Now edit the description
-                                if let Ok(mut desc_data) =
-                                    NUnitDescription::pack_entity(context, desc_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if desc_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
-                                        {
-                                            changed = true;
-                                        }
-                                    });
-
-                                    if changed {
-                                        desc_data.unpack_entity(context, desc_entity).log();
+                            if let Some((desc_entity, mut desc)) = desc_data.clone() {
+                                ui.group(|ui| {
+                                    if desc.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        desc.clone().unpack_entity(context, desc_entity).log();
                                     }
-                                }
+                                });
 
-                                // Representation
-                                if let Some(rep_id) = rep_id {
-                                    ui.collapsing("Representation", |ui| {
-                                        if let Ok(rep_entity) = context.entity(rep_id) {
-                                            if let Ok(mut rep_data) =
-                                                NUnitRepresentation::pack_entity(
-                                                    context, rep_entity,
-                                                )
+                                ui.collapsing("Representation", |ui| {
+                                    if let Some((rep_entity, mut rep)) = rep_data.clone() {
+                                        ui.group(|ui| {
+                                            if rep
+                                                .view_mut(ViewContext::new(ui), context, ui)
+                                                .changed
                                             {
-                                                ui.group(|ui| {
-                                                    if rep_data
-                                                        .view_mut(ViewContext::new(ui), context, ui)
-                                                        .changed
-                                                    {
-                                                        changed = true;
-                                                    }
-                                                });
-
-                                                if changed {
-                                                    rep_data
-                                                        .unpack_entity(context, rep_entity)
-                                                        .log();
-                                                }
+                                                rep.clone()
+                                                    .unpack_entity(context, rep_entity)
+                                                    .log();
                                             }
+                                        });
+                                    } else {
+                                        ui.label("Representation not set");
+                                        if ui.button("➕ Add Default Representation").clicked() {
+                                            add_representation = true;
                                         }
-                                    });
-                                }
+                                    }
+                                });
 
-                                // Behavior
-                                if let Some(behavior_id) = behavior_id {
-                                    ui.collapsing("Behavior", |ui| {
-                                        if let Ok(behavior_entity) = context.entity(behavior_id) {
-                                            if let Ok(mut behavior_data) =
-                                                NUnitBehavior::pack_entity(context, behavior_entity)
+                                ui.collapsing("Behavior", |ui| {
+                                    if let Some((behavior_entity, mut behavior)) =
+                                        behavior_data.clone()
+                                    {
+                                        ui.group(|ui| {
+                                            if behavior
+                                                .view_mut(ViewContext::new(ui), context, ui)
+                                                .changed
                                             {
-                                                ui.group(|ui| {
-                                                    if behavior_data
-                                                        .view_mut(ViewContext::new(ui), context, ui)
-                                                        .changed
-                                                    {
-                                                        changed = true;
-                                                    }
-                                                });
-
-                                                if changed {
-                                                    behavior_data
-                                                        .unpack_entity(context, behavior_entity)
-                                                        .log();
-                                                }
+                                                behavior
+                                                    .clone()
+                                                    .unpack_entity(context, behavior_entity)
+                                                    .log();
                                             }
+                                        });
+                                    } else {
+                                        ui.label("Behavior not set");
+                                        if ui.button("➕ Add Default Behavior").clicked() {
+                                            add_behavior = true;
                                         }
-                                    });
+                                    }
+                                });
+
+                                if add_representation {
+                                    println!("Adding representation to unit description");
+                                    Self::create_and_link_component::<NUnitRepresentation>(
+                                        context,
+                                        desc_entity,
+                                        unit_owner,
+                                    );
+                                    changed = true;
                                 }
+
+                                if add_behavior {
+                                    println!("Adding behavior to unit description");
+                                    Self::create_and_link_component::<NUnitBehavior>(
+                                        context,
+                                        desc_entity,
+                                        unit_owner,
+                                    );
+                                    changed = true;
+                                }
+                            } else {
+                                ui.label("Description not set");
                             }
                         });
-                    }
 
-                    // Stats
-                    if let Some(stats_id) = stats_id {
                         ui.collapsing("Stats", |ui| {
-                            if let Ok(stats_entity) = context.entity(stats_id) {
-                                if let Ok(mut stats_data) =
-                                    NUnitStats::pack_entity(context, stats_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if stats_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
-                                        {
-                                            changed = true;
-                                        }
-                                    });
-
-                                    if changed {
-                                        stats_data.unpack_entity(context, stats_entity).log();
+                            if let Some((stats_entity, mut stats)) = stats_data.clone() {
+                                ui.group(|ui| {
+                                    if stats.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        stats.clone().unpack_entity(context, stats_entity).log();
                                     }
+                                });
+                            } else {
+                                ui.label("Stats not set");
+                                if ui.button("➕ Add Default Stats").clicked() {
+                                    Self::create_and_link_component::<NUnitStats>(
+                                        context, entity, unit_owner,
+                                    );
+                                    changed = true;
+                                }
+                            }
+                        });
+
+                        ui.collapsing("State", |ui| {
+                            if let Some((state_entity, mut state)) = state_data.clone() {
+                                ui.group(|ui| {
+                                    if state.view_mut(ViewContext::new(ui), context, ui).changed {
+                                        state.clone().unpack_entity(context, state_entity).log();
+                                    }
+                                });
+                            } else {
+                                ui.label("State not set");
+                                if ui.button("➕ Add Default State").clicked() {
+                                    Self::create_and_link_component::<NUnitState>(
+                                        context, entity, unit_owner,
+                                    );
+                                    changed = true;
                                 }
                             }
                         });
                     }
-
-                    // State
-                    if let Some(state_id) = state_id {
-                        ui.collapsing("State", |ui| {
-                            if let Ok(state_entity) = context.entity(state_id) {
-                                if let Ok(mut state_data) =
-                                    NUnitState::pack_entity(context, state_entity)
-                                {
-                                    ui.group(|ui| {
-                                        if state_data
-                                            .view_mut(ViewContext::new(ui), context, ui)
-                                            .changed
-                                        {
-                                            changed = true;
-                                        }
-                                    });
-
-                                    if changed {
-                                        state_data.unpack_entity(context, state_entity).log();
-                                    }
-                                }
-                            }
-                        });
+                } else {
+                    ui.label("Unit not found");
+                    if ui.button("Add Default Unit").clicked() {
+                        changed = true;
                     }
                 }
+
                 Ok(())
             });
         });
@@ -897,8 +908,8 @@ impl BattleEditorPlugin {
                     ui.heading("Fusion Editor");
                     ui.separator();
 
-                    // Edit fusion
-                    if let Ok(mut fusion_data) = NFusion::pack_entity(context, entity) {
+                    if let Ok(fusion) = context.get::<NFusion>(entity).cloned() {
+                        let mut fusion_data = fusion.clone();
                         ui.group(|ui| {
                             if fusion_data
                                 .view_mut(ViewContext::new(ui), context, ui)
@@ -909,14 +920,11 @@ impl BattleEditorPlugin {
                         });
 
                         if changed {
-                            fusion_data.unpack_entity(context, entity).log();
+                            fusion_data.clone().unpack_entity(context, entity).log();
                         }
-                    }
 
-                    ui.separator();
+                        ui.separator();
 
-                    // Navigation to linked units
-                    if let Ok(fusion) = context.get_by_id::<NFusion>(id) {
                         ui.heading("Linked Units");
                         for unit_id in &fusion.units.ids {
                             if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
@@ -930,12 +938,288 @@ impl BattleEditorPlugin {
                             }
                         }
                     }
+                } else {
+                    ui.label("Fusion not found");
+                    if ui.button("Add Default Fusion").clicked() {
+                        changed = true;
+                    }
                 }
+
                 Ok(())
             });
         });
 
         Ok((action, changed))
+    }
+
+    fn create_and_link_component<T>(context: &mut Context, parent_entity: Entity, owner: u64)
+    where
+        T: Node + 'static,
+    {
+        let mut component = T::default();
+        component.set_owner(owner);
+        let component_entity = context.world_mut().unwrap().spawn_empty().id();
+
+        component.unpack_entity(context, component_entity).log();
+        context
+            .link_parent_child_entity(parent_entity, component_entity)
+            .log();
+        let component_id = context.id(component_entity).unwrap();
+        println!(
+            "Creating component {} with ID {} for parent entity {:?}",
+            std::any::type_name::<T>(),
+            component_id,
+            parent_entity
+        );
+        // Update parent references based on component type
+        Self::update_parent_component_reference::<T>(
+            context,
+            parent_entity,
+            component_id,
+            component_entity,
+        );
+    }
+
+    fn update_parent_component_reference<T>(
+        context: &mut Context,
+        parent_entity: Entity,
+        component_id: u64,
+        component_entity: Entity,
+    ) where
+        T: Node + 'static,
+    {
+        let type_name = std::any::type_name::<T>();
+        println!("Updating parent reference for type: {}", type_name);
+
+        // Handle NActionAbility for houses
+        if type_name.contains("NActionAbility") {
+            if let Ok(mut house) = context.get::<NHouse>(parent_entity).cloned() {
+                house.action = Some(NActionAbility {
+                    id: component_id,
+                    owner: house.owner,
+                    entity: Some(component_entity),
+                    ability_name: String::new(),
+                    description: None,
+                });
+                house.unpack_entity(context, parent_entity).log();
+                println!("Updated house with action ability");
+            }
+        }
+        // Handle NHouseColor for houses
+        else if type_name.contains("NHouseColor") {
+            if let Ok(mut house) = context.get::<NHouse>(parent_entity).cloned() {
+                house.color = Some(NHouseColor {
+                    id: component_id,
+                    owner: house.owner,
+                    entity: Some(component_entity),
+                    color: HexColor("#808080".to_string()),
+                });
+                house.unpack_entity(context, parent_entity).log();
+                println!("Updated house with color");
+            }
+        }
+        // Handle NStatusAbility for houses
+        else if type_name.contains("NStatusAbility") {
+            if let Ok(mut house) = context.get::<NHouse>(parent_entity).cloned() {
+                house.status = Some(NStatusAbility {
+                    id: component_id,
+                    owner: house.owner,
+                    entity: Some(component_entity),
+                    status_name: String::new(),
+                    description: None,
+                    representation: None,
+                });
+                house.unpack_entity(context, parent_entity).log();
+                println!("Updated house with status ability");
+            }
+        }
+        // Handle NUnitRepresentation for unit descriptions
+        else if type_name.contains("NUnitRepresentation") {
+            if let Ok(mut desc) = context.get::<NUnitDescription>(parent_entity).cloned() {
+                desc.representation = Some(NUnitRepresentation {
+                    id: component_id,
+                    owner: desc.owner,
+                    entity: Some(component_entity),
+                    material: Material::default(),
+                });
+                desc.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NUnitBehavior for unit descriptions
+        else if type_name.contains("NUnitBehavior") {
+            if let Ok(mut desc) = context.get::<NUnitDescription>(parent_entity).cloned() {
+                desc.behavior = Some(NUnitBehavior {
+                    id: component_id,
+                    owner: desc.owner,
+                    entity: Some(component_entity),
+                    reactions: vec![],
+                });
+                desc.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NActionDescription for action abilities
+        else if type_name.contains("NActionDescription") {
+            if let Ok(mut action) = context.get::<NActionAbility>(parent_entity).cloned() {
+                action.description = Some(NActionDescription {
+                    id: component_id,
+                    owner: action.owner,
+                    entity: Some(component_entity),
+                    description: String::new(),
+                    effect: None,
+                });
+                action.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NActionEffect for action descriptions
+        else if type_name.contains("NActionEffect") {
+            if let Ok(mut desc) = context.get::<NActionDescription>(parent_entity).cloned() {
+                desc.effect = Some(NActionEffect {
+                    id: component_id,
+                    owner: desc.owner,
+                    entity: Some(component_entity),
+                    actions: vec![],
+                });
+                desc.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NStatusDescription for status abilities
+        else if type_name.contains("NStatusDescription") {
+            if let Ok(mut status) = context.get::<NStatusAbility>(parent_entity).cloned() {
+                status.description = Some(NStatusDescription {
+                    id: component_id,
+                    owner: status.owner,
+                    entity: Some(component_entity),
+                    description: String::new(),
+                    behavior: None,
+                });
+                status.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NStatusBehavior for status descriptions
+        else if type_name.contains("NStatusBehavior") {
+            if let Ok(mut desc) = context.get::<NStatusDescription>(parent_entity).cloned() {
+                desc.behavior = Some(NStatusBehavior {
+                    id: component_id,
+                    owner: desc.owner,
+                    entity: Some(component_entity),
+                    reactions: vec![],
+                });
+                desc.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NStatusRepresentation for status abilities
+        else if type_name.contains("NStatusRepresentation") {
+            if let Ok(mut status) = context.get::<NStatusAbility>(parent_entity).cloned() {
+                status.representation = Some(NStatusRepresentation {
+                    id: component_id,
+                    owner: status.owner,
+                    entity: Some(component_entity),
+                    material: Material::default(),
+                });
+                status.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NUnitStats for units
+        else if type_name.contains("NUnitStats") {
+            if let Ok(mut unit) = context.get::<NUnit>(parent_entity).cloned() {
+                unit.stats = Some(NUnitStats {
+                    id: component_id,
+                    owner: unit.owner,
+                    entity: Some(component_entity),
+                    pwr: 1,
+                    hp: 1,
+                });
+                unit.unpack_entity(context, parent_entity).log();
+            }
+        }
+        // Handle NUnitState for units
+        else if type_name.contains("NUnitState") {
+            if let Ok(mut unit) = context.get::<NUnit>(parent_entity).cloned() {
+                unit.state = Some(NUnitState {
+                    id: component_id,
+                    owner: unit.owner,
+                    entity: Some(component_entity),
+                    xp: 0,
+                    lvl: 1,
+                    rarity: 0,
+                });
+                unit.unpack_entity(context, parent_entity).log();
+            }
+        }
+    }
+
+    fn create_default_unit(context: &mut Context, house_id: u64, owner: u64) {
+        let mut new_unit = NUnit::default();
+        new_unit.id = next_id();
+        new_unit.owner = owner;
+        new_unit.unit_name = format!("Unit {}", new_unit.id);
+
+        let mut stats = NUnitStats::default();
+        stats.id = next_id();
+        stats.owner = owner;
+        stats.pwr = 1;
+        stats.hp = 1;
+
+        let mut state = NUnitState::default();
+        state.id = next_id();
+        state.owner = owner;
+        state.lvl = 1;
+        state.xp = 0;
+        state.rarity = 0;
+
+        let mut description = NUnitDescription::default();
+        description.id = next_id();
+        description.owner = owner;
+
+        let unit_entity = context.world_mut().unwrap().spawn_empty().id();
+        let stats_entity = context.world_mut().unwrap().spawn_empty().id();
+        let state_entity = context.world_mut().unwrap().spawn_empty().id();
+        let desc_entity = context.world_mut().unwrap().spawn_empty().id();
+
+        let stats_id = stats.id;
+        let state_id = state.id;
+        let desc_id = description.id;
+        let unit_id = new_unit.id;
+
+        stats.unpack_entity(context, stats_entity).log();
+        state.unpack_entity(context, state_entity).log();
+        description.unpack_entity(context, desc_entity).log();
+
+        new_unit.stats = Some(NUnitStats {
+            id: stats_id,
+            owner,
+            entity: Some(stats_entity),
+            pwr: 1,
+            hp: 1,
+        });
+        new_unit.state = Some(NUnitState {
+            id: state_id,
+            owner,
+            entity: Some(state_entity),
+            lvl: 1,
+            xp: 0,
+            rarity: 0,
+        });
+        new_unit.description = Some(NUnitDescription {
+            id: desc_id,
+            owner,
+            entity: Some(desc_entity),
+            description: String::new(),
+            representation: None,
+            behavior: None,
+        });
+        new_unit.unpack_entity(context, unit_entity).log();
+
+        context
+            .link_parent_child_entity(unit_entity, stats_entity)
+            .log();
+        context
+            .link_parent_child_entity(unit_entity, state_entity)
+            .log();
+        context
+            .link_parent_child_entity(unit_entity, desc_entity)
+            .log();
+        context.link_parent_child(house_id, unit_id).log();
     }
 }
 
