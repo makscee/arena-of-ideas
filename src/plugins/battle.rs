@@ -169,14 +169,47 @@ impl BattlePlugin {
             .to_custom_e("No battle loaded")?;
 
         let t = data.t;
+        let main_rect = ui.available_rect_before_wrap();
+
+        // Show battle camera in the full area
         BattleCamera::show(&mut data.simulation, t, ui);
-        world.insert_resource(data);
-        Ok(())
-    }
-    pub fn pane_controls(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world
-            .remove_resource::<BattleData>()
-            .to_custom_e("No battle loaded")?;
+
+        // Create overlay for controls at the bottom
+        let overlay_height = 80.0;
+        let slider_height = 20.0;
+        let controls_height = overlay_height - slider_height;
+
+        let overlay_rect = Rect::from_min_size(
+            main_rect.left_bottom() - egui::vec2(0.0, overlay_height),
+            egui::vec2(main_rect.width(), overlay_height),
+        );
+
+        let slider_rect = Rect::from_min_size(
+            overlay_rect.left_bottom() - egui::vec2(0.0, slider_height),
+            egui::vec2(overlay_rect.width(), slider_height),
+        );
+
+        let controls_rect = Rect::from_min_size(
+            overlay_rect.min,
+            egui::vec2(overlay_rect.width(), controls_height),
+        );
+
+        let pointer_pos = ui.ctx().pointer_hover_pos();
+        let show_full_controls = pointer_pos.map_or(false, |pos| overlay_rect.contains(pos));
+        // Always show progress slider at the bottom
+        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
+            ui.set_clip_rect(slider_rect);
+            if data.simulation.duration > 0.0 {
+                let bg_color = ui.visuals().extreme_bg_color.gamma_multiply(0.8);
+                ui.painter().rect_filled(slider_rect, 0.0, bg_color);
+
+                Slider::new("ts").name(false).full_width().ui(
+                    &mut data.t,
+                    0.0..=data.simulation.duration,
+                    ui,
+                );
+            }
+        });
         let BattleData {
             teams_world: _,
             battle,
@@ -188,174 +221,200 @@ impl BattlePlugin {
             playback_speed,
             on_done,
         } = &mut data;
-        if simulation.duration > 0.0 {
-            Slider::new("ts")
-                .full_width()
-                .ui(t, 0.0..=simulation.duration, ui);
-        }
-        let mut rect = ui.available_rect_before_wrap();
-        let btn_size = 30.0;
-        rect.set_height(btn_size);
 
-        if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
-            .ui(ui, |color, rect, _, ui| {
-                if !*playing {
-                    triangle(rect, color, 1, ui);
-                } else {
-                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                    ui.painter().line_segment(
-                        [left.center_top(), left.center_bottom()],
-                        color.stroke_w(10.0),
-                    );
-                    ui.painter().line_segment(
-                        [right.center_top(), right.center_bottom()],
-                        color.stroke_w(10.0),
-                    );
-                }
-            })
-            .clicked()
-        {
-            *playing = !*playing;
+        if *playing {
+            *t += gt().last_delta() * *playback_speed;
+            *t = t.at_most(simulation.duration);
         }
-        if RectButton::new_rect(Rect::from_center_size(
-            rect.center() + egui::vec2(btn_size * 2.0, 0.0),
-            btn_size.v2(),
-        ))
-        .ui(ui, |color, rect, _, ui| {
-            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(left, color, 1, ui);
-            ui.painter().line_segment(
-                [right.center_top(), right.center_bottom()],
-                color.stroke_w(6.0),
-            );
-        })
-        .clicked()
-        {
-            *t = simulation.duration;
+        if *t >= simulation.duration && !simulation.ended() {
+            simulation.run();
         }
-        if RectButton::new_rect(Rect::from_center_size(
-            rect.center() - egui::vec2(btn_size * 2.0, 0.0),
-            btn_size.v2(),
-        ))
-        .ui(ui, |color, rect, _, ui| {
-            let rect = Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-            triangle(right, color, 3, ui);
-            ui.painter().line_segment(
-                [left.center_top(), left.center_bottom()],
-                color.stroke_w(6.0),
-            );
-        })
-        .clicked()
-        {
-            *t -= 1.0;
-        }
-        ui.advance_cursor_after_rect(rect);
+        // Show full controls if pointer is in overlay area
+        if show_full_controls {
+            ui.allocate_new_ui(egui::UiBuilder::new().max_rect(controls_rect), |ui| {
+                ui.set_clip_rect(controls_rect);
+                ui.vertical(|ui| {
+                    // Main control buttons
+                    let main_btn_size = 35.0;
+                    let btn_padding = 25.0;
+                    ui.horizontal(|ui| {
+                        let center =
+                            controls_rect.center_top() + egui::vec2(0.0, main_btn_size * 0.5);
+                        let rect = Rect::from_center_size(center, main_btn_size.v2());
 
-        if *t >= simulation.duration && simulation.ended() {
-            let result = simulation.fusions_right.is_empty();
-            ui.vertical_centered_justified(|ui| {
-                if result {
-                    "Victory".cstr_cs(GREEN, CstrStyle::Bold)
-                } else {
-                    "Defeat".cstr_cs(RED, CstrStyle::Bold)
-                }
-                .label(ui);
-            });
-            ui.columns(2, |ui| {
-                ui[0].vertical_centered_justified(|ui| {
-                    ui.set_max_width(200.0);
-                    if "Replay".cstr().button(ui).clicked() {
-                        *t = 0.0;
-                    }
-                });
-                ui[1].vertical_centered_justified(|ui| {
-                    ui.set_max_width(200.0);
-                    if let Some(on_done) = on_done {
-                        if "Complete".cstr().button(ui).clicked() {
-                            let mut h = DefaultHasher::new();
-                            for a in &simulation.log.actions {
-                                a.hash(&mut h);
-                            }
-                            on_done(battle.id, result, h.finish());
+                        // Previous button
+                        if RectButton::new_rect(
+                            rect.translate(egui::vec2(-(main_btn_size + btn_padding), 0.0)),
+                        )
+                        .ui(ui, |color, rect, _, ui| {
+                            let rect = Rect::from_center_size(
+                                rect.center(),
+                                rect.size() * egui::vec2(1.0, 0.5),
+                            );
+                            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                            triangle(right, color, 3, ui);
+                            ui.painter().line_segment(
+                                [left.center_top(), left.center_bottom()],
+                                color.stroke_w(6.0),
+                            );
+                        })
+                        .clicked()
+                        {
+                            *t -= 1.0;
                         }
-                    }
-                });
-            })
-        } else {
-            let rect = rect.translate(egui::vec2(0.0, rect.height()));
-            if RectButton::new_rect(Rect::from_center_size(rect.center(), btn_size.v2()))
-                .ui(ui, |color, _, _, ui| {
-                    ui.horizontal_centered(|ui| playback_speed.cstr_c(color).label(ui));
-                })
-                .clicked()
-            {
-                *playback_speed = 1.0;
-            }
-            if RectButton::new_rect(Rect::from_center_size(
-                rect.center() + egui::vec2(btn_size * 2.0, 0.0),
-                btn_size.v2(),
-            ))
-            .ui(ui, |color, rect, _, ui| {
-                let rect =
-                    Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                triangle(left, color, 1, ui);
-                triangle(right, color, 1, ui);
-            })
-            .clicked()
-            {
-                *playback_speed = *playback_speed * 2.0;
-            }
-            if RectButton::new_rect(Rect::from_center_size(
-                rect.center() - egui::vec2(btn_size * 2.0, 0.0),
-                btn_size.v2(),
-            ))
-            .ui(ui, |color, rect, _, ui| {
-                let rect =
-                    Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                triangle(left, color, 3, ui);
-                triangle(right, color, 3, ui);
-            })
-            .clicked()
-            {
-                *playback_speed = *playback_speed * 0.5;
-            }
-            ui.advance_cursor_after_rect(rect);
 
-            ui.horizontal(|ui| {
-                if "+1".cstr().button(ui).clicked() {
-                    simulation.run();
-                }
-                if "+10".cstr().button(ui).clicked() {
-                    for _ in 0..10 {
-                        simulation.run();
-                    }
-                }
-                if "+100".cstr().button(ui).clicked() {
-                    for _ in 0..100 {
-                        simulation.run();
-                    }
-                }
+                        // Play/Pause button
+                        if RectButton::new_rect(rect)
+                            .ui(ui, |color, rect, _, ui| {
+                                if !*playing {
+                                    triangle(rect, color, 1, ui);
+                                } else {
+                                    let left =
+                                        Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                                    let right =
+                                        Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                                    ui.painter().line_segment(
+                                        [left.center_top(), left.center_bottom()],
+                                        color.stroke_w(10.0),
+                                    );
+                                    ui.painter().line_segment(
+                                        [right.center_top(), right.center_bottom()],
+                                        color.stroke_w(10.0),
+                                    );
+                                }
+                            })
+                            .clicked()
+                        {
+                            *playing = !*playing;
+                        }
+
+                        // Next button
+                        if RectButton::new_rect(
+                            rect.translate(egui::vec2(main_btn_size + btn_padding, 0.0)),
+                        )
+                        .ui(ui, |color, rect, _, ui| {
+                            let rect = Rect::from_center_size(
+                                rect.center(),
+                                rect.size() * egui::vec2(1.0, 0.5),
+                            );
+                            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                            triangle(left, color, 1, ui);
+                            ui.painter().line_segment(
+                                [right.center_top(), right.center_bottom()],
+                                color.stroke_w(6.0),
+                            );
+                        })
+                        .clicked()
+                        {
+                            *t = simulation.duration;
+                        }
+                    });
+
+                    let mut rect = ui.available_rect_before_wrap();
+                    rect.set_top(controls_rect.top() + main_btn_size);
+                    // Playback speed controls
+                    ui.horizontal(|ui| {
+                        let btn_size = 25.0;
+
+                        let center = rect.center_top() + egui::vec2(0.0, btn_size * 0.5);
+                        let rect = Rect::from_center_size(center, btn_size.v2());
+                        // Slower button
+                        if RectButton::new_rect(
+                            rect.translate(egui::vec2(-(btn_size + btn_padding), 0.0)),
+                        )
+                        .ui(ui, |color, rect, _, ui| {
+                            let rect = Rect::from_center_size(
+                                rect.center(),
+                                rect.size() * egui::vec2(1.0, 0.5),
+                            );
+                            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                            triangle(left, color, 3, ui);
+                            triangle(right, color, 3, ui);
+                        })
+                        .clicked()
+                        {
+                            *playback_speed = *playback_speed * 0.5;
+                        }
+
+                        ui.add_space(10.0);
+
+                        // Speed display/reset button
+                        if RectButton::new_rect(rect.translate(egui::vec2(0.0, 5.0)))
+                            .ui(ui, |color, _, _, ui| {
+                                ui.vertical_centered_justified(|ui| {
+                                    playback_speed.cstr_c(color).label(ui)
+                                });
+                            })
+                            .clicked()
+                        {
+                            *playback_speed = 1.0;
+                        }
+
+                        ui.add_space(10.0);
+
+                        // Faster button
+                        if RectButton::new_rect(
+                            rect.translate(egui::vec2(btn_size + btn_padding, 0.0)),
+                        )
+                        .ui(ui, |color, rect, _, ui| {
+                            let rect = Rect::from_center_size(
+                                rect.center(),
+                                rect.size() * egui::vec2(1.0, 0.5),
+                            );
+                            let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
+                            let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
+                            triangle(left, color, 1, ui);
+                            triangle(right, color, 1, ui);
+                        })
+                        .clicked()
+                        {
+                            *playback_speed = *playback_speed * 2.0;
+                        }
+                    });
+                });
             });
-            if *playing {
-                *t += gt().last_delta() * *playback_speed;
-                *t = t.at_most(simulation.duration);
-            }
-            if *t >= simulation.duration && !simulation.ended() {
-                simulation.run();
-            }
         }
+        if *t >= simulation.duration && simulation.ended() {
+            ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
+                let result = simulation.fusions_right.is_empty();
+                ui.vertical_centered_justified(|ui| {
+                    if result {
+                        "Victory".cstr_cs(GREEN, CstrStyle::Bold)
+                    } else {
+                        "Defeat".cstr_cs(RED, CstrStyle::Bold)
+                    }
+                    .label(ui);
+                });
+                ui.columns(2, |ui| {
+                    ui[0].vertical_centered_justified(|ui| {
+                        ui.set_max_width(200.0);
+                        if "Replay".cstr().button(ui).clicked() {
+                            *t = 0.0;
+                        }
+                    });
+                    ui[1].vertical_centered_justified(|ui| {
+                        ui.set_max_width(200.0);
+                        if let Some(on_done) = on_done {
+                            if "Complete".cstr().button(ui).clicked() {
+                                let mut h = DefaultHasher::new();
+                                for a in &simulation.log.actions {
+                                    a.hash(&mut h);
+                                }
+                                on_done(battle.id, result, h.finish());
+                            }
+                        }
+                    });
+                })
+            });
+        }
+
         world.insert_resource(data);
         Ok(())
     }
+
     pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
         world.resource_scope(|world, mut data: Mut<BattleData>| {
             Context::from_world(world, |context| {

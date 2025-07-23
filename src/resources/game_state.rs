@@ -54,7 +54,6 @@ impl GameState {
             GameState::Editor => {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
-                let controls = tiles.insert_pane(Pane::Battle(BattlePane::Controls));
                 let edit_left_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
                 let edit_left_slots = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftSlots));
                 let edit_right_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
@@ -65,8 +64,7 @@ impl GameState {
                 let edit_right =
                     tiles.insert_vertical_tile([edit_right_slots, edit_right_graph].into());
                 let edit = tiles.insert_tab_tile([edit_left, edit_right, battle_editor].into());
-                let vertical = tiles.insert_vertical_tile([view, controls].into());
-                let root = tiles.insert_horizontal_tile([edit, vertical].into());
+                let root = tiles.insert_vertical_tile([view, edit].into());
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Explorer => {
@@ -151,14 +149,7 @@ impl GameState {
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Battle => {
-                tile_tree.tree = Tree::new_vertical(
-                    TREE_ID,
-                    [
-                        Pane::Battle(BattlePane::View),
-                        Pane::Battle(BattlePane::Controls),
-                    ]
-                    .into(),
-                );
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Battle(BattlePane::View).into());
             }
             GameState::Inspector => {
                 let mut tiles = Tiles::default();
@@ -202,7 +193,6 @@ pub enum Pane {
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum BattlePane {
     View,
-    Controls,
     EditLeftGraph,
     EditLeftSlots,
     EditRightGraph,
@@ -264,7 +254,6 @@ impl Pane {
             },
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
-                BattlePane::Controls => BattlePlugin::pane_controls(ui, world)?,
                 BattlePane::EditLeftGraph => BattlePlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
                 BattlePane::EditLeftSlots => BattlePlugin::pane_edit_slots(true, ui, world),
