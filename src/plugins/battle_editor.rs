@@ -145,10 +145,6 @@ impl BattleEditorPlugin {
                     state.current_node = Some(node);
                     state.navigation_stack.clear();
                 }
-                BattleEditorAction::Reset => {
-                    state.current_node = None;
-                    state.navigation_stack.clear();
-                }
             }
         }
 
@@ -790,5 +786,4 @@ enum BattleEditorAction {
     GoBack,
     Navigate(BattleEditorNode),
     SetCurrent(BattleEditorNode),
-    Reset,
 }
