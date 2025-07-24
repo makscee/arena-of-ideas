@@ -416,12 +416,13 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
             fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
                 let mut changed = false;
+                egui::Grid::new("vars").show(ui, |ui| {
                 #(
-                    ui.vertical(|ui| {
-                        VarName::#var_fields.cstr().label(ui);
-                        changed |= self.#var_fields.show_mut(context, ui);
-                    });
+                    VarName::#var_fields.cstr().label(ui);
+                    changed |= self.#var_fields.show_mut(context, ui);
+                    ui.end_row();
                 )*
+                });
                 #(
                     changed |= self.#data_fields.show_mut(context, ui);
                 )*
