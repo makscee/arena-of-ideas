@@ -38,25 +38,6 @@ impl TopBar {
             Self::state_btn(GameState::Explorer, ui, world, |_, _| {});
             Self::state_btn(GameState::Inspector, ui, world, |_, _| {});
             ui.menu_button("settings", |ui| {
-                if "theme".cstr().button(ui).clicked() {
-                    Window::new("theme Editor", |ui, _| {
-                        let mut colorix = colorix().clone();
-                        let mut color = colorix.raw_colors[0];
-                        if ui.color_edit_button_srgba(&mut color).changed() {
-                            for c in &mut colorix.raw_colors {
-                                *c = color;
-                            }
-                            colorix.generate_scale();
-                            colorix.apply(ui.ctx());
-                            pd_mut(|d| {
-                                d.client_settings.theme = colorix.clone();
-                            });
-                            colorix.save();
-                        }
-                    })
-                    .push(world);
-                    ui.close_menu();
-                }
                 if "reset tiles".cstr().button(ui).clicked() {
                     pd_mut(|d| {
                         d.client_state.tile_states.clear();
@@ -64,6 +45,9 @@ impl TopBar {
                     TilePlugin::load_state_tree(cur_state(world), world);
                     ui.close_menu();
                 }
+
+                let mut settings = pd().client_settings.clone();
+                crate::settings_editor!(settings, ui);
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if let Some(fps) = world

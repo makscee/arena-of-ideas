@@ -24,6 +24,112 @@ pub struct ClientSettings {
     pub theme: Colorix,
 }
 
+#[macro_export]
+macro_rules! settings_editor {
+    ($settings:expr, $ui:expr) => {
+        egui::Grid::new("settings_grid")
+            .num_columns(2)
+            .spacing([40.0, 4.0])
+            .show($ui, |ui| {
+                settings_field!(server_select, $settings, ui);
+                settings_field!($settings, dev_mode, "Dev Mode", ui);
+                settings_field!($settings, auto_login, "Auto Login", ui);
+                ui.end_row();
+
+                settings_field!($settings, window_mode, "Window Mode", ui);
+                settings_field!($settings, resolution, "Resolution", ui);
+                settings_field!($settings, vsync, "VSync", ui);
+                ui.end_row();
+
+                settings_field!($settings, animation_time, "Animation Time", ui);
+                settings_field!($settings, volume_master, "Master Volume", ui);
+                settings_field!($settings, volume_music, "Music Volume", ui);
+                ui.end_row();
+
+                settings_field!($settings, volume_fx, "FX Volume", ui);
+                settings_field!($settings, theme, "Theme", ui);
+                ui.end_row();
+            });
+    };
+}
+
+#[macro_export]
+macro_rules! settings_field {
+    ($settings:expr, $field:ident, $label:expr, $ui:expr) => {
+        $ui.label($label);
+        if $settings.$field.show_mut(&Context::default(), $ui) {
+            pd_mut(|d| d.client_settings.$field = $settings.$field.clone());
+        }
+        $ui.end_row();
+    };
+    (server_select, $settings:expr, $ui:expr) => {
+        $ui.label("Active Server");
+        let mut current_server = $settings.active_server;
+        let server_names: Vec<&'static str> = $settings.servers.keys().copied().collect();
+        let mut changed = false;
+        egui::ComboBox::from_id_salt("server_select")
+            .selected_text(current_server)
+            .show_ui($ui, |ui| {
+                for &server_name in &server_names {
+                    if ui
+                        .selectable_value(&mut current_server, server_name, server_name)
+                        .changed()
+                    {
+                        changed = true;
+                    }
+                }
+            });
+        if changed {
+            $settings.active_server = current_server;
+            pd_mut(|d| d.client_settings.active_server = current_server);
+        }
+        $ui.end_row();
+    };
+}
+
+impl Show for &'static str {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, _ui: &mut Ui) -> bool {
+        false
+    }
+}
+
+impl ToCstr for WindowMode {
+    fn cstr(&self) -> Cstr {
+        self.to_string()
+    }
+}
+
+impl Show for WindowMode {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.to_string().cstr().label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
+    }
+}
+
+impl Show for Colorix {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        "Theme".cstr_c(self.color(0)).label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        let mut color = self.raw_colors[0];
+        if ui.color_edit_button_srgba(&mut color).changed() {
+            for c in &mut self.raw_colors {
+                *c = color;
+            }
+            self.generate_scale();
+            self.apply(ui.ctx());
+            true
+        } else {
+            false
+        }
+    }
+}
+
 impl Default for ClientSettings {
     fn default() -> Self {
         Self {
@@ -53,7 +159,17 @@ impl PersistentData for ClientSettings {
 }
 
 #[derive(
-    Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, EnumString, EnumIter, Display,
+    Default,
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumString,
+    EnumIter,
+    Display,
+    AsRefStr,
 )]
 pub enum WindowMode {
     #[default]
