@@ -88,16 +88,16 @@ impl BattleEditorPlugin {
                 if let Some(current) = &state.current_node {
                     match current {
                         BattleEditorNode::Team(id) => {
-                            ui.label(format!("Team #{}", id));
+                            format!("[tw Team #{}]", id).cstr().label(ui);
                         }
                         BattleEditorNode::House(id) => {
-                            ui.label(format!("House #{}", id));
+                            format!("[tw House #{}]", id).cstr().label(ui);
                         }
                         BattleEditorNode::Unit(id) => {
-                            ui.label(format!("Unit #{}", id));
+                            format!("[tw Unit #{}]", id).cstr().label(ui);
                         }
                         BattleEditorNode::Fusion(id) => {
-                            ui.label(format!("Fusion #{}", id));
+                            format!("[tw Fusion #{}]", id).cstr().label(ui);
                         }
                     }
                 } else {
@@ -200,34 +200,22 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            ui.heading(format!("Team: {}", id));
-            ui.separator();
-
-            if Self::show_node_editor::<NTeam>(id, context, ui)? {
-                changed = true;
-            }
-
-            ui.separator();
-            ui.heading("Houses");
-
+            "[h2 Houses]".cstr().label(ui);
             let (houses_changed, house_action) =
                 Self::show_children_node_editors::<NHouse>(id, context, ui, id, |house_id| {
                     BattleEditorAction::Navigate(BattleEditorNode::House(house_id))
                 })?;
-
             changed |= houses_changed;
             if house_action.is_some() {
                 action = house_action;
             }
-
             ui.separator();
-            ui.heading("Fusions");
+            "[h2 Fusions]".cstr().label(ui);
 
             let (fusions_changed, fusion_action) =
                 Self::show_children_node_editors::<NFusion>(id, context, ui, id, |fusion_id| {
                     BattleEditorAction::Navigate(BattleEditorNode::Fusion(fusion_id))
                 })?;
-
             changed |= fusions_changed;
             if fusion_action.is_some() {
                 action = fusion_action;
@@ -251,16 +239,12 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            ui.heading(format!("House: {}", id));
-            ui.separator();
-
             if Self::show_node_editor::<NHouse>(id, context, ui)? {
                 changed = true;
             }
-
             ui.separator();
 
-            ui.collapsing("House Color", |ui| {
+            ui.collapsing("Color", |ui| {
                 if let Ok((color_changed, _)) =
                     Self::show_parent_node_editor::<NHouseColor>(id, context, ui, id)
                 {
@@ -343,7 +327,7 @@ impl BattleEditorPlugin {
             });
 
             ui.separator();
-            ui.heading("Units");
+            "[h2 Units]".cstr().label(ui);
 
             let (units_changed, unit_action) =
                 Self::show_children_node_editors::<NUnit>(id, context, ui, id, |unit_id| {
@@ -519,7 +503,7 @@ impl BattleEditorPlugin {
         ui: &mut Ui,
     ) -> Result<bool, ExpressionError>
     where
-        T: Node + 'static + View,
+        T: Node + 'static + View + NodeViewFns,
     {
         let mut changed = false;
 
@@ -529,7 +513,8 @@ impl BattleEditorPlugin {
             ExpressionError::from("Node not found")
         })?;
         ui.group(|ui| {
-            changed |= node.view_mut(ViewContext::new(ui), context, ui).changed;
+            node.node_info_cstr(context).label(ui);
+            changed |= node.show_mut(context, ui);
         });
         if changed {
             node.unpack_entity(context, entity).log();
@@ -567,9 +552,7 @@ impl BattleEditorPlugin {
                     ui,
                 );
 
-                parent_node
-                    .node_info_cstr(ViewContext::new(ui), context)
-                    .label(ui);
+                parent_node.node_info_cstr(context).label(ui);
 
                 if btn_response.deleted() {
                     context.despawn(parent_entity).log();
@@ -581,10 +564,7 @@ impl BattleEditorPlugin {
 
             if !was_deleted {
                 ui.group(|ui| {
-                    if parent_node
-                        .view_mut(ViewContext::new(ui), context, ui)
-                        .changed
-                    {
+                    if parent_node.show_mut(context, ui) {
                         changed = true;
                         parent_node.unpack_entity(context, parent_entity).log();
                     }
@@ -634,7 +614,7 @@ impl BattleEditorPlugin {
                     ui,
                 );
 
-                node.node_info_cstr(ViewContext::new(ui), context).label(ui);
+                node.node_info_cstr(context).label(ui);
 
                 if btn_response.clicked() {
                     action = Some(action_callback(node.id()));

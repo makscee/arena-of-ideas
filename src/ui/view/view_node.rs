@@ -106,7 +106,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
             },
         );
     }
-    fn node_info_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+    fn node_info_cstr(&self, context: &Context) -> Cstr {
         let vars = self.get_vars(context);
         let mut info_parts = Vec::new();
 
@@ -209,7 +209,7 @@ impl NodeViewFns for NHouse {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.house_name.cstr()
     }
-    fn node_info_cstr(&self, _vctx: ViewContext, context: &Context) -> Cstr {
+    fn node_info_cstr(&self, context: &Context) -> Cstr {
         let mut info_parts = Vec::new();
 
         let units_count = self.units_load(context).len();
@@ -270,7 +270,7 @@ impl NodeViewFns for NUnit {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.unit_name.cstr()
     }
-    fn node_info_cstr(&self, _vctx: ViewContext, context: &Context) -> Cstr {
+    fn node_info_cstr(&self, context: &Context) -> Cstr {
         let mut info_parts = Vec::new();
         if let Ok(stats) = self.stats_load(context) {
             info_parts.push(format!(
