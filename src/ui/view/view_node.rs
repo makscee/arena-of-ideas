@@ -25,87 +25,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
-    fn node_rating(&self) -> Option<i32> {
-        self.id().node_rating()
-    }
-    fn node_link_rating(
-        &self,
-        context: &Context,
-        is_parent: bool,
-        id: u64,
-    ) -> Result<(i32, bool), ExpressionError> {
-        let (child, parent) = if is_parent {
-            (self.id(), id)
-        } else {
-            (id, self.id())
-        };
-        let (rating, solid) = context
-            .world()?
-            .get_any_link_rating(parent, child)
-            .to_e_not_found()?;
-        Ok((rating, solid))
-    }
-    fn node_view_link_rating(
-        &self,
-        vctx: ViewContext,
-        context: &Context,
-        ui: &mut Ui,
-        is_parent: bool,
-        id: u64,
-    ) {
-        let (text, solid) = if let Ok((r, solid)) = self.node_link_rating(context, is_parent, id) {
-            (r.cstr_expanded(), solid)
-        } else {
-            ("[tw _]".cstr(), false)
-        };
-        let (child, parent) = if is_parent {
-            (self.id(), id)
-        } else {
-            (id, self.id())
-        };
-        rating_button(
-            ui,
-            text,
-            solid,
-            |ui| {
-                "link rating vote".cstr().label(ui);
-            },
-            || {
-                cn().reducers
-                    .content_vote_link(parent, child, true)
-                    .notify_error_op()
-            },
-            || {
-                cn().reducers
-                    .content_vote_link(parent, child, false)
-                    .notify_error_op()
-            },
-        );
-    }
-    fn node_view_rating(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
-        let Some(r) = self.node_rating() else {
-            "[red Node not found]".cstr().label(ui);
-            return;
-        };
-        rating_button(
-            ui,
-            r.cstr_expanded(),
-            false,
-            |ui| {
-                "node rating vote".cstr().label(ui);
-            },
-            || {
-                cn().reducers
-                    .content_vote_node(self.id(), true)
-                    .notify_error_op();
-            },
-            || {
-                cn().reducers
-                    .content_vote_node(self.id(), false)
-                    .notify_error_op();
-            },
-        );
-    }
+
     fn node_info_cstr(&self, context: &Context) -> Cstr {
         let vars = self.get_vars(context);
         let mut info_parts = Vec::new();
@@ -171,29 +91,6 @@ pub trait NodeViewFns: NodeExt + ViewFns {
         });
         vr
     }
-}
-
-fn rating_button(
-    ui: &mut Ui,
-    text: String,
-    active: bool,
-    open: impl FnOnce(&mut Ui),
-    minus: impl FnOnce(),
-    plus: impl FnOnce(),
-) {
-    text.as_button().active(active, ui).ui(ui).bar_menu(|ui| {
-        ui.vertical(|ui| {
-            open(ui);
-            ui.horizontal(|ui| {
-                if "[red [b -]]".cstr().button(ui).clicked() {
-                    plus()
-                }
-                if "[green [b +]]".cstr().button(ui).clicked() {
-                    minus()
-                }
-            });
-        });
-    });
 }
 
 impl NodeViewFns for NCore {}

@@ -29,8 +29,8 @@ impl<T: NodeViewFns> NodesListWidget<T> {
 
             // Sort by rating (descending) then by node_id (ascending)
             nodes.sort_by(|a, b| {
-                let rating_a = a.node_rating().unwrap_or_default();
-                let rating_b = b.node_rating().unwrap_or_default();
+                let rating_a = a.id().node_rating().unwrap_or_default();
+                let rating_b = b.id().node_rating().unwrap_or_default();
                 match rating_b.cmp(&rating_a) {
                     // descending rating
                     std::cmp::Ordering::Equal => a.id().cmp(&b.id()), // ascending id
@@ -40,21 +40,21 @@ impl<T: NodeViewFns> NodesListWidget<T> {
             let mut table = nodes.table().column(
                 "r",
                 move |context, ui, node, _value| {
-                    node.node_view_rating(vctx, context, ui);
+                    node.see(context).node_rating(ui);
                     Ok(())
                 },
-                |_, node| Ok(VarValue::i32(node.node_rating().unwrap_or_default())),
+                |_, node| Ok(VarValue::i32(node.id().node_rating().unwrap_or_default())),
             );
             if let Some((is_parent, id)) = vctx.link_rating {
                 table = table.column(
                     "lr",
                     move |context, ui, node, _value| {
-                        node.node_view_link_rating(vctx, context, ui, is_parent, id);
+                        node.see(context).node_link_rating(ui, is_parent, id);
                         Ok(())
                     },
                     move |context, node| {
                         Ok(VarValue::i32(
-                            node.node_link_rating(context, is_parent, id)
+                            node.get_node_link_rating(context, is_parent, id)
                                 .unwrap_or_default()
                                 .0,
                         ))

@@ -40,3 +40,21 @@ impl<'a, T: SFnTagCard> SeeBuilder<'a, T> {
         self.data.see_tag_card(self.ctx, ui)
     }
 }
+
+impl<'a, T> SeeBuilder<'a, &'a T>
+where
+    &'a T: SFnNodeRating,
+{
+    pub fn node_rating(self, ui: &mut Ui) {
+        self.data.see_node_rating(self.ctx, ui)
+    }
+}
+
+impl<'a, T> SeeBuilder<'a, &'a T>
+where
+    &'a T: SFnNodeLinkRating,
+{
+    pub fn node_link_rating(self, ui: &mut Ui, is_parent: bool, id: u64) {
+        self.data.see_node_link_rating(self.ctx, ui, is_parent, id)
+    }
+}
