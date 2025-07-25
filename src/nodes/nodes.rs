@@ -28,6 +28,7 @@ pub trait Node:
     fn set_owner(&mut self, owner: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
+    fn set_entity(&mut self, entity: Entity);
     fn from_dir(path: String, dir: &Dir) -> Option<Self>;
     fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>];
     fn pack_fill(&self, pn: &mut PackedNodes);

@@ -3,6 +3,7 @@ use crate::nodes::*;
 use crate::resources::*;
 use crate::ui::*;
 use crate::utils::*;
+use bevy::ecs::component::Mutable;
 use bevy_egui::egui::ScrollArea;
 
 pub struct BattleEditorPlugin;
@@ -592,25 +593,44 @@ impl BattleEditorPlugin {
         action_callback: impl Fn(u64) -> BattleEditorAction,
     ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
     where
-        T: Node + 'static + View,
+        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + StringData,
     {
         let mut changed = false;
         let mut action = None;
 
         let children = context.collect_children_components::<T>(parent_id)?;
         let mut children_to_delete = Vec::new();
-
+        let mut pasted: Option<(Entity, T)> = None;
         for node in children {
             ui.horizontal(|ui| {
-                let child_entity = node.entity();
-                let display_name = Self::get_node_display_name(node);
-                if ui.button(format!("Edit {}", display_name)).clicked() {
+                let btn_response = node.ctxbtn().add_copy().with_paste().with_delete().ui(
+                    ViewContext::new(ui),
+                    context,
+                    ui,
+                );
+
+                if btn_response.clicked() {
                     action = Some(action_callback(node.id()));
                 }
-                if ui.button("🗑 Delete").clicked() {
-                    children_to_delete.push(child_entity);
+
+                if btn_response.deleted() {
+                    children_to_delete.push(node.entity());
+                }
+
+                if let Some(pasted_data) = btn_response.pasted() {
+                    pasted = Some((node.entity(), pasted_data.clone()));
                 }
             });
+        }
+        if let Some((entity, data)) = pasted {
+            let mut node = context.get_mut::<T>(entity).unwrap();
+            let id = node.id();
+            let owner = node.owner();
+            *node = data;
+            node.set_id(id);
+            node.set_owner(owner);
+            node.set_entity(entity);
+            changed = true;
         }
         for entity in children_to_delete {
             context.despawn(entity).log();
@@ -625,28 +645,6 @@ impl BattleEditorPlugin {
         }
 
         Ok((changed, action))
-    }
-
-    fn get_node_display_name<T: Node>(node: &T) -> String {
-        match T::kind_s().cstr().as_str() {
-            "NHouse" => {
-                if let Some(house) = (node as &dyn std::any::Any).downcast_ref::<NHouse>() {
-                    return house.house_name.clone();
-                }
-            }
-            "NUnit" => {
-                if let Some(unit) = (node as &dyn std::any::Any).downcast_ref::<NUnit>() {
-                    return unit.unit_name.clone();
-                }
-            }
-            "NFusion" => {
-                if let Some(fusion) = (node as &dyn std::any::Any).downcast_ref::<NFusion>() {
-                    return format!("Fusion ({})", fusion.id);
-                }
-            }
-            _ => {}
-        }
-        format!("{}", T::kind_s().cstr())
     }
 
     fn create_node<T>(context: &mut Context, owner: u64) -> u64

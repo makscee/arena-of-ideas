@@ -12,7 +12,12 @@ pub trait NodeViewFns: NodeExt + ViewFns {
                     ui.visuals().widgets.hovered.bg_fill,
                 );
             }
-            vr.title_clicked = self.view_title(vctx, context, ui).clicked();
+            let btn_response = self.node_ctxbtn().ui(vctx, context, ui);
+            vr.title_clicked = btn_response.clicked();
+            if btn_response.deleted() {
+                let id = self.id();
+                cn().reducers.admin_delete_node(id).notify_error_op();
+            }
             self.view_data(vctx, context, ui);
         });
         vr

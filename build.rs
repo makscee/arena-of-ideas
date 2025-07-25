@@ -454,6 +454,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn get_entity(&self) -> Option<Entity> {
                 self.entity
             }
+            fn set_entity(&mut self, entity: Entity) {
+                self.entity = Some(entity);
+            }
             fn from_dir(path: String, dir: &Dir) -> Option<Self> {
                 let file = dir.get_dir(&path)?.files().next()?;
                 let id = u64::from_str(file.path().file_stem()?.to_str()?).unwrap();
