@@ -184,15 +184,18 @@ impl NodeExplorerPlugin {
             match ns.kind {
                 NodeKind::NHouse => context
                     .get_by_id::<NHouse>(id)?
-                    .tag_card(default(), context, ui)
+                    .see(context)
+                    .tag_card(ui)
                     .ui(ui),
                 NodeKind::NActionAbility => context
                     .get_by_id::<NActionAbility>(id)?
-                    .tag_card(default(), context, ui)
+                    .see(context)
+                    .tag_card(ui)
                     .ui(ui),
                 NodeKind::NStatusAbility => context
                     .get_by_id::<NStatusAbility>(id)?
-                    .tag_card(default(), context, ui)
+                    .see(context)
+                    .tag_card(ui)
                     .ui(ui),
                 NodeKind::NFusion => context
                     .get_by_id::<NFusion>(id)?
@@ -200,7 +203,8 @@ impl NodeExplorerPlugin {
                     .ui(ui),
                 NodeKind::NUnit => context
                     .get_by_id::<NUnit>(id)?
-                    .tag_card(default(), context, ui)
+                    .see(context)
+                    .tag_card(ui)
                     .ui(ui),
                 NodeKind::NUnitRepresentation => {
                     context.get_by_id::<NUnitRepresentation>(id)?.view(

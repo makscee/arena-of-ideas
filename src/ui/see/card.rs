@@ -1,30 +1,109 @@
 use super::*;
 
-#[derive(Clone, Copy, Default)]
-pub struct TagCardContext {
-    expanded: bool,
+pub trait SFnCard {
+    fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;
 }
 
-impl TagCardContext {
-    pub fn new() -> Self {
-        default()
+impl SFnCard for NUnit {
+    fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
+        let color = context.color(ui);
+        let pwr = context.get_var(VarName::pwr)?;
+        let hp = context.get_var(VarName::hp)?;
+        let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
+            behavior.reactions.tier()
+        } else {
+            0
+        };
+        Ok(show_frame(
+            self,
+            &self.unit_name,
+            color,
+            context,
+            ui,
+            |ui| {
+                ui.horizontal(|ui| {
+                    TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
+                    TagWidget::new_var_value(VarName::hp, hp).ui(ui);
+                    TagWidget::new_var_value(VarName::tier, (tier as i32).into()).ui(ui);
+                });
+                if let Ok(description) = self.description_load(context) {
+                    description.description.label_w(ui);
+                    if let Ok(behavior) = description.behavior_load(context) {
+                        behavior.show(context, ui);
+                    }
+                }
+            },
+        ))
     }
-    pub fn expanded(mut self, value: bool) -> Self {
-        self.expanded = value;
-        self
+}
+
+impl SFnCard for NHouse {
+    fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
+        let color = context.color(ui);
+        Ok(show_frame(
+            self,
+            &self.house_name,
+            color,
+            context,
+            ui,
+            |ui| {
+                if let Ok(action) = self.action_load(context) {
+                    action.see(context).tag_card(ui).ok();
+                }
+                if let Ok(status) = self.status_load(context) {
+                    status.see(context).tag_card(ui).ok();
+                }
+                for unit in self.units_load(context) {
+                    context
+                        .with_owner_ref(unit.entity(), |context| {
+                            unit.clone().see(context).tag_card(ui)
+                        })
+                        .ok();
+                }
+            },
+        ))
     }
-    fn merge_state(mut self, node: &impl Node, ui: &mut Ui) -> Self {
-        if let Some(other) = ui
-            .ctx()
-            .data(|r| r.get_temp::<TagCardContext>(node.egui_id().with(ui.id())))
-        {
-            self.expanded = other.expanded;
-        }
-        self
+}
+
+impl SFnCard for NActionAbility {
+    fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
+        let color = context.color(ui);
+        Ok(show_frame(
+            self,
+            &self.ability_name,
+            color,
+            context,
+            ui,
+            |ui| {
+                if let Ok(description) = self.description_load(context) {
+                    description.description.label_w(ui);
+                    if let Ok(effect) = description.effect_load(context) {
+                        effect.show(context, ui);
+                    }
+                }
+            },
+        ))
     }
-    fn save(self, node: &impl Node, ui: &mut Ui) {
-        ui.ctx()
-            .data_mut(|w| w.insert_temp(node.egui_id().with(ui.id()), self));
+}
+
+impl SFnCard for NStatusAbility {
+    fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
+        let color = context.color(ui);
+        Ok(show_frame(
+            self,
+            &self.status_name,
+            color,
+            context,
+            ui,
+            |ui| {
+                if let Ok(description) = self.description_load(context) {
+                    description.description.label_w(ui);
+                    if let Ok(behavior) = description.behavior_load(context) {
+                        behavior.show(context, ui);
+                    }
+                }
+            },
+        ))
     }
 }
 
@@ -63,164 +142,6 @@ fn show_frame(
         .inner
 }
 
-pub trait TagCard: Node {
-    fn tag_card(
-        &self,
-        tctx: TagCardContext,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
-        let tctx = tctx.merge_state(self, ui);
-        context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
-            let response = if tctx.expanded {
-                self.show_card(context, ui)?
-            } else {
-                self.show_tag(context, ui)?
-            };
-            if response.clicked() {
-                tctx.expanded(!tctx.expanded).save(self, ui);
-            }
-            Ok(())
-        })
-    }
-    fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;
-    fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError>;
-}
-
-impl TagCard for NUnit {
-    fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
-            behavior.reactions.tier()
-        } else {
-            0
-        };
-        let lvl = context.get_i32(VarName::lvl).unwrap_or_default();
-        let xp = match context.get_i32(VarName::xp) {
-            Ok(v) => format!(" [tw {v}]/[{} [b {lvl}]]", VarName::lvl.color().to_hex()),
-            Err(_) => default(),
-        };
-        Ok(TagWidget::new_name_value(
-            context.get_string(VarName::unit_name)?,
-            context.get_color(VarName::color)?,
-            format!(
-                "[b {} {} [tw T]{}]{xp}",
-                context.get_i32(VarName::pwr)?.cstr_c(VarName::pwr.color()),
-                context.get_i32(VarName::hp)?.cstr_c(VarName::hp.color()),
-                (tier as i32).cstr_c(VarName::tier.color())
-            ),
-        )
-        .ui(ui))
-    }
-    fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        let pwr = context.get_var(VarName::pwr)?;
-        let hp = context.get_var(VarName::hp)?;
-        let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
-            behavior.reactions.tier()
-        } else {
-            0
-        };
-        Ok(show_frame(
-            self,
-            &self.unit_name,
-            color,
-            context,
-            ui,
-            |ui| {
-                ui.horizontal(|ui| {
-                    TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
-                    TagWidget::new_var_value(VarName::hp, hp).ui(ui);
-                    TagWidget::new_var_value(VarName::tier, (tier as i32).into()).ui(ui);
-                });
-                if let Ok(description) = self.description_load(context) {
-                    description.description.label_w(ui);
-                    if let Ok(behavior) = description.behavior_load(context) {
-                        behavior.show(context, ui);
-                    }
-                }
-            },
-        ))
-    }
-}
-impl TagCard for NHouse {
-    fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(TagWidget::new_name(&self.house_name, color).ui(ui))
-    }
-    fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(show_frame(
-            self,
-            &self.house_name,
-            color,
-            context,
-            ui,
-            |ui| {
-                if let Ok(action) = self.action_load(context) {
-                    action.tag_card(default(), context, ui).ui(ui);
-                }
-                if let Ok(status) = self.status_load(context) {
-                    status.tag_card(default(), context, ui).ui(ui);
-                }
-                for unit in self.units_load(context) {
-                    context
-                        .with_owner_ref(unit.entity(), |context| {
-                            unit.tag_card(default(), context, ui)
-                        })
-                        .ui(ui);
-                }
-            },
-        ))
-    }
-}
-impl TagCard for NActionAbility {
-    fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(TagWidget::new_name(&self.ability_name, color).ui(ui))
-    }
-    fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(show_frame(
-            self,
-            &self.ability_name,
-            color,
-            context,
-            ui,
-            |ui| {
-                if let Ok(description) = self.description_load(context) {
-                    description.description.label_w(ui);
-                    if let Ok(effect) = description.effect_load(context) {
-                        effect.show(context, ui);
-                    }
-                }
-            },
-        ))
-    }
-}
-impl TagCard for NStatusAbility {
-    fn show_tag(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(TagWidget::new_name(&self.status_name, color).ui(ui))
-    }
-    fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
-        let color = context.color(ui);
-        Ok(show_frame(
-            self,
-            &self.status_name,
-            color,
-            context,
-            ui,
-            |ui| {
-                if let Ok(description) = self.description_load(context) {
-                    description.description.label_w(ui);
-                    if let Ok(behavior) = description.behavior_load(context) {
-                        behavior.show(context, ui);
-                    }
-                }
-            },
-        ))
-    }
-}
 impl NFusion {
     pub fn show_card(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         ui.horizontal(|ui| {
@@ -249,7 +170,7 @@ impl NFusion {
                 for unit in &units {
                     context
                         .with_owner(unit.entity(), |context| {
-                            unit.tag_card(default(), context, ui)
+                            (*unit).clone().see(context).tag_card(ui)
                         })
                         .ui(ui);
                 }

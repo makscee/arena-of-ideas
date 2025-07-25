@@ -190,7 +190,9 @@ impl MatchPlugin {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     for house in team.houses_load(context) {
                         house
-                            .tag_card(TagCardContext::new().expanded(true), context, ui)
+                            .clone()
+                            .see(context)
+                            .tag_card_expanded(true, ui)
                             .ui(ui);
                     }
                     Ok(())
