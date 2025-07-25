@@ -311,17 +311,6 @@ impl MatchPlugin {
                             .notify_error_op();
                     }
                 },
-                |fusion| {
-                    cn().reducers
-                        .match_edit_fusion(fusion.to_tnode())
-                        .notify_op();
-                },
-                |fusion, id| cn().reducers.match_add_fusion_unit(fusion.id, id).unwrap(),
-                |fusion, id| {
-                    cn().reducers
-                        .match_remove_fusion_unit(fusion.id, id)
-                        .unwrap()
-                },
                 |fusions| {
                     cn().reducers.match_reorder_fusions(fusions).unwrap();
                 },

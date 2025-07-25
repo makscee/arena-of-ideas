@@ -123,6 +123,9 @@ impl BattleEditorPlugin {
                 match result {
                     Ok((Some(action), _)) => navigation_action = Some(action),
                     Ok((_, true)) => changed = true,
+                    Err(err) => {
+                        err.ui(ui);
+                    }
                     _ => {}
                 }
             });
@@ -436,7 +439,6 @@ impl BattleEditorPlugin {
             if let Ok(mut fusion) = context.get::<NFusion>(context.entity(id)?).cloned() {
                 let mut add_unit: Option<u64> = None;
                 let mut remove_unit: Option<u64> = None;
-
                 if fusion.show_editor(context, ui)? {
                     changed = true;
                 }
@@ -479,13 +481,21 @@ impl BattleEditorPlugin {
                 }
 
                 if let Some(unit_id) = add_unit {
-                    context.link_parent_child(unit_id, id)?;
+                    context.link_parent_child(unit_id, id).notify_error_op();
+                    fusion.units.ids.push(unit_id);
                     changed = true;
                 }
 
                 if let Some(unit_id) = remove_unit {
-                    fusion.remove_unit(context, unit_id)?;
+                    fusion.remove_unit(unit_id)?;
+                    context
+                        .unlink_parent_child(unit_id, fusion.id)
+                        .notify_error_op();
                     changed = true;
+                }
+                if changed {
+                    let entity = fusion.entity();
+                    fusion.unpack_entity(context, entity).notify_error_op();
                 }
             }
 

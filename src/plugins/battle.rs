@@ -100,6 +100,7 @@ impl BattlePlugin {
             data.battle.right = right;
             data.playing = false;
             data.t = 0.0;
+            data.simulation = BattleSimulation::new(data.battle.clone()).start();
             pd_mut(|pd| {
                 pd.client_state
                     .set_battle_test_teams(&data.battle.left, &data.battle.right);
@@ -436,91 +437,6 @@ impl BattlePlugin {
                         .reload_requested = true;
                 }
             });
-        });
-    }
-    pub fn pane_edit_slots(left: bool, ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|world, mut data: Mut<BattleData>| {
-            let BattleData {
-                teams_world,
-                team_left,
-                team_right,
-                battle,
-                simulation: _,
-                t: _,
-                playing: _,
-                playback_speed: _,
-                on_done: _,
-            } = data.as_mut();
-            let mut changed = false;
-            let team_entity = if left { *team_left } else { *team_right };
-            let mut edited = None;
-            let mut add_unit: Option<(u64, u64)> = None;
-            let mut remove_unit: Option<(u64, u64)> = None;
-            Context::from_world_r(teams_world, |context| {
-                NFusion::slots_editor(
-                    team_entity,
-                    context,
-                    ui,
-                    |_, _, _| {},
-                    |fusion| {
-                        edited = Some(fusion);
-                    },
-                    |fusion, unit| {
-                        add_unit = Some((fusion.id, unit));
-                    },
-                    |fusion, unit| {
-                        remove_unit = Some((fusion.id, unit));
-                    },
-                    |_| {},
-                )
-                .ui(ui);
-                if let Some(fusion) = edited {
-                    context
-                        .world_mut()
-                        .unwrap()
-                        .entity_mut(fusion.entity())
-                        .insert(fusion);
-                    changed = true;
-                }
-                if let Some((fusion, unit)) = add_unit {
-                    context.get_by_id_mut::<NFusion>(fusion)?.action_limit += 10;
-                    context.link_parent_child(unit, fusion)?;
-                    changed = true;
-                }
-                if let Some((fusion, unit)) = remove_unit {
-                    // First get the unit index
-                    let unit_index = {
-                        let fusion_ref = context.get_by_id::<NFusion>(fusion)?;
-                        let units = fusion_ref.units(context)?;
-                        units.iter().position(|u| u.id == unit)
-                    };
-
-                    // Then remove from fusion behavior
-                    if let Some(unit_index) = unit_index {
-                        let mut fusion_ref = context.get_by_id_mut::<NFusion>(fusion)?;
-                        if unit_index < fusion_ref.behavior.len() {
-                            fusion_ref.behavior.remove(unit_index);
-                        }
-                    }
-
-                    // Finally unlink the unit
-                    context.unlink_parent_child(unit, fusion)?;
-                    changed = true;
-                }
-
-                if changed {
-                    world.resource_mut::<ReloadData>().reload_requested = true;
-                    let updated_team = NTeam::pack_entity(context, team_entity).unwrap();
-                    let team = if left {
-                        &mut battle.left
-                    } else {
-                        &mut battle.right
-                    };
-                    *team = updated_team;
-                }
-                Ok(())
-            })
-            .ui(ui);
         });
     }
 }

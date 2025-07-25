@@ -1,18 +1,17 @@
 use super::*;
 
 impl NFusion {
-    pub fn remove_unit(&mut self, context: &Context, id: u64) -> Result<(), ExpressionError> {
+    pub fn remove_unit(&mut self, id: u64) -> Result<(), ExpressionError> {
         if self.trigger.unit == id {
             self.trigger = Default::default();
         }
 
-        // Find the index of the unit being removed
-        let units = self.units(context)?;
-        if let Some(unit_index) = units.iter().position(|u| u.id == id) {
+        if let Some(unit_index) = self.units.ids.iter().position(|u| *u == id) {
             // Remove the behavior at the corresponding index
             if unit_index < self.behavior.len() {
                 self.behavior.remove(unit_index);
             }
+            self.units.ids.remove(unit_index);
         }
 
         Ok(())
@@ -313,75 +312,11 @@ impl NFusion {
         .inner?;
         Ok(changed)
     }
-    pub fn editor(
-        &self,
-        context: &Context,
-        response: Response,
-        on_add_unit: &mut impl FnMut(NFusion, u64),
-        on_remove_unit: &mut impl FnMut(NFusion, u64),
-    ) -> Result<Option<NFusion>, ExpressionError> {
-        let mut edited: Option<NFusion> = None;
-        let team = context.first_parent::<NTeam>(self.id)?;
-        response
-            .on_hover_ui(|ui| {
-                self.show_card(context, ui).ui(ui);
-            })
-            .bar_menu(|ui| {
-                let Ok(units) = self.units(context) else {
-                    return;
-                };
-                ui.menu_button("add unit", |ui| {
-                    let roster = team.roster_units_load(context);
-                    for unit in &roster {
-                        if units.iter().any(|u| u.id == unit.id) {
-                            continue;
-                        }
-                        context
-                            .with_owner_ref(unit.entity(), |context| {
-                                match unit.show_tag(context, ui) {
-                                    Ok(response) => {
-                                        if response.clicked() {
-                                            on_add_unit(self.clone(), unit.id);
-                                        }
-                                        Ok(())
-                                    }
-                                    Err(e) => Err(e),
-                                }
-                            })
-                            .ui(ui);
-                    }
-                });
-                if !units.is_empty() {
-                    ui.menu_button("remove unit", |ui| {
-                        for unit in &units {
-                            if unit.cstr().button(ui).clicked() {
-                                on_remove_unit(self.clone(), unit.id);
-                            }
-                        }
-                    });
-                    ui.menu_button("edit", |ui| {
-                        let mut fusion = self.clone();
-                        let r = fusion.show_editor(context, ui);
-                        if let Ok(c) = &r {
-                            if *c {
-                                edited = Some(fusion);
-                            }
-                        } else {
-                            r.ui(ui);
-                        }
-                    });
-                }
-            });
-        Ok(edited)
-    }
     pub fn slots_editor(
         team: Entity,
         context: &Context,
         ui: &mut Ui,
         slot: impl Fn(&mut Ui, &Response, &NFusion),
-        on_edited: impl FnOnce(NFusion),
-        mut on_add_unit: impl FnMut(NFusion, u64),
-        mut on_remove_unit: impl FnMut(NFusion, u64),
         mut on_reorder: impl FnMut(Vec<u64>),
     ) -> Result<(), ExpressionError> {
         let team = context.get::<NTeam>(team)?;
@@ -449,19 +384,6 @@ impl NFusion {
                     let id = fusions.remove(*j);
                     fusions.insert(i, id);
                     on_reorder(fusions);
-                }
-
-                match fusion.editor(context, resp.clone(), &mut on_add_unit, &mut on_remove_unit) {
-                    Ok(edited) => {
-                        if let Some(fusion) = edited {
-                            on_edited(fusion);
-                            return;
-                        }
-                    }
-                    Err(e) => {
-                        let ui = &mut ui.new_child(UiBuilder::new().max_rect(ui.min_rect()));
-                        e.cstr().label_w(ui);
-                    }
                 }
                 slot(ui, &resp, fusion);
             }
