@@ -98,7 +98,7 @@ impl Selector {
         })
         .inner
     }
-    pub fn ui_iter<'a, E: PartialEq + Clone + ToString + ToCstr + 'a, I>(
+    pub fn ui_iter<'a, E: PartialEq + Clone + ToCstr + 'a, I>(
         self,
         value: &mut E,
         values: I,
@@ -112,12 +112,14 @@ impl Selector {
         ComboBox::from_id_salt(self.name.text())
             .selected_text(
                 value
-                    .cstr_c(name_color(&value.to_string()))
+                    .cstr_c(name_color(&value.cstr().to_string()))
                     .widget(1.0, ui.style()),
             )
             .show_ui(ui, |ui| {
                 for e in values {
-                    let text = e.cstr_c(name_color(&e.to_string())).widget(1.0, ui.style());
+                    let text = e
+                        .cstr_c(name_color(&e.cstr().to_string()))
+                        .widget(1.0, ui.style());
                     changed |= ui.selectable_value(value, e.clone(), text).changed();
                 }
             });

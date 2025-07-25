@@ -362,6 +362,11 @@ impl ToCstr for str {
         self.to_owned()
     }
 }
+impl ToCstr for &str {
+    fn cstr(&self) -> Cstr {
+        (*self).to_owned()
+    }
+}
 impl ToCstr for u8 {
     fn cstr(&self) -> Cstr {
         self.to_string()
@@ -406,7 +411,7 @@ impl ToCstr for bool {
 }
 impl ToCstr for Vec2 {
     fn cstr(&self) -> Cstr {
-        format!("({}, {})", self.x.cstr(), self.y.cstr())
+        format!("{}×{}", self.x as i32, self.y as i32)
     }
 }
 impl ToCstr for Color {
