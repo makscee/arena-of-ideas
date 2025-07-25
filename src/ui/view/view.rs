@@ -356,7 +356,9 @@ where
                     swap = Some((i, i + 1));
                 }
                 ui.vertical(|ui| {
-                    vr.merge(v.view_with_children_mut(vctx.with_id(i), context, ui));
+                    ui.push_id(i, |ui| {
+                        vr.merge(v.view_with_children_mut(vctx.with_id(i), context, ui));
+                    });
                     if vr.take_delete_me() {
                         to_remove = Some(i);
                     }
