@@ -1,4 +1,4 @@
-use parking_lot::{lock_api::RwLockReadGuard, RawRwLock, RwLock};
+use parking_lot::{RawRwLock, RwLock, lock_api::RwLockReadGuard};
 
 use super::*;
 
@@ -17,6 +17,8 @@ static EDIT_TS: Mutex<Option<f64>> = Mutex::new(None);
 pub struct Data {
     pub client_settings: ClientSettings,
     pub client_state: ClientState,
+    pub saved_client_settings: ClientSettings,
+    pub saved_client_state: ClientState,
 }
 
 pub fn pd() -> RwLockReadGuard<'static, RawRwLock, Data> {
@@ -29,6 +31,23 @@ pub fn pd_mut(f: impl FnOnce(&mut Data)) {
         *DATA.get().unwrap().write() = new_data;
         *EDIT_TS.lock() = Some(gt().elapsed());
     }
+}
+
+pub fn pd_save_settings() {
+    pd_mut(|data| {
+        data.saved_client_settings = data.client_settings.clone();
+        data.saved_client_state = data.client_state.clone();
+    });
+    let pd = pd();
+    pd.client_settings.save();
+    pd.client_state.save();
+}
+
+pub fn pd_discard_settings() {
+    pd_mut(|data| {
+        data.client_settings = data.saved_client_settings.clone();
+        data.client_state = data.saved_client_state.clone();
+    });
 }
 
 pub trait PersistentData:
@@ -75,6 +94,8 @@ impl PersistentDataPlugin {
         let mut data = DATA.get_or_init(|| default()).write();
         data.client_settings = Self::load_data();
         data.client_state = Self::load_data();
+        data.saved_client_settings = data.client_settings.clone();
+        data.saved_client_state = data.client_state.clone();
     }
     fn save() {
         let pd = pd();

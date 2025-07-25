@@ -2,6 +2,8 @@ use bevy::{
     ecs::event::EventReader,
     window::{PresentMode, VideoModeSelection, WindowResized},
 };
+use bevy_egui::egui::color_picker::color_picker_hsva_2d;
+use ecolor::Hsva;
 use settings_derive::Settings;
 
 use super::*;
@@ -69,6 +71,22 @@ pub struct ClientSettings {
 macro_rules! settings_editor {
     ($settings:expr, $ui:expr) => {
         $settings.generate_settings_ui($ui);
+
+        $ui.separator();
+        $ui.columns(2, |ui| {
+            ui[0].vertical_centered_justified(|ui| {
+                if ui.button("Save").clicked() {
+                    pd_save_settings();
+                    ui.close_menu();
+                }
+            });
+            ui[1].vertical_centered_justified(|ui| {
+                if ui.button("Discard").clicked() {
+                    pd_discard_settings();
+                    ui.close_menu();
+                }
+            });
+        });
     };
 }
 
@@ -112,20 +130,24 @@ impl Show for WindowMode {
 
 impl Show for Colorix {
     fn show(&self, _: &Context, ui: &mut Ui) {
-        "Theme".cstr_c(self.color(0)).label(ui);
+        ui.menu_button("Theme".cstr_c(self.color(0)), |ui| {
+            "Theme".cstr_c(self.color(0)).label(ui);
+        });
     }
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        let mut color = self.raw_colors[0];
-        if ui.color_edit_button_srgba(&mut color).changed() {
+        let mut changed = false;
+        let mut hsva = Hsva::from_srgba_unmultiplied(self.raw_colors[0].to_array());
+        if color_picker_hsva_2d(ui, &mut hsva, egui::color_picker::Alpha::Opaque) {
+            let c = hsva.to_srgba_unmultiplied();
+            let color = Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]);
             for c in &mut self.raw_colors {
                 *c = color;
             }
             self.generate_scale();
             self.apply(ui.ctx());
-            true
-        } else {
-            false
+            changed = true;
         }
+        changed
     }
 }
 
@@ -226,7 +248,7 @@ pub struct ClientSettingsPlugin;
 impl Plugin for ClientSettingsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Loaded), setup)
-            .add_systems(Update, on_resize);
+            .add_systems(Update, (on_resize, apply_settings_changes));
     }
 }
 
@@ -234,6 +256,15 @@ fn setup(world: &mut World) {
     let cs = pd().client_settings.clone();
     cs.apply(world);
 }
+
+fn apply_settings_changes(world: &mut World) {
+    let cs = pd().client_settings.clone();
+    let saved_cs = pd().saved_client_settings.clone();
+    if cs != saved_cs {
+        cs.apply(world);
+    }
+}
+
 fn on_resize(mut resize_reader: EventReader<WindowResized>) {
     for e in resize_reader.read() {
         debug!("Resize {e:?}");

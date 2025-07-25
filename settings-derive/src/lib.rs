@@ -46,7 +46,8 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                             }
                         } else if tokens_str.starts_with("checkbox") {
                             ui_widget = Some(quote! {
-                                if ui.checkbox(&mut settings.#field_name, #label).changed() {
+                                ui.label(#label);
+                                if ui.checkbox(&mut settings.#field_name, "enabled").changed() {
                                     pd_mut(|d| d.client_settings.#field_name = settings.#field_name);
                                 }
                             });
@@ -68,12 +69,14 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                                     pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                 }
                             });
-                        } else if tokens_str == "show" {
+                        } else if tokens_str.starts_with("show") {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
-                                if settings.#field_name.show_mut(&crate::prelude::Context::default(), ui) {
-                                    pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
-                                }
+                                ui.collapsing("edit", |ui| {
+                                    if settings.#field_name.show_mut(&crate::prelude::Context::default(), ui) {
+                                        pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
+                                    }
+                                });
                             });
                         }
 
