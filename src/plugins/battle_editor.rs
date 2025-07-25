@@ -544,7 +544,13 @@ impl BattleEditorPlugin {
         owner: u64,
     ) -> Result<(bool, Option<u64>), ExpressionError>
     where
-        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + StringData,
+        T: Node
+            + 'static
+            + View
+            + ViewFns
+            + Component<Mutability = Mutable>
+            + StringData
+            + NodeViewFns,
     {
         let mut changed = false;
         let mut parent_id = None;
@@ -560,6 +566,10 @@ impl BattleEditorPlugin {
                     context,
                     ui,
                 );
+
+                parent_node
+                    .node_info_cstr(ViewContext::new(ui), context)
+                    .label(ui);
 
                 if btn_response.deleted() {
                     context.despawn(parent_entity).log();
@@ -602,7 +612,13 @@ impl BattleEditorPlugin {
         action_callback: impl Fn(u64) -> BattleEditorAction,
     ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
     where
-        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + StringData,
+        T: Node
+            + 'static
+            + View
+            + ViewFns
+            + Component<Mutability = Mutable>
+            + StringData
+            + NodeViewFns,
     {
         let mut changed = false;
         let mut action = None;
@@ -617,6 +633,8 @@ impl BattleEditorPlugin {
                     context,
                     ui,
                 );
+
+                node.node_info_cstr(ViewContext::new(ui), context).label(ui);
 
                 if btn_response.clicked() {
                     action = Some(action_callback(node.id()));
