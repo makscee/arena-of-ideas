@@ -58,3 +58,9 @@ where
         self.data.see_node_link_rating(self.ctx, ui, is_parent, id)
     }
 }
+
+impl<'a, T: SFnInfo> SeeBuilder<'a, T> {
+    pub fn info(self) -> Cstr {
+        self.data.see_info_cstr(self.ctx)
+    }
+}

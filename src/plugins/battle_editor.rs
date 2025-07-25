@@ -513,7 +513,7 @@ impl BattleEditorPlugin {
         ui: &mut Ui,
     ) -> Result<bool, ExpressionError>
     where
-        T: Node + 'static + View + NodeViewFns,
+        T: Node + 'static + View + SFnInfo,
     {
         let mut changed = false;
 
@@ -523,7 +523,7 @@ impl BattleEditorPlugin {
             ExpressionError::from("Node not found")
         })?;
         ui.group(|ui| {
-            node.node_info_cstr(context).label(ui);
+            node.see(context).info().label(ui);
             changed |= node.show_mut(context, ui);
         });
         if changed {
@@ -539,13 +539,7 @@ impl BattleEditorPlugin {
         owner: u64,
     ) -> Result<(bool, Option<u64>), ExpressionError>
     where
-        T: Node
-            + 'static
-            + View
-            + ViewFns
-            + Component<Mutability = Mutable>
-            + StringData
-            + NodeViewFns,
+        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + SFnInfo,
     {
         let mut changed = false;
         let mut parent_id = None;
@@ -562,7 +556,7 @@ impl BattleEditorPlugin {
                     ui,
                 );
 
-                parent_node.node_info_cstr(context).label(ui);
+                parent_node.see(context).info().label(ui);
 
                 if btn_response.deleted() {
                     context.despawn(parent_entity).log();
@@ -602,13 +596,7 @@ impl BattleEditorPlugin {
         action_callback: impl Fn(u64) -> BattleEditorAction,
     ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
     where
-        T: Node
-            + 'static
-            + View
-            + ViewFns
-            + Component<Mutability = Mutable>
-            + StringData
-            + NodeViewFns,
+        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + SFnInfo,
     {
         let mut changed = false;
         let mut action = None;
@@ -623,9 +611,7 @@ impl BattleEditorPlugin {
                     context,
                     ui,
                 );
-
-                node.node_info_cstr(context).label(ui);
-
+                node.see(context).info().label(ui);
                 if btn_response.clicked() {
                     action = Some(action_callback(node.id()));
                 }

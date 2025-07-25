@@ -1,5 +1,6 @@
 mod builder;
 mod card;
+mod info;
 mod node_link_rating;
 mod node_rating;
 mod tag;
@@ -10,6 +11,7 @@ use super::*;
 
 pub use builder::*;
 pub use card::*;
+pub use info::*;
 pub use node_link_rating::*;
 pub use node_rating::*;
 pub use tag::*;

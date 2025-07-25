@@ -2,50 +2,10 @@ use super::*;
 
 #[allow(unused)]
 pub trait NodeViewFns: NodeExt + ViewFns {
-    fn view_node(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
-        let mut vr = ViewResponse::default();
-        ui.horizontal(|ui| {
-            if vctx.selected {
-                ui.painter().rect_filled(
-                    ui.available_rect_before_wrap(),
-                    0,
-                    ui.visuals().widgets.hovered.bg_fill,
-                );
-            }
-            let btn_response = self.node_ctxbtn().ui(vctx, context, ui);
-            vr.title_clicked = btn_response.clicked();
-            if btn_response.deleted() {
-                let id = self.id();
-                cn().reducers.admin_delete_node(id).notify_error_op();
-            }
-            self.view_data(vctx, context, ui);
-        });
-        vr
-    }
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
 
-    fn node_info_cstr(&self, context: &Context) -> Cstr {
-        let vars = self.get_vars(context);
-        let mut info_parts = Vec::new();
-
-        for (var_name, var_value) in vars {
-            info_parts.push(format!(
-                "[{} {var_name}] {var_value}",
-                var_name.color().to_hex(),
-                var_name = var_name,
-                var_value = var_value.cstr()
-            ));
-        }
-
-        let parents_count = context.parents(self.id()).len();
-        if parents_count > 0 {
-            info_parts.push(format!("[tw parents: {}]", parents_count));
-        }
-
-        info_parts.join(" ")
-    }
     fn view_data(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) {
         // self.show(context, ui);
     }
@@ -106,23 +66,6 @@ impl NodeViewFns for NHouse {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.house_name.cstr()
     }
-    fn node_info_cstr(&self, context: &Context) -> Cstr {
-        let mut info_parts = Vec::new();
-
-        let units_count = self.units_load(context).len();
-        if units_count > 0 {
-            info_parts.push(format!("units: {}", units_count));
-        }
-        let color = self.color_for_text(context);
-        if let Ok(ability) = self.action_load(context) {
-            info_parts.push(ability.ability_name.cstr_c(color));
-        }
-        if let Ok(status) = self.status_load(context) {
-            info_parts.push(status.status_name.cstr_c(color));
-        }
-
-        info_parts.join(" | ")
-    }
 }
 impl NodeViewFns for NHouseColor {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
@@ -166,29 +109,6 @@ impl NodeViewFns for NFusion {}
 impl NodeViewFns for NUnit {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.unit_name.cstr()
-    }
-    fn node_info_cstr(&self, context: &Context) -> Cstr {
-        let mut info_parts = Vec::new();
-        if let Ok(stats) = self.stats_load(context) {
-            info_parts.push(format!(
-                "[{} {}]/[{} {}]",
-                VarName::pwr.color().to_hex(),
-                stats.pwr,
-                VarName::hp.color().to_hex(),
-                stats.hp
-            ));
-        }
-        if let Ok(house) = context.first_parent::<NHouse>(self.id()) {
-            let color = house.color_for_text(context);
-            info_parts.push(house.house_name.cstr_c(color));
-        }
-        if let Ok(desc) = self.description_load(context) {
-            if !desc.description.is_empty() {
-                info_parts.push(desc.description.clone());
-            }
-        }
-
-        info_parts.join(" | ")
     }
 }
 impl NodeViewFns for NUnitDescription {
