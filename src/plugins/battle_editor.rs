@@ -544,7 +544,7 @@ impl BattleEditorPlugin {
         owner: u64,
     ) -> Result<(bool, Option<u64>), ExpressionError>
     where
-        T: Node + 'static + View,
+        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + StringData,
     {
         let mut changed = false;
         let mut parent_id = None;
@@ -553,23 +553,32 @@ impl BattleEditorPlugin {
             parent_id = Some(parent.id());
 
             let mut parent_node = parent.clone();
-            ui.group(|ui| {
-                if parent_node
-                    .view_mut(ViewContext::new(ui), context, ui)
-                    .changed
-                {
+            let mut was_deleted = false;
+            ui.horizontal(|ui| {
+                let btn_response = parent_node.ctxbtn().add_copy().with_delete().ui(
+                    ViewContext::new(ui),
+                    context,
+                    ui,
+                );
+
+                if btn_response.deleted() {
+                    context.despawn(parent_entity).log();
                     changed = true;
-                    parent_node.unpack_entity(context, parent_entity).log();
+                    parent_id = None;
+                    was_deleted = true;
                 }
             });
 
-            if ui
-                .button(format!("🗑 Remove {}", T::kind_s().cstr()))
-                .clicked()
-            {
-                context.despawn(parent_entity).log();
-                changed = true;
-                parent_id = None;
+            if !was_deleted {
+                ui.group(|ui| {
+                    if parent_node
+                        .view_mut(ViewContext::new(ui), context, ui)
+                        .changed
+                    {
+                        changed = true;
+                        parent_node.unpack_entity(context, parent_entity).log();
+                    }
+                });
             }
         } else {
             ui.label(format!("{} not set", T::kind_s().cstr()));
