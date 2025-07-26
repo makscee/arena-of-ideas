@@ -137,6 +137,12 @@ impl Show for Colorix {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut hsva = Hsva::from_srgba_unmultiplied(self.raw_colors[0].to_array());
+        ui.horizontal(|ui| {
+            for i in 0_usize..12 {
+                let rect = ui.allocate_space(LINE_HEIGHT.v2()).1;
+                ui.painter().rect_filled(rect, 0, colorix().color(i));
+            }
+        });
         if color_picker_hsva_2d(ui, &mut hsva, egui::color_picker::Alpha::Opaque) {
             let c = hsva.to_srgba_unmultiplied();
             let color = Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]);
@@ -145,6 +151,7 @@ impl Show for Colorix {
             }
             self.generate_scale();
             self.apply(ui.ctx());
+            self.clone().save();
             changed = true;
         }
         changed

@@ -69,7 +69,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
             fn default_tnode(self) -> TNode;
             fn show_explorer(self, context: &Context, vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError>;
             fn view_pack_with_children_mut(self, context: &Context, ui: &mut Ui, pack: &mut PackedNodes) -> Result<ViewResponse, ExpressionError>;
-            fn view_id_with_children(self, context: &Context, ui: &mut Ui, id: u64) -> Result<ViewResponse, ExpressionError>;
             fn query_all_ids(self, world: &mut World) -> Vec<u64>;
         }
 
@@ -158,17 +157,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                                 *pack = n.pack();
                             }
                             Ok(vr)
-                        }
-                    )*
-                }
-            }
-            fn view_id_with_children(self, context: &Context, ui: &mut Ui, id: u64) -> Result<ViewResponse, ExpressionError> {
-                match self {
-                    Self::None => unimplemented!(),
-                    #(
-                        Self::#names => {
-                            let n = context.get_by_id::<#names>(id)?;
-                            Ok(n.view_node(ViewContext::new(ui), context, ui))
                         }
                     )*
                 }
