@@ -15,11 +15,21 @@ impl Plugin for BattleEditorPlugin {
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct BattleEditorState {
     pub current_node: Option<BattleEditorNode>,
     pub navigation_stack: Vec<BattleEditorNode>,
     pub is_left_team: bool,
+}
+
+impl Default for BattleEditorState {
+    fn default() -> Self {
+        Self {
+            current_node: None,
+            navigation_stack: Vec::new(),
+            is_left_team: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -32,7 +42,14 @@ pub enum BattleEditorNode {
 
 impl BattleEditorPlugin {
     fn init(world: &mut World) {
-        world.init_resource::<BattleEditorState>();
+        let mut state = world.resource_mut::<BattleEditorState>();
+        if state.current_node.is_none() {
+            let id = pd().client_state.battle_test.0.root;
+            if id > 0 {
+                state.current_node =
+                    Some(BattleEditorNode::Team(pd().client_state.battle_test.0.root))
+            }
+        }
     }
 
     pub fn pane(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
@@ -247,87 +264,55 @@ impl BattleEditorPlugin {
             }
             ui.separator();
 
-            ui.collapsing("Color", |ui| {
-                if let Ok((color_changed, _)) =
-                    Self::show_parent_node_editor::<NHouseColor>(id, context, ui, id)
-                {
-                    changed |= color_changed;
+            Self::show_parent_node_editor::<NHouseColor>(id, context, ui, id, &mut changed);
+
+            if let Some(action_id) =
+                Self::show_parent_node_editor::<NActionAbility>(id, context, ui, id, &mut changed)
+            {
+                if let Some(desc_id) = Self::show_parent_node_editor::<NActionDescription>(
+                    action_id,
+                    context,
+                    ui,
+                    id,
+                    &mut changed,
+                ) {
+                    Self::show_parent_node_editor::<NActionEffect>(
+                        desc_id,
+                        context,
+                        ui,
+                        id,
+                        &mut changed,
+                    );
                 }
-            });
+            }
 
-            ui.collapsing("Action Ability", |ui| {
-                if let Ok((action_changed, action_id)) =
-                    Self::show_parent_node_editor::<NActionAbility>(id, context, ui, id)
-                {
-                    changed |= action_changed;
+            if let Some(status_id) =
+                Self::show_parent_node_editor::<NStatusAbility>(id, context, ui, id, &mut changed)
+            {
+                if let Some(desc_id) = Self::show_parent_node_editor::<NStatusDescription>(
+                    status_id,
+                    context,
+                    ui,
+                    id,
+                    &mut changed,
+                ) {
+                    Self::show_parent_node_editor::<NStatusBehavior>(
+                        desc_id,
+                        context,
+                        ui,
+                        id,
+                        &mut changed,
+                    );
 
-                    if let Some(action_id) = action_id {
-                        ui.collapsing("Action Description", |ui| {
-                            if let Ok((desc_changed, desc_id)) =
-                                Self::show_parent_node_editor::<NActionDescription>(
-                                    action_id, context, ui, id,
-                                )
-                            {
-                                changed |= desc_changed;
-
-                                if let Some(desc_id) = desc_id {
-                                    ui.collapsing("Action Effect", |ui| {
-                                        if let Ok((effect_changed, _)) =
-                                            Self::show_parent_node_editor::<NActionEffect>(
-                                                desc_id, context, ui, id,
-                                            )
-                                        {
-                                            changed |= effect_changed;
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
+                    Self::show_parent_node_editor::<NStatusRepresentation>(
+                        status_id,
+                        context,
+                        ui,
+                        id,
+                        &mut changed,
+                    );
                 }
-            });
-
-            ui.collapsing("Status Ability", |ui| {
-                if let Ok((status_changed, status_id)) =
-                    Self::show_parent_node_editor::<NStatusAbility>(id, context, ui, id)
-                {
-                    changed |= status_changed;
-
-                    if let Some(status_id) = status_id {
-                        ui.collapsing("Status Description", |ui| {
-                            if let Ok((desc_changed, desc_id)) =
-                                Self::show_parent_node_editor::<NStatusDescription>(
-                                    status_id, context, ui, id,
-                                )
-                            {
-                                changed |= desc_changed;
-
-                                if let Some(desc_id) = desc_id {
-                                    ui.collapsing("Status Behavior", |ui| {
-                                        if let Ok((behavior_changed, _)) =
-                                            Self::show_parent_node_editor::<NStatusBehavior>(
-                                                desc_id, context, ui, id,
-                                            )
-                                        {
-                                            changed |= behavior_changed;
-                                        }
-                                    });
-                                }
-                            }
-                        });
-
-                        ui.collapsing("Status Representation", |ui| {
-                            if let Ok((repr_changed, _)) =
-                                Self::show_parent_node_editor::<NStatusRepresentation>(
-                                    status_id, context, ui, id,
-                                )
-                            {
-                                changed |= repr_changed;
-                            }
-                        });
-                    }
-                }
-            });
+            }
 
             ui.separator();
             "[h2 Units]".cstr().label(ui);
@@ -369,51 +354,28 @@ impl BattleEditorPlugin {
 
             ui.separator();
 
-            ui.collapsing("Stats", |ui| {
-                if let Ok((stats_changed, _)) =
-                    Self::show_parent_node_editor::<NUnitStats>(id, context, ui, id)
-                {
-                    changed |= stats_changed;
-                }
-            });
+            Self::show_parent_node_editor::<NUnitStats>(id, context, ui, id, &mut changed);
+            Self::show_parent_node_editor::<NUnitState>(id, context, ui, id, &mut changed);
 
-            ui.collapsing("State", |ui| {
-                if let Ok((state_changed, _)) =
-                    Self::show_parent_node_editor::<NUnitState>(id, context, ui, id)
-                {
-                    changed |= state_changed;
-                }
-            });
+            if let Some(desc_id) =
+                Self::show_parent_node_editor::<NUnitDescription>(id, context, ui, id, &mut changed)
+            {
+                Self::show_parent_node_editor::<NUnitRepresentation>(
+                    desc_id,
+                    context,
+                    ui,
+                    id,
+                    &mut changed,
+                );
 
-            ui.collapsing("Description", |ui| {
-                if let Ok((desc_changed, desc_id)) =
-                    Self::show_parent_node_editor::<NUnitDescription>(id, context, ui, id)
-                {
-                    changed |= desc_changed;
-
-                    if let Some(desc_id) = desc_id {
-                        ui.collapsing("Representation", |ui| {
-                            if let Ok((repr_changed, _)) =
-                                Self::show_parent_node_editor::<NUnitRepresentation>(
-                                    desc_id, context, ui, id,
-                                )
-                            {
-                                changed |= repr_changed;
-                            }
-                        });
-
-                        ui.collapsing("Behavior", |ui| {
-                            if let Ok((behavior_changed, _)) =
-                                Self::show_parent_node_editor::<NUnitBehavior>(
-                                    desc_id, context, ui, id,
-                                )
-                            {
-                                changed |= behavior_changed;
-                            }
-                        });
-                    }
-                }
-            });
+                Self::show_parent_node_editor::<NUnitBehavior>(
+                    desc_id,
+                    context,
+                    ui,
+                    id,
+                    &mut changed,
+                );
+            }
 
             Ok(())
         });
@@ -483,6 +445,7 @@ impl BattleEditorPlugin {
                 if let Some(unit_id) = add_unit {
                     context.link_parent_child(unit_id, id).notify_error_op();
                     fusion.units.ids.push(unit_id);
+                    fusion.action_limit = 100;
                     changed = true;
                 }
 
@@ -537,55 +500,66 @@ impl BattleEditorPlugin {
         context: &mut Context,
         ui: &mut Ui,
         owner: u64,
-    ) -> Result<(bool, Option<u64>), ExpressionError>
+        changed: &mut bool,
+    ) -> Option<u64>
     where
-        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + SFnInfo,
+        T: Node + 'static + View + ViewFns + SFnInfo,
     {
-        let mut changed = false;
         let mut parent_id = None;
         if let Ok(parent) = context.first_parent::<T>(child_id) {
             let parent_entity = parent.entity();
             parent_id = Some(parent.id());
 
             let mut parent_node = parent.clone();
-            let mut was_deleted = false;
-            ui.horizontal(|ui| {
-                let btn_response = parent_node.ctxbtn().add_copy().with_delete().ui(
-                    ViewContext::new(ui),
-                    context,
-                    ui,
-                );
 
-                parent_node.see(context).info().label(ui);
+            ui.collapsing(format!("{}", T::kind_s().cstr()), |ui| {
+                let mut local_changed = false;
+                let mut was_deleted = false;
 
-                if btn_response.deleted() {
-                    context.despawn(parent_entity).log();
-                    changed = true;
-                    parent_id = None;
-                    was_deleted = true;
-                }
-            });
+                ui.horizontal(|ui| {
+                    let btn_response = parent_node.ctxbtn().add_copy().with_delete().ui(
+                        ViewContext::new(ui),
+                        context,
+                        ui,
+                    );
 
-            if !was_deleted {
-                ui.group(|ui| {
-                    if parent_node.show_mut(context, ui) {
-                        changed = true;
-                        parent_node.unpack_entity(context, parent_entity).log();
+                    parent_node.see(context).info().label(ui);
+
+                    if btn_response.deleted() {
+                        was_deleted = true;
                     }
                 });
-            }
+
+                if !was_deleted {
+                    ui.group(|ui| {
+                        if parent_node.show_mut(context, ui) {
+                            local_changed = true;
+                        }
+                    });
+                }
+
+                if was_deleted {
+                    context.despawn(parent_entity).log();
+                    *changed = true;
+                    parent_id = None;
+                } else if local_changed {
+                    parent_node.unpack_entity(context, parent_entity).log();
+                    *changed = true;
+                }
+            });
         } else {
             ui.label(format!("{} not set", T::kind_s().cstr()));
             if ui
                 .button(format!("➕ Add Default {}", T::kind_s().cstr()))
                 .clicked()
             {
-                Self::create_node::<T>(context, owner).add_child(context.world_mut()?, child_id);
-                changed = true;
+                Self::create_node::<T>(context, owner)
+                    .add_child(context.world_mut().unwrap(), child_id);
+                *changed = true;
             }
         }
 
-        Ok((changed, parent_id))
+        parent_id
     }
 
     fn show_children_node_editors<T>(
