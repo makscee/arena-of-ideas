@@ -56,6 +56,15 @@ impl BattleEditorPlugin {
         let mut navigation_action: Option<BattleEditorAction> = None;
         let mut changed = false;
 
+        // Set up slot actions
+        if let Some(mut battle_data) = world.remove_resource::<BattleData>() {
+            battle_data.slot_actions = vec![(
+                "Add default unit".to_string(),
+                Self::handle_add_default_unit,
+            )];
+            world.insert_resource(battle_data);
+        }
+
         {
             let is_left = world.resource::<BattleEditorState>().is_left_team;
 
@@ -170,7 +179,7 @@ impl BattleEditorPlugin {
         }
 
         if changed {
-            world.resource_mut::<ReloadData>().reload_requested = true;
+            Self::save_team_changes(world);
         }
 
         Ok(())
@@ -681,6 +690,74 @@ impl BattleEditorPlugin {
         let component_entity = context.world_mut().unwrap().spawn_empty().id();
         component.unpack_entity(context, component_entity).log();
         id
+    }
+
+    fn save_team_changes(world: &mut World) {
+        world.resource_mut::<ReloadData>().reload_requested = true;
+    }
+
+    fn handle_add_default_unit(slot: i32, team_entity: Entity, context: &mut Context) {
+        // Fusion slots are always 0-4 regardless of which team
+        let fusion_slot = slot.abs() - 1; // Convert 1-5 or -1 to -5 into 0-4
+
+        // Get team and find existing fusion for this slot
+        let (team_owner, fusion_id) = {
+            let team = match context.get::<NTeam>(team_entity) {
+                Ok(team) => team,
+                Err(_) => return,
+            };
+            let fusion = team.fusions.iter().find(|f| f.slot == fusion_slot);
+            match fusion {
+                Some(f) => (team.owner, f.id),
+                None => return, // Should never happen - teams should always have 5 fusions
+            }
+        };
+
+        let fusion_entity = context.entity(fusion_id).unwrap_or(Entity::PLACEHOLDER);
+
+        // Create a new house
+        let house_id = Self::create_node::<NHouse>(context, team_owner);
+        let house_entity = context.entity(house_id).unwrap_or(Entity::PLACEHOLDER);
+
+        // Create a new unit
+        let unit_id = Self::create_node::<NUnit>(context, team_owner);
+        let unit_entity = context.entity(unit_id).unwrap_or(Entity::PLACEHOLDER);
+
+        // Set unit properties
+        if let Ok(mut unit) = context.get_mut::<NUnit>(unit_entity) {
+            unit.unit_name = "Default Unit".to_string();
+        }
+
+        // Get unit for adding to house
+        let unit_clone = context
+            .get::<NUnit>(unit_entity)
+            .cloned()
+            .unwrap_or_default();
+
+        // Add unit to house
+        if let Ok(mut house) = context.get_mut::<NHouse>(house_entity) {
+            house.units.push(unit_clone);
+        }
+
+        // Add unit to fusion
+        if let Ok(mut fusion) = context.get_mut::<NFusion>(fusion_entity) {
+            fusion.units.ids.push(unit_id);
+        }
+
+        // Update team fusions list
+        let fusion_id = context.id(fusion_entity).unwrap_or(0);
+        let updated_fusion = context.get::<NFusion>(fusion_entity).cloned().ok();
+        if let (Ok(mut team), Some(fusion)) =
+            (context.get_mut::<NTeam>(team_entity), updated_fusion)
+        {
+            if let Some(fusion_in_team) = team.fusions.iter_mut().find(|f| f.id == fusion_id) {
+                *fusion_in_team = fusion;
+            }
+        }
+
+        op(|world| {
+            Self::save_team_changes(world);
+        });
     }
 }
 

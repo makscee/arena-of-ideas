@@ -47,6 +47,26 @@ impl BattleCamera {
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
     pub fn show(bs: &mut BattleSimulation, t: f32, ui: &mut Ui) {
+        Self::show_with_actions(
+            bs,
+            t,
+            ui,
+            &Vec::new(),
+            &mut World::default(),
+            Entity::PLACEHOLDER,
+            Entity::PLACEHOLDER,
+        );
+    }
+
+    pub fn show_with_actions(
+        bs: &mut BattleSimulation,
+        t: f32,
+        ui: &mut Ui,
+        slot_actions: &Vec<(String, fn(i32, Entity, &mut Context))>,
+        teams_world: &mut World,
+        team_left: Entity,
+        team_right: Entity,
+    ) {
         let mut cam = ui
             .data(|r| r.get_temp::<BattleCamera>(ui.id()))
             .unwrap_or_default();
@@ -64,8 +84,22 @@ impl BattleCamera {
 
         let slots = global_settings().team_slots;
         for s in 1..=slots {
-            cam.show_slot_rect(s as i32, ui);
-            cam.show_slot_rect(-(s as i32), ui);
+            cam.show_slot_with_action(
+                s as i32,
+                ui,
+                slot_actions,
+                teams_world,
+                team_left,
+                team_right,
+            );
+            cam.show_slot_with_action(
+                -(s as i32),
+                ui,
+                slot_actions,
+                teams_world,
+                team_left,
+                team_right,
+            );
         }
 
         Context::from_world_r(&mut bs.world, |context| {
@@ -132,15 +166,40 @@ impl BattleCamera {
             self.u().v2() * 2.0,
         )
     }
-    fn show_slot_rect(&self, slot: i32, ui: &mut Ui) -> Response {
+
+    fn show_slot_with_action(
+        &self,
+        slot: i32,
+        ui: &mut Ui,
+        slot_actions: &Vec<(String, fn(i32, Entity, &mut Context))>,
+        teams_world: &mut World,
+        team_left: Entity,
+        team_right: Entity,
+    ) {
         let rect = self.slot_rect(slot);
-        RectButton::new_rect(rect).ui(ui, |color, rect, _, ui| {
+        let response = RectButton::new_rect(rect).ui(ui, |color, rect, _, ui| {
             corners_rounded_rect(
                 rect.shrink(rect.width() * 0.1),
                 rect.width() * 0.15,
                 color.stroke(),
                 ui,
             );
-        })
+        });
+
+        if !slot_actions.is_empty() {
+            let team_entity = if slot > 0 { team_left } else { team_right };
+            response.bar_menu(|ui| {
+                for (action_name, action_fn) in slot_actions {
+                    if ui.button(action_name).clicked() {
+                        Context::from_world_r(teams_world, |mut context| {
+                            action_fn(slot, team_entity, &mut context);
+                            Ok(())
+                        })
+                        .ok();
+                        ui.close_menu();
+                    }
+                }
+            });
+        }
     }
 }
