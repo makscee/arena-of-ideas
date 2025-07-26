@@ -225,61 +225,115 @@ impl NodeExplorerPlugin {
             Ok(())
         })
     }
-    pub fn pane_parents(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Self::pane_relations(ui, world, true)
-    }
-    pub fn pane_children(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Self::pane_relations(ui, world, false)
-    }
-    fn pane_relations(
-        ui: &mut Ui,
-        world: &mut World,
-        parents: bool,
-    ) -> Result<(), ExpressionError> {
+    pub fn pane_linked_nodes(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         let mut ned = world
             .remove_resource::<NodeExplorerDataNew>()
             .to_e_not_found()?;
         Context::from_world_r(world, |context| {
             let mut selected: Option<u64> = None;
-            let ids = if parents { &ned.parents } else { &ned.children };
-            if ids.is_empty() {
-                let label_text = if parents { "No parents" } else { "No children" };
-                ui.label(label_text);
-                return Ok(());
+            let inspected_id = ned.inspected_node.unwrap_or(0);
+
+            // Collect all nodes by kind with their relationship type and link rating
+            let mut nodes_by_kind: std::collections::HashMap<NodeKind, Vec<(u64, String, i32)>> =
+                std::collections::HashMap::new();
+
+            // Add parents
+            for (kind, ids) in &ned.parents {
+                for &id in ids {
+                    let rating = context
+                        .world()?
+                        .get_any_link_rating(id, inspected_id)
+                        .map(|(r, _)| r)
+                        .unwrap_or(0);
+                    nodes_by_kind.entry(*kind).or_default().push((
+                        id,
+                        "Parent".to_string(),
+                        rating,
+                    ));
+                }
             }
-            let mut selected_kind = ui
-                .ctx()
-                .data_mut(|w| w.get_temp_mut_or_default::<NodeKind>(ui.id()).clone());
-            if EnumSwitcher::new().show_iter(
-                &mut selected_kind,
-                [NodeKind::None].iter().chain(ids.keys()),
-                ui,
-            ) {
-                ui.ctx().data_mut(|w| w.insert_temp(ui.id(), selected_kind));
+
+            // Add children
+            for (kind, ids) in &ned.children {
+                for &id in ids {
+                    let rating = context
+                        .world()?
+                        .get_any_link_rating(inspected_id, id)
+                        .map(|(r, _)| r)
+                        .unwrap_or(0);
+                    nodes_by_kind
+                        .entry(*kind)
+                        .or_default()
+                        .push((id, "Child".to_string(), rating));
+                }
             }
-            let mut vctx = ViewContext::new(ui).one_line(true);
-            if let Some(selected) = ned.inspected_node {
-                vctx = vctx.link_rating(!parents, selected);
-            }
-            if selected_kind == NodeKind::None {
-                for (kind, ids) in ids {
-                    ui.vertical_centered_justified(|ui| {
-                        kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
-                    });
-                    if let Some(id) =
-                        kind.show_explorer(context, vctx, ui, ids, ned.inspected_node)?
+
+            // Add unlinked nodes only for kinds that have linked nodes
+            let linked_kinds: std::collections::HashSet<NodeKind> = ned
+                .parents
+                .keys()
+                .chain(ned.children.keys())
+                .copied()
+                .collect();
+
+            for kind in linked_kinds {
+                let all_ids = kind.query_all_ids(context.world_mut()?);
+                for id in all_ids {
+                    if id != inspected_id
+                        && !ned
+                            .parents
+                            .get(&kind)
+                            .map_or(false, |ids| ids.contains(&id))
+                        && !ned
+                            .children
+                            .get(&kind)
+                            .map_or(false, |ids| ids.contains(&id))
                     {
-                        selected = Some(id);
+                        nodes_by_kind.entry(kind).or_default().push((
+                            id,
+                            "Unlinked".to_string(),
+                            0,
+                        ));
                     }
                 }
-            } else {
-                let all_ids = selected_kind.query_all_ids(context.world_mut()?);
-                if let Some(id) =
-                    selected_kind.show_explorer(context, vctx, ui, &all_ids, ned.inspected_node)?
-                {
-                    selected = Some(id);
-                }
             }
+
+            // Sort each kind's nodes by rating (descending), then by relationship type
+            for (_, nodes) in nodes_by_kind.iter_mut() {
+                nodes.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.1.cmp(&b.1)));
+            }
+
+            let mut kinds: Vec<_> = nodes_by_kind.keys().copied().collect();
+            kinds.sort();
+
+            if kinds.is_empty() {
+                ui.label("No nodes found");
+                return Ok(());
+            }
+
+            ui.columns(kinds.len(), |columns| {
+                for (i, kind) in kinds.iter().enumerate() {
+                    if let Some(nodes) = nodes_by_kind.get(kind) {
+                        columns[i].vertical(|ui| {
+                            kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
+                            ui.separator();
+
+                            let ids: Vec<u64> = nodes.iter().map(|(id, _, _)| *id).collect();
+                            let vctx = ViewContext::new(ui)
+                                .one_line(true)
+                                .link_rating(true, inspected_id)
+                                .link_rating(false, inspected_id);
+
+                            if let Ok(Some(id)) =
+                                kind.show_explorer(context, vctx, ui, &ids, ned.inspected_node)
+                            {
+                                selected = Some(id);
+                            }
+                        });
+                    }
+                }
+            });
+
             if let Some(selected) = selected {
                 Self::select_id(context, &mut ned, selected)?;
                 ui.ctx().data_mut(|w| w.remove_by_type::<NodeKind>());

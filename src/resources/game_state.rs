@@ -150,15 +150,13 @@ impl GameState {
             GameState::Inspector => {
                 let mut tiles = Tiles::default();
 
-                let parents = tiles.insert_pane(Pane::Inspector(InspectorPane::Parents));
-                let children = tiles.insert_pane(Pane::Inspector(InspectorPane::Children));
+                let linked_nodes = tiles.insert_pane(Pane::Inspector(InspectorPane::LinkedNodes));
                 let same_kind = tiles.insert_pane(Pane::Inspector(InspectorPane::SameKind));
                 let inspector_node = tiles.insert_pane(Pane::Inspector(InspectorPane::Node));
 
-                // Create 2x2 layout: top row (parents | children), bottom row (same_kind | inspector_node)
-                let top_row = tiles.insert_horizontal_tile([parents, children].into());
-                let bottom_row = tiles.insert_horizontal_tile([same_kind, inspector_node].into());
-                let root = tiles.insert_vertical_tile([top_row, bottom_row].into());
+                // Create layout: top row (linked_nodes full width), bottom row (inspector_node | same_kind)
+                let bottom_row = tiles.insert_horizontal_tile([inspector_node, same_kind].into());
+                let root = tiles.insert_vertical_tile([linked_nodes, bottom_row].into());
 
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
@@ -204,8 +202,7 @@ pub enum ShopPane {
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum InspectorPane {
-    Parents,
-    Children,
+    LinkedNodes,
     SameKind,
     Node,
 }
@@ -253,24 +250,18 @@ impl Pane {
                 BattlePane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
             },
             Pane::Inspector(pane) => match pane {
-                InspectorPane::Parents => {
-                    "Parents".cstr_s(CstrStyle::Heading2).label(ui);
+                InspectorPane::LinkedNodes => {
+                    "Linked Nodes".cstr_s(CstrStyle::Heading2).label(ui);
                     if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
-                        NodeExplorerPlugin::pane_parents(ui, world)?
-                    } else {
-                        ui.label("No node selected for inspection");
-                    }
-                }
-                InspectorPane::Children => {
-                    "Children".cstr_s(CstrStyle::Heading2).label(ui);
-                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
-                        NodeExplorerPlugin::pane_children(ui, world)?
+                        NodeExplorerPlugin::pane_linked_nodes(ui, world)?
                     } else {
                         ui.label("No node selected for inspection");
                     }
                 }
                 InspectorPane::SameKind => {
-                    "Same Kind".cstr_s(CstrStyle::Heading2).label(ui);
+                    "Other Nodes of Same Kind"
+                        .cstr_s(CstrStyle::Heading2)
+                        .label(ui);
                     if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_selected(ui, world)?
                     } else {
@@ -278,7 +269,7 @@ impl Pane {
                     }
                 }
                 InspectorPane::Node => {
-                    "Node Details".cstr_s(CstrStyle::Heading2).label(ui);
+                    "Node Editing".cstr_s(CstrStyle::Heading2).label(ui);
                     if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_node(ui, world)?
                     } else {
