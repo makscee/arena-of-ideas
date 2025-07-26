@@ -44,7 +44,7 @@ impl StdbPlugin {
                     );
                     // Use op() to schedule the cache reload
                     op(|world| {
-                        crate::ui::NodeExplorerPluginNew::load_kinds(world);
+                        crate::ui::NodeExplorerPlugin::load_kinds(world);
                     });
                 }
             }

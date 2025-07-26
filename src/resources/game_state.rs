@@ -252,7 +252,7 @@ impl Pane {
             Pane::Inspector(pane) => match pane {
                 InspectorPane::LinkedNodes => {
                     "Linked Nodes".cstr_s(CstrStyle::Heading2).label(ui);
-                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                    if NodeExplorerPlugin::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_linked_nodes(ui, world)?
                     } else {
                         ui.label("No node selected for inspection");
@@ -262,7 +262,7 @@ impl Pane {
                     "Other Nodes of Same Kind"
                         .cstr_s(CstrStyle::Heading2)
                         .label(ui);
-                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                    if NodeExplorerPlugin::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_selected(ui, world)?
                     } else {
                         ui.label("No node selected for inspection");
@@ -270,7 +270,7 @@ impl Pane {
                 }
                 InspectorPane::Node => {
                     "Node Editing".cstr_s(CstrStyle::Heading2).label(ui);
-                    if NodeExplorerPluginNew::get_inspected_node(world).is_some() {
+                    if NodeExplorerPlugin::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_node(ui, world)?
                     } else {
                         ui.label("No node selected for inspection");
@@ -279,7 +279,7 @@ impl Pane {
             },
             Pane::ExplorerList(kind) => {
                 kind.cstr_s(CstrStyle::Heading2).label(ui);
-                NodeExplorerPluginNew::pane_kind_list(ui, world, kind)?
+                NodeExplorerPlugin::pane_kind_list(ui, world, kind)?
             }
         };
         Ok(())

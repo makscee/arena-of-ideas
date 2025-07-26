@@ -91,7 +91,7 @@ fn main() {
             MatchPlugin,
             PersistentDataPlugin,
             BattlePlugin,
-            NodeExplorerPluginNew,
+            NodeExplorerPlugin,
             BattleEditorPlugin,
         ))
         .add_plugins((
