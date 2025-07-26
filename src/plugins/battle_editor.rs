@@ -528,17 +528,19 @@ impl BattleEditorPlugin {
                 let mut was_deleted = false;
 
                 ui.horizontal(|ui| {
-                    let btn_response = parent_node
-                        .see(context)
-                        .ctxbtn()
-                        .add_copy()
-                        .with_delete()
-                        .ui(ui);
+                    let btn_response = parent_node.see(context).node_ctxbtn_full().ui(ui);
 
                     parent_node.see(context).info().label(ui);
 
                     if btn_response.deleted() {
                         was_deleted = true;
+                    }
+                    if let Some(pasted_node) = btn_response.pasted_node_full() {
+                        if let Err(e) = pasted_node.clone().unpack_entity(context, parent_entity) {
+                            error!("Failed to unpack parent node: {}", e);
+                        } else {
+                            local_changed = true;
+                        }
                     }
                 });
 
@@ -590,15 +592,10 @@ impl BattleEditorPlugin {
         let children = context.collect_children_components::<T>(parent_id)?;
         let mut children_to_delete = Vec::new();
         let mut pasted: Option<(Entity, T)> = None;
+        let mut node_full_pasted: Option<(Entity, T)> = None;
         for node in children {
             ui.horizontal(|ui| {
-                let btn_response = node
-                    .see(context)
-                    .ctxbtn()
-                    .add_copy()
-                    .with_paste()
-                    .with_delete()
-                    .ui(ui);
+                let btn_response = node.see(context).node_ctxbtn_full().ui(ui);
                 node.see(context).info().label(ui);
                 if btn_response.clicked() {
                     action = Some(action_callback(node.id()));
@@ -611,6 +608,10 @@ impl BattleEditorPlugin {
                 if let Some(pasted_data) = btn_response.pasted() {
                     pasted = Some((node.entity(), pasted_data.clone()));
                 }
+
+                if let Some(pasted_node_full) = btn_response.pasted_node_full() {
+                    node_full_pasted = Some((node.entity(), pasted_node_full.clone()));
+                }
             });
         }
         if let Some((entity, data)) = pasted {
@@ -622,6 +623,13 @@ impl BattleEditorPlugin {
             node.set_owner(owner);
             node.set_entity(entity);
             changed = true;
+        }
+        if let Some((entity, node_full_data)) = node_full_pasted {
+            if let Err(e) = node_full_data.unpack_entity(context, entity) {
+                error!("Failed to unpack node: {}", e);
+            } else {
+                changed = true;
+            }
         }
         for entity in children_to_delete {
             context.despawn(entity).log();

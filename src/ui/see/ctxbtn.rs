@@ -4,12 +4,15 @@ use super::*;
 pub enum CtxBtnAction<T> {
     Delete,
     Paste(T),
+    PasteNodeFull(T),
 }
 
 pub struct CtxBtnBuilder<'a, T: Clone> {
     item: &'a T,
     copy_action: Option<Box<dyn FnOnce(T) + 'a>>,
     paste_fn: Option<Box<dyn Fn() -> Option<T> + 'a>>,
+    copy_node_full_action: Option<Box<dyn FnOnce(T) + 'a>>,
+    paste_node_full_fn: Option<Box<dyn Fn() -> Option<T> + 'a>>,
     enable_delete: bool,
     custom_actions: Vec<(String, Box<dyn FnOnce(T) + 'a>)>,
     custom_dangerous_actions: Vec<(String, Box<dyn FnOnce(T) + 'a>)>,
@@ -21,6 +24,8 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
             item,
             copy_action: None,
             paste_fn: None,
+            copy_node_full_action: None,
+            paste_node_full_fn: None,
             enable_delete: false,
             custom_actions: Vec::new(),
             custom_dangerous_actions: Vec::new(),
@@ -88,12 +93,54 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
         self
     }
 
+    pub fn add_copy_node_full(mut self, context: &'a Context<'a>) -> Self
+    where
+        T: Node,
+    {
+        let context_ptr = context as *const Context<'a>;
+        self.copy_node_full_action = Some(Box::new(move |item| {
+            let context = unsafe { &*context_ptr };
+            if let Some(entity) = item.get_entity() {
+                if let Ok(packed) = T::pack_entity(context, entity) {
+                    let packed_nodes = packed.pack();
+                    if let Ok(serialized) = ron::to_string(&packed_nodes) {
+                        clipboard_set(serialized);
+                    }
+                }
+            }
+        }));
+        self
+    }
+
+    pub fn add_paste_node_full(mut self) -> Self
+    where
+        T: Node,
+    {
+        self.paste_node_full_fn = Some(Box::new(move || {
+            clipboard_get().and_then(|data| {
+                if let Ok(packed_nodes) = ron::from_str::<PackedNodes>(&data) {
+                    let mut id = next_id();
+                    let res = T::unpack_id(packed_nodes.root, &packed_nodes).map(|mut n| {
+                        n.reassign_ids(&mut id);
+                        n
+                    });
+                    set_next_id(id);
+                    res
+                } else {
+                    None
+                }
+            })
+        }));
+        self
+    }
+
     pub fn ui(mut self, ui: &mut Ui) -> CtxBtnResponse<T>
     where
         T: SFnTitle,
     {
         let mut delete_action = None;
         let mut paste_action = None;
+        let mut paste_node_full_action = None;
 
         let title_response = ui
             .horizontal(|ui| {
@@ -118,10 +165,26 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
                         }
                     }
 
+                    if let Some(copy_node_full_fn) = self.copy_node_full_action.take() {
+                        if ui.button("📦 Copy Node Full").clicked() {
+                            copy_node_full_fn(self.item.clone());
+                            ui.close_menu();
+                        }
+                    }
+
                     if let Some(paste_fn) = &self.paste_fn {
                         if ui.button("📋 Paste").clicked() {
                             if let Some(data) = paste_fn() {
                                 paste_action = Some(CtxBtnAction::Paste(data));
+                            }
+                            ui.close_menu();
+                        }
+                    }
+
+                    if let Some(paste_node_full_fn) = &self.paste_node_full_fn {
+                        if ui.button("📦 Paste Node Full").clicked() {
+                            if let Some(data) = paste_node_full_fn() {
+                                paste_node_full_action = Some(CtxBtnAction::PasteNodeFull(data));
                             }
                             ui.close_menu();
                         }
@@ -175,6 +238,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
             response: title_response,
             delete_action,
             paste_action,
+            paste_node_full_action,
         }
     }
 }
@@ -183,6 +247,7 @@ pub struct CtxBtnResponse<T> {
     pub response: Response,
     pub delete_action: Option<CtxBtnAction<T>>,
     pub paste_action: Option<CtxBtnAction<T>>,
+    pub paste_node_full_action: Option<CtxBtnAction<T>>,
 }
 
 impl<T> CtxBtnResponse<T> {
@@ -196,6 +261,14 @@ impl<T> CtxBtnResponse<T> {
 
     pub fn pasted(&self) -> Option<&T> {
         if let Some(CtxBtnAction::Paste(ref data)) = self.paste_action {
+            Some(data)
+        } else {
+            None
+        }
+    }
+
+    pub fn pasted_node_full(&self) -> Option<&T> {
+        if let Some(CtxBtnAction::PasteNodeFull(ref data)) = self.paste_node_full_action {
             Some(data)
         } else {
             None
@@ -216,6 +289,13 @@ impl<'a, T: NodeExt + Clone + SFnTitle> SeeBuilder<'a, T> {
     {
         CtxBtnBuilder::new(self.data()).with_node_defaults()
     }
+
+    pub fn node_ctxbtn_full(self) -> CtxBtnBuilder<'a, T>
+    where
+        T: StringData + Default + Node,
+    {
+        CtxBtnBuilder::new(self.data()).with_node_full_defaults(self.context())
+    }
 }
 
 impl<'a, T: NodeExt + Clone> CtxBtnBuilder<'a, T> {
@@ -224,5 +304,16 @@ impl<'a, T: NodeExt + Clone> CtxBtnBuilder<'a, T> {
         T: StringData + Default,
     {
         self.add_copy().with_paste().with_delete()
+    }
+
+    pub fn with_node_full_defaults(self, context: &'a Context<'a>) -> Self
+    where
+        T: Node + StringData + Default,
+    {
+        self.add_copy()
+            .with_paste()
+            .add_copy_node_full(context)
+            .add_paste_node_full()
+            .with_delete()
     }
 }
