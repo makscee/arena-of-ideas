@@ -243,6 +243,17 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
 
     let common_trait = common_node_trait_fns(struct_ident, &one_types, &many_types);
 
+    let shared_new_fns = shared_new_functions(
+        struct_ident,
+        &all_data_fields,
+        &all_data_types,
+        &one_fields,
+        &one_types,
+        &many_fields,
+        &many_types,
+        false, // is_server = false
+    );
+
     quote! {
         #[derive(Component, Clone, Debug, Hash)]
         pub #item
@@ -272,6 +283,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         #[allow(dead_code)]
         #[allow(unused_mut)]
         impl #struct_ident {
+            #shared_new_fns
             #(
                 pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
                     if let Some(n) = self.#one_fields.as_ref() {

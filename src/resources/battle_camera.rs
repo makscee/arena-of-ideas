@@ -187,7 +187,7 @@ impl BattleCamera {
         });
 
         if !slot_actions.is_empty() {
-            let team_entity = if slot > 0 { team_left } else { team_right };
+            let team_entity = if slot < 0 { team_left } else { team_right };
             response.bar_menu(|ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {

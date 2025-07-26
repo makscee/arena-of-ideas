@@ -45,7 +45,7 @@ pub trait Node: Default + Sized {
 pub trait NodeExt: Sized + Node + StringData {
     fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn insert_self(&self, ctx: &ReducerContext);
+    fn insert_self(&mut self, ctx: &ReducerContext);
     fn update_self(&self, ctx: &ReducerContext);
     fn delete_self(&self, ctx: &ReducerContext);
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
@@ -77,7 +77,10 @@ where
             None
         }
     }
-    fn insert_self(&self, ctx: &ReducerContext) {
+    fn insert_self(&mut self, ctx: &ReducerContext) {
+        if self.id() == 0 {
+            self.set_id(next_id(ctx));
+        }
         let node = self.to_tnode();
         debug!("insert {node:?}");
         match ctx.db.nodes_world().try_insert(node.clone()) {

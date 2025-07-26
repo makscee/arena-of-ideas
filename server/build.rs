@@ -159,6 +159,16 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &one_types,
     );
     let common_trait = common_node_trait_fns(struct_ident, &one_types, &many_types);
+    let shared_new_fns = shared_new_functions(
+        struct_ident,
+        &all_data_fields,
+        &all_data_types,
+        &one_fields,
+        &one_types,
+        &many_fields,
+        &many_types,
+        true, // is_server = true
+    );
     let one_link_fields_load = one_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
@@ -189,54 +199,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         pub #item
         #common
         impl #struct_ident {
-            pub fn new(
-                ctx: &ReducerContext,
-                owner: u64,
-                #(
-                    #all_data_fields: #all_data_types,
-                )*
-            ) -> Self {
-                let d = Self {
-                    id: ctx.next_id(),
-                    owner,
-                    #(
-                        #all_data_fields,
-                    )*
-                    ..Default::default()
-                };
-                d.insert_self(ctx);
-                d
-            }
-            pub fn new_full(
-                ctx: &ReducerContext,
-                owner: u64,
-                #(
-                    #all_data_fields: #all_data_types,
-                )*
-                #(
-                    #one_fields: #one_types,
-                )*
-                #(
-                    #many_fields: Vec<#many_types>,
-                )*
-            ) -> Self {
-                let d = Self {
-                    id: ctx.next_id(),
-                    owner,
-                    #(
-                        #all_data_fields,
-                    )*
-                    #(
-                        #one_fields: Some(#one_fields),
-                    )*
-                    #(
-                        #many_fields,
-                    )*
-                    ..default()
-                };
-                d.insert_self(ctx);
-                d
-            }
+            #shared_new_fns
             #(
                 pub fn #one_link_fields_set(&mut self, ctx: &ReducerContext, mut #one_fields: #one_types) -> Result<&mut Self, String> {
                     self.id.add_parent(ctx, #one_fields.id)?;
@@ -342,12 +305,12 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
             fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self {
                 let mut d = Self::new(
-                    ctx,
                     owner,
                     #(
                         self.#all_data_fields.clone(),
                     )*
                 );
+                d.insert_self(ctx);
                 d
             }
             fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self {

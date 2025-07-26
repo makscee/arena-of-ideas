@@ -704,55 +704,92 @@ impl BattleEditorPlugin {
         let (team_owner, fusion_id) = {
             let team = match context.get::<NTeam>(team_entity) {
                 Ok(team) => team,
-                Err(_) => return,
+                Err(e) => {
+                    e.cstr().notify_error_op();
+                    panic!("Team not found for entity {team_entity}")
+                }
             };
-            let fusion = team.fusions.iter().find(|f| f.slot == fusion_slot);
+            let fusion = team.fusions_load(context).iter().find_map(|f| {
+                if f.slot == fusion_slot {
+                    Some(f.id())
+                } else {
+                    None
+                }
+            });
             match fusion {
-                Some(f) => (team.owner, f.id),
-                None => return, // Should never happen - teams should always have 5 fusions
+                Some(id) => (team.owner, id),
+                None => panic!("Team {team_entity} fusion not found for slot {fusion_slot}"),
             }
         };
 
-        let fusion_entity = context.entity(fusion_id).unwrap_or(Entity::PLACEHOLDER);
+        let fusion_entity = context.entity(fusion_id).unwrap();
 
-        // Create a new house
-        let house_id = Self::create_node::<NHouse>(context, team_owner);
-        let house_entity = context.entity(house_id).unwrap_or(Entity::PLACEHOLDER);
+        // Create complete house with unit using new_full
+        let unit_stats = NUnitStats::new_full(
+            team_owner, 1, // pwr
+            1, // hp
+        );
 
-        // Create a new unit
-        let unit_id = Self::create_node::<NUnit>(context, team_owner);
-        let unit_entity = context.entity(unit_id).unwrap_or(Entity::PLACEHOLDER);
+        let unit_state = NUnitState::new_full(
+            team_owner, 0, // xp
+            1, // lvl
+            1, // rarity
+        );
 
-        // Set unit properties
-        if let Ok(mut unit) = context.get_mut::<NUnit>(unit_entity) {
-            unit.unit_name = "Default Unit".to_string();
-        }
+        let unit_behavior = NUnitBehavior::new_full(
+            team_owner,
+            vec![], // reactions - empty for now
+        );
 
-        // Get unit for adding to house
-        let unit_clone = context
-            .get::<NUnit>(unit_entity)
-            .cloned()
-            .unwrap_or_default();
+        let unit_representation = NUnitRepresentation::new_full(
+            team_owner,
+            default(), // material
+        );
 
-        // Add unit to house
-        if let Ok(mut house) = context.get_mut::<NHouse>(house_entity) {
-            house.units.push(unit_clone);
-        }
+        let unit_description = NUnitDescription::new_full(
+            team_owner,
+            "Default unit description".to_string(),
+            unit_representation,
+            unit_behavior,
+        );
 
-        // Add unit to fusion
-        if let Ok(mut fusion) = context.get_mut::<NFusion>(fusion_entity) {
-            fusion.units.ids.push(unit_id);
-        }
+        let unit = NUnit::new_full(
+            team_owner,
+            "Default Unit".to_string(),
+            unit_description,
+            unit_stats,
+            unit_state,
+        );
 
-        // Update team fusions list
-        let fusion_id = context.id(fusion_entity).unwrap_or(0);
-        let updated_fusion = context.get::<NFusion>(fusion_entity).cloned().ok();
-        if let (Ok(mut team), Some(fusion)) =
-            (context.get_mut::<NTeam>(team_entity), updated_fusion)
+        let house_color = NHouseColor::new_full(
+            team_owner,
+            default(), // color
+        );
+        let house = NHouse::new_full(
+            team_owner,
+            "Default House".to_string(),
+            house_color,
+            NActionAbility::new(team_owner, "Default Action".to_string()),
+            NStatusAbility::new(team_owner, "Default Status".to_string()),
+            vec![unit],
+        );
+
+        let house_entity = context.world_mut().unwrap().spawn_empty().id();
+        house.clone().unpack_entity(context, house_entity).unwrap();
+        context
+            .link_parent_child_entity(team_entity, house_entity)
+            .unwrap();
+        if let Ok(unit) = context
+            .first_child::<NUnit>(context.id(house_entity).unwrap())
+            .map(|u| u.id)
         {
-            if let Some(fusion_in_team) = team.fusions.iter_mut().find(|f| f.id == fusion_id) {
-                *fusion_in_team = fusion;
-            }
+            context
+                .get_mut::<NFusion>(fusion_entity)
+                .unwrap()
+                .units
+                .ids
+                .push(unit);
+            context.link_parent_child(unit, fusion_id).unwrap();
         }
 
         op(|world| {

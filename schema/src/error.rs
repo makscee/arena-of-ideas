@@ -29,7 +29,7 @@ pub enum ExpressionErrorVariants {
     ValueNotFound(VarName),
     #[error("{0}")]
     Custom(String),
-    #[error("Entity#{0} {1} not linked to id")]
+    #[error("Entity#{0}_{1} not linked to id")]
     // provide Entity on bevy 0.16 from nostd dependency
     IdNotFound(u32, u32),
     #[error("Id#{0} not liked to Entity")]

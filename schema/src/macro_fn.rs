@@ -128,6 +128,14 @@ pub fn strings_conversions(
     parent_fields: &Vec<Ident>,
     parent_types: &Vec<Type>,
 ) -> TokenStream {
+    let shared_unpack = shared_unpack_id_fix(
+        one_fields,
+        one_types,
+        many_fields,
+        many_types,
+        parent_fields,
+        parent_types,
+    );
     quote! {
         fn pack_fill(&self, pn: &mut PackedNodes) {
             let kind = self.kind().to_string();
@@ -156,38 +164,7 @@ pub fn strings_conversions(
             self.pack_fill(&mut pn);
             pn
         }
-        fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
-            let NodeData { kind, data } = pn.get(id)?;
-            if !Self::kind_s().to_string().eq(kind) {
-                panic!(
-                    "Wrong node#{id} kind, expected {} got {}",
-                    Self::kind_s(),
-                    kind
-                );
-            }
-            let mut d = Self::default();
-            d.id = id;
-            if let Err(e) = d.inject_data(data) {
-                panic!("Unpack deserialize from data err: {e} data: {data}");
-            }
-            #(
-                d.#one_fields = pn
-                    .kind_parents(id, NodeKind::#one_types.as_ref())
-                    .get(0)
-                    .and_then(|id| #one_types::unpack_id(*id, pn));
-            )*
-            #(
-                d.#many_fields = pn
-                    .kind_children(id, NodeKind::#many_types.as_ref())
-                    .into_iter()
-                    .filter_map(|id| #many_types::unpack_id(id, pn))
-                    .collect();
-            )*
-            #(
-                d.#parent_fields = parent_links(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
-            )*
-            Some(d)
-        }
+        #shared_unpack
         fn reassign_ids(&mut self, next_id: &mut u64) {
             self.set_id(*next_id);
             *next_id += 1;
@@ -305,6 +282,62 @@ pub fn common_node_fns(
         }
     }
 }
+pub fn shared_new_functions(
+    _struct_ident: &Ident,
+    all_data_fields: &Vec<Ident>,
+    all_data_types: &Vec<Type>,
+    one_fields: &Vec<Ident>,
+    one_types: &Vec<TokenStream>,
+    many_fields: &Vec<Ident>,
+    many_types: &Vec<TokenStream>,
+    _is_server: bool,
+) -> TokenStream {
+    quote! {
+        pub fn new(
+            owner: u64,
+            #(
+                #all_data_fields: #all_data_types,
+            )*
+        ) -> Self {
+            Self {
+                id: 0,
+                owner,
+                #(
+                    #all_data_fields,
+                )*
+                ..Default::default()
+            }
+        }
+        pub fn new_full(
+            owner: u64,
+            #(
+                #all_data_fields: #all_data_types,
+            )*
+            #(
+                #one_fields: #one_types,
+            )*
+            #(
+                #many_fields: Vec<#many_types>,
+            )*
+        ) -> Self {
+            Self {
+                id: 0,
+                owner,
+                #(
+                    #all_data_fields,
+                )*
+                #(
+                    #one_fields: Some(#one_fields),
+                )*
+                #(
+                    #many_fields,
+                )*
+                ..default()
+            }
+        }
+    }
+}
+
 pub fn common_node_trait_fns(
     _struct_ident: &Ident,
     one_types: &Vec<TokenStream>,
@@ -324,6 +357,55 @@ pub fn common_node_trait_fns(
                     NodeKind::#many_types,
                 )*
             ].into()
+        }
+    }
+}
+
+pub fn shared_unpack_id_fix(
+    one_fields: &Vec<Ident>,
+    one_types: &Vec<TokenStream>,
+    many_fields: &Vec<Ident>,
+    many_types: &Vec<TokenStream>,
+    parent_fields: &Vec<Ident>,
+    parent_types: &Vec<Type>,
+) -> TokenStream {
+    quote! {
+        fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
+            let NodeData { kind, data } = pn.get(id)?;
+            if !Self::kind_s().to_string().eq(kind) {
+                panic!(
+                    "Wrong node#{id} kind, expected {} got {}",
+                    Self::kind_s(),
+                    kind
+                );
+            }
+            let mut d = Self::default();
+            d.id = if id == 0 {
+                // Will be assigned proper ID when unpacked to context
+                0
+            } else {
+                id
+            };
+            if let Err(e) = d.inject_data(data) {
+                panic!("Unpack deserialize from data err: {e} data: {data}");
+            }
+            #(
+                d.#one_fields = pn
+                    .kind_parents(id, NodeKind::#one_types.as_ref())
+                    .get(0)
+                    .and_then(|id| #one_types::unpack_id(*id, pn));
+            )*
+            #(
+                d.#many_fields = pn
+                    .kind_children(id, NodeKind::#many_types.as_ref())
+                    .into_iter()
+                    .filter_map(|id| #many_types::unpack_id(id, pn))
+                    .collect();
+            )*
+            #(
+                d.#parent_fields = parent_links(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
+            )*
+            Some(d)
         }
     }
 }

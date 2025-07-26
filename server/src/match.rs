@@ -305,9 +305,9 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
         let unit_id = unit.clone(ctx, pid, &mut default()).id;
         let mut unit = unit_id.to_node::<NUnit>(ctx)?;
         unit_id.add_parent(ctx, house_id)?;
-        NUnitState::new(ctx, pid, 0, 1, 0)
-            .id
-            .add_child(ctx, unit_id)?;
+        let mut unit_state = NUnitState::new(pid, 0, 1, 0);
+        unit_state.insert_self(ctx);
+        unit_state.id.add_child(ctx, unit_id)?;
         let fusion = m.get_slot_fusion(ctx, slot)?;
         fusion.units_add(ctx, unit_id)?;
         fusion.action_limit = fusion
@@ -420,8 +420,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
     if team.fusions.len() >= ctx.global_settings().team_slots as usize {
         return Err("Team size limit reached".into());
     }
-    let fusion = NFusion::new(
-        ctx,
+    let mut fusion = NFusion::new(
         pid,
         default(),
         i32::MAX,
@@ -433,6 +432,7 @@ fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
         default(),
         default(),
     );
+    fusion.insert_self(ctx);
     fusion.id.add_parent(ctx, team.id())?;
     team.fusions.push(fusion);
     for (i, fusion) in team
@@ -613,22 +613,15 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         m.delete_with_components(ctx);
     }
     let gs = ctx.global_settings();
-    let mut m = NMatch::new(
-        ctx,
-        pid,
-        gs.match_g.initial,
-        0,
-        0,
-        3,
-        true,
-        default(),
-        default(),
-    );
+    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 0, 3, true, default(), default());
+    m.insert_self(ctx);
     m.id.add_child(ctx, player.id)?;
-    let mut team = NTeam::new(ctx, pid);
+    let mut team = NTeam::new(pid);
+    team.insert_self(ctx);
     team.id.add_child(ctx, m.id)?;
     for i in 0..ctx.global_settings().team_slots as i32 {
-        let fusion = NFusion::new(ctx, pid, default(), i, 0, 0, 0, 1, 0, default(), default());
+        let mut fusion = NFusion::new(pid, default(), i, 0, 0, 0, 1, 0, default(), default());
+        fusion.insert_self(ctx);
         fusion.id.add_parent(ctx, team.id())?;
         team.fusions.push(fusion);
     }
@@ -653,7 +646,8 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {
         pool.id
     } else {
-        let new_pool = NFloorPool::new(ctx, ID_ARENA, floor);
+        let mut new_pool = NFloorPool::new(ID_ARENA, floor);
+        new_pool.insert_self(ctx);
         new_pool.id.add_parent(ctx, arena.id)?;
         let id = new_pool.id;
         arena.floor_pools.push(new_pool);
@@ -666,20 +660,20 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     {
         let player_team_id = player_team.clone_ids_remap(ctx)?.id;
         player_team_id.add_parent(ctx, pool_id)?;
-        NBattle::new(
-            ctx,
+        let mut battle = NBattle::new(
             pid,
             player_team_id,
             team.id,
             ctx.timestamp.to_micros_since_unix_epoch() as u64,
             default(),
             None,
-        )
-        .id
-        .add_parent(ctx, m_id)?;
+        );
+        battle.insert_self(ctx);
+        battle.id.add_parent(ctx, m_id)?;
     } else {
         let _ = arena.floor_bosses_load(ctx);
-        let floor_boss = NFloorBoss::new(ctx, ID_ARENA, floor);
+        let mut floor_boss = NFloorBoss::new(ID_ARENA, floor);
+        floor_boss.insert_self(ctx);
         floor_boss.id.add_parent(ctx, arena.id)?;
         player_team
             .clone_ids_remap(ctx)?

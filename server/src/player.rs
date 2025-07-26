@@ -11,12 +11,14 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.sender);
-    let mut player = NPlayer::new(ctx, 0, name);
-    player.player_data_set(ctx, NPlayerData::new(ctx, player.id, pass_hash, false, 0))?;
-    player.identity_set(
-        ctx,
-        NPlayerIdentity::new(ctx, player.id, Some(ctx.sender.to_string())),
-    )?;
+    let mut player = NPlayer::new(0, name);
+    player.insert_self(ctx);
+    let mut player_data = NPlayerData::new(player.id, pass_hash, false, 0);
+    player_data.insert_self(ctx);
+    player.player_data_set(ctx, player_data)?;
+    let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string()));
+    identity.insert_self(ctx);
+    player.identity_set(ctx, identity)?;
     Ok(())
 }
 
@@ -31,10 +33,9 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.sender);
-        player.identity_set(
-            ctx,
-            NPlayerIdentity::new(ctx, player.id, Some(ctx.sender.to_string())),
-        )?;
+        let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string()));
+        identity.insert_self(ctx);
+        player.identity_set(ctx, identity)?;
         player.login(ctx)?.save(ctx);
         Ok(())
     }

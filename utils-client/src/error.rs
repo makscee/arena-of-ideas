@@ -1,4 +1,4 @@
-use schema::{type_name_short, ExpressionErrorVariants};
+use schema::{ExpressionErrorVariants, type_name_short};
 
 use super::*;
 
