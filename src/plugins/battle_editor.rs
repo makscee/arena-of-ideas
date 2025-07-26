@@ -395,29 +395,40 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            ui.heading(format!("Fusion: {}", id));
-            ui.separator();
-
             if let Ok(mut fusion) = context.get::<NFusion>(context.entity(id)?).cloned() {
                 let mut add_unit: Option<u64> = None;
                 let mut remove_unit: Option<u64> = None;
-                if fusion.show_editor(context, ui)? {
-                    changed = true;
-                }
-
-                ui.separator();
-                ui.heading("Units");
-
                 let units = fusion.units(context)?;
-                ui.label(format!("Current units: {}", units.len()));
+                for (slot_idx, unit) in units.iter().enumerate() {
+                    ui.group(|ui| {
+                        ui.vertical(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.strong(format!("Unit {}", unit.id));
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        if ui.button("Remove").clicked() {
+                                            remove_unit = Some(unit.id);
+                                        }
+                                    },
+                                );
+                            });
 
-                for unit in &units {
-                    ui.horizontal(|ui| {
-                        ui.label(format!("Unit: {}", unit.id));
-                        if ui.button("Remove").clicked() {
-                            remove_unit = Some(unit.id);
-                        }
+                            ui.separator();
+                            match fusion.render_unit_range_selector(ui, context, unit, slot_idx) {
+                                Ok(range_changed) => {
+                                    if range_changed {
+                                        changed = true;
+                                    }
+                                }
+                                Err(e) => {
+                                    e.cstr().notify_error_op();
+                                }
+                            }
+                        });
                     });
+
+                    ui.add_space(8.0);
                 }
 
                 ui.separator();

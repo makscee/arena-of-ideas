@@ -312,6 +312,133 @@ impl NFusion {
         .inner?;
         Ok(changed)
     }
+
+    // Extract range selector functionality for reuse
+    pub fn render_unit_range_selector(
+        &mut self,
+        ui: &mut Ui,
+        context: &Context,
+        unit: &NUnit,
+        slot_idx: usize,
+    ) -> Result<bool, ExpressionError> {
+        let mut changed = false;
+
+        if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id) {
+            let action_range = self.get_action_range(slot_idx);
+            let max_actions = Self::get_max_actions(&behavior, &self.trigger);
+
+            if max_actions > 0 {
+                let (current_start, current_len) = action_range;
+
+                let range_selector = RangeSelector::new(max_actions)
+                    .range(current_start, current_len)
+                    .border_thickness(3.0)
+                    .drag_threshold(12.0)
+                    .show_drag_hints(false)
+                    .show_debug_info(false)
+                    .id(egui::Id::new(format!("fusion_range_selector_{}", unit.id)));
+
+                let (_, range_changed) =
+                    range_selector.ui(ui, context, |item_ui, ctx, action_idx, is_in_range| {
+                        if let Some(reaction) =
+                            behavior.reactions.get(self.trigger.trigger as usize)
+                        {
+                            if let Some(action) = reaction.actions.get(action_idx) {
+                                let vctx = ViewContext::new(item_ui).non_interactible(true);
+                                if is_in_range {
+                                    Self::render_action_normal(item_ui, ctx, unit, action, vctx);
+                                } else {
+                                    Self::render_action_greyed(item_ui, ctx, unit, action, vctx);
+                                }
+                            }
+                        }
+                        Ok(())
+                    });
+
+                if let Some((new_start, new_length)) = range_changed {
+                    // Ensure behavior vector has the correct size
+                    if let Ok(units) = self.units(context) {
+                        if self.behavior.len() < units.len() {
+                            self.behavior.resize(
+                                units.len(),
+                                UnitActionRef {
+                                    trigger: 0,
+                                    start: 0,
+                                    length: 0,
+                                },
+                            );
+                        }
+
+                        if let Some(action_ref) = self.behavior.get_mut(slot_idx) {
+                            action_ref.start = new_start;
+                            action_ref.length = new_length;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(changed)
+    }
+
+    fn get_action_range(&self, slot_idx: usize) -> (u8, u8) {
+        let current_action_ref = self.behavior.get(slot_idx);
+        let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
+        let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
+        (current_start, current_len)
+    }
+
+    fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
+        behavior
+            .reactions
+            .get(trigger.trigger as usize)
+            .map(|reaction| reaction.actions.len() as u8)
+            .unwrap_or(0)
+    }
+
+    fn render_action_normal(
+        ui: &mut Ui,
+        context: &Context,
+        unit: &NUnit,
+        action: &Action,
+        vctx: ViewContext,
+    ) {
+        if let Ok(entity) = context.entity(unit.id) {
+            context
+                .with_owner_ref(entity, |context| {
+                    action.title_cstr(vctx, context).label_w(ui);
+                    Ok(())
+                })
+                .ui(ui);
+        }
+    }
+
+    fn render_action_greyed(
+        ui: &mut Ui,
+        context: &Context,
+        unit: &NUnit,
+        action: &Action,
+        vctx: ViewContext,
+    ) {
+        let old_style = ui.visuals().clone();
+        ui.visuals_mut().override_text_color = Some(egui::Color32::GRAY);
+
+        if let Ok(entity) = context.entity(unit.id) {
+            context
+                .with_owner_ref(entity, |context| {
+                    action
+                        .title_cstr(vctx, context)
+                        .as_label_alpha(0.5, ui.style())
+                        .wrap()
+                        .ui(ui);
+                    Ok(())
+                })
+                .ui(ui);
+        }
+
+        *ui.visuals_mut() = old_style;
+    }
     pub fn slots_editor(
         team: Entity,
         context: &Context,
