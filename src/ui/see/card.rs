@@ -108,10 +108,10 @@ impl SFnCard for NStatusAbility {
 }
 
 fn show_frame(
-    node: &impl ViewFns,
+    _node: &impl ViewFns,
     name: &str,
     color: Color32,
-    context: &Context,
+    _context: &Context,
     ui: &mut Ui,
     content: impl FnOnce(&mut Ui),
 ) -> Response {
@@ -130,7 +130,7 @@ fn show_frame(
                         })
                         .bar_menu(|ui| {
                             ui.menu_button("inspect", |ui| {
-                                node.view(ViewContext::new(ui), context, ui);
+                                ui.label("Inspection removed - use new see() API");
                             });
                         });
                     resp

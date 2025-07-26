@@ -88,16 +88,16 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
         self
     }
 
-    pub fn ui(mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> CtxBtnResponse<T>
+    pub fn ui(mut self, ui: &mut Ui) -> CtxBtnResponse<T>
     where
-        T: ViewFns,
+        T: SFnTitle,
     {
         let mut delete_action = None;
         let mut paste_action = None;
 
         let title_response = ui
             .horizontal(|ui| {
-                let title_response = self.item.view_title(vctx, context, ui);
+                let title_response = self.item.see_title_cstr().button(ui);
 
                 let circle_size = 12.0;
                 let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -203,15 +203,22 @@ impl<T> CtxBtnResponse<T> {
     }
 }
 
-pub trait CtxBtn: ViewFns + Sized + Clone {
-    fn ctxbtn(&self) -> CtxBtnBuilder<Self> {
-        CtxBtnBuilder::new(self)
+impl<'a, T: Clone + SFnTitle> SeeBuilder<'a, T> {
+    pub fn ctxbtn(self) -> CtxBtnBuilder<'a, T> {
+        CtxBtnBuilder::new(self.data())
     }
 }
 
-impl<T: ViewFns + Clone> CtxBtn for T {}
+impl<'a, T: NodeExt + Clone + SFnTitle> SeeBuilder<'a, T> {
+    pub fn node_ctxbtn(self) -> CtxBtnBuilder<'a, T>
+    where
+        T: StringData + Default,
+    {
+        CtxBtnBuilder::new(self.data()).with_node_defaults()
+    }
+}
 
-impl<'a, T: NodeViewFns + Clone> CtxBtnBuilder<'a, T> {
+impl<'a, T: NodeExt + Clone> CtxBtnBuilder<'a, T> {
     pub fn with_node_defaults(self) -> Self
     where
         T: StringData + Default,
@@ -219,14 +226,3 @@ impl<'a, T: NodeViewFns + Clone> CtxBtnBuilder<'a, T> {
         self.add_copy().with_paste().with_delete()
     }
 }
-
-pub trait NodeCtxBtn: NodeViewFns + Sized + Clone {
-    fn node_ctxbtn(&self) -> CtxBtnBuilder<Self>
-    where
-        Self: StringData + Default,
-    {
-        CtxBtnBuilder::new(self).with_node_defaults()
-    }
-}
-
-impl<T: NodeViewFns + Clone + StringData + Default> NodeCtxBtn for T {}

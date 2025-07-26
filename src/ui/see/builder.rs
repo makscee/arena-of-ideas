@@ -9,6 +9,14 @@ impl<'a, T> SeeBuilder<'a, T> {
     pub fn new(data: &'a T, ctx: &'a Context<'a>) -> Self {
         Self { data, ctx }
     }
+
+    pub fn data(&self) -> &'a T {
+        self.data
+    }
+
+    pub fn context(&self) -> &'a Context<'a> {
+        self.ctx
+    }
 }
 
 impl<'a, T: SFnTitle> SeeBuilder<'a, T> {

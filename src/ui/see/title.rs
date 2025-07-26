@@ -45,3 +45,75 @@ impl SFnTitle for NStatusAbility {
         self.status_name.cstr()
     }
 }
+
+impl SFnTitle for NFusion {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NHouseColor {
+    fn see_title_cstr(&self) -> Cstr {
+        self.color.cstr()
+    }
+}
+
+impl SFnTitle for NActionDescription {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NActionEffect {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NStatusDescription {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NStatusBehavior {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NStatusRepresentation {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NUnitStats {
+    fn see_title_cstr(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for NUnitState {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NUnitDescription {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NUnitRepresentation {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}
+
+impl SFnTitle for NUnitBehavior {
+    fn see_title_cstr(&self) -> Cstr {
+        self.kind().cstr()
+    }
+}

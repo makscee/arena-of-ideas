@@ -514,7 +514,7 @@ impl BattleEditorPlugin {
         changed: &mut bool,
     ) -> Option<u64>
     where
-        T: Node + 'static + View + ViewFns + SFnInfo,
+        T: Node + 'static + SFnInfo + SFnTitle,
     {
         let mut parent_id = None;
         if let Ok(parent) = context.first_parent::<T>(child_id) {
@@ -528,11 +528,12 @@ impl BattleEditorPlugin {
                 let mut was_deleted = false;
 
                 ui.horizontal(|ui| {
-                    let btn_response = parent_node.ctxbtn().add_copy().with_delete().ui(
-                        ViewContext::new(ui),
-                        context,
-                        ui,
-                    );
+                    let btn_response = parent_node
+                        .see(context)
+                        .ctxbtn()
+                        .add_copy()
+                        .with_delete()
+                        .ui(ui);
 
                     parent_node.see(context).info().label(ui);
 
@@ -581,7 +582,7 @@ impl BattleEditorPlugin {
         action_callback: impl Fn(u64) -> BattleEditorAction,
     ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
     where
-        T: Node + 'static + View + ViewFns + Component<Mutability = Mutable> + SFnInfo,
+        T: Node + 'static + Component<Mutability = Mutable> + SFnInfo + SFnTitle,
     {
         let mut changed = false;
         let mut action = None;
@@ -591,11 +592,13 @@ impl BattleEditorPlugin {
         let mut pasted: Option<(Entity, T)> = None;
         for node in children {
             ui.horizontal(|ui| {
-                let btn_response = node.ctxbtn().add_copy().with_paste().with_delete().ui(
-                    ViewContext::new(ui),
-                    context,
-                    ui,
-                );
+                let btn_response = node
+                    .see(context)
+                    .ctxbtn()
+                    .add_copy()
+                    .with_paste()
+                    .with_delete()
+                    .ui(ui);
                 node.see(context).info().label(ui);
                 if btn_response.clicked() {
                     action = Some(action_callback(node.id()));
