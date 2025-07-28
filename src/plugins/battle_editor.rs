@@ -58,10 +58,13 @@ impl BattleEditorPlugin {
 
         // Set up slot actions
         if let Some(mut battle_data) = world.remove_resource::<BattleData>() {
-            battle_data.slot_actions = vec![(
-                "Add default unit".to_string(),
-                Self::handle_add_default_unit,
-            )];
+            battle_data.slot_actions = vec![
+                (
+                    "Add default unit".to_string(),
+                    Self::handle_add_default_unit,
+                ),
+                ("Edit fusion".to_string(), Self::handle_edit_fusion),
+            ];
             world.insert_resource(battle_data);
         }
 
@@ -446,20 +449,22 @@ impl BattleEditorPlugin {
                 let team = context.first_parent::<NTeam>(id)?;
                 let houses = team.houses_load(context);
 
-                for house in houses {
-                    ui.collapsing(format!("House: {}", house.house_name), |ui| {
-                        let house_units = house.units_load(context);
-                        for unit in house_units {
-                            if !units.iter().any(|u| u.id == unit.id) {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("Unit: {}", unit.id));
-                                    if ui.button("Add to Fusion").clicked() {
-                                        add_unit = Some(unit.id);
-                                    }
-                                });
+                for (idx, house) in houses.iter().enumerate() {
+                    CollapsingHeader::new(&house.house_name)
+                        .id_salt(idx)
+                        .show(ui, |ui| {
+                            let house_units = house.units_load(context);
+                            for unit in house_units {
+                                if !units.iter().any(|u| u.id == unit.id) {
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("Unit: {}", unit.id));
+                                        if ui.button("Add to Fusion").clicked() {
+                                            add_unit = Some(unit.id);
+                                        }
+                                    });
+                                }
                             }
-                        }
-                    });
+                        });
                 }
 
                 if let Some(unit_id) = add_unit {
@@ -794,6 +799,40 @@ impl BattleEditorPlugin {
 
         op(|world| {
             Self::save_team_changes(world);
+        });
+    }
+
+    fn handle_edit_fusion(slot: i32, team_entity: Entity, context: &mut Context) {
+        let fusion_slot = slot.abs() - 1;
+
+        let fusion_id = {
+            let team = match context.get::<NTeam>(team_entity) {
+                Ok(team) => team,
+                Err(e) => {
+                    e.cstr().notify_error_op();
+                    panic!("Team not found for entity {team_entity}")
+                }
+            };
+            let fusion = team.fusions_load(context).iter().find_map(|f| {
+                if f.slot == fusion_slot {
+                    Some(f.id())
+                } else {
+                    None
+                }
+            });
+            match fusion {
+                Some(id) => id,
+                None => panic!("Team {team_entity} fusion not found for slot {fusion_slot}"),
+            }
+        };
+
+        op(move |world| {
+            if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
+                if let Some(current) = state.current_node.clone() {
+                    state.navigation_stack.push(current);
+                }
+                state.current_node = Some(BattleEditorNode::Fusion(fusion_id));
+            }
         });
     }
 }
