@@ -402,88 +402,101 @@ impl BattleEditorPlugin {
         ui: &mut Ui,
         world: &mut World,
     ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
-        let action = None;
+        let mut action = None;
         let mut changed = false;
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            if let Ok(mut fusion) = context.get::<NFusion>(context.entity(id)?).cloned() {
-                let mut add_unit: Option<u64> = None;
-                let mut remove_unit: Option<u64> = None;
-                let units = fusion.units(context)?;
-                for (slot_idx, unit) in units.iter().enumerate() {
-                    ui.group(|ui| {
-                        ui.vertical(|ui| {
-                            ui.horizontal(|ui| {
-                                ui.strong(format!("Unit {}", unit.id));
-                                ui.with_layout(
-                                    egui::Layout::right_to_left(egui::Align::Center),
-                                    |ui| {
-                                        if ui.button("Remove").clicked() {
-                                            remove_unit = Some(unit.id);
-                                        }
-                                    },
-                                );
-                            });
+            if Self::show_node_editor::<NFusion>(id, context, ui)? {
+                changed = true;
+            }
+            ui.separator();
 
-                            ui.separator();
-                            match fusion.render_unit_range_selector(ui, context, unit, slot_idx) {
-                                Ok(range_changed) => {
-                                    if range_changed {
-                                        changed = true;
-                                    }
+            ui.heading("Units in Fusion");
+
+            let fusion = context.get::<NFusion>(context.entity(id)?)?;
+            let fusion_unit_ids = fusion.units.ids.clone();
+            let mut units_to_remove = Vec::new();
+
+            for unit_id in fusion_unit_ids {
+                if let Ok(unit) = context.get::<NUnit>(context.entity(unit_id)?) {
+                    let mut remove_clicked = false;
+
+                    if Self::show_node_with_action_button(
+                        unit,
+                        context,
+                        ui,
+                        Some(("Remove", &mut remove_clicked)),
+                    ) {
+                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
+                            unit_id,
+                        )));
+                    }
+
+                    if remove_clicked {
+                        units_to_remove.push(unit_id);
+                    }
+                }
+            }
+
+            for unit_id in units_to_remove {
+                context.unlink_parent_child(unit_id, id).notify_error_op();
+                if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
+                    fusion.units.ids.retain(|&u| u != unit_id);
+                    changed = true;
+                }
+            }
+
+            ui.separator();
+            ui.heading("Available Units from Houses");
+
+            let team = context.first_parent::<NTeam>(id)?;
+            let houses = team.houses_load(context);
+            let fusion = context.get::<NFusion>(context.entity(id)?)?;
+            let fusion_unit_ids = fusion.units.ids.clone();
+            let mut add_unit: Option<u64> = None;
+
+            // Collect all house units upfront to avoid borrowing issues
+            let mut all_house_units = Vec::new();
+            for house in &houses {
+                let house_units: Vec<_> = house.units_load(context).into_iter().cloned().collect();
+                all_house_units.push((house.house_name.clone(), house_units));
+            }
+
+            for (idx, (house_name, house_units)) in all_house_units.iter().enumerate() {
+                CollapsingHeader::new(house_name)
+                    .id_salt(idx)
+                    .show(ui, |ui| {
+                        for unit in house_units {
+                            if !fusion_unit_ids.contains(&unit.id()) {
+                                let unit_id = unit.id();
+                                let mut add_clicked = false;
+
+                                if Self::show_node_with_action_button(
+                                    unit,
+                                    context,
+                                    ui,
+                                    Some(("Add", &mut add_clicked)),
+                                ) {
+                                    action = Some(BattleEditorAction::Navigate(
+                                        BattleEditorNode::Unit(unit_id),
+                                    ));
                                 }
-                                Err(e) => {
-                                    e.cstr().notify_error_op();
+
+                                if add_clicked {
+                                    add_unit = Some(unit_id);
                                 }
                             }
-                        });
+                        }
                     });
+            }
 
-                    ui.add_space(8.0);
-                }
-
-                ui.separator();
-                ui.heading("Add Units from Houses");
-
-                let team = context.first_parent::<NTeam>(id)?;
-                let houses = team.houses_load(context);
-
-                for (idx, house) in houses.iter().enumerate() {
-                    CollapsingHeader::new(&house.house_name)
-                        .id_salt(idx)
-                        .show(ui, |ui| {
-                            let house_units = house.units_load(context);
-                            for unit in house_units {
-                                if !units.iter().any(|u| u.id == unit.id) {
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("Unit: {}", unit.id));
-                                        if ui.button("Add to Fusion").clicked() {
-                                            add_unit = Some(unit.id);
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                }
-
-                if let Some(unit_id) = add_unit {
-                    context.link_parent_child(unit_id, id).notify_error_op();
+            if let Some(unit_id) = add_unit {
+                context.link_parent_child(unit_id, id).notify_error_op();
+                if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
                     fusion.units.ids.push(unit_id);
                     fusion.action_limit = 100;
                     changed = true;
-                }
-
-                if let Some(unit_id) = remove_unit {
-                    fusion.remove_unit(unit_id)?;
-                    context
-                        .unlink_parent_child(unit_id, fusion.id)
-                        .notify_error_op();
-                    changed = true;
-                }
-                if changed {
-                    let entity = fusion.entity();
-                    fusion.unpack_entity(context, entity).notify_error_op();
                 }
             }
 
@@ -590,6 +603,35 @@ impl BattleEditorPlugin {
         parent_id
     }
 
+    fn show_node_with_action_button<T>(
+        node: &T,
+        context: &Context,
+        ui: &mut Ui,
+        action_button: Option<(&str, &mut bool)>,
+    ) -> bool
+    where
+        T: Node + SFnInfo + SFnTitle,
+    {
+        let mut navigate_clicked = false;
+
+        ui.horizontal(|ui| {
+            if let Some((button_text, button_clicked)) = action_button {
+                if ui.button(button_text).clicked() {
+                    *button_clicked = true;
+                }
+            }
+
+            let btn_response = node.see(context).node_ctxbtn_full().ui(ui);
+            node.see(context).info().label(ui);
+
+            if btn_response.clicked() {
+                navigate_clicked = true;
+            }
+        });
+
+        navigate_clicked
+    }
+
     fn show_children_node_editors<T>(
         parent_id: u64,
         context: &mut Context,
@@ -605,8 +647,10 @@ impl BattleEditorPlugin {
 
         let children = context.collect_children_components::<T>(parent_id)?;
         let mut children_to_delete = Vec::new();
+
         let mut pasted: Option<(Entity, T)> = None;
         let mut node_full_pasted: Option<(Entity, T)> = None;
+
         for node in children {
             ui.horizontal(|ui| {
                 let btn_response = node.see(context).node_ctxbtn_full().ui(ui);
@@ -628,16 +672,19 @@ impl BattleEditorPlugin {
                 }
             });
         }
+
         if let Some((entity, data)) = pasted {
-            let mut node = context.get_mut::<T>(entity).unwrap();
-            let id = node.id();
-            let owner = node.owner();
-            *node = data;
-            node.set_id(id);
-            node.set_owner(owner);
-            node.set_entity(entity);
-            changed = true;
+            if let Ok(mut node_mut) = context.get_mut::<T>(entity) {
+                let id = node_mut.id();
+                let owner = node_mut.owner();
+                *node_mut = data;
+                node_mut.set_id(id);
+                node_mut.set_owner(owner);
+                node_mut.set_entity(entity);
+                changed = true;
+            }
         }
+
         if let Some((entity, node_full_data)) = node_full_pasted {
             if let Err(e) = node_full_data.unpack_entity(context, entity) {
                 error!("Failed to unpack node: {}", e);
@@ -645,10 +692,12 @@ impl BattleEditorPlugin {
                 changed = true;
             }
         }
+
         for entity in children_to_delete {
             context.despawn(entity).log();
             changed = true;
         }
+
         if ui
             .button(format!("➕ Add {}", T::kind_s().cstr()))
             .clicked()
