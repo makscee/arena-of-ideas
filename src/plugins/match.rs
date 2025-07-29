@@ -740,7 +740,7 @@ impl MatchPlugin {
             .text_fn(ui, |(source_fusion_id, _, unit_id)| {
                 if let Ok(source_unit) = context.get_by_id::<NUnit>(*unit_id) {
                     if source_unit.unit_name == unit.unit_name {
-                        format!("[green]Stack {} (merge XP + level up)", unit.unit_name)
+                        format!("Stack {} (merge XP + level up)", unit.unit_name)
                     } else if *source_fusion_id == fusion.id {
                         format!("Swap with {}", unit.unit_name)
                     } else {
@@ -764,7 +764,7 @@ impl MatchPlugin {
                         if let Ok(shop_unit) = context.get_by_id::<NUnit>(slot.node_id) {
                             if shop_unit.unit_name == unit.unit_name {
                                 format!(
-                                    "[green]Stack {} [yellow -{}g] (merge XP + level up)",
+                                    "Stack {} [yellow -{}g] (merge XP + level up)",
                                     unit.unit_name, slot.price
                                 )
                             } else {
@@ -893,7 +893,7 @@ impl MatchPlugin {
                 if let Some(payload) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
                     .id(format!("unit_buy_empty_slot_{}_{}", fusion_idx, slot_idx))
                     .text_fn(ui, |(_, slot)| {
-                        format!("[green]Play unit [yellow -{}g]", slot.price)
+                        format!("Play unit [yellow -{}g]", slot.price)
                     })
                     .ui(ui)
                 {

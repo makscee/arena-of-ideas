@@ -498,58 +498,6 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_buy_fusion(ctx: &ReducerContext) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let pid = player.id;
-    let team = player.active_match_load(ctx)?.team_load(ctx)?;
-    let _ = team.fusions_load(ctx);
-    if team.fusions.len() >= ctx.global_settings().team_slots as usize {
-        return Err("Team size limit reached".into());
-    }
-    let mut fusion = NFusion::new(
-        pid,
-        default(),
-        i32::MAX,
-        0,
-        0,
-        0,
-        1,
-        0,
-        default(),
-        default(),
-    );
-    fusion.insert_self(ctx);
-    fusion.id.add_parent(ctx, team.id())?;
-    team.fusions.push(fusion);
-    for (i, fusion) in team
-        .fusions
-        .iter_mut()
-        .sorted_by_key(|f| f.slot)
-        .enumerate()
-    {
-        fusion.slot = i as i32;
-    }
-    player.save(ctx);
-    Ok(())
-}
-
-#[reducer]
-fn match_edit_fusion(ctx: &ReducerContext, fusion: TNode) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    let fusion: NFusion = fusion.to_node()?;
-    let team = m.team_load(ctx)?;
-    for f in team.fusions_load(ctx)? {
-        if f.slot == fusion.slot {
-            *f = fusion;
-            break;
-        }
-    }
-    player.save(ctx);
-    Ok(())
-}
-
-#[reducer]
 fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
@@ -581,31 +529,6 @@ fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> 
     );
 
     Ok(())
-}
-
-#[reducer]
-fn match_remove_fusion_unit(
-    ctx: &ReducerContext,
-    fusion_id: u64,
-    unit_id: u64,
-) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    let fusion = m
-        .team_load(ctx)?
-        .fusions_load(ctx)?
-        .into_iter()
-        .find(|f| f.id == fusion_id)
-        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
-
-    let units = fusion.units_load(ctx)?;
-    if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
-        if unit_index < fusion.behavior.len() {
-            fusion.behavior.remove(unit_index);
-        }
-    }
-
-    fusion.units_remove(ctx, unit_id)
 }
 
 #[reducer]

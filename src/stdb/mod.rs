@@ -26,17 +26,14 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_add_fusion_unit_reducer;
 pub mod match_buy_fusion_lvl_reducer;
-pub mod match_buy_fusion_reducer;
 pub mod match_buy_reducer;
 pub mod match_complete_reducer;
-pub mod match_edit_fusion_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
 pub mod match_move_unit_between_fusions_reducer;
 pub mod match_play_house_reducer;
 pub mod match_play_unit_allow_stack_reducer;
 pub mod match_play_unit_reducer;
-pub mod match_remove_fusion_unit_reducer;
 pub mod match_reorder_fusion_units_reducer;
 pub mod match_reorder_fusions_reducer;
 pub mod match_reroll_reducer;
@@ -104,15 +101,9 @@ pub use match_add_fusion_unit_reducer::{
 pub use match_buy_fusion_lvl_reducer::{
     match_buy_fusion_lvl, set_flags_for_match_buy_fusion_lvl, MatchBuyFusionLvlCallbackId,
 };
-pub use match_buy_fusion_reducer::{
-    match_buy_fusion, set_flags_for_match_buy_fusion, MatchBuyFusionCallbackId,
-};
 pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
 pub use match_complete_reducer::{
     match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
-};
-pub use match_edit_fusion_reducer::{
-    match_edit_fusion, set_flags_for_match_edit_fusion, MatchEditFusionCallbackId,
 };
 pub use match_g_type::MatchG;
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
@@ -129,10 +120,6 @@ pub use match_play_unit_allow_stack_reducer::{
 };
 pub use match_play_unit_reducer::{
     match_play_unit, set_flags_for_match_play_unit, MatchPlayUnitCallbackId,
-};
-pub use match_remove_fusion_unit_reducer::{
-    match_remove_fusion_unit, set_flags_for_match_remove_fusion_unit,
-    MatchRemoveFusionUnitCallbackId,
 };
 pub use match_reorder_fusion_units_reducer::{
     match_reorder_fusion_units, set_flags_for_match_reorder_fusion_units,
@@ -218,14 +205,10 @@ pub enum Reducer {
     MatchBuy {
         i: u8,
     },
-    MatchBuyFusion,
     MatchBuyFusionLvl {
         slot: u8,
     },
     MatchComplete,
-    MatchEditFusion {
-        fusion: TNode,
-    },
     MatchInsert,
     MatchMoveUnitBetweenFusions {
         source_fusion_id: u64,
@@ -243,10 +226,6 @@ pub enum Reducer {
     MatchPlayUnitAllowStack {
         i: u8,
         slot: u8,
-    },
-    MatchRemoveFusionUnit {
-        fusion_id: u64,
-        unit_id: u64,
     },
     MatchReorderFusionUnits {
         fusion_id: u64,
@@ -312,16 +291,13 @@ impl __sdk::Reducer for Reducer {
             Reducer::Logout => "logout",
             Reducer::MatchAddFusionUnit { .. } => "match_add_fusion_unit",
             Reducer::MatchBuy { .. } => "match_buy",
-            Reducer::MatchBuyFusion => "match_buy_fusion",
             Reducer::MatchBuyFusionLvl { .. } => "match_buy_fusion_lvl",
             Reducer::MatchComplete => "match_complete",
-            Reducer::MatchEditFusion { .. } => "match_edit_fusion",
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchMoveUnitBetweenFusions { .. } => "match_move_unit_between_fusions",
             Reducer::MatchPlayHouse { .. } => "match_play_house",
             Reducer::MatchPlayUnit { .. } => "match_play_unit",
             Reducer::MatchPlayUnitAllowStack { .. } => "match_play_unit_allow_stack",
-            Reducer::MatchRemoveFusionUnit { .. } => "match_remove_fusion_unit",
             Reducer::MatchReorderFusionUnits { .. } => "match_reorder_fusion_units",
             Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
             Reducer::MatchReroll => "match_reroll",
@@ -411,10 +387,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 )?
                 .into(),
             ),
-            "match_buy_fusion" => Ok(__sdk::parse_reducer_args::<
-                match_buy_fusion_reducer::MatchBuyFusionArgs,
-            >("match_buy_fusion", &value.args)?
-            .into()),
             "match_buy_fusion_lvl" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_lvl_reducer::MatchBuyFusionLvlArgs,
             >("match_buy_fusion_lvl", &value.args)?
@@ -422,10 +394,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_complete" => Ok(__sdk::parse_reducer_args::<
                 match_complete_reducer::MatchCompleteArgs,
             >("match_complete", &value.args)?
-            .into()),
-            "match_edit_fusion" => Ok(__sdk::parse_reducer_args::<
-                match_edit_fusion_reducer::MatchEditFusionArgs,
-            >("match_edit_fusion", &value.args)?
             .into()),
             "match_insert" => Ok(
                 __sdk::parse_reducer_args::<match_insert_reducer::MatchInsertArgs>(
@@ -452,12 +420,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 Ok(__sdk::parse_reducer_args::<
                     match_play_unit_allow_stack_reducer::MatchPlayUnitAllowStackArgs,
                 >("match_play_unit_allow_stack", &value.args)?
-                .into())
-            }
-            "match_remove_fusion_unit" => {
-                Ok(__sdk::parse_reducer_args::<
-                    match_remove_fusion_unit_reducer::MatchRemoveFusionUnitArgs,
-                >("match_remove_fusion_unit", &value.args)?
                 .into())
             }
             "match_reorder_fusion_units" => {
