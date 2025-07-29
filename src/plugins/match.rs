@@ -710,35 +710,53 @@ impl MatchPlugin {
 
         if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
             .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
-            .text_fn(ui, |(_, _, unit_id)| {
+            .text_fn(ui, |(source_fusion_id, _, unit_id)| {
                 if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
-                    format!("Swap with {}", unit.unit_name)
+                    if *source_fusion_id == fusion.id {
+                        format!("Swap with {}", unit.unit_name)
+                    } else {
+                        format!("Move {} here", unit.unit_name)
+                    }
                 } else {
-                    "Swap units".to_string()
+                    "Move unit here".to_string()
                 }
             })
             .ui(ui)
         {
-            Self::handle_unit_swap(context, fusion, &payload, slot_idx);
+            Self::handle_unit_drop(context, fusion, &payload, slot_idx);
         }
     }
 
-    fn handle_unit_swap(
+    fn handle_unit_drop(
         context: &Context,
         fusion: &NFusion,
         payload: &(u64, usize, u64),
         slot_idx: usize,
     ) {
-        let (source_fusion_id, source_slot_idx, _source_unit_id) = payload;
-        if *source_fusion_id == fusion.id && *source_slot_idx != slot_idx {
-            let current_units = fusion.units(context).unwrap_or_default();
-            if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
-                let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
-                unit_ids.swap(*source_slot_idx, slot_idx);
-                cn().reducers
-                    .match_reorder_fusion_units(fusion.id, unit_ids)
-                    .notify_error_op();
+        let (source_fusion_id, source_slot_idx, source_unit_id) = payload;
+
+        if *source_fusion_id == fusion.id {
+            // Same fusion - swap or reorder
+            if *source_slot_idx != slot_idx {
+                let current_units = fusion.units(context).unwrap_or_default();
+                if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
+                    let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
+                    unit_ids.swap(*source_slot_idx, slot_idx);
+                    cn().reducers
+                        .match_reorder_fusion_units(fusion.id, unit_ids)
+                        .notify_error_op();
+                }
             }
+        } else {
+            // Different fusion - move unit
+            cn().reducers
+                .match_move_unit_between_fusions(
+                    *source_fusion_id,
+                    fusion.id,
+                    *source_unit_id,
+                    slot_idx as u32,
+                )
+                .notify_error_op();
         }
     }
 
@@ -764,9 +782,13 @@ impl MatchPlugin {
         // Handle unit reordering drops
         if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
             .id(format!("empty_slot_{}_{}", fusion_idx, slot_idx))
-            .text_fn(ui, |(_, _, unit_id)| {
+            .text_fn(ui, |(source_fusion_id, _, unit_id)| {
                 if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
-                    format!("Move {} here", unit.unit_name)
+                    if *source_fusion_id == fusion.id {
+                        format!("Move {} here", unit.unit_name)
+                    } else {
+                        format!("Move {} to this fusion", unit.unit_name)
+                    }
                 } else {
                     "Move unit here".to_string()
                 }
@@ -800,8 +822,10 @@ impl MatchPlugin {
         payload: &(u64, usize, u64),
         slot_idx: usize,
     ) {
-        let (source_fusion_id, source_slot_idx, _source_unit_id) = payload;
+        let (source_fusion_id, source_slot_idx, source_unit_id) = payload;
+
         if *source_fusion_id == fusion.id {
+            // Same fusion - reorder
             let current_units = fusion.units(context).unwrap_or_default();
             if *source_slot_idx < current_units.len() && slot_idx < fusion.lvl as usize {
                 let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
@@ -815,6 +839,16 @@ impl MatchPlugin {
                     .match_reorder_fusion_units(fusion.id, unit_ids)
                     .notify_error_op();
             }
+        } else {
+            // Different fusion - move unit
+            cn().reducers
+                .match_move_unit_between_fusions(
+                    *source_fusion_id,
+                    fusion.id,
+                    *source_unit_id,
+                    slot_idx as u32,
+                )
+                .notify_error_op();
         }
     }
 

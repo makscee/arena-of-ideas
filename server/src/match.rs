@@ -606,6 +606,65 @@ fn match_reorder_fusion_units(
 }
 
 #[reducer]
+fn match_move_unit_between_fusions(
+    ctx: &ReducerContext,
+    source_fusion_id: u64,
+    target_fusion_id: u64,
+    unit_id: u64,
+    target_slot_idx: u32,
+) -> Result<(), String> {
+    {
+        let source_fusion_id = source_fusion_id;
+        let target_fusion_id = target_fusion_id;
+        let unit_id = unit_id;
+        let mut player = ctx.player()?;
+        let m = player.active_match_load(ctx)?;
+        let team = m.team_load(ctx)?;
+        let fusions = team.fusions_load(ctx)?;
+
+        let source_fusion = fusions
+            .iter_mut()
+            .find(|f| f.id == source_fusion_id)
+            .ok_or_else(|| format!("Failed to find source Fusion#{}", source_fusion_id))?;
+        let unit_position = source_fusion
+            .units
+            .ids
+            .iter()
+            .position(|&id| id == unit_id)
+            .ok_or_else(|| {
+                format!(
+                    "Unit#{} not found in source Fusion#{}",
+                    unit_id, source_fusion_id
+                )
+            })?;
+        source_fusion.units_remove(ctx, unit_id)?;
+        source_fusion.behavior.remove(unit_position);
+
+        let target_fusion = fusions
+            .iter_mut()
+            .find(|f| f.id == target_fusion_id)
+            .ok_or_else(|| format!("Failed to find target Fusion#{}", target_fusion_id))?;
+        if target_fusion.units.ids.len() >= target_fusion.lvl as usize {
+            return Err("Target fusion is full".into());
+        }
+        let insert_idx = (target_slot_idx as usize).min(target_fusion.units.ids.len());
+        target_fusion.units.ids.insert(insert_idx, unit_id);
+        target_fusion.id.add_parent(ctx, unit_id)?;
+        target_fusion.behavior.insert(
+            insert_idx,
+            UnitActionRef {
+                trigger: 0,
+                start: 0,
+                length: 0,
+            },
+        );
+
+        player.save(ctx);
+        Ok(())
+    }
+}
+
+#[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
