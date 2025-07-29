@@ -292,24 +292,6 @@ pub fn subscribe_reducers() {
     cn().reducers.on_match_insert(|e| {
         e.event.notify_error();
     });
-    cn().reducers.on_match_edit_fusion(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_add_fusion_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_remove_fusion_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
     cn().reducers.on_match_reorder_fusions(|e, _| {
         if !e.check_identity() {
             return;
@@ -353,12 +335,6 @@ pub fn subscribe_reducers() {
         e.event.notify_error();
     });
     cn().reducers.on_match_buy_fusion_lvl(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_buy_fusion(|e| {
         if !e.check_identity() {
             return;
         }
