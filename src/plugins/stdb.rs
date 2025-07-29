@@ -334,6 +334,18 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_play_unit_allow_stack(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_stack_units(|e, _, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_match_play_house(|e, _| {
         if !e.check_identity() {
             return;

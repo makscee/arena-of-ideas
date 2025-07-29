@@ -309,7 +309,7 @@ impl MatchPlugin {
                         .ui(ui)
                     {
                         cn().reducers
-                            .match_play_unit(unit.0 as u8, fusion.slot as u8)
+                            .match_play_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
                             .notify_error_op();
                     }
                 },
@@ -552,9 +552,18 @@ impl MatchPlugin {
         slot_idx: usize,
     ) -> Result<(), ExpressionError> {
         ui.horizontal(|ui| -> Result<(), ExpressionError> {
-            let resp = Self::render_unit_icon(ui, context, unit);
+            ui.vertical(|ui| {
+                let resp = Self::render_unit_icon(ui, context, unit);
+
+                // Display level and XP
+                if let Ok(state) = unit.state_load(context) {
+                    ui.label(format!("Lvl {}", state.lvl));
+                    ui.label(format!("XP {}/{}", state.xp, state.lvl));
+                }
+
+                Self::handle_unit_drag_drop(ui, context, fusion, unit, fusion_idx, slot_idx, resp);
+            });
             Self::render_unit_actions(ui, context, fusion, unit, slot_idx)?;
-            Self::handle_unit_drag_drop(ui, context, fusion, unit, fusion_idx, slot_idx, resp);
             Ok(())
         })
         .inner?;
@@ -563,14 +572,32 @@ impl MatchPlugin {
     }
 
     fn render_unit_icon(ui: &mut Ui, context: &Context, unit: &NUnit) -> Response {
-        if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
+        let resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
             MatRect::new(egui::Vec2::new(60.0, 60.0))
                 .add_mat(&rep.material, unit.id)
                 .unit_rep_with_default(unit.id)
                 .ui(ui, context)
         } else {
             MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+        };
+
+        // Check if unit has stackable duplicates and add visual indicator
+        if let Some(payload) = egui::DragAndDrop::payload::<(u64, usize, u64)>(ui.ctx()) {
+            if let Ok(source_unit) = context.get_by_id::<NUnit>(payload.2) {
+                if source_unit.unit_name == unit.unit_name && source_unit.id != unit.id {
+                    // Draw a green border to indicate this unit can be stacked with the dragged unit
+                    let painter = ui.painter();
+                    painter.rect_stroke(
+                        resp.rect,
+                        4.0,
+                        egui::Stroke::new(3.0, egui::Color32::GREEN),
+                        egui::StrokeKind::Outside,
+                    );
+                }
+            }
         }
+
+        resp
     }
 
     fn render_unit_actions(
@@ -711,11 +738,13 @@ impl MatchPlugin {
         if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
             .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
             .text_fn(ui, |(source_fusion_id, _, unit_id)| {
-                if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
-                    if *source_fusion_id == fusion.id {
+                if let Ok(source_unit) = context.get_by_id::<NUnit>(*unit_id) {
+                    if source_unit.unit_name == unit.unit_name {
+                        format!("[green]Stack {} (merge XP + level up)", unit.unit_name)
+                    } else if *source_fusion_id == fusion.id {
                         format!("Swap with {}", unit.unit_name)
                     } else {
-                        format!("Move {} here", unit.unit_name)
+                        format!("Move {} here", source_unit.unit_name)
                     }
                 } else {
                     "Move unit here".to_string()
@@ -723,7 +752,42 @@ impl MatchPlugin {
             })
             .ui(ui)
         {
-            Self::handle_unit_drop(context, fusion, &payload, slot_idx);
+            Self::handle_unit_drop(context, fusion, &payload, slot_idx, unit);
+        }
+
+        // Handle shop unit purchases - only allow stacking when dropped on same unit type
+        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
+            if payload.1.card_kind == CardKind::Unit {
+                if let Some(shop_payload) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
+                    .id(format!("unit_stack_shop_{}_{}", fusion_idx, slot_idx))
+                    .text_fn(ui, |(_, slot)| {
+                        if let Ok(shop_unit) = context.get_by_id::<NUnit>(slot.node_id) {
+                            if shop_unit.unit_name == unit.unit_name {
+                                format!(
+                                    "[green]Stack {} [yellow -{}g] (merge XP + level up)",
+                                    unit.unit_name, slot.price
+                                )
+                            } else {
+                                format!("Cannot stack different units")
+                            }
+                        } else {
+                            format!("Cannot stack")
+                        }
+                    })
+                    .ui(ui)
+                {
+                    if let Ok(shop_unit) = context.get_by_id::<NUnit>(shop_payload.1.node_id) {
+                        if shop_unit.unit_name == unit.unit_name {
+                            cn().reducers
+                                .match_play_unit_allow_stack(
+                                    shop_payload.0 as u8,
+                                    fusion.slot as u8,
+                                )
+                                .notify_error_op();
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -732,13 +796,27 @@ impl MatchPlugin {
         fusion: &NFusion,
         payload: &(u64, usize, u64),
         slot_idx: usize,
+        target_unit: &NUnit,
     ) {
         let (source_fusion_id, source_slot_idx, source_unit_id) = payload;
 
         if *source_fusion_id == fusion.id {
-            // Same fusion - swap or reorder
+            // Same fusion - check for stacking or reordering
             if *source_slot_idx != slot_idx {
                 let current_units = fusion.units(context).unwrap_or_default();
+
+                // Check if target unit can be stacked with source unit
+                if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
+                    if target_unit.unit_name == source_unit.unit_name {
+                        // Stack the units
+                        cn().reducers
+                            .match_stack_units(fusion.id, target_unit.id, *source_unit_id)
+                            .notify_error_op();
+                        return;
+                    }
+                }
+
+                // No stacking - regular reorder
                 if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
                     let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
                     unit_ids.swap(*source_slot_idx, slot_idx);
@@ -748,7 +826,18 @@ impl MatchPlugin {
                 }
             }
         } else {
-            // Different fusion - move unit
+            // Different fusion - check for stacking or move unit
+            if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
+                if target_unit.unit_name == source_unit.unit_name {
+                    // Stack the units
+                    cn().reducers
+                        .match_stack_units(fusion.id, target_unit.id, *source_unit_id)
+                        .notify_error_op();
+                    return;
+                }
+            }
+
+            // No stacking - regular move
             cn().reducers
                 .match_move_unit_between_fusions(
                     *source_fusion_id,
@@ -801,15 +890,15 @@ impl MatchPlugin {
         // Handle shop unit purchases
         if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
             if payload.1.card_kind == CardKind::Unit {
-                if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
+                if let Some(payload) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
                     .id(format!("unit_buy_empty_slot_{}_{}", fusion_idx, slot_idx))
                     .text_fn(ui, |(_, slot)| {
-                        format!("play unit [yellow -{}g]", slot.price)
+                        format!("[green]Play unit [yellow -{}g]", slot.price)
                     })
                     .ui(ui)
                 {
                     cn().reducers
-                        .match_play_unit(shop_item.0 as u8, fusion.slot as u8)
+                        .match_play_unit(payload.0 as u8, fusion.slot as u8)
                         .notify_error_op();
                 }
             }

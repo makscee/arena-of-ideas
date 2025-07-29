@@ -34,6 +34,7 @@ pub mod match_g_type;
 pub mod match_insert_reducer;
 pub mod match_move_unit_between_fusions_reducer;
 pub mod match_play_house_reducer;
+pub mod match_play_unit_allow_stack_reducer;
 pub mod match_play_unit_reducer;
 pub mod match_remove_fusion_unit_reducer;
 pub mod match_reorder_fusion_units_reducer;
@@ -42,6 +43,7 @@ pub mod match_reroll_reducer;
 pub mod match_sell_fusion_unit_reducer;
 pub mod match_sell_reducer;
 pub mod match_set_fusion_unit_action_range_reducer;
+pub mod match_stack_units_reducer;
 pub mod match_start_battle_reducer;
 pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
@@ -121,6 +123,10 @@ pub use match_move_unit_between_fusions_reducer::{
 pub use match_play_house_reducer::{
     match_play_house, set_flags_for_match_play_house, MatchPlayHouseCallbackId,
 };
+pub use match_play_unit_allow_stack_reducer::{
+    match_play_unit_allow_stack, set_flags_for_match_play_unit_allow_stack,
+    MatchPlayUnitAllowStackCallbackId,
+};
 pub use match_play_unit_reducer::{
     match_play_unit, set_flags_for_match_play_unit, MatchPlayUnitCallbackId,
 };
@@ -143,6 +149,9 @@ pub use match_sell_reducer::{match_sell, set_flags_for_match_sell, MatchSellCall
 pub use match_set_fusion_unit_action_range_reducer::{
     match_set_fusion_unit_action_range, set_flags_for_match_set_fusion_unit_action_range,
     MatchSetFusionUnitActionRangeCallbackId,
+};
+pub use match_stack_units_reducer::{
+    match_stack_units, set_flags_for_match_stack_units, MatchStackUnitsCallbackId,
 };
 pub use match_start_battle_reducer::{
     match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
@@ -231,6 +240,10 @@ pub enum Reducer {
         i: u8,
         slot: u8,
     },
+    MatchPlayUnitAllowStack {
+        i: u8,
+        slot: u8,
+    },
     MatchRemoveFusionUnit {
         fusion_id: u64,
         unit_id: u64,
@@ -254,6 +267,11 @@ pub enum Reducer {
         unit_id: u64,
         actions_start: u8,
         actions_len: u8,
+    },
+    MatchStackUnits {
+        fusion_id: u64,
+        target_unit_id: u64,
+        source_unit_id: u64,
     },
     MatchStartBattle,
     MatchSubmitBattleResult {
@@ -302,6 +320,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchMoveUnitBetweenFusions { .. } => "match_move_unit_between_fusions",
             Reducer::MatchPlayHouse { .. } => "match_play_house",
             Reducer::MatchPlayUnit { .. } => "match_play_unit",
+            Reducer::MatchPlayUnitAllowStack { .. } => "match_play_unit_allow_stack",
             Reducer::MatchRemoveFusionUnit { .. } => "match_remove_fusion_unit",
             Reducer::MatchReorderFusionUnits { .. } => "match_reorder_fusion_units",
             Reducer::MatchReorderFusions { .. } => "match_reorder_fusions",
@@ -309,6 +328,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchSell { .. } => "match_sell",
             Reducer::MatchSellFusionUnit { .. } => "match_sell_fusion_unit",
             Reducer::MatchSetFusionUnitActionRange { .. } => "match_set_fusion_unit_action_range",
+            Reducer::MatchStackUnits { .. } => "match_stack_units",
             Reducer::MatchStartBattle => "match_start_battle",
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
@@ -428,6 +448,12 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 match_play_unit_reducer::MatchPlayUnitArgs,
             >("match_play_unit", &value.args)?
             .into()),
+            "match_play_unit_allow_stack" => {
+                Ok(__sdk::parse_reducer_args::<
+                    match_play_unit_allow_stack_reducer::MatchPlayUnitAllowStackArgs,
+                >("match_play_unit_allow_stack", &value.args)?
+                .into())
+            }
             "match_remove_fusion_unit" => {
                 Ok(__sdk::parse_reducer_args::<
                     match_remove_fusion_unit_reducer::MatchRemoveFusionUnitArgs,
@@ -468,6 +494,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("match_set_fusion_unit_action_range", &value.args)?
                 .into())
             }
+            "match_stack_units" => Ok(__sdk::parse_reducer_args::<
+                match_stack_units_reducer::MatchStackUnitsArgs,
+            >("match_stack_units", &value.args)?
+            .into()),
             "match_start_battle" => Ok(__sdk::parse_reducer_args::<
                 match_start_battle_reducer::MatchStartBattleArgs,
             >("match_start_battle", &value.args)?

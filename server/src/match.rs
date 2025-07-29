@@ -206,6 +206,87 @@ fn match_buy_fusion_lvl(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
 
 #[reducer]
 fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
+    match_play_unit_internal(ctx, i, slot, true)
+}
+
+#[reducer]
+fn match_play_unit_allow_stack(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
+    match_play_unit_internal(ctx, i, slot, false)
+}
+
+#[reducer]
+fn match_stack_units(
+    ctx: &ReducerContext,
+    _fusion_id: u64,
+    target_unit_id: u64,
+    source_unit_id: u64,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+
+    let team = m.team_load(ctx)?;
+    let all_fusions = team.fusions_load(ctx)?;
+
+    // Find target and source units and their fusion IDs
+    let mut target_unit = None;
+    let mut source_unit = None;
+    let mut source_fusion_id = None;
+
+    // Search all fusions for both units
+    for fusion in all_fusions.iter() {
+        let units = fusion.units_load(ctx)?;
+        for unit in units {
+            if unit.id == target_unit_id {
+                target_unit = Some(unit);
+            } else if unit.id == source_unit_id {
+                source_unit = Some(unit);
+                source_fusion_id = Some(fusion.id);
+            }
+        }
+    }
+
+    let mut target_unit = target_unit.to_custom_e_s("Target unit not found")?;
+    let mut source_unit = source_unit.to_custom_e_s("Source unit not found")?;
+    let source_fusion_id = source_fusion_id.to_custom_e_s("Source fusion not found")?;
+
+    if target_unit.unit_name != source_unit.unit_name {
+        return Err("Units must have the same name to stack".into());
+    }
+
+    // Merge XP and level up
+    let target_state = target_unit.state_load(ctx)?;
+    let source_state = source_unit.state_load(ctx)?;
+
+    // Add source XP to target
+    target_state.xp += source_state.xp;
+
+    // Level up if enough XP
+    while target_state.xp >= target_state.lvl {
+        target_state.xp -= target_state.lvl;
+        target_state.lvl += 1;
+    }
+
+    target_state.save(ctx);
+
+    // Remove source unit from its fusion
+    for fusion in all_fusions {
+        if fusion.id == source_fusion_id {
+            fusion.units_remove(ctx, source_unit_id)?;
+            break;
+        }
+    }
+    source_unit.delete_with_components(ctx);
+
+    m.save(ctx);
+    Ok(())
+}
+
+fn match_play_unit_internal(
+    ctx: &ReducerContext,
+    i: u8,
+    slot: u8,
+    force_no_stack: bool,
+) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
@@ -286,15 +367,20 @@ fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> 
 
     let slot = slot as i32;
     let fusion = m.get_slot_fusion(ctx, slot)?;
-    let duplicate_unit = fusion.units_load(ctx)?.into_iter().find_map(|u| {
-        if u.unit_name == unit.unit_name {
-            Some(u)
-        } else {
-            None
-        }
-    });
-    if let Some(mut unit) = duplicate_unit {
-        let state = unit.state_load(ctx)?;
+    let duplicate_unit = if !force_no_stack {
+        fusion.units_load(ctx)?.into_iter().find_map(|u| {
+            if u.unit_name == unit.unit_name {
+                Some(u)
+            } else {
+                None
+            }
+        })
+    } else {
+        None
+    };
+
+    if let Some(mut existing_unit) = duplicate_unit {
+        let state = existing_unit.state_load(ctx)?;
         state.xp += 1;
         while state.xp >= state.lvl {
             state.xp -= state.lvl;
