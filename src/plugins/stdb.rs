@@ -304,19 +304,19 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
-    cn().reducers.on_match_play_unit(|e, _, _| {
+    cn().reducers.on_match_buy_unit(|e, _, _| {
         if !e.check_identity() {
             return;
         }
         e.event.notify_error();
     });
-    cn().reducers.on_match_play_unit_allow_stack(|e, _, _| {
+    cn().reducers.on_match_buy_unit_allow_stack(|e, _, _| {
         if !e.check_identity() {
             return;
         }
         e.event.notify_error();
     });
-    cn().reducers.on_match_stack_units(|e, _, _, _| {
+    cn().reducers.on_match_move_owned_unit(|e, _, _, _| {
         if !e.check_identity() {
             return;
         }

@@ -1,4 +1,4 @@
-use std::i32;
+use std::{collections::HashMap, i32};
 
 use rand::{Rng, seq::SliceRandom};
 
@@ -154,96 +154,14 @@ fn match_buy_fusion_lvl(ctx: &ReducerContext, slot: u8) -> Result<(), String> {
 }
 
 #[reducer]
-fn match_play_unit(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
-    match_play_unit_internal(ctx, i, slot, true)
-}
-
-#[reducer]
-fn match_play_unit_allow_stack(ctx: &ReducerContext, i: u8, slot: u8) -> Result<(), String> {
-    match_play_unit_internal(ctx, i, slot, false)
-}
-
-#[reducer]
-fn match_stack_units(
-    ctx: &ReducerContext,
-    _fusion_id: u64,
-    target_unit_id: u64,
-    source_unit_id: u64,
-) -> Result<(), String> {
+fn match_buy_unit(ctx: &ReducerContext, shop_idx: u8, slot: u8) -> Result<(), String> {
     let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-
-    let team = m.team_load(ctx)?;
-    let all_fusions = team.fusions_load(ctx)?;
-
-    // Find target and source units and their fusion IDs
-    let mut target_unit = None;
-    let mut source_unit = None;
-    let mut source_fusion_id = None;
-
-    // Search all fusions for both units
-    for fusion in all_fusions.iter() {
-        let units = fusion.units_load(ctx)?;
-        for unit in units {
-            if unit.id == target_unit_id {
-                target_unit = Some(unit);
-            } else if unit.id == source_unit_id {
-                source_unit = Some(unit);
-                source_fusion_id = Some(fusion.id);
-            }
-        }
-    }
-
-    let mut target_unit = target_unit.to_custom_e_s("Target unit not found")?;
-    let mut source_unit = source_unit.to_custom_e_s("Source unit not found")?;
-    let source_fusion_id = source_fusion_id.to_custom_e_s("Source fusion not found")?;
-
-    if target_unit.unit_name != source_unit.unit_name {
-        return Err("Units must have the same name to stack".into());
-    }
-
-    // Merge XP and level up
-    let target_state = target_unit.state_load(ctx)?;
-    let source_state = source_unit.state_load(ctx)?;
-
-    // Add source XP to target
-    target_state.xp += source_state.xp;
-
-    // Level up if enough XP
-    while target_state.xp >= target_state.lvl {
-        target_state.xp -= target_state.lvl;
-        target_state.lvl += 1;
-    }
-
-    target_state.save(ctx);
-
-    // Remove source unit from its fusion
-    for fusion in all_fusions {
-        if fusion.id == source_fusion_id {
-            fusion.units_remove(ctx, source_unit_id)?;
-            break;
-        }
-    }
-    source_unit.delete_with_components(ctx);
-
-    m.save(ctx);
-    Ok(())
-}
-
-fn match_play_unit_internal(
-    ctx: &ReducerContext,
-    i: u8,
-    slot: u8,
-    force_no_stack: bool,
-) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let offer = m
         .shop_offers
         .last_mut()
         .to_custom_e_s_fn(|| format!("No shop offers found"))?;
-    let shop_slot = offer.get_slot_mut(i)?;
+    let shop_slot = offer.get_slot_mut(shop_idx)?;
 
     if shop_slot.sold {
         return Err("Item already sold".into());
@@ -260,7 +178,7 @@ fn match_play_unit_internal(
 
     shop_slot.sold = true;
     let price = shop_slot.price;
-    let id = shop_slot.node_id;
+    let unit_id = shop_slot.node_id;
     m.g -= price;
 
     if let Some(limit) = &mut offer.buy_limit {
@@ -269,16 +187,146 @@ fn match_play_unit_internal(
             m.shop_offers.remove(m.shop_offers.len() - 1);
         }
     }
-    let mut unit = NUnit::get(ctx, id)
-        .to_custom_e_s_fn(|| format!("Failed to find Unit#{id}"))?
+
+    let unit = NUnit::get(ctx, unit_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit_id}"))?
         .with_children(ctx)
         .with_components(ctx)
         .take();
+
+    let mut player = ctx.player()?;
+    let mut m = player.active_match_load(ctx)?;
+    match_move_unit_to_slot(ctx, &mut m, None, unit, slot as i32, -1, true)
+}
+
+#[reducer]
+fn match_buy_unit_allow_stack(ctx: &ReducerContext, shop_idx: u8, slot: u8) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let offer = m
+        .shop_offers
+        .last_mut()
+        .to_custom_e_s_fn(|| format!("No shop offers found"))?;
+    let shop_slot = offer.get_slot_mut(shop_idx)?;
+
+    if shop_slot.sold {
+        return Err("Item already sold".into());
+    }
+
+    if shop_slot.card_kind != CardKind::Unit {
+        return Err("Item is not a unit".into());
+    }
+
+    let g = m.g;
+    if shop_slot.price > g {
+        return Err("Not enough g".into());
+    }
+
+    shop_slot.sold = true;
+    let price = shop_slot.price;
+    let unit_id = shop_slot.node_id;
+    m.g -= price;
+
+    if let Some(limit) = &mut offer.buy_limit {
+        *limit -= 1;
+        if *limit == 0 {
+            m.shop_offers.remove(m.shop_offers.len() - 1);
+        }
+    }
+
+    let unit = NUnit::get(ctx, unit_id)
+        .to_custom_e_s_fn(|| format!("Failed to find Unit#{unit_id}"))?
+        .with_children(ctx)
+        .with_components(ctx)
+        .take();
+
+    let mut player = ctx.player()?;
+    let mut m = player.active_match_load(ctx)?;
+    match_move_unit_to_slot(ctx, &mut m, None, unit, slot as i32, -1, false)
+}
+
+#[reducer]
+fn match_move_owned_unit(
+    ctx: &ReducerContext,
+    source_unit_id: u64,
+    target_fusion_slot: i32,
+    target_position: i32,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let team = m.team_load(ctx)?;
+    let all_fusions = team.fusions_load(ctx)?;
+
+    let mut source_fusion_id = None;
+    let mut source_position = None;
+
+    for fusion in all_fusions.iter() {
+        let units = fusion.units_load(ctx)?;
+        for (pos, unit) in units.iter().enumerate() {
+            if unit.id == source_unit_id {
+                source_fusion_id = Some(fusion.id);
+                source_position = Some(pos);
+                break;
+            }
+        }
+        if source_fusion_id.is_some() {
+            break;
+        }
+    }
+
+    let source_fusion_id = source_fusion_id.to_custom_e_s("Source fusion not found")?;
+    let source_position = source_position.to_custom_e_s("Source position not found")?;
+
+    // Get the source unit before removing it
+    let source_unit = NUnit::get(ctx, source_unit_id)
+        .to_custom_e_s("Source unit not found")?
+        .with_children(ctx)
+        .with_components(ctx)
+        .take();
+
+    // Remove unit from source fusion
+    for fusion in all_fusions.iter_mut() {
+        if fusion.id == source_fusion_id {
+            fusion.units_remove(ctx, source_unit_id)?;
+            // Also remove behavior at this position
+            if source_position < fusion.behavior.len() {
+                fusion.behavior.remove(source_position);
+            }
+            break;
+        }
+    }
+
+    let mut player = ctx.player()?;
+    let mut m = player.active_match_load(ctx)?;
+    match_move_unit_to_slot(
+        ctx,
+        &mut m,
+        Some(source_unit_id),
+        source_unit,
+        target_fusion_slot,
+        target_position,
+        false,
+    )
+}
+
+fn match_move_unit_to_slot(
+    ctx: &ReducerContext,
+    m: &mut NMatch,
+    source_unit_id: Option<u64>,
+    mut unit: NUnit,
+    target_fusion_slot: i32,
+    target_position: i32,
+    from_shop_only_empty: bool,
+) -> Result<(), String> {
+    let player = ctx.player()?;
+    let pid = player.id;
+
     let unit_tier = unit
         .description_load(ctx)?
         .behavior_load(ctx)?
         .reactions
         .tier();
+
     let team = m.team_load(ctx)?;
     let _ = team.houses_load(ctx);
     let house = unit
@@ -292,81 +340,139 @@ fn match_play_unit_internal(
         .map(|h| h.id)
         .to_custom_e_s_fn(|| format!("Team house {house} not found"))?;
 
-    let slot = slot as i32;
-    let fusion = m.get_slot_fusion(ctx, slot)?;
-    let duplicate_unit = if !force_no_stack {
-        fusion.units_load(ctx)?.into_iter().find_map(|u| {
-            if u.unit_name == unit.unit_name {
-                Some(u)
-            } else {
-                None
-            }
-        })
+    let target_fusion = m.get_slot_fusion(ctx, target_fusion_slot)?;
+    let mut target_units = target_fusion.units_load(ctx)?;
+
+    // Check if target position is occupied
+    let target_slot_idx = if target_position < 0 {
+        target_units.len()
     } else {
-        None
+        target_position as usize
     };
 
-    if let Some(mut existing_unit) = duplicate_unit {
-        let state = existing_unit.state_load(ctx)?;
-        state.xp += 1;
-        while state.xp >= state.lvl {
-            state.xp -= state.lvl;
-            state.lvl += 1;
-        }
-        state.save(ctx);
-    } else {
-        let unit_id = unit.clone(ctx, pid, &mut default()).id;
-        let mut unit = unit_id.to_node::<NUnit>(ctx)?;
-        unit_id.add_parent(ctx, house_id)?;
-        let mut unit_state = NUnitState::new(pid, 0, 1, 0);
-        unit_state.insert_self(ctx);
-        unit_state.id.add_child(ctx, unit_id)?;
-        let fusion = m.get_slot_fusion(ctx, slot)?;
-        fusion.units_add(ctx, unit_id)?;
-        fusion.action_limit = fusion
-            .action_limit
-            .max(unit_tier as i32 * 2 + (fusion.lvl - 1) * 2);
-        if fusion.units.ids.len() == 1 {
-            fusion.trigger.unit = unit.id;
-            let b = unit.description_load(ctx)?.behavior_load(ctx)?;
-            // Find the index of the unit in this fusion
-            let units = fusion.units_load(ctx)?;
-            if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
-                // Ensure behavior vector has the same length as units
-                fusion.behavior.resize(
-                    units.len(),
+    if target_slot_idx < target_units.len() {
+        let target_unit = &target_units[target_slot_idx];
+
+        // Check if we can stack (same unit name)
+        if target_unit.unit_name == unit.unit_name {
+            // Stack the units
+            let target_unit = &mut target_units[target_slot_idx];
+            let target_state = target_unit.state_load(ctx)?;
+            let xp = unit
+                .state_load(ctx)
+                .map(|s| s.xp + ((1.0 + (s.lvl - 1) as f32) / 2.0 * (s.lvl - 1) as f32) as i32 + 1)
+                .unwrap_or(1);
+            target_state.xp += xp;
+            while target_state.xp >= target_state.lvl {
+                target_state.xp -= target_state.lvl;
+                target_state.lvl += 1;
+            }
+            target_state.update_self(ctx);
+            unit.delete_with_components(ctx);
+            m.save(ctx);
+            return Ok(());
+        } else {
+            // Different units - check if we can swap
+            if from_shop_only_empty {
+                return Err("Can only buy units into empty slots or stack with same unit".into());
+            }
+
+            // Swap positions if moving owned unit
+            if let Some(source_id) = source_unit_id {
+                // This is a swap - the source unit was already removed from its fusion
+                // We need to move the target unit to where the source came from
+                let unit_id = if source_id != unit.id {
+                    unit.clone(ctx, pid, &mut HashMap::default()).id
+                } else {
+                    source_id
+                };
+
+                // Insert the unit at target position
+                let _unit_clone = unit_id.to_node::<NUnit>(ctx)?;
+                if source_id != unit.id {
+                    unit_id.add_parent(ctx, house_id)?;
+                    let mut unit_state = NUnitState::new(pid, 0, 1, 0);
+                    unit_state.insert_self(ctx);
+                    unit_state.id.add_child(ctx, unit_id)?;
+                }
+
+                // Remove target unit from current position and add source unit
+                let target_unit_id = target_unit.id;
+                target_fusion.units_remove(ctx, target_unit_id)?;
+                target_fusion.units.ids.insert(target_slot_idx, unit_id);
+                unit_id.add_parent(ctx, target_fusion.id)?;
+
+                // Update behavior
+                if target_slot_idx < target_fusion.behavior.len() {
+                    target_fusion.behavior.remove(target_slot_idx);
+                }
+                let b = unit.description_load(ctx)?.behavior_load(ctx)?;
+                target_fusion.behavior.insert(
+                    target_slot_idx,
                     UnitActionRef {
                         trigger: 0,
                         start: 0,
-                        length: 0,
+                        length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
                     },
                 );
 
-                // Update the behavior for this unit at the corresponding index
-                fusion.behavior[unit_index] = UnitActionRef {
-                    trigger: 0, // Use first trigger for now
-                    start: 0,
-                    length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
-                };
+                target_fusion.action_limit = target_fusion
+                    .action_limit
+                    .max(unit_tier as i32 * 2 + (target_fusion.lvl - 1) * 2);
+
+                m.save(ctx);
+                return Ok(());
+            } else {
+                return Err("Cannot replace existing unit when buying from shop".into());
             }
         }
-    }
-    m.save(ctx);
-    Ok(())
-}
+    } else {
+        // Empty slot - place unit here
+        if target_fusion.units.ids.len() >= target_fusion.lvl as usize {
+            return Err("Target fusion is full".into());
+        }
 
-#[reducer]
-fn match_sell(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    m.g += ctx.global_settings().match_g.unit_sell;
-    let unit = m
-        .roster_units_load(ctx)?
-        .into_iter()
-        .find(|u| u.unit_name == name)
-        .to_custom_e_s_fn(|| format!("Failed to find unit {name}"))?;
-    unit.delete_with_components(ctx);
-    player.save(ctx);
+        let unit_id = if let Some(source_id) = source_unit_id {
+            source_id
+        } else {
+            let new_id = unit.clone(ctx, pid, &mut HashMap::default()).id;
+            new_id.add_parent(ctx, house_id)?;
+            let mut unit_state = NUnitState::new(pid, 0, 1, 0);
+            unit_state.insert_self(ctx);
+            unit_state.id.add_child(ctx, new_id)?;
+            new_id
+        };
+
+        target_fusion.units_add(ctx, unit_id)?;
+        target_fusion.action_limit = target_fusion
+            .action_limit
+            .max(unit_tier as i32 * 2 + (target_fusion.lvl - 1) * 2);
+
+        if target_fusion.units.ids.len() == 1 {
+            target_fusion.trigger.unit = unit.id;
+        }
+
+        let b = unit.description_load(ctx)?.behavior_load(ctx)?;
+        let units = target_fusion.units_load(ctx)?;
+        if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
+            target_fusion.behavior.resize(
+                units.len(),
+                UnitActionRef {
+                    trigger: 0,
+                    start: 0,
+                    length: 0,
+                },
+            );
+
+            target_fusion.behavior[unit_index] = UnitActionRef {
+                trigger: 0,
+                start: 0,
+                length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
+            };
+        }
+    }
+
+    m.save(ctx);
     Ok(())
 }
 
@@ -421,40 +527,6 @@ fn match_reroll(ctx: &ReducerContext) -> Result<(), String> {
     m.g -= cost;
     m.fill_shop_case(ctx)?;
     player.save(ctx);
-    Ok(())
-}
-
-#[reducer]
-fn match_add_fusion_unit(ctx: &ReducerContext, fusion_id: u64, unit_id: u64) -> Result<(), String> {
-    let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    if !m.roster_units_load(ctx)?.iter().any(|u| u.id == unit_id) {
-        return Err(format!("Unit#{unit_id} not found"));
-    }
-    let fusions = m.team_load(ctx)?.fusions_load(ctx)?;
-    if let Some(f) = fusions
-        .iter()
-        .find(|f| f.units.ids.iter().any(|id| *id == unit_id))
-    {
-        return Err(format!("Fusion#{} already contains Unit#{unit_id}", f.id));
-    }
-    let fusion = fusions
-        .into_iter()
-        .find(|f| f.id == fusion_id)
-        .to_custom_e_s_fn(|| format!("Failed to find Fusion#{fusion_id}"))?;
-
-    fusion.units_add(ctx, unit_id)?;
-
-    let units = fusion.units_load(ctx)?;
-    fusion.behavior.resize(
-        units.len(),
-        UnitActionRef {
-            trigger: 0,
-            start: 0,
-            length: 0,
-        },
-    );
-
     Ok(())
 }
 
@@ -549,55 +621,27 @@ fn match_move_unit_between_fusions(
     unit_id: u64,
     target_slot_idx: u32,
 ) -> Result<(), String> {
-    {
-        let source_fusion_id = source_fusion_id;
-        let target_fusion_id = target_fusion_id;
-        let unit_id = unit_id;
-        let mut player = ctx.player()?;
-        let m = player.active_match_load(ctx)?;
-        let team = m.team_load(ctx)?;
-        let fusions = team.fusions_load(ctx)?;
-
-        let source_fusion = fusions
-            .iter_mut()
-            .find(|f| f.id == source_fusion_id)
-            .ok_or_else(|| format!("Failed to find source Fusion#{}", source_fusion_id))?;
-        let unit_position = source_fusion
-            .units
-            .ids
-            .iter()
-            .position(|&id| id == unit_id)
-            .ok_or_else(|| {
-                format!(
-                    "Unit#{} not found in source Fusion#{}",
-                    unit_id, source_fusion_id
-                )
-            })?;
-        source_fusion.units_remove(ctx, unit_id)?;
-        source_fusion.behavior.remove(unit_position);
-
-        let target_fusion = fusions
-            .iter_mut()
-            .find(|f| f.id == target_fusion_id)
-            .ok_or_else(|| format!("Failed to find target Fusion#{}", target_fusion_id))?;
-        if target_fusion.units.ids.len() >= target_fusion.lvl as usize {
-            return Err("Target fusion is full".into());
-        }
-        let insert_idx = (target_slot_idx as usize).min(target_fusion.units.ids.len());
-        target_fusion.units.ids.insert(insert_idx, unit_id);
-        target_fusion.id.add_parent(ctx, unit_id)?;
-        target_fusion.behavior.insert(
-            insert_idx,
-            UnitActionRef {
-                trigger: 0,
-                start: 0,
-                length: 0,
-            },
-        );
-
-        player.save(ctx);
-        Ok(())
+    if source_fusion_id == target_fusion_id {
+        return Err("Cannot move unit within same fusion using this function".into());
     }
+
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let team = m.team_load(ctx)?;
+    let fusions = team.fusions_load(ctx)?;
+
+    let target_fusion = fusions
+        .iter()
+        .find(|f| f.id == target_fusion_id)
+        .ok_or_else(|| format!("Failed to find target Fusion#{}", target_fusion_id))?;
+
+    let target_position = if target_slot_idx as usize >= target_fusion.units.ids.len() {
+        -1 // Append to end
+    } else {
+        target_slot_idx as i32
+    };
+
+    match_move_owned_unit(ctx, unit_id, target_fusion.slot, target_position)
 }
 
 #[reducer]

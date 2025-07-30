@@ -150,18 +150,6 @@ where
     }
 }
 
-impl NMatch {
-    pub fn roster_units_load(&mut self, ctx: &ReducerContext) -> Result<Vec<&mut NUnit>, String> {
-        Ok(self
-            .team_load(ctx)?
-            .houses_load(ctx)?
-            .into_iter()
-            .filter_map(|h| h.units_load(ctx).ok())
-            .flatten()
-            .collect_vec())
-    }
-}
-
 impl NTeam {
     #[must_use]
     pub fn clone_ids_remap(&self, ctx: &ReducerContext) -> Result<Self, String> {

@@ -251,7 +251,7 @@ impl MatchPlugin {
                         .ui(ui)
                     {
                         cn().reducers
-                            .match_play_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
+                            .match_buy_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
                             .notify_error_op();
                     }
                 },
@@ -721,10 +721,7 @@ impl MatchPlugin {
                     if let Ok(shop_unit) = context.get_by_id::<NUnit>(shop_payload.1.node_id) {
                         if shop_unit.unit_name == unit.unit_name {
                             cn().reducers
-                                .match_play_unit_allow_stack(
-                                    shop_payload.0 as u8,
-                                    fusion.slot as u8,
-                                )
+                                .match_buy_unit_allow_stack(shop_payload.0 as u8, fusion.slot as u8)
                                 .notify_error_op();
                         }
                     }
@@ -752,7 +749,7 @@ impl MatchPlugin {
                     if target_unit.unit_name == source_unit.unit_name {
                         // Stack the units
                         cn().reducers
-                            .match_stack_units(fusion.id, target_unit.id, *source_unit_id)
+                            .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
                             .notify_error_op();
                         return;
                     }
@@ -773,7 +770,7 @@ impl MatchPlugin {
                 if target_unit.unit_name == source_unit.unit_name {
                     // Stack the units
                     cn().reducers
-                        .match_stack_units(fusion.id, target_unit.id, *source_unit_id)
+                        .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
                         .notify_error_op();
                     return;
                 }
@@ -781,12 +778,7 @@ impl MatchPlugin {
 
             // No stacking - regular move
             cn().reducers
-                .match_move_unit_between_fusions(
-                    *source_fusion_id,
-                    fusion.id,
-                    *source_unit_id,
-                    slot_idx as u32,
-                )
+                .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
                 .notify_error_op();
         }
     }
@@ -840,7 +832,7 @@ impl MatchPlugin {
                     .ui(ui)
                 {
                     cn().reducers
-                        .match_play_unit(payload.0 as u8, fusion.slot as u8)
+                        .match_buy_unit(payload.0 as u8, fusion.slot as u8)
                         .notify_error_op();
                 }
             }
@@ -873,12 +865,7 @@ impl MatchPlugin {
         } else {
             // Different fusion - move unit
             cn().reducers
-                .match_move_unit_between_fusions(
-                    *source_fusion_id,
-                    fusion.id,
-                    *source_unit_id,
-                    slot_idx as u32,
-                )
+                .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
                 .notify_error_op();
         }
     }
