@@ -26,7 +26,6 @@ pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_add_fusion_unit_reducer;
 pub mod match_buy_fusion_lvl_reducer;
-pub mod match_buy_reducer;
 pub mod match_complete_reducer;
 pub mod match_g_type;
 pub mod match_insert_reducer;
@@ -101,7 +100,6 @@ pub use match_add_fusion_unit_reducer::{
 pub use match_buy_fusion_lvl_reducer::{
     match_buy_fusion_lvl, set_flags_for_match_buy_fusion_lvl, MatchBuyFusionLvlCallbackId,
 };
-pub use match_buy_reducer::{match_buy, set_flags_for_match_buy, MatchBuyCallbackId};
 pub use match_complete_reducer::{
     match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
 };
@@ -202,9 +200,6 @@ pub enum Reducer {
         fusion_id: u64,
         unit_id: u64,
     },
-    MatchBuy {
-        i: u8,
-    },
     MatchBuyFusionLvl {
         slot: u8,
     },
@@ -290,7 +285,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
             Reducer::MatchAddFusionUnit { .. } => "match_add_fusion_unit",
-            Reducer::MatchBuy { .. } => "match_buy",
             Reducer::MatchBuyFusionLvl { .. } => "match_buy_fusion_lvl",
             Reducer::MatchComplete => "match_complete",
             Reducer::MatchInsert => "match_insert",
@@ -380,13 +374,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 match_add_fusion_unit_reducer::MatchAddFusionUnitArgs,
             >("match_add_fusion_unit", &value.args)?
             .into()),
-            "match_buy" => Ok(
-                __sdk::parse_reducer_args::<match_buy_reducer::MatchBuyArgs>(
-                    "match_buy",
-                    &value.args,
-                )?
-                .into(),
-            ),
             "match_buy_fusion_lvl" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_lvl_reducer::MatchBuyFusionLvlArgs,
             >("match_buy_fusion_lvl", &value.args)?

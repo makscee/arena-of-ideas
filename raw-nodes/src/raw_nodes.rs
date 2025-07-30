@@ -105,7 +105,6 @@ struct NMatch {
     pub lives: i32,
     pub active: bool,
     pub team: ParentComponent<NTeam>,
-    pub hand: Vec<(CardKind, u64)>,
     pub shop_offers: Vec<ShopOffer>,
     pub battles: ChildComponents<NBattle>,
 }

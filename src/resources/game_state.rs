@@ -195,7 +195,6 @@ pub enum BattlePane {
 pub enum ShopPane {
     Shop,
     Roster,
-    Hand,
     Team,
     Info,
     Fusion,
@@ -239,7 +238,6 @@ impl Pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
-                ShopPane::Hand => MatchPlugin::pane_hand(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
                 ShopPane::Fusion => MatchPlugin::pane_fusion(ui, world)?,
             },

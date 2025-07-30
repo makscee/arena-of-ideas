@@ -304,12 +304,6 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
-    cn().reducers.on_match_buy(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
     cn().reducers.on_match_play_unit(|e, _, _| {
         if !e.check_identity() {
             return;

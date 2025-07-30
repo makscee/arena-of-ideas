@@ -96,15 +96,6 @@ impl MatchPlugin {
                                 .layout(Layout::bottom_up(Align::Center).with_cross_justify(true))
                                 .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
                             |ui| {
-                                if "buy"
-                                    .cstr()
-                                    .as_button()
-                                    .enabled(!slot.sold)
-                                    .ui(ui)
-                                    .clicked()
-                                {
-                                    cn().reducers.match_buy(i as u8).notify_op();
-                                }
                                 if !slot.sold {
                                     context.with_layer_ref(
                                         ContextLayer::Owner(context.entity(slot.node_id).unwrap()),
@@ -200,55 +191,6 @@ impl MatchPlugin {
             );
             if let Some(card) = card {
                 cn().reducers.match_play_house(card.0 as u8).unwrap();
-            }
-            Ok(())
-        })
-    }
-    pub fn pane_hand(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let rect = ui.available_rect_before_wrap();
-            let m = player(context)?.active_match_load(context)?;
-            if ui.available_width() < 30.0 {
-                return Ok(());
-            }
-            ui.columns(7, |ui| {
-                for (i, (card_kind, id)) in m.hand.iter().enumerate() {
-                    let ui = &mut ui[i];
-                    let entity = context.entity(*id).unwrap();
-                    context
-                        .with_owner_ref(entity, |context| {
-                            match card_kind {
-                                CardKind::Unit => {
-                                    let unit = context.get::<NUnit>(entity)?;
-                                    unit.view_card(context, ui)?
-                                        .dnd_set_drag_payload((i, unit.clone()));
-                                }
-                                CardKind::House => {
-                                    let house = context.get::<NHouse>(entity)?;
-                                    house
-                                        .view_card(context, ui)?
-                                        .dnd_set_drag_payload((i, house.clone()));
-                                }
-                            };
-                            Ok(())
-                        })
-                        .ui(ui);
-                }
-            });
-            if let Some(offer) = DndArea::<(usize, ShopSlot)>::new(rect)
-                .text_fn(ui, |(_, slot)| {
-                    format!(
-                        "buy {} [yellow -{}g]",
-                        match slot.card_kind {
-                            CardKind::Unit => format!("unit"),
-                            CardKind::House => format!("house"),
-                        },
-                        slot.price
-                    )
-                })
-                .ui(ui)
-            {
-                cn().reducers.match_buy(offer.0 as u8).unwrap();
             }
             Ok(())
         })
