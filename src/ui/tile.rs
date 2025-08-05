@@ -104,7 +104,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
 
     fn is_tab_closable(&self, _tiles: &Tiles<Pane>, _tile_id: TileId) -> bool {
-        true
+        false
     }
 
     fn on_tab_close(&mut self, tiles: &mut Tiles<Pane>, tile_id: TileId) -> bool {

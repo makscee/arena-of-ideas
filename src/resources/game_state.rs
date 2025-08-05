@@ -92,9 +92,10 @@ impl GameState {
                                 tiles.insert_vertical_tile([top, bottom].into())
                             }
                             5 => {
-                                let top = tiles.insert_horizontal_tile([kinds[0], kinds[1]].into());
-                                let bottom = tiles
-                                    .insert_horizontal_tile([kinds[2], kinds[3], kinds[4]].into());
+                                let top = tiles
+                                    .insert_horizontal_tile([kinds[0], kinds[1], kinds[2]].into());
+                                let bottom =
+                                    tiles.insert_horizontal_tile([kinds[3], kinds[4]].into());
                                 tiles.insert_vertical_tile([top, bottom].into())
                             }
                             6 => {
@@ -267,7 +268,7 @@ impl Pane {
                     }
                 }
                 InspectorPane::Node => {
-                    "Node Editing".cstr_s(CstrStyle::Heading2).label(ui);
+                    "Node Inspector".cstr_s(CstrStyle::Heading2).label(ui);
                     if NodeExplorerPlugin::get_inspected_node(world).is_some() {
                         NodeExplorerPlugin::pane_node(ui, world)?
                     } else {

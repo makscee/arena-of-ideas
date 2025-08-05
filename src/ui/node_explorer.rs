@@ -113,14 +113,6 @@ impl<T: NodeViewFns> NodesListWidget<T> {
             }
             table = table
                 .column(
-                    "owner",
-                    |_, ui, node, _value| {
-                        node.owner().cstr_s(CstrStyle::Small).label(ui);
-                        Ok(())
-                    },
-                    |_, node| Ok(VarValue::u64(node.owner())),
-                )
-                .column(
                     "node",
                     |context, ui, node, _value| {
                         ui.horizontal(|ui| {
@@ -129,6 +121,14 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                                 context,
                                 ui,
                             );
+                            if node.owner() == ID_CORE {
+                                ui.painter().rect_stroke(
+                                    response.rect,
+                                    ROUNDING,
+                                    YELLOW.stroke(),
+                                    egui::StrokeKind::Outside,
+                                );
+                            }
                             response.bar_menu(|ui| {
                                 if "open in inspector".cstr().button(ui).clicked() {
                                     new_selected = Some(node.id());
@@ -400,6 +400,7 @@ impl NodeExplorerPlugin {
             return Ok(());
         };
         let node = id.get_node().to_e_not_found()?;
+        node.kind().cstr().label(ui);
         Context::from_world_r(world, |context| {
             format!(
                 "[tw #]{id} [tw e:]{} [tw owner:] {}",
