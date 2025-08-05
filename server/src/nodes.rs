@@ -25,6 +25,11 @@ pub trait Node: Default + Sized {
     fn save(&self, ctx: &ReducerContext);
     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self;
+    fn owned_kinds() -> HashSet<NodeKind>;
+    fn owned_parents() -> HashSet<NodeKind>;
+    fn owned_children() -> HashSet<NodeKind>;
+    fn linked_children() -> HashSet<NodeKind>;
+    fn linked_parents() -> HashSet<NodeKind>;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;

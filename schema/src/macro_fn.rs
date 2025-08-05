@@ -22,6 +22,10 @@ pub struct ParsedNodeFields {
     pub all_data_types: Vec<Type>,
     pub parent_fields: Vec<Ident>,
     pub parent_types: Vec<Type>,
+    pub linked_children_fields: Vec<Ident>,
+    pub linked_children_types: Vec<Type>,
+    pub linked_parents_fields: Vec<Ident>,
+    pub linked_parents_types: Vec<Type>,
 }
 
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
@@ -38,6 +42,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut data_types = Vec::default();
     let mut parent_fields = Vec::default();
     let mut parent_types = Vec::default();
+    let mut linked_children_fields = Vec::default();
+    let mut linked_children_types = Vec::default();
+    let mut linked_parents_fields = Vec::default();
+    let mut linked_parents_types = Vec::default();
     fn inner_type(type_path: &TypePath) -> Type {
         match &type_path.path.segments.first().unwrap().arguments {
             PathArguments::AngleBracketed(arg) => match arg.args.first().unwrap() {
@@ -55,7 +63,11 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "ChildComponents" || type_ident == "ParentComponents" {
+                if type_ident == "ChildComponents"
+                    || type_ident == "ParentComponents"
+                    || type_ident == "OwnedChildren"
+                    || type_ident == "OwnedParents"
+                {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
@@ -65,13 +77,45 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                         }
                         _ => {}
                     }
-                } else if type_ident == "ParentComponent" || type_ident == "ChildComponent" {
+                } else if type_ident == "ParentComponent"
+                    || type_ident == "ChildComponent"
+                    || type_ident == "OwnedChild"
+                    || type_ident == "OwnedParent"
+                {
                     one_fields_str.push(field_ident.to_string());
                     one_fields.push(field_ident);
                     one_types.push(inner_type(type_path).to_token_stream());
                 } else if type_ident == "ParentLinks" {
                     parent_fields.push(field_ident.clone());
                     parent_types.push(inner_type(type_path));
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedChildrenIds" {
+                    linked_children_fields.push(field_ident.clone());
+                    linked_children_types.push(inner_type(type_path));
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedParentsIds" {
+                    linked_parents_fields.push(field_ident.clone());
+                    linked_parents_types.push(inner_type(type_path));
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedChild" {
+                    // LinkedChild is a single linked child (contains Option<u64>)
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedChildren" {
+                    linked_children_fields.push(field_ident.clone());
+                    linked_children_types.push(inner_type(type_path));
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedParent" {
+                    // LinkedParent is a single linked parent (contains Option<u64>)
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedParents" {
+                    linked_parents_fields.push(field_ident.clone());
+                    linked_parents_types.push(inner_type(type_path));
                     all_data_fields.push(field_ident);
                     all_data_types.push(ty.clone());
                 } else if type_ident == "i32"
@@ -115,6 +159,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         all_data_types,
         parent_fields,
         parent_types,
+        linked_children_fields,
+        linked_children_types,
+        linked_parents_fields,
+        linked_parents_types,
     }
 }
 
@@ -127,6 +175,10 @@ pub fn strings_conversions(
     many_types: &Vec<TokenStream>,
     parent_fields: &Vec<Ident>,
     parent_types: &Vec<Type>,
+    linked_children_fields: &Vec<Ident>,
+    linked_children_types: &Vec<Type>,
+    linked_parents_fields: &Vec<Ident>,
+    linked_parents_types: &Vec<Type>,
 ) -> TokenStream {
     let shared_unpack = shared_unpack_id_fix(
         one_fields,
@@ -135,6 +187,10 @@ pub fn strings_conversions(
         many_types,
         parent_fields,
         parent_types,
+        linked_children_fields,
+        linked_children_types,
+        linked_parents_fields,
+        linked_parents_types,
     );
     quote! {
         fn pack_fill(&self, pn: &mut PackedNodes) {
@@ -155,6 +211,16 @@ pub fn strings_conversions(
             #(
                 for parent in &self.#parent_fields.ids {
                     pn.link_parent_child(*parent, self.id, NodeKind::#parent_types.to_string(), kind.clone());
+                }
+            )*
+            #(
+                for child in &self.#linked_children_fields.ids {
+                    pn.link_parent_child(self.id, *child, kind.clone(), NodeKind::#linked_children_types.to_string());
+                }
+            )*
+            #(
+                for parent in &self.#linked_parents_fields.ids {
+                    pn.link_parent_child(*parent, self.id, NodeKind::#linked_parents_types.to_string(), kind.clone());
                 }
             )*
         }
@@ -342,8 +408,43 @@ pub fn common_node_trait_fns(
     _struct_ident: &Ident,
     one_types: &Vec<TokenStream>,
     many_types: &Vec<TokenStream>,
+    linked_children_types: &Vec<Type>,
+    linked_parents_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
+        fn owned_kinds() -> HashSet<NodeKind> {
+            let mut kinds = Self::owned_parents();
+            kinds.extend(Self::owned_children());
+            kinds
+        }
+        fn owned_parents() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#one_types,
+                )*
+            ].into()
+        }
+        fn owned_children() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#many_types,
+                )*
+            ].into()
+        }
+        fn linked_children() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#linked_children_types,
+                )*
+            ].into()
+        }
+        fn linked_parents() -> HashSet<NodeKind> {
+            [
+                #(
+                    NodeKind::#linked_parents_types,
+                )*
+            ].into()
+        }
         fn component_kinds() -> HashSet<NodeKind> {
             [
                 #(
@@ -368,6 +469,10 @@ pub fn shared_unpack_id_fix(
     many_types: &Vec<TokenStream>,
     parent_fields: &Vec<Ident>,
     parent_types: &Vec<Type>,
+    linked_children_fields: &Vec<Ident>,
+    linked_children_types: &Vec<Type>,
+    linked_parents_fields: &Vec<Ident>,
+    linked_parents_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
         fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
@@ -404,6 +509,12 @@ pub fn shared_unpack_id_fix(
             )*
             #(
                 d.#parent_fields = parent_links(pn.kind_parents(id, NodeKind::#parent_types.as_ref()));
+            )*
+            #(
+                d.#linked_children_fields = linked_children(pn.kind_children(id, NodeKind::#linked_children_types.as_ref()));
+            )*
+            #(
+                d.#linked_parents_fields = linked_parents(pn.kind_parents(id, NodeKind::#linked_parents_types.as_ref()));
             )*
             Some(d)
         }

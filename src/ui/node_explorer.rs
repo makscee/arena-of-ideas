@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Not};
 
 use bevy_egui::egui::Grid;
 
@@ -254,6 +254,16 @@ impl NodeExplorerPlugin {
                     let kind = parent.kind()?;
                     data.parents.entry(kind).or_default().push(parent);
                 }
+            }
+        }
+        for child in kind.all_linked_children() {
+            if !data.children.keys().contains(&child) {
+                data.children.insert(child, default());
+            }
+        }
+        for parent in kind.all_linked_parents() {
+            if !data.parents.keys().contains(&parent) {
+                data.parents.insert(parent, default());
             }
         }
         Ok(())

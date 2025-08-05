@@ -57,6 +57,11 @@ fn main() {
 fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
     quote! {
         pub trait ServerNodeKind {
+            fn owned_kinds(self) -> HashSet<NodeKind>;
+            fn owned_parents(self) -> HashSet<NodeKind>;
+            fn owned_children(self) -> HashSet<NodeKind>;
+            fn linked_children(self) -> HashSet<NodeKind>;
+            fn linked_parents(self) -> HashSet<NodeKind>;
             fn component_kinds(self) -> HashSet<NodeKind>;
             fn children_kinds(self) -> HashSet<NodeKind>;
             fn convert(self, data: &str) -> Result<TNode, ExpressionError>;
@@ -64,6 +69,56 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
         }
 
         impl ServerNodeKind for NodeKind {
+            fn owned_kinds(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::owned_kinds()
+                        }
+                    )*
+                }
+            }
+            fn owned_parents(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::owned_parents()
+                        }
+                    )*
+                }
+            }
+            fn owned_children(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::owned_children()
+                        }
+                    )*
+                }
+            }
+            fn linked_children(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::linked_children()
+                        }
+                    )*
+                }
+            }
+            fn linked_parents(self) -> HashSet<Self> {
+                match self {
+                    NodeKind::None => default(),
+                    #(
+                        Self::#names => {
+                            #names::linked_parents()
+                        }
+                    )*
+                }
+            }
             fn component_kinds(self) -> HashSet<Self> {
                 match self {
                     NodeKind::None => default(),
@@ -129,6 +184,10 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         all_data_types,
         parent_fields,
         parent_types,
+        linked_children_fields,
+        linked_children_types,
+        linked_parents_fields,
+        linked_parents_types,
     } = parse_node_fields(&item.fields);
 
     let strings_conversions = strings_conversions(
@@ -140,6 +199,10 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_types,
         &parent_fields,
         &parent_types,
+        &linked_children_fields,
+        &linked_children_types,
+        &linked_parents_fields,
+        &linked_parents_types,
     );
     if let Fields::Named(fields) = &mut item.fields {
         fields
@@ -158,7 +221,13 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &one_fields,
         &one_types,
     );
-    let common_trait = common_node_trait_fns(struct_ident, &one_types, &many_types);
+    let common_trait = common_node_trait_fns(
+        struct_ident,
+        &one_types,
+        &many_types,
+        &linked_children_types,
+        &linked_parents_types,
+    );
     let shared_new_fns = shared_new_functions(
         struct_ident,
         &all_data_fields,
