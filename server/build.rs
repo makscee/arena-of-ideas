@@ -182,12 +182,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_type_ident: _,
         all_data_fields,
         all_data_types,
-        parent_fields,
-        parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
         linked_parents_types,
+        linked_child_fields,
+        linked_child_types,
+        linked_parent_fields,
+        linked_parent_types,
     } = parse_node_fields(&item.fields);
 
     let strings_conversions = strings_conversions(
@@ -197,12 +199,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_fields,
         &many_fields_str,
         &many_types,
-        &parent_fields,
-        &parent_types,
         &linked_children_fields,
         &linked_children_types,
         &linked_parents_fields,
         &linked_parents_types,
+        &linked_child_fields,
+        &linked_child_types,
+        &linked_parent_fields,
+        &linked_parent_types,
     );
     if let Fields::Named(fields) = &mut item.fields {
         fields
@@ -254,14 +258,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         .iter()
         .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
         .collect_vec();
-    let parent_link_add = parent_fields
-        .iter()
-        .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
-        .collect_vec();
-    let parent_link_remove = parent_fields
-        .iter()
-        .map(|i| Ident::new(&format!("{i}_remove"), Span::call_site()))
-        .collect_vec();
 
     quote! {
         #[derive(Default, Debug)]
@@ -303,36 +299,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         return Err(format!("No {} children found for {}", #many_types::kind_s(), self.id()));
                     }
                     Ok(&mut self.#many_fields)
-                }
-            )*
-            #(
-                pub fn #parent_link_add(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
-                    if self.#parent_fields.ids.contains(&id) {
-                        return Err(format!(
-                            "{}#{} already has parent#{id}",
-                            self.kind(),
-                            self.id
-                        ));
-                    }
-                    self.#parent_fields.ids.push(id);
-                    self.id.add_parent(ctx, id)?;
-                    self.update_self(ctx);
-                    Ok(())
-                }
-            )*
-            #(
-                pub fn #parent_link_remove(&mut self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
-                    let Some(i) = self.#parent_fields.ids.iter().position(|u| *u == id) else {
-                        return Err(format!(
-                            "{}#{} does not have parent#{id}",
-                            self.kind(),
-                            self.id
-                        ));
-                    };
-                    self.#parent_fields.ids.remove(i);
-                    self.id.remove_parent(ctx, id)?;
-                    self.update_self(ctx);
-                    Ok(())
                 }
             )*
             pub fn find_by_data(

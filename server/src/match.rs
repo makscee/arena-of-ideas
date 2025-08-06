@@ -409,7 +409,7 @@ fn match_move_unit_to_slot(
                 let b = unit.description_load(ctx)?.behavior_load(ctx)?;
                 target_fusion.behavior.insert(
                     target_slot_idx,
-                    UnitActionRef {
+                    UnitActionRange {
                         trigger: 0,
                         start: 0,
                         length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
@@ -457,14 +457,14 @@ fn match_move_unit_to_slot(
         if let Some(unit_index) = units.iter().position(|u| u.id == unit_id) {
             target_fusion.behavior.resize(
                 units.len(),
-                UnitActionRef {
+                UnitActionRange {
                     trigger: 0,
                     start: 0,
                     length: 0,
                 },
             );
 
-            target_fusion.behavior[unit_index] = UnitActionRef {
+            target_fusion.behavior[unit_index] = UnitActionRange {
                 trigger: 0,
                 start: 0,
                 length: b.reactions.get(0).map(|r| r.actions.len()).unwrap_or(0) as u8,
@@ -600,7 +600,7 @@ fn match_reorder_fusion_units(
             let behavior = old_behavior
                 .get(old_index)
                 .cloned()
-                .unwrap_or(UnitActionRef {
+                .unwrap_or(UnitActionRange {
                     trigger: 0,
                     start: 0,
                     length: 0,
@@ -807,7 +807,7 @@ fn match_set_fusion_unit_action_range(
             // Ensure behavior vector has the same length as units
             fusion.behavior.resize(
                 units.len(),
-                UnitActionRef {
+                UnitActionRange {
                     trigger: 0,
                     start: 0,
                     length: 0,

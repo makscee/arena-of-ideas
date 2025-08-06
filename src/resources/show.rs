@@ -264,13 +264,13 @@ impl Show for UnitTriggerRef {
         false
     }
 }
-impl Show for Vec<UnitActionRef> {
+impl Show for Vec<UnitActionRange> {
     fn show(&self, _context: &Context, _ui: &mut Ui) {}
     fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {
         false
     }
 }
-impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRef>)> {
+impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRange>)> {
     fn show(&self, _: &Context, _: &mut Ui) {}
     fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
         false

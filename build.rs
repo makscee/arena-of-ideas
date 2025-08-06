@@ -273,12 +273,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_type_ident: _,
         all_data_fields,
         all_data_types,
-        parent_fields,
-        parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
         linked_parents_types,
+        linked_child_fields,
+        linked_child_types,
+        linked_parent_fields,
+        linked_parent_types,
     } = parse_node_fields(&item.fields);
 
     // Add id, owner, and entity fields to the struct
@@ -314,12 +316,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_fields,
         &many_fields_str,
         &many_types,
-        &parent_fields,
-        &parent_types,
         &linked_children_fields,
         &linked_children_types,
         &linked_parents_fields,
         &linked_parents_types,
+        &linked_child_fields,
+        &linked_child_types,
+        &linked_parent_fields,
+        &linked_parent_types,
     );
 
     let common = common_node_fns(
@@ -656,11 +660,26 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
-                    let ids = context.collect_parents_components::<#parent_types>(s.id)?
+                    let ids = context.collect_parents_components::<#linked_parents_types>(s.id)?
                         .into_iter()
                         .map(|n| n.id)
                         .collect_vec();
-                    s.#parent_fields = parent_links::<#parent_types>(ids);
+                    s.#linked_parents_fields = linked_parents::<#linked_parents_types>(ids);
+                )*
+                #(
+                    let ids = context.collect_parents_components::<#linked_children_types>(s.id)?
+                        .into_iter()
+                        .map(|n| n.id)
+                        .collect_vec();
+                    s.#linked_children_fields = linked_children::<#linked_children_types>(ids);
+                )*
+                #(
+                    let id = context.first_parent::<#linked_parent_types>(s.id).ok().map(|n| n.id);
+                    s.#linked_parent_fields = linked_parent::<#linked_parent_types>(id);
+                )*
+                #(
+                    let id = context.first_child::<#linked_child_types>(s.id).ok().map(|n| n.id);
+                    s.#linked_child_fields = linked_child::<#linked_child_types>(id);
                 )*
                 Ok(s)
             }
@@ -672,8 +691,23 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 }
                 context.link_id_entity(self.id, entity)?;
                 #(
-                    for parent in &self.#parent_fields.ids {
+                    for parent in &self.#linked_parents_fields.ids {
                         context.link_parent_child(*parent, self.id)?;
+                    }
+                )*
+                #(
+                    for child in &self.#linked_children_fields.ids {
+                        context.link_parent_child(self.id, *child)?;
+                    }
+                )*
+                #(
+                    if let Some(parent) = &self.#linked_parent_fields {
+                        context.link_parent_child(self.id, *parent);
+                    }
+                )*
+                #(
+                    if let Some(child) = &self.#linked_child_fields {
+                        context.link_parent_child(self.id, *child);
                     }
                 )*
                 #(

@@ -54,7 +54,7 @@ impl NFusion {
     pub fn get_action<'a>(
         context: &'a Context,
         unit_id: u64,
-        ar: &UnitActionRef,
+        ar: &UnitActionRange,
         index: usize,
     ) -> Result<&'a Action, ExpressionError> {
         Self::get_behavior(context, unit_id)?
@@ -174,7 +174,7 @@ impl NFusion {
                             ui.horizontal(|ui| {
                                 for start in 0..r.actions.len() {
                                     for length in 1..=(r.actions.len() - start) {
-                                        let ar = UnitActionRef {
+                                        let ar = UnitActionRange {
                                             trigger: ti as u8,
                                             start: start as u8,
                                             length: length as u8,
@@ -204,7 +204,7 @@ impl NFusion {
                                                     Ok(units) => {
                                                         self.behavior.resize(
                                                             units.len(),
-                                                            UnitActionRef {
+                                                            UnitActionRange {
                                                                 trigger: 0,
                                                                 start: 0,
                                                                 length: 0,
@@ -361,7 +361,7 @@ impl NFusion {
                         if self.behavior.len() < units.len() {
                             self.behavior.resize(
                                 units.len(),
-                                UnitActionRef {
+                                UnitActionRange {
                                     trigger: 0,
                                     start: 0,
                                     length: 0,
