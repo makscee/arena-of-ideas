@@ -154,37 +154,3 @@ where
             .and_then(|id| id.to_node(ctx).ok())
     }
 }
-
-impl NTeam {
-    #[must_use]
-    pub fn clone_ids_remap(&self, ctx: &ReducerContext) -> Result<Self, String> {
-        let mut remap: HashMap<u64, u64> = default();
-        let mut new_team = self.clone(ctx, self.owner, &mut remap);
-        let child_kind = NodeKind::NFusion.to_string();
-        let parent_kind = NodeKind::NUnit.to_string();
-        for fusion in &mut new_team.fusions {
-            if fusion.units.ids.is_empty() {
-                continue;
-            }
-            fusion.units.ids = fusion
-                .units
-                .ids
-                .iter()
-                .map(|u| *remap.get(u).unwrap())
-                .collect();
-            for id in &fusion.units.ids {
-                TNodeLink::add_by_id(
-                    ctx,
-                    *id,
-                    fusion.id,
-                    parent_kind.clone(),
-                    child_kind.clone(),
-                    true,
-                )?;
-            }
-            fusion.trigger.unit = *remap.get(&fusion.trigger.unit).unwrap();
-        }
-        new_team.save(ctx);
-        Ok(new_team)
-    }
-}
