@@ -176,9 +176,9 @@ impl TNodeLink {
 
 #[allow(unused)]
 pub trait NodeIdExt {
-    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
-    fn find(self, ctx: &ReducerContext) -> Option<TNode>;
-    fn find_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
+    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
+    fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode>;
+    fn load_tnode_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
     fn add_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
     fn add_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
@@ -196,18 +196,20 @@ pub trait NodeIdExt {
     fn top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
+    fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool;
+    fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
 }
 impl NodeIdExt for u64 {
-    fn to_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String> {
-        self.find(ctx)
+    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String> {
+        self.load_tnode(ctx)
             .to_custom_e_s_fn(|| format!("Node#{self} not found"))?
             .to_node()
     }
-    fn find(self, ctx: &ReducerContext) -> Option<TNode> {
+    fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode> {
         ctx.db.nodes_world().id().find(self)
     }
-    fn find_err(self, ctx: &ReducerContext) -> Result<TNode, String> {
-        self.find(ctx)
+    fn load_tnode_err(self, ctx: &ReducerContext) -> Result<TNode, String> {
+        self.load_tnode(ctx)
             .to_custom_e_s_fn(|| format!("Failed to find TNode#{self}"))
     }
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind> {
@@ -215,17 +217,17 @@ impl NodeIdExt for u64 {
     }
     fn add_parent(self, ctx: &ReducerContext, parent: u64) -> Result<(), String> {
         let child =
-            TNode::find(ctx, self).to_custom_e_s_fn(|| format!("Link child#{self} not found"))?;
-        let parent = TNode::find(ctx, parent)
+            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link child#{self} not found"))?;
+        let parent = TNode::load(ctx, parent)
             .to_custom_e_s_fn(|| format!("Link parent#{parent} not found"))?;
         TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
     fn add_child(self, ctx: &ReducerContext, child: u64) -> Result<(), String> {
         let parent =
-            TNode::find(ctx, self).to_custom_e_s_fn(|| format!("Link parent#{self} not found"))?;
+            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link parent#{self} not found"))?;
         let child =
-            TNode::find(ctx, child).to_custom_e_s_fn(|| format!("Link child#{child} not found"))?;
+            TNode::load(ctx, child).to_custom_e_s_fn(|| format!("Link child#{child} not found"))?;
         TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
@@ -363,13 +365,27 @@ impl NodeIdExt for u64 {
             .child;
         if child == self { Some(parent) } else { None }
     }
+    fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool {
+        ctx.db
+            .node_links()
+            .parent_child()
+            .filter((id, self))
+            .any(|l| l.solid)
+    }
+    fn has_child(self, ctx: &ReducerContext, id: u64) -> bool {
+        ctx.db
+            .node_links()
+            .parent_child()
+            .filter((self, id))
+            .any(|l| l.solid)
+    }
 }
 
 impl TNode {
     pub fn kind(&self) -> NodeKind {
         NodeKind::from_str(&self.kind).unwrap()
     }
-    pub fn find(ctx: &ReducerContext, id: u64) -> Option<Self> {
+    pub fn load(ctx: &ReducerContext, id: u64) -> Option<Self> {
         ctx.db.nodes_world().id().find(id)
     }
     pub fn delete_by_id(ctx: &ReducerContext, id: u64) {
@@ -431,7 +447,7 @@ pub trait IdVecExt {
 impl IdVecExt for Vec<u64> {
     fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T> {
         self.into_iter()
-            .filter_map(|n| n.to_node::<T>(ctx).ok())
+            .filter_map(|n| n.load_node::<T>(ctx).ok())
             .collect()
     }
 }

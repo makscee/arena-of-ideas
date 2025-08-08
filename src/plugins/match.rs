@@ -241,7 +241,7 @@ impl MatchPlugin {
                             {
                                 format!(
                                     "\n[yellow [b -{}g]]",
-                                    (fusion.lvl + 1) * global_settings().match_g.fusion_lvl_mul
+                                    (fusion.lvl + 1) * global_settings().match_g.fusion_slot_mul
                                 )
                             } else {
                                 default()

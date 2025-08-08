@@ -106,22 +106,26 @@ struct NMatch {
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
     pub team: OwnedChild<NTeam>,
-    pub bench: OwnedChildren<NUnit>,
+    pub bench: OwnedChildren<NBenchSlot>,
     pub battles: OwnedChildren<NBattle>,
 }
 
+struct NBenchSlot {
+    pub index: i32,
+    pub unit: OwnedParent<NUnit>,
+}
+
 struct NFusion {
-    pub units: OwnedParents<NFusionUnit>,
+    pub slots: OwnedParents<NFusionSlot>,
     pub trigger: UnitTriggerRef,
-    pub slot: i32,
+    pub index: i32,
     pub pwr: i32,
     pub hp: i32,
     pub dmg: i32,
-    pub units_limit: i32,
     pub actions_limit: i32,
 }
 
-struct NFusionUnit {
+struct NFusionSlot {
     pub index: i32,
     pub actions: UnitActionRange,
     pub unit: OwnedParent<NUnit>,
@@ -147,8 +151,7 @@ struct NUnitStats {
 }
 
 struct NUnitState {
-    pub xp: i32,
-    pub lvl: i32,
+    pub stacks: i32,
     pub rarity: i32,
 }
 

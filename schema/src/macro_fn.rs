@@ -1,26 +1,29 @@
 use itertools::Itertools;
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
-use quote::ToTokens;
 use quote::quote;
+use strum::VariantNames;
 use syn::{Fields, GenericArgument, Ident, PathArguments, Type, TypePath};
+
+use crate::VarName;
+use crate::VarValue;
 
 #[derive(Default)]
 pub struct ParsedNodeFields {
-    pub one_fields: Vec<Ident>,
-    pub one_fields_str: Vec<String>,
-    pub one_types: Vec<proc_macro2::TokenStream>,
-    pub many_fields: Vec<Ident>,
-    pub many_fields_str: Vec<String>,
-    pub many_types: Vec<proc_macro2::TokenStream>,
     pub var_fields: Vec<Ident>,
     pub var_types: Vec<Type>,
     pub data_fields: Vec<Ident>,
-    pub data_fields_str: Vec<String>,
     pub data_types: Vec<Type>,
-    pub data_type_ident: proc_macro2::TokenStream,
     pub all_data_fields: Vec<Ident>,
     pub all_data_types: Vec<Type>,
+    pub owned_children_fields: Vec<Ident>,
+    pub owned_children_types: Vec<Type>,
+    pub owned_parents_fields: Vec<Ident>,
+    pub owned_parents_types: Vec<Type>,
+    pub owned_child_fields: Vec<Ident>,
+    pub owned_child_types: Vec<Type>,
+    pub owned_parent_fields: Vec<Ident>,
+    pub owned_parent_types: Vec<Type>,
     pub linked_children_fields: Vec<Ident>,
     pub linked_children_types: Vec<Type>,
     pub linked_parents_fields: Vec<Ident>,
@@ -31,23 +34,40 @@ pub struct ParsedNodeFields {
     pub linked_parent_types: Vec<Type>,
 }
 
+impl ParsedNodeFields {
+    pub fn one_owned(&self) -> (Vec<Ident>, Vec<Type>) {
+        let mut fields = self.owned_child_fields.clone();
+        fields.extend(self.owned_parent_fields.clone());
+        let mut types = self.owned_child_types.clone();
+        types.extend(self.owned_parent_types.clone());
+        (fields, types)
+    }
+    pub fn many_owned(&self) -> (Vec<Ident>, Vec<Type>) {
+        let mut fields = self.owned_children_fields.clone();
+        fields.extend(self.owned_parents_fields.clone());
+        let mut types = self.owned_children_types.clone();
+        types.extend(self.owned_parents_types.clone());
+        (fields, types)
+    }
+}
+
 pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     let mut pnf = ParsedNodeFields::default();
     let ParsedNodeFields {
-        one_fields,
-        one_fields_str,
-        one_types,
-        many_fields,
-        many_fields_str,
-        many_types,
         var_fields,
         var_types,
         data_fields,
-        data_fields_str,
         data_types,
-        data_type_ident,
         all_data_fields,
         all_data_types,
+        owned_children_fields,
+        owned_children_types,
+        owned_parents_fields,
+        owned_parents_types,
+        owned_child_fields,
+        owned_child_types,
+        owned_parent_fields,
+        owned_parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -69,77 +89,71 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
     for field in fields.iter() {
         let ty = &field.ty;
         let field_ident = field.ident.clone().unwrap();
+        let field_str = field_ident.to_string();
         match ty {
             syn::Type::Path(type_path) => {
-                let type_ident = &type_path.path.segments.first().unwrap().ident;
-                if type_ident == "OwnedChildren" || type_ident == "OwnedParents" {
+                let type_ident = type_path.path.segments.first().unwrap().ident.to_string();
+                if type_ident == "OwnedChildren" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
-                            many_fields_str.push(field_ident.to_string());
-                            many_fields.push(field_ident);
-                            many_types.push(it.to_token_stream());
+                            owned_children_fields.push(field_ident.clone());
+                            owned_children_types.push(it.clone());
                         }
                         _ => {}
                     }
-                } else if type_ident == "OwnedChild" || type_ident == "OwnedParent" {
-                    one_fields_str.push(field_ident.to_string());
-                    one_fields.push(field_ident);
-                    one_types.push(inner_type(type_path).to_token_stream());
+                } else if type_ident == "OwnedParents" {
+                    let it = inner_type(type_path);
+                    match &it {
+                        Type::Path(..) => {
+                            owned_parents_fields.push(field_ident.clone());
+                            owned_parents_types.push(it.clone());
+                        }
+                        _ => {}
+                    }
+                } else if type_ident == "OwnedChild" {
+                    owned_child_fields.push(field_ident.clone());
+                    owned_child_types.push(inner_type(type_path));
+                } else if type_ident == "OwnedParent" {
+                    owned_parent_fields.push(field_ident.clone());
+                    owned_parent_types.push(inner_type(type_path));
                 } else if type_ident == "LinkedChild" {
                     linked_child_fields.push(field_ident.clone());
                     linked_child_types.push(inner_type(type_path));
-                    all_data_fields.push(field_ident);
-                    all_data_types.push(ty.clone());
-                } else if type_ident == "LinkedChildren" {
-                    linked_children_fields.push(field_ident.clone());
-                    linked_children_types.push(inner_type(type_path));
-                    all_data_fields.push(field_ident);
-                    all_data_types.push(ty.clone());
                 } else if type_ident == "LinkedParent" {
                     linked_parent_fields.push(field_ident.clone());
                     linked_parent_types.push(inner_type(type_path));
-                    all_data_fields.push(field_ident);
-                    all_data_types.push(ty.clone());
+                } else if type_ident == "LinkedChildren" {
+                    linked_children_fields.push(field_ident.clone());
+                    linked_children_types.push(inner_type(type_path));
                 } else if type_ident == "LinkedParents" {
                     linked_parents_fields.push(field_ident.clone());
                     linked_parents_types.push(inner_type(type_path));
-                    all_data_fields.push(field_ident);
-                    all_data_types.push(ty.clone());
-                } else if type_ident == "i32"
-                    || type_ident == "f32"
-                    || type_ident == "String"
-                    || type_ident == "color"
-                    || type_ident == "HexColor"
+                } else if VarName::VARIANTS.contains(&field_str.as_str())
+                    && VarValue::VARIANTS.contains(&type_ident.as_str())
                 {
                     var_fields.push(field_ident.clone());
                     var_types.push(ty.clone());
                 } else {
-                    data_fields_str.push(field_ident.to_string());
-                    data_fields.push(field_ident);
+                    data_fields.push(field_ident.clone());
                     data_types.push(ty.clone());
+                }
+                if !type_ident.starts_with("Owned") {
+                    all_data_fields.push(field_ident);
+                    all_data_types.push(ty.clone());
                 }
             }
             _ => unimplemented!(),
         }
     }
-    all_data_fields.append(&mut var_fields.clone());
-    all_data_fields.append(&mut data_fields.clone());
-
-    all_data_types.append(&mut var_types.clone());
-    all_data_types.append(&mut data_types.clone());
-
-    *data_type_ident = quote! { (#(#all_data_types),*) };
     pnf
 }
 
 pub fn strings_conversions(
     one_fields: &Vec<Ident>,
-    _component_fields_str: &Vec<String>,
-    one_types: &Vec<TokenStream>,
+    one_types: &Vec<Type>,
     many_fields: &Vec<Ident>,
-    _child_fields_str: &Vec<String>,
-    many_types: &Vec<TokenStream>,
+    many_types: &Vec<Type>,
     linked_children_fields: &Vec<Ident>,
     linked_children_types: &Vec<Type>,
     linked_parents_fields: &Vec<Ident>,
@@ -180,12 +194,12 @@ pub fn strings_conversions(
                 }
             )*
             #(
-                if let Some(parent) = &self.linked_parent_fields {
+                if let Some(parent) = &self.#linked_parent_fields.id {
                     pn.link_parent_child(*parent, self.id, NodeKind::#linked_parent_types.to_string(), kind.clone());
                 }
             )*
             #(
-                if let Some(child) = &self.linked_child_fields {
+                if let Some(child) = &self.#linked_child_fields.id {
                     pn.link_parent_child(self.id, *child, NodeKind::#linked_child_types.to_string(), kind.clone());
                 }
             )*
@@ -230,7 +244,7 @@ pub fn common_node_fns(
     all_data_fields: &Vec<Ident>,
     all_data_types: &Vec<Type>,
     one_fields: &Vec<Ident>,
-    one_types: &Vec<TokenStream>,
+    one_types: &Vec<Type>,
 ) -> TokenStream {
     let component_link_fields_mut = one_fields
         .iter()
@@ -325,14 +339,12 @@ pub fn common_node_fns(
     }
 }
 pub fn shared_new_functions(
-    _struct_ident: &Ident,
     all_data_fields: &Vec<Ident>,
     all_data_types: &Vec<Type>,
     one_fields: &Vec<Ident>,
-    one_types: &Vec<TokenStream>,
+    one_types: &Vec<Type>,
     many_fields: &Vec<Ident>,
-    many_types: &Vec<TokenStream>,
-    _is_server: bool,
+    many_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
         pub fn new(
@@ -381,9 +393,8 @@ pub fn shared_new_functions(
 }
 
 pub fn common_node_trait_fns(
-    _struct_ident: &Ident,
-    one_types: &Vec<TokenStream>,
-    many_types: &Vec<TokenStream>,
+    one_types: &Vec<Type>,
+    many_types: &Vec<Type>,
     linked_children_types: &Vec<Type>,
     linked_parents_types: &Vec<Type>,
 ) -> TokenStream {
@@ -440,9 +451,9 @@ pub fn common_node_trait_fns(
 
 pub fn shared_unpack_id_fix(
     one_fields: &Vec<Ident>,
-    one_types: &Vec<TokenStream>,
+    one_types: &Vec<Type>,
     many_fields: &Vec<Ident>,
-    many_types: &Vec<TokenStream>,
+    many_types: &Vec<Type>,
     linked_children_fields: &Vec<Ident>,
     linked_children_types: &Vec<Type>,
     linked_parents_fields: &Vec<Ident>,
@@ -463,12 +474,6 @@ pub fn shared_unpack_id_fix(
                 );
             }
             let mut d = Self::default();
-            d.id = if id == 0 {
-                // Will be assigned proper ID when unpacked to context
-                0
-            } else {
-                id
-            };
             if let Err(e) = d.inject_data(data) {
                 panic!("Unpack deserialize from data err: {e} data: {data}");
             }
@@ -492,10 +497,10 @@ pub fn shared_unpack_id_fix(
                 d.#linked_parents_fields = linked_parents(pn.kind_parents(id, NodeKind::#linked_parents_types.as_ref()));
             )*
             #(
-                d.#linked_child_fields = linked_parent(pn.kind_children(id, NodeKind::#linked_child_types.as_ref()).first());
+                d.#linked_child_fields = linked_child(pn.kind_children(id, NodeKind::#linked_child_types.as_ref()).first().copied());
             )*
             #(
-                d.#linked_parent_fields = linked_parent(pn.kind_parents(id, NodeKind::#linked_parent_types.as_ref()).first());
+                d.#linked_parent_fields = linked_parent(pn.kind_parents(id, NodeKind::#linked_parent_types.as_ref()).first().copied());
             )*
             Some(d)
         }

@@ -1,13 +1,13 @@
 use ecolor::Color32;
 use error::ExpressionError;
-use glam::{vec2, Vec2};
+use glam::{Vec2, vec2};
 use itertools::Itertools;
 use std::cmp::Ordering;
 
 use super::*;
 
 #[allow(non_camel_case_types)]
-#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr, EnumIter)]
+#[derive(Clone, Serialize, Deserialize, Debug, AsRefStr, EnumIter, strum_macros::VariantNames)]
 pub enum VarValue {
     i32(i32),
     f32(f32),
@@ -22,6 +22,7 @@ pub enum VarValue {
 
 impl VarValue {
     pub fn get_string(&self) -> Result<String, ExpressionError> {
+        self.as_ref();
         match self {
             VarValue::i32(v) => Ok(v.to_string()),
             VarValue::f32(v) => Ok(v.to_string()),

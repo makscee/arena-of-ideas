@@ -39,7 +39,7 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
 #[reducer]
 fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), String> {
     let _ = ctx.player()?;
-    let mut node = id.find_err(ctx)?;
+    let mut node = id.load_tnode_err(ctx)?;
     let vote = if vote { 1 } else { -1 };
     node.rating += vote;
     node.update(ctx);
@@ -54,8 +54,8 @@ fn content_vote_link(
     vote: bool,
 ) -> Result<(), String> {
     let _ = ctx.player()?;
-    let parent = parent.find_err(ctx)?;
-    let child = child.find_err(ctx)?;
+    let parent = parent.load_tnode_err(ctx)?;
+    let child = child.load_tnode_err(ctx)?;
     TNodeLink::vote(ctx, &parent, &child, vote);
     Ok(())
 }

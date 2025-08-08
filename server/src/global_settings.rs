@@ -19,7 +19,7 @@ impl Default for GlobalSettings {
                 unit_buy: 3,
                 unit_sell: 1,
                 house_buy: 5,
-                fusion_lvl_mul: 1,
+                fusion_slot_mul: 1,
                 reroll: 1,
                 initial: 10,
             },
@@ -32,7 +32,7 @@ pub struct MatchG {
     pub unit_buy: i32,
     pub unit_sell: i32,
     pub house_buy: i32,
-    pub fusion_lvl_mul: i32,
+    pub fusion_slot_mul: i32,
     pub reroll: i32,
     pub initial: i32,
 }

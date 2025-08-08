@@ -140,7 +140,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
 
         info!("solidifying house {}", house.house_name);
         for id in house.collect_ids() {
-            let mut node = id.find(ctx).unwrap();
+            let mut node = id.load_tnode(ctx).unwrap();
             node.owner = ID_CORE;
             node.update(ctx);
         }

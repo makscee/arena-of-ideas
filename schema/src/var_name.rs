@@ -15,6 +15,7 @@ use super::*;
     AsRefStr,
     EnumString,
     EnumIter,
+    strum_macros::VariantNames,
 )]
 #[repr(u8)]
 pub enum VarName {
@@ -54,6 +55,7 @@ pub enum VarName {
     floor,
     round,
     action_limit,
+    stacks,
 }
 
 impl VarName {

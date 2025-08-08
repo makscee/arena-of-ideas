@@ -70,7 +70,7 @@ impl NMatch {
     fn buy_fusion_lvl(&mut self, ctx: &ReducerContext, slot: usize) -> Result<(), String> {
         let fusion = self.get_slot_fusion(ctx, slot as i32)?;
         fusion.lvl += 1;
-        let price = ctx.global_settings().match_g.fusion_lvl_mul * fusion.lvl;
+        let price = ctx.global_settings().match_g.fusion_slot_mul * fusion.lvl;
         if self.g < price {
             return Err("Not enough g".into());
         }

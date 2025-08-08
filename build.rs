@@ -258,21 +258,22 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
 
 fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let struct_ident = &item.ident;
+    let pnf = parse_node_fields(&item.fields);
     let ParsedNodeFields {
-        one_fields,
-        one_fields_str,
-        one_types,
-        many_fields,
-        many_fields_str,
-        many_types,
         var_fields,
         var_types: _,
         data_fields,
-        data_fields_str: _,
         data_types: _,
-        data_type_ident: _,
         all_data_fields,
         all_data_types,
+        owned_children_fields: _,
+        owned_children_types: _,
+        owned_parents_fields: _,
+        owned_parents_types: _,
+        owned_child_fields: _,
+        owned_child_types: _,
+        owned_parent_fields: _,
+        owned_parent_types: _,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -281,7 +282,11 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         linked_child_types,
         linked_parent_fields,
         linked_parent_types,
-    } = parse_node_fields(&item.fields);
+    } = &pnf;
+    let (one_fields, one_types) = pnf.one_owned();
+    let (many_fields, many_types) = pnf.many_owned();
+    let one_fields_str = one_fields.iter().map(|f| f.to_string()).collect_vec();
+    let many_fields_str = many_fields.iter().map(|f| f.to_string()).collect_vec();
 
     // Add id, owner, and entity fields to the struct
     if let Fields::Named(fields) = &mut item.fields {
@@ -311,19 +316,17 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
 
     let strings_conversions = strings_conversions(
         &one_fields,
-        &one_fields_str,
         &one_types,
         &many_fields,
-        &many_fields_str,
         &many_types,
-        &linked_children_fields,
-        &linked_children_types,
-        &linked_parents_fields,
-        &linked_parents_types,
-        &linked_child_fields,
-        &linked_child_types,
-        &linked_parent_fields,
-        &linked_parent_types,
+        linked_children_fields,
+        linked_children_types,
+        linked_parents_fields,
+        linked_parents_types,
+        linked_child_fields,
+        linked_child_types,
+        linked_parent_fields,
+        linked_parent_types,
     );
 
     let common = common_node_fns(
@@ -335,22 +338,19 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     );
 
     let common_trait_fns = common_node_trait_fns(
-        struct_ident,
         &one_types,
         &many_types,
-        &linked_children_types,
-        &linked_parents_types,
+        linked_children_types,
+        linked_parents_types,
     );
 
     let shared_new_fns = shared_new_functions(
-        struct_ident,
-        &all_data_fields,
-        &all_data_types,
+        all_data_fields,
+        all_data_types,
         &one_fields,
         &one_types,
         &many_fields,
         &many_types,
-        false, // is_server = false
     );
 
     quote! {

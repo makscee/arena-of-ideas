@@ -167,21 +167,23 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
 
 fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let struct_ident = &item.ident;
+    let pnf = parse_node_fields(&item.fields);
+
     let ParsedNodeFields {
-        one_fields,
-        one_fields_str,
-        one_types,
-        many_fields,
-        many_fields_str,
-        many_types,
         var_fields: _,
         var_types: _,
         data_fields: _,
-        data_fields_str: _,
         data_types: _,
-        data_type_ident: _,
         all_data_fields,
         all_data_types,
+        owned_children_fields: _,
+        owned_children_types: _,
+        owned_parents_fields: _,
+        owned_parents_types: _,
+        owned_child_fields: _,
+        owned_child_types: _,
+        owned_parent_fields: _,
+        owned_parent_types: _,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -190,14 +192,13 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         linked_child_types,
         linked_parent_fields,
         linked_parent_types,
-    } = parse_node_fields(&item.fields);
-
+    } = &pnf;
+    let (one_fields, one_types) = pnf.one_owned();
+    let (many_fields, many_types) = pnf.many_owned();
     let strings_conversions = strings_conversions(
         &one_fields,
-        &one_fields_str,
         &one_types,
         &many_fields,
-        &many_fields_str,
         &many_types,
         &linked_children_fields,
         &linked_children_types,
@@ -226,21 +227,18 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &one_types,
     );
     let common_trait = common_node_trait_fns(
-        struct_ident,
         &one_types,
         &many_types,
         &linked_children_types,
         &linked_parents_types,
     );
     let shared_new_fns = shared_new_functions(
-        struct_ident,
         &all_data_fields,
         &all_data_types,
         &one_fields,
         &one_types,
         &many_fields,
         &many_types,
-        true, // is_server = true
     );
     let one_link_fields_load = one_fields
         .iter()
@@ -266,16 +264,16 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #one_link_fields_set(&mut self, ctx: &ReducerContext, mut #one_fields: #one_types) -> Result<&mut Self, String> {
-                    self.id.add_parent(ctx, #one_fields.id)?;
-                    self.#one_fields = Some(#one_fields);
+                pub fn #one_link_fields_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                    self.id.add_parent(ctx, node.id)?;
+                    self.#one_fields = Some(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #many_link_fields_set(&mut self, ctx: &ReducerContext, mut #many_fields: #many_types) -> Result<&mut Self, String> {
-                    self.id.add_child(ctx, #many_fields.id)?;
-                    self.#many_fields.push(#many_fields);
+                pub fn #many_link_fields_set(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                    self.id.add_child(ctx, node.id)?;
+                    self.#many_fields.push(node);
                     Ok(self)
                 }
             )*
@@ -385,13 +383,13 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 #(
                     if let Some(n) = &self.#one_fields {
                         TNodeLink::solidify(ctx, n.id, self.id)?;
-                        n.solidify_links(ctx);
+                        n.solidify_links(ctx)?;
                     }
                 )*
                 #(
                     for n in &self.#many_fields {
                         TNodeLink::solidify(ctx, self.id, n.id)?;
-                        n.solidify_links(ctx);
+                        n.solidify_links(ctx)?;
                     }
                 )*
                 Ok(())

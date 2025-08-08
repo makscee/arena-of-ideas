@@ -98,27 +98,29 @@ where
         ctx.db.nodes_world().id().update(node);
     }
     fn delete_self(&self, ctx: &ReducerContext) {
+        ctx.db.node_links().child().delete(self.id());
+        ctx.db.node_links().parent().delete(self.id());
         TNode::delete_by_id(ctx, self.id());
     }
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .get_kind_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .get_kind_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .find_kind_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn find_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .find_kind_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn collect_parents<P: NodeExt>(&self, ctx: &ReducerContext) -> Vec<P> {
         self.id()
@@ -136,21 +138,21 @@ where
     fn top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .top_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .top_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn mutual_top_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .mutual_top_parent(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
     fn mutual_top_child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()
             .mutual_top_child(ctx, P::kind_s())
-            .and_then(|id| id.to_node(ctx).ok())
+            .and_then(|id| id.load_node(ctx).ok())
     }
 }
