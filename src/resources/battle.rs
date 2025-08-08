@@ -312,9 +312,9 @@ impl BattleSimulation {
                 Ok(context
                     .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
                     .into_iter()
-                    .sorted_by_key(|s| s.slot)
+                    .sorted_by_key(|s| s.index)
                     .filter_map(|n| {
-                        if !n.units.ids.is_empty() {
+                        if context.first_parent::<NUnit>(n.id).is_ok() {
                             Some(n.entity())
                         } else {
                             None

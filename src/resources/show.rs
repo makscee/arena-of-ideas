@@ -264,6 +264,15 @@ impl Show for UnitTriggerRef {
         false
     }
 }
+impl Show for UnitActionRange {
+    fn show(&self, _context: &Context, ui: &mut Ui) {
+        format!("{}: {}-{}", self.trigger, self.start, self.length).label(ui);
+    }
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}
 impl Show for Vec<UnitActionRange> {
     fn show(&self, _context: &Context, _ui: &mut Ui) {}
     fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {

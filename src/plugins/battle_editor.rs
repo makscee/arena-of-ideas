@@ -436,7 +436,8 @@ impl BattleEditorPlugin {
             for unit_id in units_to_remove {
                 context.unlink_parent_child(unit_id, id).notify_error_op();
                 if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
-                    fusion.units.ids.retain(|&u| u != unit_id);
+                    todo!();
+                    // fusion.units.ids.retain(|&u| u != unit_id);
                     changed = true;
                 }
             }
@@ -447,7 +448,7 @@ impl BattleEditorPlugin {
             let team = context.first_parent::<NTeam>(id)?;
             let houses = team.houses_load(context);
             let fusion = context.get::<NFusion>(context.entity(id)?)?;
-            let fusion_unit_ids = fusion.units.ids.clone();
+            let fusion_unit_ids = Vec::new();
             let mut add_unit: Option<u64> = None;
 
             // Collect all house units upfront to avoid borrowing issues
@@ -488,8 +489,8 @@ impl BattleEditorPlugin {
             if let Some(unit_id) = add_unit {
                 context.link_parent_child(unit_id, id).notify_error_op();
                 if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
-                    fusion.units.ids.push(unit_id);
-                    fusion.action_limit = 100;
+                    // fusion.units.ids.push(unit_id);
+                    fusion.actions_limit = 100;
                     changed = true;
                 }
             }
@@ -725,12 +726,12 @@ impl BattleEditorPlugin {
                 if let Some(fusion) =
                     (&mut component as &mut dyn std::any::Any).downcast_mut::<NFusion>()
                 {
-                    fusion.slot = 0;
+                    // fusion.slot = 0;
                     fusion.pwr = 1;
                     fusion.hp = 1;
                     fusion.dmg = 1;
-                    fusion.lvl = 1;
-                    fusion.action_limit = 1;
+                    // fusion.lvl = 1;
+                    fusion.actions_limit = 1;
                 }
             }
             _ => {}
@@ -758,7 +759,7 @@ impl BattleEditorPlugin {
                 }
             };
             let fusion = team.fusions_load(context).iter().find_map(|f| {
-                if f.slot == fusion_slot {
+                if f.index == fusion_slot {
                     Some(f.id())
                 } else {
                     None
@@ -812,12 +813,12 @@ impl BattleEditorPlugin {
             .first_child::<NUnit>(context.id(house_entity).unwrap())
             .map(|u| u.id)
         {
-            context
-                .get_mut::<NFusion>(fusion_entity)
-                .unwrap()
-                .units
-                .ids
-                .push(unit);
+            // context
+            //     .get_mut::<NFusion>(fusion_entity)
+            //     .unwrap()
+            //     .units
+            //     .ids
+            //     .push(unit);
             context.link_parent_child(unit, fusion_id).unwrap();
         }
 
@@ -838,7 +839,7 @@ impl BattleEditorPlugin {
                 }
             };
             let fusion = team.fusions_load(context).iter().find_map(|f| {
-                if f.slot == fusion_slot {
+                if f.index == fusion_slot {
                     Some(f.id())
                 } else {
                     None

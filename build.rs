@@ -701,12 +701,12 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
-                    if let Some(parent) = &self.#linked_parent_fields {
+                    if let Some(parent) = &self.#linked_parent_fields.id {
                         context.link_parent_child(self.id, *parent);
                     }
                 )*
                 #(
-                    if let Some(child) = &self.#linked_child_fields {
+                    if let Some(child) = &self.#linked_child_fields.id {
                         context.link_parent_child(self.id, *child);
                     }
                 )*

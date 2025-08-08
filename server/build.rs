@@ -56,6 +56,9 @@ fn main() {
 
 fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
     quote! {
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         pub trait ServerNodeKind {
             fn owned_kinds(self) -> HashSet<NodeKind>;
             fn owned_parents(self) -> HashSet<NodeKind>;
@@ -67,7 +70,6 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
             fn convert(self, data: &str) -> Result<TNode, ExpressionError>;
             fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
         }
-
         impl ServerNodeKind for NodeKind {
             fn owned_kinds(self) -> HashSet<Self> {
                 match self {
@@ -261,6 +263,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         #[derive(Default, Debug)]
         pub #item
         #common
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl #struct_ident {
             #shared_new_fns
             #(
@@ -321,6 +326,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 n.map(|n| n.to_node().unwrap())
             }
         }
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
         impl Node for #struct_ident {
             #strings_conversions
             #common_trait

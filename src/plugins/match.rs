@@ -76,11 +76,12 @@ impl MatchPlugin {
                 ui.vertical(|ui| {
                     format!("g: [yellow [b {}]]", m.g).label(ui);
                     if "reroll".cstr().button(ui).clicked() {
-                        cn().reducers.match_reroll().notify_op();
+                        cn().reducers.match_shop_reroll().notify_op();
                     }
                     ui.add_space(20.0);
                     if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                        cn().reducers.match_start_battle().notify_op();
+                        todo!();
+                        // cn().reducers.match_start_battle().notify_op();
                     }
                     ui.expand_to_include_y(available_rect.max.y);
                 });
@@ -143,9 +144,10 @@ impl MatchPlugin {
                 .ui(ui)
             {
                 let (fusion_id, _slot_idx, unit_id) = payload.as_ref();
-                cn().reducers
-                    .match_sell_fusion_unit(*fusion_id, *unit_id)
-                    .notify_op();
+                todo!();
+                // cn().reducers
+                //     .match_sell_fusion_unit(*fusion_id, *unit_id)
+                //     .notify_op();
             }
 
             Ok(())
@@ -190,7 +192,7 @@ impl MatchPlugin {
                 },
             );
             if let Some(card) = card {
-                cn().reducers.match_play_house(card.0 as u8).unwrap();
+                // cn().reducers.match_play_house(card.0 as u8).unwrap();
             }
             Ok(())
         })
@@ -200,74 +202,74 @@ impl MatchPlugin {
             let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
-            NFusion::slots_editor(
-                team.entity(),
-                context,
-                ui,
-                |ui, resp, fusion| {
-                    if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
-                        .id(fusion.slot)
-                        .text_fn(ui, |unit| {
-                            let lvl_increase = match fusion.units(context) {
-                                Ok(units) => {
-                                    if let Some(unit) =
-                                        units.iter().find(|u| u.unit_name == unit.1.unit_name)
-                                    {
-                                        let Ok(state) = unit.state_load(context) else {
-                                            return "\nstate error".to_owned();
-                                        };
-                                        if state.xp + 1 >= state.lvl {
-                                            format!(
-                                                "\n[n [tl increase lvl:]\n{} -> {}]",
-                                                state.lvl,
-                                                state.lvl + 1
-                                            )
-                                        } else {
-                                            format!(
-                                                "\n[n [tl increase xp:]\n{} -> {} ({})]",
-                                                state.xp,
-                                                state.xp + 1,
-                                                state.lvl
-                                            )
-                                        }
-                                    } else {
-                                        default()
-                                    }
-                                }
-                                Err(e) => e.cstr(),
-                            };
-                            let cost = if lvl_increase.is_empty()
-                                && fusion.units.ids.len() as i32 >= fusion.lvl
-                            {
-                                format!(
-                                    "\n[yellow [b -{}g]]",
-                                    (fusion.lvl + 1) * global_settings().match_g.fusion_slot_mul
-                                )
-                            } else {
-                                default()
-                            };
-                            format!("play [b {}]{cost}{lvl_increase}", unit.1.unit_name)
-                        })
-                        .ui(ui)
-                    {
-                        cn().reducers
-                            .match_buy_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
-                            .notify_error_op();
-                    }
-                },
-                |fusions| {
-                    cn().reducers.match_reorder_fusions(fusions).unwrap();
-                },
-            )
-            .ui(ui);
-            if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
-                .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
-                .ui(ui)
-            {
-                cn().reducers
-                    .match_play_house(house.0 as u8)
-                    .notify_error_op();
-            }
+            // NFusion::slots_editor(
+            //     team.entity(),
+            //     context,
+            //     ui,
+            //     |ui, resp, fusion| {
+            //         if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
+            //             .id(fusion.slot)
+            //             .text_fn(ui, |unit| {
+            //                 let lvl_increase = match fusion.units(context) {
+            //                     Ok(units) => {
+            //                         if let Some(unit) =
+            //                             units.iter().find(|u| u.unit_name == unit.1.unit_name)
+            //                         {
+            //                             let Ok(state) = unit.state_load(context) else {
+            //                                 return "\nstate error".to_owned();
+            //                             };
+            //                             if state.xp + 1 >= state.lvl {
+            //                                 format!(
+            //                                     "\n[n [tl increase lvl:]\n{} -> {}]",
+            //                                     state.lvl,
+            //                                     state.lvl + 1
+            //                                 )
+            //                             } else {
+            //                                 format!(
+            //                                     "\n[n [tl increase xp:]\n{} -> {} ({})]",
+            //                                     state.xp,
+            //                                     state.xp + 1,
+            //                                     state.lvl
+            //                                 )
+            //                             }
+            //                         } else {
+            //                             default()
+            //                         }
+            //                     }
+            //                     Err(e) => e.cstr(),
+            //                 };
+            //                 let cost = if lvl_increase.is_empty()
+            //                     && fusion.units.ids.len() as i32 >= fusion.lvl
+            //                 {
+            //                     format!(
+            //                         "\n[yellow [b -{}g]]",
+            //                         (fusion.lvl + 1) * global_settings().match_g.fusion_slot_mul
+            //                     )
+            //                 } else {
+            //                     default()
+            //                 };
+            //                 format!("play [b {}]{cost}{lvl_increase}", unit.1.unit_name)
+            //             })
+            //             .ui(ui)
+            //         {
+            //             cn().reducers
+            //                 .match_buy_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
+            //                 .notify_error_op();
+            //         }
+            //     },
+            //     |fusions| {
+            //         cn().reducers.match_reorder_fusions(fusions).unwrap();
+            //     },
+            // )
+            // .ui(ui);
+            // if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
+            //     .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
+            //     .ui(ui)
+            // {
+            //     cn().reducers
+            //         .match_play_house(house.0 as u8)
+            //         .notify_error_op();
+            // }
 
             Ok(())
         })
@@ -427,7 +429,7 @@ impl MatchPlugin {
         ui.label(format!(
             "{}/{}",
             fusion.get_action_count(),
-            fusion.action_limit
+            fusion.actions_limit
         ));
 
         if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
@@ -464,7 +466,7 @@ impl MatchPlugin {
     ) -> Result<(), ExpressionError> {
         ui.vertical(|ui| -> Result<(), ExpressionError> {
             let units = fusion.units(context).unwrap_or_default();
-            let max_slots = fusion.lvl as usize;
+            let max_slots = fusion.slots_load(context).len();
 
             for slot_idx in 0..max_slots {
                 if let Some(unit) = units.get(slot_idx) {
@@ -477,7 +479,7 @@ impl MatchPlugin {
             ui.add_space(5.0);
             if "buy slot".cstr().button(ui).clicked() {
                 cn().reducers
-                    .match_buy_fusion_lvl(fusion.slot as u8)
+                    .match_buy_fusion_slot(fusion.id)
                     .notify_error_op();
             }
             Ok(())
@@ -499,8 +501,7 @@ impl MatchPlugin {
 
                 // Display level and XP
                 if let Ok(state) = unit.state_load(context) {
-                    ui.label(format!("Lvl {}", state.lvl));
-                    ui.label(format!("XP {}/{}", state.xp, state.lvl));
+                    ui.label(format!("Stacks {}", state.stacks));
                 }
 
                 Self::handle_unit_drag_drop(ui, context, fusion, unit, fusion_idx, slot_idx, resp);
@@ -587,9 +588,9 @@ impl MatchPlugin {
                         });
 
                     if let Some((new_start, new_length)) = range_changed {
-                        cn().reducers
-                            .match_set_fusion_unit_action_range(unit.id, new_start, new_length)
-                            .notify_error_op();
+                        // cn().reducers
+                        //     .match_set_fusion_unit_action_range(unit.id, new_start, new_length)
+                        //     .notify_error_op();
                     }
                 }
             }
@@ -599,10 +600,11 @@ impl MatchPlugin {
     }
 
     fn get_action_range(fusion: &NFusion, slot_idx: usize) -> (u8, u8) {
-        let current_action_ref = fusion.behavior.get(slot_idx);
-        let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
-        let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
-        (current_start, current_len)
+        // let current_action_ref = fusion.behavior.get(slot_idx);
+        // let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
+        // let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
+        // (current_start, current_len)
+        (0, 0)
     }
 
     fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
@@ -720,9 +722,9 @@ impl MatchPlugin {
                 {
                     if let Ok(shop_unit) = context.get_by_id::<NUnit>(shop_payload.1.node_id) {
                         if shop_unit.unit_name == unit.unit_name {
-                            cn().reducers
-                                .match_buy_unit_allow_stack(shop_payload.0 as u8, fusion.slot as u8)
-                                .notify_error_op();
+                            // cn().reducers
+                            //     .match_buy_unit_allow_stack(shop_payload.0 as u8, fusion.slot as u8)
+                            //     .notify_error_op();
                         }
                     }
                 }
@@ -748,9 +750,9 @@ impl MatchPlugin {
                 if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
                     if target_unit.unit_name == source_unit.unit_name {
                         // Stack the units
-                        cn().reducers
-                            .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                            .notify_error_op();
+                        // cn().reducers
+                        //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
+                        //     .notify_error_op();
                         return;
                     }
                 }
@@ -759,9 +761,9 @@ impl MatchPlugin {
                 if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
                     let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
                     unit_ids.swap(*source_slot_idx, slot_idx);
-                    cn().reducers
-                        .match_reorder_fusion_units(fusion.id, unit_ids)
-                        .notify_error_op();
+                    // cn().reducers
+                    //     .match_reorder_fusion_units(fusion.id, unit_ids)
+                    //     .notify_error_op();
                 }
             }
         } else {
@@ -769,17 +771,17 @@ impl MatchPlugin {
             if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
                 if target_unit.unit_name == source_unit.unit_name {
                     // Stack the units
-                    cn().reducers
-                        .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                        .notify_error_op();
+                    // cn().reducers
+                    //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
+                    //     .notify_error_op();
                     return;
                 }
             }
 
             // No stacking - regular move
-            cn().reducers
-                .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                .notify_error_op();
+            // cn().reducers
+            //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
+            //     .notify_error_op();
         }
     }
 
@@ -831,9 +833,9 @@ impl MatchPlugin {
                     })
                     .ui(ui)
                 {
-                    cn().reducers
-                        .match_buy_unit(payload.0 as u8, fusion.slot as u8)
-                        .notify_error_op();
+                    // cn().reducers
+                    //     .match_buy_unit(payload.0 as u8, fusion.slot as u8)
+                    //     .notify_error_op();
                 }
             }
         }
@@ -850,7 +852,7 @@ impl MatchPlugin {
         if *source_fusion_id == fusion.id {
             // Same fusion - reorder
             let current_units = fusion.units(context).unwrap_or_default();
-            if *source_slot_idx < current_units.len() && slot_idx < fusion.lvl as usize {
+            if *source_slot_idx < current_units.len() {
                 let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
                 let moved_unit = unit_ids.remove(*source_slot_idx);
                 if slot_idx >= unit_ids.len() {
@@ -858,15 +860,15 @@ impl MatchPlugin {
                 } else {
                     unit_ids.insert(slot_idx, moved_unit);
                 }
-                cn().reducers
-                    .match_reorder_fusion_units(fusion.id, unit_ids)
-                    .notify_error_op();
+                // cn().reducers
+                //     .match_reorder_fusion_units(fusion.id, unit_ids)
+                //     .notify_error_op();
             }
         } else {
             // Different fusion - move unit
-            cn().reducers
-                .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                .notify_error_op();
+            // cn().reducers
+            //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
+            //     .notify_error_op();
         }
     }
 
@@ -879,9 +881,9 @@ impl MatchPlugin {
                     })
                     .ui(ui)
                 {
-                    cn().reducers
-                        .match_play_house(shop_item.0 as u8)
-                        .notify_error_op();
+                    // cn().reducers
+                    //     .match_play_house(shop_item.0 as u8)
+                    //     .notify_error_op();
                 }
             }
         }

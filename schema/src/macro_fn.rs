@@ -224,7 +224,6 @@ pub fn strings_conversions(
         fn reassign_ids(&mut self, next_id: &mut u64) {
             self.set_id(*next_id);
             *next_id += 1;
-            let id = self.id();
             #(
                 if let Some(d) = self.#one_fields.as_mut() {
                     d.reassign_ids(next_id);

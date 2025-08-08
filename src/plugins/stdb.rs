@@ -292,61 +292,6 @@ pub fn subscribe_reducers() {
     cn().reducers.on_match_insert(|e| {
         e.event.notify_error();
     });
-    cn().reducers.on_match_reorder_fusions(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_reorder_fusion_units(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_buy_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_buy_unit_allow_stack(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_move_owned_unit(|e, _, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_play_house(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_buy_fusion_lvl(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers
-        .on_match_set_fusion_unit_action_range(|e, _, _, _| {
-            if !e.check_identity() {
-                return;
-            }
-            e.event.notify_error();
-        });
-    cn().reducers.on_match_start_battle(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
     cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
         if !e.check_identity() {
             return;
