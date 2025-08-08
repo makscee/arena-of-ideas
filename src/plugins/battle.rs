@@ -65,10 +65,13 @@ impl BattlePlugin {
         for team in [&mut left, &mut right] {
             while team.fusions.len() < slots {
                 let mut fusion = NFusion::default();
-                fusion.slot = team.fusions.len() as i32;
+                fusion.index = team.fusions.len() as i32;
                 fusion.id = next_id();
                 fusion.owner = team.owner;
-                fusion.units_limit = 1;
+                let mut slot = NFusionSlot::default();
+                slot.id = next_id();
+                slot.owner = team.owner;
+                fusion.slots.push(slot);
                 team.fusions.push(fusion);
             }
         }

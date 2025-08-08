@@ -146,6 +146,50 @@ fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
+fn match_submit_battle_result(
+    ctx: &ReducerContext,
+    id: u64,
+    result: bool,
+    hash: u64,
+) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    let battle = m.battles_load(ctx)?.last_mut().unwrap();
+    if battle.id != id {
+        return Err("Wrong Battle id".into());
+    }
+    if battle.result.is_some() {
+        return Err("Battle result already submitted".into());
+    }
+    battle.result = Some(result);
+    battle.hash = hash;
+    if result {
+        m.floor += 1;
+    } else {
+        m.lives -= 1;
+    }
+    if m.lives <= 0 {
+        m.active = false;
+    }
+    m.g += ctx.global_settings().match_g.initial;
+    match_shop_reroll(ctx)?;
+    player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    if m.active {
+        Err("Match is still active".into())
+    } else {
+        m.delete_with_components(ctx);
+        Ok(())
+    }
+}
+
+#[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;

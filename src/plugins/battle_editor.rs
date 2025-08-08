@@ -407,21 +407,15 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            if Self::show_node_editor::<NFusion>(id, context, ui)? {
-                changed = true;
-            }
+            changed |= Self::show_node_editor::<NFusion>(id, context, ui)?;
             ui.separator();
-
             ui.heading("Units in Fusion");
 
             let fusion = context.get::<NFusion>(context.entity(id)?)?;
-            let fusion_unit_ids = fusion.units.ids.clone();
             let mut units_to_remove = Vec::new();
-
-            for unit_id in fusion_unit_ids {
-                if let Ok(unit) = context.get::<NUnit>(context.entity(unit_id)?) {
+            for slot in fusion.slots_load(context) {
+                if let Ok(unit) = slot.unit_load(context) {
                     let mut remove_clicked = false;
-
                     if Self::show_node_with_action_button(
                         unit,
                         context,
@@ -429,12 +423,12 @@ impl BattleEditorPlugin {
                         Some(("Remove", &mut remove_clicked)),
                     ) {
                         action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
-                            unit_id,
+                            unit.id,
                         )));
                     }
 
                     if remove_clicked {
-                        units_to_remove.push(unit_id);
+                        units_to_remove.push(unit.id);
                     }
                 }
             }
@@ -779,27 +773,10 @@ impl BattleEditorPlugin {
         let fusion_entity = context.entity(fusion_id).unwrap();
 
         // Create complete house with unit using new_full
-        let unit_stats = NUnitStats::new_full(
-            team_owner, 1, // pwr
-            1, // hp
-        );
-
-        let unit_state = NUnitState::new_full(
-            team_owner, 0, // xp
-            1, // lvl
-            1, // rarity
-        );
-
-        let unit_behavior = NUnitBehavior::new_full(
-            team_owner,
-            vec![], // reactions - empty for now
-        );
-
-        let unit_representation = NUnitRepresentation::new_full(
-            team_owner,
-            default(), // material
-        );
-
+        let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
+        let unit_state = NUnitState::new_full(team_owner, 1, 1);
+        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
+        let unit_representation = NUnitRepresentation::new_full(team_owner, default());
         let unit_description = NUnitDescription::new_full(
             team_owner,
             "Default unit description".to_string(),
@@ -810,15 +787,13 @@ impl BattleEditorPlugin {
         let unit = NUnit::new_full(
             team_owner,
             "Default Unit".to_string(),
+            default(),
             unit_description,
             unit_stats,
             unit_state,
         );
 
-        let house_color = NHouseColor::new_full(
-            team_owner,
-            default(), // color
-        );
+        let house_color = NHouseColor::new_full(team_owner, default());
         let house = NHouse::new_full(
             team_owner,
             "Default House".to_string(),
