@@ -63,7 +63,10 @@ impl SFnInfo for NHouse {
     fn see_info_cstr(&self, context: &Context) -> Cstr {
         let mut info_parts = Vec::new();
 
-        let units_count = self.units_load(context).len();
+        let units_count = context
+            .collect_children_components::<NUnit>(self.id)
+            .map(|u| u.len())
+            .unwrap_or_default();
         if units_count > 0 {
             info_parts.push(format!("units: {}", units_count));
         }

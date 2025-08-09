@@ -131,15 +131,17 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 continue;
             }
         }
-        if let Some(units) = units.remove(&house.id) {
-            house.units = units;
-        } else {
+        let Some(units) = units.remove(&house.id) else {
             error!("units failed");
             continue;
-        }
+        };
 
         info!("solidifying house {}", house.house_name);
-        for id in house.collect_ids() {
+        for id in house
+            .collect_ids()
+            .into_iter()
+            .chain(units.into_iter().flat_map(|u| u.collect_ids()))
+        {
             let mut node = id.load_tnode(ctx).unwrap();
             node.owner = ID_CORE;
             node.update(ctx);

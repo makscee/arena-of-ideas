@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 
@@ -8,7 +8,7 @@ use super::*;
 pub struct PackedNodes {
     pub root: u64,
     pub nodes: HashMap<u64, NodeData>,
-    pub links: Vec<NodeLink>,
+    pub links: HashSet<NodeLink>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -16,7 +16,7 @@ pub struct NodeData {
     pub kind: String,
     pub data: String,
 }
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
 pub struct NodeLink {
     pub parent: u64,
     pub child: u64,
@@ -41,7 +41,7 @@ impl PackedNodes {
         parent_kind: String,
         child_kind: String,
     ) {
-        self.links.push(NodeLink {
+        self.links.insert(NodeLink {
             child,
             parent,
             parent_kind,
@@ -94,19 +94,14 @@ impl PackedNodes {
             remap.insert(id, new_id);
             self.nodes.insert(new_id, data);
         }
-        for NodeLink {
-            parent,
-            child,
-            parent_kind: _,
-            child_kind: _,
-        } in &mut self.links
-        {
-            if let Some(id) = remap.get(parent) {
-                *parent = *id;
+        self.links = HashSet::from_iter(self.links.drain().map(|mut l| {
+            if let Some(id) = remap.get(&l.parent) {
+                l.parent = *id;
             }
-            if let Some(id) = remap.get(child) {
-                *child = *id;
+            if let Some(id) = remap.get(&l.child) {
+                l.child = *id;
             }
-        }
+            l
+        }));
     }
 }

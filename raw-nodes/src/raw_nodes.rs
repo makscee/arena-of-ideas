@@ -45,7 +45,7 @@ struct NHouse {
     pub color: OwnedParent<NHouseColor>,
     pub action: OwnedParent<NActionAbility>,
     pub status: OwnedParent<NStatusAbility>,
-    pub units: OwnedChildren<NUnit>,
+    pub units: LinkedChildren<NUnit>,
 }
 
 struct NHouseColor {

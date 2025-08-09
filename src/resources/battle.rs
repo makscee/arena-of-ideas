@@ -301,12 +301,12 @@ impl BattleSimulation {
         let mut world = World::new();
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
+        dbg!(&battle.left);
         Context::from_world_r(&mut world, |context| {
             battle.left.unpack_entity(context, team_left)?;
             battle.right.unpack_entity(context, team_right)
         })
         .log();
-
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             Context::from_world_ref_r(world, |context| {
                 Ok(context
@@ -314,7 +314,7 @@ impl BattleSimulation {
                     .into_iter()
                     .sorted_by_key(|s| s.index)
                     .filter_map(|n| {
-                        if context.first_parent::<NUnit>(n.id).is_ok() {
+                        if dbg!(context.first_parent_recursive::<NUnit>(n.id)).is_ok() {
                             Some(n.entity())
                         } else {
                             None
@@ -325,6 +325,7 @@ impl BattleSimulation {
             .unwrap()
         }
         let fusions_left = entities_by_slot(team_left, &world);
+        dbg!(&fusions_left);
         let fusions_right = entities_by_slot(team_right, &world);
         Self {
             world,

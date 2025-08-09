@@ -53,7 +53,10 @@ impl SFnCard for NHouse {
                 if let Ok(status) = self.status_load(context) {
                     status.see(context).tag_card(ui).ok();
                 }
-                for unit in self.units_load(context) {
+                for unit in context
+                    .collect_children_components::<NUnit>(self.id)
+                    .unwrap()
+                {
                     context
                         .with_owner_ref(unit.entity(), |context| {
                             unit.clone().see(context).tag_card(ui)

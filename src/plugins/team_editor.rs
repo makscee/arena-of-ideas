@@ -20,16 +20,11 @@ pub struct TeamEditor<'a> {
     context: &'a Context<'a>,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum SlotTarget {
-    Bench(u64),  // NBenchSlot id
-    Fusion(u64), // NFusionSlot id
-}
-
 #[derive(Debug, Clone)]
 pub enum TeamAction {
-    MoveUnit { unit_id: u64, target: SlotTarget },
+    MoveUnit { unit_id: u64, target: u64 },
     ContextMenuAction { slot_id: u64, action_name: String },
+    AddSlot { fusion_id: u64 },
 }
 
 impl<'a> TeamEditor<'a> {
@@ -110,7 +105,7 @@ impl<'a> TeamEditor<'a> {
             ui.separator();
 
             for slot in bench_slots {
-                Self::render_bench_slot(ui, slot, context, actions);
+                Self::render_slot(ui, slot.id, context, actions);
             }
         });
     }
@@ -123,52 +118,35 @@ impl<'a> TeamEditor<'a> {
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
-            ui.label(format!("Fusion {}", fusion.index));
+            ui.horizontal(|ui| {
+                ui.label(format!("Fusion {}", fusion.index));
+                if ui.button("Add Slot").clicked() {
+                    actions.push(TeamAction::AddSlot {
+                        fusion_id: fusion.id,
+                    });
+                }
+            });
             ui.separator();
 
             for slot in slots {
-                Self::render_fusion_slot(ui, slot, context, actions);
+                Self::render_slot(ui, slot.id, context, actions);
             }
         });
     }
 
-    fn render_bench_slot(
-        ui: &mut Ui,
-        slot: &NBenchSlot,
-        context: &Context,
-        actions: &mut Vec<TeamAction>,
-    ) {
-        let unit = Self::get_slot_unit(slot.id, context);
+    fn render_slot(ui: &mut Ui, slot_id: u64, context: &Context, actions: &mut Vec<TeamAction>) {
+        let unit = Self::get_slot_unit(slot_id, context);
         let resp = Self::render_unit_in_slot(ui, unit, context);
 
         if unit.is_some() {
-            Self::handle_unit_interactions(resp, SlotTarget::Bench(slot.id), unit, actions);
+            Self::handle_unit_interactions(resp, slot_id, unit, actions);
         } else {
-            Self::handle_empty_slot_interactions(resp, slot.id, actions);
-        }
-    }
-
-    fn render_fusion_slot(
-        ui: &mut Ui,
-        slot: &NFusionSlot,
-        context: &Context,
-        actions: &mut Vec<TeamAction>,
-    ) {
-        let unit = Self::get_slot_unit(slot.id, context);
-        let resp = Self::render_unit_in_slot(ui, unit, context);
-
-        if unit.is_some() {
-            Self::handle_unit_interactions(resp, SlotTarget::Fusion(slot.id), unit, actions);
-        } else {
-            Self::handle_empty_slot_interactions(resp, slot.id, actions);
+            Self::handle_empty_slot_interactions(resp, slot_id, context, actions);
         }
     }
 
     fn get_slot_unit<'b>(slot_id: u64, context: &'b Context) -> Option<&'b NUnit> {
-        context
-            .collect_children_components::<NUnit>(slot_id)
-            .ok()
-            .and_then(|units| units.into_iter().next())
+        context.first_parent::<NUnit>(slot_id).ok()
     }
 
     fn render_unit_in_slot(ui: &mut Ui, unit: Option<&NUnit>, context: &Context) -> Response {
@@ -215,7 +193,7 @@ impl<'a> TeamEditor<'a> {
 
     fn handle_unit_interactions(
         resp: Response,
-        target: SlotTarget,
+        target: u64,
         current_unit: Option<&NUnit>,
         actions: &mut Vec<TeamAction>,
     ) {
@@ -235,7 +213,12 @@ impl<'a> TeamEditor<'a> {
         }
     }
 
-    fn handle_empty_slot_interactions(resp: Response, slot_id: u64, actions: &mut Vec<TeamAction>) {
+    fn handle_empty_slot_interactions(
+        resp: Response,
+        slot_id: u64,
+        context: &Context,
+        actions: &mut Vec<TeamAction>,
+    ) {
         // Handle right-click context menu for empty slots
         resp.context_menu(|ui| {
             if ui.button("Add Default Unit").clicked() {
@@ -257,12 +240,9 @@ impl<'a> TeamEditor<'a> {
 
         // Handle drop onto empty slot
         if let Some(dragged_unit_id) = resp.dnd_release_payload::<u64>() {
-            // Determine target type based on slot context
-            // For now, we assume bench slots for empty drops
-            let target = SlotTarget::Bench(slot_id);
             actions.push(TeamAction::MoveUnit {
                 unit_id: *dragged_unit_id,
-                target,
+                target: slot_id,
             });
         }
     }

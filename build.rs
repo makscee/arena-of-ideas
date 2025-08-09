@@ -266,14 +266,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_types: _,
         all_data_fields,
         all_data_types,
-        owned_children_fields: _,
-        owned_children_types: _,
-        owned_parents_fields: _,
-        owned_parents_types: _,
-        owned_child_fields: _,
-        owned_child_types: _,
-        owned_parent_fields: _,
-        owned_parent_types: _,
+        owned_children_fields,
+        owned_children_types,
+        owned_parents_fields,
+        owned_parents_types,
+        owned_child_fields,
+        owned_child_types,
+        owned_parent_fields,
+        owned_parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -315,10 +315,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         .collect_vec();
 
     let strings_conversions = strings_conversions(
-        &one_fields,
-        &one_types,
-        &many_fields,
-        &many_types,
+        owned_children_fields,
+        owned_children_types,
+        owned_parents_fields,
+        owned_parents_types,
+        owned_child_fields,
+        owned_child_types,
+        owned_parent_fields,
+        owned_parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -711,20 +715,35 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
-                    if let Some(d) = self.#one_fields.take() {
+                    if let Some(d) = self.#owned_parent_fields.take() {
                         let entity = context.world_mut()?.spawn_empty().id();
                         d.unpack_entity(context, entity).log();
                         let id = entity.id(context)?;
                         let world = context.world_mut()?;
-                        // id.add_parent(world, self.id);
                         self.id.add_parent(world, id);
                     }
                 )*
                 #(
-                    for d in std::mem::take(&mut self.#many_fields) {
+                    if let Some(d) = self.#owned_child_fields.take() {
+                        let entity = context.world_mut()?.spawn_empty().id();
+                        d.unpack_entity(context, entity).log();
+                        let id = entity.id(context)?;
+                        let world = context.world_mut()?;
+                        self.id.add_child(world, id);
+                    }
+                )*
+                #(
+                    for d in std::mem::take(&mut self.#owned_children_fields) {
                         let child = context.world_mut()?.spawn_empty().id();
                         d.unpack_entity(context, child).log();
                         child.id(context)?.add_parent(context.world_mut()?, self.id);
+                    }
+                )*
+                #(
+                    for d in std::mem::take(&mut self.#owned_parents_fields) {
+                        let parent = context.world_mut()?.spawn_empty().id();
+                        d.unpack_entity(context, parent).log();
+                        parent.id(context)?.add_child(context.world_mut()?, self.id);
                     }
                 )*
                 let kind = self.kind();

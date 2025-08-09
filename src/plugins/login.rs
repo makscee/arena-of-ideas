@@ -74,10 +74,9 @@ impl LoginPlugin {
                 .find(|link| link.parent == identity_node.id)
                 .and_then(|link| NPlayer::load(link.child))
             {
-                dbg!(&player);
-                let mut cs = pd().client_state.clone();
-                cs.last_logged_in = Some((player.player_name.clone(), identity));
-                cs.save();
+                pd_mut(|pd| {
+                    pd.client_state.last_logged_in = Some((player.player_name.clone(), identity));
+                });
                 LoginOption { player }.save(world);
             } else {
                 error!("Failed to load NPlayer by Identity");

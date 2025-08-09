@@ -5,6 +5,7 @@ use crate::ui::*;
 use crate::utils::*;
 use bevy::ecs::component::Mutable;
 use bevy_egui::egui::ScrollArea;
+use rand::Rng;
 
 pub struct BattleEditorPlugin;
 
@@ -37,7 +38,6 @@ pub enum BattleEditorNode {
     Team(u64),
     House(u64),
     Unit(u64),
-    Fusion(u64),
 }
 
 impl BattleEditorPlugin {
@@ -58,13 +58,10 @@ impl BattleEditorPlugin {
 
         // Set up slot actions
         if let Some(mut battle_data) = world.remove_resource::<BattleData>() {
-            battle_data.slot_actions = vec![
-                (
-                    "Add default unit".to_string(),
-                    Self::handle_add_default_unit,
-                ),
-                ("Edit fusion".to_string(), Self::handle_edit_fusion),
-            ];
+            battle_data.slot_actions = vec![(
+                "Add default unit".to_string(),
+                Self::handle_add_default_unit,
+            )];
             world.insert_resource(battle_data);
         }
 
@@ -125,9 +122,6 @@ impl BattleEditorPlugin {
                         BattleEditorNode::Unit(id) => {
                             format!("[tw Unit #{}]", id).cstr().label(ui);
                         }
-                        BattleEditorNode::Fusion(id) => {
-                            format!("[tw Fusion #{}]", id).cstr().label(ui);
-                        }
                     }
                 } else {
                     ui.label("Select a component to edit");
@@ -143,7 +137,6 @@ impl BattleEditorPlugin {
                         BattleEditorNode::Team(id) => Self::render_team_editor(*id, ui, world),
                         BattleEditorNode::House(id) => Self::render_house_editor(*id, ui, world),
                         BattleEditorNode::Unit(id) => Self::render_unit_editor(*id, ui, world),
-                        BattleEditorNode::Fusion(id) => Self::render_fusion_editor(*id, ui, world),
                     }
                 } else {
                     Self::render_team_selector(ui, world)
@@ -232,6 +225,36 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
+            let team_entity = context.entity(id)?;
+
+            "[h2 Team Editor]".cstr().label(ui);
+
+            let team_editor = TeamEditor::new(team_entity, context);
+            let actions = team_editor.ui(ui)?;
+
+            for team_action in actions {
+                match team_action {
+                    TeamAction::MoveUnit { unit_id, target } => {
+                        Self::handle_move_unit(unit_id, target, context)?;
+                        changed = true;
+                    }
+                    TeamAction::ContextMenuAction {
+                        slot_id,
+                        action_name,
+                    } => {
+                        if action_name == "Add Default Unit" {
+                            Self::handle_add_default_unit_to_slot(slot_id, context)?;
+                            changed = true;
+                        }
+                    }
+                    TeamAction::AddSlot { fusion_id } => {
+                        Self::handle_add_slot(fusion_id, context)?;
+                        changed = true;
+                    }
+                }
+            }
+
+            ui.separator();
             "[h2 Houses]".cstr().label(ui);
             let (houses_changed, house_action) =
                 Self::show_children_node_editors::<NHouse>(id, context, ui, id, |house_id| {
@@ -240,17 +263,6 @@ impl BattleEditorPlugin {
             changed |= houses_changed;
             if house_action.is_some() {
                 action = house_action;
-            }
-            ui.separator();
-            "[h2 Fusions]".cstr().label(ui);
-
-            let (fusions_changed, fusion_action) =
-                Self::show_children_node_editors::<NFusion>(id, context, ui, id, |fusion_id| {
-                    BattleEditorAction::Navigate(BattleEditorNode::Fusion(fusion_id))
-                })?;
-            changed |= fusions_changed;
-            if fusion_action.is_some() {
-                action = fusion_action;
             }
 
             Ok(())
@@ -387,112 +399,6 @@ impl BattleEditorPlugin {
                     id,
                     &mut changed,
                 );
-            }
-
-            Ok(())
-        });
-
-        world.insert_resource(battle_data);
-        result?;
-        Ok((action, changed))
-    }
-
-    fn render_fusion_editor(
-        id: u64,
-        ui: &mut Ui,
-        world: &mut World,
-    ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
-        let mut action = None;
-        let mut changed = false;
-
-        let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            changed |= Self::show_node_editor::<NFusion>(id, context, ui)?;
-            ui.separator();
-            ui.heading("Units in Fusion");
-
-            let fusion = context.get::<NFusion>(context.entity(id)?)?;
-            let mut units_to_remove = Vec::new();
-            for slot in fusion.slots_load(context) {
-                if let Ok(unit) = slot.unit_load(context) {
-                    let mut remove_clicked = false;
-                    if Self::show_node_with_action_button(
-                        unit,
-                        context,
-                        ui,
-                        Some(("Remove", &mut remove_clicked)),
-                    ) {
-                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
-                            unit.id,
-                        )));
-                    }
-
-                    if remove_clicked {
-                        units_to_remove.push(unit.id);
-                    }
-                }
-            }
-
-            for unit_id in units_to_remove {
-                context.unlink_parent_child(unit_id, id).notify_error_op();
-                if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
-                    todo!();
-                    // fusion.units.ids.retain(|&u| u != unit_id);
-                    changed = true;
-                }
-            }
-
-            ui.separator();
-            ui.heading("Available Units from Houses");
-
-            let team = context.first_parent::<NTeam>(id)?;
-            let houses = team.houses_load(context);
-            let fusion = context.get::<NFusion>(context.entity(id)?)?;
-            let fusion_unit_ids = Vec::new();
-            let mut add_unit: Option<u64> = None;
-
-            // Collect all house units upfront to avoid borrowing issues
-            let mut all_house_units = Vec::new();
-            for house in &houses {
-                let house_units: Vec<_> = house.units_load(context).into_iter().cloned().collect();
-                all_house_units.push((house.house_name.clone(), house_units));
-            }
-
-            for (idx, (house_name, house_units)) in all_house_units.iter().enumerate() {
-                CollapsingHeader::new(house_name)
-                    .id_salt(idx)
-                    .show(ui, |ui| {
-                        for unit in house_units {
-                            if !fusion_unit_ids.contains(&unit.id()) {
-                                let unit_id = unit.id();
-                                let mut add_clicked = false;
-
-                                if Self::show_node_with_action_button(
-                                    unit,
-                                    context,
-                                    ui,
-                                    Some(("Add", &mut add_clicked)),
-                                ) {
-                                    action = Some(BattleEditorAction::Navigate(
-                                        BattleEditorNode::Unit(unit_id),
-                                    ));
-                                }
-
-                                if add_clicked {
-                                    add_unit = Some(unit_id);
-                                }
-                            }
-                        }
-                    });
-            }
-
-            if let Some(unit_id) = add_unit {
-                context.link_parent_child(unit_id, id).notify_error_op();
-                if let Ok(mut fusion) = context.get_mut::<NFusion>(context.entity(id)?) {
-                    // fusion.units.ids.push(unit_id);
-                    fusion.actions_limit = 100;
-                    changed = true;
-                }
             }
 
             Ok(())
@@ -745,120 +651,104 @@ impl BattleEditorPlugin {
         world.resource_mut::<ReloadData>().reload_requested = true;
     }
 
-    fn handle_add_default_unit(slot: i32, team_entity: Entity, context: &mut Context) {
-        // Fusion slots are always 0-4 regardless of which team
-        let fusion_slot = slot.abs() - 1; // Convert 1-5 or -1 to -5 into 0-4
+    fn handle_move_unit(
+        unit_id: u64,
+        target_id: u64,
+        context: &mut Context,
+    ) -> Result<(), ExpressionError> {
+        let old_slot_id = if let Ok(slot) = context.first_child::<NBenchSlot>(unit_id) {
+            slot.id
+        } else if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
+            slot.id
+        } else {
+            return Err(
+                ExpressionErrorVariants::Custom("Unit is not in a slot".to_string()).into(),
+            );
+        };
+        context.unlink_parent_child(unit_id, old_slot_id)?;
+        context.link_parent_child(unit_id, target_id)?;
+        Ok(())
+    }
 
-        // Get team and find existing fusion for this slot
-        let (team_owner, fusion_id) = {
-            let team = match context.get::<NTeam>(team_entity) {
-                Ok(team) => team,
-                Err(e) => {
-                    e.cstr().notify_error_op();
-                    panic!("Team not found for entity {team_entity}")
-                }
-            };
-            let fusion = team.fusions_load(context).iter().find_map(|f| {
-                if f.index == fusion_slot {
-                    Some(f.id())
-                } else {
-                    None
-                }
-            });
-            match fusion {
-                Some(id) => (team.owner, id),
-                None => panic!("Team {team_entity} fusion not found for slot {fusion_slot}"),
-            }
+    fn handle_add_default_unit_to_slot(
+        slot_id: u64,
+        context: &mut Context,
+    ) -> Result<(), ExpressionError> {
+        let slot_entity = context.entity(slot_id)?;
+
+        // Find the team this slot belongs to
+        let team = if let Ok(_) = context.get::<NBenchSlot>(slot_entity) {
+            context.first_parent_recursive::<NTeam>(slot_id)?
+        } else if let Ok(_) = context.get::<NFusionSlot>(slot_entity) {
+            context.first_parent_recursive::<NTeam>(slot_id)?
+        } else {
+            return Err(ExpressionError::from("Invalid slot type"));
         };
 
-        let fusion_entity = context.entity(fusion_id).unwrap();
+        let team_owner = team.owner;
+        let team_entity = team.entity();
 
-        // Create complete house with unit using new_full
+        // Create a default unit with house
         let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
         let unit_state = NUnitState::new_full(team_owner, 1, 1);
-        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
-        let unit_representation = NUnitRepresentation::new_full(team_owner, default());
-        let unit_description = NUnitDescription::new_full(
-            team_owner,
-            "Default unit description".to_string(),
-            unit_representation,
-            unit_behavior,
-        );
+        let _unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
+        let _unit_representation = NUnitRepresentation::new_full(team_owner, default());
 
         let unit = NUnit::new_full(
             team_owner,
             "Default Unit".to_string(),
             default(),
-            unit_description,
+            default(),
             unit_stats,
             unit_state,
         );
+        let unit_entity = context.world_mut()?.spawn_empty().id();
+        unit.unpack_entity(context, unit_entity)?;
 
         let house_color = NHouseColor::new_full(team_owner, default());
         let house = NHouse::new_full(
             team_owner,
             "Default House".to_string(),
+            default(),
             house_color,
-            NActionAbility::new(team_owner, "Default Action".to_string()),
-            NStatusAbility::new(team_owner, "Default Status".to_string()),
-            vec![unit],
+            NActionAbility::new_full(team_owner, "Default Action".to_string(), default()),
+            NStatusAbility::new_full(
+                team_owner,
+                "Default Status".to_string(),
+                default(),
+                default(),
+            ),
         );
 
         let house_entity = context.world_mut().unwrap().spawn_empty().id();
-        house.clone().unpack_entity(context, house_entity).unwrap();
-        context
-            .link_parent_child_entity(team_entity, house_entity)
-            .unwrap();
-        if let Ok(unit) = context
-            .first_child::<NUnit>(context.id(house_entity).unwrap())
-            .map(|u| u.id)
-        {
-            // context
-            //     .get_mut::<NFusion>(fusion_entity)
-            //     .unwrap()
-            //     .units
-            //     .ids
-            //     .push(unit);
-            context.link_parent_child(unit, fusion_id).unwrap();
-        }
+        house.clone().unpack_entity(context, house_entity)?;
+        context.link_parent_child_entity(team_entity, house_entity)?;
+        context.link_parent_child_entity(house_entity, unit_entity)?;
+        context.link_parent_child_entity(unit_entity, slot_entity)?;
 
-        op(|world| {
-            Self::save_team_changes(world);
-        });
+        Ok(())
     }
 
-    fn handle_edit_fusion(slot: i32, team_entity: Entity, context: &mut Context) {
-        let fusion_slot = slot.abs() - 1;
+    fn handle_add_slot(fusion_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+        let fusion_entity = context.entity(fusion_id)?;
+        let fusion = context.get::<NFusion>(fusion_entity)?;
 
-        let fusion_id = {
-            let team = match context.get::<NTeam>(team_entity) {
-                Ok(team) => team,
-                Err(e) => {
-                    e.cstr().notify_error_op();
-                    panic!("Team not found for entity {team_entity}")
-                }
-            };
-            let fusion = team.fusions_load(context).iter().find_map(|f| {
-                if f.index == fusion_slot {
-                    Some(f.id())
-                } else {
-                    None
-                }
-            });
-            match fusion {
-                Some(id) => id,
-                None => panic!("Team {team_entity} fusion not found for slot {fusion_slot}"),
-            }
-        };
+        // Find the next slot index
+        let existing_slots = context.collect_children_components::<NFusionSlot>(fusion_id)?;
+        let next_index = existing_slots.len() as u32;
 
-        op(move |world| {
-            if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
-                if let Some(current) = state.current_node.clone() {
-                    state.navigation_stack.push(current);
-                }
-                state.current_node = Some(BattleEditorNode::Fusion(fusion_id));
-            }
-        });
+        // Create new fusion slot
+        let new_slot = NFusionSlot::new(fusion.owner, next_index as i32, default());
+        let slot_entity = context.world_mut().unwrap().spawn_empty().id();
+        new_slot.unpack_entity(context, slot_entity)?;
+        context.link_parent_child_entity(fusion_entity, slot_entity)?;
+
+        Ok(())
+    }
+
+    fn handle_add_default_unit(_slot: i32, _team_entity: Entity, _context: &mut Context) {
+        // Legacy function - kept for compatibility but unused
+        // The new system uses handle_add_default_unit_to_slot instead
     }
 }
 

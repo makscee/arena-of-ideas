@@ -150,10 +150,14 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
 }
 
 pub fn strings_conversions(
-    one_fields: &Vec<Ident>,
-    one_types: &Vec<Type>,
-    many_fields: &Vec<Ident>,
-    many_types: &Vec<Type>,
+    owned_children_fields: &Vec<Ident>,
+    owned_children_types: &Vec<Type>,
+    owned_parents_fields: &Vec<Ident>,
+    owned_parents_types: &Vec<Type>,
+    owned_child_fields: &Vec<Ident>,
+    owned_child_types: &Vec<Type>,
+    owned_parent_fields: &Vec<Ident>,
+    owned_parent_types: &Vec<Type>,
     linked_children_fields: &Vec<Ident>,
     linked_children_types: &Vec<Type>,
     linked_parents_fields: &Vec<Ident>,
@@ -163,11 +167,15 @@ pub fn strings_conversions(
     linked_parent_fields: &Vec<Ident>,
     linked_parent_types: &Vec<Type>,
 ) -> TokenStream {
-    let shared_unpack = shared_unpack_id_fix(
-        one_fields,
-        one_types,
-        many_fields,
-        many_types,
+    let shared_unpack = shared_unpack_id(
+        owned_children_fields,
+        owned_children_types,
+        owned_parents_fields,
+        owned_parents_types,
+        owned_child_fields,
+        owned_child_types,
+        owned_parent_fields,
+        owned_parent_types,
         linked_children_fields,
         linked_children_types,
         linked_parents_fields,
@@ -182,13 +190,25 @@ pub fn strings_conversions(
             let kind = self.kind().to_string();
             pn.add_node(kind.clone(), self.get_data(), self.id);
             #(
-                if let Some(n) = self.#one_fields.as_ref() {
+                if let Some(n) = self.#owned_parent_fields.as_ref() {
                     n.pack_fill(pn);
                     pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
                 }
             )*
             #(
-                for n in &self.#many_fields {
+                if let Some(n) = self.#owned_child_fields.as_ref() {
+                    n.pack_fill(pn);
+                    pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
+                }
+            )*
+            #(
+                for n in &self.#owned_parents_fields {
+                    n.pack_fill(pn);
+                    pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
+                }
+            )*
+            #(
+                for n in &self.#owned_children_fields {
                     n.pack_fill(pn);
                     pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
                 }
@@ -225,12 +245,22 @@ pub fn strings_conversions(
             self.set_id(*next_id);
             *next_id += 1;
             #(
-                if let Some(d) = self.#one_fields.as_mut() {
+                if let Some(d) = self.#owned_parent_fields.as_mut() {
                     d.reassign_ids(next_id);
                 }
             )*
             #(
-                for d in &mut self.#many_fields {
+                if let Some(d) = self.#owned_child_fields.as_mut() {
+                    d.reassign_ids(next_id);
+                }
+            )*
+            #(
+                for d in &mut self.#owned_parents_fields {
+                    d.reassign_ids(next_id);
+                }
+            )*
+            #(
+                for d in &mut self.#owned_children_fields {
                     d.reassign_ids(next_id);
                 }
             )*
@@ -448,11 +478,15 @@ pub fn common_node_trait_fns(
     }
 }
 
-pub fn shared_unpack_id_fix(
-    one_fields: &Vec<Ident>,
-    one_types: &Vec<Type>,
-    many_fields: &Vec<Ident>,
-    many_types: &Vec<Type>,
+pub fn shared_unpack_id(
+    owned_children_fields: &Vec<Ident>,
+    owned_children_types: &Vec<Type>,
+    owned_parents_fields: &Vec<Ident>,
+    owned_parents_types: &Vec<Type>,
+    owned_child_fields: &Vec<Ident>,
+    owned_child_types: &Vec<Type>,
+    owned_parent_fields: &Vec<Ident>,
+    owned_parent_types: &Vec<Type>,
     linked_children_fields: &Vec<Ident>,
     linked_children_types: &Vec<Type>,
     linked_parents_fields: &Vec<Ident>,
@@ -473,20 +507,34 @@ pub fn shared_unpack_id_fix(
                 );
             }
             let mut d = Self::default();
+            d.id = id;
             if let Err(e) = d.inject_data(data) {
                 panic!("Unpack deserialize from data err: {e} data: {data}");
             }
             #(
-                d.#one_fields = pn
-                    .kind_parents(id, NodeKind::#one_types.as_ref())
+                d.#owned_child_fields = pn
+                    .kind_children(id, NodeKind::#owned_child_types.as_ref())
                     .get(0)
-                    .and_then(|id| #one_types::unpack_id(*id, pn));
+                    .and_then(|id| #owned_child_types::unpack_id(*id, pn));
             )*
             #(
-                d.#many_fields = pn
-                    .kind_children(id, NodeKind::#many_types.as_ref())
+                d.#owned_parent_fields = pn
+                    .kind_parents(id, NodeKind::#owned_parent_types.as_ref())
+                    .get(0)
+                    .and_then(|id| #owned_parent_types::unpack_id(*id, pn));
+            )*
+            #(
+                d.#owned_parents_fields = pn
+                    .kind_parents(id, NodeKind::#owned_parents_types.as_ref())
                     .into_iter()
-                    .filter_map(|id| #many_types::unpack_id(id, pn))
+                    .filter_map(|id| #owned_parents_types::unpack_id(id, pn))
+                    .collect();
+            )*
+            #(
+                d.#owned_children_fields = pn
+                    .kind_children(id, NodeKind::#owned_children_types.as_ref())
+                    .into_iter()
+                    .filter_map(|id| #owned_children_types::unpack_id(id, pn))
                     .collect();
             )*
             #(

@@ -95,13 +95,16 @@ impl NFusion {
         Ok(battle_actions)
     }
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+        debug!("fusion fn");
         let entity = self.entity();
         let units = self.units(context)?;
+        dbg!(&units);
         for unit in units {
             let unit_entity = unit.entity();
             let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };
+            dbg!(&rep);
             context
                 .with_owner_ref(unit_entity, |context| {
                     RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)

@@ -164,15 +164,6 @@ impl NodeKindOnUnpack for NodeKind {
     }
 }
 
-impl NTeam {
-    pub fn roster_units_load<'a>(&'a self, context: &'a Context) -> Vec<&'a NUnit> {
-        self.houses_load(context)
-            .into_iter()
-            .flat_map(|h| h.units_load(context))
-            .collect_vec()
-    }
-}
-
 impl NHouse {
     pub fn color_for_text(&self, context: &Context) -> Color32 {
         self.color_load(context)
