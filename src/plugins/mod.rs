@@ -11,6 +11,7 @@ mod persistent_data;
 mod representation;
 mod stdb;
 mod stdb_ext;
+mod team_editor;
 mod tile;
 mod ui;
 
@@ -28,5 +29,6 @@ pub use persistent_data::*;
 pub use representation::*;
 pub use stdb::*;
 pub use stdb_ext::*;
+pub use team_editor::*;
 pub use tile::*;
 pub use ui::*;
