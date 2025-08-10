@@ -305,11 +305,19 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         );
     }
 
-    let component_fields_load = one_fields
+    let parent_fields_load = owned_parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let child_fields_load = many_fields
+    let child_fields_load = owned_child_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+        .collect_vec();
+    let children_fields_load = owned_children_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+        .collect_vec();
+    let parents_fields_load = owned_parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
@@ -388,20 +396,40 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #component_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #one_types, ExpressionError> {
-                    if let Some(n) = self.#one_fields.as_ref() {
+                pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #owned_child_types, ExpressionError> {
+                    if let Some(n) = self.#owned_child_fields.as_ref() {
                         Ok(n)
                     } else {
-                        context.first_parent::<#one_types>(self.id)
+                        context.first_child::<#owned_child_types>(self.id)
                     }
                 }
             )*
             #(
-                pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #many_types> {
-                    if !self.#many_fields.is_empty() {
-                        self.#many_fields.iter().collect()
+                pub fn #parent_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #owned_parent_types, ExpressionError> {
+                    if let Some(n) = self.#owned_parent_fields.as_ref() {
+                        Ok(n)
+                    } else {
+                        context.first_parent::<#owned_parent_types>(self.id)
+                    }
+                }
+            )*
+            #(
+                pub fn #parents_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #owned_parents_types> {
+                    if !self.#owned_parents_fields.is_empty() {
+                        self.#owned_parents_fields.iter().collect()
                     } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
-                        context.collect_children_components::<#many_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
+                        context.collect_parents_components::<#owned_parents_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
+                    } else {
+                        std::default::Default::default()
+                    }
+                }
+            )*
+            #(
+                pub fn #children_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #owned_children_types> {
+                    if !self.#owned_children_fields.is_empty() {
+                        self.#owned_children_fields.iter().collect()
+                    } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
+                        context.collect_children_components::<#owned_children_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
                     } else {
                         std::default::Default::default()
                     }
@@ -618,7 +646,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn load_recursive(world: &World, id: u64) -> Option<Self> {
                 let mut d = Self::load(id)?;
                 #(
-                    let kind = #one_types::kind_s().to_string();
+                    let kind = #owned_parent_types::kind_s().to_string();
                     if let Some(id) = cn()
                         .db
                         .nodes_world()
@@ -626,18 +654,45 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         .find(|n| n.kind == kind && d.id().is_child_of(world, n.id))
                         .map(|n| n.id)
                     {
-                        d.#one_fields = #one_types::load_recursive(world, id);
+                        d.#owned_parent_fields = #owned_parent_types::load_recursive(world, id);
                     }
                 )*
                 #(
-                    let kind = #many_types::kind_s().to_string();
-                    d.#many_fields = cn()
+                    let kind = #owned_child_types::kind_s().to_string();
+                    if let Some(id) = cn()
+                        .db
+                        .nodes_world()
+                        .iter()
+                        .find(|n| n.kind == kind && d.id().is_parent_of(world, n.id))
+                        .map(|n| n.id)
+                    {
+                        d.#owned_child_fields = #owned_child_types::load_recursive(world, id);
+                    }
+                )*
+                #(
+                    let kind = #owned_children_types::kind_s().to_string();
+                    d.#owned_children_fields = cn()
                         .db
                         .nodes_world()
                         .iter()
                         .filter_map(|n| {
                             if d.id().is_parent_of(world, n.id) && n.kind == kind {
-                                #many_types::load_recursive(world, n.id)
+                                #owned_children_types::load_recursive(world, n.id)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                )*
+                #(
+                    let kind = #owned_parents_types::kind_s().to_string();
+                    d.#owned_parents_fields = cn()
+                        .db
+                        .nodes_world()
+                        .iter()
+                        .filter_map(|n| {
+                            if d.id().is_child_of(world, n.id) && n.kind == kind {
+                                #owned_parents_types::load_recursive(world, n.id)
                             } else {
                                 None
                             }
@@ -649,8 +704,16 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
                 let mut s = context.get::<Self>(entity)?.clone();
                 #(
-                    s.#one_fields = context.parents_entity(entity)?.into_iter().find_map(|e|
-                        if let Ok(c) = #one_types::pack_entity(context, e) {
+                    s.#owned_parent_fields = context.parents_entity(entity)?.into_iter().find_map(|e|
+                        if let Ok(c) = #owned_parent_types::pack_entity(context, e) {
+                            Some(c)
+                        } else {
+                            None
+                        });
+                )*
+                #(
+                    s.#owned_child_fields = context.children_entity(entity)?.into_iter().find_map(|e|
+                        if let Ok(c) = #owned_child_types::pack_entity(context, e) {
                             Some(c)
                         } else {
                             None
@@ -658,8 +721,15 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 )*
                 #(
                     for child in context.children_entity(entity)? {
-                        if let Ok(d) = #many_types::pack_entity(context, child) {
-                            s.#many_fields.push(d);
+                        if let Ok(d) = #owned_children_types::pack_entity(context, child) {
+                            s.#owned_children_fields.push(d);
+                        }
+                    }
+                )*
+                #(
+                    for parent in context.parents_entity(entity)? {
+                        if let Ok(d) = #owned_parents_types::pack_entity(context, parent) {
+                            s.#owned_parents_fields.push(d);
                         }
                     }
                 )*
@@ -751,12 +821,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 kind.on_unpack(context, entity);
                 Ok(())
             }
-            fn with_components(mut self, context: &Context) -> Self {
-                #(
-                    self.#one_fields = #one_types::pack_entity(context, self.entity()).ok();
-                )*
-                self
-            }
         }
 
         #[allow(unused)]
@@ -789,12 +853,22 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             ) -> ViewResponse {
                 let mut vr = ViewResponse::default();
                 #(
-                    if let Ok(d) = self.#component_fields_load(context) {
+                    if let Ok(d) = self.#child_fields_load(context) {
                         vr.merge(d.view_with_children(vctx, context, ui));
                     }
                 )*
                 #(
-                    for (i, d) in self.#child_fields_load(context).into_iter().enumerate() {
+                    if let Ok(d) = self.#parent_fields_load(context) {
+                        vr.merge(d.view_with_children(vctx, context, ui));
+                    }
+                )*
+                #(
+                    for (i, d) in self.#children_fields_load(context).into_iter().enumerate() {
+                        vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
+                    }
+                )*
+                #(
+                    for (i, d) in self.#parents_fields_load(context).into_iter().enumerate() {
                         vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
                     }
                 )*

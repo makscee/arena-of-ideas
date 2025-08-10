@@ -246,19 +246,35 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_fields,
         &many_types,
     );
-    let one_link_fields_load = one_fields
+    let owned_child_load = owned_child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let many_link_fields_load = many_fields
+    let owned_parent_load = owned_parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let one_link_fields_set = one_fields
+    let owned_children_load = owned_children_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+        .collect_vec();
+    let owned_parents_load = owned_parents_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
+        .collect_vec();
+    let owned_child_set = owned_child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_set"), Span::call_site()))
         .collect_vec();
-    let many_link_fields_set = many_fields
+    let owned_parent_set = owned_parent_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_set"), Span::call_site()))
+        .collect_vec();
+    let owned_children_add = owned_children_fields
+        .iter()
+        .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
+        .collect_vec();
+    let owned_parents_add = owned_parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
         .collect_vec();
@@ -273,39 +289,75 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #one_link_fields_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                pub fn #owned_parent_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
                     self.id.add_parent(ctx, node.id)?;
-                    self.#one_fields = Some(node);
+                    self.#owned_parent_fields = Some(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #many_link_fields_set(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                pub fn #owned_child_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
                     self.id.add_child(ctx, node.id)?;
-                    self.#many_fields.push(node);
+                    self.#owned_child_fields = Some(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #one_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #one_types, String> {
-                    let id = self.id();
-                    if self.#one_fields.is_none() {
-                        self.#one_fields = self.parent::<#one_types>(ctx);
-                    }
-                    self.#one_fields
-                        .as_mut()
-                        .to_custom_e_s_fn(|| format!("{} not found for {}", #one_types::kind_s(), id))
+                pub fn #owned_parents_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                    self.id.add_parent(ctx, node.id)?;
+                    self.#owned_parents_fields.push(node);
+                    Ok(self)
                 }
             )*
             #(
-                pub fn #many_link_fields_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#many_types>, String> {
-                    if self.#many_fields.is_empty() {
-                        self.#many_fields = self.collect_children::<#many_types>(ctx);
+                pub fn #owned_children_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                    self.id.add_child(ctx, node.id)?;
+                    self.#owned_children_fields.push(node);
+                    Ok(self)
+                }
+            )*
+            #(
+                pub fn #owned_child_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #owned_child_types, String> {
+                    let id = self.id();
+                    if self.#owned_child_fields.is_none() {
+                        self.#owned_child_fields = self.child::<#owned_child_types>(ctx);
                     }
-                    if self.#many_fields.is_empty() {
-                        return Err(format!("No {} children found for {}", #many_types::kind_s(), self.id()));
+                    self.#owned_child_fields
+                        .as_mut()
+                        .to_custom_e_s_fn(|| format!("{} not found for {}", #owned_child_types::kind_s(), id))
+                }
+            )*
+            #(
+                pub fn #owned_parent_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #owned_parent_types, String> {
+                    let id = self.id();
+                    if self.#owned_parent_fields.is_none() {
+                        self.#owned_parent_fields = self.parent::<#owned_parent_types>(ctx);
                     }
-                    Ok(&mut self.#many_fields)
+                    self.#owned_parent_fields
+                        .as_mut()
+                        .to_custom_e_s_fn(|| format!("{} not found for {}", #owned_parent_types::kind_s(), id))
+                }
+            )*
+            #(
+                pub fn #owned_children_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#owned_children_types>, String> {
+                    if self.#owned_children_fields.is_empty() {
+                        self.#owned_children_fields = self.collect_children::<#owned_children_types>(ctx);
+                    }
+                    if self.#owned_children_fields.is_empty() {
+                        return Err(format!("No {} children found for {}", #owned_children_types::kind_s(), self.id()));
+                    }
+                    Ok(&mut self.#owned_children_fields)
+                }
+            )*
+            #(
+                pub fn #owned_parents_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#owned_parents_types>, String> {
+                    if self.#owned_parents_fields.is_empty() {
+                        self.#owned_parents_fields = self.collect_parents::<#owned_parents_types>(ctx);
+                    }
+                    if self.#owned_parents_fields.is_empty() {
+                        return Err(format!("No {} parents found for {}", #owned_parents_types::kind_s(), self.id()));
+                    }
+                    Ok(&mut self.#owned_parents_fields)
                 }
             )*
             pub fn find_by_data(
@@ -362,17 +414,31 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 let mut d = self.clone_self(ctx, owner);
                 remap.insert(self.id, d.id);
                 #(
-                    if let Some(n) = self.#one_fields.as_ref() {
+                    if let Some(n) = self.#owned_parent_fields.as_ref() {
                         let n = n.clone(ctx, owner, remap);
                         d.id.add_parent(ctx, n.id).unwrap();
-                        d.#one_fields = Some(n);
+                        d.#owned_parent_fields = Some(n);
                     }
                 )*
                 #(
-                    for n in &self.#many_fields {
+                    if let Some(n) = self.#owned_child_fields.as_ref() {
                         let n = n.clone(ctx, owner, remap);
                         d.id.add_child(ctx, n.id).unwrap();
-                        d.#many_fields.push(n);
+                        d.#owned_child_fields = Some(n);
+                    }
+                )*
+                #(
+                    for n in &self.#owned_parents_fields {
+                        let n = n.clone(ctx, owner, remap);
+                        d.id.add_parent(ctx, n.id).unwrap();
+                        d.#owned_parents_fields.push(n);
+                    }
+                )*
+                #(
+                    for n in &self.#owned_children_fields {
+                        let n = n.clone(ctx, owner, remap);
+                        d.id.add_child(ctx, n.id).unwrap();
+                        d.#owned_children_fields.push(n);
                     }
                 )*
                 d
@@ -393,14 +459,26 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
             fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String> {
                 #(
-                    if let Some(n) = &self.#one_fields {
+                    if let Some(n) = &self.#owned_parent_fields {
                         TNodeLink::solidify(ctx, n.id, self.id)?;
                         n.solidify_links(ctx)?;
                     }
                 )*
                 #(
-                    for n in &self.#many_fields {
+                    if let Some(n) = &self.#owned_child_fields {
                         TNodeLink::solidify(ctx, self.id, n.id)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
+                    for n in &self.#owned_children_fields {
+                        TNodeLink::solidify(ctx, self.id, n.id)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
+                    for n in &self.#owned_parents_fields {
+                        TNodeLink::solidify(ctx, n.id, self.id)?;
                         n.solidify_links(ctx)?;
                     }
                 )*

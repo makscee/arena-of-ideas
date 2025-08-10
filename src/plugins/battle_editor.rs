@@ -5,7 +5,6 @@ use crate::ui::*;
 use crate::utils::*;
 use bevy::ecs::component::Mutable;
 use bevy_egui::egui::ScrollArea;
-use rand::Rng;
 
 pub struct BattleEditorPlugin;
 
@@ -56,102 +55,91 @@ impl BattleEditorPlugin {
         let mut navigation_action: Option<BattleEditorAction> = None;
         let mut changed = false;
 
-        // Set up slot actions
-        if let Some(mut battle_data) = world.remove_resource::<BattleData>() {
-            battle_data.slot_actions = vec![(
-                "Add default unit".to_string(),
-                Self::handle_add_default_unit,
-            )];
-            world.insert_resource(battle_data);
-        }
+        let is_left = world.resource::<BattleEditorState>().is_left_team;
 
-        {
-            let is_left = world.resource::<BattleEditorState>().is_left_team;
+        ui.horizontal(|ui| {
+            ui.label("Editing:");
+            if ui.selectable_label(is_left, "Left Team").clicked() {
+                world.resource_mut::<BattleEditorState>().is_left_team = true;
 
-            ui.horizontal(|ui| {
-                ui.label("Editing:");
-                if ui.selectable_label(is_left, "Left Team").clicked() {
-                    world.resource_mut::<BattleEditorState>().is_left_team = true;
+                let mut battle_data = world.remove_resource::<BattleData>().unwrap();
+                let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
+                    context.id(battle_data.team_left)
+                })
+                .unwrap_or(0);
+                world.insert_resource(battle_data);
 
-                    let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-                    let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
-                        context.id(battle_data.team_left)
-                    })
-                    .unwrap_or(0);
-                    world.insert_resource(battle_data);
+                navigation_action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
+                    team_id,
+                )));
+            }
+            if ui.selectable_label(!is_left, "Right Team").clicked() {
+                world.resource_mut::<BattleEditorState>().is_left_team = false;
 
-                    navigation_action = Some(BattleEditorAction::SetCurrent(
-                        BattleEditorNode::Team(team_id),
-                    ));
+                let mut battle_data = world.remove_resource::<BattleData>().unwrap();
+                let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
+                    context.id(battle_data.team_right)
+                })
+                .unwrap_or(0);
+                world.insert_resource(battle_data);
+
+                navigation_action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
+                    team_id,
+                )));
+            }
+        });
+
+        ui.separator();
+
+        let state = world.resource::<BattleEditorState>();
+        ui.horizontal(|ui| {
+            if !state.navigation_stack.is_empty() {
+                if ui.button("← Back").clicked() {
+                    navigation_action = Some(BattleEditorAction::GoBack);
                 }
-                if ui.selectable_label(!is_left, "Right Team").clicked() {
-                    world.resource_mut::<BattleEditorState>().is_left_team = false;
+                ui.separator();
+            }
 
-                    let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-                    let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
-                        context.id(battle_data.team_right)
-                    })
-                    .unwrap_or(0);
-                    world.insert_resource(battle_data);
-
-                    navigation_action = Some(BattleEditorAction::SetCurrent(
-                        BattleEditorNode::Team(team_id),
-                    ));
-                }
-            });
-
-            ui.separator();
-
-            let state = world.resource::<BattleEditorState>();
-            ui.horizontal(|ui| {
-                if !state.navigation_stack.is_empty() {
-                    if ui.button("← Back").clicked() {
-                        navigation_action = Some(BattleEditorAction::GoBack);
+            if let Some(current) = &state.current_node {
+                match current {
+                    BattleEditorNode::Team(id) => {
+                        format!("[tw Team #{}]", id).cstr().label(ui);
                     }
-                    ui.separator();
-                }
-
-                if let Some(current) = &state.current_node {
-                    match current {
-                        BattleEditorNode::Team(id) => {
-                            format!("[tw Team #{}]", id).cstr().label(ui);
-                        }
-                        BattleEditorNode::House(id) => {
-                            format!("[tw House #{}]", id).cstr().label(ui);
-                        }
-                        BattleEditorNode::Unit(id) => {
-                            format!("[tw Unit #{}]", id).cstr().label(ui);
-                        }
+                    BattleEditorNode::House(id) => {
+                        format!("[tw House #{}]", id).cstr().label(ui);
                     }
-                } else {
-                    ui.label("Select a component to edit");
-                }
-            });
-
-            ui.separator();
-
-            let current_node = world.resource::<BattleEditorState>().current_node.clone();
-            ScrollArea::vertical().show(ui, |ui| {
-                let result = if let Some(current) = &current_node {
-                    match current {
-                        BattleEditorNode::Team(id) => Self::render_team_editor(*id, ui, world),
-                        BattleEditorNode::House(id) => Self::render_house_editor(*id, ui, world),
-                        BattleEditorNode::Unit(id) => Self::render_unit_editor(*id, ui, world),
+                    BattleEditorNode::Unit(id) => {
+                        format!("[tw Unit #{}]", id).cstr().label(ui);
                     }
-                } else {
-                    Self::render_team_selector(ui, world)
-                };
-
-                match result {
-                    Ok((Some(action), _)) => navigation_action = Some(action),
-                    Ok((_, true)) => changed = true,
-                    Err(err) => {
-                        err.ui(ui);
-                    }
-                    _ => {}
                 }
-            });
-        }
+            } else {
+                ui.label("Select a component to edit");
+            }
+        });
+
+        ui.separator();
+
+        let current_node = world.resource::<BattleEditorState>().current_node.clone();
+        ScrollArea::vertical().show(ui, |ui| {
+            let result = if let Some(current) = &current_node {
+                match current {
+                    BattleEditorNode::Team(id) => Self::render_team_editor(*id, ui, world),
+                    BattleEditorNode::House(id) => Self::render_house_editor(*id, ui, world),
+                    BattleEditorNode::Unit(id) => Self::render_unit_editor(*id, ui, world),
+                }
+            } else {
+                Self::render_team_selector(ui, world)
+            };
+
+            match result {
+                Ok((Some(action), _)) => navigation_action = Some(action),
+                Ok((_, true)) => changed = true,
+                Err(err) => {
+                    err.ui(ui);
+                }
+                _ => {}
+            }
+        });
 
         if let Some(action) = navigation_action {
             let mut state = world.resource_mut::<BattleEditorState>();
@@ -243,7 +231,7 @@ impl BattleEditorPlugin {
                         action_name,
                     } => {
                         if action_name == "Add Default Unit" {
-                            Self::handle_add_default_unit_to_slot(slot_id, context)?;
+                            Self::handle_add_default_unit_to_slot(team_entity, slot_id, context)?;
                             changed = true;
                         }
                     }
@@ -671,34 +659,32 @@ impl BattleEditorPlugin {
     }
 
     fn handle_add_default_unit_to_slot(
+        team_entity: Entity,
         slot_id: u64,
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
         let slot_entity = context.entity(slot_id)?;
-
-        // Find the team this slot belongs to
-        let team = if let Ok(_) = context.get::<NBenchSlot>(slot_entity) {
-            context.first_parent_recursive::<NTeam>(slot_id)?
-        } else if let Ok(_) = context.get::<NFusionSlot>(slot_entity) {
-            context.first_parent_recursive::<NTeam>(slot_id)?
-        } else {
-            return Err(ExpressionError::from("Invalid slot type"));
-        };
-
+        let team = context.get::<NTeam>(team_entity)?;
         let team_owner = team.owner;
-        let team_entity = team.entity();
 
-        // Create a default unit with house
         let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
         let unit_state = NUnitState::new_full(team_owner, 1, 1);
-        let _unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
-        let _unit_representation = NUnitRepresentation::new_full(team_owner, default());
+        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
+        let unit_representation = NUnitRepresentation::new_full(
+            team_owner,
+            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+        );
 
         let unit = NUnit::new_full(
             team_owner,
             "Default Unit".to_string(),
             default(),
-            default(),
+            NUnitDescription::new_full(
+                team_owner,
+                "Default Description".into(),
+                unit_representation,
+                unit_behavior,
+            ),
             unit_stats,
             unit_state,
         );
@@ -720,11 +706,13 @@ impl BattleEditorPlugin {
             ),
         );
 
-        let house_entity = context.world_mut().unwrap().spawn_empty().id();
+        let house_entity = context.world_mut()?.spawn_empty().id();
         house.clone().unpack_entity(context, house_entity)?;
         context.link_parent_child_entity(team_entity, house_entity)?;
         context.link_parent_child_entity(house_entity, unit_entity)?;
         context.link_parent_child_entity(unit_entity, slot_entity)?;
+
+        dbg!(NTeam::pack_entity(context, team_entity));
 
         Ok(())
     }
@@ -734,21 +722,16 @@ impl BattleEditorPlugin {
         let fusion = context.get::<NFusion>(fusion_entity)?;
 
         // Find the next slot index
-        let existing_slots = context.collect_children_components::<NFusionSlot>(fusion_id)?;
-        let next_index = existing_slots.len() as u32;
+        let existing_slots = context.collect_parents_components::<NFusionSlot>(fusion_id)?;
+        let next_index = existing_slots.len() as i32;
 
         // Create new fusion slot
-        let new_slot = NFusionSlot::new(fusion.owner, next_index as i32, default());
-        let slot_entity = context.world_mut().unwrap().spawn_empty().id();
+        let new_slot = NFusionSlot::new(fusion.owner, next_index, default());
+        let slot_entity = context.world_mut()?.spawn_empty().id();
         new_slot.unpack_entity(context, slot_entity)?;
-        context.link_parent_child_entity(fusion_entity, slot_entity)?;
+        context.link_parent_child_entity(slot_entity, fusion_entity)?;
 
         Ok(())
-    }
-
-    fn handle_add_default_unit(_slot: i32, _team_entity: Entity, _context: &mut Context) {
-        // Legacy function - kept for compatibility but unused
-        // The new system uses handle_add_default_unit_to_slot instead
     }
 }
 

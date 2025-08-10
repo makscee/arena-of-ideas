@@ -44,7 +44,6 @@ pub trait Node:
     fn linked_parents() -> HashSet<NodeKind>;
     fn component_kinds() -> HashSet<NodeKind>;
     fn children_kinds() -> HashSet<NodeKind>;
-    fn with_components(self, context: &Context) -> Self;
     fn egui_id(&self) -> Id {
         Id::new(self.id())
     }

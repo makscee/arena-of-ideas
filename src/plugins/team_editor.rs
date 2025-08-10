@@ -1,23 +1,11 @@
-use super::*;
+use std::ops::Not;
 
-// Usage example:
-// let actions = TeamEditor::new(team_entity, context)
-//     .ui(ui)?;
-//
-// for action in actions {
-//     match action {
-//         TeamAction::MoveUnit { unit_id, target } => {
-//             // Handle unit movement
-//         }
-//         TeamAction::ContextMenuAction { slot_id, action_name } => {
-//             // Handle context menu action
-//         }
-//     }
-// }
+use super::*;
 
 pub struct TeamEditor<'a> {
     team_entity: Entity,
     context: &'a Context<'a>,
+    bench_entity: Option<Entity>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,53 +20,67 @@ impl<'a> TeamEditor<'a> {
         Self {
             team_entity,
             context,
+            bench_entity: None,
         }
+    }
+
+    pub fn with_bench(mut self, bench_entity: Entity) -> Self {
+        self.bench_entity = Some(bench_entity);
+        self
     }
 
     pub fn ui(self, ui: &mut Ui) -> Result<Vec<TeamAction>, ExpressionError> {
         let team = self.context.get::<NTeam>(self.team_entity)?;
         let mut actions = Vec::new();
 
-        // Get bench slots
-        let bench_slots = self
-            .context
-            .collect_children_components::<NBenchSlot>(team.id)?;
-        let mut bench_slots_sorted: Vec<&NBenchSlot> = bench_slots.into_iter().collect();
-        bench_slots_sorted.sort_by_key(|s| s.index);
+        let bench_slots = if let Some(bench_entity) = self.bench_entity {
+            let mut slots = self
+                .context
+                .collect_children_components::<NBenchSlot>(self.context.id(bench_entity)?)?;
+            slots.sort_by_key(|s| s.index);
+            Some(slots)
+        } else {
+            None
+        };
 
-        // Get fusions and their slots
-        let fusions = team.fusions_load(self.context);
-        let fusions_sorted = fusions.into_iter().sorted_by_key(|f| f.index).collect_vec();
+        let fusions = team
+            .fusions_load(self.context)
+            .into_iter()
+            .sorted_by_key(|f| f.index)
+            .collect_vec();
 
         let mut fusion_slots: HashMap<u64, Vec<&NFusionSlot>> = HashMap::new();
-        for fusion in &fusions_sorted {
+        for fusion in &fusions {
             let slots = self
                 .context
-                .collect_children_components::<NFusionSlot>(fusion.id)?;
-            let mut slots_sorted: Vec<&NFusionSlot> = slots.into_iter().collect();
-            slots_sorted.sort_by_key(|s| s.index);
-            fusion_slots.insert(fusion.id, slots_sorted);
+                .collect_parents_components::<NFusionSlot>(fusion.id)?
+                .into_iter()
+                .sorted_by_key(|s| s.index)
+                .collect_vec();
+            fusion_slots.insert(fusion.id, slots);
         }
 
-        // Calculate columns: bench + fusions
-        let total_columns = 1 + fusions_sorted.len();
+        let bench_column_count = if bench_slots.is_some() { 1 } else { 0 };
+        let total_columns = bench_column_count + fusions.len();
 
         if total_columns == 0 {
             return Ok(actions);
         }
 
         ui.columns(total_columns, |columns| {
-            // Render bench column
-            Self::render_bench_column(
-                &mut columns[0],
-                &bench_slots_sorted,
-                self.context,
-                &mut actions,
-            );
+            let mut column_idx = 0;
 
-            // Render fusion columns
-            for (fusion_idx, fusion) in fusions_sorted.iter().enumerate() {
-                let column_idx = fusion_idx + 1;
+            if let Some(ref bench_slots) = bench_slots {
+                Self::render_bench_column(
+                    &mut columns[column_idx],
+                    bench_slots,
+                    self.context,
+                    &mut actions,
+                );
+                column_idx += 1;
+            }
+
+            for fusion in &fusions {
                 let empty_slots = vec![];
                 let slots = fusion_slots.get(&fusion.id).unwrap_or(&empty_slots);
                 Self::render_fusion_column(
@@ -88,6 +90,7 @@ impl<'a> TeamEditor<'a> {
                     self.context,
                     &mut actions,
                 );
+                column_idx += 1;
             }
         });
 
@@ -167,14 +170,12 @@ impl<'a> TeamEditor<'a> {
     ) -> Response {
         let mut mat_rect = MatRect::new(size);
 
-        // Add unit representation
         if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
             mat_rect = mat_rect.add_mat(&rep.material, unit.id);
         }
 
         let resp = mat_rect.unit_rep_with_default(unit.id).ui(ui, context);
 
-        // Handle dragging visual feedback
         if resp.dragged() {
             if let Some(pos) = ui.ctx().pointer_latest_pos() {
                 let origin = resp.rect.center();
@@ -197,9 +198,7 @@ impl<'a> TeamEditor<'a> {
         current_unit: Option<&NUnit>,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle drop onto this slot
         if let Some(dragged_unit_id) = resp.dnd_release_payload::<u64>() {
-            // Don't move unit to its current slot
             if let Some(unit) = current_unit {
                 if unit.id == *dragged_unit_id {
                     return;
@@ -219,7 +218,6 @@ impl<'a> TeamEditor<'a> {
         context: &Context,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle right-click context menu for empty slots
         resp.context_menu(|ui| {
             if ui.button("Add Default Unit").clicked() {
                 actions.push(TeamAction::ContextMenuAction {
@@ -238,7 +236,6 @@ impl<'a> TeamEditor<'a> {
             }
         });
 
-        // Handle drop onto empty slot
         if let Some(dragged_unit_id) = resp.dnd_release_payload::<u64>() {
             actions.push(TeamAction::MoveUnit {
                 unit_id: *dragged_unit_id,
