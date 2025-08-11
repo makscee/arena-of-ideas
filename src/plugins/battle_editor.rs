@@ -217,8 +217,14 @@ impl BattleEditorPlugin {
 
             "[h2 Team Editor]".cstr().label(ui);
 
-            let team_editor = TeamEditor::new(team_entity, context);
-            let actions = team_editor.ui(ui)?;
+            const ACTION_DEFAULT_UNIT: &str = "Add Default Unit";
+            const ACTION_UNIT_EDITOR: &str = "Open Unit Editor";
+            const ACTION_DELETE_UNIT: &str = "Delete Unit";
+            let team_editor = TeamEditor::new(team_entity)
+                .empty_slot_action(ACTION_DEFAULT_UNIT)
+                .filled_slot_action(ACTION_UNIT_EDITOR)
+                .filled_slot_action(ACTION_DELETE_UNIT);
+            let actions = team_editor.ui(ui, context)?;
 
             for team_action in actions {
                 match team_action {
@@ -229,10 +235,22 @@ impl BattleEditorPlugin {
                     TeamAction::ContextMenuAction {
                         slot_id,
                         action_name,
+                        unit_id,
                     } => {
-                        if action_name == "Add Default Unit" {
+                        if action_name == ACTION_DEFAULT_UNIT {
                             Self::handle_add_default_unit_to_slot(team_entity, slot_id, context)?;
                             changed = true;
+                        } else if action_name == ACTION_UNIT_EDITOR {
+                            if let Some(unit_id) = unit_id {
+                                action = Some(BattleEditorAction::Navigate(
+                                    BattleEditorNode::Unit(unit_id),
+                                ));
+                            }
+                        } else if action_name == ACTION_DELETE_UNIT {
+                            if let Some(unit_id) = unit_id {
+                                Self::handle_delete_unit(unit_id, context)?;
+                                changed = true;
+                            }
                         }
                     }
                     TeamAction::AddSlot { fusion_id } => {
@@ -691,28 +709,39 @@ impl BattleEditorPlugin {
         let unit_entity = context.world_mut()?.spawn_empty().id();
         unit.unpack_entity(context, unit_entity)?;
 
-        let house_color = NHouseColor::new_full(team_owner, default());
-        let house = NHouse::new_full(
-            team_owner,
-            "Default House".to_string(),
-            default(),
-            house_color,
-            NActionAbility::new_full(team_owner, "Default Action".to_string(), default()),
-            NStatusAbility::new_full(
-                team_owner,
-                "Default Status".to_string(),
-                default(),
-                default(),
-            ),
-        );
+        let house_entity = {
+            let existing_houses =
+                context.collect_children_components::<NHouse>(context.id(team_entity)?)?;
+            let default_house = existing_houses
+                .iter()
+                .find(|h| h.house_name == "Default House");
 
-        let house_entity = context.world_mut()?.spawn_empty().id();
-        house.clone().unpack_entity(context, house_entity)?;
-        context.link_parent_child_entity(team_entity, house_entity)?;
+            if let Some(existing_house) = default_house {
+                existing_house.entity()
+            } else {
+                let house_color = NHouseColor::new_full(team_owner, default());
+                let house = NHouse::new_full(
+                    team_owner,
+                    "Default House".to_string(),
+                    default(),
+                    house_color,
+                    NActionAbility::new_full(team_owner, "Default Action".to_string(), default()),
+                    NStatusAbility::new_full(
+                        team_owner,
+                        "Default Status".to_string(),
+                        default(),
+                        default(),
+                    ),
+                );
+
+                let house_entity = context.world_mut()?.spawn_empty().id();
+                house.clone().unpack_entity(context, house_entity)?;
+                context.link_parent_child_entity(team_entity, house_entity)?;
+                house_entity
+            }
+        };
         context.link_parent_child_entity(house_entity, unit_entity)?;
         context.link_parent_child_entity(unit_entity, slot_entity)?;
-
-        dbg!(NTeam::pack_entity(context, team_entity));
 
         Ok(())
     }
@@ -731,6 +760,12 @@ impl BattleEditorPlugin {
         new_slot.unpack_entity(context, slot_entity)?;
         context.link_parent_child_entity(slot_entity, fusion_entity)?;
 
+        Ok(())
+    }
+
+    fn handle_delete_unit(unit_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+        let unit_entity = context.entity(unit_id)?;
+        context.despawn(unit_entity).log();
         Ok(())
     }
 }
