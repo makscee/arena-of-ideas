@@ -776,7 +776,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 )*
                 #(
                     if let Some(parent) = &self.#linked_parent_fields.id {
-                        context.link_parent_child(self.id, *parent);
+                        context.link_parent_child(*parent, self.id);
                     }
                 )*
                 #(

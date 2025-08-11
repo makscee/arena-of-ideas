@@ -1,5 +1,6 @@
 use super::*;
 use crate::nodes::*;
+
 use crate::resources::*;
 use crate::ui::*;
 use crate::utils::*;
@@ -220,6 +221,7 @@ impl BattleEditorPlugin {
             const ACTION_DEFAULT_UNIT: &str = "Add Default Unit";
             const ACTION_UNIT_EDITOR: &str = "Open Unit Editor";
             const ACTION_DELETE_UNIT: &str = "Delete Unit";
+
             let team_editor = TeamEditor::new(team_entity)
                 .empty_slot_action(ACTION_DEFAULT_UNIT)
                 .filled_slot_action(ACTION_UNIT_EDITOR)
@@ -255,6 +257,15 @@ impl BattleEditorPlugin {
                     }
                     TeamAction::AddSlot { fusion_id } => {
                         Self::handle_add_slot(fusion_id, context)?;
+                        changed = true;
+                    }
+
+                    TeamAction::ChangeActionRange {
+                        slot_id,
+                        start,
+                        length,
+                    } => {
+                        Self::handle_change_action_range(slot_id, start, length, context)?;
                         changed = true;
                     }
                 }
@@ -766,6 +777,18 @@ impl BattleEditorPlugin {
     fn handle_delete_unit(unit_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
         let unit_entity = context.entity(unit_id)?;
         context.despawn(unit_entity).log();
+        Ok(())
+    }
+
+    fn handle_change_action_range(
+        slot_id: u64,
+        start: u8,
+        length: u8,
+        context: &mut Context,
+    ) -> Result<(), ExpressionError> {
+        let mut slot = context.get_mut::<NFusionSlot>(context.entity(slot_id)?)?;
+        slot.actions.start = start;
+        slot.actions.length = length;
         Ok(())
     }
 }
