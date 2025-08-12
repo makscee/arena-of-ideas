@@ -1,11 +1,5 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum TeamEditorViewMode {
-    Units,
-    Actions,
-}
-
 pub struct TeamEditor {
     team_entity: Entity,
     bench_entity: Option<Entity>,
@@ -63,12 +57,9 @@ impl TeamEditor {
         let team = context.get::<NTeam>(self.team_entity)?;
         let mut actions = Vec::new();
 
-        let state_id = egui::Id::new(self.team_entity.index()).with("team_editor_state");
-        let mut view_mode = ui.memory(|m| {
-            m.data
-                .get_temp::<TeamEditorViewMode>(state_id)
-                .unwrap_or(TeamEditorViewMode::Units)
-        });
+        let state_id = egui::Id::new(self.team_entity.index()).with("team_editor_selected_fusion");
+        let mut selected_fusion_id =
+            ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
         let bench_slots = if let Some(bench_entity) = self.bench_entity {
             let mut slots =
@@ -102,88 +93,70 @@ impl TeamEditor {
             return Ok(actions);
         }
 
-        ui.horizontal(|ui| {
-            if ui
-                .selectable_label(view_mode == TeamEditorViewMode::Units, "Units")
-                .clicked()
-            {
-                view_mode = match view_mode {
-                    TeamEditorViewMode::Units => TeamEditorViewMode::Actions,
-                    TeamEditorViewMode::Actions => TeamEditorViewMode::Units,
-                };
-                ui.memory_mut(|m| {
-                    m.data.insert_temp(state_id, view_mode.clone());
-                });
+        let mut selected_column_rect = None;
+        let mut clicked_fusion_id = None;
+
+        ui.columns(total_columns, |columns| {
+            let mut column_idx = 0;
+
+            if let Some(ref bench_slots) = bench_slots {
+                self.render_bench_column_with_actions_display(
+                    &mut columns[column_idx],
+                    bench_slots,
+                    context,
+                    &mut actions,
+                );
+                column_idx += 1;
             }
-            if ui
-                .selectable_label(view_mode == TeamEditorViewMode::Actions, "Actions")
-                .clicked()
-            {
-                view_mode = match view_mode {
-                    TeamEditorViewMode::Units => TeamEditorViewMode::Actions,
-                    TeamEditorViewMode::Actions => TeamEditorViewMode::Units,
-                };
-                ui.memory_mut(|m| {
-                    m.data.insert_temp(state_id, view_mode.clone());
-                });
+
+            for fusion in &fusions {
+                let empty_slots = vec![];
+                let slots = fusion_slots.get(&fusion.id).unwrap_or(&empty_slots);
+
+                if selected_fusion_id == Some(fusion.id) {
+                    self.render_fusion_actions_column(
+                        &mut columns[column_idx],
+                        fusion,
+                        slots,
+                        context,
+                        &mut actions,
+                    );
+                    selected_column_rect = Some(columns[column_idx].min_rect());
+                } else {
+                    let clicked = self.render_fusion_column_with_actions_display(
+                        &mut columns[column_idx],
+                        fusion,
+                        slots,
+                        context,
+                        &mut actions,
+                    );
+                    if clicked {
+                        clicked_fusion_id = Some(fusion.id);
+                    }
+                }
+                column_idx += 1;
             }
         });
 
-        match view_mode {
-            TeamEditorViewMode::Units => {
-                ui.columns(total_columns, |columns| {
-                    let mut column_idx = 0;
-
-                    if let Some(ref bench_slots) = bench_slots {
-                        self.render_bench_column_with_actions_display(
-                            &mut columns[column_idx],
-                            bench_slots,
-                            context,
-                            &mut actions,
-                        );
-                        column_idx += 1;
-                    }
-
-                    for fusion in &fusions {
-                        let empty_slots = vec![];
-                        let slots = fusion_slots.get(&fusion.id).unwrap_or(&empty_slots);
-                        self.render_fusion_column_with_actions_display(
-                            &mut columns[column_idx],
-                            fusion,
-                            slots,
-                            context,
-                            &mut actions,
-                        );
-                        column_idx += 1;
-                    }
-                });
-            }
-            TeamEditorViewMode::Actions => {
-                ui.columns(total_columns, |columns| {
-                    let mut column_idx = 0;
-
-                    if bench_slots.is_some() {
-                        columns[column_idx].vertical(|ui| {
-                            ui.label("Bench");
-                            ui.separator();
-                            ui.label("No actions");
-                        });
-                        column_idx += 1;
-                    }
-
-                    for fusion in &fusions {
-                        let empty_slots = vec![];
-                        let slots = fusion_slots.get(&fusion.id).unwrap_or(&empty_slots);
-                        self.render_fusion_actions_column(
-                            &mut columns[column_idx],
-                            fusion,
-                            slots,
-                            context,
-                            &mut actions,
-                        );
-                        column_idx += 1;
-                    }
-                });
+        if let Some(fusion_id) = clicked_fusion_id {
+            selected_fusion_id = Some(fusion_id);
+            ui.memory_mut(|m| {
+                m.data.insert_temp(state_id, selected_fusion_id);
+            });
+        }
+        if clicked_fusion_id.is_none()
+            && ui.input(|i| i.pointer.any_click())
+            && selected_fusion_id.is_some()
+        {
+            if let Some(pointer_pos) = ui.input(|i| i.pointer.interact_pos()) {
+                let clicked_outside =
+                    selected_column_rect.map_or(true, |rect| !rect.contains(pointer_pos));
+                if clicked_outside {
+                    selected_fusion_id = None;
+                    ui.memory_mut(|m| {
+                        m.data.insert_temp(state_id, selected_fusion_id);
+                    });
+                }
             }
         }
 
@@ -214,7 +187,9 @@ impl TeamEditor {
         slots: &[&NFusionSlot],
         context: &Context,
         actions: &mut Vec<TeamAction>,
-    ) {
+    ) -> bool {
+        let mut clicked = false;
+
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.label(format!("Fusion {}", fusion.index));
@@ -225,14 +200,24 @@ impl TeamEditor {
                 }
             });
 
-            ui.group(|ui| {
+            let group_response = ui.group(|ui| {
                 self.render_fusion_action_sequence(fusion, slots, context, ui);
             });
+            let actions_response = ui.allocate_rect(group_response.response.rect, Sense::click());
+
+            if actions_response.hovered() {
+                ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::PointingHand);
+            }
+            if actions_response.clicked() {
+                clicked = true;
+            }
 
             for slot in slots {
                 self.render_slot(ui, slot.id, context, actions);
             }
         });
+
+        clicked
     }
 
     fn render_fusion_action_sequence(
@@ -418,11 +403,6 @@ impl TeamEditor {
             for slot in slots {
                 if let Some(unit) = Self::get_slot_unit(slot.id, context) {
                     ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label(format!("Unit: {}", unit.unit_name));
-                            ui.label(format!("Slot {}", slot.index));
-                        });
-
                         if let Ok(unit_behavior) =
                             context.first_parent_recursive::<NUnitBehavior>(unit.id)
                         {
@@ -480,12 +460,10 @@ impl TeamEditor {
                             ui.label("No unit behavior");
                         }
                     });
-                    ui.separator();
                 } else {
                     ui.group(|ui| {
                         ui.label(format!("Empty Slot {}", slot.index));
                     });
-                    ui.separator();
                 }
             }
         });
