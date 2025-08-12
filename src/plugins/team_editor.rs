@@ -128,7 +128,6 @@ impl TeamEditor {
                 });
             }
         });
-        ui.separator();
 
         match view_mode {
             TeamEditorViewMode::Units => {
@@ -200,13 +199,6 @@ impl TeamEditor {
     ) {
         ui.vertical(|ui| {
             ui.label("Bench");
-
-            ui.group(|ui| {
-                ui.label("Action Sequence:");
-                ui.separator();
-                ui.label("Bench units don't participate in fusion actions");
-            });
-
             ui.separator();
 
             for slot in bench_slots {
@@ -234,12 +226,8 @@ impl TeamEditor {
             });
 
             ui.group(|ui| {
-                ui.label("Action Sequence:");
-                ui.separator();
                 self.render_fusion_action_sequence(fusion, slots, context, ui);
             });
-
-            ui.separator();
 
             for slot in slots {
                 self.render_slot(ui, slot.id, context, actions);
@@ -280,11 +268,8 @@ impl TeamEditor {
             ui.label("No actions selected");
         } else {
             ui.vertical(|ui| {
-                for (unit_name, action) in all_actions {
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{}:", unit_name));
-                        action.cstr().label_w(ui);
-                    });
+                for (_, action) in all_actions {
+                    action.cstr().label_w(ui);
                 }
             });
         }

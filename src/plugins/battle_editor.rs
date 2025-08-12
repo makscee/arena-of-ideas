@@ -118,8 +118,6 @@ impl BattleEditorPlugin {
             }
         });
 
-        ui.separator();
-
         let current_node = world.resource::<BattleEditorState>().current_node.clone();
         ScrollArea::vertical().show(ui, |ui| {
             let result = if let Some(current) = &current_node {
@@ -214,14 +212,11 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            let team_entity = context.entity(id)?;
-
-            "[h2 Team Editor]".cstr().label(ui);
-
             const ACTION_DEFAULT_UNIT: &str = "Add Default Unit";
             const ACTION_UNIT_EDITOR: &str = "Open Unit Editor";
             const ACTION_DELETE_UNIT: &str = "Delete Unit";
 
+            let team_entity = context.entity(id)?;
             let team_editor = TeamEditor::new(team_entity)
                 .empty_slot_action(ACTION_DEFAULT_UNIT)
                 .filled_slot_action(ACTION_UNIT_EDITOR)
@@ -386,15 +381,10 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            ui.heading(format!("Unit: {}", id));
-            ui.separator();
-
             if Self::show_node_editor::<NUnit>(id, context, ui)? {
                 changed = true;
             }
-
             ui.separator();
-
             Self::show_parent_node_editor::<NUnitStats>(id, context, ui, id, &mut changed);
             Self::show_parent_node_editor::<NUnitState>(id, context, ui, id, &mut changed);
 
