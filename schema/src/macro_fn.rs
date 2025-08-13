@@ -130,7 +130,8 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     linked_parents_fields.push(field_ident.clone());
                     linked_parents_types.push(inner_type(type_path));
                 } else if VarName::VARIANTS.contains(&field_str.as_str())
-                    && VarValue::VARIANTS.contains(&type_ident.as_str())
+                    && (VarValue::VARIANTS.contains(&type_ident.as_str())
+                        || type_ident == "HexColor")
                 {
                     var_fields.push(field_ident.clone());
                     var_types.push(ty.clone());

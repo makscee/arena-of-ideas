@@ -391,13 +391,16 @@ impl BattleEditorPlugin {
             if let Some(desc_id) =
                 Self::show_parent_node_editor::<NUnitDescription>(id, context, ui, id, &mut changed)
             {
-                Self::show_parent_node_editor::<NUnitRepresentation>(
-                    desc_id,
-                    context,
-                    ui,
-                    id,
-                    &mut changed,
-                );
+                context.with_owner_ref(context.entity(id)?, |context| {
+                    Self::show_parent_node_editor::<NUnitRepresentation>(
+                        desc_id,
+                        context,
+                        ui,
+                        id,
+                        &mut changed,
+                    );
+                    Ok(())
+                })?;
 
                 Self::show_parent_node_editor::<NUnitBehavior>(
                     desc_id,
