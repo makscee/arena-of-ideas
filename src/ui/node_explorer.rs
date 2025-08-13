@@ -16,10 +16,10 @@ pub struct NodeExplorerData {
     pub selected_kind: NodeKind,
     /// Selected IDs for the current kind (from old NodeExplorerData)
     pub selected_ids: Vec<u64>,
-    /// Children of the inspected node, grouped by kind
-    pub children: HashMap<NodeKind, Vec<u64>>,
-    /// Parents of the inspected node, grouped by kind
-    pub parents: HashMap<NodeKind, Vec<u64>>,
+    /// Children of the inspected node, grouped by kind with link ratings
+    pub children: HashMap<NodeKind, Vec<(u64, Option<i32>)>>,
+    /// Parents of the inspected node, grouped by kind with link ratings
+    pub parents: HashMap<NodeKind, Vec<(u64, Option<i32>)>>,
     /// Owner filter (from old NodeExplorerData)
     pub owner_filter: OwnerFilter,
 }
@@ -238,34 +238,70 @@ impl NodeExplorerPlugin {
         data.children.clear();
         data.parents.clear();
 
+        // Initialize children and parents maps with all linked kinds
+        for child_kind in kind.all_linked_children() {
+            data.children.insert(child_kind, Vec::new());
+        }
+        for parent_kind in kind.all_linked_parents() {
+            data.parents.insert(parent_kind, Vec::new());
+        }
+
         let filter_ids = data.owner_filter.ids();
 
-        for child in context.children(id) {
-            if let Some(child_node) = child.get_node() {
-                if filter_ids.is_empty() || filter_ids.contains(&child_node.owner) {
-                    let kind = child.kind()?;
-                    data.children.entry(kind).or_default().push(child);
+        // Fill children map
+        for (child_kind, child_vec) in data.children.iter_mut() {
+            let all_ids = child_kind.query_all_ids(context.world_mut()?);
+            for node_id in all_ids {
+                if node_id == id {
+                    continue;
                 }
-            }
-        }
-        for parent in context.parents(id) {
-            if let Some(parent_node) = parent.get_node() {
-                if filter_ids.is_empty() || filter_ids.contains(&parent_node.owner) {
-                    let kind = parent.kind()?;
-                    data.parents.entry(kind).or_default().push(parent);
+
+                if let Some(node) = node_id.get_node() {
+                    if !filter_ids.is_empty() && !filter_ids.contains(&node.owner) {
+                        continue;
+                    }
                 }
+
+                let link_rating = if context.children(id).contains(&node_id) {
+                    context
+                        .world()?
+                        .get_any_link_rating(id, node_id)
+                        .map(|(r, _)| r)
+                } else {
+                    None
+                };
+
+                child_vec.push((node_id, link_rating));
             }
         }
-        for child in kind.all_linked_children() {
-            if !data.children.keys().contains(&child) {
-                data.children.insert(child, default());
+
+        // Fill parents map
+        for (parent_kind, parent_vec) in data.parents.iter_mut() {
+            let all_ids = parent_kind.query_all_ids(context.world_mut()?);
+            for node_id in all_ids {
+                if node_id == id {
+                    continue;
+                }
+
+                if let Some(node) = node_id.get_node() {
+                    if !filter_ids.is_empty() && !filter_ids.contains(&node.owner) {
+                        continue;
+                    }
+                }
+
+                let link_rating = if context.parents(id).contains(&node_id) {
+                    context
+                        .world()?
+                        .get_any_link_rating(node_id, id)
+                        .map(|(r, _)| r)
+                } else {
+                    None
+                };
+
+                parent_vec.push((node_id, link_rating));
             }
         }
-        for parent in kind.all_linked_parents() {
-            if !data.parents.keys().contains(&parent) {
-                data.parents.insert(parent, default());
-            }
-        }
+
         Ok(())
     }
 
@@ -476,71 +512,10 @@ impl NodeExplorerPlugin {
             let mut selected: Option<u64> = None;
             let inspected_id = ned.inspected_node.unwrap_or(0);
 
-            let mut nodes_by_kind: HashMap<NodeKind, Vec<(u64, String, i32)>> = HashMap::new();
-            for (kind, ids) in &ned.parents {
-                for &id in ids {
-                    let rating = context
-                        .world()?
-                        .get_any_link_rating(id, inspected_id)
-                        .map(|(r, _)| r)
-                        .unwrap_or(0);
-                    nodes_by_kind.entry(*kind).or_default().push((
-                        id,
-                        "Parent".to_string(),
-                        rating,
-                    ));
-                }
-            }
-
-            // Add children
-            for (kind, ids) in &ned.children {
-                for &id in ids {
-                    let rating = context
-                        .world()?
-                        .get_any_link_rating(inspected_id, id)
-                        .map(|(r, _)| r)
-                        .unwrap_or(0);
-                    nodes_by_kind
-                        .entry(*kind)
-                        .or_default()
-                        .push((id, "Child".to_string(), rating));
-                }
-            }
-
-            let linked_kinds: HashSet<NodeKind> = ned
-                .parents
-                .keys()
-                .chain(ned.children.keys())
-                .copied()
-                .collect();
-
-            for kind in linked_kinds {
-                let all_ids = kind.query_all_ids(context.world_mut()?);
-                for id in all_ids {
-                    if id != inspected_id
-                        && !ned
-                            .parents
-                            .get(&kind)
-                            .map_or(false, |ids| ids.contains(&id))
-                        && !ned
-                            .children
-                            .get(&kind)
-                            .map_or(false, |ids| ids.contains(&id))
-                    {
-                        nodes_by_kind.entry(kind).or_default().push((
-                            id,
-                            "Unlinked".to_string(),
-                            0,
-                        ));
-                    }
-                }
-            }
-
-            for (_, nodes) in nodes_by_kind.iter_mut() {
-                nodes.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.1.cmp(&b.1)));
-            }
-
-            let mut kinds: Vec<_> = nodes_by_kind.keys().copied().collect();
+            let mut all_kinds: HashSet<NodeKind> = HashSet::new();
+            all_kinds.extend(ned.children.keys());
+            all_kinds.extend(ned.parents.keys());
+            let mut kinds: Vec<_> = all_kinds.into_iter().collect();
             kinds.sort();
 
             if kinds.is_empty() {
@@ -550,83 +525,89 @@ impl NodeExplorerPlugin {
 
             ui.columns(kinds.len(), |columns| {
                 for (i, kind) in kinds.iter().enumerate() {
-                    if let Some(nodes) = nodes_by_kind.get(kind) {
-                        columns[i].vertical(|ui| {
-                            kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
+                    columns[i].vertical(|ui| {
+                        kind.cstr_c(ui.visuals().weak_text_color()).label(ui);
 
-                            // Add new node creation for this specific kind
-                            let state = ned.new_node_states.entry(*kind).or_default();
-                            let mut is_open = state.is_open;
-                            let mut pack = state.pack.take();
+                        // Add new node creation for this specific kind
+                        let state = ned.new_node_states.entry(*kind).or_default();
+                        let mut is_open = state.is_open;
+                        let mut pack = state.pack.take();
 
-                            ScrollArea::vertical().id_salt(kind).show(ui, |ui| {
-                                ui.collapsing(format!("New {}", kind.cstr()), |ui| {
-                                    is_open = true;
+                        ScrollArea::vertical().id_salt(kind).show(ui, |ui| {
+                            ui.collapsing(format!("New {}", kind.cstr()), |ui| {
+                                is_open = true;
 
-                                    // Initialize pack if needed
-                                    if pack.is_none() {
-                                        let mut new_pack = PackedNodes::default();
-                                        new_pack.root = 1;
-                                        new_pack.add_node(kind.to_string(), kind.default_data(), 1);
-                                        pack = Some(new_pack);
+                                // Initialize pack if needed
+                                if pack.is_none() {
+                                    let mut new_pack = PackedNodes::default();
+                                    new_pack.root = 1;
+                                    new_pack.add_node(kind.to_string(), kind.default_data(), 1);
+                                    pack = Some(new_pack);
+                                }
+
+                                if let Some(ref mut pack) = pack {
+                                    if let Ok(_view_response) =
+                                        kind.view_pack_with_children_mut(context, ui, pack)
+                                    {
+                                        ui.horizontal(|ui| {
+                                            if ui.button("Publish").clicked() {
+                                                let pack_string = to_ron_string(pack);
+                                                cn().reducers
+                                                    .content_publish_node(pack_string)
+                                                    .ok();
+                                                // Reset the pack after publishing
+                                                let mut new_pack = PackedNodes::default();
+                                                new_pack.root = 1;
+                                                new_pack.add_node(
+                                                    kind.to_string(),
+                                                    kind.default_data(),
+                                                    1,
+                                                );
+                                                *pack = new_pack;
+                                            }
+
+                                            if ui.button("Reset").clicked() {
+                                                let mut new_pack = PackedNodes::default();
+                                                new_pack.root = 1;
+                                                new_pack.add_node(
+                                                    kind.to_string(),
+                                                    kind.default_data(),
+                                                    1,
+                                                );
+                                                *pack = new_pack;
+                                            }
+                                        });
                                     }
-
-                                    if let Some(ref mut pack) = pack {
-                                        if let Ok(_view_response) =
-                                            kind.view_pack_with_children_mut(context, ui, pack)
-                                        {
-                                            ui.horizontal(|ui| {
-                                                if ui.button("Publish").clicked() {
-                                                    let pack_string = to_ron_string(pack);
-                                                    cn().reducers
-                                                        .content_publish_node(pack_string)
-                                                        .ok();
-                                                    // Reset the pack after publishing
-                                                    let mut new_pack = PackedNodes::default();
-                                                    new_pack.root = 1;
-                                                    new_pack.add_node(
-                                                        kind.to_string(),
-                                                        kind.default_data(),
-                                                        1,
-                                                    );
-                                                    *pack = new_pack;
-                                                }
-
-                                                if ui.button("Reset").clicked() {
-                                                    let mut new_pack = PackedNodes::default();
-                                                    new_pack.root = 1;
-                                                    new_pack.add_node(
-                                                        kind.to_string(),
-                                                        kind.default_data(),
-                                                        1,
-                                                    );
-                                                    *pack = new_pack;
-                                                }
-                                            });
-                                        }
-                                    }
-                                });
-
-                                // Update state
-                                ned.new_node_states.get_mut(kind).unwrap().is_open = is_open;
-                                ned.new_node_states.get_mut(kind).unwrap().pack = pack;
-
-                                ui.separator();
-
-                                let ids: Vec<u64> = nodes.iter().map(|(id, _, _)| *id).collect();
-                                let vctx = ViewContext::new(ui)
-                                    .one_line(true)
-                                    .link_rating(true, inspected_id)
-                                    .link_rating(false, inspected_id);
-
-                                if let Ok(Some(id)) =
-                                    kind.show_explorer(context, vctx, ui, &ids, ned.inspected_node)
-                                {
-                                    selected = Some(id);
                                 }
                             });
+
+                            // Update state
+                            ned.new_node_states.get_mut(kind).unwrap().is_open = is_open;
+                            ned.new_node_states.get_mut(kind).unwrap().pack = pack;
+
+                            ui.separator();
+
+                            // Display nodes from both parents and children maps
+                            let mut ids = Vec::new();
+                            if let Some(parent_nodes) = ned.parents.get(kind) {
+                                ids.extend(parent_nodes.iter().map(|(id, _)| *id));
+                            }
+                            if let Some(child_nodes) = ned.children.get(kind) {
+                                ids.extend(child_nodes.iter().map(|(id, _)| *id));
+                            }
+
+                            let vctx = ViewContext::new(ui)
+                                .one_line(true)
+                                .link_rating(true, inspected_id)
+                                .link_rating(false, inspected_id);
+
+                            if let Ok(Some(id)) =
+                                kind.show_explorer(context, vctx, ui, &ids, ned.inspected_node)
+                            {
+                                selected = Some(id);
+                            }
                         });
-                    }
+                    });
                 }
             });
 
