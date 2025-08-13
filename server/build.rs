@@ -60,84 +60,25 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
         #[allow(dead_code)]
         #[allow(unused_mut)]
         pub trait ServerNodeKind {
-            fn owned_kinds(self) -> HashSet<NodeKind>;
-            fn owned_parents(self) -> HashSet<NodeKind>;
-            fn owned_children(self) -> HashSet<NodeKind>;
-            fn linked_children(self) -> HashSet<NodeKind>;
-            fn linked_parents(self) -> HashSet<NodeKind>;
-            fn component_kinds(self) -> HashSet<NodeKind>;
-            fn children_kinds(self) -> HashSet<NodeKind>;
+            fn all_linked_parents(self) -> HashSet<NodeKind>;
+            fn all_linked_children(self) -> HashSet<NodeKind>;
             fn convert(self, data: &str) -> Result<TNode, ExpressionError>;
-            fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
+            fn delete_with_owned(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
         }
         impl ServerNodeKind for NodeKind {
-            fn owned_kinds(self) -> HashSet<Self> {
+            fn all_linked_children(self) -> HashSet<NodeKind> {
                 match self {
-                    NodeKind::None => default(),
+                    NodeKind::None => HashSet::new(),
                     #(
-                        Self::#names => {
-                            #names::owned_kinds()
-                        }
+                        Self::#names => #names::all_linked_children(),
                     )*
                 }
             }
-            fn owned_parents(self) -> HashSet<Self> {
+            fn all_linked_parents(self) -> HashSet<NodeKind> {
                 match self {
-                    NodeKind::None => default(),
+                    NodeKind::None => HashSet::new(),
                     #(
-                        Self::#names => {
-                            #names::owned_parents()
-                        }
-                    )*
-                }
-            }
-            fn owned_children(self) -> HashSet<Self> {
-                match self {
-                    NodeKind::None => default(),
-                    #(
-                        Self::#names => {
-                            #names::owned_children()
-                        }
-                    )*
-                }
-            }
-            fn linked_children(self) -> HashSet<Self> {
-                match self {
-                    NodeKind::None => default(),
-                    #(
-                        Self::#names => {
-                            #names::linked_children()
-                        }
-                    )*
-                }
-            }
-            fn linked_parents(self) -> HashSet<Self> {
-                match self {
-                    NodeKind::None => default(),
-                    #(
-                        Self::#names => {
-                            #names::linked_parents()
-                        }
-                    )*
-                }
-            }
-            fn component_kinds(self) -> HashSet<Self> {
-                match self {
-                    NodeKind::None => default(),
-                    #(
-                        Self::#names => {
-                            #names::component_kinds()
-                        }
-                    )*
-                }
-            }
-            fn children_kinds(self) -> HashSet<Self> {
-                match self {
-                    NodeKind::None => default(),
-                    #(
-                        Self::#names => {
-                            #names::children_kinds()
-                        }
+                        Self::#names => #names::all_linked_parents(),
                     )*
                 }
             }
@@ -152,12 +93,12 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
                     )*
                 }
             }
-            fn delete_with_components(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+            fn delete_with_owned(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
                 match self {
                     Self::None => unreachable!(),
                     #(
                         Self::#names => {
-                            #names::get(ctx, id).to_custom_e_s_fn(|| format!("Failed to get {self}#{id}"))?.delete_with_components(ctx);
+                            #names::get(ctx, id).to_custom_e_s_fn(|| format!("Failed to get {self}#{id}"))?.delete_with_owned(ctx);
                         }
                     )*
                 }
@@ -225,18 +166,16 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 .unwrap(),
         );
     }
-    let common = common_node_fns(
-        struct_ident,
-        &all_data_fields,
-        &all_data_types,
-        &one_fields,
-        &one_types,
-    );
+    let common = common_node_fns(struct_ident, &all_data_fields, &all_data_types);
     let common_trait = common_node_trait_fns(
-        &one_types,
-        &many_types,
-        &linked_children_types,
-        &linked_parents_types,
+        owned_children_types,
+        owned_parents_types,
+        owned_child_types,
+        owned_parent_types,
+        linked_children_types,
+        linked_parents_types,
+        linked_child_types,
+        linked_parent_types,
     );
     let shared_new_fns = shared_new_functions(
         &all_data_fields,
@@ -484,20 +423,27 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 )*
                 Ok(())
             }
-            fn with_components(&mut self, ctx: &ReducerContext) -> &mut Self {
+            fn with_owned(&mut self, ctx: &ReducerContext) -> &mut Self {
                 #(
-                    self.#one_fields = self.parent::<#one_types>(ctx)
-                        .map(|mut d| std::mem::take(d.with_components(ctx)
-                            .with_children(ctx))
+                    self.#owned_parent_fields = self.parent::<#owned_parent_types>(ctx)
+                        .map(|mut d| std::mem::take(d.with_owned(ctx))
                         );
                 )*
-                self
-            }
-            fn with_children(&mut self, ctx: &ReducerContext) -> &mut Self {
                 #(
-                    self.#many_fields = self.collect_children::<#many_types>(ctx)
+                    self.#owned_child_fields = self.child::<#owned_child_types>(ctx)
+                        .map(|mut d| std::mem::take(d.with_owned(ctx))
+                        );
+                )*
+                #(
+                    self.#owned_parents_fields = self.collect_parents::<#owned_parents_types>(ctx)
                         .into_iter()
-                        .map(|mut n| std::mem::take(n.with_components(ctx).with_children(ctx)))
+                        .map(|mut n| std::mem::take(n.with_owned(ctx)))
+                        .collect();
+                )*
+                #(
+                    self.#owned_children_fields = self.collect_children::<#owned_children_types>(ctx)
+                        .into_iter()
+                        .map(|mut n| std::mem::take(n.with_owned(ctx)))
                         .collect();
                 )*
                 self
@@ -515,15 +461,25 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
             }
-            fn delete_with_components(&self, ctx: &ReducerContext) {
+            fn delete_with_owned(&self, ctx: &ReducerContext) {
                 #(
-                    if let Some(n) = self.parent::<#one_types>(ctx) {
-                        n.delete_with_components(ctx);
+                    if let Some(n) = self.parent::<#owned_parent_types>(ctx) {
+                        n.delete_with_owned(ctx);
                     }
                 )*
                 #(
-                    for n in self.collect_children::<#many_types>(ctx) {
-                        n.delete_with_components(ctx);
+                    if let Some(n) = self.child::<#owned_child_types>(ctx) {
+                        n.delete_with_owned(ctx);
+                    }
+                )*
+                #(
+                    for n in self.collect_parents::<#owned_parents_types>(ctx) {
+                        n.delete_with_owned(ctx);
+                    }
+                )*
+                #(
+                    for n in self.collect_children::<#owned_children_types>(ctx) {
+                        n.delete_with_owned(ctx);
                     }
                 )*
                 self.delete_self(ctx);

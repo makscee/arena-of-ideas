@@ -476,11 +476,7 @@ impl NodeExplorerPlugin {
             let mut selected: Option<u64> = None;
             let inspected_id = ned.inspected_node.unwrap_or(0);
 
-            // Collect all nodes by kind with their relationship type and link rating
-            let mut nodes_by_kind: std::collections::HashMap<NodeKind, Vec<(u64, String, i32)>> =
-                std::collections::HashMap::new();
-
-            // Add parents
+            let mut nodes_by_kind: HashMap<NodeKind, Vec<(u64, String, i32)>> = HashMap::new();
             for (kind, ids) in &ned.parents {
                 for &id in ids {
                     let rating = context
@@ -511,8 +507,7 @@ impl NodeExplorerPlugin {
                 }
             }
 
-            // Add unlinked nodes only for kinds that have linked nodes
-            let linked_kinds: std::collections::HashSet<NodeKind> = ned
+            let linked_kinds: HashSet<NodeKind> = ned
                 .parents
                 .keys()
                 .chain(ned.children.keys())
@@ -541,7 +536,6 @@ impl NodeExplorerPlugin {
                 }
             }
 
-            // Sort each kind's nodes by rating (descending), then by relationship type
             for (_, nodes) in nodes_by_kind.iter_mut() {
                 nodes.sort_by(|a, b| b.2.cmp(&a.2).then_with(|| a.1.cmp(&b.1)));
             }

@@ -61,7 +61,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if !player.check_pass(old_pass) {
         return Err("Old password did not match".to_owned());
     }
-    player.player_data_mut().pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
+    player.player_data.as_mut().unwrap().pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
     player.save(ctx);
     Ok(())
 }
@@ -87,7 +87,7 @@ impl NPlayer {
         }
     }
     fn check_pass(&self, pass: String) -> bool {
-        if let Some(hash) = &self.player_data().pass_hash {
+        if let Some(hash) = &self.player_data.as_ref().unwrap().pass_hash {
             match verify(pass, hash) {
                 Ok(v) => v,
                 Err(e) => {

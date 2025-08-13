@@ -37,13 +37,8 @@ pub trait Node:
     fn load_recursive(world: &World, id: u64) -> Option<Self>;
     fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError>;
     fn unpack_entity(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
-    fn owned_kinds() -> HashSet<NodeKind>;
-    fn owned_parents() -> HashSet<NodeKind>;
-    fn owned_children() -> HashSet<NodeKind>;
-    fn linked_children() -> HashSet<NodeKind>;
-    fn linked_parents() -> HashSet<NodeKind>;
-    fn component_kinds() -> HashSet<NodeKind>;
-    fn children_kinds() -> HashSet<NodeKind>;
+    fn all_linked_parents() -> HashSet<NodeKind>;
+    fn all_linked_children() -> HashSet<NodeKind>;
     fn egui_id(&self) -> Id {
         Id::new(self.id())
     }

@@ -1,5 +1,3 @@
-use itertools::Itertools;
-use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::quote;
 use strum::VariantNames;
@@ -273,33 +271,13 @@ pub fn common_node_fns(
     struct_ident: &Ident,
     all_data_fields: &Vec<Ident>,
     all_data_types: &Vec<Type>,
-    one_fields: &Vec<Ident>,
-    one_types: &Vec<Type>,
 ) -> TokenStream {
-    let component_link_fields_mut = one_fields
-        .iter()
-        .map(|i| Ident::new(&format!("{i}_mut"), Span::call_site()))
-        .collect_vec();
-    let component_link_fields_err = one_fields
-        .iter()
-        .map(|i| format!("Failed to get field {i}").leak())
-        .collect_vec();
     let fields_len = all_data_fields.len();
     quote! {
         #[allow(unused)]
         #[allow(dead_code)]
         #[allow(unused_mut)]
         impl #struct_ident {
-            #(
-                pub fn #one_fields(&self) -> &#one_types {
-                    self.#one_fields.as_ref().expect(#component_link_fields_err)
-                }
-            )*
-            #(
-                pub fn #component_link_fields_mut<'a>(&'a mut self) -> &'a mut #one_types {
-                    self.#one_fields.as_mut().expect(#component_link_fields_err)
-                }
-            )*
             fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
                 match ron::from_str::<Self>(data) {
                     Ok(v) => {
@@ -423,56 +401,45 @@ pub fn shared_new_functions(
 }
 
 pub fn common_node_trait_fns(
-    one_types: &Vec<Type>,
-    many_types: &Vec<Type>,
+    owned_children_types: &Vec<Type>,
+    owned_parents_types: &Vec<Type>,
+    owned_child_types: &Vec<Type>,
+    owned_parent_types: &Vec<Type>,
     linked_children_types: &Vec<Type>,
     linked_parents_types: &Vec<Type>,
+    linked_child_types: &Vec<Type>,
+    linked_parent_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
-        fn owned_kinds() -> HashSet<NodeKind> {
-            let mut kinds = Self::owned_parents();
-            kinds.extend(Self::owned_children());
-            kinds
-        }
-        fn owned_parents() -> HashSet<NodeKind> {
+        fn all_linked_parents() -> HashSet<NodeKind> {
             [
                 #(
-                    NodeKind::#one_types,
+                    NodeKind::#owned_parents_types,
                 )*
-            ].into()
-        }
-        fn owned_children() -> HashSet<NodeKind> {
-            [
                 #(
-                    NodeKind::#many_types,
+                    NodeKind::#owned_parent_types,
                 )*
-            ].into()
-        }
-        fn linked_children() -> HashSet<NodeKind> {
-            [
-                #(
-                    NodeKind::#linked_children_types,
-                )*
-            ].into()
-        }
-        fn linked_parents() -> HashSet<NodeKind> {
-            [
                 #(
                     NodeKind::#linked_parents_types,
                 )*
-            ].into()
-        }
-        fn component_kinds() -> HashSet<NodeKind> {
-            [
                 #(
-                    NodeKind::#one_types,
+                    NodeKind::#linked_parent_types,
                 )*
             ].into()
         }
-        fn children_kinds() -> HashSet<NodeKind> {
+        fn all_linked_children() -> HashSet<NodeKind> {
             [
                 #(
-                    NodeKind::#many_types,
+                    NodeKind::#owned_children_types,
+                )*
+                #(
+                    NodeKind::#owned_child_types,
+                )*
+                #(
+                    NodeKind::#linked_children_types,
+                )*
+                #(
+                    NodeKind::#linked_child_types,
                 )*
             ].into()
         }

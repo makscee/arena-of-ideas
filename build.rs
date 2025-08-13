@@ -64,7 +64,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
             fn set_var(self, context: &mut Context, entity: Entity, var: VarName, value: VarValue);
             fn get_vars(self, context: &Context, entity: Entity) -> Vec<(VarName, VarValue)>;
             fn unpack(self, context: &mut Context, entity: Entity, node: &TNode);
-            fn is_component(self, child: NodeKind) -> bool;
             fn default_data(self) -> String;
             fn default_tnode(self) -> TNode;
             fn show_explorer(self, context: &Context, vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError>;
@@ -72,11 +71,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
             fn query_all_ids(self, world: &mut World) -> Vec<u64>;
             fn all_linked_parents(self) -> HashSet<NodeKind>;
             fn all_linked_children(self) -> HashSet<NodeKind>;
-            fn owned_kinds(self) -> HashSet<NodeKind>;
-            fn owned_parents(self) -> HashSet<NodeKind>;
-            fn owned_children(self) -> HashSet<NodeKind>;
-            fn linked_children(self) -> HashSet<NodeKind>;
-            fn linked_parents(self) -> HashSet<NodeKind>;
         }
 
         #[allow(unused)]
@@ -111,25 +105,11 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                     })*
                 };
             }
-            fn is_component(self, child: NodeKind) -> bool {
-                match self {
-                    NodeKind::None => false,
-                    #(
-                        Self::#names => {
-                            #names::owned_kinds().contains(&child)
-                        }
-                    )*
-                }
-            }
             fn all_linked_children(self) -> HashSet<NodeKind> {
                 match self {
                     NodeKind::None => HashSet::new(),
                     #(
-                        Self::#names => {
-                            let mut kinds = self.owned_children();
-                            kinds.extend(self.linked_children());
-                            kinds
-                        }
+                        Self::#names => #names::all_linked_children(),
                     )*
                 }
             }
@@ -137,11 +117,7 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                 match self {
                     NodeKind::None => HashSet::new(),
                     #(
-                        Self::#names => {
-                            let mut kinds = self.owned_parents();
-                            kinds.extend(self.linked_parents());
-                            kinds
-                        }
+                        Self::#names => #names::all_linked_parents(),
                     )*
                 }
             }
@@ -198,56 +174,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                     #(
                         Self::#names => {
                             world.query::<&#names>().iter(world).map(|n| n.id()).collect()
-                        }
-                    )*
-                }
-            }
-            fn owned_kinds(self) -> HashSet<NodeKind> {
-                match self {
-                    NodeKind::None => HashSet::default(),
-                    #(
-                        Self::#names => {
-                            #names::owned_kinds()
-                        }
-                    )*
-                }
-            }
-            fn owned_parents(self) -> HashSet<NodeKind> {
-                match self {
-                    NodeKind::None => HashSet::default(),
-                    #(
-                        Self::#names => {
-                            #names::owned_parents()
-                        }
-                    )*
-                }
-            }
-            fn owned_children(self) -> HashSet<NodeKind> {
-                match self {
-                    NodeKind::None => HashSet::default(),
-                    #(
-                        Self::#names => {
-                            #names::owned_children()
-                        }
-                    )*
-                }
-            }
-            fn linked_children(self) -> HashSet<NodeKind> {
-                match self {
-                    NodeKind::None => HashSet::default(),
-                    #(
-                        Self::#names => {
-                            #names::linked_children()
-                        }
-                    )*
-                }
-            }
-            fn linked_parents(self) -> HashSet<NodeKind> {
-                match self {
-                    NodeKind::None => HashSet::default(),
-                    #(
-                        Self::#names => {
-                            #names::linked_parents()
                         }
                     )*
                 }
@@ -341,19 +267,17 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         linked_parent_types,
     );
 
-    let common = common_node_fns(
-        struct_ident,
-        &all_data_fields,
-        &all_data_types,
-        &one_fields,
-        &one_types,
-    );
+    let common = common_node_fns(struct_ident, &all_data_fields, &all_data_types);
 
     let common_trait_fns = common_node_trait_fns(
-        &one_types,
-        &many_types,
+        owned_children_types,
+        owned_parents_types,
+        owned_child_types,
+        owned_parent_types,
         linked_children_types,
         linked_parents_types,
+        linked_child_types,
+        linked_parent_types,
     );
 
     let shared_new_fns = shared_new_functions(
