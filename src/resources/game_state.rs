@@ -127,22 +127,14 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
                 let info = tiles.insert_pane(Pane::Shop(ShopPane::Info));
-                let roster = tiles.insert_pane(Pane::Shop(ShopPane::Roster));
                 let team = tiles.insert_pane(Pane::Shop(ShopPane::Team));
-                let fusion = tiles.insert_pane(Pane::Shop(ShopPane::Fusion));
                 let top = tiles.insert_horizontal_tile([shop, info].into());
                 if let Tile::Container(h) = tiles.get_mut(top).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(shop, 4.0);
                     }
                 }
-                let mid = tiles.insert_horizontal_tile([team, roster, fusion].into());
-                if let Tile::Container(h) = tiles.get_mut(mid).unwrap() {
-                    if let Container::Linear(h) = h {
-                        h.shares.set_share(team, 4.0);
-                    }
-                }
-                let root = tiles.insert_vertical_tile([top, fusion].into());
+                let root = tiles.insert_vertical_tile([top, team].into());
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Battle => {

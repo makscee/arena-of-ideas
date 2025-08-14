@@ -48,8 +48,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .to_custom_e_s_fn(|| format!("Failed to find House#{node_id}"))?
                 .with_owned(ctx)
                 .take();
+            let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
-                .houses_load(ctx)?
+                .houses
                 .iter()
                 .find(|h| h.house_name == house.house_name)
                 .is_some()

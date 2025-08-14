@@ -80,8 +80,9 @@ impl MatchPlugin {
                     }
                     ui.add_space(20.0);
                     if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                        todo!();
-                        // cn().reducers.match_start_battle().notify_op();
+                        op(|world| {
+                            GameState::Battle.set_next(world);
+                        });
                     }
                     ui.expand_to_include_y(available_rect.max.y);
                 });
@@ -143,11 +144,8 @@ impl MatchPlugin {
                 })
                 .ui(ui)
             {
-                let (fusion_id, _slot_idx, unit_id) = payload.as_ref();
-                todo!();
-                // cn().reducers
-                //     .match_sell_fusion_unit(*fusion_id, *unit_id)
-                //     .notify_op();
+                let (_fusion_id, _slot_idx, unit_id) = payload.as_ref();
+                cn().reducers.match_sell_unit(*unit_id).notify_op();
             }
 
             Ok(())
@@ -192,84 +190,66 @@ impl MatchPlugin {
                 },
             );
             if let Some(card) = card {
-                // cn().reducers.match_play_house(card.0 as u8).unwrap();
+                cn().reducers.match_shop_buy(card.0 as u8).notify_op();
             }
             Ok(())
         })
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
-            let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
-            // NFusion::slots_editor(
-            //     team.entity(),
-            //     context,
-            //     ui,
-            //     |ui, resp, fusion| {
-            //         if let Some(unit) = DndArea::<(usize, NUnit)>::new(resp.rect)
-            //             .id(fusion.slot)
-            //             .text_fn(ui, |unit| {
-            //                 let lvl_increase = match fusion.units(context) {
-            //                     Ok(units) => {
-            //                         if let Some(unit) =
-            //                             units.iter().find(|u| u.unit_name == unit.1.unit_name)
-            //                         {
-            //                             let Ok(state) = unit.state_load(context) else {
-            //                                 return "\nstate error".to_owned();
-            //                             };
-            //                             if state.xp + 1 >= state.lvl {
-            //                                 format!(
-            //                                     "\n[n [tl increase lvl:]\n{} -> {}]",
-            //                                     state.lvl,
-            //                                     state.lvl + 1
-            //                                 )
-            //                             } else {
-            //                                 format!(
-            //                                     "\n[n [tl increase xp:]\n{} -> {} ({})]",
-            //                                     state.xp,
-            //                                     state.xp + 1,
-            //                                     state.lvl
-            //                                 )
-            //                             }
-            //                         } else {
-            //                             default()
-            //                         }
-            //                     }
-            //                     Err(e) => e.cstr(),
-            //                 };
-            //                 let cost = if lvl_increase.is_empty()
-            //                     && fusion.units.ids.len() as i32 >= fusion.lvl
-            //                 {
-            //                     format!(
-            //                         "\n[yellow [b -{}g]]",
-            //                         (fusion.lvl + 1) * global_settings().match_g.fusion_slot_mul
-            //                     )
-            //                 } else {
-            //                     default()
-            //                 };
-            //                 format!("play [b {}]{cost}{lvl_increase}", unit.1.unit_name)
-            //             })
-            //             .ui(ui)
-            //         {
-            //             cn().reducers
-            //                 .match_buy_unit_allow_stack(unit.0 as u8, fusion.slot as u8)
-            //                 .notify_error_op();
-            //         }
-            //     },
-            //     |fusions| {
-            //         cn().reducers.match_reorder_fusions(fusions).unwrap();
-            //     },
-            // )
-            // .ui(ui);
-            // if let Some(house) = DndArea::<(usize, NHouse)>::new(rect)
-            //     .text_fn(ui, |house| format!("play [b {}]", house.1.house_name))
-            //     .ui(ui)
-            // {
-            //     cn().reducers
-            //         .match_play_house(house.0 as u8)
-            //         .notify_error_op();
-            // }
+            let rect = ui.available_rect_before_wrap();
+
+            let mut team_editor = TeamEditor::new(team.entity());
+            team_editor = team_editor.filled_slot_action("Sell Unit");
+
+            if let Ok(actions) = team_editor.ui(ui, context) {
+                for action in actions {
+                    match action {
+                        TeamAction::MoveUnit { unit_id, target } => {
+                            cn().reducers
+                                .match_move_unit(unit_id, target)
+                                .notify_error_op();
+                        }
+                        TeamAction::AddSlot { fusion_id } => {
+                            cn().reducers
+                                .match_buy_fusion_slot(fusion_id)
+                                .notify_error_op();
+                        }
+                        TeamAction::ContextMenuAction {
+                            unit_id: Some(unit_id),
+                            action_name,
+                            ..
+                        } => {
+                            if action_name == "Sell Unit" {
+                                cn().reducers.match_sell_unit(unit_id).notify_error_op();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+
+            // Handle house purchases from shop
+            if let Some(house) = DndArea::<(usize, ShopSlot)>::new(rect)
+                .text_fn(ui, |slot| {
+                    if slot.1.card_kind == CardKind::House {
+                        format!("play house [yellow -{}g]", slot.1.price)
+                    } else {
+                        "Invalid drop".to_string()
+                    }
+                })
+                .ui(ui)
+            {
+                debug!("drop house");
+                if house.1.card_kind == CardKind::House {
+                    debug!("house reducer");
+                    cn().reducers
+                        .match_shop_buy(house.0 as u8)
+                        .notify_error_op();
+                }
+            }
 
             Ok(())
         })
@@ -373,7 +353,6 @@ impl MatchPlugin {
 
     pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
-            let rect = ui.available_rect_before_wrap();
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
             let fusions = team.fusions_load(context);
@@ -386,7 +365,6 @@ impl MatchPlugin {
             Self::render_fusion_headers(ui, context, &fusions)?;
             ui.add_space(5.0);
             Self::render_fusion_units(ui, context, &fusions)?;
-            Self::handle_house_drops(ui, rect);
 
             Ok(())
         })
@@ -470,52 +448,20 @@ impl MatchPlugin {
 
             for slot_idx in 0..max_slots {
                 if let Some(unit) = units.get(slot_idx) {
-                    Self::render_unit_slot(ui, context, fusion, unit, fusion_idx, slot_idx)?;
+                    Self::render_unit_icon(ui, context, unit);
                 } else {
                     Self::render_empty_slot(ui, context, fusion, fusion_idx, slot_idx);
                 }
             }
 
-            ui.add_space(5.0);
-            if "buy slot".cstr().button(ui).clicked() {
-                cn().reducers
-                    .match_buy_fusion_slot(fusion.id)
-                    .notify_error_op();
-            }
             Ok(())
         })
         .inner
     }
 
-    fn render_unit_slot(
-        ui: &mut Ui,
-        context: &Context,
-        fusion: &NFusion,
-        unit: &NUnit,
-        fusion_idx: usize,
-        slot_idx: usize,
-    ) -> Result<(), ExpressionError> {
-        ui.horizontal(|ui| -> Result<(), ExpressionError> {
-            ui.vertical(|ui| {
-                let resp = Self::render_unit_icon(ui, context, unit);
-
-                // Display level and XP
-                if let Ok(state) = unit.state_load(context) {
-                    ui.label(format!("Stacks {}", state.stacks));
-                }
-
-                Self::handle_unit_drag_drop(ui, context, fusion, unit, fusion_idx, slot_idx, resp);
-            });
-            Self::render_unit_actions(ui, context, fusion, unit, slot_idx)?;
-            Ok(())
-        })
-        .inner?;
-        ui.add_space(5.0);
-        Ok(())
-    }
-
-    fn render_unit_icon(ui: &mut Ui, context: &Context, unit: &NUnit) -> Response {
-        let resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
+    fn render_unit_icon(ui: &mut Ui, context: &Context, unit: &NUnit) {
+        let _resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id)
+        {
             MatRect::new(egui::Vec2::new(60.0, 60.0))
                 .add_mat(&rep.material, unit.id)
                 .unit_rep_with_default(unit.id)
@@ -524,368 +470,18 @@ impl MatchPlugin {
             MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
         };
 
-        // Check if unit has stackable duplicates and add visual indicator
-        if let Some(payload) = egui::DragAndDrop::payload::<(u64, usize, u64)>(ui.ctx()) {
-            if let Ok(source_unit) = context.get_by_id::<NUnit>(payload.2) {
-                if source_unit.unit_name == unit.unit_name && source_unit.id != unit.id {
-                    // Draw a green border to indicate this unit can be stacked with the dragged unit
-                    let painter = ui.painter();
-                    painter.rect_stroke(
-                        resp.rect,
-                        4.0,
-                        egui::Stroke::new(3.0, egui::Color32::GREEN),
-                        egui::StrokeKind::Outside,
-                    );
-                }
-            }
-        }
-
-        resp
-    }
-
-    fn render_unit_actions(
-        ui: &mut Ui,
-        context: &Context,
-        fusion: &NFusion,
-        unit: &NUnit,
-        slot_idx: usize,
-    ) -> Result<(), ExpressionError> {
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
-            if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id) {
-                let action_range = Self::get_action_range(fusion, slot_idx);
-                let max_actions = Self::get_max_actions(&behavior, &fusion.trigger);
-
-                if max_actions > 0 {
-                    let (current_start, current_len) = action_range;
-
-                    let range_selector = RangeSelector::new(max_actions)
-                        .range(current_start, current_len)
-                        .border_thickness(3.0)
-                        .drag_threshold(12.0)
-                        .show_drag_hints(false)
-                        .show_debug_info(false)
-                        .id(egui::Id::new(format!("range_selector_{}", unit.id)));
-
-                    let (_, range_changed) =
-                        range_selector.ui(ui, context, |item_ui, ctx, action_idx, is_in_range| {
-                            if let Some(reaction) =
-                                behavior.reactions.get(fusion.trigger.trigger as usize)
-                            {
-                                if let Some(action) = reaction.actions.get(action_idx) {
-                                    let vctx = ViewContext::new(item_ui).non_interactible(true);
-                                    if is_in_range {
-                                        Self::render_action_normal(
-                                            item_ui, ctx, unit, action, vctx,
-                                        );
-                                    } else {
-                                        Self::render_action_greyed(
-                                            item_ui, ctx, unit, action, vctx,
-                                        );
-                                    }
-                                }
-                            }
-                            Ok(())
-                        });
-
-                    if let Some((new_start, new_length)) = range_changed {
-                        // cn().reducers
-                        //     .match_set_fusion_unit_action_range(unit.id, new_start, new_length)
-                        //     .notify_error_op();
-                    }
-                }
-            }
-            Ok(())
-        })
-        .inner
-    }
-
-    fn get_action_range(fusion: &NFusion, slot_idx: usize) -> (u8, u8) {
-        // let current_action_ref = fusion.behavior.get(slot_idx);
-        // let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
-        // let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
-        // (current_start, current_len)
-        (0, 0)
-    }
-
-    fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
-        behavior
-            .reactions
-            .get(trigger.trigger as usize)
-            .map(|reaction| reaction.actions.len() as u8)
-            .unwrap_or(0)
-    }
-
-    fn render_action_normal(
-        ui: &mut Ui,
-        context: &Context,
-        unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
-        if let Ok(entity) = context.entity(unit.id) {
-            context
-                .with_owner_ref(entity, |context| {
-                    action.title_cstr(vctx, context).label_w(ui);
-                    Ok(())
-                })
-                .ui(ui);
-        }
-    }
-
-    fn render_action_greyed(
-        ui: &mut Ui,
-        context: &Context,
-        unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
-        let old_style = ui.visuals().clone();
-        ui.visuals_mut().override_text_color = Some(egui::Color32::GRAY);
-
-        if let Ok(entity) = context.entity(unit.id) {
-            context
-                .with_owner_ref(entity, |context| {
-                    action
-                        .title_cstr(vctx, context)
-                        .as_label_alpha(0.5, ui.style())
-                        .wrap()
-                        .ui(ui);
-                    Ok(())
-                })
-                .ui(ui);
-        }
-
-        *ui.visuals_mut() = old_style;
-    }
-
-    fn handle_unit_drag_drop(
-        ui: &mut Ui,
-        context: &Context,
-        fusion: &NFusion,
-        unit: &NUnit,
-        fusion_idx: usize,
-        slot_idx: usize,
-        resp: Response,
-    ) {
-        if resp.dragged() {
-            resp.dnd_set_drag_payload((fusion.id, slot_idx, unit.id));
-            if let Some(pos) = ui.ctx().pointer_latest_pos() {
-                let origin = resp.rect.center();
-                let painter = ui.ctx().layer_painter(egui::LayerId::new(
-                    egui::Order::Foreground,
-                    egui::Id::new("drag_arrow"),
-                ));
-                painter.arrow(origin, pos - origin, ui.visuals().widgets.hovered.fg_stroke);
-            }
-        }
-
-        if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
-            .id(format!("unit_slot_{}_{}", fusion_idx, slot_idx))
-            .text_fn(ui, |(source_fusion_id, _, unit_id)| {
-                if let Ok(source_unit) = context.get_by_id::<NUnit>(*unit_id) {
-                    if source_unit.unit_name == unit.unit_name {
-                        format!("Stack {} (merge XP + level up)", unit.unit_name)
-                    } else if *source_fusion_id == fusion.id {
-                        format!("Swap with {}", unit.unit_name)
-                    } else {
-                        format!("Move {} here", source_unit.unit_name)
-                    }
-                } else {
-                    "Move unit here".to_string()
-                }
-            })
-            .ui(ui)
-        {
-            Self::handle_unit_drop(context, fusion, &payload, slot_idx, unit);
-        }
-
-        // Handle shop unit purchases - only allow stacking when dropped on same unit type
-        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
-            if payload.1.card_kind == CardKind::Unit {
-                if let Some(shop_payload) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
-                    .id(format!("unit_stack_shop_{}_{}", fusion_idx, slot_idx))
-                    .text_fn(ui, |(_, slot)| {
-                        if let Ok(shop_unit) = context.get_by_id::<NUnit>(slot.node_id) {
-                            if shop_unit.unit_name == unit.unit_name {
-                                format!(
-                                    "Stack {} [yellow -{}g] (merge XP + level up)",
-                                    unit.unit_name, slot.price
-                                )
-                            } else {
-                                format!("Cannot stack different units")
-                            }
-                        } else {
-                            format!("Cannot stack")
-                        }
-                    })
-                    .ui(ui)
-                {
-                    if let Ok(shop_unit) = context.get_by_id::<NUnit>(shop_payload.1.node_id) {
-                        if shop_unit.unit_name == unit.unit_name {
-                            // cn().reducers
-                            //     .match_buy_unit_allow_stack(shop_payload.0 as u8, fusion.slot as u8)
-                            //     .notify_error_op();
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn handle_unit_drop(
-        context: &Context,
-        fusion: &NFusion,
-        payload: &(u64, usize, u64),
-        slot_idx: usize,
-        target_unit: &NUnit,
-    ) {
-        let (source_fusion_id, source_slot_idx, source_unit_id) = payload;
-
-        if *source_fusion_id == fusion.id {
-            // Same fusion - check for stacking or reordering
-            if *source_slot_idx != slot_idx {
-                let current_units = fusion.units(context).unwrap_or_default();
-
-                // Check if target unit can be stacked with source unit
-                if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
-                    if target_unit.unit_name == source_unit.unit_name {
-                        // Stack the units
-                        // cn().reducers
-                        //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                        //     .notify_error_op();
-                        return;
-                    }
-                }
-
-                // No stacking - regular reorder
-                if *source_slot_idx < current_units.len() && slot_idx < current_units.len() {
-                    let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
-                    unit_ids.swap(*source_slot_idx, slot_idx);
-                    // cn().reducers
-                    //     .match_reorder_fusion_units(fusion.id, unit_ids)
-                    //     .notify_error_op();
-                }
-            }
-        } else {
-            // Different fusion - check for stacking or move unit
-            if let Ok(source_unit) = context.get_by_id::<NUnit>(*source_unit_id) {
-                if target_unit.unit_name == source_unit.unit_name {
-                    // Stack the units
-                    // cn().reducers
-                    //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-                    //     .notify_error_op();
-                    return;
-                }
-            }
-
-            // No stacking - regular move
-            // cn().reducers
-            //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-            //     .notify_error_op();
+        if let Ok(state) = unit.state_load(context) {
+            ui.label(format!("Stacks {}", state.stacks));
         }
     }
 
     fn render_empty_slot(
         ui: &mut Ui,
         context: &Context,
-        fusion: &NFusion,
-        fusion_idx: usize,
-        slot_idx: usize,
+        _fusion: &NFusion,
+        _fusion_idx: usize,
+        _slot_idx: usize,
     ) {
-        let resp = MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
-        Self::handle_empty_slot_drops(ui, context, fusion, fusion_idx, slot_idx, resp);
-    }
-
-    fn handle_empty_slot_drops(
-        ui: &mut Ui,
-        context: &Context,
-        fusion: &NFusion,
-        fusion_idx: usize,
-        slot_idx: usize,
-        resp: Response,
-    ) {
-        // Handle unit reordering drops
-        if let Some(payload) = DndArea::<(u64, usize, u64)>::new(resp.rect)
-            .id(format!("empty_slot_{}_{}", fusion_idx, slot_idx))
-            .text_fn(ui, |(source_fusion_id, _, unit_id)| {
-                if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
-                    if *source_fusion_id == fusion.id {
-                        format!("Move {} here", unit.unit_name)
-                    } else {
-                        format!("Move {} to this fusion", unit.unit_name)
-                    }
-                } else {
-                    "Move unit here".to_string()
-                }
-            })
-            .ui(ui)
-        {
-            Self::handle_unit_move_to_empty(context, fusion, &payload, slot_idx);
-        }
-
-        // Handle shop unit purchases
-        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
-            if payload.1.card_kind == CardKind::Unit {
-                if let Some(payload) = DndArea::<(usize, ShopSlot)>::new(resp.rect)
-                    .id(format!("unit_buy_empty_slot_{}_{}", fusion_idx, slot_idx))
-                    .text_fn(ui, |(_, slot)| {
-                        format!("Play unit [yellow -{}g]", slot.price)
-                    })
-                    .ui(ui)
-                {
-                    // cn().reducers
-                    //     .match_buy_unit(payload.0 as u8, fusion.slot as u8)
-                    //     .notify_error_op();
-                }
-            }
-        }
-    }
-
-    fn handle_unit_move_to_empty(
-        context: &Context,
-        fusion: &NFusion,
-        payload: &(u64, usize, u64),
-        slot_idx: usize,
-    ) {
-        let (source_fusion_id, source_slot_idx, source_unit_id) = payload;
-
-        if *source_fusion_id == fusion.id {
-            // Same fusion - reorder
-            let current_units = fusion.units(context).unwrap_or_default();
-            if *source_slot_idx < current_units.len() {
-                let mut unit_ids: Vec<u64> = current_units.iter().map(|u| u.id).collect();
-                let moved_unit = unit_ids.remove(*source_slot_idx);
-                if slot_idx >= unit_ids.len() {
-                    unit_ids.push(moved_unit);
-                } else {
-                    unit_ids.insert(slot_idx, moved_unit);
-                }
-                // cn().reducers
-                //     .match_reorder_fusion_units(fusion.id, unit_ids)
-                //     .notify_error_op();
-            }
-        } else {
-            // Different fusion - move unit
-            // cn().reducers
-            //     .match_move_owned_unit(*source_unit_id, fusion.slot, slot_idx as i32)
-            //     .notify_error_op();
-        }
-    }
-
-    fn handle_house_drops(ui: &mut Ui, rect: egui::Rect) {
-        if let Some(payload) = egui::DragAndDrop::payload::<(usize, ShopSlot)>(ui.ctx()) {
-            if payload.1.card_kind == CardKind::House {
-                if let Some(shop_item) = DndArea::<(usize, ShopSlot)>::new(rect)
-                    .text_fn(ui, |(_, slot)| {
-                        format!("play house [yellow -{}g]", slot.price)
-                    })
-                    .ui(ui)
-                {
-                    // cn().reducers
-                    //     .match_play_house(shop_item.0 as u8)
-                    //     .notify_error_op();
-                }
-            }
-        }
+        let _resp = MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
     }
 }

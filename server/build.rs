@@ -410,6 +410,20 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
+                    if let Some(id) = self.#linked_parent_fields.id {
+                        TNodeLink::solidify(ctx, id, self.id)?;
+                        let n = id.load_node::<#linked_parent_types>(ctx)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
+                    if let Some(id) = self.#linked_child_fields.id {
+                        TNodeLink::solidify(ctx, self.id, id)?;
+                        let n = id.load_node::<#linked_child_types>(ctx)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
                     for n in &self.#owned_children_fields {
                         TNodeLink::solidify(ctx, self.id, n.id)?;
                         n.solidify_links(ctx)?;
@@ -418,6 +432,20 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 #(
                     for n in &self.#owned_parents_fields {
                         TNodeLink::solidify(ctx, n.id, self.id)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
+                    for id in &self.#linked_children_fields.ids {
+                        TNodeLink::solidify(ctx, self.id, *id)?;
+                        let n = id.load_node::<#linked_children_types>(ctx)?;
+                        n.solidify_links(ctx)?;
+                    }
+                )*
+                #(
+                    for id in &self.#linked_parents_fields.ids {
+                        TNodeLink::solidify(ctx, *id, self.id)?;
+                        let n = id.load_node::<#linked_parents_types>(ctx)?;
                         n.solidify_links(ctx)?;
                     }
                 )*
