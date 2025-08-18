@@ -1,0 +1,73 @@
+[package]
+name = "client"
+version.workspace = true
+edition.workspace = true
+
+[features]
+dynamic_linking = ["bevy/dynamic_linking"]
+
+[dependencies]
+ui = { path = "../ui" }
+utils = { path = "../utils" }
+schema = { path = "../schema" }
+raw-nodes = { path = "../raw-nodes" }
+utils-client = { path = "../utils-client" }
+settings-derive = { path = "../settings-derive" }
+
+spacetimedb-sdk = { workspace = true }
+spacetimedb-sats = { workspace = true }
+spacetimedb-lib = { workspace = true }
+bevy = { workspace = true, features = [] }
+bevy-trait-query = { workspace = true }
+bevy_egui = { workspace = true }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+itertools = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
+include_dir = { workspace = true }
+thiserror = { workspace = true }
+convert_case = { workspace = true }
+once_cell = { workspace = true }
+ecolor = { workspace = true }
+lerp = { workspace = true }
+indexmap = { workspace = true }
+colored = { workspace = true }
+chrono = { workspace = true }
+egui_extras = { workspace = true }
+log = { workspace = true }
+glam = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+parking_lot = { workspace = true }
+tween = { workspace = true }
+color-hex = { workspace = true }
+egui_tiles = { workspace = true }
+
+backtrace = { workspace = true }
+mlua = {workspace = true }
+
+bevy_asset_loader = { version = "0.23.0", features = [
+    "standard_dynamic_assets",
+] }
+bevy_common_assets = { version = "0.12.0", features = ["ron"] }
+serde_json = "1.0.104"
+anyhow = "1.0.75"
+clap = { version = "4.4.5", features = ["derive"] }
+hex = "0.4.3"
+home = "0.5.5"
+egui_commonmark = "0.20.0"
+bevy_tasks = "0.16.1"
+regex = "1.10.5"
+
+[dependencies.winit]
+version = "0.30.9"
+features = ["default"]
+
+[build-dependencies]
+schema = { path = "../schema" }
+itertools = { workspace = true }
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true }
+prettyplease = { workspace = true }
