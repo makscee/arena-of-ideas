@@ -61,7 +61,9 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if !player.check_pass(old_pass) {
         return Err("Old password did not match".to_owned());
     }
-    player.player_data.as_mut().unwrap().pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
+    if let Some(player_data) = player.player_data.get_data_mut() {
+        player_data.pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
+    }
     player.save(ctx);
     Ok(())
 }
@@ -87,13 +89,17 @@ impl NPlayer {
         }
     }
     fn check_pass(&self, pass: String) -> bool {
-        if let Some(hash) = &self.player_data.as_ref().unwrap().pass_hash {
-            match verify(pass, hash) {
-                Ok(v) => v,
-                Err(e) => {
-                    log::error!("Password verify error: {e}");
-                    false
+        if let Some(player_data) = self.player_data.get_data() {
+            if let Some(pass_hash) = &player_data.pass_hash {
+                match verify(pass, pass_hash) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        log::error!("Password verify error: {e}");
+                        false
+                    }
                 }
+            } else {
+                true
             }
         } else {
             true

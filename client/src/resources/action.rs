@@ -116,9 +116,11 @@ impl ActionImpl for Action {
                     status.id = 0;
                     description.id = 0;
                     behavior.id = 0;
-                    description.behavior = Some(behavior.clone());
-                    status.description = Some(description.clone());
-                    status.representation = representation;
+                    description.behavior.set_data(behavior.clone());
+                    status.description.set_data(description.clone());
+                    if let Some(repr) = representation {
+                        status.representation.set_data(repr);
+                    }
                     let targets = context.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(

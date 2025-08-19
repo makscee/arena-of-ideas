@@ -119,42 +119,26 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_types: _,
         all_data_fields,
         all_data_types,
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     } = &pnf;
     let (one_fields, one_types) = pnf.one_owned();
     let (many_fields, many_types) = pnf.many_owned();
     let strings_conversions = strings_conversions(
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     );
     if let Fields::Named(fields) = &mut item.fields {
         fields
@@ -167,16 +151,8 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         );
     }
     let common = common_node_fns(struct_ident, &all_data_fields, &all_data_types);
-    let common_trait = common_node_trait_fns(
-        owned_children_types,
-        owned_parents_types,
-        owned_child_types,
-        owned_parent_types,
-        linked_children_types,
-        linked_parents_types,
-        linked_child_types,
-        linked_parent_types,
-    );
+    let common_trait =
+        common_node_trait_fns(children_types, parents_types, child_types, parent_types);
     let shared_new_fns = shared_new_functions(
         &all_data_fields,
         &all_data_types,
@@ -185,35 +161,35 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_fields,
         &many_types,
     );
-    let owned_child_load = owned_child_fields
+    let child_load = child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let owned_parent_load = owned_parent_fields
+    let parent_load = parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let owned_children_load = owned_children_fields
+    let children_load = children_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let owned_parents_load = owned_parents_fields
+    let parents_load = parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let owned_child_set = owned_child_fields
+    let child_set = child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_set"), Span::call_site()))
         .collect_vec();
-    let owned_parent_set = owned_parent_fields
+    let parent_set = parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_set"), Span::call_site()))
         .collect_vec();
-    let owned_children_add = owned_children_fields
+    let children_add = children_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
         .collect_vec();
-    let owned_parents_add = owned_parents_fields
+    let parents_add = parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_add"), Span::call_site()))
         .collect_vec();
@@ -228,75 +204,87 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #owned_parent_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                pub fn #parent_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
                     self.id.add_parent(ctx, node.id)?;
-                    self.#owned_parent_fields = Some(node);
+                    self.#parent_fields.set_data(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #owned_child_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                pub fn #child_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
                     self.id.add_child(ctx, node.id)?;
-                    self.#owned_child_fields = Some(node);
+                    self.#child_fields.set_data(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #owned_parents_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                pub fn #parents_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
                     self.id.add_parent(ctx, node.id)?;
-                    self.#owned_parents_fields.push(node);
+                    self.#parents_fields.push(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #owned_children_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
+                pub fn #children_add(&mut self, ctx: &ReducerContext, mut node: #many_types) -> Result<&mut Self, String> {
                     self.id.add_child(ctx, node.id)?;
-                    self.#owned_children_fields.push(node);
+                    self.#children_fields.push(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #owned_child_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #owned_child_types, String> {
+                pub fn #child_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #child_types, String> {
                     let id = self.id();
-                    if self.#owned_child_fields.is_none() {
-                        self.#owned_child_fields = self.child::<#owned_child_types>(ctx);
+                    if !self.#child_fields.is_loaded() {
+                        if let Some(node) = self.child::<#child_types>(ctx) {
+                            self.#child_fields.set_data(node);
+                        }
                     }
-                    self.#owned_child_fields
-                        .as_mut()
-                        .to_custom_e_s_fn(|| format!("{} not found for {}", #owned_child_types::kind_s(), id))
+                    self.#child_fields
+                        .get_data_mut()
+                        .to_custom_e_s_fn(|| format!("{} not found for {}", #child_types::kind_s(), id))
                 }
             )*
             #(
-                pub fn #owned_parent_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #owned_parent_types, String> {
+                pub fn #parent_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut #parent_types, String> {
                     let id = self.id();
-                    if self.#owned_parent_fields.is_none() {
-                        self.#owned_parent_fields = self.parent::<#owned_parent_types>(ctx);
+                    if !self.#parent_fields.is_loaded() {
+                        if let Some(node) = self.parent::<#parent_types>(ctx) {
+                            self.#parent_fields.set_data(node);
+                        }
                     }
-                    self.#owned_parent_fields
-                        .as_mut()
-                        .to_custom_e_s_fn(|| format!("{} not found for {}", #owned_parent_types::kind_s(), id))
+                    self.#parent_fields
+                        .get_data_mut()
+                        .to_custom_e_s_fn(|| format!("{} not found for {}", #parent_types::kind_s(), id))
                 }
             )*
             #(
-                pub fn #owned_children_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#owned_children_types>, String> {
-                    if self.#owned_children_fields.is_empty() {
-                        self.#owned_children_fields = self.collect_children::<#owned_children_types>(ctx);
+                pub fn #children_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#children_types>, String> {
+                    if !self.#children_fields.is_loaded() {
+                        let children = self.collect_children::<#children_types>(ctx);
+                        self.#children_fields.set_data(children);
                     }
-                    if self.#owned_children_fields.is_empty() {
-                        return Err(format!("No {} children found for {}", #owned_children_types::kind_s(), self.id()));
+                    if self.#children_fields.is_empty() {
+                        return Err(format!("No {} children found for {}", #children_types::kind_s(), self.id()));
                     }
-                    Ok(&mut self.#owned_children_fields)
+                    let id = self.id();
+                    self.#children_fields
+                        .get_data_mut()
+                        .to_custom_e_s_fn(|| format!("{} children not loaded for {}", #children_types::kind_s(), id))
                 }
             )*
             #(
-                pub fn #owned_parents_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#owned_parents_types>, String> {
-                    if self.#owned_parents_fields.is_empty() {
-                        self.#owned_parents_fields = self.collect_parents::<#owned_parents_types>(ctx);
+                pub fn #parents_load<'a>(&'a mut self, ctx: &ReducerContext) -> Result<&'a mut Vec<#parents_types>, String> {
+                    if !self.#parents_fields.is_loaded() {
+                        let parents = self.collect_parents::<#parents_types>(ctx);
+                        self.#parents_fields.set_data(parents);
                     }
-                    if self.#owned_parents_fields.is_empty() {
-                        return Err(format!("No {} parents found for {}", #owned_parents_types::kind_s(), self.id()));
+                    if self.#parents_fields.is_empty() {
+                        return Err(format!("No {} parents found for {}", #parents_types::kind_s(), self.id()));
                     }
-                    Ok(&mut self.#owned_parents_fields)
+                    let id = self.id();
+                    self.#parents_fields
+                        .get_data_mut()
+                        .to_custom_e_s_fn(|| format!("{} parents not loaded for {}", #parents_types::kind_s(), id))
                 }
             )*
             pub fn find_by_data(
@@ -353,31 +341,35 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 let mut d = self.clone_self(ctx, owner);
                 remap.insert(self.id, d.id);
                 #(
-                    if let Some(n) = self.#owned_parent_fields.as_ref() {
+                    if let Some(n) = self.#parent_fields.get_data() {
                         let n = n.clone(ctx, owner, remap);
                         d.id.add_parent(ctx, n.id).unwrap();
-                        d.#owned_parent_fields = Some(n);
+                        d.#parent_fields.set_data(n);
                     }
                 )*
                 #(
-                    if let Some(n) = self.#owned_child_fields.as_ref() {
+                    if let Some(n) = self.#child_fields.get_data() {
                         let n = n.clone(ctx, owner, remap);
                         d.id.add_child(ctx, n.id).unwrap();
-                        d.#owned_child_fields = Some(n);
+                        d.#child_fields.set_data(n);
                     }
                 )*
                 #(
-                    for n in &self.#owned_parents_fields {
-                        let n = n.clone(ctx, owner, remap);
-                        d.id.add_parent(ctx, n.id).unwrap();
-                        d.#owned_parents_fields.push(n);
+                    if let Some(parents_data) = self.#parents_fields.get_data() {
+                        for n in parents_data {
+                            let n = n.clone(ctx, owner, remap);
+                            d.id.add_parent(ctx, n.id).unwrap();
+                            d.#parents_fields.push(n);
+                        }
                     }
                 )*
                 #(
-                    for n in &self.#owned_children_fields {
-                        let n = n.clone(ctx, owner, remap);
-                        d.id.add_child(ctx, n.id).unwrap();
-                        d.#owned_children_fields.push(n);
+                    if let Some(children_data) = self.#children_fields.get_data() {
+                        for n in children_data {
+                            let n = n.clone(ctx, owner, remap);
+                            d.id.add_child(ctx, n.id).unwrap();
+                            d.#children_fields.push(n);
+                        }
                     }
                 )*
                 d
@@ -385,129 +377,115 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn collect_ids(&self) -> Vec<u64> {
                 let mut v = [self.id].to_vec();
                 #(
-                    if let Some(n) = self.#one_fields.as_ref() {
+                    if let Some(n) = self.#one_fields.get_data() {
                         v.extend(n.collect_ids());
                     }
                 )*
                 #(
-                    for n in &self.#many_fields {
-                        v.extend(n.collect_ids());
+                    if let Some(many_data) = self.#many_fields.get_data() {
+                        for n in many_data {
+                            v.extend(n.collect_ids());
+                        }
                     }
                 )*
                 v
             }
             fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String> {
                 #(
-                    if let Some(n) = &self.#owned_parent_fields {
+                    if let Some(n) = self.#parent_fields.get_data() {
                         TNodeLink::solidify(ctx, n.id, self.id)?;
                         n.solidify_links(ctx)?;
                     }
                 )*
                 #(
-                    if let Some(n) = &self.#owned_child_fields {
+                    if let Some(n) = self.#child_fields.get_data() {
                         TNodeLink::solidify(ctx, self.id, n.id)?;
                         n.solidify_links(ctx)?;
                     }
                 )*
+
+
                 #(
-                    if let Some(id) = self.#linked_parent_fields.id {
-                        TNodeLink::solidify(ctx, id, self.id)?;
-                        let n = id.load_node::<#linked_parent_types>(ctx)?;
-                        n.solidify_links(ctx)?;
+                    if let Some(children_data) = self.#children_fields.get_data() {
+                        for n in children_data {
+                            TNodeLink::solidify(ctx, self.id, n.id)?;
+                            n.solidify_links(ctx)?;
+                        }
                     }
                 )*
                 #(
-                    if let Some(id) = self.#linked_child_fields.id {
-                        TNodeLink::solidify(ctx, self.id, id)?;
-                        let n = id.load_node::<#linked_child_types>(ctx)?;
-                        n.solidify_links(ctx)?;
+                    if let Some(parents_data) = self.#parents_fields.get_data() {
+                        for n in parents_data {
+                            TNodeLink::solidify(ctx, n.id, self.id)?;
+                            n.solidify_links(ctx)?;
+                        }
                     }
                 )*
-                #(
-                    for n in &self.#owned_children_fields {
-                        TNodeLink::solidify(ctx, self.id, n.id)?;
-                        n.solidify_links(ctx)?;
-                    }
-                )*
-                #(
-                    for n in &self.#owned_parents_fields {
-                        TNodeLink::solidify(ctx, n.id, self.id)?;
-                        n.solidify_links(ctx)?;
-                    }
-                )*
-                #(
-                    for id in &self.#linked_children_fields.ids {
-                        TNodeLink::solidify(ctx, self.id, *id)?;
-                        let n = id.load_node::<#linked_children_types>(ctx)?;
-                        n.solidify_links(ctx)?;
-                    }
-                )*
-                #(
-                    for id in &self.#linked_parents_fields.ids {
-                        TNodeLink::solidify(ctx, *id, self.id)?;
-                        let n = id.load_node::<#linked_parents_types>(ctx)?;
-                        n.solidify_links(ctx)?;
-                    }
-                )*
+
+
                 Ok(())
             }
             fn with_owned(&mut self, ctx: &ReducerContext) -> &mut Self {
                 #(
-                    self.#owned_parent_fields = self.parent::<#owned_parent_types>(ctx)
-                        .map(|mut d| std::mem::take(d.with_owned(ctx))
-                        );
+                    if let Some(mut parent) = self.parent::<#parent_types>(ctx) {
+                        self.#parent_fields.set_data(std::mem::take(parent.with_owned(ctx)));
+                    }
                 )*
                 #(
-                    self.#owned_child_fields = self.child::<#owned_child_types>(ctx)
-                        .map(|mut d| std::mem::take(d.with_owned(ctx))
-                        );
+                    if let Some(mut child) = self.child::<#child_types>(ctx) {
+                        self.#child_fields.set_data(std::mem::take(child.with_owned(ctx)));
+                    }
                 )*
                 #(
-                    self.#owned_parents_fields = self.collect_parents::<#owned_parents_types>(ctx)
+                    let parents_data = self.collect_parents::<#parents_types>(ctx)
                         .into_iter()
                         .map(|mut n| std::mem::take(n.with_owned(ctx)))
                         .collect();
+                    self.#parents_fields.set_data(parents_data);
                 )*
                 #(
-                    self.#owned_children_fields = self.collect_children::<#owned_children_types>(ctx)
+                    let children_data = self.collect_children::<#children_types>(ctx)
                         .into_iter()
                         .map(|mut n| std::mem::take(n.with_owned(ctx)))
                         .collect();
+                    self.#children_fields.set_data(children_data);
                 )*
                 self
             }
             fn save(&self, ctx: &ReducerContext) {
                 self.update_self(ctx);
                 #(
-                    if let Some(d) = &self.#one_fields {
+                    if let Some(d) = self.#one_fields.get_data() {
                         d.save(ctx);
                     }
                 )*
                 #(
-                    for d in &self.#many_fields {
-                        d.save(ctx);
+                    if let Some(many_data) = self.#many_fields.get_data() {
+                        for d in many_data {
+                            d.save(ctx);
+                        }
                     }
                 )*
             }
             fn delete_with_owned(&self, ctx: &ReducerContext) {
                 #(
-                    if let Some(n) = self.parent::<#owned_parent_types>(ctx) {
-                        n.delete_with_owned(ctx);
+                    if let Some(p) = self.parent::<#parent_types>(ctx) {
+                        p.delete_with_owned(ctx);
                     }
                 )*
                 #(
-                    if let Some(n) = self.child::<#owned_child_types>(ctx) {
-                        n.delete_with_owned(ctx);
+                    if let Some(c) = self.child::<#child_types>(ctx) {
+                        c.delete_with_owned(ctx);
                     }
                 )*
                 #(
-                    for n in self.collect_parents::<#owned_parents_types>(ctx) {
-                        n.delete_with_owned(ctx);
+                    for p in self.collect_parents::<#parents_types>(ctx) {
+                        p.delete_with_owned(ctx);
                     }
                 )*
                 #(
-                    for n in self.collect_children::<#owned_children_types>(ctx) {
-                        n.delete_with_owned(ctx);
+                    for c in self.collect_children::<#children_types>(ctx) {
+                        c.delete_with_owned(ctx);
                     }
                 )*
                 self.delete_self(ctx);

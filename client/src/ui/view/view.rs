@@ -1,5 +1,6 @@
 use std::any::type_name_of_val;
 
+use schema::{NodePart, NodeParts};
 use serde::de::DeserializeOwned;
 
 use super::*;
@@ -379,6 +380,176 @@ where
             vr.changed = true;
         }
         vr
+    }
+}
+
+impl<R, T> ViewFns for NodeParts<R, T>
+where
+    R: Clone,
+    T: ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn title_cstr(&self, _vctx: ViewContext, _context: &Context) -> Cstr {
+        if let Some(nodes) = self.get_data() {
+            format!("NodeParts[{}]", nodes.len()).cstr()
+        } else {
+            "NodeParts[?]".cstr()
+        }
+    }
+}
+
+impl<R, T> ViewFns for NodePart<R, T>
+where
+    R: Clone,
+    T: ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
+        if let Some(node) = self.get_data() {
+            node.title_cstr(vctx, context)
+        } else {
+            "NodePart[None]".cstr()
+        }
+    }
+}
+
+impl<R, T> ViewChildren for NodeParts<R, T>
+where
+    R: Clone,
+    T: ViewChildren + ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        if let Some(nodes) = self.get_data() {
+            for (i, v) in nodes.iter().enumerate() {
+                v.view_with_children(vctx.with_id(i), context, ui);
+            }
+        }
+        default()
+    }
+    fn view_children_mut(
+        &mut self,
+        mut vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        let mut vr = ViewResponse::default();
+        if let Some(nodes) = self.get_data_mut() {
+            let mut to_remove = None;
+            let mut swap = None;
+            let len = nodes.len();
+            let size = egui::Vec2::splat(8.0);
+            vctx.parent_rect = None;
+            for (i, v) in nodes.iter_mut().enumerate() {
+                ui.horizontal(|ui| {
+                    if RectButton::new_size(size)
+                        .enabled(i > 0)
+                        .ui(ui, |color, rect, _, ui| {
+                            ui.painter().line_segment(
+                                [rect.left_bottom(), rect.center_top()],
+                                Stroke::new(1.0, color),
+                            );
+                            ui.painter().line_segment(
+                                [rect.center_top(), rect.right_bottom()],
+                                Stroke::new(1.0, color),
+                            );
+                            ui.painter().line_segment(
+                                [rect.right_bottom(), rect.left_bottom()],
+                                Stroke::new(1.0, color),
+                            );
+                        })
+                        .clicked()
+                    {
+                        swap = Some((i, i - 1));
+                    }
+                    if RectButton::new_size(size)
+                        .enabled(i < len - 1)
+                        .ui(ui, |color, rect, _, ui| {
+                            ui.painter().line_segment(
+                                [rect.left_top(), rect.center_bottom()],
+                                Stroke::new(1.0, color),
+                            );
+                            ui.painter().line_segment(
+                                [rect.center_bottom(), rect.right_top()],
+                                Stroke::new(1.0, color),
+                            );
+                            ui.painter().line_segment(
+                                [rect.right_top(), rect.left_top()],
+                                Stroke::new(1.0, color),
+                            );
+                        })
+                        .clicked()
+                    {
+                        swap = Some((i, i + 1));
+                    }
+                    if RectButton::new_size(size)
+                        .ui(ui, |color, rect, _, ui| {
+                            ui.painter().line_segment(
+                                [rect.left_top(), rect.right_bottom()],
+                                Stroke::new(1.0, color),
+                            );
+                            ui.painter().line_segment(
+                                [rect.right_top(), rect.left_bottom()],
+                                Stroke::new(1.0, color),
+                            );
+                        })
+                        .clicked()
+                    {
+                        to_remove = Some(i);
+                    }
+                    let mut child_vr = v.view_with_children_mut(vctx.with_id(i), context, ui);
+                    vr.merge(child_vr);
+                });
+            }
+            if let Some(i) = to_remove {
+                nodes.remove(i);
+                vr.changed = true;
+            }
+            if let Some((a, b)) = swap {
+                nodes.swap(a, b);
+                vr.changed = true;
+            }
+        }
+        vr
+    }
+    fn view_with_children_mut(
+        &mut self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        self.view_children_mut(vctx, context, ui)
+    }
+}
+
+impl<R, T> ViewChildren for NodePart<R, T>
+where
+    R: Clone,
+    T: ViewChildren + ViewFns + StringData + Serialize + DeserializeOwned,
+{
+    fn view_children(&self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
+        if let Some(node) = self.get_data() {
+            node.view_with_children(vctx, context, ui)
+        } else {
+            default()
+        }
+    }
+    fn view_children_mut(
+        &mut self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        if let Some(node) = self.get_data_mut() {
+            node.view_with_children_mut(vctx, context, ui)
+        } else {
+            default()
+        }
+    }
+    fn view_with_children_mut(
+        &mut self,
+        vctx: ViewContext,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> ViewResponse {
+        self.view_children_mut(vctx, context, ui)
     }
 }
 

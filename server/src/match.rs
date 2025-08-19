@@ -27,11 +27,11 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .to_custom_e_s_fn(|| format!("Failed to find Unit#{node_id}"))?
                 .with_owned(ctx)
                 .take();
-            let house = unit
-                .house
+            let house_id = unit
                 .id
-                .to_custom_e_s("NHouse parent of NUnit not found")?
-                .load_node::<NHouse>(ctx)?;
+                .find_kind_parent(ctx, NodeKind::NHouse)
+                .to_custom_e_s("NHouse parent of NUnit not found")?;
+            let house = house_id.load_node::<NHouse>(ctx)?;
             let house_name = house.house_name;
             let house = m
                 .team_load(ctx)?
@@ -51,6 +51,8 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
                 .houses
+                .get_data()
+                .to_custom_e_s("Houses not loaded")?
                 .iter()
                 .find(|h| h.house_name == house.house_name)
                 .is_some()

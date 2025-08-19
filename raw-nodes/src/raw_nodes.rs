@@ -1,33 +1,33 @@
 use super::*;
 
 struct NCore {
-    pub houses: OwnedChildren<NHouse>,
+    pub houses: NodeParts<Child, NHouse>,
 }
 
 struct NPlayers {
-    pub players: OwnedChildren<NPlayer>,
+    pub players: NodeParts<Child, NPlayer>,
 }
 
 struct NArena {
-    pub floor_pools: OwnedChildren<NFloorPool>,
-    pub floor_bosses: OwnedChildren<NFloorBoss>,
+    pub floor_pools: NodeParts<Child, NFloorPool>,
+    pub floor_bosses: NodeParts<Child, NFloorBoss>,
 }
 
 struct NFloorPool {
     pub floor: i32,
-    pub teams: OwnedChildren<NTeam>,
+    pub teams: NodeParts<Child, NTeam>,
 }
 
 struct NFloorBoss {
     pub floor: i32,
-    pub team: OwnedParent<NTeam>,
+    pub team: NodePart<Parent, NTeam>,
 }
 
 struct NPlayer {
     pub player_name: String,
-    pub player_data: OwnedParent<NPlayerData>,
-    pub identity: OwnedParent<NPlayerIdentity>,
-    pub active_match: OwnedParent<NMatch>,
+    pub player_data: NodePart<Parent, NPlayerData>,
+    pub identity: NodePart<Parent, NPlayerIdentity>,
+    pub active_match: NodePart<Parent, NMatch>,
 }
 
 struct NPlayerData {
@@ -42,10 +42,10 @@ struct NPlayerIdentity {
 
 struct NHouse {
     pub house_name: String,
-    pub color: OwnedParent<NHouseColor>,
-    pub action: OwnedParent<NActionAbility>,
-    pub status: OwnedParent<NStatusAbility>,
-    pub units: LinkedChildren<NUnit>,
+    pub color: NodePart<Parent, NHouseColor>,
+    pub action: NodePart<Parent, NActionAbility>,
+    pub status: NodePart<Parent, NStatusAbility>,
+    pub units: NodeParts<Child, NUnit>,
 }
 
 struct NHouseColor {
@@ -54,12 +54,12 @@ struct NHouseColor {
 
 struct NActionAbility {
     pub ability_name: String,
-    pub description: OwnedParent<NActionDescription>,
+    pub description: NodePart<Parent, NActionDescription>,
 }
 
 struct NActionDescription {
     pub description: String,
-    pub effect: OwnedParent<NActionEffect>,
+    pub effect: NodePart<Parent, NActionEffect>,
 }
 
 struct NActionEffect {
@@ -68,13 +68,13 @@ struct NActionEffect {
 
 struct NStatusAbility {
     pub status_name: String,
-    pub description: OwnedParent<NStatusDescription>,
-    pub representation: OwnedParent<NStatusRepresentation>,
+    pub description: NodePart<Parent, NStatusDescription>,
+    pub representation: NodePart<Parent, NStatusRepresentation>,
 }
 
 struct NStatusDescription {
     pub description: String,
-    pub behavior: OwnedParent<NStatusBehavior>,
+    pub behavior: NodePart<Parent, NStatusBehavior>,
 }
 
 struct NStatusBehavior {
@@ -86,8 +86,8 @@ struct NStatusRepresentation {
 }
 
 struct NTeam {
-    pub houses: OwnedChildren<NHouse>,
-    pub fusions: OwnedChildren<NFusion>,
+    pub houses: NodeParts<Child, NHouse>,
+    pub fusions: NodeParts<Child, NFusion>,
 }
 
 struct NBattle {
@@ -105,18 +105,18 @@ struct NMatch {
     pub lives: i32,
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
-    pub team: OwnedChild<NTeam>,
-    pub bench: OwnedChildren<NBenchSlot>,
-    pub battles: OwnedChildren<NBattle>,
+    pub team: NodePart<Child, NTeam>,
+    pub bench: NodeParts<Child, NBenchSlot>,
+    pub battles: NodeParts<Child, NBattle>,
 }
 
 struct NBenchSlot {
     pub index: i32,
-    pub unit: OwnedParent<NUnit>,
+    pub unit: NodePart<Parent, NUnit>,
 }
 
 struct NFusion {
-    pub slots: OwnedParents<NFusionSlot>,
+    pub slots: NodeParts<Parent, NFusionSlot>,
     pub trigger: UnitTriggerRef,
     pub index: i32,
     pub pwr: i32,
@@ -128,21 +128,20 @@ struct NFusion {
 struct NFusionSlot {
     pub index: i32,
     pub actions: UnitActionRange,
-    pub unit: OwnedParent<NUnit>,
+    pub unit: NodePart<Parent, NUnit>,
 }
 
 struct NUnit {
     pub unit_name: String,
-    pub description: OwnedParent<NUnitDescription>,
-    pub stats: OwnedParent<NUnitStats>,
-    pub state: OwnedParent<NUnitState>,
-    pub house: LinkedParent<NHouse>,
+    pub description: NodePart<Parent, NUnitDescription>,
+    pub stats: NodePart<Parent, NUnitStats>,
+    pub state: NodePart<Parent, NUnitState>,
 }
 
 struct NUnitDescription {
     pub description: String,
-    pub representation: OwnedParent<NUnitRepresentation>,
-    pub behavior: OwnedParent<NUnitBehavior>,
+    pub representation: NodePart<Parent, NUnitRepresentation>,
+    pub behavior: NodePart<Parent, NUnitBehavior>,
 }
 
 struct NUnitStats {

@@ -689,30 +689,6 @@ impl BattleEditorPlugin {
         let team = context.get::<NTeam>(team_entity)?;
         let team_owner = team.owner;
 
-        let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
-        let unit_state = NUnitState::new_full(team_owner, 1, 1);
-        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
-        let unit_representation = NUnitRepresentation::new_full(
-            team_owner,
-            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
-        );
-
-        let unit = NUnit::new_full(
-            team_owner,
-            "Default Unit".to_string(),
-            default(),
-            NUnitDescription::new_full(
-                team_owner,
-                "Default Description".into(),
-                unit_representation,
-                unit_behavior,
-            ),
-            unit_stats,
-            unit_state,
-        );
-        let unit_entity = context.world_mut()?.spawn_empty().id();
-        unit.unpack_entity(context, unit_entity)?;
-
         let house_entity = {
             let existing_houses =
                 context.collect_children_components::<NHouse>(context.id(team_entity)?)?;
@@ -724,18 +700,21 @@ impl BattleEditorPlugin {
                 existing_house.entity()
             } else {
                 let house_color = NHouseColor::new_full(team_owner, default());
+                let action_ability =
+                    NActionAbility::new_full(team_owner, "Default Action".to_string(), default());
+                let status_ability = NStatusAbility::new_full(
+                    team_owner,
+                    "Default Status".to_string(),
+                    default(),
+                    default(),
+                );
                 let house = NHouse::new_full(
                     team_owner,
                     "Default House".to_string(),
-                    default(),
                     house_color,
-                    NActionAbility::new_full(team_owner, "Default Action".to_string(), default()),
-                    NStatusAbility::new_full(
-                        team_owner,
-                        "Default Status".to_string(),
-                        default(),
-                        default(),
-                    ),
+                    action_ability,
+                    status_ability,
+                    vec![],
                 );
 
                 let house_entity = context.world_mut()?.spawn_empty().id();
@@ -744,6 +723,31 @@ impl BattleEditorPlugin {
                 house_entity
             }
         };
+
+        let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
+        let unit_state = NUnitState::new_full(team_owner, 1, 1);
+        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
+        let unit_representation = NUnitRepresentation::new_full(
+            team_owner,
+            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+        );
+
+        let unit_description = NUnitDescription::new_full(
+            team_owner,
+            "Default Description".into(),
+            unit_representation,
+            unit_behavior,
+        );
+
+        let unit = NUnit::new_full(
+            team_owner,
+            "Default Unit".to_string(),
+            unit_description,
+            unit_stats,
+            unit_state,
+        );
+        let unit_entity = context.world_mut()?.spawn_empty().id();
+        unit.unpack_entity(context, unit_entity)?;
         context.link_parent_child_entity(house_entity, unit_entity)?;
         context.link_parent_child_entity(unit_entity, slot_entity)?;
 

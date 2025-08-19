@@ -192,22 +192,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         data_types: _,
         all_data_fields,
         all_data_types,
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     } = &pnf;
     let (one_fields, one_types) = pnf.one_owned();
     let (many_fields, many_types) = pnf.many_owned();
@@ -231,54 +223,38 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         );
     }
 
-    let parent_fields_load = owned_parent_fields
+    let parent_fields_load = parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let child_fields_load = owned_child_fields
+    let child_fields_load = child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let children_fields_load = owned_children_fields
+    let children_fields_load = children_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let parents_fields_load = owned_parents_fields
+    let parents_fields_load = parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
 
     let strings_conversions = strings_conversions(
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     );
 
     let common = common_node_fns(struct_ident, &all_data_fields, &all_data_types);
 
-    let common_trait_fns = common_node_trait_fns(
-        owned_children_types,
-        owned_parents_types,
-        owned_child_types,
-        owned_parent_types,
-        linked_children_types,
-        linked_parents_types,
-        linked_child_types,
-        linked_parent_types,
-    );
+    let common_trait_fns =
+        common_node_trait_fns(children_types, parents_types, child_types, parent_types);
 
     let shared_new_fns = shared_new_functions(
         all_data_fields,
@@ -302,7 +278,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     entity: None,
                     owner: 0,
                     #(
-                        #one_fields: None,
+                        #one_fields: Default::default(),
                     )*
                     #(
                         #many_fields: std::default::Default::default(),
@@ -320,40 +296,40 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #owned_child_types, ExpressionError> {
-                    if let Some(n) = self.#owned_child_fields.as_ref() {
+                pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #child_types, ExpressionError> {
+                    if let Some(n) = self.#child_fields.get_data() {
                         Ok(n)
                     } else {
-                        context.first_child::<#owned_child_types>(self.id)
+                        context.first_child::<#child_types>(self.id)
                     }
                 }
             )*
             #(
-                pub fn #parent_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #owned_parent_types, ExpressionError> {
-                    if let Some(n) = self.#owned_parent_fields.as_ref() {
+                pub fn #parent_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #parent_types, ExpressionError> {
+                    if let Some(n) = self.#parent_fields.get_data() {
                         Ok(n)
                     } else {
-                        context.first_parent::<#owned_parent_types>(self.id)
+                        context.first_parent::<#parent_types>(self.id)
                     }
                 }
             )*
             #(
-                pub fn #parents_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #owned_parents_types> {
-                    if !self.#owned_parents_fields.is_empty() {
-                        self.#owned_parents_fields.iter().collect()
+                pub fn #parents_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #parents_types> {
+                    if let Some(parents_data) = self.#parents_fields.get_data() {
+                        parents_data.iter().collect()
                     } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
-                        context.collect_parents_components::<#owned_parents_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
+                        context.collect_parents_components::<#parents_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
                     } else {
                         std::default::Default::default()
                     }
                 }
             )*
             #(
-                pub fn #children_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #owned_children_types> {
-                    if !self.#owned_children_fields.is_empty() {
-                        self.#owned_children_fields.iter().collect()
+                pub fn #children_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #children_types> {
+                    if let Some(children_data) = self.#children_fields.get_data() {
+                        children_data.iter().collect()
                     } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
-                        context.collect_children_components::<#owned_children_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
+                        context.collect_children_components::<#children_types>(id).unwrap_or_default().into_iter().sorted_by_key(|n| n.id).collect_vec()
                     } else {
                         std::default::Default::default()
                     }
@@ -409,7 +385,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     return Some(value);
                 }
                 #(
-                    if let Some(v) = self.#one_fields.as_ref()
+                    if let Some(v) = self.#one_fields.get_data()
                         .or_else(|| {
                             self.entity
                                 .and_then(|e| context.get::<#one_types>(e).ok())
@@ -429,7 +405,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     )*
                     _ => {
                         #(
-                            if let Some(n) = &mut self.#one_fields {
+                            if let Some(n) = self.#one_fields.get_data_mut() {
                                 n.set_var(var, value.clone());
                             }
                         )*
@@ -446,7 +422,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)> {
                 let mut vars = self.get_own_vars().into_iter().collect_vec();
                 #(
-                    if let Some(d) = self.#one_fields.as_ref().or_else(|| {
+                    if let Some(d) = self.#one_fields.get_data().or_else(|| {
                         self.entity
                             .and_then(|e| context.get::<#one_types>(e).ok())
                     }) {
@@ -518,15 +494,18 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 d.inject_data(file.contents_utf8()?).unwrap();
                 d.id = id;
                 #(
-                    d.#one_fields = #one_types::from_dir(format!("{path}/{}", #one_fields_str), dir);
+                    if let Some(data) = #one_types::from_dir(format!("{path}/{}", #one_fields_str), dir) {
+                        d.#one_fields.set_data(data);
+                    }
                 )*
                 #(
-                    d.#many_fields = dir
+                    let nodes = dir
                         .get_dir(format!("{path}/{}", #many_fields_str))
                         .into_iter()
                         .flat_map(|d| d.dirs())
                         .filter_map(|d| #many_types::from_dir(d.path().to_string_lossy().to_string(), dir))
                         .collect_vec();
+                    d.#many_fields.set_data(nodes);
                 )*
                 Some(d)
             }
@@ -542,7 +521,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     let dir = include_dir::Dir::new(
                         child_path.clone().leak(),
                         self.#one_fields
-                            .as_ref()
+                            .get_data()
                             .and_then(|c| Some(c.to_dir(child_path)))
                             .unwrap_or_default(),
                     );
@@ -570,7 +549,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             fn load_recursive(world: &World, id: u64) -> Option<Self> {
                 let mut d = Self::load(id)?;
                 #(
-                    let kind = #owned_parent_types::kind_s().to_string();
+                    let kind = #parent_types::kind_s().to_string();
                     if let Some(id) = cn()
                         .db
                         .nodes_world()
@@ -578,11 +557,13 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         .find(|n| n.kind == kind && d.id().is_child_of(world, n.id))
                         .map(|n| n.id)
                     {
-                        d.#owned_parent_fields = #owned_parent_types::load_recursive(world, id);
+                        if let Some(data) = #parent_types::load_recursive(world, id) {
+                            d.#parent_fields.set_data(data);
+                        }
                     }
                 )*
                 #(
-                    let kind = #owned_child_types::kind_s().to_string();
+                    let kind = #child_types::kind_s().to_string();
                     if let Some(id) = cn()
                         .db
                         .nodes_world()
@@ -590,95 +571,82 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         .find(|n| n.kind == kind && d.id().is_parent_of(world, n.id))
                         .map(|n| n.id)
                     {
-                        d.#owned_child_fields = #owned_child_types::load_recursive(world, id);
+                        if let Some(data) = #child_types::load_recursive(world, id) {
+                            d.#child_fields.set_data(data);
+                        }
                     }
                 )*
                 #(
-                    let kind = #owned_children_types::kind_s().to_string();
-                    d.#owned_children_fields = cn()
+                    let kind = #children_types::kind_s().to_string();
+                    let children_data = cn()
                         .db
                         .nodes_world()
                         .iter()
                         .filter_map(|n| {
                             if d.id().is_parent_of(world, n.id) && n.kind == kind {
-                                #owned_children_types::load_recursive(world, n.id)
+                                #children_types::load_recursive(world, n.id)
                             } else {
                                 None
                             }
                         })
                         .collect();
+                    d.#children_fields.set_data(children_data);
                 )*
                 #(
-                    let kind = #owned_parents_types::kind_s().to_string();
-                    d.#owned_parents_fields = cn()
+                    let kind = #parents_types::kind_s().to_string();
+                    let parents_data = cn()
                         .db
                         .nodes_world()
                         .iter()
                         .filter_map(|n| {
                             if d.id().is_child_of(world, n.id) && n.kind == kind {
-                                #owned_parents_types::load_recursive(world, n.id)
+                                #parents_types::load_recursive(world, n.id)
                             } else {
                                 None
                             }
                         })
                         .collect();
+                    d.#parents_fields.set_data(parents_data);
                 )*
                 Some(d)
             }
             fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
                 let mut s = context.get::<Self>(entity)?.clone();
                 #(
-                    s.#owned_parent_fields = context.parents_entity(entity)?.into_iter().find_map(|e|
-                        if let Ok(c) = #owned_parent_types::pack_entity(context, e) {
+                    if let Some(data) = context.parents_entity(entity)?.into_iter().find_map(|e|
+                        if let Ok(c) = #parent_types::pack_entity(context, e) {
                             Some(c)
                         } else {
                             None
-                        });
+                        }) {
+                        s.#parent_fields.set_data(data);
+                    }
                 )*
                 #(
-                    s.#owned_child_fields = context.children_entity(entity)?.into_iter().find_map(|e|
-                        if let Ok(c) = #owned_child_types::pack_entity(context, e) {
+                    if let Some(data) = context.children_entity(entity)?.into_iter().find_map(|e|
+                        if let Ok(c) = #child_types::pack_entity(context, e) {
                             Some(c)
                         } else {
                             None
-                        });
+                        }) {
+                        s.#child_fields.set_data(data);
+                    }
                 )*
                 #(
                     for child in context.children_entity(entity)? {
-                        if let Ok(d) = #owned_children_types::pack_entity(context, child) {
-                            s.#owned_children_fields.push(d);
+                        if let Ok(d) = #children_types::pack_entity(context, child) {
+                            s.#children_fields.push(d);
                         }
                     }
                 )*
                 #(
                     for parent in context.parents_entity(entity)? {
-                        if let Ok(d) = #owned_parents_types::pack_entity(context, parent) {
-                            s.#owned_parents_fields.push(d);
+                        if let Ok(d) = #parents_types::pack_entity(context, parent) {
+                            s.#parents_fields.push(d);
                         }
                     }
                 )*
-                #(
-                    let ids = context.collect_parents_components::<#linked_parents_types>(s.id)?
-                        .into_iter()
-                        .map(|n| n.id)
-                        .collect_vec();
-                    s.#linked_parents_fields = linked_parents::<#linked_parents_types>(ids);
-                )*
-                #(
-                    let ids = context.collect_parents_components::<#linked_children_types>(s.id)?
-                        .into_iter()
-                        .map(|n| n.id)
-                        .collect_vec();
-                    s.#linked_children_fields = linked_children::<#linked_children_types>(ids);
-                )*
-                #(
-                    let id = context.first_parent::<#linked_parent_types>(s.id).ok().map(|n| n.id);
-                    s.#linked_parent_fields = linked_parent::<#linked_parent_types>(id);
-                )*
-                #(
-                    let id = context.first_child::<#linked_child_types>(s.id).ok().map(|n| n.id);
-                    s.#linked_child_fields = linked_child::<#linked_child_types>(id);
-                )*
+
                 Ok(s)
             }
             fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
@@ -688,28 +656,9 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     self.id = next_id();
                 }
                 context.link_id_entity(self.id, entity)?;
+
                 #(
-                    for parent in &self.#linked_parents_fields.ids {
-                        context.link_parent_child(*parent, self.id)?;
-                    }
-                )*
-                #(
-                    for child in &self.#linked_children_fields.ids {
-                        context.link_parent_child(self.id, *child)?;
-                    }
-                )*
-                #(
-                    if let Some(parent) = &self.#linked_parent_fields.id {
-                        context.link_parent_child(*parent, self.id);
-                    }
-                )*
-                #(
-                    if let Some(child) = &self.#linked_child_fields.id {
-                        context.link_parent_child(self.id, *child);
-                    }
-                )*
-                #(
-                    if let Some(d) = self.#owned_parent_fields.take() {
+                    if let Some(d) = self.#parent_fields.take_data() {
                         let entity = context.world_mut()?.spawn_empty().id();
                         d.unpack_entity(context, entity).log();
                         let id = entity.id(context)?;
@@ -718,7 +667,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
-                    if let Some(d) = self.#owned_child_fields.take() {
+                    if let Some(d) = self.#child_fields.take_data() {
                         let entity = context.world_mut()?.spawn_empty().id();
                         d.unpack_entity(context, entity).log();
                         let id = entity.id(context)?;
@@ -727,17 +676,21 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
                 #(
-                    for d in std::mem::take(&mut self.#owned_children_fields) {
-                        let child = context.world_mut()?.spawn_empty().id();
-                        d.unpack_entity(context, child).log();
-                        child.id(context)?.add_parent(context.world_mut()?, self.id);
+                    if let Some(children_data) = self.#children_fields.take_data() {
+                        for d in children_data {
+                            let child = context.world_mut()?.spawn_empty().id();
+                            d.unpack_entity(context, child).log();
+                            child.id(context)?.add_parent(context.world_mut()?, self.id);
+                        }
                     }
                 )*
                 #(
-                    for d in std::mem::take(&mut self.#owned_parents_fields) {
-                        let parent = context.world_mut()?.spawn_empty().id();
-                        d.unpack_entity(context, parent).log();
-                        parent.id(context)?.add_child(context.world_mut()?, self.id);
+                    if let Some(parents_data) = self.#parents_fields.take_data() {
+                        for d in parents_data {
+                            let parent = context.world_mut()?.spawn_empty().id();
+                            d.unpack_entity(context, parent).log();
+                            parent.id(context)?.add_child(context.world_mut()?, self.id);
+                        }
                     }
                 )*
                 let kind = self.kind();
@@ -806,15 +759,15 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             ) -> ViewResponse {
                 let mut vr = ViewResponse::default();
                 #(
-                    if let Some(d) = &mut self.#one_fields {
+                    if let Some(d) = self.#one_fields.get_data_mut() {
                         let mut child_resp = d.view_with_children_mut(vctx, context, ui);
                         if child_resp.take_delete_me() {
-                            self.#one_fields = None;
+                            self.#one_fields.set_none();
                         }
                         vr.merge(child_resp);
                     } else if let Some(d) = new_node_btn::<#one_types>(ui) {
                         vr.changed = true;
-                        self.#one_fields = Some(d);
+                        self.#one_fields.set_data(d);
                     }
                 )*
                 #(

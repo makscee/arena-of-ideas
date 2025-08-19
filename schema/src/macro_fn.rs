@@ -14,37 +14,29 @@ pub struct ParsedNodeFields {
     pub data_types: Vec<Type>,
     pub all_data_fields: Vec<Ident>,
     pub all_data_types: Vec<Type>,
-    pub owned_children_fields: Vec<Ident>,
-    pub owned_children_types: Vec<Type>,
-    pub owned_parents_fields: Vec<Ident>,
-    pub owned_parents_types: Vec<Type>,
-    pub owned_child_fields: Vec<Ident>,
-    pub owned_child_types: Vec<Type>,
-    pub owned_parent_fields: Vec<Ident>,
-    pub owned_parent_types: Vec<Type>,
-    pub linked_children_fields: Vec<Ident>,
-    pub linked_children_types: Vec<Type>,
-    pub linked_parents_fields: Vec<Ident>,
-    pub linked_parents_types: Vec<Type>,
-    pub linked_child_fields: Vec<Ident>,
-    pub linked_child_types: Vec<Type>,
-    pub linked_parent_fields: Vec<Ident>,
-    pub linked_parent_types: Vec<Type>,
+    pub children_fields: Vec<Ident>,
+    pub children_types: Vec<Type>,
+    pub parents_fields: Vec<Ident>,
+    pub parents_types: Vec<Type>,
+    pub child_fields: Vec<Ident>,
+    pub child_types: Vec<Type>,
+    pub parent_fields: Vec<Ident>,
+    pub parent_types: Vec<Type>,
 }
 
 impl ParsedNodeFields {
     pub fn one_owned(&self) -> (Vec<Ident>, Vec<Type>) {
-        let mut fields = self.owned_child_fields.clone();
-        fields.extend(self.owned_parent_fields.clone());
-        let mut types = self.owned_child_types.clone();
-        types.extend(self.owned_parent_types.clone());
+        let mut fields = self.child_fields.clone();
+        fields.extend(self.parent_fields.clone());
+        let mut types = self.child_types.clone();
+        types.extend(self.parent_types.clone());
         (fields, types)
     }
     pub fn many_owned(&self) -> (Vec<Ident>, Vec<Type>) {
-        let mut fields = self.owned_children_fields.clone();
-        fields.extend(self.owned_parents_fields.clone());
-        let mut types = self.owned_children_types.clone();
-        types.extend(self.owned_parents_types.clone());
+        let mut fields = self.children_fields.clone();
+        fields.extend(self.parents_fields.clone());
+        let mut types = self.children_types.clone();
+        types.extend(self.parents_types.clone());
         (fields, types)
     }
 }
@@ -58,22 +50,14 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         data_types,
         all_data_fields,
         all_data_types,
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     } = &mut pnf;
     fn inner_type(type_path: &TypePath) -> Type {
         match &type_path.path.segments.first().unwrap().arguments {
@@ -91,12 +75,70 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
         match ty {
             syn::Type::Path(type_path) => {
                 let type_ident = type_path.path.segments.first().unwrap().ident.to_string();
-                if type_ident == "OwnedChildren" {
+                if type_ident == "NodeParts" {
+                    if let syn::PathArguments::AngleBracketed(angle_args) =
+                        &type_path.path.segments.first().unwrap().arguments
+                    {
+                        if angle_args.args.len() == 2 {
+                            if let (
+                                syn::GenericArgument::Type(relation_type),
+                                syn::GenericArgument::Type(node_type),
+                            ) = (&angle_args.args[0], &angle_args.args[1])
+                            {
+                                if let syn::Type::Path(relation_path) = relation_type {
+                                    let relation_ident = relation_path
+                                        .path
+                                        .segments
+                                        .first()
+                                        .unwrap()
+                                        .ident
+                                        .to_string();
+                                    if relation_ident == "Parent" {
+                                        parents_fields.push(field_ident.clone());
+                                        parents_types.push(node_type.clone());
+                                    } else if relation_ident == "Child" {
+                                        children_fields.push(field_ident.clone());
+                                        children_types.push(node_type.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if type_ident == "NodePart" {
+                    if let syn::PathArguments::AngleBracketed(angle_args) =
+                        &type_path.path.segments.first().unwrap().arguments
+                    {
+                        if angle_args.args.len() == 2 {
+                            if let (
+                                syn::GenericArgument::Type(relation_type),
+                                syn::GenericArgument::Type(node_type),
+                            ) = (&angle_args.args[0], &angle_args.args[1])
+                            {
+                                if let syn::Type::Path(relation_path) = relation_type {
+                                    let relation_ident = relation_path
+                                        .path
+                                        .segments
+                                        .first()
+                                        .unwrap()
+                                        .ident
+                                        .to_string();
+                                    if relation_ident == "Parent" {
+                                        parent_fields.push(field_ident.clone());
+                                        parent_types.push(node_type.clone());
+                                    } else if relation_ident == "Child" {
+                                        child_fields.push(field_ident.clone());
+                                        child_types.push(node_type.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if type_ident == "OwnedChildren" {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
-                            owned_children_fields.push(field_ident.clone());
-                            owned_children_types.push(it.clone());
+                            children_fields.push(field_ident.clone());
+                            children_types.push(it.clone());
                         }
                         _ => {}
                     }
@@ -104,29 +146,17 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     let it = inner_type(type_path);
                     match &it {
                         Type::Path(..) => {
-                            owned_parents_fields.push(field_ident.clone());
-                            owned_parents_types.push(it.clone());
+                            parents_fields.push(field_ident.clone());
+                            parents_types.push(it.clone());
                         }
                         _ => {}
                     }
                 } else if type_ident == "OwnedChild" {
-                    owned_child_fields.push(field_ident.clone());
-                    owned_child_types.push(inner_type(type_path));
+                    child_fields.push(field_ident.clone());
+                    child_types.push(inner_type(type_path));
                 } else if type_ident == "OwnedParent" {
-                    owned_parent_fields.push(field_ident.clone());
-                    owned_parent_types.push(inner_type(type_path));
-                } else if type_ident == "LinkedChild" {
-                    linked_child_fields.push(field_ident.clone());
-                    linked_child_types.push(inner_type(type_path));
-                } else if type_ident == "LinkedParent" {
-                    linked_parent_fields.push(field_ident.clone());
-                    linked_parent_types.push(inner_type(type_path));
-                } else if type_ident == "LinkedChildren" {
-                    linked_children_fields.push(field_ident.clone());
-                    linked_children_types.push(inner_type(type_path));
-                } else if type_ident == "LinkedParents" {
-                    linked_parents_fields.push(field_ident.clone());
-                    linked_parents_types.push(inner_type(type_path));
+                    parent_fields.push(field_ident.clone());
+                    parent_types.push(inner_type(type_path));
                 } else if VarName::VARIANTS.contains(&field_str.as_str())
                     && (VarValue::VARIANTS.contains(&type_ident.as_str())
                         || type_ident == "HexColor")
@@ -137,7 +167,10 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
                     data_fields.push(field_ident.clone());
                     data_types.push(ty.clone());
                 }
-                if !type_ident.starts_with("Owned") {
+                if !type_ident.starts_with("Owned")
+                    && type_ident != "NodePart"
+                    && type_ident != "NodeParts"
+                {
                     all_data_fields.push(field_ident);
                     all_data_types.push(ty.clone());
                 }
@@ -149,87 +182,55 @@ pub fn parse_node_fields(fields: &Fields) -> ParsedNodeFields {
 }
 
 pub fn strings_conversions(
-    owned_children_fields: &Vec<Ident>,
-    owned_children_types: &Vec<Type>,
-    owned_parents_fields: &Vec<Ident>,
-    owned_parents_types: &Vec<Type>,
-    owned_child_fields: &Vec<Ident>,
-    owned_child_types: &Vec<Type>,
-    owned_parent_fields: &Vec<Ident>,
-    owned_parent_types: &Vec<Type>,
-    linked_children_fields: &Vec<Ident>,
-    linked_children_types: &Vec<Type>,
-    linked_parents_fields: &Vec<Ident>,
-    linked_parents_types: &Vec<Type>,
-    linked_child_fields: &Vec<Ident>,
-    linked_child_types: &Vec<Type>,
-    linked_parent_fields: &Vec<Ident>,
-    linked_parent_types: &Vec<Type>,
+    children_fields: &Vec<Ident>,
+    children_types: &Vec<Type>,
+    parents_fields: &Vec<Ident>,
+    parents_types: &Vec<Type>,
+    child_fields: &Vec<Ident>,
+    child_types: &Vec<Type>,
+    parent_fields: &Vec<Ident>,
+    parent_types: &Vec<Type>,
 ) -> TokenStream {
     let shared_unpack = shared_unpack_id(
-        owned_children_fields,
-        owned_children_types,
-        owned_parents_fields,
-        owned_parents_types,
-        owned_child_fields,
-        owned_child_types,
-        owned_parent_fields,
-        owned_parent_types,
-        linked_children_fields,
-        linked_children_types,
-        linked_parents_fields,
-        linked_parents_types,
-        linked_child_fields,
-        linked_child_types,
-        linked_parent_fields,
-        linked_parent_types,
+        children_fields,
+        children_types,
+        parents_fields,
+        parents_types,
+        child_fields,
+        child_types,
+        parent_fields,
+        parent_types,
     );
     quote! {
         fn pack_fill(&self, pn: &mut PackedNodes) {
             let kind = self.kind().to_string();
             pn.add_node(kind.clone(), self.get_data(), self.id);
             #(
-                if let Some(n) = self.#owned_parent_fields.as_ref() {
+                if let Some(n) = self.#parent_fields.get_data() {
                     n.pack_fill(pn);
                     pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
                 }
             )*
             #(
-                if let Some(n) = self.#owned_child_fields.as_ref() {
+                if let Some(n) = self.#child_fields.get_data() {
                     n.pack_fill(pn);
                     pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
                 }
             )*
             #(
-                for n in &self.#owned_parents_fields {
-                    n.pack_fill(pn);
-                    pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
+                if let Some(parents_data) = self.#parents_fields.get_data() {
+                    for n in parents_data {
+                        n.pack_fill(pn);
+                        pn.link_parent_child(n.id, self.id, n.kind().to_string(), kind.clone());
+                    }
                 }
             )*
             #(
-                for n in &self.#owned_children_fields {
-                    n.pack_fill(pn);
-                    pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
-                }
-            )*
-            #(
-                if let Some(parent) = &self.#linked_parent_fields.id {
-                    pn.link_parent_child(*parent, self.id, NodeKind::#linked_parent_types.to_string(), kind.clone());
-                }
-            )*
-            #(
-                if let Some(child) = &self.#linked_child_fields.id {
-                    pn.link_parent_child(self.id, *child, NodeKind::#linked_child_types.to_string(), kind.clone());
-                }
-            )*
-            #(
-                for child in &self.#linked_children_fields.ids {
-                    pn.link_parent_child(self.id, *child, kind.clone(), NodeKind::#linked_children_types.to_string());
-                }
-            )*
-            #(
-                for parent in &self.#linked_parents_fields.ids {
-                    pn.link_parent_child(*parent, self.id, NodeKind::#linked_parents_types.to_string(), kind.clone());
+                if let Some(children_data) = self.#children_fields.get_data() {
+                    for n in children_data {
+                        n.pack_fill(pn);
+                        pn.link_parent_child(self.id, n.id, kind.clone(), n.kind().to_string());
+                    }
                 }
             )*
         }
@@ -244,23 +245,27 @@ pub fn strings_conversions(
             self.set_id(*next_id);
             *next_id += 1;
             #(
-                if let Some(d) = self.#owned_parent_fields.as_mut() {
+                if let Some(d) = self.#parent_fields.get_data_mut() {
                     d.reassign_ids(next_id);
                 }
             )*
             #(
-                if let Some(d) = self.#owned_child_fields.as_mut() {
+                if let Some(d) = self.#child_fields.get_data_mut() {
                     d.reassign_ids(next_id);
                 }
             )*
             #(
-                for d in &mut self.#owned_parents_fields {
-                    d.reassign_ids(next_id);
+                if let Some(parents_data) = self.#parents_fields.get_data_mut() {
+                    for d in parents_data {
+                        d.reassign_ids(next_id);
+                    }
                 }
             )*
             #(
-                for d in &mut self.#owned_children_fields {
-                    d.reassign_ids(next_id);
+                if let Some(children_data) = self.#children_fields.get_data_mut() {
+                    for d in children_data {
+                        d.reassign_ids(next_id);
+                    }
                 }
             )*
         }
@@ -389,10 +394,10 @@ pub fn shared_new_functions(
                     #all_data_fields,
                 )*
                 #(
-                    #one_fields: Some(#one_fields),
+                    #one_fields: crate::NodePart::with_node(#one_fields),
                 )*
                 #(
-                    #many_fields,
+                    #many_fields: crate::NodeParts::with_nodes(#many_fields),
                 )*
                 ..default()
             }
@@ -405,10 +410,6 @@ pub fn common_node_trait_fns(
     owned_parents_types: &Vec<Type>,
     owned_child_types: &Vec<Type>,
     owned_parent_types: &Vec<Type>,
-    linked_children_types: &Vec<Type>,
-    linked_parents_types: &Vec<Type>,
-    linked_child_types: &Vec<Type>,
-    linked_parent_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
         fn all_linked_parents() -> HashSet<NodeKind> {
@@ -418,12 +419,6 @@ pub fn common_node_trait_fns(
                 )*
                 #(
                     NodeKind::#owned_parent_types,
-                )*
-                #(
-                    NodeKind::#linked_parents_types,
-                )*
-                #(
-                    NodeKind::#linked_parent_types,
                 )*
             ].into()
         }
@@ -435,34 +430,20 @@ pub fn common_node_trait_fns(
                 #(
                     NodeKind::#owned_child_types,
                 )*
-                #(
-                    NodeKind::#linked_children_types,
-                )*
-                #(
-                    NodeKind::#linked_child_types,
-                )*
             ].into()
         }
     }
 }
 
 pub fn shared_unpack_id(
-    owned_children_fields: &Vec<Ident>,
-    owned_children_types: &Vec<Type>,
-    owned_parents_fields: &Vec<Ident>,
-    owned_parents_types: &Vec<Type>,
-    owned_child_fields: &Vec<Ident>,
-    owned_child_types: &Vec<Type>,
-    owned_parent_fields: &Vec<Ident>,
-    owned_parent_types: &Vec<Type>,
-    linked_children_fields: &Vec<Ident>,
-    linked_children_types: &Vec<Type>,
-    linked_parents_fields: &Vec<Ident>,
-    linked_parents_types: &Vec<Type>,
-    linked_child_fields: &Vec<Ident>,
-    linked_child_types: &Vec<Type>,
-    linked_parent_fields: &Vec<Ident>,
-    linked_parent_types: &Vec<Type>,
+    children_fields: &Vec<Ident>,
+    children_types: &Vec<Type>,
+    parents_fields: &Vec<Ident>,
+    parents_types: &Vec<Type>,
+    child_fields: &Vec<Ident>,
+    child_types: &Vec<Type>,
+    parent_fields: &Vec<Ident>,
+    parent_types: &Vec<Type>,
 ) -> TokenStream {
     quote! {
         fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self> {
@@ -480,42 +461,32 @@ pub fn shared_unpack_id(
                 panic!("Unpack deserialize from data err: {e} data: {data}");
             }
             #(
-                d.#owned_child_fields = pn
-                    .kind_children(id, NodeKind::#owned_child_types.as_ref())
-                    .get(0)
-                    .and_then(|id| #owned_child_types::unpack_id(*id, pn));
+                if let Some(child_id) = pn
+                    .kind_children(id, NodeKind::#child_types.as_ref())
+                    .get(0) {
+                    d.#child_fields.set_id(*child_id);
+                }
             )*
             #(
-                d.#owned_parent_fields = pn
-                    .kind_parents(id, NodeKind::#owned_parent_types.as_ref())
-                    .get(0)
-                    .and_then(|id| #owned_parent_types::unpack_id(*id, pn));
+                if let Some(parent_id) = pn
+                    .kind_parents(id, NodeKind::#parent_types.as_ref())
+                    .get(0) {
+                    d.#parent_fields.set_id(*parent_id);
+                }
             )*
             #(
-                d.#owned_parents_fields = pn
-                    .kind_parents(id, NodeKind::#owned_parents_types.as_ref())
-                    .into_iter()
-                    .filter_map(|id| #owned_parents_types::unpack_id(id, pn))
-                    .collect();
+                let parent_ids = pn
+                    .kind_parents(id, NodeKind::#parents_types.as_ref());
+                if !parent_ids.is_empty() {
+                    d.#parents_fields.set_ids(parent_ids);
+                }
             )*
             #(
-                d.#owned_children_fields = pn
-                    .kind_children(id, NodeKind::#owned_children_types.as_ref())
-                    .into_iter()
-                    .filter_map(|id| #owned_children_types::unpack_id(id, pn))
-                    .collect();
-            )*
-            #(
-                d.#linked_children_fields = linked_children(pn.kind_children(id, NodeKind::#linked_children_types.as_ref()));
-            )*
-            #(
-                d.#linked_parents_fields = linked_parents(pn.kind_parents(id, NodeKind::#linked_parents_types.as_ref()));
-            )*
-            #(
-                d.#linked_child_fields = linked_child(pn.kind_children(id, NodeKind::#linked_child_types.as_ref()).first().copied());
-            )*
-            #(
-                d.#linked_parent_fields = linked_parent(pn.kind_parents(id, NodeKind::#linked_parent_types.as_ref()).first().copied());
+                let child_ids = pn
+                    .kind_children(id, NodeKind::#children_types.as_ref());
+                if !child_ids.is_empty() {
+                    d.#children_fields.set_ids(child_ids);
+                }
             )*
             Some(d)
         }
