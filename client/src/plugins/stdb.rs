@@ -229,8 +229,6 @@ fn on_insert(node: &TNode) {
         Context::from_world(world, |context| {
             node.unpack(context, entity);
         });
-
-        // Send StdbEvent
         world.send_event(StdbEvent {
             entity,
             node,

@@ -650,7 +650,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 Ok(s)
             }
             fn unpack_entity(mut self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
-                // debug!("Unpack {}#{:?} into {entity}", self.cstr().to_colored(), self.id);
+                // debug!("Unpack {}#{:?} into {entity} {self:?}", self.cstr().to_colored(), self.id);
                 self.entity = Some(entity);
                 if self.id == 0 {
                     self.id = next_id();

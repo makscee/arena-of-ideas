@@ -167,10 +167,6 @@ pub trait TableNodeView<T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
 }
 
-pub fn core<'a>(context: &'a Context) -> &'a NCore {
-    NCore::get_by_id(ID_CORE, context).unwrap()
-}
-
 pub fn node_menu<T: Node + NodeExt + ViewFns>(ui: &mut Ui, context: &Context) -> Option<T> {
     let mut result = None;
     fn show_node_list<T: Node + NodeExt + ViewFns>(

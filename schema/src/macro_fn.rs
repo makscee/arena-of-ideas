@@ -464,28 +464,40 @@ pub fn shared_unpack_id(
                 if let Some(child_id) = pn
                     .kind_children(id, NodeKind::#child_types.as_ref())
                     .get(0) {
-                    d.#child_fields.set_id(*child_id);
+                    if let Some(child_data) = #child_types::unpack_id(*child_id, pn) {
+                        d.#child_fields.set_data(child_data);
+                    }
                 }
             )*
             #(
                 if let Some(parent_id) = pn
                     .kind_parents(id, NodeKind::#parent_types.as_ref())
                     .get(0) {
-                    d.#parent_fields.set_id(*parent_id);
+                    if let Some(parent_data) = #parent_types::unpack_id(*parent_id, pn) {
+                        d.#parent_fields.set_data(parent_data);
+                    }
                 }
             )*
             #(
                 let parent_ids = pn
                     .kind_parents(id, NodeKind::#parents_types.as_ref());
-                if !parent_ids.is_empty() {
-                    d.#parents_fields.set_ids(parent_ids);
+                let parents_data: Vec<#parents_types> = parent_ids
+                    .iter()
+                    .filter_map(|parent_id| #parents_types::unpack_id(*parent_id, pn))
+                    .collect();
+                if !parents_data.is_empty() {
+                    d.#parents_fields.set_data(parents_data);
                 }
             )*
             #(
                 let child_ids = pn
                     .kind_children(id, NodeKind::#children_types.as_ref());
-                if !child_ids.is_empty() {
-                    d.#children_fields.set_ids(child_ids);
+                let children_data: Vec<#children_types> = child_ids
+                    .iter()
+                    .filter_map(|child_id| #children_types::unpack_id(*child_id, pn))
+                    .collect();
+                if !children_data.is_empty() {
+                    d.#children_fields.set_data(children_data);
                 }
             )*
             Some(d)
