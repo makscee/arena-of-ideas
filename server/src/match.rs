@@ -25,7 +25,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         CardKind::Unit => {
             let unit = NUnit::get(ctx, node_id)
                 .to_custom_e_s_fn(|| format!("Failed to find Unit#{node_id}"))?
-                .with_owned(ctx)
+                .with_parts(ctx)
                 .take();
             let house_id = unit
                 .id
@@ -46,7 +46,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         CardKind::House => {
             let house = NHouse::get(ctx, node_id)
                 .to_custom_e_s_fn(|| format!("Failed to find House#{node_id}"))?
-                .with_owned(ctx)
+                .with_parts(ctx)
                 .take();
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
@@ -96,7 +96,7 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
             let s_state = slot_unit.state_load(ctx)?;
             let u_state = unit.state_load(ctx)?;
             s_state.stacks += u_state.stacks;
-            unit.delete_with_owned(ctx);
+            unit.delete_with_parts(ctx);
             s_state.save(ctx);
         } else {
             m.unlink_unit(ctx, slot_unit.id)?;
@@ -120,7 +120,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
     m.unlink_unit(ctx, unit_id)?;
-    unit.delete_with_owned(ctx);
+    unit.delete_with_parts(ctx);
     m.save(ctx);
     Ok(())
 }
@@ -200,7 +200,7 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
     if m.active {
         Err("Match is still active".into())
     } else {
-        m.delete_with_owned(ctx);
+        m.delete_with_parts(ctx);
         Ok(())
     }
 }
@@ -210,7 +210,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     for m in NMatch::collect_owner(ctx, player.id) {
-        m.delete_with_owned(ctx);
+        m.delete_with_parts(ctx);
     }
     let gs = ctx.global_settings();
     let mut m = NMatch::new(pid, gs.match_g.initial, 0, 0, 3, true, default());

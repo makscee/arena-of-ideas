@@ -154,7 +154,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
 fn admin_delete_node(ctx: &ReducerContext, id: u64) -> Result<(), String> {
     ctx.is_admin()?;
     let kind = id.kind(ctx).to_custom_e_s("Failed to get kind")?;
-    kind.delete_with_owned(ctx, id)
+    kind.delete_with_parts(ctx, id)
 }
 
 #[reducer]

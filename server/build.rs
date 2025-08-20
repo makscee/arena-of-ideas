@@ -63,7 +63,7 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
             fn all_linked_parents(self) -> HashSet<NodeKind>;
             fn all_linked_children(self) -> HashSet<NodeKind>;
             fn convert(self, data: &str) -> Result<TNode, ExpressionError>;
-            fn delete_with_owned(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
+            fn delete_with_parts(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
         }
         impl ServerNodeKind for NodeKind {
             fn all_linked_children(self) -> HashSet<NodeKind> {
@@ -93,12 +93,12 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
                     )*
                 }
             }
-            fn delete_with_owned(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+            fn delete_with_parts(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
                 match self {
                     Self::None => unreachable!(),
                     #(
                         Self::#names => {
-                            #names::get(ctx, id).to_custom_e_s_fn(|| format!("Failed to get {self}#{id}"))?.delete_with_owned(ctx);
+                            #names::get(ctx, id).to_custom_e_s_fn(|| format!("Failed to get {self}#{id}"))?.delete_with_parts(ctx);
                         }
                     )*
                 }
@@ -425,28 +425,28 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
 
                 Ok(())
             }
-            fn with_owned(&mut self, ctx: &ReducerContext) -> &mut Self {
+            fn with_parts(&mut self, ctx: &ReducerContext) -> &mut Self {
                 #(
                     if let Some(mut parent) = self.parent::<#parent_types>(ctx) {
-                        self.#parent_fields.set_data(std::mem::take(parent.with_owned(ctx)));
+                        self.#parent_fields.set_data(std::mem::take(parent.with_parts(ctx)));
                     }
                 )*
                 #(
                     if let Some(mut child) = self.child::<#child_types>(ctx) {
-                        self.#child_fields.set_data(std::mem::take(child.with_owned(ctx)));
+                        self.#child_fields.set_data(std::mem::take(child.with_parts(ctx)));
                     }
                 )*
                 #(
                     let parents_data = self.collect_parents::<#parents_types>(ctx)
                         .into_iter()
-                        .map(|mut n| std::mem::take(n.with_owned(ctx)))
+                        .map(|mut n| std::mem::take(n.with_parts(ctx)))
                         .collect();
                     self.#parents_fields.set_data(parents_data);
                 )*
                 #(
                     let children_data = self.collect_children::<#children_types>(ctx)
                         .into_iter()
-                        .map(|mut n| std::mem::take(n.with_owned(ctx)))
+                        .map(|mut n| std::mem::take(n.with_parts(ctx)))
                         .collect();
                     self.#children_fields.set_data(children_data);
                 )*
@@ -467,25 +467,25 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     }
                 )*
             }
-            fn delete_with_owned(&self, ctx: &ReducerContext) {
+            fn delete_with_parts(&self, ctx: &ReducerContext) {
                 #(
                     if let Some(p) = self.parent::<#parent_types>(ctx) {
-                        p.delete_with_owned(ctx);
+                        p.delete_with_parts(ctx);
                     }
                 )*
                 #(
                     if let Some(c) = self.child::<#child_types>(ctx) {
-                        c.delete_with_owned(ctx);
+                        c.delete_with_parts(ctx);
                     }
                 )*
                 #(
                     for p in self.collect_parents::<#parents_types>(ctx) {
-                        p.delete_with_owned(ctx);
+                        p.delete_with_parts(ctx);
                     }
                 )*
                 #(
                     for c in self.collect_children::<#children_types>(ctx) {
-                        c.delete_with_owned(ctx);
+                        c.delete_with_parts(ctx);
                     }
                 )*
                 self.delete_self(ctx);

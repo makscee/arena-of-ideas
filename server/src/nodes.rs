@@ -20,7 +20,7 @@ pub trait Node: Default + Sized {
     fn pack_fill(&self, pn: &mut PackedNodes);
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
-    fn with_owned(&mut self, ctx: &ReducerContext) -> &mut Self;
+    fn with_parts(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(&self, ctx: &ReducerContext);
     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self;
@@ -28,7 +28,7 @@ pub trait Node: Default + Sized {
     fn all_linked_children() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;
     fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String>;
-    fn delete_with_owned(&self, ctx: &ReducerContext);
+    fn delete_with_parts(&self, ctx: &ReducerContext);
     fn kind(&self) -> NodeKind {
         NodeKind::from_str(type_name_of_val_short(self)).unwrap()
     }
