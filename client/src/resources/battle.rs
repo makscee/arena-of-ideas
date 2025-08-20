@@ -414,7 +414,7 @@ impl BattleSimulation {
     ) -> Result<VecDeque<BattleAction>, ExpressionError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
-        for entity in context.battle_simulation()?.all_units() {
+        for entity in context.battle_simulation()?.all_fusions() {
             context
                 .with_owner(entity, |context| {
                     match context.get::<NFusion>(entity)?.react(&event, context) {
@@ -493,7 +493,7 @@ impl BattleSimulation {
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
         Context::from_battle_simulation_r(self, |context| {
-            for entity in context.battle_simulation()?.all_units() {
+            for entity in context.battle_simulation()?.all_fusions() {
                 let dmg = context.get::<NFusion>(entity)?.dmg;
                 context.with_owner(entity, |context| {
                     if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
@@ -570,7 +570,7 @@ impl BattleSimulation {
     pub fn right_units(&self) -> &Vec<Entity> {
         &self.fusions_right
     }
-    pub fn all_units(&self) -> Vec<Entity> {
+    pub fn all_fusions(&self) -> Vec<Entity> {
         let mut units = self.fusions_left.clone();
         units.append(&mut self.fusions_right.clone());
         units

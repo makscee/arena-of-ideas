@@ -267,6 +267,10 @@ impl BattleEditorPlugin {
                         Self::handle_bench_unit(unit_id, context)?;
                         changed = true;
                     }
+                    TeamAction::ChangeTrigger { fusion_id, trigger } => {
+                        Self::handle_change_trigger(fusion_id, trigger, context)?;
+                        changed = true;
+                    }
                 }
             }
 
@@ -794,6 +798,16 @@ impl BattleEditorPlugin {
         let mut slot = context.get_mut::<NFusionSlot>(context.entity(slot_id)?)?;
         slot.actions.start = start;
         slot.actions.length = length;
+        Ok(())
+    }
+
+    fn handle_change_trigger(
+        fusion_id: u64,
+        trigger: UnitTriggerRef,
+        context: &mut Context,
+    ) -> Result<(), ExpressionError> {
+        let mut fusion = context.get_mut::<NFusion>(context.entity(fusion_id)?)?;
+        fusion.trigger = trigger;
         Ok(())
     }
 }

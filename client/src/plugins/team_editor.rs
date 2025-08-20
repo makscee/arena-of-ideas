@@ -28,6 +28,10 @@ pub enum TeamAction {
         start: u8,
         length: u8,
     },
+    ChangeTrigger {
+        fusion_id: u64,
+        trigger: UnitTriggerRef,
+    },
 }
 
 impl TeamEditor {
@@ -140,7 +144,28 @@ impl TeamEditor {
             }
         }
 
-        Ok(actions)
+        // Process additional actions from unit moves and bench moves
+        let mut all_actions = actions;
+        let mut additional_actions = Vec::new();
+
+        for action in &all_actions {
+            match action {
+                TeamAction::MoveUnit { unit_id, target } => {
+                    let move_additional =
+                        self.get_move_unit_additional_actions(*unit_id, *target, context)?;
+                    additional_actions.extend(move_additional);
+                }
+                TeamAction::BenchUnit { unit_id } => {
+                    let bench_additional =
+                        self.get_bench_unit_additional_actions(*unit_id, context)?;
+                    additional_actions.extend(bench_additional);
+                }
+                _ => {}
+            }
+        }
+
+        all_actions.extend(additional_actions);
+        Ok(all_actions)
     }
 
     fn get_unlinked_units<'a>(
@@ -155,6 +180,200 @@ impl TeamEditor {
             .into_iter()
             .filter(|unit| context.first_child::<NFusionSlot>(unit.id).is_err())
             .collect())
+    }
+
+    fn get_available_triggers(
+        &self,
+        context: &Context,
+        slots: &[&NFusionSlot],
+    ) -> Result<(Vec<Trigger>, HashMap<Trigger, UnitTriggerRef>), ExpressionError> {
+        let mut trigger_map = HashMap::new();
+
+        for slot in slots {
+            if let Some(unit) = Self::get_slot_unit(slot.id, context) {
+                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                {
+                    for (trigger_idx, reaction) in unit_behavior.reactions.iter().enumerate() {
+                        let trigger = reaction.trigger.clone();
+                        if !trigger_map.contains_key(&trigger) {
+                            trigger_map.insert(
+                                trigger,
+                                UnitTriggerRef {
+                                    unit: unit.id,
+                                    trigger: trigger_idx as u8,
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut triggers: Vec<Trigger> = trigger_map.keys().cloned().collect();
+        triggers.sort_by(|a, b| a.as_ref().cmp(b.as_ref()));
+
+        Ok((triggers, trigger_map))
+    }
+
+    fn get_move_unit_additional_actions(
+        &self,
+        unit_id: u64,
+        target_id: u64,
+        context: &Context,
+    ) -> Result<Vec<TeamAction>, ExpressionError> {
+        let mut additional_actions = Vec::new();
+
+        let old_fusion_id = if let Ok(old_slot) = context.first_child::<NFusionSlot>(unit_id) {
+            let old_fusion = context.first_child::<NFusion>(old_slot.id)?;
+            Some((old_fusion.id, old_slot.id))
+        } else {
+            None
+        };
+
+        let new_fusion_id =
+            if let Ok(new_slot) = context.get::<NFusionSlot>(context.entity(target_id)?) {
+                let new_fusion = context.first_child::<NFusion>(new_slot.id)?;
+                Some(new_fusion.id)
+            } else {
+                None
+            };
+
+        let is_same_fusion = match (old_fusion_id, new_fusion_id) {
+            (Some((old_id, _)), Some(new_id)) => old_id == new_id,
+            _ => false,
+        };
+
+        // Handle moving out of previous slot
+        if let Some((old_fusion_id, old_slot_id)) = old_fusion_id {
+            // Reset action range for the slot being vacated
+            additional_actions.push(TeamAction::ChangeActionRange {
+                slot_id: old_slot_id,
+                start: 0,
+                length: 0,
+            });
+
+            // Update trigger only if moving to different fusion (not same fusion)
+            if !is_same_fusion {
+                let old_fusion = context.get::<NFusion>(context.entity(old_fusion_id)?)?;
+                if old_fusion.trigger.unit == unit_id {
+                    let remaining_slots =
+                        context.collect_parents_components::<NFusionSlot>(old_fusion_id)?;
+                    let mut new_trigger_ref = UnitTriggerRef::default();
+
+                    for slot in remaining_slots {
+                        if slot.id != old_slot_id {
+                            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                                if let Ok(unit_behavior) =
+                                    context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                                {
+                                    if !unit_behavior.reactions.is_empty() {
+                                        new_trigger_ref = UnitTriggerRef {
+                                            unit: unit.id,
+                                            trigger: 0,
+                                        };
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    additional_actions.push(TeamAction::ChangeTrigger {
+                        fusion_id: old_fusion_id,
+                        trigger: new_trigger_ref,
+                    });
+                }
+            }
+        }
+
+        // Handle moving into new slot
+        if let Some(new_fusion_id) = new_fusion_id {
+            let new_fusion = context.get::<NFusion>(context.entity(new_fusion_id)?)?;
+
+            // If fusion has no trigger set (unit id is 0), set it to this unit
+            if new_fusion.trigger.unit == 0 {
+                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id)
+                {
+                    if !unit_behavior.reactions.is_empty() {
+                        additional_actions.push(TeamAction::ChangeTrigger {
+                            fusion_id: new_fusion_id,
+                            trigger: UnitTriggerRef {
+                                unit: unit_id,
+                                trigger: 0,
+                            },
+                        });
+                    }
+                }
+            }
+
+            // Set action range to select all actions for the moved unit
+            if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
+                if let Some(reaction) = unit_behavior
+                    .reactions
+                    .get(new_fusion.trigger.trigger as usize)
+                {
+                    additional_actions.push(TeamAction::ChangeActionRange {
+                        slot_id: target_id,
+                        start: 0,
+                        length: reaction.actions.len() as u8,
+                    });
+                }
+            }
+        }
+
+        Ok(additional_actions)
+    }
+
+    fn get_bench_unit_additional_actions(
+        &self,
+        unit_id: u64,
+        context: &Context,
+    ) -> Result<Vec<TeamAction>, ExpressionError> {
+        let mut additional_actions = Vec::new();
+
+        // Handle moving to bench
+        if let Ok(old_slot) = context.first_child::<NFusionSlot>(unit_id) {
+            let old_fusion = context.first_child::<NFusion>(old_slot.id)?;
+
+            // Reset action range for the slot being vacated
+            additional_actions.push(TeamAction::ChangeActionRange {
+                slot_id: old_slot.id,
+                start: 0,
+                length: 0,
+            });
+
+            // If this unit was the trigger unit, update trigger to another unit or default
+            if old_fusion.trigger.unit == unit_id {
+                let remaining_slots =
+                    context.collect_parents_components::<NFusionSlot>(old_fusion.id)?;
+                let mut new_trigger_ref = UnitTriggerRef::default();
+
+                for slot in remaining_slots {
+                    if slot.id != old_slot.id {
+                        if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                            if let Ok(unit_behavior) =
+                                context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                            {
+                                if !unit_behavior.reactions.is_empty() {
+                                    new_trigger_ref = UnitTriggerRef {
+                                        unit: unit.id,
+                                        trigger: 0,
+                                    };
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                additional_actions.push(TeamAction::ChangeTrigger {
+                    fusion_id: old_fusion.id,
+                    trigger: new_trigger_ref,
+                });
+            }
+        }
+
+        Ok(additional_actions)
     }
 
     fn render_bench_column(
@@ -264,6 +483,14 @@ impl TeamEditor {
         context: &Context,
         ui: &mut Ui,
     ) {
+        // Display current trigger
+        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+            ui.horizontal(|ui| {
+                Icon::Lightning.show(ui);
+                trigger.cstr().label(ui);
+            });
+            ui.separator();
+        }
         let mut all_actions = Vec::new();
 
         for slot in slots {
@@ -442,6 +669,31 @@ impl TeamEditor {
                 ui.label(format!("Fusion {}", fusion.index));
             });
             ui.separator();
+
+            // Trigger selector
+            if let Ok((available_triggers, trigger_map)) =
+                self.get_available_triggers(context, slots)
+            {
+                if !available_triggers.is_empty() {
+                    let current_trigger =
+                        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+                            trigger.clone()
+                        } else {
+                            Trigger::default()
+                        };
+
+                    let mut selected_trigger = current_trigger;
+                    if Selector::new("").ui_iter(&mut selected_trigger, &available_triggers, ui) {
+                        if let Some(trigger_ref) = trigger_map.get(&selected_trigger) {
+                            actions.push(TeamAction::ChangeTrigger {
+                                fusion_id: fusion.id,
+                                trigger: trigger_ref.clone(),
+                            });
+                        }
+                    }
+                    ui.separator();
+                }
+            }
 
             for slot in slots {
                 if let Some(unit) = Self::get_slot_unit(slot.id, context) {

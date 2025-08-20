@@ -28,7 +28,6 @@ pub fn pd_mut(f: impl FnOnce(&mut Data)) {
     let mut new_data = pd().clone();
     f(&mut new_data);
     if !pd().eq(&new_data) {
-        debug!("new data login: {:?}", new_data.client_state.last_logged_in);
         *DATA.get().unwrap().write() = new_data;
         *EDIT_TS.lock() = Some(gt().elapsed());
     }

@@ -58,7 +58,7 @@ impl ExpressionImpl for Expression {
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),
             Expression::unit_size => Ok(UNIT_SIZE.into()),
-            Expression::all_units => Ok(context.battle_simulation()?.all_units().vec_to_value()),
+            Expression::all_units => Ok(context.battle_simulation()?.all_fusions().vec_to_value()),
             Expression::all_ally_units => Ok(context
                 .battle_simulation()?
                 .all_allies(context.owner_entity()?)?
