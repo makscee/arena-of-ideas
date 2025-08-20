@@ -18,6 +18,10 @@ pub trait GetVar: Debug {
     fn set_var(&mut self, var: VarName, value: VarValue);
 }
 
+pub trait ClientLoader<N> {
+    fn load(self, ctx: &Context) -> Result<N, ExpressionError>;
+}
+
 pub trait Node:
     Default + Component + Sized + GetVar + Show + Debug + std::hash::Hash + StringData + Clone + ToCstr
 {

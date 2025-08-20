@@ -8,6 +8,7 @@ members = [
     "utils-client",
     "settings-derive",
     "client",
+    "node-loaders",
 ]
 
 [workspace.package]

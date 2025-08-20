@@ -13,6 +13,7 @@ schema = { path = "../schema" }
 raw-nodes = { path = "../raw-nodes" }
 utils-client = { path = "../utils-client" }
 settings-derive = { path = "../settings-derive" }
+node-loaders = { path = "../node-loaders", features = ["client"] }
 
 spacetimedb-sdk = { workspace = true }
 spacetimedb-sats = { workspace = true }
@@ -66,6 +67,7 @@ features = ["default"]
 
 [build-dependencies]
 schema = { path = "../schema" }
+node-loaders = { path = "../node-loaders" }
 itertools = { workspace = true }
 proc-macro2 = { workspace = true }
 quote = { workspace = true }

@@ -40,6 +40,10 @@ pub trait Node: Default + Sized {
     }
 }
 
+pub trait ServerLoader<N> {
+    fn load(self, ctx: &ReducerContext) -> Result<N, String>;
+}
+
 #[allow(dead_code)]
 pub trait NodeExt: Sized + Node + StringData {
     fn to_tnode(&self) -> TNode;

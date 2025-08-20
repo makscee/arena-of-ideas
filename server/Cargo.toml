@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 schema = { path = "../schema" }
 raw-nodes = { path = "../raw-nodes" }
 utils = { path = "../utils", features = ["server"] }
+node-loaders = { path = "../node-loaders", features = ["server"] }
 spacetimedb = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
@@ -27,6 +28,7 @@ bcrypt-no-getrandom = "0.16.0"
 
 [build-dependencies]
 schema = { path = "../schema" }
+node-loaders = { path = "../node-loaders" }
 syn = { workspace = true, features = ["full", "parsing"] }
 quote = { workspace = true }
 proc-macro2 = { workspace = true }

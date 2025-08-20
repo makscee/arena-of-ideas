@@ -37,6 +37,8 @@ fn main() {
         .collect();
 
     let output = quote! {
+        use node_loaders::*;
+
         #node_kinds_impl
         #(
             #client_impls
@@ -184,6 +186,7 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
 
 fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let struct_ident = &item.ident;
+    let loader_ident = quote::format_ident!("{}Loader", struct_ident);
     let pnf = parse_node_fields(&item.fields);
     let ParsedNodeFields {
         var_fields,
@@ -205,6 +208,15 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let (many_fields, many_types) = pnf.many_owned();
     let one_fields_str = one_fields.iter().map(|f| f.to_string()).collect_vec();
     let many_fields_str = many_fields.iter().map(|f| f.to_string()).collect_vec();
+
+    let one_load_flags = one_fields
+        .iter()
+        .map(|f| quote::format_ident!("load_{}", f))
+        .collect_vec();
+    let many_load_flags = many_fields
+        .iter()
+        .map(|f| quote::format_ident!("load_{}", f))
+        .collect_vec();
 
     // Add id, owner, and entity fields to the struct
     if let Fields::Named(fields) = &mut item.fields {
@@ -289,7 +301,11 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 }
             }
         }
-
+        impl ClientLoader<#struct_ident> for #loader_ident {
+            fn load(self, ctx: &Context) -> Result<#struct_ident, ExpressionError> {
+                #struct_ident::load_with(self, ctx).map_err(|e| ExpressionErrorVariants::Custom(e).into())
+            }
+        }
         #[allow(unused)]
         #[allow(dead_code)]
         #[allow(unused_mut)]
@@ -353,6 +369,29 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     .iter()
                     .find(|n| n.kind == kind && n.data == data);
                 n.map(|n| n.to_node().unwrap())
+            }
+
+            pub fn loader(id: u64) -> node_loaders::#loader_ident {
+                node_loaders::#loader_ident::new(id)
+            }
+
+            pub fn load_with(loader: node_loaders::#loader_ident, ctx: &Context<'_>) -> Result<Self, String> {
+                let mut node = ctx.get_by_id::<#struct_ident>(loader.id)
+                    .map_err(|e| format!("{} with id {} not found: {}", stringify!(#struct_ident), loader.id, e))?
+                    .clone();
+
+                #(
+                    if loader.#one_load_flags {
+                        let _ = node.#parent_fields_load(ctx);
+                    }
+                )*
+                #(
+                    if loader.#many_load_flags {
+                        let _ = node.#parents_fields_load(ctx);
+                    }
+                )*
+
+                Ok(node)
             }
         }
 

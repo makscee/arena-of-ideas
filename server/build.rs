@@ -35,6 +35,8 @@ fn main() {
         .map(|item| generate_impl(item))
         .collect();
     let output = quote! {
+        use node_loaders::*;
+
         #(#server_impls)*
         #server_trait_impls
     };
@@ -110,6 +112,7 @@ fn generate_server_trait_impls(names: &[Ident]) -> TokenStream {
 
 fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let struct_ident = &item.ident;
+    let loader_ident = quote::format_ident!("{}Loader", struct_ident);
     let pnf = parse_node_fields(&item.fields);
 
     let ParsedNodeFields {
@@ -130,6 +133,15 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     } = &pnf;
     let (one_fields, one_types) = pnf.one_owned();
     let (many_fields, many_types) = pnf.many_owned();
+
+    let one_load_flags = one_fields
+        .iter()
+        .map(|f| quote::format_ident!("load_{}", f))
+        .collect_vec();
+    let many_load_flags = many_fields
+        .iter()
+        .map(|f| quote::format_ident!("load_{}", f))
+        .collect_vec();
     let strings_conversions = strings_conversions(
         children_fields,
         children_types,
@@ -195,6 +207,11 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         .collect_vec();
 
     quote! {
+        impl ServerLoader<#struct_ident> for #loader_ident {
+            fn load(self, ctx: &ReducerContext) -> Result<#struct_ident, String> {
+                #struct_ident::load_with(self, ctx)
+            }
+        }
         #[derive(Default, Debug)]
         pub #item
         #common
@@ -307,6 +324,28 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     .filter(&data)
                     .find(|n| n.kind == kind);
                 n.map(|n| n.to_node().unwrap())
+            }
+
+            pub fn loader(id: u64) -> node_loaders::#loader_ident {
+                node_loaders::#loader_ident::new(id)
+            }
+
+            pub fn load_with(loader: node_loaders::#loader_ident, ctx: &ReducerContext) -> Result<Self, String> {
+                let mut node = #struct_ident::get(ctx, loader.id)
+                    .ok_or_else(|| format!("{} with id {} not found", stringify!(#struct_ident), loader.id))?;
+
+                #(
+                    if loader.#one_load_flags {
+                        let _ = node.#parent_load(ctx)?;
+                    }
+                )*
+                #(
+                    if loader.#many_load_flags {
+                        let _ = node.#parents_load(ctx)?;
+                    }
+                )*
+
+                Ok(node)
             }
         }
         #[allow(unused)]
