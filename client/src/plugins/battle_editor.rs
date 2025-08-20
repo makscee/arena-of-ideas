@@ -134,7 +134,7 @@ impl BattleEditorPlugin {
                 Ok((Some(action), _)) => navigation_action = Some(action),
                 Ok((_, true)) => changed = true,
                 Err(err) => {
-                    err.ui(ui);
+                    err.cstr().notify_error(world);
                 }
                 _ => {}
             }
@@ -261,6 +261,10 @@ impl BattleEditorPlugin {
                         length,
                     } => {
                         Self::handle_change_action_range(slot_id, start, length, context)?;
+                        changed = true;
+                    }
+                    TeamAction::BenchUnit { unit_id } => {
+                        Self::handle_bench_unit(unit_id, context)?;
                         changed = true;
                     }
                 }
@@ -666,17 +670,21 @@ impl BattleEditorPlugin {
         target_id: u64,
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
-        let old_slot_id = if let Ok(slot) = context.first_child::<NBenchSlot>(unit_id) {
-            slot.id
-        } else if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
-            slot.id
+        if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
+            context.unlink_parent_child(unit_id, slot.id)?;
+        }
+        context.link_parent_child(unit_id, target_id)?;
+        Ok(())
+    }
+
+    fn handle_bench_unit(unit_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+        if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
+            context.unlink_parent_child(unit_id, slot.id)?;
         } else {
             return Err(
                 ExpressionErrorVariants::Custom("Unit is not in a slot".to_string()).into(),
             );
         };
-        context.unlink_parent_child(unit_id, old_slot_id)?;
-        context.link_parent_child(unit_id, target_id)?;
         Ok(())
     }
 

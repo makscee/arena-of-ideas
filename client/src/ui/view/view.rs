@@ -494,7 +494,7 @@ where
                     {
                         to_remove = Some(i);
                     }
-                    let mut child_vr = v.view_with_children_mut(vctx.with_id(i), context, ui);
+                    let child_vr = v.view_with_children_mut(vctx.with_id(i), context, ui);
                     vr.merge(child_vr);
                 });
             }

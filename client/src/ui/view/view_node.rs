@@ -156,5 +156,4 @@ impl NodeViewFns for NArena {}
 impl NodeViewFns for NFloorPool {}
 impl NodeViewFns for NFloorBoss {}
 impl NodeViewFns for NBattle {}
-impl NodeViewFns for NBenchSlot {}
 impl NodeViewFns for NFusionSlot {}

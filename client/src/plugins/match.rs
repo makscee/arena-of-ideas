@@ -226,6 +226,9 @@ impl MatchPlugin {
                                 cn().reducers.match_sell_unit(unit_id).notify_error_op();
                             }
                         }
+                        TeamAction::BenchUnit { unit_id } => {
+                            cn().reducers.match_bench_unit(unit_id).notify_error_op();
+                        }
                         _ => {}
                     }
                 }

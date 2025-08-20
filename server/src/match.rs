@@ -126,6 +126,20 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
 }
 
 #[reducer]
+fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let pid = player.id;
+    let unit = unit_id.load_node::<NUnit>(ctx)?;
+    if unit.owner != pid {
+        return Err("Unit not owned by player".to_string());
+    }
+    let m = player.active_match_load(ctx)?;
+    m.unlink_unit(ctx, unit_id)?;
+    m.save(ctx);
+    Ok(())
+}
+
+#[reducer]
 fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
@@ -231,15 +245,7 @@ impl NMatch {
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ReducerContext, unit_id: u64) -> Result<u64, String> {
-        let links = TNodeLink::children_of_kind(ctx, unit_id, NodeKind::NFusionSlot, true)
-            .into_iter()
-            .chain(TNodeLink::children_of_kind(
-                ctx,
-                unit_id,
-                NodeKind::NBenchSlot,
-                true,
-            ))
-            .collect_vec();
+        let links = TNodeLink::children_of_kind(ctx, unit_id, NodeKind::NFusionSlot, true);
         if links.len() > 1 {
             error!("Unit#{} linked to {} slots", unit_id, links.len());
         }

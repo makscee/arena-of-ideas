@@ -106,13 +106,7 @@ struct NMatch {
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
     pub team: NodePart<Child, NTeam>,
-    pub bench: NodeParts<Child, NBenchSlot>,
     pub battles: NodeParts<Child, NBattle>,
-}
-
-struct NBenchSlot {
-    pub index: i32,
-    pub unit: NodePart<Parent, NUnit>,
 }
 
 struct NFusion {

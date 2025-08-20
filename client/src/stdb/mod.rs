@@ -24,6 +24,7 @@ pub mod identity_disconnected_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_bench_unit_reducer;
 pub mod match_buy_fusion_slot_reducer;
 pub mod match_complete_reducer;
 pub mod match_g_type;
@@ -85,6 +86,9 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_bench_unit_reducer::{
+    match_bench_unit, set_flags_for_match_bench_unit, MatchBenchUnitCallbackId,
+};
 pub use match_buy_fusion_slot_reducer::{
     match_buy_fusion_slot, set_flags_for_match_buy_fusion_slot, MatchBuyFusionSlotCallbackId,
 };
@@ -160,6 +164,9 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
+    MatchBenchUnit {
+        unit_id: u64,
+    },
     MatchBuyFusionSlot {
         fusion_id: u64,
     },
@@ -212,6 +219,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
+            Reducer::MatchBenchUnit { .. } => "match_bench_unit",
             Reducer::MatchBuyFusionSlot { .. } => "match_buy_fusion_slot",
             Reducer::MatchComplete => "match_complete",
             Reducer::MatchInsert => "match_insert",
@@ -288,6 +296,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 "logout",
                 &value.args,
             )?
+            .into()),
+            "match_bench_unit" => Ok(__sdk::parse_reducer_args::<
+                match_bench_unit_reducer::MatchBenchUnitArgs,
+            >("match_bench_unit", &value.args)?
             .into()),
             "match_buy_fusion_slot" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_slot_reducer::MatchBuyFusionSlotArgs,

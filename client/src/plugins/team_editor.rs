@@ -2,7 +2,6 @@ use super::*;
 
 pub struct TeamEditor {
     team_entity: Entity,
-    bench_entity: Option<Entity>,
     empty_slot_actions: Vec<String>,
     filled_slot_actions: Vec<String>,
 }
@@ -12,6 +11,9 @@ pub enum TeamAction {
     MoveUnit {
         unit_id: u64,
         target: u64,
+    },
+    BenchUnit {
+        unit_id: u64,
     },
     ContextMenuAction {
         slot_id: u64,
@@ -32,15 +34,9 @@ impl TeamEditor {
     pub fn new(team_entity: Entity) -> Self {
         Self {
             team_entity,
-            bench_entity: None,
             empty_slot_actions: Vec::new(),
             filled_slot_actions: Vec::new(),
         }
-    }
-
-    pub fn with_bench(mut self, bench_entity: Entity) -> Self {
-        self.bench_entity = Some(bench_entity);
-        self
     }
 
     pub fn empty_slot_action(mut self, action_name: &str) -> Self {
@@ -61,15 +57,6 @@ impl TeamEditor {
         let mut selected_fusion_id =
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
-        let bench_slots = if let Some(bench_entity) = self.bench_entity {
-            let mut slots =
-                context.collect_children_components::<NBenchSlot>(context.id(bench_entity)?)?;
-            slots.sort_by_key(|s| s.index);
-            Some(slots)
-        } else {
-            None
-        };
-
         let fusions = team
             .fusions_load(context)
             .into_iter()
@@ -86,28 +73,14 @@ impl TeamEditor {
             fusion_slots.insert(fusion.id, slots);
         }
 
-        let bench_column_count = if bench_slots.is_some() { 1 } else { 0 };
-        let total_columns = bench_column_count + fusions.len();
-
-        if total_columns == 0 {
-            return Ok(actions);
-        }
+        let unlinked_units = self.get_unlinked_units(context, &fusion_slots)?;
+        let total_columns = fusions.len() + 1; // +1 for bench column
 
         let mut selected_column_rect = None;
         let mut clicked_fusion_id = None;
 
         ui.columns(total_columns, |columns| {
             let mut column_idx = 0;
-
-            if let Some(ref bench_slots) = bench_slots {
-                self.render_bench_column_with_actions_display(
-                    &mut columns[column_idx],
-                    bench_slots,
-                    context,
-                    &mut actions,
-                );
-                column_idx += 1;
-            }
 
             for fusion in &fusions {
                 let empty_slots = vec![];
@@ -136,6 +109,13 @@ impl TeamEditor {
                 }
                 column_idx += 1;
             }
+            // Bench column (last column)
+            self.render_bench_column(
+                &mut columns[column_idx],
+                &unlinked_units,
+                context,
+                &mut actions,
+            );
         });
 
         if let Some(fusion_id) = clicked_fusion_id {
@@ -163,10 +143,24 @@ impl TeamEditor {
         Ok(actions)
     }
 
-    fn render_bench_column_with_actions_display(
+    fn get_unlinked_units<'a>(
+        &self,
+        context: &'a Context,
+        _fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
+    ) -> Result<Vec<&'a NUnit>, ExpressionError> {
+        let all_units = context
+            .collect_children_components_recursive::<NUnit>(context.id(self.team_entity)?)?;
+
+        Ok(all_units
+            .into_iter()
+            .filter(|unit| context.first_child::<NFusionSlot>(unit.id).is_err())
+            .collect())
+    }
+
+    fn render_bench_column(
         &self,
         ui: &mut Ui,
-        bench_slots: &[&NBenchSlot],
+        unlinked_units: &[&NUnit],
         context: &Context,
         actions: &mut Vec<TeamAction>,
     ) {
@@ -174,10 +168,53 @@ impl TeamEditor {
             ui.label("Bench");
             ui.separator();
 
-            for slot in bench_slots {
-                self.render_slot(ui, slot.id, context, actions);
+            for unit in unlinked_units {
+                let resp = self.render_unit_with_representation(
+                    ui,
+                    unit,
+                    egui::Vec2::new(60.0, 60.0),
+                    context,
+                );
+                self.handle_bench_unit_interactions(resp, unit.id, actions);
+            }
+
+            // DndArea for dropping units into bench
+            let mut drop_rect = ui.min_rect();
+            drop_rect.extend_with_y(drop_rect.top() + 60.0);
+            if drop_rect.height() > 10.0 {
+                if let Some(dragged_unit_id) = DndArea::<u64>::new(drop_rect)
+                    .text("Drop unit to bench")
+                    .ui(ui)
+                {
+                    actions.push(TeamAction::BenchUnit {
+                        unit_id: *dragged_unit_id,
+                    });
+                }
             }
         });
+    }
+
+    fn handle_bench_unit_interactions(
+        &self,
+        resp: Response,
+        unit_id: u64,
+        actions: &mut Vec<TeamAction>,
+    ) {
+        // Handle context menu
+        if !self.filled_slot_actions.is_empty() {
+            resp.bar_menu(|ui| {
+                for action_name in &self.filled_slot_actions {
+                    if ui.button(action_name).clicked() {
+                        actions.push(TeamAction::ContextMenuAction {
+                            slot_id: 0,
+                            action_name: action_name.clone(),
+                            unit_id: Some(unit_id),
+                        });
+                        ui.close_menu();
+                    }
+                }
+            });
+        }
     }
 
     fn render_fusion_column_with_actions_display(
@@ -267,13 +304,31 @@ impl TeamEditor {
         context: &Context,
         actions: &mut Vec<TeamAction>,
     ) {
-        let unit = Self::get_slot_unit(slot_id, context);
-        let resp = Self::render_unit_in_slot(ui, unit, context);
+        let current_unit = Self::get_slot_unit(slot_id, context);
+        let resp = self.render_unit_in_slot(ui, current_unit, context);
+        let slot_rect = resp.rect;
 
-        if unit.is_some() {
-            self.handle_unit_interactions(resp, slot_id, unit, actions);
+        if current_unit.is_some() {
+            self.handle_unit_interactions(&resp, slot_id, current_unit, actions);
         } else {
-            self.handle_empty_slot_interactions(resp, slot_id, actions);
+            self.handle_empty_slot_interactions(&resp, slot_id, actions);
+        }
+
+        // DndArea for dropping units onto slots
+        if let Some(dragged_unit_id) = DndArea::<u64>::new(slot_rect)
+            .text_fn(ui, |_| {
+                if current_unit.is_some() {
+                    "Swap units".to_string()
+                } else {
+                    "Drop unit here".to_string()
+                }
+            })
+            .ui(ui)
+        {
+            actions.push(TeamAction::MoveUnit {
+                unit_id: *dragged_unit_id,
+                target: slot_id,
+            });
         }
     }
 
@@ -281,17 +336,23 @@ impl TeamEditor {
         context.first_parent::<NUnit>(slot_id).ok()
     }
 
-    fn render_unit_in_slot(ui: &mut Ui, unit: Option<&NUnit>, context: &Context) -> Response {
+    fn render_unit_in_slot(
+        &self,
+        ui: &mut Ui,
+        unit: Option<&NUnit>,
+        context: &Context,
+    ) -> Response {
         let size = egui::Vec2::new(60.0, 60.0);
 
         if let Some(unit) = unit {
-            Self::render_unit_with_representation(ui, unit, size, context)
+            self.render_unit_with_representation(ui, unit, size, context)
         } else {
             Self::render_empty_slot(ui, size, context)
         }
     }
 
     fn render_unit_with_representation(
+        &self,
         ui: &mut Ui,
         unit: &NUnit,
         size: egui::Vec2,
@@ -323,24 +384,12 @@ impl TeamEditor {
 
     fn handle_unit_interactions(
         &self,
-        resp: Response,
+        resp: &Response,
         target: u64,
         current_unit: Option<&NUnit>,
         actions: &mut Vec<TeamAction>,
     ) {
-        if let Some(dragged_unit_id) = resp.dnd_release_payload::<u64>() {
-            if let Some(unit) = current_unit {
-                if unit.id == *dragged_unit_id {
-                    return;
-                }
-            }
-
-            actions.push(TeamAction::MoveUnit {
-                unit_id: *dragged_unit_id,
-                target,
-            });
-        }
-
+        // Handle context menu for filled slots
         if current_unit.is_some() && !self.filled_slot_actions.is_empty() {
             resp.bar_menu(|ui| {
                 for action_name in &self.filled_slot_actions {
@@ -359,10 +408,11 @@ impl TeamEditor {
 
     fn handle_empty_slot_interactions(
         &self,
-        resp: Response,
+        resp: &Response,
         slot_id: u64,
         actions: &mut Vec<TeamAction>,
     ) {
+        // Handle context menu for empty slots
         if !self.empty_slot_actions.is_empty() {
             resp.bar_menu(|ui| {
                 for action_name in &self.empty_slot_actions {
@@ -375,13 +425,6 @@ impl TeamEditor {
                         ui.close_menu();
                     }
                 }
-            });
-        }
-
-        if let Some(dragged_unit_id) = resp.dnd_release_payload::<u64>() {
-            actions.push(TeamAction::MoveUnit {
-                unit_id: *dragged_unit_id,
-                target: slot_id,
             });
         }
     }
