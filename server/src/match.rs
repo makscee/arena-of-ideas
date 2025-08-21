@@ -31,8 +31,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .id
                 .find_kind_parent(ctx, NodeKind::NHouse)
                 .to_custom_e_s("NHouse parent of NUnit not found")?;
-            let house = house_id.load_node::<NHouse>(ctx)?;
-            let house_name = house.house_name;
+            let house_name = house_id.load_node::<NHouse>(ctx)?.house_name;
             let house = m
                 .team_load(ctx)?
                 .houses_load(ctx)?
@@ -44,18 +43,17 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
             unit.id.add_parent(ctx, m.id)?;
         }
         CardKind::House => {
-            let house = NHouse::get(ctx, node_id)
-                .to_custom_e_s_fn(|| format!("Failed to find House#{node_id}"))?
-                .with_parts(ctx)
-                .take();
+            let house = NHouse::loader(node_id)
+                .with_all_parts()
+                .without_units()
+                .load(ctx)?;
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
                 .houses
                 .get_data()
                 .to_custom_e_s("Houses not loaded")?
                 .iter()
-                .find(|h| h.house_name == house.house_name)
-                .is_some()
+                .any(|h| h.house_name == house.house_name)
             {
                 // increase house lvl
             } else {
@@ -78,8 +76,8 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
         return Err("Unit not owned by player".into());
     }
     let m = player.active_match_load(ctx)?;
-    let old_target_id = m.unlink_unit(ctx, unit_id)?;
-    if target_id == old_target_id {
+    let old_target_id = m.unlink_unit(ctx, unit_id);
+    if old_target_id.is_some_and(|id| id == target_id) {
         return Err("Unit already at target".into());
     }
     let target_node = target_id
@@ -99,9 +97,11 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
             unit.delete_with_parts(ctx);
             s_state.save(ctx);
         } else {
-            m.unlink_unit(ctx, slot_unit.id)?;
+            m.unlink_unit(ctx, slot_unit.id);
             unit_id.add_child(ctx, target_id)?;
-            slot_unit.id.add_child(ctx, old_target_id)?;
+            if let Some(old_target_id) = old_target_id {
+                slot_unit.id.add_child(ctx, old_target_id)?;
+            }
         }
     } else {
         unit_id.add_child(ctx, target_id)?;
@@ -119,7 +119,6 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     }
     let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
-    m.unlink_unit(ctx, unit_id)?;
     unit.delete_with_parts(ctx);
     m.save(ctx);
     Ok(())
@@ -134,7 +133,7 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
         return Err("Unit not owned by player".to_string());
     }
     let m = player.active_match_load(ctx)?;
-    m.unlink_unit(ctx, unit_id)?;
+    m.unlink_unit(ctx, unit_id);
     m.save(ctx);
     Ok(())
 }
@@ -244,7 +243,7 @@ impl NMatch {
         self.save(ctx);
         Ok(())
     }
-    fn unlink_unit(&mut self, ctx: &ReducerContext, unit_id: u64) -> Result<u64, String> {
+    fn unlink_unit(&mut self, ctx: &ReducerContext, unit_id: u64) -> Option<u64> {
         let links = TNodeLink::children_of_kind(ctx, unit_id, NodeKind::NFusionSlot, true);
         if links.len() > 1 {
             error!("Unit#{} linked to {} slots", unit_id, links.len());
@@ -253,7 +252,7 @@ impl NMatch {
         for link in links {
             ctx.db.node_links().delete(link);
         }
-        res.to_custom_e_s_fn(|| format!("Unit#{unit_id} not linked to any slot"))
+        res
     }
     fn fill_shop_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {
         let gs = ctx.global_settings();

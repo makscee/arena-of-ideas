@@ -234,24 +234,11 @@ impl MatchPlugin {
                 }
             }
 
-            // Handle house purchases from shop
-            if let Some(house) = DndArea::<(usize, ShopSlot)>::new(rect)
-                .text_fn(ui, |slot| {
-                    if slot.1.card_kind == CardKind::House {
-                        format!("play house [yellow -{}g]", slot.1.price)
-                    } else {
-                        "Invalid drop".to_string()
-                    }
-                })
+            if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
+                .text_fn(ui, |slot| format!("buy [yellow -{}g]", slot.1.price))
                 .ui(ui)
             {
-                debug!("drop house");
-                if house.1.card_kind == CardKind::House {
-                    debug!("house reducer");
-                    cn().reducers
-                        .match_shop_buy(house.0 as u8)
-                        .notify_error_op();
-                }
+                cn().reducers.match_shop_buy(card.0 as u8).notify_error_op();
             }
 
             Ok(())

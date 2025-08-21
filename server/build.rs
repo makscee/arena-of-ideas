@@ -134,14 +134,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let (one_fields, one_types) = pnf.one_owned();
     let (many_fields, many_types) = pnf.many_owned();
 
-    let one_load_flags = one_fields
-        .iter()
-        .map(|f| quote::format_ident!("load_{}", f))
-        .collect_vec();
-    let many_load_flags = many_fields
-        .iter()
-        .map(|f| quote::format_ident!("load_{}", f))
-        .collect_vec();
     let strings_conversions = strings_conversions(
         children_fields,
         children_types,
@@ -333,18 +325,26 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             pub fn load_with(loader: node_loaders::#loader_ident, ctx: &ReducerContext) -> Result<Self, String> {
                 let mut node = #struct_ident::get(ctx, loader.id)
                     .ok_or_else(|| format!("{} with id {} not found", stringify!(#struct_ident), loader.id))?;
-
                 #(
-                    if loader.#one_load_flags {
-                        let _ = node.#parent_load(ctx)?;
+                    if loader.#parent_load {
+                        let _ = node.#parent_load(ctx);
                     }
                 )*
                 #(
-                    if loader.#many_load_flags {
-                        let _ = node.#parents_load(ctx)?;
+                    if loader.#child_load {
+                        let _ = node.#child_load(ctx);
                     }
                 )*
-
+                #(
+                    if loader.#parents_load {
+                        let _ = node.#parents_load(ctx);
+                    }
+                )*
+                #(
+                    if loader.#children_load {
+                        let _ = node.#children_load(ctx);
+                    }
+                )*
                 Ok(node)
             }
         }

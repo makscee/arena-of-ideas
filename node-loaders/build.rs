@@ -56,14 +56,14 @@ fn generate_loader_structs(structs: &[ItemStruct]) -> TokenStream {
         let all_part_fields = one_fields.iter().chain(many_fields.iter());
 
         let flag_fields = all_part_fields.clone().map(|field| {
-            let flag_name = quote::format_ident!("load_{}", field);
+            let flag_name = quote::format_ident!("{}_load", field);
             quote! { pub #flag_name: bool }
         });
 
         let with_methods = all_part_fields.clone().map(|field| {
             let method_name = quote::format_ident!("with_{}", field);
             let without_method_name = quote::format_ident!("without_{}", field);
-            let flag_name = quote::format_ident!("load_{}", field);
+            let flag_name = quote::format_ident!("{}_load", field);
             quote! {
                 pub fn #method_name(mut self) -> Self {
                     self.#flag_name = true;
@@ -78,12 +78,12 @@ fn generate_loader_structs(structs: &[ItemStruct]) -> TokenStream {
         });
 
         let default_flags = all_part_fields.clone().map(|field| {
-            let flag_name = quote::format_ident!("load_{}", field);
+            let flag_name = quote::format_ident!("{}_load", field);
             quote! { #flag_name: false }
         });
 
         let set_all_flags = all_part_fields.clone().map(|field| {
-            let flag_name = quote::format_ident!("load_{}", field);
+            let flag_name = quote::format_ident!("{}_load", field);
             quote! { self.#flag_name = true; }
         });
 

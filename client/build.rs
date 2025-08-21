@@ -209,15 +209,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let one_fields_str = one_fields.iter().map(|f| f.to_string()).collect_vec();
     let many_fields_str = many_fields.iter().map(|f| f.to_string()).collect_vec();
 
-    let one_load_flags = one_fields
-        .iter()
-        .map(|f| quote::format_ident!("load_{}", f))
-        .collect_vec();
-    let many_load_flags = many_fields
-        .iter()
-        .map(|f| quote::format_ident!("load_{}", f))
-        .collect_vec();
-
     // Add id, owner, and entity fields to the struct
     if let Fields::Named(fields) = &mut item.fields {
         fields
@@ -235,19 +226,19 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         );
     }
 
-    let parent_fields_load = parent_fields
+    let parent_load = parent_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let child_fields_load = child_fields
+    let child_load = child_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let children_fields_load = children_fields
+    let children_load = children_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
-    let parents_fields_load = parents_fields
+    let parents_load = parents_fields
         .iter()
         .map(|i| Ident::new(&format!("{i}_load"), Span::call_site()))
         .collect_vec();
@@ -312,7 +303,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #child_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #child_types, ExpressionError> {
+                pub fn #child_load<'a>(&'a self, context: &'a Context) -> Result<&'a #child_types, ExpressionError> {
                     if let Some(n) = self.#child_fields.get_data() {
                         Ok(n)
                     } else {
@@ -321,7 +312,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 }
             )*
             #(
-                pub fn #parent_fields_load<'a>(&'a self, context: &'a Context) -> Result<&'a #parent_types, ExpressionError> {
+                pub fn #parent_load<'a>(&'a self, context: &'a Context) -> Result<&'a #parent_types, ExpressionError> {
                     if let Some(n) = self.#parent_fields.get_data() {
                         Ok(n)
                     } else {
@@ -330,7 +321,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 }
             )*
             #(
-                pub fn #parents_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #parents_types> {
+                pub fn #parents_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #parents_types> {
                     if let Some(parents_data) = self.#parents_fields.get_data() {
                         parents_data.iter().collect()
                     } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
@@ -341,7 +332,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 }
             )*
             #(
-                pub fn #children_fields_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #children_types> {
+                pub fn #children_load<'a>(&'a self, context: &'a Context) -> Vec<&'a #children_types> {
                     if let Some(children_data) = self.#children_fields.get_data() {
                         children_data.iter().collect()
                     } else if let Some(id) = self.entity.and_then(|e| context.id(e).ok()) {
@@ -381,13 +372,23 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     .clone();
 
                 #(
-                    if loader.#one_load_flags {
-                        let _ = node.#parent_fields_load(ctx);
+                    if loader.#parent_load {
+                        let _ = node.#parent_load(ctx);
                     }
                 )*
                 #(
-                    if loader.#many_load_flags {
-                        let _ = node.#parents_fields_load(ctx);
+                    if loader.#child_load {
+                        let _ = node.#child_load(ctx);
+                    }
+                )*
+                #(
+                    if loader.#parents_load {
+                        let _ = node.#parents_load(ctx);
+                    }
+                )*
+                #(
+                    if loader.#children_load {
+                        let _ = node.#children_load(ctx);
                     }
                 )*
 
@@ -769,22 +770,22 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             ) -> ViewResponse {
                 let mut vr = ViewResponse::default();
                 #(
-                    if let Ok(d) = self.#child_fields_load(context) {
+                    if let Ok(d) = self.#child_load(context) {
                         vr.merge(d.view_with_children(vctx, context, ui));
                     }
                 )*
                 #(
-                    if let Ok(d) = self.#parent_fields_load(context) {
+                    if let Ok(d) = self.#parent_load(context) {
                         vr.merge(d.view_with_children(vctx, context, ui));
                     }
                 )*
                 #(
-                    for (i, d) in self.#children_fields_load(context).into_iter().enumerate() {
+                    for (i, d) in self.#children_load(context).into_iter().enumerate() {
                         vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
                     }
                 )*
                 #(
-                    for (i, d) in self.#parents_fields_load(context).into_iter().enumerate() {
+                    for (i, d) in self.#parents_load(context).into_iter().enumerate() {
                         vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
                     }
                 )*
