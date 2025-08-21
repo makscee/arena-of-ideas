@@ -11,13 +11,10 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.sender);
-    let mut player = NPlayer::new(0, name);
-    player.insert_self(ctx);
-    let mut player_data = NPlayerData::new(player.id, pass_hash, false, 0);
-    player_data.insert_self(ctx);
+    let mut player = NPlayer::new(0, name).insert(ctx);
+    let mut player_data = NPlayerData::new(player.id, pass_hash, false, 0).insert(ctx);
     player.player_data_set(ctx, player_data)?;
-    let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string()));
-    identity.insert_self(ctx);
+    let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
     player.identity_set(ctx, identity)?;
     Ok(())
 }
@@ -33,8 +30,8 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.sender);
-        let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string()));
-        identity.insert_self(ctx);
+        let mut identity =
+            NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
         player.identity_set(ctx, identity)?;
         player.login(ctx)?.save(ctx);
         Ok(())
@@ -50,7 +47,7 @@ fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?.logout(ctx)?;
-    player.identity_load(ctx)?.delete_self(ctx);
+    player.identity_load(ctx)?.delete(ctx);
     player.save(ctx);
     Ok(())
 }
@@ -130,7 +127,7 @@ impl NPlayer {
     fn clear_identity(ctx: &ReducerContext, identity: &Identity) {
         if let Some(node) = Self::find_identity(ctx, identity) {
             info!("identity cleared for {node:?}");
-            node.delete_self(ctx);
+            node.delete(ctx);
         }
     }
 }

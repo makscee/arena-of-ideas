@@ -36,17 +36,17 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
         id: ID_CORE,
         ..default()
     }
-    .insert_self(ctx);
+    .insert(ctx);
     NPlayers {
         id: ID_PLAYERS,
         ..default()
     }
-    .insert_self(ctx);
+    .insert(ctx);
     NArena {
         id: ID_ARENA,
         ..default()
     }
-    .insert_self(ctx);
+    .insert(ctx);
     Ok(())
 }
 

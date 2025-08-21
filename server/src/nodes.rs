@@ -11,7 +11,7 @@ use serde::{
 include!(concat!(env!("OUT_DIR"), "/server_impls.rs"));
 
 #[allow(unused)]
-pub trait Node: Default + Sized {
+pub trait Node: Default + Sized + StringData {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;
@@ -38,6 +38,36 @@ pub trait Node: Default + Sized {
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }
+    fn insert(mut self, ctx: &ReducerContext) -> Self {
+        if self.id() == 0 {
+            self.set_id(next_id(ctx));
+        }
+        let node = self.to_tnode();
+        debug!("insert {node:?}");
+        match ctx.db.nodes_world().try_insert(node.clone()) {
+            Ok(_) => {}
+            Err(e) => error!("Insert of {node:?} failed: {e}"),
+        }
+        self
+    }
+    fn update(&self, ctx: &ReducerContext) {
+        if self.id() == 0 {
+            panic!("Node id not set");
+        }
+        let node = self.to_tnode();
+        ctx.db.nodes_world().id().update(node);
+    }
+    fn delete(&self, ctx: &ReducerContext) {
+        if self.id() == 0 {
+            panic!("Node id not set");
+        }
+        ctx.db.node_links().child().delete(self.id());
+        ctx.db.node_links().parent().delete(self.id());
+        TNode::delete_by_id(ctx, self.id());
+    }
+    fn to_tnode(&self) -> TNode {
+        TNode::new(self.id(), self.owner(), self.kind(), self.get_data())
+    }
 }
 
 pub trait ServerLoader<N> {
@@ -46,11 +76,7 @@ pub trait ServerLoader<N> {
 
 #[allow(dead_code)]
 pub trait NodeExt: Sized + Node + StringData {
-    fn to_tnode(&self) -> TNode;
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
-    fn insert_self(&mut self, ctx: &ReducerContext);
-    fn update_self(&self, ctx: &ReducerContext);
-    fn delete_self(&self, ctx: &ReducerContext);
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn find_parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
@@ -68,9 +94,6 @@ impl<T> NodeExt for T
 where
     T: Node + StringData,
 {
-    fn to_tnode(&self) -> TNode {
-        TNode::new(self.id(), self.owner(), self.kind(), self.get_data())
-    }
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self> {
         let kind = Self::kind_s().to_string();
         let node: TNode = ctx.db.nodes_world().id().find(id)?;
@@ -79,26 +102,6 @@ where
         } else {
             None
         }
-    }
-    fn insert_self(&mut self, ctx: &ReducerContext) {
-        if self.id() == 0 {
-            self.set_id(next_id(ctx));
-        }
-        let node = self.to_tnode();
-        debug!("insert {node:?}");
-        match ctx.db.nodes_world().try_insert(node.clone()) {
-            Ok(_) => {}
-            Err(e) => error!("Insert of {node:?} failed: {e}"),
-        }
-    }
-    fn update_self(&self, ctx: &ReducerContext) {
-        let node = self.to_tnode();
-        ctx.db.nodes_world().id().update(node);
-    }
-    fn delete_self(&self, ctx: &ReducerContext) {
-        ctx.db.node_links().child().delete(self.id());
-        ctx.db.node_links().parent().delete(self.id());
-        TNode::delete_by_id(ctx, self.id());
     }
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P> {
         self.id()

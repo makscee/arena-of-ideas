@@ -145,7 +145,6 @@ struct NUnitStats {
 
 struct NUnitState {
     pub stacks: i32,
-    pub rarity: i32,
 }
 
 struct NUnitBehavior {

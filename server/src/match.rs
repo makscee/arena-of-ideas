@@ -38,9 +38,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .iter()
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
-            let unit = unit.clone(ctx, pid, &mut default());
+            let mut unit = unit.clone(ctx, pid, &mut default());
+            unit.state_set(ctx, NUnitState::new_full(pid, 1).insert(ctx))?;
             unit.id.add_parent(ctx, house.id)?;
-            unit.id.add_parent(ctx, m.id)?;
         }
         CardKind::House => {
             let house = NHouse::loader(node_id)
@@ -146,8 +146,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let mut fusion = fusion_id.load_node::<NFusion>(ctx)?;
     let slots = fusion.slots_load(ctx)?;
     let price = ctx.global_settings().match_g.fusion_slot_mul * slots.len() as i32;
-    let mut fs = NFusionSlot::new(pid, slots.len() as i32, default());
-    fs.insert_self(ctx);
+    let mut fs = NFusionSlot::new(pid, slots.len() as i32, default()).insert(ctx);
     fs.id.add_child(ctx, fusion.id)?;
     m.buy(ctx, price)
 }
@@ -212,15 +211,11 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         m.delete_with_parts(ctx);
     }
     let gs = ctx.global_settings();
-    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 0, 3, true, default());
-    m.insert_self(ctx);
-    let mut team = NTeam::new(pid);
-    team.insert_self(ctx);
+    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 0, 3, true, default()).insert(ctx);
+    let mut team = NTeam::new(pid).insert(ctx);
     for i in 0..ctx.global_settings().team_slots as i32 {
-        let mut fusion = NFusion::new(pid, default(), i, 0, 0, 0, 1);
-        fusion.insert_self(ctx);
-        let mut slot = NFusionSlot::new(pid, 0, default());
-        slot.insert_self(ctx);
+        let mut fusion = NFusion::new(pid, default(), i, 0, 0, 0, 1).insert(ctx);
+        let slot = NFusionSlot::new(pid, 0, default()).insert(ctx);
         fusion.slots_add(ctx, slot)?;
         team.fusions_add(ctx, fusion)?;
     }

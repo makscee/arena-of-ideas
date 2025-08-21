@@ -373,8 +373,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         self.#all_data_fields.clone(),
                     )*
                 );
-                d.insert_self(ctx);
-                d
+                d.insert(ctx)
             }
             fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self {
                 let mut d = self.clone_self(ctx, owner);
@@ -492,7 +491,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 self
             }
             fn save(&self, ctx: &ReducerContext) {
-                self.update_self(ctx);
+                self.update(ctx);
                 #(
                     if let Some(d) = self.#one_fields.get_data() {
                         d.save(ctx);
@@ -527,7 +526,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         c.delete_with_parts(ctx);
                     }
                 )*
-                self.delete_self(ctx);
+                self.delete(ctx);
             }
         }
     }

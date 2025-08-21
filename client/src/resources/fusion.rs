@@ -118,64 +118,6 @@ impl NFusion {
         Ok(())
     }
 
-    fn get_action_range(&self, slot_idx: usize) -> (u8, u8) {
-        // let current_action_ref = self.behavior.get(slot_idx);
-        // let current_start = current_action_ref.map(|ar| ar.start).unwrap_or(0);
-        // let current_len = current_action_ref.map(|ar| ar.length).unwrap_or(0);
-        // (current_start, current_len)
-        (0, 0)
-    }
-
-    fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
-        behavior
-            .reactions
-            .get(trigger.trigger as usize)
-            .map(|reaction| reaction.actions.len() as u8)
-            .unwrap_or(0)
-    }
-
-    fn render_action_normal(
-        ui: &mut Ui,
-        context: &Context,
-        unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
-        if let Ok(entity) = context.entity(unit.id) {
-            context
-                .with_owner_ref(entity, |context| {
-                    action.title_cstr(vctx, context).label_w(ui);
-                    Ok(())
-                })
-                .ui(ui);
-        }
-    }
-
-    fn render_action_greyed(
-        ui: &mut Ui,
-        context: &Context,
-        unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
-        let old_style = ui.visuals().clone();
-        ui.visuals_mut().override_text_color = Some(egui::Color32::GRAY);
-
-        if let Ok(entity) = context.entity(unit.id) {
-            context
-                .with_owner_ref(entity, |context| {
-                    action
-                        .title_cstr(vctx, context)
-                        .as_label_alpha(0.5, ui.style())
-                        .wrap()
-                        .ui(ui);
-                    Ok(())
-                })
-                .ui(ui);
-        }
-
-        *ui.visuals_mut() = old_style;
-    }
     pub fn slots_editor(
         team: Entity,
         context: &Context,

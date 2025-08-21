@@ -737,7 +737,7 @@ impl BattleEditorPlugin {
         };
 
         let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
-        let unit_state = NUnitState::new_full(team_owner, 1, 1);
+        let unit_state = NUnitState::new_full(team_owner, 1);
         let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
         let unit_representation = NUnitRepresentation::new_full(
             team_owner,
