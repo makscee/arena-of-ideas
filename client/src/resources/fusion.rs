@@ -6,24 +6,16 @@ impl NFusion {
             self.trigger = Default::default();
         }
 
-        // if let Some(unit_index) = self.units.ids.iter().position(|u| *u == id) {
-        //     if unit_index < self.behavior.len() {
-        //         self.behavior.remove(unit_index);
-        //     }
-        //     self.units.ids.remove(unit_index);
-        // }
-
         Ok(())
     }
 
-    pub fn get_action_count(&self) -> usize {
-        // self.behavior.iter().map(|ar| ar.length as usize).sum()
-        0
+    pub fn get_action_count(&self, context: &Context) -> Result<usize, ExpressionError> {
+        let slots = self.get_slots(context)?;
+        Ok(slots.iter().map(|slot| slot.actions.length as usize).sum())
     }
 
-    pub fn can_add_action(&self) -> bool {
-        // self.get_action_count() < self.action_limit as usize
-        true
+    pub fn can_add_action(&self, context: &Context) -> Result<bool, ExpressionError> {
+        Ok(self.get_action_count(context)? < self.actions_limit as usize)
     }
 
     pub fn get_unit_tier(context: &Context, unit_id: u64) -> Result<u8, ExpressionError> {
@@ -33,15 +25,64 @@ impl NFusion {
             Ok(0)
         }
     }
+
     pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
-        context.collect_parents_components_recursive(self.id)
+        let slots = self.get_slots(context)?;
+        let mut units = Vec::new();
+        for slot in slots {
+            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                units.push(unit);
+            }
+        }
+        Ok(units)
     }
+
+    pub fn get_slots<'a>(
+        &self,
+        context: &'a Context,
+    ) -> Result<Vec<&'a NFusionSlot>, ExpressionError> {
+        let mut slots = context.collect_parents_components::<NFusionSlot>(self.id)?;
+        slots.sort_by_key(|s| s.index);
+        Ok(slots)
+    }
+
+    pub fn gather_fusion_actions<'a>(
+        &self,
+        context: &'a Context,
+    ) -> Result<Vec<(u64, &'a Action)>, ExpressionError> {
+        let slots = self.get_slots(context)?;
+        let mut all_actions = Vec::new();
+
+        for slot in slots {
+            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                {
+                    if let Some(reaction) =
+                        unit_behavior.reactions.get(self.trigger.trigger as usize)
+                    {
+                        let start = slot.actions.start as usize;
+                        let end = (slot.actions.start + slot.actions.length) as usize;
+
+                        for i in start..end.min(reaction.actions.len()) {
+                            if let Some(action) = reaction.actions.get(i) {
+                                all_actions.push((unit.id, action));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(all_actions)
+    }
+
     fn get_behavior<'a>(
         context: &'a Context,
         unit: u64,
     ) -> Result<&'a NUnitBehavior, ExpressionError> {
         context.first_parent_recursive::<NUnitBehavior>(unit)
     }
+
     pub fn get_trigger<'a>(
         context: &'a Context,
         tr: &UnitTriggerRef,
@@ -52,6 +93,7 @@ impl NFusion {
             .to_e_not_found()
             .map(|b| &b.trigger)
     }
+
     pub fn get_action<'a>(
         context: &'a Context,
         unit_id: u64,
@@ -66,34 +108,37 @@ impl NFusion {
             .get(ar.start as usize + index)
             .to_e_not_found()
     }
+
     pub fn react(
         &self,
         event: &Event,
         context: &Context,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
+
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
             if Self::get_trigger(context, &self.trigger)?
                 .fire(event, context)
                 .unwrap_or_default()
             {
-                let units = self.units(context)?;
-                let unit_ids: Vec<u64> = units.iter().map(|u| u.id).collect();
-                // for (unit_index, ar) in self.behavior.iter().enumerate() {
-                //     if let Some(unit_id) = unit_ids.get(unit_index) {
-                //         for i in 0..ar.length as usize {
-                //             let action = Self::get_action(context, *unit_id, ar, i)?;
-                //             let action = action.clone();
-                //             context.add_caster(context.entity(*unit_id)?);
-                //             battle_actions.extend(action.process(context)?);
-                //         }
-                //     }
-                // }
+                let fusion_actions = self.gather_fusion_actions(context)?;
+                let cloned_actions: Vec<(u64, Action)> = fusion_actions
+                    .into_iter()
+                    .map(|(unit_id, action)| (unit_id, action.clone()))
+                    .collect();
+
+                for (unit_id, action) in cloned_actions {
+                    let unit_entity = context.entity(unit_id)?;
+                    context.add_caster(unit_entity);
+                    battle_actions.extend(action.process(context)?);
+                }
             }
             Ok(())
         })?;
+
         Ok(battle_actions)
     }
+
     pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let entity = self.entity();
         let units = self.units(context)?;
@@ -115,88 +160,6 @@ impl NFusion {
                 })
                 .ui(ui);
         }
-        Ok(())
-    }
-
-    pub fn slots_editor(
-        team: Entity,
-        context: &Context,
-        ui: &mut Ui,
-        slot: impl Fn(&mut Ui, &Response, &NFusion),
-        mut on_reorder: impl FnMut(Vec<u64>),
-    ) -> Result<(), ExpressionError> {
-        let team = context.get::<NTeam>(team)?;
-        let fusions: HashMap<usize, &NFusion> = HashMap::from_iter(
-            team.fusions_load(context)
-                .into_iter()
-                .map(|f| (f.index as usize, f)),
-        );
-        if ui.available_width() < 30.0 {
-            return Ok(());
-        }
-        ui.columns(fusions.len(), |ui| {
-            for i in (0..fusions.len()).rev() {
-                let ui = &mut ui[i];
-                let i = fusions.len() - i - 1;
-                let fusion = fusions.get(&i).unwrap();
-                // let resp = if fusion.units.ids.is_empty() {
-                let resp = if true {
-                    MatRect::new(ui.available_size()).ui(ui, context)
-                } else {
-                    // Get all unit representations
-                    let units = fusion.units(context).unwrap_or_default();
-                    let mut mat_rect = MatRect::new(ui.available_size());
-
-                    // Add unit representations
-                    for unit in units {
-                        if let Ok(rep) =
-                            context.first_parent_recursive::<NUnitRepresentation>(unit.id)
-                        {
-                            mat_rect = mat_rect.add_mat(&rep.material, unit.id);
-                        }
-                    }
-
-                    // Add fusion-specific representations
-                    if let Ok(fusion_reps) =
-                        context.collect_children_components::<NUnitRepresentation>(fusion.id)
-                    {
-                        for rep in fusion_reps {
-                            mat_rect = mat_rect.add_mat(&rep.material, fusion.id);
-                        }
-                    }
-
-                    mat_rect.unit_rep_with_default(fusion.id).ui(ui, context)
-                };
-
-                if resp.dragged()
-                //&& !fusion.units.ids.is_empty()
-                {
-                    if let Some(pos) = ui.ctx().pointer_latest_pos() {
-                        let origin = resp.rect.center();
-                        ui.painter().arrow(
-                            origin,
-                            pos - origin,
-                            ui.visuals().widgets.hovered.fg_stroke,
-                        );
-                    }
-                }
-                resp.dnd_set_drag_payload(i);
-                if let Some(j) = resp.dnd_release_payload::<usize>() {
-                    if i == *j {
-                        continue;
-                    }
-                    let mut fusions = fusions
-                        .iter()
-                        .sorted_by_key(|(i, _)| **i)
-                        .map(|(_, f)| f.id)
-                        .collect_vec();
-                    let id = fusions.remove(*j);
-                    fusions.insert(i, id);
-                    on_reorder(fusions);
-                }
-                slot(ui, &resp, fusion);
-            }
-        });
         Ok(())
     }
 }

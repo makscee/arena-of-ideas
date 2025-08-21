@@ -12,9 +12,9 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.sender);
     let mut player = NPlayer::new(0, name).insert(ctx);
-    let mut player_data = NPlayerData::new(player.id, pass_hash, false, 0).insert(ctx);
+    let player_data = NPlayerData::new(player.id, pass_hash, false, 0).insert(ctx);
     player.player_data_set(ctx, player_data)?;
-    let mut identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
+    let identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
     player.identity_set(ctx, identity)?;
     Ok(())
 }
@@ -30,8 +30,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.sender);
-        let mut identity =
-            NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
+        let identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
         player.identity_set(ctx, identity)?;
         player.login(ctx)?.save(ctx);
         Ok(())

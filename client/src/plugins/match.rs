@@ -396,7 +396,7 @@ impl MatchPlugin {
             });
         ui.label(format!(
             "{}/{}",
-            fusion.get_action_count(),
+            fusion.get_action_count(context).unwrap_or(0),
             fusion.actions_limit
         ));
 

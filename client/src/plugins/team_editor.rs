@@ -457,7 +457,7 @@ impl TeamEditor {
             });
 
             let group_response = ui.group(|ui| {
-                self.render_fusion_action_sequence(fusion, slots, context, ui);
+                self.render_fusion_action_sequence(fusion, context, ui);
             });
             let actions_response = ui.allocate_rect(group_response.response.rect, Sense::click());
 
@@ -476,14 +476,7 @@ impl TeamEditor {
         clicked
     }
 
-    fn render_fusion_action_sequence(
-        &self,
-        fusion: &NFusion,
-        slots: &[&NFusionSlot],
-        context: &Context,
-        ui: &mut Ui,
-    ) {
-        // Display current trigger
+    fn render_fusion_action_sequence(&self, fusion: &NFusion, context: &Context, ui: &mut Ui) {
         if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
@@ -491,36 +484,32 @@ impl TeamEditor {
             });
             ui.separator();
         }
-        let mut all_actions = Vec::new();
-
-        for slot in slots {
-            if let Some(unit) = Self::get_slot_unit(slot.id, context) {
-                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
-                {
-                    if let Some(reaction) =
-                        unit_behavior.reactions.get(fusion.trigger.trigger as usize)
-                    {
-                        let start = slot.actions.start as usize;
-                        let end = (slot.actions.start + slot.actions.length) as usize;
-
-                        for i in start..end.min(reaction.actions.len()) {
-                            if let Some(action) = reaction.actions.get(i) {
-                                all_actions.push((unit.unit_name.clone(), action));
+        match fusion.gather_fusion_actions(context) {
+            Ok(fusion_actions) => {
+                if fusion_actions.is_empty() {
+                    ui.label("No actions selected");
+                } else {
+                    ui.vertical(|ui| {
+                        for (unit_id, action) in fusion_actions {
+                            if let Ok(unit) = context.get_by_id::<NUnit>(unit_id) {
+                                context
+                                    .with_owner_ref(unit.entity(), |context| {
+                                        action.view_title(
+                                            ViewContext::new(ui).non_interactible(true),
+                                            context,
+                                            ui,
+                                        );
+                                        Ok(())
+                                    })
+                                    .ui(ui);
+                            } else {
+                                action.cstr().label_w(ui);
                             }
                         }
-                    }
+                    });
                 }
             }
-        }
-
-        if all_actions.is_empty() {
-            ui.label("No actions selected");
-        } else {
-            ui.vertical(|ui| {
-                for (_, action) in all_actions {
-                    action.cstr().label_w(ui);
-                }
-            });
+            Err(e) => e.ui(ui),
         }
     }
 

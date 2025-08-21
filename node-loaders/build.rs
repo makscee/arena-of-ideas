@@ -94,6 +94,9 @@ fn generate_loader_structs(structs: &[ItemStruct]) -> TokenStream {
                 #(#flag_fields,)*
             }
 
+            #[allow(unused)]
+            #[allow(dead_code)]
+            #[allow(unused_mut)]
             impl #loader_name {
                 pub fn new(id: u64) -> Self {
                     Self {

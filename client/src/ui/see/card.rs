@@ -157,16 +157,9 @@ impl NFusion {
         context.with_owner_ref(self.entity(), |context| {
             let pwr = context.sum_var(VarName::pwr)?;
             let hp = context.sum_var(VarName::hp)?;
-            let lvl = context.get_var(VarName::lvl)?;
             ui.horizontal(|ui| {
                 TagWidget::new_var_value(VarName::pwr, pwr).ui(ui);
                 TagWidget::new_var_value(VarName::hp, hp).ui(ui);
-                TagWidget::new_var_value(VarName::lvl, lvl).ui(ui);
-                ui.label(format!(
-                    "Actions: {}/{}",
-                    self.get_action_count(),
-                    self.actions_limit
-                ));
             });
             ui.vertical(|ui| -> Result<(), ExpressionError> {
                 "units:".cstr_c(ui.visuals().weak_text_color()).label(ui);

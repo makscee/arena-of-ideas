@@ -37,7 +37,7 @@ impl ActionImpl for Action {
             }
             Action::add_value(x) => {
                 let value = x.get_value(context)?;
-                context.set_value_var(context.get_value().unwrap_or_default().add(&value)?);
+                context.set_value_var(context.get_value().unwrap_or(1.into()).add(&value)?);
             }
             Action::subtract_value(x) => {
                 let value = x.get_value(context)?;
@@ -83,8 +83,7 @@ impl ActionImpl for Action {
                 let house = context.first_parent_recursive::<NHouse>(caster)?;
                 let color = house.color_load(context)?.color.c32();
                 let name: String;
-                let lvl = context.get_i32(VarName::lvl)?;
-                let value = context.get_i32(VarName::value).unwrap_or_default() + lvl;
+                let value = context.get_i32(VarName::value).unwrap_or(1);
                 if let Ok(ability) = house.action_load(context) {
                     name = ability.ability_name.clone();
                     let effect = ability
@@ -126,7 +125,7 @@ impl ActionImpl for Action {
                         actions.push(BattleAction::apply_status(
                             target,
                             status.clone(),
-                            lvl + value,
+                            value,
                             color,
                         ));
                     }
