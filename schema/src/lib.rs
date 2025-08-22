@@ -209,3 +209,10 @@ pub enum CardKind {
     Unit,
     House,
 }
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, AsRefStr)]
+pub enum AbilityType {
+    #[default]
+    Action,
+    Status,
+}

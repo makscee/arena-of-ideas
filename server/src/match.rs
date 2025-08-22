@@ -60,6 +60,8 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 let house = house.clone(ctx, pid, &mut default());
                 house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
             }
+            m.team.set_unknown();
+            m.fill_shop_case(ctx, true)?;
         }
     }
     m.buy(ctx, price)?;
@@ -146,7 +148,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let mut fusion = fusion_id.load_node::<NFusion>(ctx)?;
     let slots = fusion.slots_load(ctx)?;
     let price = ctx.global_settings().match_g.fusion_slot_mul * slots.len() as i32;
-    let mut fs = NFusionSlot::new(pid, slots.len() as i32, default()).insert(ctx);
+    let fs = NFusionSlot::new(pid, slots.len() as i32, default()).insert(ctx);
     fs.id.add_child(ctx, fusion.id)?;
     m.buy(ctx, price)
 }
@@ -155,7 +157,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
 fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
-    m.fill_shop_case(ctx)?;
+    m.fill_shop_case(ctx, true)?;
     m.buy(ctx, ctx.global_settings().match_g.reroll)
 }
 
@@ -220,7 +222,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         team.fusions_add(ctx, fusion)?;
     }
     m.team_set(ctx, team)?;
-    m.fill_shop_case(ctx)?;
+    m.fill_shop_case(ctx, false)?;
     player.active_match_set(ctx, m)?;
     player.save(ctx);
     Ok(())
@@ -249,7 +251,7 @@ impl NMatch {
         }
         res
     }
-    fn fill_shop_case(&mut self, ctx: &ReducerContext) -> Result<(), String> {
+    fn fill_shop_case(&mut self, ctx: &ReducerContext, units: bool) -> Result<(), String> {
         let gs = ctx.global_settings();
 
         let unit_price = gs.match_g.unit_buy;
@@ -273,25 +275,23 @@ impl NMatch {
             .collect_vec();
         let shop_case = (0..4)
             .map(|_| {
-                let unit = ctx.rng().gen_bool(0.5);
-                let n =
-                    if unit && !units_from_owned_houses.is_empty() || not_owned_houses.is_empty() {
-                        ShopSlot {
-                            card_kind: CardKind::Unit,
-                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: unit_price,
-                            buy_text: None,
-                        }
-                    } else {
-                        ShopSlot {
-                            card_kind: CardKind::House,
-                            node_id: *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: house_price,
-                            buy_text: None,
-                        }
-                    };
+                let n = if units && !units_from_owned_houses.is_empty() {
+                    ShopSlot {
+                        card_kind: CardKind::Unit,
+                        node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                        sold: false,
+                        price: unit_price,
+                        buy_text: None,
+                    }
+                } else {
+                    ShopSlot {
+                        card_kind: CardKind::House,
+                        node_id: *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                        sold: false,
+                        price: house_price,
+                        buy_text: None,
+                    }
+                };
                 n
             })
             .collect_vec();
