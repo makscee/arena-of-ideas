@@ -1,13 +1,5 @@
 use super::*;
 
-struct NCore {
-    pub houses: NodeParts<Child, NHouse>,
-}
-
-struct NPlayers {
-    pub players: NodeParts<Child, NPlayer>,
-}
-
 struct NArena {
     pub floor_pools: NodeParts<Child, NFloorPool>,
     pub floor_bosses: NodeParts<Child, NFloorBoss>,

@@ -94,21 +94,6 @@ impl NFusion {
             .map(|b| &b.trigger)
     }
 
-    pub fn get_action<'a>(
-        context: &'a Context,
-        unit_id: u64,
-        ar: &UnitActionRange,
-        index: usize,
-    ) -> Result<&'a Action, ExpressionError> {
-        Self::get_behavior(context, unit_id)?
-            .reactions
-            .get(ar.trigger as usize)
-            .to_e_not_found()?
-            .actions
-            .get(ar.start as usize + index)
-            .to_e_not_found()
-    }
-
     pub fn react(
         &self,
         event: &Event,

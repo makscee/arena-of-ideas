@@ -27,8 +27,6 @@ pub trait SFnInfoDefault: NodeExt {
     }
 }
 
-impl SFnInfoDefault for NCore {}
-impl SFnInfoDefault for NPlayers {}
 impl SFnInfoDefault for NPlayer {}
 impl SFnInfoDefault for NPlayerData {}
 impl SFnInfoDefault for NPlayerIdentity {}

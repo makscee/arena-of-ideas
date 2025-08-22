@@ -32,16 +32,6 @@ pub fn next_id(ctx: &ReducerContext) -> u64 {
 fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     GlobalSettings::default().replace(ctx);
-    NCore {
-        id: ID_CORE,
-        ..default()
-    }
-    .insert(ctx);
-    NPlayers {
-        id: ID_PLAYERS,
-        ..default()
-    }
-    .insert(ctx);
     NArena {
         id: ID_ARENA,
         ..default()

@@ -53,8 +53,6 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     }
 }
 
-impl NodeViewFns for NCore {}
-impl NodeViewFns for NPlayers {}
 impl NodeViewFns for NPlayer {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.player_name.cstr()
