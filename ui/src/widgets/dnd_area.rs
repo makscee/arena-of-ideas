@@ -56,7 +56,7 @@ impl<T: Any + Send + Sync> DndArea<T> {
         } else {
             ui.visuals().widgets.active.fg_stroke.color
         };
-        let t = ui.ctx().animate_bool(ui.id().with(self.id), hovered);
+        let t = ui.ctx().animate_bool(resp.id.with(self.id), hovered);
         ui.painter().rect_filled(
             self.rect,
             CornerRadius::ZERO,
@@ -70,7 +70,7 @@ impl<T: Any + Send + Sync> DndArea<T> {
         }
         corners_rounded_rect(
             self.rect,
-            25.0 + t * 10.0,
+            resp.rect.width() * 0.2 * (t * 0.5 + 1.0),
             color.stroke_w(2.0 + t * 2.0),
             ui,
         );

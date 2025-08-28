@@ -23,7 +23,7 @@ pub trait Node: Default + Sized + StringData {
     fn with_parts(&mut self, ctx: &ReducerContext) -> &mut Self;
     fn save(&self, ctx: &ReducerContext);
     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
-    fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self;
+    fn clone(&self, ctx: &ReducerContext, owner: u64) -> Self;
     fn all_linked_parents() -> HashSet<NodeKind>;
     fn all_linked_children() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;

@@ -1,4 +1,4 @@
-use rand::{Rng, seq::SliceRandom};
+use rand::seq::SliceRandom;
 
 use super::*;
 
@@ -38,7 +38,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .iter()
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
-            let mut unit = unit.clone(ctx, pid, &mut default());
+            let mut unit = unit.clone(ctx, pid);
             unit.state_set(ctx, NUnitState::new_full(pid, 1).insert(ctx))?;
             unit.id.add_parent(ctx, house.id)?;
         }
@@ -57,7 +57,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
             {
                 // increase house lvl
             } else {
-                let house = house.clone(ctx, pid, &mut default());
+                let house = house.clone(ctx, pid);
                 house.id.add_parent(ctx, m.team_load(ctx)?.id)?;
             }
             m.team.set_unknown();
@@ -170,6 +170,7 @@ fn match_submit_battle_result(
 ) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
+    m.floor += 1;
     let battle = m.battles_load(ctx)?.last_mut().unwrap();
     if battle.id != id {
         return Err("Wrong Battle id".into());
@@ -179,17 +180,63 @@ fn match_submit_battle_result(
     }
     battle.result = Some(result);
     battle.hash = hash;
-    if result {
-        m.floor += 1;
-    } else {
+    if !result {
         m.lives -= 1;
     }
     if m.lives <= 0 {
         m.active = false;
     }
     m.g += ctx.global_settings().match_g.initial;
-    match_shop_reroll(ctx)?;
+    m.fill_shop_case(ctx, false)?;
     player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
+    let mut player = ctx.player()?;
+    let pid = player.id;
+    let m = player.active_match_load(ctx)?;
+    let m_id = m.id;
+    let floor = m.floor;
+    let mut arena = NArena::loader(ID_ARENA)
+        .with_floor_pools()
+        .with_floor_bosses()
+        .load(ctx)?;
+    let player_team = m.team_load(ctx)?.with_parts(ctx).take().clone(ctx, pid);
+    let pool_id = if let Some(pool) = arena.floor_pools.iter().find(|p| p.floor == floor) {
+        pool.id
+    } else {
+        let new_pool = NFloorPool::new(ID_ARENA, floor).insert(ctx);
+        let id = new_pool.id;
+        arena.floor_pools_add(ctx, new_pool)?;
+        id
+    };
+    let teams = pool_id.collect_kind_children(ctx, NodeKind::NTeam);
+    player_team.id.add_parent(ctx, pool_id)?;
+    let enemy_team = if let Some(team_id) = teams.choose(&mut ctx.rng()) {
+        team_id.load_node::<NTeam>(ctx)?
+    } else {
+        let mut floor_boss = NFloorBoss::new(ID_ARENA, floor).insert(ctx);
+        player_team.id.add_parent(ctx, floor_boss.id)?;
+        arena.floor_bosses_add(ctx, floor_boss)?;
+        team
+    };
+    {
+        let player_team_id = player_team.clone(ctx, pid).id;
+        player_team_id.add_parent(ctx, pool_id)?;
+        let battle = NBattle::new(
+            pid,
+            player_team_id,
+            enemy_team.id,
+            ctx.timestamp.to_micros_since_unix_epoch() as u64,
+            default(),
+            None,
+        )
+        .insert(ctx);
+        battle.id.add_parent(ctx, m_id)?;
+    }
+    m.save(ctx);
     Ok(())
 }
 
@@ -213,7 +260,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         m.delete_with_parts(ctx);
     }
     let gs = ctx.global_settings();
-    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 0, 3, true, default()).insert(ctx);
+    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 3, true, default()).insert(ctx);
     let mut team = NTeam::new(pid).insert(ctx);
     for i in 0..ctx.global_settings().team_slots as i32 {
         let mut fusion = NFusion::new(pid, default(), i, 0, 0, 0, 1).insert(ctx);

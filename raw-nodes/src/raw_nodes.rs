@@ -12,7 +12,7 @@ struct NFloorPool {
 
 struct NFloorBoss {
     pub floor: i32,
-    pub team: NodePart<Parent, NTeam>,
+    pub team: NodePart<Child, NTeam>,
 }
 
 struct NPlayer {
@@ -93,7 +93,6 @@ struct NBattle {
 struct NMatch {
     pub g: i32,
     pub floor: i32,
-    pub round: i32,
     pub lives: i32,
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,

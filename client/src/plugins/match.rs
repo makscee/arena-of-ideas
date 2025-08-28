@@ -26,7 +26,9 @@ impl MatchPlugin {
             let m = player(context)?.active_match_load(context)?;
             if let Some(last) = m.battles_load(context).last() {
                 if last.result.is_none() {
-                    MatchPlugin::load_battle(context).notify(context.world_mut()?);
+                    GameState::Battle.set_next(context.world_mut()?);
+                    MatchPlugin::load_battle(context)?;
+                    return Ok(());
                 }
             }
             Ok(())
@@ -47,7 +49,10 @@ impl MatchPlugin {
             GameState::Title.set_next(world);
             return;
         }
-        Self::check_battles(world).log();
+        if let Err(e) = Self::check_battles(world) {
+            e.cstr().notify_error(world);
+            return;
+        }
     }
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
@@ -70,6 +75,23 @@ impl MatchPlugin {
     pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
+
+            // Check for unresolved battles
+            if let Some(last_battle) = m.battles_load(context).last() {
+                if last_battle.result.is_none() {
+                    ui.vertical_centered_justified(|ui| {
+                        "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
+                        "Complete the current battle to access the shop."
+                            .cstr()
+                            .label(ui);
+                        if "Go to Battle".cstr().button(ui).clicked() {
+                            GameState::Battle.set_next_op();
+                        }
+                    });
+                    return Ok(());
+                }
+            }
+
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
             ui.horizontal(|ui| {
@@ -80,9 +102,7 @@ impl MatchPlugin {
                     }
                     ui.add_space(20.0);
                     if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                        op(|world| {
-                            GameState::Battle.set_next(world);
-                        });
+                        cn().reducers.match_start_battle().notify_op();
                     }
                     ui.expand_to_include_y(available_rect.max.y);
                 });
@@ -163,9 +183,6 @@ impl MatchPlugin {
                 ui.end_row();
                 "floor".cstr().label(ui);
                 m.floor.cstr_s(CstrStyle::Bold).label(ui);
-                ui.end_row();
-                "round".cstr().label(ui);
-                m.round.cstr_s(CstrStyle::Bold).label(ui);
                 ui.end_row();
             });
             Ok(())
@@ -315,7 +332,6 @@ impl MatchPlugin {
         })
     }
     pub fn load_battle(context: &mut Context) -> Result<(), ExpressionError> {
-        GameState::Battle.set_next(context.world_mut()?);
         let battles = player(context)?
             .active_match_load(context)?
             .battles_load(context);

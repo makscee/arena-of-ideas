@@ -375,19 +375,18 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 );
                 d.insert(ctx)
             }
-            fn clone(&self, ctx: &ReducerContext, owner: u64, remap: &mut HashMap<u64, u64>) -> Self {
+            fn clone(&self, ctx: &ReducerContext, owner: u64) -> Self {
                 let mut d = self.clone_self(ctx, owner);
-                remap.insert(self.id, d.id);
                 #(
                     if let Some(n) = self.#parent_fields.get_data() {
-                        let n = n.clone(ctx, owner, remap);
+                        let n = n.clone(ctx, owner);
                         d.id.add_parent(ctx, n.id).unwrap();
                         d.#parent_fields.set_data(n);
                     }
                 )*
                 #(
                     if let Some(n) = self.#child_fields.get_data() {
-                        let n = n.clone(ctx, owner, remap);
+                        let n = n.clone(ctx, owner);
                         d.id.add_child(ctx, n.id).unwrap();
                         d.#child_fields.set_data(n);
                     }
@@ -395,7 +394,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 #(
                     if let Some(parents_data) = self.#parents_fields.get_data() {
                         for n in parents_data {
-                            let n = n.clone(ctx, owner, remap);
+                            let n = n.clone(ctx, owner);
                             d.id.add_parent(ctx, n.id).unwrap();
                             d.#parents_fields.push(n);
                         }
@@ -404,7 +403,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 #(
                     if let Some(children_data) = self.#children_fields.get_data() {
                         for n in children_data {
-                            let n = n.clone(ctx, owner, remap);
+                            let n = n.clone(ctx, owner);
                             d.id.add_child(ctx, n.id).unwrap();
                             d.#children_fields.push(n);
                         }

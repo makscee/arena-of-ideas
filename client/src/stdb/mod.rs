@@ -33,6 +33,7 @@ pub mod match_move_unit_reducer;
 pub mod match_sell_unit_reducer;
 pub mod match_shop_buy_reducer;
 pub mod match_shop_reroll_reducer;
+pub mod match_start_battle_reducer;
 pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
 pub mod nodes_world_table;
@@ -109,6 +110,9 @@ pub use match_shop_buy_reducer::{
 pub use match_shop_reroll_reducer::{
     match_shop_reroll, set_flags_for_match_shop_reroll, MatchShopRerollCallbackId,
 };
+pub use match_start_battle_reducer::{
+    match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
+};
 pub use match_submit_battle_result_reducer::{
     match_submit_battle_result, set_flags_for_match_submit_battle_result,
     MatchSubmitBattleResultCallbackId,
@@ -183,6 +187,7 @@ pub enum Reducer {
         shop_idx: u8,
     },
     MatchShopReroll,
+    MatchStartBattle,
     MatchSubmitBattleResult {
         id: u64,
         result: bool,
@@ -227,6 +232,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchSellUnit { .. } => "match_sell_unit",
             Reducer::MatchShopBuy { .. } => "match_shop_buy",
             Reducer::MatchShopReroll => "match_shop_reroll",
+            Reducer::MatchStartBattle => "match_start_battle",
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
@@ -331,6 +337,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_shop_reroll" => Ok(__sdk::parse_reducer_args::<
                 match_shop_reroll_reducer::MatchShopRerollArgs,
             >("match_shop_reroll", &value.args)?
+            .into()),
+            "match_start_battle" => Ok(__sdk::parse_reducer_args::<
+                match_start_battle_reducer::MatchStartBattleArgs,
+            >("match_start_battle", &value.args)?
             .into()),
             "match_submit_battle_result" => {
                 Ok(__sdk::parse_reducer_args::<
