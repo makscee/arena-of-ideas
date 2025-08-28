@@ -133,13 +133,13 @@ impl ViewCard for NHouse {
                 });
                 Ok(())
             });
-            if let Ok(action) = self.action_load(context) {
+            if let Ok(ability) = self.ability_load(context) {
                 section(ui, |ui| {
-                    action
+                    ability
                         .ability_name
                         .cstr_cs(color, CstrStyle::Heading2)
                         .label(ui);
-                    action
+                    ability
                         .description_load(context)?
                         .description
                         .cstr_c(ui.visuals().weak_text_color())
@@ -165,13 +165,13 @@ impl ViewCard for NHouse {
     }
     fn show_card_on_hover(&self, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
         let color = context.color(ui);
-        if let Ok(action) = self.action_load(context) {
+        if let Ok(ability) = self.ability_load(context) {
             section(ui, |ui| {
-                action
+                ability
                     .ability_name
                     .cstr_cs(color, CstrStyle::Heading2)
                     .label(ui);
-                action
+                ability
                     .description_load(context)?
                     .effect_load(context)?
                     .show(context, ui);

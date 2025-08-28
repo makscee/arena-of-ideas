@@ -17,7 +17,7 @@ impl EventImpl for Event {
                 //     fusion.react(event, context).log();
                 // }
                 for status in context
-                    .collect_children_components_recursive::<NStatusAbility>(context.id(owner)?)?
+                    .collect_children_components_recursive::<NStatusMagic>(context.id(owner)?)?
                     .into_iter()
                     .cloned()
                     .collect_vec()

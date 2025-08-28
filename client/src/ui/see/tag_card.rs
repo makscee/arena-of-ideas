@@ -24,5 +24,5 @@ pub trait SFnTagCard: SFnTag + SFnCard + Node {
 
 impl SFnTagCard for NUnit {}
 impl SFnTagCard for NHouse {}
-impl SFnTagCard for NActionAbility {}
-impl SFnTagCard for NStatusAbility {}
+impl SFnTagCard for NAbilityMagic {}
+impl SFnTagCard for NStatusMagic {}

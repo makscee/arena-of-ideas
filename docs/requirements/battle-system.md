@@ -34,7 +34,7 @@ The Battle System manages combat simulation, visualization, and interaction with
 - NUnit: Individual combat units with stats and abilities
 - NFusion: Combined units with enhanced capabilities
 - NHouse: Faction providing abilities and status effects
-- NActionAbility/NStatusAbility: Combat abilities and effects
+- NAbilityMagic/NStatusMagic: Combat abilities and effects
 
 ### State Management
 - BattleState resource tracking current combat phase

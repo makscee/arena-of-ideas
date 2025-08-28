@@ -31,10 +31,10 @@ impl SFnInfoDefault for NPlayer {}
 impl SFnInfoDefault for NPlayerData {}
 impl SFnInfoDefault for NPlayerIdentity {}
 impl SFnInfoDefault for NHouseColor {}
-impl SFnInfoDefault for NActionAbility {}
-impl SFnInfoDefault for NActionDescription {}
-impl SFnInfoDefault for NActionEffect {}
-impl SFnInfoDefault for NStatusAbility {}
+impl SFnInfoDefault for NAbilityMagic {}
+impl SFnInfoDefault for NAbilityDescription {}
+impl SFnInfoDefault for NAbilityEffect {}
+impl SFnInfoDefault for NStatusMagic {}
 impl SFnInfoDefault for NStatusDescription {}
 impl SFnInfoDefault for NStatusBehavior {}
 impl SFnInfoDefault for NStatusRepresentation {}
@@ -69,7 +69,7 @@ impl SFnInfo for NHouse {
             info_parts.push(format!("units: {}", units_count));
         }
         let color = self.color_for_text(context);
-        if let Ok(ability) = self.action_load(context) {
+        if let Ok(ability) = self.ability_load(context) {
             info_parts.push(ability.ability_name.cstr_c(color));
         }
         if let Ok(status) = self.status_load(context) {

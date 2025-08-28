@@ -97,12 +97,12 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             error!("color failed");
             continue;
         }
-        if let Some(mut action) = house.mutual_top_parent::<NActionAbility>(ctx) {
-            if let Some(mut description) = action.mutual_top_parent::<NActionDescription>(ctx) {
-                if let Some(effect) = description.mutual_top_parent::<NActionEffect>(ctx) {
+        if let Some(mut ability) = house.mutual_top_parent::<NAbilityMagic>(ctx) {
+            if let Some(mut description) = ability.mutual_top_parent::<NAbilityDescription>(ctx) {
+                if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
                     description.effect.set_data(effect);
-                    action.description.set_data(description);
-                    house.action.set_data(action);
+                    ability.description.set_data(description);
+                    house.ability.set_data(ability);
                 } else {
                     error!("ability effect failed");
                 }
@@ -110,8 +110,8 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 error!("ability description failed");
             }
         };
-        if house.action.is_none() {
-            if let Some(mut status) = house.mutual_top_parent::<NStatusAbility>(ctx) {
+        if house.ability.is_none() {
+            if let Some(mut status) = house.mutual_top_parent::<NStatusMagic>(ctx) {
                 if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
                     if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
                         description.behavior.set_data(behavior);

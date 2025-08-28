@@ -217,10 +217,10 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let enemy_team = if let Some(team_id) = teams.choose(&mut ctx.rng()) {
         team_id.load_node::<NTeam>(ctx)?
     } else {
-        let mut floor_boss = NFloorBoss::new(ID_ARENA, floor).insert(ctx);
+        let floor_boss = NFloorBoss::new(ID_ARENA, floor).insert(ctx);
         player_team.id.add_parent(ctx, floor_boss.id)?;
         arena.floor_bosses_add(ctx, floor_boss)?;
-        team
+        panic!()
     };
     {
         let player_team_id = player_team.clone(ctx, pid).id;

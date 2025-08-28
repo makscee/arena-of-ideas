@@ -311,16 +311,16 @@ impl BattleEditorPlugin {
             Self::show_parent_node_editor::<NHouseColor>(id, context, ui, id, &mut changed);
 
             if let Some(action_id) =
-                Self::show_parent_node_editor::<NActionAbility>(id, context, ui, id, &mut changed)
+                Self::show_parent_node_editor::<NAbilityMagic>(id, context, ui, id, &mut changed)
             {
-                if let Some(desc_id) = Self::show_parent_node_editor::<NActionDescription>(
+                if let Some(desc_id) = Self::show_parent_node_editor::<NAbilityDescription>(
                     action_id,
                     context,
                     ui,
                     id,
                     &mut changed,
                 ) {
-                    Self::show_parent_node_editor::<NActionEffect>(
+                    Self::show_parent_node_editor::<NAbilityEffect>(
                         desc_id,
                         context,
                         ui,
@@ -331,7 +331,7 @@ impl BattleEditorPlugin {
             }
 
             if let Some(status_id) =
-                Self::show_parent_node_editor::<NStatusAbility>(id, context, ui, id, &mut changed)
+                Self::show_parent_node_editor::<NStatusMagic>(id, context, ui, id, &mut changed)
             {
                 if let Some(desc_id) = Self::show_parent_node_editor::<NStatusDescription>(
                     status_id,
@@ -713,8 +713,8 @@ impl BattleEditorPlugin {
             } else {
                 let house_color = NHouseColor::new_full(team_owner, default());
                 let action_ability =
-                    NActionAbility::new_full(team_owner, "Default Action".to_string(), default());
-                let status_ability = NStatusAbility::new_full(
+                    NAbilityMagic::new_full(team_owner, "Default Action".to_string(), default());
+                let status_ability = NStatusMagic::new_full(
                     team_owner,
                     "Default Status".to_string(),
                     default(),

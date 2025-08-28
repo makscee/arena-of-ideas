@@ -42,7 +42,7 @@ Based on raw_nodes.rs structure:
 **Game Content Nodes:**
 - NHouse: Faction with units, abilities, and visual theme
 - NHouseColor: Visual representation of house
-- NActionAbility/NStatusAbility: House-specific abilities
+- NAbilityMagic/NStatusMagic: House-specific abilities
 - NUnit: Individual game piece with stats and behavior
 - NUnitStats/NUnitState/NUnitBehavior: Unit properties
 

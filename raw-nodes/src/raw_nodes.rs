@@ -35,8 +35,8 @@ struct NPlayerIdentity {
 struct NHouse {
     pub house_name: String,
     pub color: NodePart<Parent, NHouseColor>,
-    pub action: NodePart<Parent, NActionAbility>,
-    pub status: NodePart<Parent, NStatusAbility>,
+    pub ability: NodePart<Parent, NAbilityMagic>,
+    pub status: NodePart<Parent, NStatusMagic>,
     pub units: NodeParts<Child, NUnit>,
 }
 
@@ -44,21 +44,21 @@ struct NHouseColor {
     pub color: HexColor,
 }
 
-struct NActionAbility {
+struct NAbilityMagic {
     pub ability_name: String,
-    pub description: NodePart<Parent, NActionDescription>,
+    pub description: NodePart<Parent, NAbilityDescription>,
 }
 
-struct NActionDescription {
+struct NAbilityDescription {
     pub description: String,
-    pub effect: NodePart<Parent, NActionEffect>,
+    pub effect: NodePart<Parent, NAbilityEffect>,
 }
 
-struct NActionEffect {
+struct NAbilityEffect {
     pub actions: Vec<Action>,
 }
 
-struct NStatusAbility {
+struct NStatusMagic {
     pub status_name: String,
     pub description: NodePart<Parent, NStatusDescription>,
     pub representation: NodePart<Parent, NStatusRepresentation>,

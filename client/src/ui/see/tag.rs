@@ -43,14 +43,14 @@ impl SFnTag for NHouse {
     }
 }
 
-impl SFnTag for NActionAbility {
+impl SFnTag for NAbilityMagic {
     fn see_tag(&self, context: &Context, ui: &mut Ui) -> Response {
         let color = context.color(ui);
         TagWidget::new_name(&self.ability_name, color).ui(ui)
     }
 }
 
-impl SFnTag for NStatusAbility {
+impl SFnTag for NStatusMagic {
     fn see_tag(&self, context: &Context, ui: &mut Ui) -> Response {
         let color = context.color(ui);
         TagWidget::new_name(&self.status_name, color).ui(ui)

@@ -33,7 +33,7 @@ pub enum BattleAction {
     heal(Entity, Entity, i32),
     death(Entity),
     spawn(Entity),
-    apply_status(Entity, NStatusAbility, i32, Color32),
+    apply_status(Entity, NStatusMagic, i32, Color32),
     send_event(Event),
     vfx(HashMap<VarName, VarValue>, String),
     wait(f32),
@@ -427,7 +427,7 @@ impl BattleSimulation {
         }
         for (r, s) in context
             .world_mut()?
-            .query::<(&NStatusBehavior, &NStatusAbility)>()
+            .query::<(&NStatusBehavior, &NStatusMagic)>()
             .iter(context.world()?)
         {
             context.with_layer_ref_r(ContextLayer::Owner(s.entity()), |context| {
@@ -447,14 +447,14 @@ impl BattleSimulation {
     fn apply_status(
         context: &mut Context,
         target: Entity,
-        status: NStatusAbility,
+        status: NStatusMagic,
         charges: i32,
         color: Color32,
     ) -> Result<(), ExpressionError> {
         let t = context.t()?;
         for child in context.children(context.id(target)?) {
             let child = context.entity(child)?;
-            if let Ok(child_status) = context.get::<NStatusAbility>(child) {
+            if let Ok(child_status) = context.get::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
                     let mut state = context.get_mut::<NodeState>(child)?;
                     let charges = state

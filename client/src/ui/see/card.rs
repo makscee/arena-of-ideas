@@ -47,8 +47,8 @@ impl SFnCard for NHouse {
             context,
             ui,
             |ui| {
-                if let Ok(action) = self.action_load(context) {
-                    action.see(context).tag_card(ui).ok();
+                if let Ok(ability) = self.ability_load(context) {
+                    ability.see(context).tag_card(ui).ok();
                 }
                 if let Ok(status) = self.status_load(context) {
                     status.see(context).tag_card(ui).ok();
@@ -68,7 +68,7 @@ impl SFnCard for NHouse {
     }
 }
 
-impl SFnCard for NActionAbility {
+impl SFnCard for NAbilityMagic {
     fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(show_frame(
@@ -89,7 +89,7 @@ impl SFnCard for NActionAbility {
     }
 }
 
-impl SFnCard for NStatusAbility {
+impl SFnCard for NStatusMagic {
     fn see_card(&self, context: &Context, ui: &mut Ui) -> Result<Response, ExpressionError> {
         let color = context.color(ui);
         Ok(show_frame(
@@ -170,7 +170,7 @@ impl NFusion {
                         })
                         .ui(ui);
                 }
-                let statuses = context.collect_children_components::<NStatusAbility>(self.id)?;
+                let statuses = context.collect_children_components::<NStatusMagic>(self.id)?;
                 if !statuses.is_empty() {
                     "statuses:".cstr_c(ui.visuals().weak_text_color()).label(ui);
                     for status in statuses {

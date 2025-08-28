@@ -70,22 +70,22 @@ impl NodeViewFns for NHouseColor {
         self.color.cstr()
     }
 }
-impl NodeViewFns for NActionAbility {
+impl NodeViewFns for NAbilityMagic {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.ability_name.cstr()
     }
 }
-impl NodeViewFns for NActionDescription {
+impl NodeViewFns for NAbilityDescription {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.description.cstr()
     }
 }
-impl NodeViewFns for NActionEffect {
+impl NodeViewFns for NAbilityEffect {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.actions.iter().map(|r| r.cstr()).join("\n")
     }
 }
-impl NodeViewFns for NStatusAbility {
+impl NodeViewFns for NStatusMagic {
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
         self.status_name.cstr()
     }

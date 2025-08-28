@@ -466,13 +466,13 @@ impl NodeExplorerPlugin {
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
-                NodeKind::NActionAbility => context
-                    .get_by_id::<NActionAbility>(id)?
+                NodeKind::NAbilityMagic => context
+                    .get_by_id::<NAbilityMagic>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
-                NodeKind::NStatusAbility => context
-                    .get_by_id::<NStatusAbility>(id)?
+                NodeKind::NStatusMagic => context
+                    .get_by_id::<NStatusMagic>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),

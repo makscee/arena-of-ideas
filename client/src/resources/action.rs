@@ -84,7 +84,7 @@ impl ActionImpl for Action {
                 let color = house.color_load(context)?.color.c32();
                 let name: String;
                 let value = context.get_i32(VarName::value).unwrap_or(1);
-                if let Ok(ability) = house.action_load(context) {
+                if let Ok(ability) = house.ability_load(context) {
                     name = ability.ability_name.clone();
                     let effect = ability
                         .description_load(context)?

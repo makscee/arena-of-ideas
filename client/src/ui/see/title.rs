@@ -34,13 +34,13 @@ impl SFnTitle for NHouse {
     }
 }
 
-impl SFnTitle for NActionAbility {
+impl SFnTitle for NAbilityMagic {
     fn see_title_cstr(&self) -> Cstr {
         self.ability_name.cstr()
     }
 }
 
-impl SFnTitle for NStatusAbility {
+impl SFnTitle for NStatusMagic {
     fn see_title_cstr(&self) -> Cstr {
         self.status_name.cstr()
     }
@@ -58,13 +58,13 @@ impl SFnTitle for NHouseColor {
     }
 }
 
-impl SFnTitle for NActionDescription {
+impl SFnTitle for NAbilityDescription {
     fn see_title_cstr(&self) -> Cstr {
         self.kind().cstr()
     }
 }
 
-impl SFnTitle for NActionEffect {
+impl SFnTitle for NAbilityEffect {
     fn see_title_cstr(&self) -> Cstr {
         self.kind().cstr()
     }
