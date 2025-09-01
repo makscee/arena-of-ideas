@@ -1,26 +1,17 @@
+use super::*;
 use serde::de::DeserializeOwned;
 
-use super::*;
-
-pub trait ShowPrefix {
-    fn show(&self, ui: &mut Ui);
-}
-impl ShowPrefix for Option<&str> {
-    fn show(&self, ui: &mut Ui) {
-        if let Some(s) = self {
-            s.cstr_cs(ui.visuals().weak_text_color(), CstrStyle::Small)
-                .label(ui);
-        }
-    }
-}
-pub trait Show {
+pub trait SFnShow {
     fn show(&self, context: &Context, ui: &mut Ui);
+}
+
+pub trait SFnShowMut {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool;
 }
 
-impl<T> Show for Option<T>
+impl<T> SFnShow for Option<T>
 where
-    T: Show + Default + Serialize + DeserializeOwned,
+    T: SFnShow + Default + Serialize + DeserializeOwned,
 {
     fn show(&self, context: &Context, ui: &mut Ui) {
         if let Some(v) = self.as_ref() {
@@ -29,6 +20,12 @@ where
             "[tw none]".cstr().label(ui);
         }
     }
+}
+
+impl<T> SFnShowMut for Option<T>
+where
+    T: SFnShowMut + Default + Serialize + DeserializeOwned,
+{
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         let mut is_some = self.is_some();
         if Checkbox::new(&mut is_some, "").ui(ui).changed() {
@@ -48,7 +45,7 @@ where
     }
 }
 
-impl Show for VarValue {
+impl SFnShow for VarValue {
     fn show(&self, context: &Context, ui: &mut Ui) {
         ui.horizontal(|ui| match self {
             VarValue::String(v) => v.show(context, ui),
@@ -59,11 +56,17 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show(context, ui),
             VarValue::Color32(v) => v.show(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(context, ui),
-            VarValue::list(v) => {
-                format!("List({})", v.len()).cstr().label(ui);
-            }
+            VarValue::list(v) => ui.horizontal(|ui| {
+                "[tw List: ]".cstr().label(ui);
+                for v in v {
+                    v.show(context, ui);
+                }
+            }),
         });
     }
+}
+
+impl SFnShowMut for VarValue {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| match self {
             VarValue::i32(v) => v.show_mut(context, ui),
@@ -74,78 +77,116 @@ impl Show for VarValue {
             VarValue::Vec2(v) => v.show_mut(context, ui),
             VarValue::Color32(v) => v.show_mut(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(context, ui),
-            VarValue::list(_) => false,
+            VarValue::list(v) => ui.horizontal(|ui| {
+                "[tw List: ]".cstr().label(ui);
+                let mut r = false;
+                for v in v {
+                    r |= v.show_mut(context, ui);
+                }
+                r
+            }),
         })
         .inner
     }
 }
 
-impl Show for i32 {
+impl SFnShow for i32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for i32 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         DragValue::new(self).ui(ui).changed()
     }
 }
-impl Show for f32 {
+
+impl SFnShow for f32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for f32 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         DragValue::new(self).min_decimals(1).ui(ui).changed()
     }
 }
-impl Show for f64 {
+
+impl SFnShow for f64 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for f64 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         DragValue::new(self).min_decimals(1).ui(ui).changed()
     }
 }
-impl Show for u64 {
+
+impl SFnShow for u64 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for u64 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| DragValue::new(self).ui(ui))
             .inner
             .changed()
     }
 }
-impl Show for u32 {
+
+impl SFnShow for u32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for u32 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| DragValue::new(self).ui(ui))
             .inner
             .changed()
     }
 }
-impl Show for u8 {
+
+impl SFnShow for u8 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for u8 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| DragValue::new(self).ui(ui))
             .inner
             .changed()
     }
 }
-impl Show for bool {
+
+impl SFnShow for bool {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for bool {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Checkbox::new(self, "").ui(ui).changed()
     }
 }
-impl Show for Vec2 {
+
+impl SFnShow for Vec2 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for Vec2 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
             let rx = DragValue::new(&mut self.x).prefix("x:").ui(ui);
@@ -156,18 +197,26 @@ impl Show for Vec2 {
         .changed()
     }
 }
-impl Show for String {
+
+impl SFnShow for String {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label_t(ui);
     }
+}
+
+impl SFnShowMut for String {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Input::new("").ui_string(self, ui).changed()
     }
 }
-impl Show for Color {
+
+impl SFnShow for Color {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for Color {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
             let mut c = self.c32();
@@ -180,10 +229,14 @@ impl Show for Color {
         .inner
     }
 }
-impl Show for Color32 {
+
+impl SFnShow for Color32 {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for Color32 {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
             let mut hsva = self.clone().into();
@@ -196,10 +249,14 @@ impl Show for Color32 {
         .inner
     }
 }
-impl Show for HexColor {
+
+impl SFnShow for HexColor {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for HexColor {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut err = None;
@@ -240,52 +297,74 @@ impl Show for HexColor {
         changed
     }
 }
-impl Show for Entity {
+
+impl SFnShow for Entity {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.to_string().label(ui);
     }
+}
+
+impl SFnShowMut for Entity {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         self.show(&Context::default(), ui);
         false
     }
 }
 
-impl Show for Event {
+impl SFnShow for Event {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr_cs(low_contrast_text(), CstrStyle::Bold).label(ui);
     }
+}
+
+impl SFnShowMut for Event {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)
     }
 }
 
-impl Show for UnitActionRange {
+impl SFnShow for UnitActionRange {
     fn show(&self, _context: &Context, ui: &mut Ui) {
         format!("{}: {}-{}", self.trigger, self.start, self.length).label(ui);
     }
+}
+
+impl SFnShowMut for UnitActionRange {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.show(context, ui);
         false
     }
 }
-impl Show for Vec<UnitActionRange> {
+
+impl SFnShow for Vec<UnitActionRange> {
     fn show(&self, _context: &Context, _ui: &mut Ui) {}
+}
+
+impl SFnShowMut for Vec<UnitActionRange> {
     fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {
         false
     }
 }
-impl Show for Vec<(u64, Vec<UnitActionRange>)> {
+
+impl SFnShow for Vec<(u64, Vec<UnitActionRange>)> {
     fn show(&self, _: &Context, _: &mut Ui) {}
+}
+
+impl SFnShowMut for Vec<(u64, Vec<UnitActionRange>)> {
     fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
         false
     }
 }
-impl Show for Vec<String> {
+
+impl SFnShow for Vec<String> {
     fn show(&self, _: &Context, ui: &mut Ui) {
         for s in self {
             s.label(ui);
         }
     }
+}
+
+impl SFnShowMut for Vec<String> {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         for s in self {
@@ -294,30 +373,39 @@ impl Show for Vec<String> {
         changed
     }
 }
-impl Show for Vec<u64> {
+
+impl SFnShow for Vec<u64> {
     fn show(&self, context: &Context, ui: &mut Ui) {
         for i in self {
             i.cstr().show(context, ui);
         }
     }
+}
+
+impl SFnShowMut for Vec<u64> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.show(context, ui);
         false
     }
 }
-impl Show for Vec<Action> {
+
+impl SFnShow for Vec<Action> {
     fn show(&self, context: &Context, ui: &mut Ui) {
         let vctx = ViewContext::new(ui).non_interactible(true);
         for a in self {
             a.view_title(vctx, context, ui);
         }
     }
+}
+
+impl SFnShowMut for Vec<Action> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)
             .changed
     }
 }
-impl Show for Reaction {
+
+impl SFnShow for Reaction {
     fn show(&self, context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {
             let vctx = ViewContext::new(ui).non_interactible(true);
@@ -328,92 +416,125 @@ impl Show for Reaction {
             self.actions.show(context, ui);
         });
     }
+}
+
+impl SFnShowMut for Reaction {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)
             .changed
     }
 }
 
-impl Show for Vec<Reaction> {
+impl SFnShow for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
         for r in self {
             r.show(context, ui);
         }
     }
+}
+
+impl SFnShowMut for Vec<Reaction> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)
             .changed
     }
 }
 
-impl Show for Material {
+impl SFnShow for Material {
     fn show(&self, context: &Context, ui: &mut Ui) {
         self.view_with_children(ViewContext::new(ui), context, ui);
     }
+}
+
+impl SFnShowMut for Material {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_with_children_mut(ViewContext::new(ui), context, ui)
             .changed
     }
 }
 
-impl Show for VarName {
+impl SFnShow for VarName {
     fn show(&self, context: &Context, ui: &mut Ui) {
         self.view(ViewContext::new(ui), context, ui);
     }
+}
+
+impl SFnShowMut for VarName {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.view_mut(ViewContext::new(ui), context, ui).changed
     }
 }
 
-impl Show for ExpressionError {
+impl SFnShow for ExpressionError {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.show(context, ui);
-        false
-    }
 }
-impl Show for CardKind {
-    fn show(&self, _: &Context, ui: &mut Ui) {
-        self.as_ref().cstr().label(ui);
-    }
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.show(context, ui);
-        false
-    }
-}
-impl Show for Vec<(CardKind, u64)> {
-    fn show(&self, _: &Context, _: &mut Ui) {
-        todo!()
-    }
-    fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
-        todo!()
-    }
-}
-impl Show for Vec<ShopOffer> {
-    fn show(&self, _: &Context, ui: &mut Ui) {
-        "shop offers".cstr().label(ui);
-    }
+
+impl SFnShowMut for ExpressionError {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
         self.show(context, ui);
         false
     }
 }
 
-impl Show for MagicType {
+impl SFnShow for CardKind {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.as_ref().cstr().label(ui);
     }
+}
+
+impl SFnShowMut for CardKind {
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}
+
+impl SFnShow for Vec<(CardKind, u64)> {
+    fn show(&self, _: &Context, _: &mut Ui) {
+        todo!()
+    }
+}
+
+impl SFnShowMut for Vec<(CardKind, u64)> {
+    fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
+        todo!()
+    }
+}
+
+impl SFnShow for Vec<ShopOffer> {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        "shop offers".cstr().label(ui);
+    }
+}
+
+impl SFnShowMut for Vec<ShopOffer> {
+    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.show(context, ui);
+        false
+    }
+}
+
+impl SFnShow for MagicType {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.as_ref().cstr().label(ui);
+    }
+}
+
+impl SFnShowMut for MagicType {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)
     }
 }
 
-impl Show for Trigger {
+impl SFnShow for Trigger {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.as_ref().cstr().label(ui);
     }
+}
+
+impl SFnShowMut for Trigger {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)
     }

@@ -476,7 +476,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         #[allow(unused)]
         #[allow(dead_code)]
         #[allow(unused_mut)]
-        impl Show for #struct_ident {
+        impl SFnShow for #struct_ident {
             fn show(&self, context: &Context, ui: &mut Ui) {
                 for (var, value) in self.get_own_vars() {
                     value.show(context, ui);
@@ -485,6 +485,12 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     self.#data_fields.show(context, ui);
                 )*
             }
+        }
+
+        #[allow(unused)]
+        #[allow(dead_code)]
+        #[allow(unused_mut)]
+        impl SFnShowMut for #struct_ident {
             fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
                 let mut changed = false;
                 #(

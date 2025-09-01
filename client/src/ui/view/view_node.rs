@@ -1,7 +1,7 @@
 use super::*;
 
 #[allow(unused)]
-pub trait NodeViewFns: NodeExt + ViewFns {
+pub trait NodeViewFns: NodeExt + ViewFns + SFnShowMut {
     fn node_title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
         self.cstr()
     }
@@ -11,7 +11,7 @@ pub trait NodeViewFns: NodeExt + ViewFns {
     }
     fn view_data_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();
-        vr.changed = self.show_mut(context, ui);
+        vr.changed = self.see_mut(context).show(ui);
         vr
     }
     fn view_context_menu_extra_mut(

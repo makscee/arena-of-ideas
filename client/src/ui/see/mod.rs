@@ -4,6 +4,7 @@ mod ctxbtn;
 mod info;
 mod node_link_rating;
 mod node_rating;
+mod show;
 mod tag;
 mod tag_card;
 mod title;
@@ -16,6 +17,7 @@ pub use ctxbtn::*;
 pub use info::*;
 pub use node_link_rating::*;
 pub use node_rating::*;
+pub use show::*;
 pub use tag::*;
 pub use tag_card::*;
 pub use title::*;
@@ -23,6 +25,10 @@ pub use title::*;
 pub trait See: Sized {
     fn see<'a>(&'a self, context: &'a Context<'a>) -> SeeBuilder<'a, Self> {
         SeeBuilder::new(self, context)
+    }
+
+    fn see_mut<'a>(&'a mut self, context: &'a Context<'a>) -> SeeBuilderMut<'a, Self> {
+        SeeBuilderMut::new(self, context)
     }
 }
 

@@ -104,10 +104,13 @@ fn get_resolution_options() -> Vec<Vec2> {
     ]
 }
 
-impl Show for &'static str {
+impl SFnShow for &'static str {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
     }
+}
+
+impl SFnShowMut for &'static str {
     fn show_mut(&mut self, _: &Context, _ui: &mut Ui) -> bool {
         false
     }
@@ -119,21 +122,27 @@ impl ToCstr for WindowMode {
     }
 }
 
-impl Show for WindowMode {
+impl SFnShow for WindowMode {
     fn show(&self, _: &Context, ui: &mut Ui) {
         self.to_string().cstr().label(ui);
     }
+}
+
+impl SFnShowMut for WindowMode {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)
     }
 }
 
-impl Show for Colorix {
+impl SFnShow for Colorix {
     fn show(&self, _: &Context, ui: &mut Ui) {
         ui.menu_button("Theme".cstr_c(self.color(0)), |ui| {
             "Theme".cstr_c(self.color(0)).label(ui);
         });
     }
+}
+
+impl SFnShowMut for Colorix {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         let mut hsva = Hsva::from_srgba_unmultiplied(self.raw_colors[0].to_array());

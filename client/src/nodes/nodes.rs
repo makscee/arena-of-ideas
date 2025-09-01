@@ -23,7 +23,16 @@ pub trait ClientLoader<N> {
 }
 
 pub trait Node:
-    Default + Component + Sized + GetVar + Show + Debug + std::hash::Hash + StringData + Clone + ToCstr
+    Default
+    + Component
+    + Sized
+    + GetVar
+    + SFnShow
+    + Debug
+    + std::hash::Hash
+    + StringData
+    + Clone
+    + ToCstr
 {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);

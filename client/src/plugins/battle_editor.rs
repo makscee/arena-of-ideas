@@ -433,7 +433,7 @@ impl BattleEditorPlugin {
         ui: &mut Ui,
     ) -> Result<bool, ExpressionError>
     where
-        T: Node + 'static + View + SFnInfo,
+        T: Node + 'static + View + SFnInfo + SFnShowMut,
     {
         let mut changed = false;
 
@@ -444,7 +444,7 @@ impl BattleEditorPlugin {
         })?;
         ui.group(|ui| {
             node.see(context).info().label(ui);
-            changed |= node.show_mut(context, ui);
+            changed |= node.see_mut(context).show(ui);
         });
         if changed {
             node.unpack_entity(context, entity).log();
@@ -460,7 +460,7 @@ impl BattleEditorPlugin {
         changed: &mut bool,
     ) -> Option<u64>
     where
-        T: Node + 'static + SFnInfo + SFnTitle,
+        T: Node + 'static + SFnInfo + SFnTitle + SFnShowMut,
     {
         let mut parent_id = None;
         if let Ok(parent) = context.first_parent::<T>(child_id) {
@@ -492,7 +492,7 @@ impl BattleEditorPlugin {
 
                 if !was_deleted {
                     ui.group(|ui| {
-                        if parent_node.show_mut(context, ui) {
+                        if parent_node.see_mut(context).show(ui) {
                             local_changed = true;
                         }
                     });
