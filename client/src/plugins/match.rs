@@ -127,12 +127,12 @@ impl MatchPlugin {
                                                     CardKind::Unit => {
                                                         let unit = context
                                                             .get_by_id::<NUnit>(slot.node_id)?;
-                                                        unit.view_card(context, ui)?
+                                                        unit.see(context).card(ui)?
                                                     }
                                                     CardKind::House => {
                                                         let house = context
                                                             .get_by_id::<NHouse>(slot.node_id)?;
-                                                        house.view_card(context, ui)?
+                                                        house.see(context).card(ui)?
                                                     }
                                                 };
                                                 resp.dnd_set_drag_payload((i, slot.clone()));
