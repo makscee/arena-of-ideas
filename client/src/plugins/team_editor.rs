@@ -193,17 +193,15 @@ impl TeamEditor {
             if let Some(unit) = Self::get_slot_unit(slot.id, context) {
                 if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
                 {
-                    for (trigger_idx, reaction) in unit_behavior.reactions.iter().enumerate() {
-                        let trigger = reaction.trigger.clone();
-                        if !trigger_map.contains_key(&trigger) {
-                            trigger_map.insert(
-                                trigger,
-                                UnitTriggerRef {
-                                    unit: unit.id,
-                                    trigger: trigger_idx as u8,
-                                },
-                            );
-                        }
+                    let trigger = unit_behavior.reaction.trigger.clone();
+                    if !trigger_map.contains_key(&trigger) {
+                        trigger_map.insert(
+                            trigger,
+                            UnitTriggerRef {
+                                unit: unit.id,
+                                trigger: 0,
+                            },
+                        );
                     }
                 }
             }
@@ -266,13 +264,11 @@ impl TeamEditor {
                                 if let Ok(unit_behavior) =
                                     context.first_parent_recursive::<NUnitBehavior>(unit.id)
                                 {
-                                    if !unit_behavior.reactions.is_empty() {
-                                        new_trigger_ref = UnitTriggerRef {
-                                            unit: unit.id,
-                                            trigger: 0,
-                                        };
-                                        break;
-                                    }
+                                    new_trigger_ref = UnitTriggerRef {
+                                        unit: unit.id,
+                                        trigger: 0,
+                                    };
+                                    break;
                                 }
                             }
                         }
@@ -294,30 +290,24 @@ impl TeamEditor {
             if new_fusion.trigger.unit == 0 {
                 if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id)
                 {
-                    if !unit_behavior.reactions.is_empty() {
-                        additional_actions.push(TeamAction::ChangeTrigger {
-                            fusion_id: new_fusion_id,
-                            trigger: UnitTriggerRef {
-                                unit: unit_id,
-                                trigger: 0,
-                            },
-                        });
-                    }
+                    additional_actions.push(TeamAction::ChangeTrigger {
+                        fusion_id: new_fusion_id,
+                        trigger: UnitTriggerRef {
+                            unit: unit_id,
+                            trigger: 0,
+                        },
+                    });
                 }
             }
 
             // Set action range to select all actions for the moved unit
             if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
-                if let Some(reaction) = unit_behavior
-                    .reactions
-                    .get(new_fusion.trigger.trigger as usize)
-                {
-                    additional_actions.push(TeamAction::ChangeActionRange {
-                        slot_id: target_id,
-                        start: 0,
-                        length: reaction.actions.len() as u8,
-                    });
-                }
+                let reaction = &unit_behavior.reaction;
+                additional_actions.push(TeamAction::ChangeActionRange {
+                    slot_id: target_id,
+                    start: 0,
+                    length: reaction.actions.len() as u8,
+                });
             }
         }
 
@@ -354,13 +344,11 @@ impl TeamEditor {
                             if let Ok(unit_behavior) =
                                 context.first_parent_recursive::<NUnitBehavior>(unit.id)
                             {
-                                if !unit_behavior.reactions.is_empty() {
-                                    new_trigger_ref = UnitTriggerRef {
-                                        unit: unit.id,
-                                        trigger: 0,
-                                    };
-                                    break;
-                                }
+                                new_trigger_ref = UnitTriggerRef {
+                                    unit: unit.id,
+                                    trigger: 0,
+                                };
+                                break;
                             }
                         }
                     }
@@ -708,22 +696,18 @@ impl TeamEditor {
                                     ui,
                                     context,
                                     |item_ui, ctx, action_idx, is_in_range| {
-                                        if let Some(reaction) = unit_behavior
-                                            .reactions
-                                            .get(fusion.trigger.trigger as usize)
-                                        {
-                                            if let Some(action) = reaction.actions.get(action_idx) {
-                                                let vctx = ViewContext::new(item_ui)
-                                                    .non_interactible(true);
-                                                if is_in_range {
-                                                    Self::render_action_normal(
-                                                        item_ui, ctx, unit, action, vctx,
-                                                    );
-                                                } else {
-                                                    Self::render_action_greyed(
-                                                        item_ui, ctx, unit, action, vctx,
-                                                    );
-                                                }
+                                        let reaction = &unit_behavior.reaction;
+                                        if let Some(action) = reaction.actions.get(action_idx) {
+                                            let vctx =
+                                                ViewContext::new(item_ui).non_interactible(true);
+                                            if is_in_range {
+                                                Self::render_action_normal(
+                                                    item_ui, ctx, unit, action, vctx,
+                                                );
+                                            } else {
+                                                Self::render_action_greyed(
+                                                    item_ui, ctx, unit, action, vctx,
+                                                );
                                             }
                                         }
                                         Ok(())
@@ -754,11 +738,7 @@ impl TeamEditor {
     }
 
     fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
-        behavior
-            .reactions
-            .get(trigger.trigger as usize)
-            .map(|r| r.actions.len() as u8)
-            .unwrap_or(0)
+        behavior.reaction.actions.len() as u8
     }
 
     fn render_action_normal(

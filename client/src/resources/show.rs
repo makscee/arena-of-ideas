@@ -405,3 +405,21 @@ impl Show for Vec<ShopOffer> {
         false
     }
 }
+
+impl Show for MagicType {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.as_ref().cstr().label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
+    }
+}
+
+impl Show for Trigger {
+    fn show(&self, _: &Context, ui: &mut Ui) {
+        self.as_ref().cstr().label(ui);
+    }
+    fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
+    }
+}

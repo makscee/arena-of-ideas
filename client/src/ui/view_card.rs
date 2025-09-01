@@ -90,7 +90,7 @@ impl ViewCard for NUnit {
                         TagWidget::new_var_value(VarName::hp, context.get_var(VarName::hp)?).ui(ui);
                         TagWidget::new_var_value(
                             VarName::tier,
-                            (behavior.reactions.tier() as i32).into(),
+                            (behavior.reaction.tier() as i32).into(),
                         )
                         .ui(ui);
                         Ok(())

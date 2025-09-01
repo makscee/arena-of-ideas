@@ -20,7 +20,7 @@ impl NFusion {
 
     pub fn get_unit_tier(context: &Context, unit_id: u64) -> Result<u8, ExpressionError> {
         if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
-            Ok(behavior.reactions.tier())
+            Ok(behavior.reaction.tier())
         } else {
             Ok(0)
         }
@@ -57,16 +57,13 @@ impl NFusion {
             if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
                 if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
                 {
-                    if let Some(reaction) =
-                        unit_behavior.reactions.get(self.trigger.trigger as usize)
-                    {
-                        let start = slot.actions.start as usize;
-                        let end = (slot.actions.start + slot.actions.length) as usize;
+                    let reaction = &unit_behavior.reaction;
+                    let start = slot.actions.start as usize;
+                    let end = (slot.actions.start + slot.actions.length) as usize;
 
-                        for i in start..end.min(reaction.actions.len()) {
-                            if let Some(action) = reaction.actions.get(i) {
-                                all_actions.push((unit.id, action));
-                            }
+                    for i in start..end.min(reaction.actions.len()) {
+                        if let Some(action) = reaction.actions.get(i) {
+                            all_actions.push((unit.id, action));
                         }
                     }
                 }
@@ -87,11 +84,7 @@ impl NFusion {
         context: &'a Context,
         tr: &UnitTriggerRef,
     ) -> Result<&'a Trigger, ExpressionError> {
-        Self::get_behavior(context, tr.unit)?
-            .reactions
-            .get(tr.trigger as usize)
-            .to_e_not_found()
-            .map(|b| &b.trigger)
+        Ok(&Self::get_behavior(context, tr.unit)?.reaction.trigger)
     }
 
     pub fn react(

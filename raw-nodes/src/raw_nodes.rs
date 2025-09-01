@@ -125,6 +125,8 @@ struct NUnit {
 
 struct NUnitDescription {
     pub description: String,
+    pub magic_type: MagicType,
+    pub trigger: Trigger,
     pub representation: NodePart<Parent, NUnitRepresentation>,
     pub behavior: NodePart<Parent, NUnitBehavior>,
 }
@@ -139,7 +141,8 @@ struct NUnitState {
 }
 
 struct NUnitBehavior {
-    pub reactions: Vec<Reaction>,
+    pub reaction: Reaction,
+    pub magic_type: MagicType,
 }
 
 struct NUnitRepresentation {

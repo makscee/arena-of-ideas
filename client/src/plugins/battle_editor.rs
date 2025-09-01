@@ -738,7 +738,14 @@ impl BattleEditorPlugin {
 
         let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
         let unit_state = NUnitState::new_full(team_owner, 1);
-        let unit_behavior = NUnitBehavior::new_full(team_owner, vec![]);
+        let unit_behavior = NUnitBehavior::new_full(
+            team_owner,
+            Reaction {
+                trigger: Trigger::BattleStart,
+                actions: vec![Action::noop],
+            },
+            MagicType::Ability,
+        );
         let unit_representation = NUnitRepresentation::new_full(
             team_owner,
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
@@ -747,6 +754,8 @@ impl BattleEditorPlugin {
         let unit_description = NUnitDescription::new_full(
             team_owner,
             "Default Description".into(),
+            MagicType::Ability,
+            Trigger::BattleStart,
             unit_representation,
             unit_behavior,
         );

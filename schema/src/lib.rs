@@ -210,9 +210,11 @@ pub enum CardKind {
     House,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, AsRefStr)]
-pub enum AbilityType {
+#[derive(
+    Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, AsRefStr, EnumIter,
+)]
+pub enum MagicType {
     #[default]
-    Action,
+    Ability,
     Status,
 }

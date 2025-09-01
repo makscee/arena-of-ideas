@@ -15,7 +15,15 @@ impl Tier for Action {
             | Action::deal_damage
             | Action::heal_damage
             | Action::use_ability
+            | Action::apply_status
             | Action::repeat(..) => 1,
         }
+    }
+}
+
+impl Tier for Reaction {
+    fn tier(&self) -> u8 {
+        let action_tiers = self.actions.iter().map(|a| a.tier()).sum::<u8>();
+        (action_tiers + 1) / 2
     }
 }

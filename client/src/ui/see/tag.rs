@@ -7,7 +7,7 @@ pub trait SFnTag {
 impl SFnTag for NUnit {
     fn see_tag(&self, context: &Context, ui: &mut Ui) -> Response {
         let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
-            behavior.reactions.tier()
+            behavior.reaction.tier()
         } else {
             0
         };

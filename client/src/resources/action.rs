@@ -82,10 +82,9 @@ impl ActionImpl for Action {
                 let caster = context.caster_entity()?.id(context)?;
                 let house = context.first_parent_recursive::<NHouse>(caster)?;
                 let color = house.color_load(context)?.color.c32();
-                let name: String;
                 let value = context.get_i32(VarName::value).unwrap_or(1);
                 if let Ok(ability) = house.ability_load(context) {
-                    name = ability.ability_name.clone();
+                    let name = ability.ability_name.clone();
                     let effect = ability
                         .description_load(context)?
                         .effect_load(context)?
@@ -98,8 +97,26 @@ impl ActionImpl for Action {
                             Ok(())
                         },
                     )?;
-                } else if let Ok(status) = house.status_load(context) {
-                    name = status.status_name.clone();
+                    let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
+                    actions.push(BattleAction::vfx(
+                        HashMap::from_iter([
+                            (VarName::text, text.into()),
+                            (VarName::color, high_contrast_text().into()),
+                            (VarName::position, context.get_var(VarName::position)?),
+                        ]),
+                        "text".into(),
+                    ));
+                } else {
+                    return Err("Ability not found".into());
+                }
+            }
+            Action::apply_status => {
+                let caster = context.caster_entity()?.id(context)?;
+                let house = context.first_parent_recursive::<NHouse>(caster)?;
+                let color = house.color_load(context)?.color.c32();
+                let value = context.get_i32(VarName::value).unwrap_or(1);
+                if let Ok(status) = house.status_load(context) {
+                    let name = status.status_name.clone();
                     let mut status = status.clone();
                     let mut description = status.description_load(context)?.clone();
                     let mut behavior = description.behavior_load(context)?.clone();
@@ -129,18 +146,18 @@ impl ActionImpl for Action {
                             color,
                         ));
                     }
+                    let text = format!("apply status [{} [b {name}] [th {value}]]", color.to_hex());
+                    actions.push(BattleAction::vfx(
+                        HashMap::from_iter([
+                            (VarName::text, text.into()),
+                            (VarName::color, high_contrast_text().into()),
+                            (VarName::position, context.get_var(VarName::position)?),
+                        ]),
+                        "text".into(),
+                    ));
                 } else {
-                    return Err("Ability not found".into());
+                    return Err("Status not found".into());
                 }
-                let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
-                actions.push(BattleAction::vfx(
-                    HashMap::from_iter([
-                        (VarName::text, text.into()),
-                        (VarName::color, high_contrast_text().into()),
-                        (VarName::position, context.get_var(VarName::position)?),
-                    ]),
-                    "text".into(),
-                ));
             }
             Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(context)? {

@@ -10,7 +10,7 @@ impl SFnCard for NUnit {
         let pwr = context.get_var(VarName::pwr)?;
         let hp = context.get_var(VarName::hp)?;
         let tier = if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(self.id) {
-            behavior.reactions.tier()
+            behavior.reaction.tier()
         } else {
             0
         };

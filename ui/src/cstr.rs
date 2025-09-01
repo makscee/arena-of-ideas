@@ -579,6 +579,11 @@ impl ToCstr for Trigger {
         s
     }
 }
+impl ToCstr for MagicType {
+    fn cstr(&self) -> Cstr {
+        self.as_ref().cstr()
+    }
+}
 impl ToCstr for Action {
     fn cstr(&self) -> Cstr {
         let inner_x = <Self as Injector<Expression>>::get_inner(self);

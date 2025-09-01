@@ -35,6 +35,7 @@ pub trait Node: Default + Sized + StringData {
     fn kind_s() -> NodeKind {
         NodeKind::from_str(type_name_short::<Self>()).unwrap()
     }
+
     fn take(&mut self) -> Self {
         std::mem::take(self)
     }

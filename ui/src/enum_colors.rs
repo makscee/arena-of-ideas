@@ -24,6 +24,7 @@ impl EnumColor for Action {
             Action::deal_damage => RED,
             Action::heal_damage => GREEN,
             Action::use_ability => ORANGE,
+            Action::apply_status => PURPLE,
             Action::debug(..) => high_contrast_text(),
             Action::set_value(..)
             | Action::add_value(..)

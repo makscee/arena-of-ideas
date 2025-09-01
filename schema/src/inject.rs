@@ -372,7 +372,8 @@ impl Injector<Self> for Action {
             | Action::add_target(..)
             | Action::deal_damage
             | Action::heal_damage
-            | Action::use_ability => default(),
+            | Action::use_ability
+            | Action::apply_status => default(),
             Action::repeat(_, vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
         }
     }
@@ -386,7 +387,8 @@ impl Injector<Self> for Action {
             | Action::add_target(..)
             | Action::deal_damage
             | Action::heal_damage
-            | Action::use_ability => default(),
+            | Action::use_ability
+            | Action::apply_status => default(),
             Action::repeat(_, vec) => vec.into_iter().map(|v| v.as_ref()).collect_vec(),
         }
     }
@@ -394,9 +396,11 @@ impl Injector<Self> for Action {
 impl Injector<Expression> for Action {
     fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
         match self {
-            Action::noop | Action::deal_damage | Action::heal_damage | Action::use_ability => {
-                default()
-            }
+            Action::noop
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::use_ability
+            | Action::apply_status => default(),
             Action::debug(x)
             | Action::set_value(x)
             | Action::add_value(x)
@@ -407,9 +411,11 @@ impl Injector<Expression> for Action {
     }
     fn get_inner(&self) -> Vec<&Expression> {
         match self {
-            Action::noop | Action::deal_damage | Action::heal_damage | Action::use_ability => {
-                default()
-            }
+            Action::noop
+            | Action::deal_damage
+            | Action::heal_damage
+            | Action::use_ability
+            | Action::apply_status => default(),
             Action::debug(x)
             | Action::set_value(x)
             | Action::add_value(x)

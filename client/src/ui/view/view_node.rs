@@ -110,9 +110,32 @@ impl NodeViewFns for NUnit {
     }
 }
 impl NodeViewFns for NUnitDescription {
-    fn view_data(&self, _vctx: ViewContext, _context: &Context, _ui: &mut Ui) {}
-    fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
-        self.description.cstr()
+    fn view_data(&self, _vctx: ViewContext, context: &Context, ui: &mut Ui) {
+        let is_valid = self.validate();
+        let validation_color = if is_valid { GREEN } else { RED };
+        let validation_text = if is_valid { "✓ Valid" } else { "✗ Invalid" };
+
+        ui.horizontal(|ui| {
+            ui.label("Validation:");
+            validation_text.cstr_c(validation_color).label(ui);
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Magic Type:");
+            self.magic_type.cstr().label(ui);
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Trigger:");
+            self.trigger.cstr().label(ui);
+        });
+    }
+
+    fn node_title_cstr(&self, _: ViewContext, context: &Context) -> Cstr {
+        match self.get_processed_description(context) {
+            Ok(processed) => processed.cstr(),
+            Err(_) => self.description.cstr(),
+        }
     }
 }
 impl NodeViewFns for NUnitStats {
@@ -128,8 +151,34 @@ impl NodeViewFns for NUnitStats {
 }
 impl NodeViewFns for NUnitState {}
 impl NodeViewFns for NUnitBehavior {
+    fn view_data(&self, _vctx: ViewContext, _context: &Context, ui: &mut Ui) {
+        let is_valid = self.validate();
+        let validation_color = if is_valid { GREEN } else { RED };
+        let validation_text = if is_valid { "✓ Valid" } else { "✗ Invalid" };
+
+        ui.horizontal(|ui| {
+            ui.label("Validation:");
+            validation_text.cstr_c(validation_color).label(ui);
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Magic Type:");
+            self.magic_type.cstr().label(ui);
+        });
+
+        let expected_action = match self.magic_type {
+            MagicType::Ability => "use_ability",
+            MagicType::Status => "apply_status",
+        };
+
+        ui.horizontal(|ui| {
+            ui.label("Expected Action:");
+            expected_action.cstr().label(ui);
+        });
+    }
+
     fn node_title_cstr(&self, _: ViewContext, _: &Context) -> Cstr {
-        self.reactions.iter().map(|r| r.cstr()).join("\n")
+        self.reaction.cstr()
     }
 }
 impl NodeViewFns for NUnitRepresentation {
