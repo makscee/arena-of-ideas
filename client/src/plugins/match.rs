@@ -416,7 +416,7 @@ impl MatchPlugin {
             fusion.actions_limit
         ));
 
-        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
                 let vctx = ViewContext::new(ui).non_interactible(true);

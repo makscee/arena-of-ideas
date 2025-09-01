@@ -2,8 +2,8 @@ use super::*;
 
 impl NFusion {
     pub fn remove_unit(&mut self, id: u64) -> Result<(), ExpressionError> {
-        if self.trigger.unit == id {
-            self.trigger = Default::default();
+        if self.trigger_unit == id {
+            self.trigger_unit = Default::default();
         }
 
         Ok(())
@@ -82,9 +82,9 @@ impl NFusion {
 
     pub fn get_trigger<'a>(
         context: &'a Context,
-        tr: &UnitTriggerRef,
+        unit_id: u64,
     ) -> Result<&'a Trigger, ExpressionError> {
-        Ok(&Self::get_behavior(context, tr.unit)?.reaction.trigger)
+        Ok(&Self::get_behavior(context, unit_id)?.reaction.trigger)
     }
 
     pub fn react(
@@ -95,7 +95,7 @@ impl NFusion {
         let mut battle_actions: Vec<BattleAction> = default();
 
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
-            if Self::get_trigger(context, &self.trigger)?
+            if Self::get_trigger(context, self.trigger_unit)?
                 .fire(event, context)
                 .unwrap_or_default()
             {

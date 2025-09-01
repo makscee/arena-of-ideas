@@ -258,12 +258,7 @@ impl Show for Event {
         Selector::new("").ui_enum(self, ui)
     }
 }
-impl Show for UnitTriggerRef {
-    fn show(&self, _context: &Context, _ui: &mut Ui) {}
-    fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {
-        false
-    }
-}
+
 impl Show for UnitActionRange {
     fn show(&self, _context: &Context, ui: &mut Ui) {
         format!("{}: {}-{}", self.trigger, self.start, self.length).label(ui);
@@ -279,7 +274,7 @@ impl Show for Vec<UnitActionRange> {
         false
     }
 }
-impl Show for Vec<(UnitTriggerRef, Vec<UnitActionRange>)> {
+impl Show for Vec<(u64, Vec<UnitActionRange>)> {
     fn show(&self, _: &Context, _: &mut Ui) {}
     fn show_mut(&mut self, _: &Context, _: &mut Ui) -> bool {
         false

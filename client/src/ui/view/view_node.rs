@@ -110,7 +110,7 @@ impl NodeViewFns for NUnit {
     }
 }
 impl NodeViewFns for NUnitDescription {
-    fn view_data(&self, _vctx: ViewContext, context: &Context, ui: &mut Ui) {
+    fn view_data(&self, _vctx: ViewContext, _: &Context, ui: &mut Ui) {
         let is_valid = self.validate();
         let validation_color = if is_valid { GREEN } else { RED };
         let validation_text = if is_valid { "✓ Valid" } else { "✗ Invalid" };

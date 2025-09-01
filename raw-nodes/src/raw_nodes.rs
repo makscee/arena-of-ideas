@@ -102,7 +102,7 @@ struct NMatch {
 
 struct NFusion {
     pub slots: NodeParts<Parent, NFusionSlot>,
-    pub trigger: UnitTriggerRef,
+    pub trigger_unit: u64,
     pub index: i32,
     pub pwr: i32,
     pub hp: i32,

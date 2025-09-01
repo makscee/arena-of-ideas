@@ -193,15 +193,15 @@ impl NFusion {
                     }
                 }
                 "behavior:".cstr_c(ui.visuals().weak_text_color()).label(ui);
-                let trigger = NFusion::get_trigger(context, &self.trigger)?;
+                let trigger = NFusion::get_trigger(context, self.trigger_unit)?;
                 let vctx = ViewContext::new(ui).non_interactible(true);
                 ui.horizontal(|ui| {
                     Icon::Lightning.show(ui);
                     trigger.view_title(vctx, context, ui);
                 });
 
-                let units = self.units(context)?;
-                let unit_ids: Vec<u64> = units.iter().map(|u| u.id).collect();
+                // let units = self.units(context)?;
+                // let unit_ids: Vec<u64> = units.iter().map(|u| u.id).collect();
                 // for (unit_index, ar) in self.behavior.iter().enumerate() {
                 //     if let Some(unit_id) = unit_ids.get(unit_index) {
                 //         for i in 0..ar.length as usize {

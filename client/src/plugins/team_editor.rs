@@ -30,7 +30,7 @@ pub enum TeamAction {
     },
     ChangeTrigger {
         fusion_id: u64,
-        trigger: UnitTriggerRef,
+        trigger: u64,
     },
 }
 
@@ -186,7 +186,7 @@ impl TeamEditor {
         &self,
         context: &Context,
         slots: &[&NFusionSlot],
-    ) -> Result<(Vec<Trigger>, HashMap<Trigger, UnitTriggerRef>), ExpressionError> {
+    ) -> Result<(Vec<Trigger>, HashMap<Trigger, u64>), ExpressionError> {
         let mut trigger_map = HashMap::new();
 
         for slot in slots {
@@ -195,13 +195,7 @@ impl TeamEditor {
                 {
                     let trigger = unit_behavior.reaction.trigger.clone();
                     if !trigger_map.contains_key(&trigger) {
-                        trigger_map.insert(
-                            trigger,
-                            UnitTriggerRef {
-                                unit: unit.id,
-                                trigger: 0,
-                            },
-                        );
+                        trigger_map.insert(trigger, unit.id);
                     }
                 }
             }
@@ -253,21 +247,19 @@ impl TeamEditor {
             // Update trigger only if moving to different fusion (not same fusion)
             if !is_same_fusion {
                 let old_fusion = context.get::<NFusion>(context.entity(old_fusion_id)?)?;
-                if old_fusion.trigger.unit == unit_id {
+                if old_fusion.trigger_unit == unit_id {
                     let remaining_slots =
                         context.collect_parents_components::<NFusionSlot>(old_fusion_id)?;
-                    let mut new_trigger_ref = UnitTriggerRef::default();
+                    let mut new_trigger_ref = 0u64;
 
                     for slot in remaining_slots {
                         if slot.id != old_slot_id {
                             if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
-                                if let Ok(unit_behavior) =
-                                    context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                                if context
+                                    .first_parent_recursive::<NUnitBehavior>(unit.id)
+                                    .is_ok()
                                 {
-                                    new_trigger_ref = UnitTriggerRef {
-                                        unit: unit.id,
-                                        trigger: 0,
-                                    };
+                                    new_trigger_ref = unit.id;
                                     break;
                                 }
                             }
@@ -287,15 +279,14 @@ impl TeamEditor {
             let new_fusion = context.get::<NFusion>(context.entity(new_fusion_id)?)?;
 
             // If fusion has no trigger set (unit id is 0), set it to this unit
-            if new_fusion.trigger.unit == 0 {
-                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id)
+            if new_fusion.trigger_unit == 0 {
+                if context
+                    .first_parent_recursive::<NUnitBehavior>(unit_id)
+                    .is_ok()
                 {
                     additional_actions.push(TeamAction::ChangeTrigger {
                         fusion_id: new_fusion_id,
-                        trigger: UnitTriggerRef {
-                            unit: unit_id,
-                            trigger: 0,
-                        },
+                        trigger: unit_id,
                     });
                 }
             }
@@ -333,21 +324,19 @@ impl TeamEditor {
             });
 
             // If this unit was the trigger unit, update trigger to another unit or default
-            if old_fusion.trigger.unit == unit_id {
+            if old_fusion.trigger_unit == unit_id {
                 let remaining_slots =
                     context.collect_parents_components::<NFusionSlot>(old_fusion.id)?;
-                let mut new_trigger_ref = UnitTriggerRef::default();
+                let mut new_trigger_ref = 0u64;
 
                 for slot in remaining_slots {
                     if slot.id != old_slot.id {
                         if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
-                            if let Ok(unit_behavior) =
-                                context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                            if context
+                                .first_parent_recursive::<NUnitBehavior>(unit.id)
+                                .is_ok()
                             {
-                                new_trigger_ref = UnitTriggerRef {
-                                    unit: unit.id,
-                                    trigger: 0,
-                                };
+                                new_trigger_ref = unit.id;
                                 break;
                             }
                         }
@@ -465,7 +454,7 @@ impl TeamEditor {
     }
 
     fn render_fusion_action_sequence(&self, fusion: &NFusion, context: &Context, ui: &mut Ui) {
-        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
                 trigger.cstr().label(ui);
@@ -653,7 +642,7 @@ impl TeamEditor {
             {
                 if !available_triggers.is_empty() {
                     let current_trigger =
-                        if let Ok(trigger) = NFusion::get_trigger(context, &fusion.trigger) {
+                        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
                             trigger.clone()
                         } else {
                             Trigger::default()
@@ -678,8 +667,7 @@ impl TeamEditor {
                         if let Ok(unit_behavior) =
                             context.first_parent_recursive::<NUnitBehavior>(unit.id)
                         {
-                            let max_actions =
-                                Self::get_max_actions(&unit_behavior, &fusion.trigger);
+                            let max_actions = unit_behavior.reaction.actions.len() as u8;
                             if max_actions > 0 {
                                 let (current_start, current_len) =
                                     (slot.actions.start, slot.actions.length);
@@ -735,10 +723,6 @@ impl TeamEditor {
                 }
             }
         });
-    }
-
-    fn get_max_actions(behavior: &NUnitBehavior, trigger: &UnitTriggerRef) -> u8 {
-        behavior.reaction.actions.len() as u8
     }
 
     fn render_action_normal(

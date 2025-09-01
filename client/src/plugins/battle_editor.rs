@@ -522,35 +522,6 @@ impl BattleEditorPlugin {
         parent_id
     }
 
-    fn show_node_with_action_button<T>(
-        node: &T,
-        context: &Context,
-        ui: &mut Ui,
-        action_button: Option<(&str, &mut bool)>,
-    ) -> bool
-    where
-        T: Node + SFnInfo + SFnTitle,
-    {
-        let mut navigate_clicked = false;
-
-        ui.horizontal(|ui| {
-            if let Some((button_text, button_clicked)) = action_button {
-                if ui.button(button_text).clicked() {
-                    *button_clicked = true;
-                }
-            }
-
-            let btn_response = node.see(context).node_ctxbtn_full().ui(ui);
-            node.see(context).info().label(ui);
-
-            if btn_response.clicked() {
-                navigate_clicked = true;
-            }
-        });
-
-        navigate_clicked
-    }
-
     fn show_children_node_editors<T>(
         parent_id: u64,
         context: &mut Context,
@@ -812,11 +783,11 @@ impl BattleEditorPlugin {
 
     fn handle_change_trigger(
         fusion_id: u64,
-        trigger: UnitTriggerRef,
+        trigger: u64,
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
         let mut fusion = context.get_mut::<NFusion>(context.entity(fusion_id)?)?;
-        fusion.trigger = trigger;
+        fusion.trigger_unit = trigger;
         Ok(())
     }
 }

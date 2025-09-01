@@ -6,9 +6,3 @@ pub struct UnitActionRange {
     pub start: u8,
     pub length: u8,
 }
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub struct UnitTriggerRef {
-    pub unit: u64,
-    pub trigger: u8,
-}
