@@ -56,12 +56,14 @@ impl SFnShow for VarValue {
             VarValue::Vec2(v) => v.show(context, ui),
             VarValue::Color32(v) => v.show(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show(context, ui),
-            VarValue::list(v) => ui.horizontal(|ui| {
-                "[tw List: ]".cstr().label(ui);
-                for v in v {
-                    v.show(context, ui);
-                }
-            }),
+            VarValue::list(v) => {
+                ui.horizontal(|ui| {
+                    "[tw List: ]".cstr().label(ui);
+                    for v in v {
+                        v.show(context, ui);
+                    }
+                });
+            }
         });
     }
 }
@@ -77,14 +79,17 @@ impl SFnShowMut for VarValue {
             VarValue::Vec2(v) => v.show_mut(context, ui),
             VarValue::Color32(v) => v.show_mut(context, ui),
             VarValue::Entity(v) => Entity::from_bits(*v).show_mut(context, ui),
-            VarValue::list(v) => ui.horizontal(|ui| {
-                "[tw List: ]".cstr().label(ui);
-                let mut r = false;
-                for v in v {
-                    r |= v.show_mut(context, ui);
-                }
-                r
-            }),
+            VarValue::list(v) => {
+                ui.horizontal(|ui| {
+                    "[tw List: ]".cstr().label(ui);
+                    let mut r = false;
+                    for v in v {
+                        r |= v.show_mut(context, ui);
+                    }
+                    r
+                })
+                .inner
+            }
         })
         .inner
     }
@@ -537,5 +542,12 @@ impl SFnShow for Trigger {
 impl SFnShowMut for Trigger {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
         Selector::new("").ui_enum(self, ui)
+    }
+}
+
+// Basic SFnShow implementation for Expression
+impl SFnShow for Expression {
+    fn show(&self, _context: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
     }
 }

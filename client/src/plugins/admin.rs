@@ -8,12 +8,24 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        let complex_expr = Expression::r#if(
+            Box::new(Expression::greater_then(
+                Box::new(Expression::var(VarName::hp)),
+                Box::new(Expression::i32(0)),
+            )),
+            Box::new(Expression::sum(
+                Box::new(Expression::var(VarName::pwr)),
+                Box::new(Expression::i32(10)),
+            )),
+            Box::new(Expression::zero),
+        );
         let id = "exp_test".into();
         let mut e = ui
             .ctx()
             .data_mut(|w| w.get_persisted_mut_or_default::<Expression>(id).clone());
 
         Context::from_world(world, |context| {
+            complex_expr.see(context).show_recursive(ui);
             if e.view_with_children_mut(ViewContext::new(ui), context, ui)
                 .changed
             {
