@@ -551,3 +551,27 @@ impl SFnShow for Expression {
         self.cstr().label(ui);
     }
 }
+
+impl SFnShow for Action {
+    fn show(&self, _context: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
+    }
+}
+
+impl SFnShowMut for Action {
+    fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
+    }
+}
+
+impl SFnShow for PainterAction {
+    fn show(&self, _context: &Context, ui: &mut Ui) {
+        self.cstr().label(ui);
+    }
+}
+
+impl SFnShowMut for PainterAction {
+    fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
+    }
+}

@@ -1,211 +1,213 @@
 use super::*;
 
-/// Trait for types that can be displayed recursively with proper nested field handling.
-/// This trait focuses on defining which fields should be shown recursively,
-/// while the actual display logic is reused.
-pub trait RecursiveShow {
+/// Trait for types that can provide their recursive fields for display.
+/// This trait focuses purely on defining which fields should be shown recursively.
+pub trait RecursiveFields {
     /// Returns an iterator of field names and their recursive values
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>>;
-
-    /// Main recursive display method with layout handling
-    fn show_recursive(&self, context: &Context, ui: &mut Ui, depth: usize)
-    where
-        Self: SFnShow,
-    {
-        self.show_recursive_content(context, ui, depth);
-    }
-
-    /// Internal method to show the actual content
-    fn show_recursive_content(&self, context: &Context, ui: &mut Ui, depth: usize)
-    where
-        Self: SFnShow,
-    {
-        let fields = self.recursive_fields();
-
-        if fields.is_empty() {
-            self.show(context, ui);
-        } else {
-            self.show(context, ui);
-
-            ui.vertical(|ui| {
-                for field in fields {
-                    ui.horizontal(|ui| match field {
-                        RecursiveField::NamedExpr(name, value) => {
-                            format!("[s [tw {}:]]", name).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                        RecursiveField::NamedAction(name, value) => {
-                            format!("[s [tw {}:]]", name).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                        RecursiveField::NamedPainterAction(name, value) => {
-                            format!("[s [tw {}:]]", name).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                        RecursiveField::IndexedExpr(index, value) => {
-                            format!("[s [tw {}:]]", index).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                        RecursiveField::IndexedAction(index, value) => {
-                            format!("[s [tw {}:]]", index).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                        RecursiveField::IndexedPainterAction(index, value) => {
-                            format!("[s [tw {}:]]", index).cstr().label(ui);
-                            SFnShowRecursive::show_recursive(value, context, ui, depth + 1);
-                        }
-                    });
-                }
-            });
-        }
-    }
 }
 
 /// Represents a field that can be displayed recursively
-pub enum RecursiveField<'a> {
-    /// Named expression field
-    NamedExpr(&'static str, &'a Expression),
-    /// Named action field
-    NamedAction(&'static str, &'a Action),
-    /// Named painter action field
-    NamedPainterAction(&'static str, &'a PainterAction),
-    /// Indexed expression field
-    IndexedExpr(usize, &'a Expression),
-    /// Indexed action field
-    IndexedAction(usize, &'a Action),
-    /// Indexed painter action field
-    IndexedPainterAction(usize, &'a PainterAction),
+pub struct RecursiveField<'a> {
+    pub name: String,
+    pub value: RecursiveValue<'a>,
+}
+
+pub enum RecursiveValue<'a> {
+    Expr(&'a Expression),
+    Action(&'a Action),
+    PainterAction(&'a PainterAction),
+    Var(&'a VarName),
+    VarValue(&'a VarValue),
+    HexColor(&'a HexColor),
+    String(&'a String),
+    I32(&'a i32),
+    F32(&'a f32),
+    Bool(&'a bool),
+    Vec2(&'a Vec2),
 }
 
 /// Main trait for recursive showing - this is what gets called from the UI
 pub trait SFnShowRecursive {
-    fn show_recursive(&self, context: &Context, ui: &mut Ui, depth: usize);
+    fn show_recursive(&self, name: &str, context: &Context, ui: &mut Ui);
 }
 
-// Blanket implementation for all types that implement RecursiveShow + SFnShow
+/// Implementation for types that provide recursive fields
 impl<T> SFnShowRecursive for T
 where
-    T: RecursiveShow + SFnShow,
+    T: RecursiveFields + SFnShow,
 {
-    fn show_recursive(&self, context: &Context, ui: &mut Ui, depth: usize) {
-        RecursiveShow::show_recursive(self, context, ui, depth)
+    fn show_recursive(&self, name: &str, context: &Context, ui: &mut Ui) {
+        ui.group(|ui| {
+            ui.vertical(|ui| {
+                if !name.is_empty() {
+                    format!("[s [tw {}:]]", name).cstr().label(ui);
+                }
+                self.show(context, ui);
+            });
+        });
+
+        let fields = self.recursive_fields();
+        ui.vertical(|ui| {
+            for field in fields {
+                ui.horizontal(|ui| {
+                    show_recursive_field(field, context, ui);
+                });
+            }
+        });
     }
 }
 
-// SFnShow implementations for types that need recursive showing
-impl SFnShow for Action {
-    fn show(&self, _context: &Context, ui: &mut Ui) {
-        format!("{:?}", std::mem::discriminant(self))
-            .cstr()
-            .label(ui);
-    }
+/// Macro to call any function on all RecursiveValue variants
+/// Examples:
+/// - `call_on_recursive_value!(field.value, show_recursive, context, ui)` - shows all values
+/// - `call_on_recursive_value!(field.value, show_mut, context, ui)` - mutable editing
+/// - `call_on_recursive_value!(field.value, validate, context, ui)` - validation
+#[macro_export]
+macro_rules! call_on_recursive_value {
+    ($value:expr, $name:expr, $func:ident, $context:expr, $ui:expr) => {
+        match $value {
+            RecursiveValue::Expr(v) => v.$func($name, $context, $ui),
+            RecursiveValue::Action(v) => v.$func($name, $context, $ui),
+            RecursiveValue::PainterAction(v) => v.$func($name, $context, $ui),
+            RecursiveValue::Var(v) => v.$func($name, $context, $ui),
+            RecursiveValue::VarValue(v) => v.$func($name, $context, $ui),
+            RecursiveValue::HexColor(v) => v.$func($name, $context, $ui),
+            RecursiveValue::String(v) => v.$func($name, $context, $ui),
+            RecursiveValue::I32(v) => v.$func($name, $context, $ui),
+            RecursiveValue::F32(v) => v.$func($name, $context, $ui),
+            RecursiveValue::Bool(v) => v.$func($name, $context, $ui),
+            RecursiveValue::Vec2(v) => v.$func($name, $context, $ui),
+        }
+    };
 }
 
-impl SFnShow for PainterAction {
-    fn show(&self, _context: &Context, ui: &mut Ui) {
-        format!("{:?}", std::mem::discriminant(self))
-            .cstr()
-            .label(ui);
+fn show_recursive_field(field: RecursiveField<'_>, context: &Context, ui: &mut Ui) {
+    crate::call_on_recursive_value!(field.value, &field.name, show_recursive, context, ui);
+}
+
+// Helper function to create RecursiveField
+impl<'a> RecursiveField<'a> {
+    fn named(name: &str, value: RecursiveValue<'a>) -> Self {
+        Self {
+            name: name.to_string(),
+            value,
+        }
+    }
+
+    fn indexed(index: usize, value: RecursiveValue<'a>) -> Self {
+        Self {
+            name: index.to_string(),
+            value,
+        }
     }
 }
 
 // Implementations for primitive types (leaf nodes)
-impl RecursiveShow for i32 {
+impl RecursiveFields for i32 {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for f32 {
+impl RecursiveFields for f32 {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for String {
+impl RecursiveFields for String {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for bool {
+impl RecursiveFields for bool {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for VarName {
+impl RecursiveFields for VarName {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for VarValue {
+impl RecursiveFields for VarValue {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
-impl RecursiveShow for HexColor {
+impl RecursiveFields for HexColor {
+    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+        vec![]
+    }
+}
+
+impl RecursiveFields for Vec2 {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
     }
 }
 
 // Container type implementations for Expression
-impl RecursiveShow for Box<Expression> {
+impl RecursiveFields for Box<Expression> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.as_ref().recursive_fields()
     }
 }
 
-impl RecursiveShow for Vec<Expression> {
+impl RecursiveFields for Vec<Expression> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
-            .map(|(i, item)| RecursiveField::IndexedExpr(i, item))
+            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Expr(item)))
             .collect()
     }
 }
 
-impl RecursiveShow for Vec<Action> {
+impl RecursiveFields for Vec<Action> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
-            .map(|(i, item)| RecursiveField::IndexedAction(i, item))
+            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Action(item)))
             .collect()
     }
 }
 
-impl RecursiveShow for Vec<Box<Action>> {
+impl RecursiveFields for Vec<Box<Action>> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
-            .map(|(i, item)| RecursiveField::IndexedAction(i, item.as_ref()))
+            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Action(item.as_ref())))
             .collect()
     }
 }
 
-impl RecursiveShow for Vec<Box<PainterAction>> {
+impl RecursiveFields for Vec<Box<PainterAction>> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
-            .map(|(i, item)| RecursiveField::IndexedPainterAction(i, item.as_ref()))
+            .map(|(i, item)| {
+                RecursiveField::indexed(i, RecursiveValue::PainterAction(item.as_ref()))
+            })
             .collect()
     }
 }
 
-impl RecursiveShow for Option<Expression> {
+impl RecursiveFields for Option<Expression> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
-            Some(value) => vec![RecursiveField::NamedExpr("value", value)],
+            Some(expr) => vec![RecursiveField::named("value", RecursiveValue::Expr(expr))],
             None => vec![], // None is a leaf node
         }
     }
 }
 
 // Expression implementation
-impl RecursiveShow for Expression {
+impl RecursiveFields for Expression {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
             // Leaf expressions (no nested expressions)
@@ -225,19 +227,39 @@ impl RecursiveShow for Expression {
             | Expression::adjacent_back
             | Expression::adjacent_front => vec![],
 
-            // Simple value expressions (leaf nodes)
-            Expression::var(_)
-            | Expression::var_sum(_)
-            | Expression::value(_)
-            | Expression::string(_)
-            | Expression::f32(_)
-            | Expression::f32_slider(_)
-            | Expression::i32(_)
-            | Expression::bool(_)
-            | Expression::vec2(_, _)
-            | Expression::color(_)
-            | Expression::lua_i32(_)
-            | Expression::lua_f32(_) => vec![],
+            // Simple value expressions - now showing their inner values
+            Expression::var(var) => vec![RecursiveField::named("var", RecursiveValue::Var(var))],
+            Expression::var_sum(var) => {
+                vec![RecursiveField::named("var", RecursiveValue::Var(var))]
+            }
+            Expression::value(val) => vec![RecursiveField::named(
+                "value",
+                RecursiveValue::VarValue(val),
+            )],
+            Expression::string(s) => {
+                vec![RecursiveField::named("string", RecursiveValue::String(s))]
+            }
+            Expression::f32(f) => vec![RecursiveField::named("f32", RecursiveValue::F32(f))],
+            Expression::f32_slider(f) => {
+                vec![RecursiveField::named("f32_slider", RecursiveValue::F32(f))]
+            }
+            Expression::i32(i) => vec![RecursiveField::named("i32", RecursiveValue::I32(i))],
+            Expression::bool(b) => vec![RecursiveField::named("bool", RecursiveValue::Bool(b))],
+            Expression::color(c) => {
+                vec![RecursiveField::named("color", RecursiveValue::HexColor(c))]
+            }
+            Expression::lua_i32(i) => {
+                vec![RecursiveField::named("lua_i32", RecursiveValue::String(i))]
+            }
+            Expression::lua_f32(f) => {
+                vec![RecursiveField::named("lua_f32", RecursiveValue::String(f))]
+            }
+
+            // vec2 with two f32 values
+            Expression::vec2(x, y) => vec![
+                RecursiveField::named("x", RecursiveValue::F32(x)),
+                RecursiveField::named("y", RecursiveValue::F32(y)),
+            ],
 
             // Expressions with one nested expression
             // Unary expressions
@@ -254,23 +276,26 @@ impl RecursiveShow for Expression {
             | Expression::random_unit(expr)
             | Expression::neg(expr)
             | Expression::to_f32(expr) => {
-                vec![RecursiveField::NamedExpr("expr", expr.as_ref())]
+                vec![RecursiveField::named(
+                    "expr",
+                    RecursiveValue::Expr(expr.as_ref()),
+                )]
             }
 
             // Special case: state_var has both an expression and a var
-            Expression::state_var(expr, _var) => {
-                vec![RecursiveField::NamedExpr("expr", expr.as_ref())]
-                // Note: var is not recursive, it will be shown by the base show() method
-            }
+            Expression::state_var(expr, var) => vec![
+                RecursiveField::named("expr", RecursiveValue::Expr(expr.as_ref())),
+                RecursiveField::named("var", RecursiveValue::Var(var)),
+            ],
 
             // Binary expressions
             Expression::vec2_ee(a, b) => vec![
-                RecursiveField::NamedExpr("x", a.as_ref()),
-                RecursiveField::NamedExpr("y", b.as_ref()),
+                RecursiveField::named("x", RecursiveValue::Expr(a.as_ref())),
+                RecursiveField::named("y", RecursiveValue::Expr(b.as_ref())),
             ],
             Expression::str_macro(template, value) => vec![
-                RecursiveField::NamedExpr("template", template.as_ref()),
-                RecursiveField::NamedExpr("value", value.as_ref()),
+                RecursiveField::named("template", RecursiveValue::Expr(template.as_ref())),
+                RecursiveField::named("value", RecursiveValue::Expr(value.as_ref())),
             ],
             Expression::sum(left, right)
             | Expression::sub(left, right)
@@ -284,31 +309,31 @@ impl RecursiveShow for Expression {
             | Expression::equals(left, right)
             | Expression::greater_then(left, right)
             | Expression::less_then(left, right) => vec![
-                RecursiveField::NamedExpr("left", left.as_ref()),
-                RecursiveField::NamedExpr("right", right.as_ref()),
+                RecursiveField::named("left", RecursiveValue::Expr(left.as_ref())),
+                RecursiveField::named("right", RecursiveValue::Expr(right.as_ref())),
             ],
             Expression::fallback(primary, fallback) => vec![
-                RecursiveField::NamedExpr("primary", primary.as_ref()),
-                RecursiveField::NamedExpr("fallback", fallback.as_ref()),
+                RecursiveField::named("primary", RecursiveValue::Expr(primary.as_ref())),
+                RecursiveField::named("fallback", RecursiveValue::Expr(fallback.as_ref())),
             ],
 
             // Ternary expressions
             Expression::r#if(condition, then_expr, else_expr) => vec![
-                RecursiveField::NamedExpr("condition", condition.as_ref()),
-                RecursiveField::NamedExpr("then", then_expr.as_ref()),
-                RecursiveField::NamedExpr("else", else_expr.as_ref()),
+                RecursiveField::named("condition", RecursiveValue::Expr(condition.as_ref())),
+                RecursiveField::named("then", RecursiveValue::Expr(then_expr.as_ref())),
+                RecursiveField::named("else", RecursiveValue::Expr(else_expr.as_ref())),
             ],
             Expression::oklch(l, c, h) => vec![
-                RecursiveField::NamedExpr("lightness", l.as_ref()),
-                RecursiveField::NamedExpr("chroma", c.as_ref()),
-                RecursiveField::NamedExpr("hue", h.as_ref()),
+                RecursiveField::named("lightness", RecursiveValue::Expr(l.as_ref())),
+                RecursiveField::named("chroma", RecursiveValue::Expr(c.as_ref())),
+                RecursiveField::named("hue", RecursiveValue::Expr(h.as_ref())),
             ],
         }
     }
 }
 
 // Action implementation
-impl RecursiveShow for Action {
+impl RecursiveFields for Action {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
             // Leaf actions
@@ -324,14 +349,23 @@ impl RecursiveShow for Action {
             | Action::add_value(expr)
             | Action::subtract_value(expr)
             | Action::add_target(expr) => {
-                vec![RecursiveField::NamedExpr("expr", expr.as_ref())]
+                vec![RecursiveField::named(
+                    "expr",
+                    RecursiveValue::Expr(expr.as_ref()),
+                )]
             }
 
             // Complex action: repeat
             Action::repeat(count_expr, actions) => {
-                let mut fields = vec![RecursiveField::NamedExpr("count", count_expr.as_ref())];
+                let mut fields = vec![RecursiveField::named(
+                    "count",
+                    RecursiveValue::Expr(count_expr.as_ref()),
+                )];
                 for (i, action) in actions.iter().enumerate() {
-                    fields.push(RecursiveField::IndexedAction(i, action.as_ref()));
+                    fields.push(RecursiveField::indexed(
+                        i,
+                        RecursiveValue::Action(action.as_ref()),
+                    ));
                 }
                 fields
             }
@@ -340,7 +374,7 @@ impl RecursiveShow for Action {
 }
 
 // PainterAction implementation
-impl RecursiveShow for PainterAction {
+impl RecursiveFields for PainterAction {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
             // Leaf action
@@ -348,37 +382,70 @@ impl RecursiveShow for PainterAction {
 
             // Actions with one expression
             PainterAction::circle(radius) => {
-                vec![RecursiveField::NamedExpr("radius", radius.as_ref())]
+                vec![RecursiveField::named(
+                    "radius",
+                    RecursiveValue::Expr(radius.as_ref()),
+                )]
             }
             PainterAction::rectangle(size) => {
-                vec![RecursiveField::NamedExpr("size", size.as_ref())]
+                vec![RecursiveField::named(
+                    "size",
+                    RecursiveValue::Expr(size.as_ref()),
+                )]
             }
             PainterAction::text(content) => {
-                vec![RecursiveField::NamedExpr("content", content.as_ref())]
+                vec![RecursiveField::named(
+                    "content",
+                    RecursiveValue::Expr(content.as_ref()),
+                )]
             }
             PainterAction::hollow(thickness) => {
-                vec![RecursiveField::NamedExpr("thickness", thickness.as_ref())]
+                vec![RecursiveField::named(
+                    "thickness",
+                    RecursiveValue::Expr(thickness.as_ref()),
+                )]
             }
             PainterAction::translate(offset) => {
-                vec![RecursiveField::NamedExpr("offset", offset.as_ref())]
+                vec![RecursiveField::named(
+                    "offset",
+                    RecursiveValue::Expr(offset.as_ref()),
+                )]
             }
             PainterAction::rotate(angle) => {
-                vec![RecursiveField::NamedExpr("angle", angle.as_ref())]
+                vec![RecursiveField::named(
+                    "angle",
+                    RecursiveValue::Expr(angle.as_ref()),
+                )]
             }
             PainterAction::scale_mesh(factor) => {
-                vec![RecursiveField::NamedExpr("factor", factor.as_ref())]
+                vec![RecursiveField::named(
+                    "factor",
+                    RecursiveValue::Expr(factor.as_ref()),
+                )]
             }
             PainterAction::scale_rect(factor) => {
-                vec![RecursiveField::NamedExpr("factor", factor.as_ref())]
+                vec![RecursiveField::named(
+                    "factor",
+                    RecursiveValue::Expr(factor.as_ref()),
+                )]
             }
             PainterAction::color(color_expr) => {
-                vec![RecursiveField::NamedExpr("color", color_expr.as_ref())]
+                vec![RecursiveField::named(
+                    "color",
+                    RecursiveValue::Expr(color_expr.as_ref()),
+                )]
             }
             PainterAction::alpha(alpha_expr) => {
-                vec![RecursiveField::NamedExpr("alpha", alpha_expr.as_ref())]
+                vec![RecursiveField::named(
+                    "alpha",
+                    RecursiveValue::Expr(alpha_expr.as_ref()),
+                )]
             }
             PainterAction::feathering(amount) => {
-                vec![RecursiveField::NamedExpr("amount", amount.as_ref())]
+                vec![RecursiveField::named(
+                    "amount",
+                    RecursiveValue::Expr(amount.as_ref()),
+                )]
             }
 
             // Complex actions
@@ -386,31 +453,33 @@ impl RecursiveShow for PainterAction {
                 thickness,
                 curvature,
             } => vec![
-                RecursiveField::NamedExpr("thickness", thickness.as_ref()),
-                RecursiveField::NamedExpr("curvature", curvature.as_ref()),
+                RecursiveField::named("thickness", RecursiveValue::Expr(thickness.as_ref())),
+                RecursiveField::named("curvature", RecursiveValue::Expr(curvature.as_ref())),
             ],
 
             PainterAction::repeat(count, action) => vec![
-                RecursiveField::NamedExpr("count", count.as_ref()),
-                RecursiveField::NamedPainterAction("action", action.as_ref()),
+                RecursiveField::named("count", RecursiveValue::Expr(count.as_ref())),
+                RecursiveField::named("action", RecursiveValue::PainterAction(action.as_ref())),
             ],
 
             PainterAction::list(actions) => actions
                 .iter()
                 .enumerate()
-                .map(|(i, action)| RecursiveField::IndexedPainterAction(i, action.as_ref()))
+                .map(|(i, action)| {
+                    RecursiveField::indexed(i, RecursiveValue::PainterAction(action.as_ref()))
+                })
                 .collect(),
         }
     }
 }
 
-// Reaction implementation (as an example of another complex type)
-impl RecursiveShow for Reaction {
+// Reaction implementation
+impl RecursiveFields for Reaction {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.actions
             .iter()
             .enumerate()
-            .map(|(i, action)| RecursiveField::IndexedAction(i, action))
+            .map(|(i, action)| RecursiveField::indexed(i, RecursiveValue::Action(action)))
             .collect()
     }
 }
@@ -493,5 +562,42 @@ mod tests {
         ];
         let fields = vec_expr.recursive_fields();
         assert_eq!(fields.len(), 3); // 3 expressions
+    }
+
+    #[test]
+    fn test_var_expression_shows_var_name() {
+        let expr = Expression::var(VarName::hp);
+        let fields = expr.recursive_fields();
+        assert_eq!(fields.len(), 1); // Should have one field for the VarName
+        assert_eq!(fields[0].name, "var");
+        match &fields[0].value {
+            RecursiveValue::Var(_) => (),
+            _ => panic!("Expected Var recursive value"),
+        }
+    }
+
+    #[test]
+    fn test_state_var_expression_shows_both_fields() {
+        let expr = Expression::state_var(Box::new(Expression::i32(5)), VarName::pwr);
+        let fields = expr.recursive_fields();
+        assert_eq!(fields.len(), 2); // Should have expr and var fields
+        assert_eq!(fields[0].name, "expr");
+        assert_eq!(fields[1].name, "var");
+        match (&fields[0].value, &fields[1].value) {
+            (RecursiveValue::Expr(_), RecursiveValue::Var(_)) => (),
+            _ => panic!("Expected Expr and Var recursive values"),
+        }
+    }
+
+    #[test]
+    fn test_primitive_values_shown_in_expressions() {
+        let expr = Expression::i32(42);
+        let fields = expr.recursive_fields();
+        assert_eq!(fields.len(), 1); // Should have one field for the i32
+        assert_eq!(fields[0].name, "i32");
+        match &fields[0].value {
+            RecursiveValue::I32(val) => assert_eq!(**val, 42),
+            _ => panic!("Expected I32 recursive value"),
+        }
     }
 }

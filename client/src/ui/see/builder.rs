@@ -100,7 +100,7 @@ impl<'a, T: SFnShow> SeeBuilder<'a, T> {
 
 impl<'a, T: SFnShowRecursive> SeeBuilder<'a, T> {
     pub fn show_recursive(self, ui: &mut Ui) {
-        self.data.show_recursive(self.ctx, ui, 0)
+        self.data.show_recursive("", self.ctx, ui)
     }
 }
 
