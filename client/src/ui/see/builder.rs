@@ -98,9 +98,12 @@ impl<'a, T: SFnShow> SeeBuilder<'a, T> {
     }
 }
 
-impl<'a, T: SFnShowRecursive> SeeBuilder<'a, T> {
-    pub fn show_recursive(self, ui: &mut Ui) {
-        self.data.show_recursive("", self.ctx, ui)
+impl<'a, T: SFnRecursive> SeeBuilder<'a, T> {
+    pub fn recursive<F>(self, ui: &mut Ui, mut f: F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
+    {
+        self.data.recursive(self.ctx, ui, &mut f)
     }
 }
 

@@ -545,10 +545,15 @@ impl SFnShowMut for Trigger {
     }
 }
 
-// Basic SFnShow implementation for Expression
 impl SFnShow for Expression {
     fn show(&self, _context: &Context, ui: &mut Ui) {
         self.cstr().label(ui);
+    }
+}
+
+impl SFnShowMut for Expression {
+    fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        Selector::new("").ui_enum(self, ui)
     }
 }
 

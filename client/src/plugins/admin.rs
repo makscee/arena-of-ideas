@@ -25,7 +25,25 @@ impl AdminPlugin {
             .data_mut(|w| w.get_persisted_mut_or_default::<Expression>(id).clone());
 
         Context::from_world(world, |context| {
-            complex_expr.see(context).show_recursive(ui);
+            complex_expr
+                .see(context)
+                .recursive(ui, |ui, context, field| {
+                    ui.group(|ui| {
+                        ui.vertical(|ui| {
+                            format!("[tw [s {}]]", field.name).label(ui);
+                            call_on_recursive_value!(field, show, context, ui);
+                            fn show_mut(
+                                v: &(impl SFnShowMut + Clone),
+                                context: &Context,
+                                ui: &mut Ui,
+                            ) {
+                                let mut v = v.clone();
+                                v.show_mut(context, ui);
+                            }
+                            call_pass_recursive_value!(field, show_mut, context, ui);
+                        });
+                    });
+                });
             if e.view_with_children_mut(ViewContext::new(ui), context, ui)
                 .changed
             {

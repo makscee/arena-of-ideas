@@ -9,6 +9,7 @@ pub struct RecursiveField<'a> {
     pub value: RecursiveValue<'a>,
 }
 
+#[derive(Copy, Clone)]
 pub enum RecursiveValue<'a> {
     Expr(&'a Expression),
     Action(&'a Action),
@@ -21,58 +22,204 @@ pub enum RecursiveValue<'a> {
     F32(&'a f32),
     Bool(&'a bool),
     Vec2(&'a Vec2),
+    Reaction(&'a Reaction),
 }
 
-pub trait SFnShowRecursive {
-    fn show_recursive(&self, name: &str, context: &Context, ui: &mut Ui);
+pub trait SFnRecursive {
+    /// Renders root value and all nested fields recursively with a custom closure.
+    ///
+    /// This function converts the root value to a `RecursiveField` and uses a single
+    /// recursive render function that:
+    /// 1. Calls the closure for the current field (in horizontal layout)
+    /// 2. Gets nested fields from the current field's value
+    /// 3. Recursively calls itself for each nested field (in vertical layout)
+    ///
+    /// The closure uses `FnMut` so you can modify variables outside the closure.
+    /// The root value is automatically converted using `ToRecursiveValue`.
+    ///
+    /// Usage:
+    /// ```
+    /// let mut field_names = Vec::new();
+    /// expression.see(context).recursive(ui, |ui, context, field| {
+    ///     if field.name.is_empty() {
+    ///         ui.label("ROOT"); // Root value has empty name
+    ///     } else {
+    ///         field.name.label(ui); // Shows names of all nested fields
+    ///         field_names.push(field.name.clone()); // Modify external variable
+    ///     }
+    /// });
+    /// ```
+    ///
+    /// The closure will be called for every field in the recursive tree structure.
+    fn recursive<F>(&self, context: &Context, ui: &mut Ui, f: &mut F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveField<'_>);
 }
 
-impl<T> SFnShowRecursive for T
+impl<T> SFnRecursive for T
 where
-    T: RecursiveFields + SFnShow,
+    T: RecursiveFields + ToRecursiveValue,
 {
-    fn show_recursive(&self, name: &str, context: &Context, ui: &mut Ui) {
-        ui.group(|ui| {
-            ui.vertical(|ui| {
-                if !name.is_empty() {
-                    format!("[s [tw {}:]]", name).cstr().label(ui);
-                }
-                self.show(context, ui);
-            });
-        });
-
-        let fields = self.recursive_fields();
-        ui.vertical(|ui| {
-            for field in fields {
-                ui.horizontal(|ui| {
-                    show_recursive_field(field, context, ui);
-                });
-            }
-        });
+    fn recursive<F>(&self, context: &Context, ui: &mut Ui, f: &mut F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
+    {
+        let root_field = RecursiveField {
+            name: String::new(),
+            value: self.to_recursive_value(),
+        };
+        render_field_recursive(root_field, context, ui, f);
     }
 }
 
+/// Calls a method on the value inside a RecursiveField.
+///
+/// This macro takes a RecursiveField, extracts the value, and calls the specified
+/// method on it with the provided arguments.
+///
+/// # Usage
+/// ```
+/// call_on_recursive_value!(field, show, context, ui);
+/// call_on_recursive_value!(field, some_method, arg1, arg2, arg3);
+/// ```
+///
+/// The macro will match on the RecursiveValue variant and call the method
+/// on the underlying value with all the provided arguments.
 #[macro_export]
 macro_rules! call_on_recursive_value {
-    ($value:expr, $name:expr, $func:ident, $context:expr, $ui:expr) => {
-        match $value {
-            RecursiveValue::Expr(v) => v.$func($name, $context, $ui),
-            RecursiveValue::Action(v) => v.$func($name, $context, $ui),
-            RecursiveValue::PainterAction(v) => v.$func($name, $context, $ui),
-            RecursiveValue::Var(v) => v.$func($name, $context, $ui),
-            RecursiveValue::VarValue(v) => v.$func($name, $context, $ui),
-            RecursiveValue::HexColor(v) => v.$func($name, $context, $ui),
-            RecursiveValue::String(v) => v.$func($name, $context, $ui),
-            RecursiveValue::I32(v) => v.$func($name, $context, $ui),
-            RecursiveValue::F32(v) => v.$func($name, $context, $ui),
-            RecursiveValue::Bool(v) => v.$func($name, $context, $ui),
-            RecursiveValue::Vec2(v) => v.$func($name, $context, $ui),
+    ($field:expr, $func:ident $(, $arg:expr)*) => {
+        match $field.value {
+            RecursiveValue::Expr(v) => v.$func($($arg),*),
+            RecursiveValue::Action(v) => v.$func($($arg),*),
+            RecursiveValue::PainterAction(v) => v.$func($($arg),*),
+            RecursiveValue::Var(v) => v.$func($($arg),*),
+            RecursiveValue::VarValue(v) => v.$func($($arg),*),
+            RecursiveValue::HexColor(v) => v.$func($($arg),*),
+            RecursiveValue::String(v) => v.$func($($arg),*),
+            RecursiveValue::I32(v) => v.$func($($arg),*),
+            RecursiveValue::F32(v) => v.$func($($arg),*),
+            RecursiveValue::Bool(v) => v.$func($($arg),*),
+            RecursiveValue::Vec2(v) => v.$func($($arg),*),
+            RecursiveValue::Reaction(v) => v.$func($($arg),*),
         }
     };
 }
 
-fn show_recursive_field(field: RecursiveField<'_>, context: &Context, ui: &mut Ui) {
-    crate::call_on_recursive_value!(field.value, &field.name, show_recursive, context, ui);
+#[macro_export]
+macro_rules! call_pass_recursive_value {
+    ($field:expr, $func:ident $(, $arg:expr)*) => {
+        match $field.value {
+            RecursiveValue::Expr(v) => $func(v, $($arg),*),
+            RecursiveValue::Action(v) => $func(v, $($arg),*),
+            RecursiveValue::PainterAction(v) => $func(v, $($arg),*),
+            RecursiveValue::Var(v) => $func(v, $($arg),*),
+            RecursiveValue::VarValue(v) => $func(v, $($arg),*),
+            RecursiveValue::HexColor(v) => $func(v, $($arg),*),
+            RecursiveValue::String(v) => $func(v, $($arg),*),
+            RecursiveValue::I32(v) => $func(v, $($arg),*),
+            RecursiveValue::F32(v) => $func(v, $($arg),*),
+            RecursiveValue::Bool(v) => $func(v, $($arg),*),
+            RecursiveValue::Vec2(v) => $func(v, $($arg),*),
+            RecursiveValue::Reaction(v) => $func(v, $($arg),*),
+        }
+    };
+}
+
+pub trait ToRecursiveValue {
+    fn to_recursive_value(&self) -> RecursiveValue<'_>;
+}
+
+impl ToRecursiveValue for Expression {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Expr(self)
+    }
+}
+
+impl ToRecursiveValue for Action {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Action(self)
+    }
+}
+
+impl ToRecursiveValue for PainterAction {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::PainterAction(self)
+    }
+}
+
+impl ToRecursiveValue for VarName {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Var(self)
+    }
+}
+
+impl ToRecursiveValue for VarValue {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::VarValue(self)
+    }
+}
+
+impl ToRecursiveValue for HexColor {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::HexColor(self)
+    }
+}
+
+impl ToRecursiveValue for String {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::String(self)
+    }
+}
+
+impl ToRecursiveValue for i32 {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::I32(self)
+    }
+}
+
+impl ToRecursiveValue for f32 {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::F32(self)
+    }
+}
+
+impl ToRecursiveValue for bool {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Bool(self)
+    }
+}
+
+impl ToRecursiveValue for Vec2 {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Vec2(self)
+    }
+}
+
+impl ToRecursiveValue for Reaction {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Reaction(self)
+    }
+}
+
+fn render_field_recursive<F>(field: RecursiveField<'_>, context: &Context, ui: &mut Ui, f: &mut F)
+where
+    F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
+{
+    ui.horizontal(|ui| {
+        f(
+            ui,
+            context,
+            RecursiveField {
+                name: field.name.clone(),
+                value: field.value,
+            },
+        );
+        ui.vertical(|ui| {
+            for nested_field in call_on_recursive_value!(field, recursive_fields) {
+                render_field_recursive(nested_field, context, ui, f);
+            }
+        });
+    });
 }
 
 impl<'a> RecursiveField<'a> {
