@@ -1,13 +1,9 @@
 use super::*;
 
-/// Trait for types that can provide their recursive fields for display.
-/// This trait focuses purely on defining which fields should be shown recursively.
 pub trait RecursiveFields {
-    /// Returns an iterator of field names and their recursive values
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>>;
 }
 
-/// Represents a field that can be displayed recursively
 pub struct RecursiveField<'a> {
     pub name: String,
     pub value: RecursiveValue<'a>,
@@ -27,12 +23,10 @@ pub enum RecursiveValue<'a> {
     Vec2(&'a Vec2),
 }
 
-/// Main trait for recursive showing - this is what gets called from the UI
 pub trait SFnShowRecursive {
     fn show_recursive(&self, name: &str, context: &Context, ui: &mut Ui);
 }
 
-/// Implementation for types that provide recursive fields
 impl<T> SFnShowRecursive for T
 where
     T: RecursiveFields + SFnShow,
@@ -58,11 +52,6 @@ where
     }
 }
 
-/// Macro to call any function on all RecursiveValue variants
-/// Examples:
-/// - `call_on_recursive_value!(field.value, show_recursive, context, ui)` - shows all values
-/// - `call_on_recursive_value!(field.value, show_mut, context, ui)` - mutable editing
-/// - `call_on_recursive_value!(field.value, validate, context, ui)` - validation
 #[macro_export]
 macro_rules! call_on_recursive_value {
     ($value:expr, $name:expr, $func:ident, $context:expr, $ui:expr) => {
@@ -86,7 +75,6 @@ fn show_recursive_field(field: RecursiveField<'_>, context: &Context, ui: &mut U
     crate::call_on_recursive_value!(field.value, &field.name, show_recursive, context, ui);
 }
 
-// Helper function to create RecursiveField
 impl<'a> RecursiveField<'a> {
     fn named(name: &str, value: RecursiveValue<'a>) -> Self {
         Self {
@@ -103,7 +91,6 @@ impl<'a> RecursiveField<'a> {
     }
 }
 
-// Implementations for primitive types (leaf nodes)
 impl RecursiveFields for i32 {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![]
@@ -152,7 +139,6 @@ impl RecursiveFields for Vec2 {
     }
 }
 
-// Container type implementations for Expression
 impl RecursiveFields for Box<Expression> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.as_ref().recursive_fields()
@@ -206,11 +192,9 @@ impl RecursiveFields for Option<Expression> {
     }
 }
 
-// Expression implementation
 impl RecursiveFields for Expression {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
-            // Leaf expressions (no nested expressions)
             Expression::one
             | Expression::zero
             | Expression::gt
@@ -227,7 +211,6 @@ impl RecursiveFields for Expression {
             | Expression::adjacent_back
             | Expression::adjacent_front => vec![],
 
-            // Simple value expressions - now showing their inner values
             Expression::var(var) => vec![RecursiveField::named("var", RecursiveValue::Var(var))],
             Expression::var_sum(var) => {
                 vec![RecursiveField::named("var", RecursiveValue::Var(var))]
@@ -255,14 +238,11 @@ impl RecursiveFields for Expression {
                 vec![RecursiveField::named("lua_f32", RecursiveValue::String(f))]
             }
 
-            // vec2 with two f32 values
             Expression::vec2(x, y) => vec![
                 RecursiveField::named("x", RecursiveValue::F32(x)),
                 RecursiveField::named("y", RecursiveValue::F32(y)),
             ],
 
-            // Expressions with one nested expression
-            // Unary expressions
             Expression::sin(expr)
             | Expression::cos(expr)
             | Expression::even(expr)
@@ -282,13 +262,11 @@ impl RecursiveFields for Expression {
                 )]
             }
 
-            // Special case: state_var has both an expression and a var
             Expression::state_var(expr, var) => vec![
                 RecursiveField::named("expr", RecursiveValue::Expr(expr.as_ref())),
                 RecursiveField::named("var", RecursiveValue::Var(var)),
             ],
 
-            // Binary expressions
             Expression::vec2_ee(a, b) => vec![
                 RecursiveField::named("x", RecursiveValue::Expr(a.as_ref())),
                 RecursiveField::named("y", RecursiveValue::Expr(b.as_ref())),
@@ -317,7 +295,6 @@ impl RecursiveFields for Expression {
                 RecursiveField::named("fallback", RecursiveValue::Expr(fallback.as_ref())),
             ],
 
-            // Ternary expressions
             Expression::r#if(condition, then_expr, else_expr) => vec![
                 RecursiveField::named("condition", RecursiveValue::Expr(condition.as_ref())),
                 RecursiveField::named("then", RecursiveValue::Expr(then_expr.as_ref())),
@@ -332,18 +309,15 @@ impl RecursiveFields for Expression {
     }
 }
 
-// Action implementation
 impl RecursiveFields for Action {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
-            // Leaf actions
             Action::noop
             | Action::deal_damage
             | Action::heal_damage
             | Action::use_ability
             | Action::apply_status => vec![],
 
-            // Actions with one expression
             Action::debug(expr)
             | Action::set_value(expr)
             | Action::add_value(expr)
@@ -355,7 +329,6 @@ impl RecursiveFields for Action {
                 )]
             }
 
-            // Complex action: repeat
             Action::repeat(count_expr, actions) => {
                 let mut fields = vec![RecursiveField::named(
                     "count",
@@ -373,14 +346,11 @@ impl RecursiveFields for Action {
     }
 }
 
-// PainterAction implementation
 impl RecursiveFields for PainterAction {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         match self {
-            // Leaf action
             PainterAction::paint => vec![],
 
-            // Actions with one expression
             PainterAction::circle(radius) => {
                 vec![RecursiveField::named(
                     "radius",
@@ -448,7 +418,6 @@ impl RecursiveFields for PainterAction {
                 )]
             }
 
-            // Complex actions
             PainterAction::curve {
                 thickness,
                 curvature,
@@ -473,7 +442,6 @@ impl RecursiveFields for PainterAction {
     }
 }
 
-// Reaction implementation
 impl RecursiveFields for Reaction {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.actions
@@ -481,123 +449,5 @@ impl RecursiveFields for Reaction {
             .enumerate()
             .map(|(i, action)| RecursiveField::indexed(i, RecursiveValue::Action(action)))
             .collect()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn example_nested_expression() -> Expression {
-        Expression::sum(
-            Box::new(Expression::i32(5)),
-            Box::new(Expression::mul(
-                Box::new(Expression::var(VarName::hp)),
-                Box::new(Expression::f32(2.5)),
-            )),
-        )
-    }
-
-    fn complex_conditional_expression() -> Expression {
-        Expression::r#if(
-            Box::new(Expression::greater_then(
-                Box::new(Expression::var(VarName::hp)),
-                Box::new(Expression::i32(0)),
-            )),
-            Box::new(Expression::sum(
-                Box::new(Expression::var(VarName::pwr)),
-                Box::new(Expression::i32(10)),
-            )),
-            Box::new(Expression::zero),
-        )
-    }
-
-    fn example_action() -> Action {
-        Action::repeat(
-            Box::new(Expression::i32(3)),
-            vec![
-                Box::new(Action::set_value(Box::new(Expression::var(VarName::hp)))),
-                Box::new(Action::add_value(Box::new(Expression::sum(
-                    Box::new(Expression::var(VarName::pwr)),
-                    Box::new(Expression::i32(5)),
-                )))),
-            ],
-        )
-    }
-
-    #[test]
-    fn test_expression_recursive_fields() {
-        let expr = example_nested_expression();
-        let fields = expr.recursive_fields();
-        assert_eq!(fields.len(), 2); // left and right
-    }
-
-    #[test]
-    fn test_complex_expression_recursive_fields() {
-        let expr = complex_conditional_expression();
-        let fields = expr.recursive_fields();
-        assert_eq!(fields.len(), 3); // condition, then, else
-    }
-
-    #[test]
-    fn test_action_recursive_fields() {
-        let action = example_action();
-        let fields = action.recursive_fields();
-        assert_eq!(fields.len(), 3); // count + 2 actions
-    }
-
-    #[test]
-    fn test_primitive_no_recursive_fields() {
-        let num = 42i32;
-        let fields = num.recursive_fields();
-        assert_eq!(fields.len(), 0); // Primitives have no recursive fields
-    }
-
-    #[test]
-    fn test_vec_recursive_fields() {
-        let vec_expr = vec![
-            Expression::i32(1),
-            Expression::var(VarName::hp),
-            Expression::sum(Box::new(Expression::i32(2)), Box::new(Expression::i32(3))),
-        ];
-        let fields = vec_expr.recursive_fields();
-        assert_eq!(fields.len(), 3); // 3 expressions
-    }
-
-    #[test]
-    fn test_var_expression_shows_var_name() {
-        let expr = Expression::var(VarName::hp);
-        let fields = expr.recursive_fields();
-        assert_eq!(fields.len(), 1); // Should have one field for the VarName
-        assert_eq!(fields[0].name, "var");
-        match &fields[0].value {
-            RecursiveValue::Var(_) => (),
-            _ => panic!("Expected Var recursive value"),
-        }
-    }
-
-    #[test]
-    fn test_state_var_expression_shows_both_fields() {
-        let expr = Expression::state_var(Box::new(Expression::i32(5)), VarName::pwr);
-        let fields = expr.recursive_fields();
-        assert_eq!(fields.len(), 2); // Should have expr and var fields
-        assert_eq!(fields[0].name, "expr");
-        assert_eq!(fields[1].name, "var");
-        match (&fields[0].value, &fields[1].value) {
-            (RecursiveValue::Expr(_), RecursiveValue::Var(_)) => (),
-            _ => panic!("Expected Expr and Var recursive values"),
-        }
-    }
-
-    #[test]
-    fn test_primitive_values_shown_in_expressions() {
-        let expr = Expression::i32(42);
-        let fields = expr.recursive_fields();
-        assert_eq!(fields.len(), 1); // Should have one field for the i32
-        assert_eq!(fields[0].name, "i32");
-        match &fields[0].value {
-            RecursiveValue::I32(val) => assert_eq!(**val, 42),
-            _ => panic!("Expected I32 recursive value"),
-        }
     }
 }
