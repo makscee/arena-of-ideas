@@ -96,10 +96,6 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
         ui.painter().add(line);
     });
 }
-pub fn title(text: &str, ui: &mut Ui) {
-    text.cstr_s(CstrStyle::Heading2).label(ui);
-    br(ui);
-}
 
 pub fn cursor_window(
     ctx: &egui::Context,

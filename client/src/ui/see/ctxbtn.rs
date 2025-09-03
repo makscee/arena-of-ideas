@@ -273,7 +273,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
 
         let title_response = ui
             .horizontal(|ui| {
-                let title_response = self.item.see_title_cstr().button(ui);
+                let title_response = self.item.cstr_title().button(ui);
 
                 let circle_size = 12.0;
                 let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(

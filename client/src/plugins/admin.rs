@@ -32,15 +32,15 @@ impl AdminPlugin {
                         ui.vertical(|ui| {
                             format!("[tw [s {}]]", field.name).label(ui);
                             call_on_recursive_value!(field, show, context, ui);
-                            fn show_mut(
-                                v: &(impl SFnShowMut + Clone),
-                                context: &Context,
-                                ui: &mut Ui,
-                            ) {
-                                let mut v = v.clone();
-                                v.show_mut(context, ui);
-                            }
-                            call_pass_recursive_value!(field, show_mut, context, ui);
+                            // fn show_mut(
+                            //     v: &(impl SFnTitle + Clone),
+                            //     context: &Context,
+                            //     ui: &mut Ui,
+                            // ) {
+                            //     let mut v = v.clone();
+                            //     // v.see(context).ctxbtn().add_delete().ui(ui);
+                            // }
+                            // call_pass_recursive_value!(field, show_mut, context, ui);
                         });
                     });
                 });

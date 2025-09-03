@@ -40,7 +40,7 @@ impl<'a, T> SeeBuilderMut<'a, T> {
 
 impl<'a, T: SFnTitle> SeeBuilder<'a, T> {
     pub fn button(self, ui: &mut Ui) -> Response {
-        self.data.see_title_cstr().button(ui)
+        self.data.cstr_title().button(ui)
     }
 }
 
