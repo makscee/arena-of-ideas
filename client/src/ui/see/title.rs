@@ -130,3 +130,69 @@ impl SFnTitle for NUnitBehavior {
         self.kind().cstr()
     }
 }
+
+impl SFnTitle for Expression {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for Action {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for Reaction {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for PainterAction {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for VarName {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for VarValue {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for i32 {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for f32 {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for bool {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for HexColor {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}
+
+impl SFnTitle for Vec2 {
+    fn cstr_title(&self) -> Cstr {
+        self.cstr()
+    }
+}

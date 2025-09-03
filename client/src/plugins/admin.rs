@@ -8,45 +8,43 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
-        let complex_expr = Expression::r#if(
-            Box::new(Expression::greater_then(
-                Box::new(Expression::var(VarName::hp)),
-                Box::new(Expression::i32(0)),
-            )),
-            Box::new(Expression::sum(
-                Box::new(Expression::var(VarName::pwr)),
-                Box::new(Expression::i32(10)),
-            )),
-            Box::new(Expression::zero),
-        );
         let id = "exp_test".into();
-        let mut e = ui
-            .ctx()
-            .data_mut(|w| w.get_persisted_mut_or_default::<Expression>(id).clone());
+        let mut e = ui.ctx().data_mut(|w| {
+            w.get_persisted_mut_or::<Expression>(
+                id,
+                Expression::r#if(
+                    Box::new(Expression::greater_then(
+                        Box::new(Expression::var(VarName::hp)),
+                        Box::new(Expression::i32(0)),
+                    )),
+                    Box::new(Expression::sum(
+                        Box::new(Expression::var(VarName::pwr)),
+                        Box::new(Expression::i32(10)),
+                    )),
+                    Box::new(Expression::zero),
+                ),
+            )
+            .clone()
+        });
 
         Context::from_world(world, |context| {
-            complex_expr
-                .see(context)
-                .recursive(ui, |ui, context, field| {
-                    ui.group(|ui| {
-                        ui.vertical(|ui| {
-                            format!("[tw [s {}]]", field.name).label(ui);
-                            call_on_recursive_value!(field, show, context, ui);
-                            // fn show_mut(
-                            //     v: &(impl SFnTitle + Clone),
-                            //     context: &Context,
-                            //     ui: &mut Ui,
-                            // ) {
-                            //     let mut v = v.clone();
-                            //     // v.see(context).ctxbtn().add_delete().ui(ui);
-                            // }
-                            // call_pass_recursive_value!(field, show_mut, context, ui);
-                        });
+            let mut changed = false;
+            e.see_mut(context).recursive(ui, |ui, context, field| {
+                ui.group(|ui| {
+                    ui.vertical(|ui| {
+                        format!("[tw [s {}]]", field.name).label(ui);
+                        fn show_mut(
+                            v: &mut (impl SFnShowMut + Clone),
+                            context: &Context,
+                            ui: &mut Ui,
+                        ) -> bool {
+                            v.see_mut(context).show(ui)
+                        }
+                        changed |= call_pass_recursive_value_mut!(field, show_mut, context, ui);
                     });
                 });
-            if e.view_with_children_mut(ViewContext::new(ui), context, ui)
-                .changed
-            {
+            });
+            if changed {
                 ui.ctx().data_mut(|w| w.insert_persisted(id, e))
             }
         });

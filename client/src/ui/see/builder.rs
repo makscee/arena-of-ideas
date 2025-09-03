@@ -112,3 +112,12 @@ impl<'a, T: SFnShowMut> SeeBuilderMut<'a, T> {
         self.data.show_mut(self.ctx, ui)
     }
 }
+
+impl<'a, T: SFnRecursiveMut> SeeBuilderMut<'a, T> {
+    pub fn recursive<F>(self, ui: &mut Ui, mut f: F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveFieldMut<'_>),
+    {
+        self.data.recursive(self.ctx, ui, &mut f)
+    }
+}
