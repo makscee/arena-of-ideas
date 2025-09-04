@@ -56,8 +56,9 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                                 let fn_ident =
                                     syn::Ident::new(&fn_name, proc_macro2::Span::call_site());
                                 ui_widget = Some(quote! {
+                                    ui.label(#label);
                                     let options = #fn_ident();
-                                    if Selector::new(#label).ui_iter(&mut settings.#field_name, &options, ui) {
+                                    if Selector.ui_iter(&mut settings.#field_name, &options, ui) {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name);
                                     }
                                 });
@@ -65,7 +66,8 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                             }
                         } else if tokens_str.starts_with("enum") {
                             ui_widget = Some(quote! {
-                                if Selector::new(#label).ui_enum(&mut settings.#field_name, ui) {
+                                ui.label(#label);
+                                if Selector.ui_enum(&mut settings.#field_name, ui) {
                                     pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                 }
                             });

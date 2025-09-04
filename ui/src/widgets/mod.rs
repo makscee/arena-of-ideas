@@ -1,7 +1,6 @@
 use super::*;
 
 mod button;
-mod collapsing_selector;
 mod confirmation;
 mod context_menu;
 mod dnd_area;
@@ -18,7 +17,6 @@ mod tag;
 mod window;
 
 pub use button::*;
-pub use collapsing_selector::*;
 pub use confirmation::*;
 pub use context_menu::*;
 pub use dnd_area::*;

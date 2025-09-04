@@ -5,6 +5,8 @@ pub enum CtxBtnAction<T> {
     Delete(T),
     Paste(T),
     PasteNodeFull(T),
+    SelectorChanged(T),
+    Clicked,
 }
 
 pub enum CtxBtnItem<'a, T: Clone> {
@@ -110,6 +112,27 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
         self
     }
 
+    fn create_publish_window(mut pack: PackedNodes, title: String) {
+        op(move |world| {
+            Window::new(title, move |ui, world| {
+                if "Publish".cstr().button(ui).clicked() {
+                    cn().reducers
+                        .content_publish_node(to_ron_string(&pack))
+                        .unwrap();
+                    WindowPlugin::close_current(world);
+                }
+                Context::from_world(world, |context| {
+                    pack.kind()
+                        .to_kind()
+                        .view_pack_with_children_mut(context, ui, &mut pack)
+                        .ui(ui);
+                });
+            })
+            .expand()
+            .push(world);
+        });
+    }
+
     pub fn add_publish_submenu(mut self) -> Self
     where
         T: Node,
@@ -121,32 +144,14 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
                     let mut pack = PackedNodes::default();
                     pack.root = item.id();
                     item.pack_fill(&mut pack);
-
-                    op(move |world| {
-                        Window::new("Publish Node", move |ui, world| {
-                            if "Publish".cstr().button(ui).clicked() {
-                                cn().reducers
-                                    .content_publish_node(to_ron_string(&pack))
-                                    .unwrap();
-                                WindowPlugin::close_current(world);
-                            }
-                            Context::from_world(world, |context| {
-                                pack.kind()
-                                    .to_kind()
-                                    .view_pack_with_children_mut(context, ui, &mut pack)
-                                    .ui(ui);
-                            });
-                        })
-                        .expand()
-                        .push(world);
-                    });
+                    Self::create_publish_window(pack, "Publish Node".to_string());
                     None
                 }),
             ),
             CtxBtnItem::Action(
                 "Nested".to_string(),
                 Box::new(|item: T, context| {
-                    let mut pack = if let Some(entity) = item.get_entity() {
+                    let pack = if let Some(entity) = item.get_entity() {
                         if let Ok(packed_item) = T::pack_entity(context, entity) {
                             packed_item.pack()
                         } else {
@@ -155,25 +160,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
                     } else {
                         item.pack()
                     };
-
-                    op(move |world| {
-                        Window::new("Publish Node Nested", move |ui, world| {
-                            if "Publish".cstr().button(ui).clicked() {
-                                cn().reducers
-                                    .content_publish_node(to_ron_string(&pack))
-                                    .unwrap();
-                                WindowPlugin::close_current(world);
-                            }
-                            Context::from_world(world, |context| {
-                                pack.kind()
-                                    .to_kind()
-                                    .view_pack_with_children_mut(context, ui, &mut pack)
-                                    .ui(ui);
-                            });
-                        })
-                        .expand()
-                        .push(world);
-                    });
+                    Self::create_publish_window(pack, "Publish Node Nested".to_string());
                     None
                 }),
             ),
@@ -264,6 +251,48 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
         result
     }
 
+    fn render_context_menu(
+        actions: Vec<CtxBtnItem<'a, T>>,
+        dangerous_actions: Vec<CtxBtnItem<'a, T>>,
+        data: &T,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> Option<CtxBtnAction<T>> {
+        let mut action = None;
+        let circle_size = 12.0;
+        let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
+            ui,
+            |color, rect, _response, ui| {
+                const SIZE: f32 = 0.1;
+                ui.painter()
+                    .circle_filled(rect.center_top(), rect.width() * SIZE, color);
+                ui.painter()
+                    .circle_filled(rect.center(), rect.width() * SIZE, color);
+                ui.painter()
+                    .circle_filled(rect.center_bottom(), rect.width() * SIZE, color);
+            },
+        );
+
+        circle_response.bar_menu(|ui| {
+            ui.set_min_width(120.0);
+
+            if let Some(result) = Self::render_menu_items(actions, data, context, ui, false) {
+                action = Some(result);
+            }
+
+            if !dangerous_actions.is_empty() {
+                ui.separator();
+            }
+
+            if let Some(result) =
+                Self::render_menu_items(dangerous_actions, data, context, ui, true)
+            {
+                action = Some(result);
+            }
+        });
+        action
+    }
+
     pub fn ui(self, ui: &mut Ui) -> CtxBtnResponse<T>
     where
         T: SFnTitle,
@@ -274,62 +303,65 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
             .horizontal(|ui| {
                 let title_response = self.builder.data().cstr_title().button(ui);
 
-                let circle_size = 12.0;
-                let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
+                if let Some(menu_action) = Self::render_context_menu(
+                    self.actions,
+                    self.dangerous_actions,
+                    self.builder.data(),
+                    self.builder.context(),
                     ui,
-                    |color, rect, _response, ui| {
-                        ui.painter()
-                            .circle_filled(rect.center(), rect.width() * 0.5, color);
-                    },
-                );
-
-                circle_response.bar_menu(|ui| {
-                    ui.set_min_width(120.0);
-
-                    if let Some(result) = Self::render_menu_items(
-                        self.actions,
-                        self.builder.data(),
-                        self.builder.context(),
-                        ui,
-                        false,
-                    ) {
-                        action = Some(result);
-                    }
-
-                    if !self.dangerous_actions.is_empty() {
-                        ui.separator();
-                    }
-
-                    if let Some(result) = Self::render_menu_items(
-                        self.dangerous_actions,
-                        self.builder.data(),
-                        self.builder.context(),
-                        ui,
-                        true,
-                    ) {
-                        action = Some(result);
-                    }
-                });
+                ) {
+                    action = Some(menu_action);
+                }
 
                 title_response
             })
             .inner;
 
         CtxBtnResponse {
-            response: title_response,
-            action,
+            action: if title_response.clicked() && action.is_none() {
+                Some(CtxBtnAction::Clicked)
+            } else {
+                action
+            },
         }
+    }
+
+    pub fn ui_enum(self, ui: &mut Ui) -> CtxBtnResponse<T>
+    where
+        T: SFnTitle + ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq,
+    {
+        let mut action = None;
+        let mut data_clone = self.builder.data().clone();
+
+        ui.horizontal(|ui| {
+            let selector_changed = Selector.ui_enum(&mut data_clone, ui);
+
+            if selector_changed {
+                action = Some(CtxBtnAction::SelectorChanged(data_clone.clone()));
+            }
+
+            if let Some(menu_action) = Self::render_context_menu(
+                self.actions,
+                self.dangerous_actions,
+                self.builder.data(),
+                self.builder.context(),
+                ui,
+            ) {
+                action = Some(menu_action);
+            }
+        });
+
+        CtxBtnResponse { action }
     }
 }
 
 pub struct CtxBtnResponse<T> {
-    pub response: Response,
     pub action: Option<CtxBtnAction<T>>,
 }
 
 impl<T> CtxBtnResponse<T> {
     pub fn clicked(&self) -> bool {
-        self.response.clicked()
+        matches!(self.action, Some(CtxBtnAction::Clicked))
     }
 
     pub fn action(&self) -> Option<&CtxBtnAction<T>> {
@@ -350,6 +382,14 @@ impl<T> CtxBtnResponse<T> {
 
     pub fn pasted_node_full(&self) -> Option<&T> {
         if let Some(CtxBtnAction::PasteNodeFull(data)) = &self.action {
+            Some(data)
+        } else {
+            None
+        }
+    }
+
+    pub fn selector_changed(&self) -> Option<&T> {
+        if let Some(CtxBtnAction::SelectorChanged(data)) = &self.action {
             Some(data)
         } else {
             None

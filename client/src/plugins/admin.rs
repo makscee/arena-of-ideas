@@ -34,13 +34,31 @@ impl AdminPlugin {
                     ui.vertical(|ui| {
                         format!("[tw [s {}]]", field.name).label(ui);
                         fn show_mut(
-                            v: &mut (impl SFnShowMut + Clone),
+                            v: &mut (
+                                     impl SFnTitle
+                                     + Clone
+                                     + ToCstr
+                                     + AsRef<str>
+                                     + IntoEnumIterator
+                                     + PartialEq
+                                 ),
                             context: &Context,
                             ui: &mut Ui,
                         ) -> bool {
-                            v.see_mut(context).show_mut(ui)
+                            if let Some(n) =
+                                v.see_mut(context).ctxbtn().ui_enum(ui).selector_changed()
+                            {
+                                *v = n.clone();
+                                true
+                            } else {
+                                false
+                            }
                         }
-                        changed |= call_pass_recursive_value_mut!(field, show_mut, context, ui);
+                        // changed |= call_pass_recursive_value_mut!(field, show_mut, context, ui);
+                        changed |= match field.value {
+                            RecursiveValueMut::Expr(e) => show_mut(e, context, ui),
+                            _ => false,
+                        };
                     });
                 });
             });
