@@ -38,7 +38,7 @@ impl AdminPlugin {
                             context: &Context,
                             ui: &mut Ui,
                         ) -> bool {
-                            v.see_mut(context).show(ui)
+                            v.see_mut(context).show_mut(ui)
                         }
                         changed |= call_pass_recursive_value_mut!(field, show_mut, context, ui);
                     });

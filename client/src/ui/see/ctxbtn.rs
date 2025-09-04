@@ -17,17 +17,15 @@ pub enum CtxBtnItem<'a, T: Clone> {
 }
 
 pub struct CtxBtnBuilder<'a, T: Clone> {
-    item: &'a T,
-    context: &'a Context<'a>,
+    builder: SeeBuilder<'a, T>,
     actions: Vec<CtxBtnItem<'a, T>>,
     dangerous_actions: Vec<CtxBtnItem<'a, T>>,
 }
 
 impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
-    pub fn new(item: &'a T, context: &'a Context<'a>) -> Self {
+    pub fn new(builder: SeeBuilder<'a, T>) -> Self {
         Self {
-            item,
-            context,
+            builder,
             actions: Vec::new(),
             dangerous_actions: Vec::new(),
         }
@@ -37,10 +35,11 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
     where
         T: StringData,
     {
+        let data = self.builder.data().get_data();
         self.actions.push(CtxBtnItem::Action(
             "📋 Copy".to_string(),
-            Box::new(|item, _context| {
-                clipboard_set(item.get_data());
+            Box::new(move |_item, _context| {
+                clipboard_set(data);
                 None
             }),
         ));
@@ -273,7 +272,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
 
         let title_response = ui
             .horizontal(|ui| {
-                let title_response = self.item.cstr_title().button(ui);
+                let title_response = self.builder.data().cstr_title().button(ui);
 
                 let circle_size = 12.0;
                 let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -287,9 +286,13 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
                 circle_response.bar_menu(|ui| {
                     ui.set_min_width(120.0);
 
-                    if let Some(result) =
-                        Self::render_menu_items(self.actions, self.item, self.context, ui, false)
-                    {
+                    if let Some(result) = Self::render_menu_items(
+                        self.actions,
+                        self.builder.data(),
+                        self.builder.context(),
+                        ui,
+                        false,
+                    ) {
                         action = Some(result);
                     }
 
@@ -299,8 +302,8 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
 
                     if let Some(result) = Self::render_menu_items(
                         self.dangerous_actions,
-                        self.item,
-                        self.context,
+                        self.builder.data(),
+                        self.builder.context(),
                         ui,
                         true,
                     ) {
@@ -356,7 +359,7 @@ impl<T> CtxBtnResponse<T> {
 
 impl<'a, T: Clone + SFnTitle> SeeBuilder<'a, T> {
     pub fn ctxbtn(self) -> CtxBtnBuilder<'a, T> {
-        CtxBtnBuilder::new(self.data(), self.context())
+        CtxBtnBuilder::new(self)
     }
 }
 
@@ -365,14 +368,14 @@ impl<'a, T: NodeExt + Clone + SFnTitle> SeeBuilder<'a, T> {
     where
         T: StringData + Default,
     {
-        CtxBtnBuilder::new(self.data(), self.context()).with_node_defaults()
+        CtxBtnBuilder::new(self).with_node_defaults()
     }
 
     pub fn node_ctxbtn_full(self) -> CtxBtnBuilder<'a, T>
     where
         T: StringData + Default + Node,
     {
-        CtxBtnBuilder::new(self.data(), self.context()).with_node_full_defaults()
+        CtxBtnBuilder::new(self).with_node_full_defaults()
     }
 }
 

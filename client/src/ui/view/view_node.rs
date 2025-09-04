@@ -11,7 +11,7 @@ pub trait NodeViewFns: NodeExt + ViewFns + SFnShowMut {
     }
     fn view_data_mut(&mut self, vctx: ViewContext, context: &Context, ui: &mut Ui) -> ViewResponse {
         let mut vr = ViewResponse::default();
-        vr.changed = self.see_mut(context).show(ui);
+        vr.changed = self.see_mut(context).show_mut(ui);
         vr
     }
     fn view_context_menu_extra_mut(

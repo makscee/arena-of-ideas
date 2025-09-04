@@ -29,8 +29,8 @@ pub trait See: Sized {
         SeeBuilder::new(self, context)
     }
 
-    fn see_mut<'a>(&'a mut self, context: &'a Context<'a>) -> SeeBuilderMut<'a, Self> {
-        SeeBuilderMut::new(self, context)
+    fn see_mut<'a>(&'a mut self, context: &'a Context<'a>) -> SeeBuilder<'a, Self> {
+        SeeBuilder::new_mut(self, context)
     }
 }
 

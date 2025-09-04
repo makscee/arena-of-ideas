@@ -444,7 +444,7 @@ impl BattleEditorPlugin {
         })?;
         ui.group(|ui| {
             node.see(context).info().label(ui);
-            changed |= node.see_mut(context).show(ui);
+            changed |= node.see_mut(context).show_mut(ui);
         });
         if changed {
             node.unpack_entity(context, entity).log();
@@ -492,7 +492,7 @@ impl BattleEditorPlugin {
 
                 if !was_deleted {
                     ui.group(|ui| {
-                        if parent_node.see_mut(context).show(ui) {
+                        if parent_node.see_mut(context).show_mut(ui) {
                             local_changed = true;
                         }
                     });
