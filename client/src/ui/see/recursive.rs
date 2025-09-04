@@ -29,11 +29,13 @@ pub enum RecursiveValue<'a> {
     Reaction(&'a Reaction),
 }
 
+#[derive(Debug)]
 pub struct RecursiveFieldMut<'a> {
     pub name: String,
     pub value: RecursiveValueMut<'a>,
 }
 
+#[derive(Debug)]
 pub enum RecursiveValueMut<'a> {
     Expr(&'a mut Expression),
     Action(&'a mut Action),
@@ -387,6 +389,111 @@ impl ToRecursiveValueMut for Vec2 {
 impl ToRecursiveValueMut for Reaction {
     fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
         RecursiveValueMut::Reaction(self)
+    }
+}
+
+macro_rules! replace_and_move_fields {
+    ($value:expr, $new_value:expr) => {{
+        std::mem::swap($value, &mut $new_value);
+        let mut old_fields = $new_value.recursive_fields_mut();
+        let mut new_fields = $value.recursive_fields_mut();
+        RecursiveValueMut::swap_matching_fields(&mut old_fields, &mut new_fields);
+    }};
+}
+
+impl<'a> RecursiveValueMut<'a> {
+    /// Replace expression and move matching fields
+    pub fn replace_expr_and_move_fields(expr: &mut Expression, mut new_expr: Expression) {
+        replace_and_move_fields!(expr, new_expr);
+    }
+
+    /// Replace action and move matching fields
+    pub fn replace_action_and_move_fields(action: &mut Action, mut new_action: Action) {
+        replace_and_move_fields!(action, new_action);
+    }
+
+    /// Replace painter action and move matching fields
+    pub fn replace_painter_action_and_move_fields(
+        painter_action: &mut PainterAction,
+        mut new_painter_action: PainterAction,
+    ) {
+        replace_and_move_fields!(painter_action, new_painter_action);
+    }
+
+    fn swap_matching_fields<'b>(
+        old_fields: &mut Vec<RecursiveFieldMut<'b>>,
+        new_fields: &mut Vec<RecursiveFieldMut<'b>>,
+    ) {
+        for new_field in new_fields.iter_mut() {
+            let mut found_index = None;
+            for (i, old_field) in old_fields.iter_mut().enumerate() {
+                if Self::swap_field_values(&mut old_field.value, &mut new_field.value) {
+                    found_index = Some(i);
+                    break;
+                }
+            }
+            if let Some(i) = found_index {
+                old_fields.remove(i);
+            }
+        }
+    }
+
+    /// Swap values between two matching field types, returns true if swap occurred
+    fn swap_field_values<'b>(
+        old: &mut RecursiveValueMut<'b>,
+        new: &mut RecursiveValueMut<'b>,
+    ) -> bool {
+        match (old, new) {
+            (RecursiveValueMut::Expr(old_e), RecursiveValueMut::Expr(new_e)) => {
+                std::mem::swap(*old_e, *new_e);
+                true
+            }
+            (RecursiveValueMut::Action(old_a), RecursiveValueMut::Action(new_a)) => {
+                std::mem::swap(*old_a, *new_a);
+                true
+            }
+            (RecursiveValueMut::PainterAction(old_p), RecursiveValueMut::PainterAction(new_p)) => {
+                std::mem::swap(*old_p, *new_p);
+                true
+            }
+            (RecursiveValueMut::Var(old_v), RecursiveValueMut::Var(new_v)) => {
+                std::mem::swap(*old_v, *new_v);
+                true
+            }
+            (RecursiveValueMut::VarValue(old_v), RecursiveValueMut::VarValue(new_v)) => {
+                std::mem::swap(*old_v, *new_v);
+                true
+            }
+            (RecursiveValueMut::HexColor(old_c), RecursiveValueMut::HexColor(new_c)) => {
+                std::mem::swap(*old_c, *new_c);
+                true
+            }
+            (RecursiveValueMut::String(old_s), RecursiveValueMut::String(new_s)) => {
+                std::mem::swap(*old_s, *new_s);
+                true
+            }
+            (RecursiveValueMut::I32(old_i), RecursiveValueMut::I32(new_i)) => {
+                std::mem::swap(*old_i, *new_i);
+                true
+            }
+            (RecursiveValueMut::F32(old_f), RecursiveValueMut::F32(new_f)) => {
+                std::mem::swap(*old_f, *new_f);
+                true
+            }
+            (RecursiveValueMut::Bool(old_b), RecursiveValueMut::Bool(new_b)) => {
+                std::mem::swap(*old_b, *new_b);
+                true
+            }
+            (RecursiveValueMut::Vec2(old_v), RecursiveValueMut::Vec2(new_v)) => {
+                std::mem::swap(*old_v, *new_v);
+                true
+            }
+            (RecursiveValueMut::Reaction(old_r), RecursiveValueMut::Reaction(new_r)) => {
+                std::mem::swap(*old_r, *new_r);
+                true
+            }
+            _ => false, // Types don't match, can't swap
+        }
     }
 }
 
