@@ -1,197 +1,79 @@
 use super::*;
 
 /// Title trait for types that can be displayed as a colored string title.
-/// This trait leverages SFnCstr for the actual string formatting.
-pub trait SFnTitle {
-    fn cstr_title(&self) -> Cstr;
-}
-
-// Basic type implementations that delegate to SFnCstr
-impl SFnTitle for String {
-    fn cstr_title(&self) -> Cstr {
+/// This trait is limited to types that implement ToCstr and provides a default
+/// implementation that just calls `.cstr()`.
+pub trait SFnCstrTitle: ToCstr {
+    fn cstr_title(&self, _context: &Context) -> Cstr {
         self.cstr()
     }
 }
 
-impl SFnTitle for &str {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
+/// Integration with SeeBuilder for title functionality
+impl<'a, T: SFnCstrTitle> SeeBuilder<'a, T> {
+    pub fn title_button(self, ui: &mut Ui) -> Response {
+        self.data().cstr_title(self.context()).button(ui)
+    }
+
+    pub fn title_label(self, ui: &mut Ui) -> Response {
+        self.data().cstr_title(self.context()).label(ui)
+    }
+
+    pub fn title_cstr(self) -> Cstr {
+        self.data().cstr_title(self.context())
     }
 }
 
-impl SFnTitle for &String {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
+impl SFnCstrTitle for Action {
+    fn cstr_title(&self, context: &Context) -> Cstr {
+        fn add_lvl(r: &mut String, context: &Context) {
+            if let Ok(lvl) = context.get_i32(VarName::lvl) {
+                *r += &format!(" [tw [s lvl]][{} [b {lvl}]]", VarName::lvl.color().to_hex());
+            }
+        }
+        match self {
+            Action::use_ability => {
+                let mut r = self.cstr();
+                if let Ok(ability) = context.get_string(VarName::ability_name) {
+                    if let Ok(color) = context.get_color(VarName::color) {
+                        r += " ";
+                        r += &ability.cstr_cs(color, CstrStyle::Bold);
+                        add_lvl(&mut r, context);
+                    }
+                }
+                r
+            }
+            _ => self.cstr(),
+        }
     }
 }
 
-impl SFnTitle for NodeKind {
-    fn cstr_title(&self) -> Cstr {
-        // Use the SFnCstr implementation which already handles this
-        self.cstr()
-    }
-}
+impl SFnCstrTitle for NArena {}
+impl SFnCstrTitle for NFloorPool {}
+impl SFnCstrTitle for NFloorBoss {}
+impl SFnCstrTitle for NPlayer {}
+impl SFnCstrTitle for NPlayerData {}
+impl SFnCstrTitle for NPlayerIdentity {}
+impl SFnCstrTitle for NHouse {}
+impl SFnCstrTitle for NHouseColor {}
+impl SFnCstrTitle for NAbilityMagic {}
+impl SFnCstrTitle for NAbilityDescription {}
+impl SFnCstrTitle for NAbilityEffect {}
+impl SFnCstrTitle for NStatusMagic {}
+impl SFnCstrTitle for NStatusDescription {}
+impl SFnCstrTitle for NStatusBehavior {}
+impl SFnCstrTitle for NStatusRepresentation {}
+impl SFnCstrTitle for NTeam {}
+impl SFnCstrTitle for NBattle {}
+impl SFnCstrTitle for NMatch {}
+impl SFnCstrTitle for NFusion {}
+impl SFnCstrTitle for NFusionSlot {}
+impl SFnCstrTitle for NUnit {}
+impl SFnCstrTitle for NUnitDescription {}
+impl SFnCstrTitle for NUnitStats {}
+impl SFnCstrTitle for NUnitState {}
+impl SFnCstrTitle for NUnitBehavior {}
+impl SFnCstrTitle for NUnitRepresentation {}
 
-impl SFnTitle for NUnit {
-    fn cstr_title(&self) -> Cstr {
-        self.unit_name.cstr()
-    }
-}
-
-impl SFnTitle for NHouse {
-    fn cstr_title(&self) -> Cstr {
-        self.house_name.cstr()
-    }
-}
-
-impl SFnTitle for NAbilityMagic {
-    fn cstr_title(&self) -> Cstr {
-        self.ability_name.cstr()
-    }
-}
-
-impl SFnTitle for NStatusMagic {
-    fn cstr_title(&self) -> Cstr {
-        self.status_name.cstr()
-    }
-}
-
-impl SFnTitle for NFusion {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NHouseColor {
-    fn cstr_title(&self) -> Cstr {
-        self.color.cstr()
-    }
-}
-
-impl SFnTitle for NAbilityDescription {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NAbilityEffect {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NStatusDescription {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NStatusBehavior {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NStatusRepresentation {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NUnitStats {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for NUnitState {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NUnitDescription {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NUnitRepresentation {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-impl SFnTitle for NUnitBehavior {
-    fn cstr_title(&self) -> Cstr {
-        self.kind().cstr()
-    }
-}
-
-// These types already have SFnCstr implementations,
-// so their title is just their colored string representation
-impl SFnTitle for Expression {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for Action {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for Reaction {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for PainterAction {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for VarName {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for VarValue {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for i32 {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for f32 {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for bool {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for HexColor {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl SFnTitle for Vec2 {
-    fn cstr_title(&self) -> Cstr {
-        self.cstr()
-    }
-}
+impl SFnCstrTitle for Expression {}
+impl SFnCstrTitle for PainterAction {}

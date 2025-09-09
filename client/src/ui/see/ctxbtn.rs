@@ -295,13 +295,17 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
 
     pub fn ui(self, ui: &mut Ui) -> CtxBtnResponse<T>
     where
-        T: SFnTitle,
+        T: SFnCstrTitle,
     {
         let mut action = None;
 
         let title_response = ui
             .horizontal(|ui| {
-                let title_response = self.builder.data().cstr_title().button(ui);
+                let title_response = self
+                    .builder
+                    .data()
+                    .cstr_title(self.builder.context())
+                    .button(ui);
 
                 if let Some(menu_action) = Self::render_context_menu(
                     self.actions,
@@ -328,7 +332,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
 
     pub fn ui_enum(self, ui: &mut Ui) -> CtxBtnResponse<T>
     where
-        T: SFnTitle + ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq,
+        T: SFnCstrTitle + ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq,
     {
         let mut action = None;
         let mut data_clone = self.builder.data().clone();
@@ -397,13 +401,13 @@ impl<T> CtxBtnResponse<T> {
     }
 }
 
-impl<'a, T: Clone + SFnTitle> SeeBuilder<'a, T> {
+impl<'a, T: Clone + SFnCstrTitle> SeeBuilder<'a, T> {
     pub fn ctxbtn(self) -> CtxBtnBuilder<'a, T> {
         CtxBtnBuilder::new(self)
     }
 }
 
-impl<'a, T: NodeExt + Clone + SFnTitle> SeeBuilder<'a, T> {
+impl<'a, T: NodeExt + Clone + SFnCstrTitle> SeeBuilder<'a, T> {
     pub fn node_ctxbtn(self) -> CtxBtnBuilder<'a, T>
     where
         T: StringData + Default,

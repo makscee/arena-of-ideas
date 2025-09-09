@@ -60,9 +60,9 @@ impl<'a, T> SeeBuilder<'a, T> {
     }
 }
 
-impl<'a, T: SFnTitle> SeeBuilder<'a, T> {
+impl<'a, T: SFnCstrTitle> SeeBuilder<'a, T> {
     pub fn button(self, ui: &mut Ui) -> Response {
-        self.data().cstr_title().button(ui)
+        self.data().cstr_title(self.context()).button(ui)
     }
 }
 

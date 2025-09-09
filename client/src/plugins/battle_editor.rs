@@ -460,7 +460,7 @@ impl BattleEditorPlugin {
         changed: &mut bool,
     ) -> Option<u64>
     where
-        T: Node + 'static + SFnInfo + SFnTitle + SFnShowMut,
+        T: Node + 'static + SFnInfo + SFnCstrTitle + SFnShowMut,
     {
         let mut parent_id = None;
         if let Ok(parent) = context.first_parent::<T>(child_id) {
@@ -530,7 +530,7 @@ impl BattleEditorPlugin {
         action_callback: impl Fn(u64) -> BattleEditorAction,
     ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
     where
-        T: Node + 'static + Component<Mutability = Mutable> + SFnInfo + SFnTitle,
+        T: Node + 'static + Component<Mutability = Mutable> + SFnInfo + SFnCstrTitle,
     {
         let mut changed = false;
         let mut action = None;
