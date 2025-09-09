@@ -43,6 +43,8 @@ impl AdminPlugin {
                     if let Some(n) = (**e)
                         .see_mut(context)
                         .ctxbtn()
+                        .add_paste()
+                        .add_copy()
                         .ui_enum(ui)
                         .selector_changed()
                     {

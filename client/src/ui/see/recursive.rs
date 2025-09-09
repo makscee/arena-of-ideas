@@ -1,11 +1,15 @@
 use super::*;
 
 pub trait RecursiveFields {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>>;
+    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+        default()
+    }
 }
 
 pub trait RecursiveFieldsMut {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>>;
+    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+        default()
+    }
 }
 
 pub struct RecursiveField<'a> {
@@ -534,18 +538,18 @@ fn render_field_recursive_mut<F>(
             RecursiveFieldMut {
                 name: field.name.clone(),
                 value: match &mut field.value {
-                    RecursiveValueMut::Expr(v) => RecursiveValueMut::Expr(v),
-                    RecursiveValueMut::Action(v) => RecursiveValueMut::Action(v),
-                    RecursiveValueMut::PainterAction(v) => RecursiveValueMut::PainterAction(v),
-                    RecursiveValueMut::Var(v) => RecursiveValueMut::Var(v),
-                    RecursiveValueMut::VarValue(v) => RecursiveValueMut::VarValue(v),
-                    RecursiveValueMut::HexColor(v) => RecursiveValueMut::HexColor(v),
-                    RecursiveValueMut::String(v) => RecursiveValueMut::String(v),
-                    RecursiveValueMut::I32(v) => RecursiveValueMut::I32(v),
-                    RecursiveValueMut::F32(v) => RecursiveValueMut::F32(v),
-                    RecursiveValueMut::Bool(v) => RecursiveValueMut::Bool(v),
-                    RecursiveValueMut::Vec2(v) => RecursiveValueMut::Vec2(v),
-                    RecursiveValueMut::Reaction(v) => RecursiveValueMut::Reaction(v),
+                    RecursiveValueMut::Expr(v) => RecursiveValueMut::Expr(*v),
+                    RecursiveValueMut::Action(v) => RecursiveValueMut::Action(*v),
+                    RecursiveValueMut::PainterAction(v) => RecursiveValueMut::PainterAction(*v),
+                    RecursiveValueMut::Var(v) => RecursiveValueMut::Var(*v),
+                    RecursiveValueMut::VarValue(v) => RecursiveValueMut::VarValue(*v),
+                    RecursiveValueMut::HexColor(v) => RecursiveValueMut::HexColor(*v),
+                    RecursiveValueMut::String(v) => RecursiveValueMut::String(*v),
+                    RecursiveValueMut::I32(v) => RecursiveValueMut::I32(*v),
+                    RecursiveValueMut::F32(v) => RecursiveValueMut::F32(*v),
+                    RecursiveValueMut::Bool(v) => RecursiveValueMut::Bool(*v),
+                    RecursiveValueMut::Vec2(v) => RecursiveValueMut::Vec2(*v),
+                    RecursiveValueMut::Reaction(v) => RecursiveValueMut::Reaction(*v),
                 },
             },
         );
@@ -591,101 +595,22 @@ impl<'a> RecursiveFieldMut<'a> {
     }
 }
 
-impl RecursiveFields for i32 {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for f32 {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for String {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for bool {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for VarName {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for VarValue {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for HexColor {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFields for Vec2 {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for i32 {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for f32 {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for String {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for bool {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for VarName {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for VarValue {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for HexColor {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
-
-impl RecursiveFieldsMut for Vec2 {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-}
+impl RecursiveFields for i32 {}
+impl RecursiveFields for f32 {}
+impl RecursiveFields for String {}
+impl RecursiveFields for bool {}
+impl RecursiveFields for VarName {}
+impl RecursiveFields for VarValue {}
+impl RecursiveFields for HexColor {}
+impl RecursiveFields for Vec2 {}
+impl RecursiveFieldsMut for i32 {}
+impl RecursiveFieldsMut for f32 {}
+impl RecursiveFieldsMut for String {}
+impl RecursiveFieldsMut for bool {}
+impl RecursiveFieldsMut for VarName {}
+impl RecursiveFieldsMut for VarValue {}
+impl RecursiveFieldsMut for HexColor {}
+impl RecursiveFieldsMut for Vec2 {}
 
 impl RecursiveFields for Box<Expression> {
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
