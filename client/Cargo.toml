@@ -7,7 +7,6 @@ edition.workspace = true
 dynamic_linking = ["bevy/dynamic_linking"]
 
 [dependencies]
-ui = { path = "../ui" }
 utils = { path = "../utils" }
 schema = { path = "../schema" }
 raw-nodes = { path = "../raw-nodes" }
@@ -44,6 +43,8 @@ parking_lot = { workspace = true }
 tween = { workspace = true }
 color-hex = { workspace = true }
 egui_tiles = { workspace = true }
+egui-notify = { workspace = true }
+egui_double_slider = { workspace = true }
 
 backtrace = { workspace = true }
 mlua = {workspace = true }

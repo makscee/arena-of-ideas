@@ -4,6 +4,7 @@ pub use crate::{nodes::*, plugins::*, resources::*, ui::*, utils::*};
 pub use anyhow::{Context as _, Result, anyhow};
 
 pub use crate::stdb::*;
+pub use crate::ui::see::cstr::{Cstr, CstrTrait, SFnCstr, SFnCstrWidget, ToCstr};
 pub use backtrace::Backtrace;
 pub use bevy::ecs::resource::Resource;
 pub use bevy::log::*;
@@ -115,5 +116,4 @@ pub use std::{
 };
 pub use strum::IntoEnumIterator;
 pub use strum_macros::{AsRefStr, Display, EnumIter, EnumString, FromRepr};
-pub use ui::*;
 pub use utils_client::{ToC32, ToColor, *};

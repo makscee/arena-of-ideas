@@ -3,7 +3,6 @@ members = [
     "raw-nodes",
     "schema",
     "server",
-    "ui",
     "utils",
     "utils-client",
     "settings-derive",

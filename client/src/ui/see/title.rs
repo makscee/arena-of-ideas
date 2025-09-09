@@ -1,9 +1,12 @@
 use super::*;
 
+/// Title trait for types that can be displayed as a colored string title.
+/// This trait leverages SFnCstr for the actual string formatting.
 pub trait SFnTitle {
     fn cstr_title(&self) -> Cstr;
 }
 
+// Basic type implementations that delegate to SFnCstr
 impl SFnTitle for String {
     fn cstr_title(&self) -> Cstr {
         self.cstr()
@@ -24,14 +27,8 @@ impl SFnTitle for &String {
 
 impl SFnTitle for NodeKind {
     fn cstr_title(&self) -> Cstr {
-        if matches!(self, raw_nodes::NodeKind::None) {
-            return "All".to_owned();
-        }
-        self.as_ref()
-            .split_at(1)
-            .1
-            .cstr()
-            .to_case(convert_case::Case::Title)
+        // Use the SFnCstr implementation which already handles this
+        self.cstr()
     }
 }
 
@@ -131,6 +128,8 @@ impl SFnTitle for NUnitBehavior {
     }
 }
 
+// These types already have SFnCstr implementations,
+// so their title is just their colored string representation
 impl SFnTitle for Expression {
     fn cstr_title(&self) -> Cstr {
         self.cstr()
