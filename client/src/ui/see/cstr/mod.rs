@@ -2,32 +2,17 @@ pub mod parser;
 pub mod style;
 pub mod traits;
 
+use std::sync::Arc;
+
+use ecolor::Hsva;
 pub use parser::*;
 pub use style::*;
-pub use traits::*;
 
 use super::*;
-use crate::ui::core::{CYAN, GREEN, MISSING_COLOR, RED, YELLOW};
-use crate::ui::core::{Colorix, Descriptions};
 use crate::ui::widgets::Button;
-use bevy::platform::collections::HashMap;
-use bevy::{
-    color::Color,
-    math::{Vec2, vec2},
-};
-use colored::{Colorize, CustomColor};
-use convert_case::Casing;
-use ecolor::Hsva;
-use egui::{Galley, Label, Response, Style, TextFormat, Widget, WidgetText, text::LayoutJob};
-use itertools::Itertools;
-use log::{debug, error, info};
-use once_cell::sync::OnceCell;
-use std::{str::FromStr, sync::Arc};
-use utils_client::{ToC32, gt};
 
 pub type Cstr = String;
 
-/// Original ToCstr trait that generated code expects
 pub trait ToCstr {
     fn cstr(&self) -> Cstr;
 
@@ -84,7 +69,7 @@ pub trait CstrTrait {
     fn info(&self);
     fn debug(&self);
     fn inject_vars(self, f: impl Fn(VarName) -> Option<VarValue>) -> Self;
-    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<Galley>;
+    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<egui::Galley>;
 }
 
 /// SFnCstrWidget is an alias for CstrTrait to follow the see module pattern
@@ -198,7 +183,7 @@ impl CstrTrait for Cstr {
         self
     }
 
-    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<Galley> {
+    fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<egui::Galley> {
         let mut job = LayoutJob::default();
         cstr_parse_into_job(&self, alpha, &mut job, ui.style());
         ui.fonts(|r| r.layout_job(job))

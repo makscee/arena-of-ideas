@@ -4,27 +4,13 @@ pub mod enum_colors;
 pub mod ui;
 pub mod utils;
 
+use super::*;
+
 pub use colorix::*;
 pub use descriptions::*;
 pub use enum_colors::*;
 pub use ui::*;
 pub use utils::*;
-
-use bevy_egui::egui;
-use bevy_egui::egui::menu::BarState;
-use colored::CustomColor;
-use egui::{
-    Align, Align2, Area, CollapsingHeader, Color32, ComboBox, CornerRadius, FontId, Frame, Id,
-    Image, Key, Layout, Margin, NumExt, Order, Rect, Response, Sense, Shadow, Stroke, TextEdit,
-    TextStyle, Ui, Widget, WidgetText, emath::Numeric, include_image, pos2, style::HandleShape,
-};
-use itertools::Itertools;
-use parking_lot::Mutex;
-use schema::*;
-use std::cell::LazyCell;
-use std::{cmp::Ordering, mem, ops::RangeInclusive};
-use strum::IntoEnumIterator;
-use utils_client::*;
 
 pub trait ToCustomColor {
     fn to_custom_color(&self) -> CustomColor;
@@ -44,7 +30,7 @@ pub trait ResponseExt {
 impl ResponseExt for Response {
     fn bar_menu(&self, add_contents: impl FnOnce(&mut Ui)) {
         let bar_id = self.id;
-        let mut bar_state = BarState::load(&self.ctx, bar_id);
+        let mut bar_state = egui::menu::BarState::load(&self.ctx, bar_id);
         bar_state.bar_menu(self, |ui| {
             ui.ctx().set_frame_flag(*BAR_OPEN_FLAG_KEY);
             add_contents(ui);

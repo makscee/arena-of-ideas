@@ -1,13 +1,4 @@
 use super::*;
-use crate::ui::core::{CYAN, Descriptions, GREEN, MISSING_COLOR, RED, low_contrast_text};
-use bevy::color::Color;
-use bevy::math::{Vec2, vec2};
-use convert_case::Casing;
-use itertools::Itertools;
-use schema::*;
-use std::ops::Deref;
-use std::str::FromStr;
-use utils_client::ToC32;
 
 // Implementations for basic types
 

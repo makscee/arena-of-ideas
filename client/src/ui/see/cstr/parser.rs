@@ -1,6 +1,4 @@
 use super::*;
-use egui::{Color32, Style, TextFormat, WidgetText, text::LayoutJob};
-use log::error;
 
 pub fn cstr_parse(s: &str, alpha: f32, style: &Style) -> WidgetText {
     let mut job = LayoutJob::default();
