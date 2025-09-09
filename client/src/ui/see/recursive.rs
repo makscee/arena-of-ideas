@@ -31,6 +31,7 @@ pub enum RecursiveValue<'a> {
     Bool(&'a bool),
     Vec2(&'a Vec2),
     Reaction(&'a Reaction),
+    Material(&'a Material),
 }
 
 #[derive(Debug)]
@@ -53,6 +54,7 @@ pub enum RecursiveValueMut<'a> {
     Bool(&'a mut bool),
     Vec2(&'a mut Vec2),
     Reaction(&'a mut Reaction),
+    Material(&'a mut Material),
 }
 
 pub trait SFnRecursive {
@@ -151,6 +153,42 @@ where
     }
 }
 
+impl<T> SFnRecursive for Vec<T>
+where
+    T: ToRecursiveValue + RecursiveFields,
+{
+    fn recursive<F>(&self, context: &Context, ui: &mut Ui, f: &mut F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
+    {
+        for (i, item) in self.iter().enumerate() {
+            let field = RecursiveField {
+                name: i.to_string(),
+                value: item.to_recursive_value(),
+            };
+            render_field_recursive(field, context, ui, f);
+        }
+    }
+}
+
+impl<T> SFnRecursiveMut for Vec<T>
+where
+    T: ToRecursiveValueMut + RecursiveFieldsMut,
+{
+    fn recursive<F>(&mut self, context: &Context, ui: &mut Ui, f: &mut F)
+    where
+        F: FnMut(&mut Ui, &Context, RecursiveFieldMut<'_>),
+    {
+        for (i, item) in self.iter_mut().enumerate() {
+            let field = RecursiveFieldMut {
+                name: i.to_string(),
+                value: item.to_recursive_value_mut(),
+            };
+            render_field_recursive_mut(field, context, ui, f);
+        }
+    }
+}
+
 /// Calls a method on the value inside a RecursiveField.
 ///
 /// This macro takes a RecursiveField, extracts the value, and calls the specified
@@ -180,6 +218,7 @@ macro_rules! call_on_recursive_value {
             RecursiveValue::Bool(v) => v.$func($($arg),*),
             RecursiveValue::Vec2(v) => v.$func($($arg),*),
             RecursiveValue::Reaction(v) => v.$func($($arg),*),
+            RecursiveValue::Material(v) => v.$func($($arg),*),
         }
     };
 }
@@ -200,6 +239,7 @@ macro_rules! call_pass_recursive_value {
             RecursiveValue::Bool(v) => $func(v, $($arg),*),
             RecursiveValue::Vec2(v) => $func(v, $($arg),*),
             RecursiveValue::Reaction(v) => $func(v, $($arg),*),
+            RecursiveValue::Material(v) => $func(v, $($arg),*),
         }
     };
 }
@@ -220,6 +260,7 @@ macro_rules! call_on_recursive_value_mut {
             RecursiveValueMut::Bool(v) => v.$func($($arg),*),
             RecursiveValueMut::Vec2(v) => v.$func($($arg),*),
             RecursiveValueMut::Reaction(v) => v.$func($($arg),*),
+            RecursiveValueMut::Material(v) => v.$func($($arg),*),
         }
     };
 }
@@ -240,6 +281,7 @@ macro_rules! call_pass_recursive_value_mut {
             RecursiveValueMut::Bool(v) => $func(v, $($arg),*),
             RecursiveValueMut::Vec2(v) => $func(v, $($arg),*),
             RecursiveValueMut::Reaction(v) => $func(v, $($arg),*),
+            RecursiveValueMut::Material(v) => $func(v, $($arg),*),
         }
     };
 }
@@ -324,6 +366,18 @@ impl ToRecursiveValue for Reaction {
     }
 }
 
+impl ToRecursiveValue for Material {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::Material(self)
+    }
+}
+
+impl<T: ToRecursiveValue + ?Sized> ToRecursiveValue for Box<T> {
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        self.as_ref().to_recursive_value()
+    }
+}
+
 impl ToRecursiveValueMut for Expression {
     fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
         RecursiveValueMut::Expr(self)
@@ -393,6 +447,18 @@ impl ToRecursiveValueMut for Vec2 {
 impl ToRecursiveValueMut for Reaction {
     fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
         RecursiveValueMut::Reaction(self)
+    }
+}
+
+impl ToRecursiveValueMut for Material {
+    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
+        RecursiveValueMut::Material(self)
+    }
+}
+
+impl<T: ToRecursiveValueMut + ?Sized> ToRecursiveValueMut for Box<T> {
+    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
+        self.as_mut().to_recursive_value_mut()
     }
 }
 
@@ -496,6 +562,10 @@ impl<'a> RecursiveValueMut<'a> {
                 std::mem::swap(*old_r, *new_r);
                 true
             }
+            (RecursiveValueMut::Material(old_m), RecursiveValueMut::Material(new_m)) => {
+                std::mem::swap(*old_m, *new_m);
+                true
+            }
             _ => false, // Types don't match, can't swap
         }
     }
@@ -550,6 +620,7 @@ fn render_field_recursive_mut<F>(
                     RecursiveValueMut::Bool(v) => RecursiveValueMut::Bool(*v),
                     RecursiveValueMut::Vec2(v) => RecursiveValueMut::Vec2(*v),
                     RecursiveValueMut::Reaction(v) => RecursiveValueMut::Reaction(*v),
+                    RecursiveValueMut::Material(v) => RecursiveValueMut::Material(*v),
                 },
             },
         );
@@ -618,40 +689,14 @@ impl RecursiveFields for Box<Expression> {
     }
 }
 
-impl RecursiveFields for Vec<Expression> {
+impl<T> RecursiveFields for Vec<T>
+where
+    T: ToRecursiveValue,
+{
     fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
-            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Expr(item)))
-            .collect()
-    }
-}
-
-impl RecursiveFields for Vec<Action> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.iter()
-            .enumerate()
-            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Action(item)))
-            .collect()
-    }
-}
-
-impl RecursiveFields for Vec<Box<Action>> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.iter()
-            .enumerate()
-            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::Action(item.as_ref())))
-            .collect()
-    }
-}
-
-impl RecursiveFields for Vec<Box<PainterAction>> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.iter()
-            .enumerate()
-            .map(|(i, item)| {
-                RecursiveField::indexed(i, RecursiveValue::PainterAction(item.as_ref()))
-            })
+            .map(|(i, item)| RecursiveField::indexed(i, item.to_recursive_value()))
             .collect()
     }
 }
@@ -1213,42 +1258,14 @@ impl RecursiveFieldsMut for Box<Expression> {
     }
 }
 
-impl RecursiveFieldsMut for Vec<Expression> {
+impl<T> RecursiveFieldsMut for Vec<T>
+where
+    T: ToRecursiveValueMut,
+{
     fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.iter_mut()
             .enumerate()
-            .map(|(i, item)| RecursiveFieldMut::indexed(i, RecursiveValueMut::Expr(item)))
-            .collect()
-    }
-}
-
-impl RecursiveFieldsMut for Vec<Action> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.iter_mut()
-            .enumerate()
-            .map(|(i, item)| RecursiveFieldMut::indexed(i, RecursiveValueMut::Action(item)))
-            .collect()
-    }
-}
-
-impl RecursiveFieldsMut for Vec<Box<Action>> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.iter_mut()
-            .enumerate()
-            .map(|(i, item)| {
-                RecursiveFieldMut::indexed(i, RecursiveValueMut::Action(item.as_mut()))
-            })
-            .collect()
-    }
-}
-
-impl RecursiveFieldsMut for Vec<Box<PainterAction>> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.iter_mut()
-            .enumerate()
-            .map(|(i, item)| {
-                RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(item.as_mut()))
-            })
+            .map(|(i, item)| RecursiveFieldMut::indexed(i, item.to_recursive_value_mut()))
             .collect()
     }
 }
@@ -1262,5 +1279,25 @@ impl RecursiveFieldsMut for Option<Expression> {
             )],
             None => vec![],
         }
+    }
+}
+
+impl RecursiveFields for Material {
+    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+        self.0
+            .iter()
+            .enumerate()
+            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::PainterAction(item)))
+            .collect()
+    }
+}
+
+impl RecursiveFieldsMut for Material {
+    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+        self.0
+            .iter_mut()
+            .enumerate()
+            .map(|(i, item)| RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(item)))
+            .collect()
     }
 }

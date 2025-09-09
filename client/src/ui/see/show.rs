@@ -396,65 +396,63 @@ impl SFnShowMut for Vec<u64> {
 
 impl SFnShow for Vec<Action> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        let vctx = ViewContext::new(ui).non_interactible(true);
-        for a in self {
-            a.view_title(vctx, context, ui);
-        }
+        self.see(context).recursive_show(ui);
     }
 }
 
 impl SFnShowMut for Vec<Action> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_with_children_mut(ViewContext::new(ui), context, ui)
-            .changed
+        self.see_mut(context).recursive_show_mut(ui)
     }
 }
 
 impl SFnShow for Reaction {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        ui.vertical(|ui| {
-            let vctx = ViewContext::new(ui).non_interactible(true);
-            ui.horizontal(|ui| {
-                Icon::Lightning.show(ui);
-                self.trigger.view_title(vctx, context, ui);
-            });
-            self.actions.show(context, ui);
-        });
+        self.see(context).recursive_show(ui);
     }
 }
 
 impl SFnShowMut for Reaction {
-    fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_with_children_mut(ViewContext::new(ui), context, ui)
-            .changed
+    fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {
+        // self.see_mut(context).recursive_show_mut(ui)
+        false
     }
 }
 
 impl SFnShow for Vec<Reaction> {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        for r in self {
-            r.show(context, ui);
-        }
+        self.see(context).recursive_show(ui);
     }
 }
 
 impl SFnShowMut for Vec<Reaction> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_with_children_mut(ViewContext::new(ui), context, ui)
-            .changed
+        self.see_mut(context).recursive_show_mut(ui)
     }
 }
 
 impl SFnShow for Material {
     fn show(&self, context: &Context, ui: &mut Ui) {
-        self.view_with_children(ViewContext::new(ui), context, ui);
+        self.see(context).recursive_show(ui);
     }
 }
 
 impl SFnShowMut for Material {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_with_children_mut(ViewContext::new(ui), context, ui)
-            .changed
+        let size_id = ui.id().with("view size");
+        let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
+        if DragValue::new(&mut size).ui(ui).changed() {
+            ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
+        }
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+        RepresentationPlugin::paint_rect(rect, context, self, ui).ui(ui);
+        ui.painter().rect_stroke(
+            rect,
+            0,
+            Stroke::new(1.0, subtle_borders_and_separators()),
+            egui::StrokeKind::Middle,
+        );
+        self.0.see_mut(context).recursive_show_mut(ui)
     }
 }
 

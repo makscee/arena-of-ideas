@@ -125,7 +125,7 @@ impl<'a, T: SFnShowMut> SeeBuilder<'a, T> {
     pub fn show_mut(self, ui: &mut Ui) -> bool {
         match self.data {
             DataRef::Mutable(data) => data.show_mut(self.ctx, ui),
-            DataRef::Immutable(_) => false,
+            DataRef::Immutable(_) => panic!("Tried to do mut operation on immutable data"),
         }
     }
 }
@@ -137,6 +137,15 @@ impl<'a, T: SFnRecursive> SeeBuilder<'a, T> {
     {
         self.data().recursive(self.ctx, ui, &mut f)
     }
+
+    pub fn recursive_show(self, ui: &mut Ui) {
+        self.recursive_readonly(ui, |ui, context, field| {
+            if !field.name.is_empty() {
+                field.name.label(ui);
+            }
+            call_on_recursive_value!(field, show, context, ui);
+        })
+    }
 }
 
 impl<'a, T: SFnRecursiveMut> SeeBuilder<'a, T> {
@@ -146,7 +155,20 @@ impl<'a, T: SFnRecursiveMut> SeeBuilder<'a, T> {
     {
         match self.data {
             DataRef::Mutable(data) => data.recursive(self.ctx, ui, &mut f),
-            DataRef::Immutable(_) => {}
+            DataRef::Immutable(_) => {
+                panic!("Tried to do mut operation on immutable data")
+            }
         }
+    }
+
+    pub fn recursive_show_mut(self, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        self.recursive(ui, |ui, context, field| {
+            if !field.name.is_empty() {
+                field.name.label(ui);
+            }
+            changed |= call_on_recursive_value_mut!(field, show_mut, context, ui);
+        });
+        changed
     }
 }
