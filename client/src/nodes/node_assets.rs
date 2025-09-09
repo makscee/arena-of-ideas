@@ -292,7 +292,7 @@ impl NodeAssetsManager {
     pub fn get_top_rated_nodes(&self, kind: NodeKind, limit: usize) -> Vec<(u64, &NodeAsset)> {
         if let Some(nodes) = self.nodes.get(&kind) {
             let mut sorted_nodes: Vec<_> = nodes.iter().collect();
-            sorted_nodes.sort_by(|a, b| b.1 .2.cmp(&a.1 .2));
+            sorted_nodes.sort_by(|a, b| b.1.2.cmp(&a.1.2));
             sorted_nodes
                 .into_iter()
                 .take(limit)

@@ -11,7 +11,6 @@ pub use ui::*;
 pub use utils::*;
 
 use bevy_egui::egui;
-use bevy_egui::egui::UiBuilder;
 use bevy_egui::egui::menu::BarState;
 use colored::CustomColor;
 use egui::{
