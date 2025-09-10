@@ -1,37 +1,37 @@
 use super::*;
 use crate::ui::see::{Cstr, CstrTrait, RecursiveField, RecursiveFieldMut};
 
-pub enum DataRef<'a, T> {
+pub enum RenderDataRef<'a, T> {
     Immutable(&'a T),
     Mutable(&'a mut T),
 }
 
-impl<'a, T> DataRef<'a, T> {
+impl<'a, T> RenderDataRef<'a, T> {
     pub fn as_ref(&self) -> &T {
         match self {
-            DataRef::Immutable(data) => data,
-            DataRef::Mutable(data) => data,
+            RenderDataRef::Immutable(data) => data,
+            RenderDataRef::Mutable(data) => data,
         }
     }
 
     pub fn as_mut(&mut self) -> Option<&mut T> {
         match self {
-            DataRef::Immutable(_) => None,
-            DataRef::Mutable(data) => Some(data),
+            RenderDataRef::Immutable(_) => None,
+            RenderDataRef::Mutable(data) => Some(data),
         }
     }
 }
 
 pub struct RenderBuilder<'a, T> {
-    data: DataRef<'a, T>,
-    ctx: &'a Context<'a>,
+    pub(super) data: RenderDataRef<'a, T>,
+    pub(super) ctx: &'a Context<'a>,
     composers: Vec<Box<dyn Composer<T> + 'a>>,
 }
 
 impl<'a, T> RenderBuilder<'a, T> {
     pub fn new(data: &'a T, ctx: &'a Context<'a>) -> Self {
         Self {
-            data: DataRef::Immutable(data),
+            data: RenderDataRef::Immutable(data),
             ctx,
             composers: Vec::new(),
         }
@@ -39,7 +39,7 @@ impl<'a, T> RenderBuilder<'a, T> {
 
     pub fn new_mut(data: &'a mut T, ctx: &'a Context<'a>) -> Self {
         Self {
-            data: DataRef::Mutable(data),
+            data: RenderDataRef::Mutable(data),
             ctx,
             composers: Vec::new(),
         }
@@ -54,7 +54,7 @@ impl<'a, T> RenderBuilder<'a, T> {
     }
 
     pub fn is_mutable(&self) -> bool {
-        matches!(self.data, DataRef::Mutable(_))
+        matches!(self.data, RenderDataRef::Mutable(_))
     }
 
     /// Add a composer to the pipeline
@@ -113,8 +113,8 @@ impl<'a, T: FDisplay> RenderBuilder<'a, T> {
 impl<'a, T: FEdit> RenderBuilder<'a, T> {
     pub fn edit(self, ui: &mut Ui) -> bool {
         match self.data {
-            DataRef::Mutable(data) => data.edit(self.ctx, ui),
-            DataRef::Immutable(_) => {
+            RenderDataRef::Mutable(data) => data.edit(self.ctx, ui),
+            RenderDataRef::Immutable(_) => {
                 panic!("Tried to edit immutable data");
             }
         }
@@ -147,8 +147,10 @@ impl<'a, T: FRecursiveMut + RecursiveFieldsMut + ToRecursiveValueMut> RenderBuil
         F: FnMut(&mut Ui, &Context, RecursiveFieldMut),
     {
         match self.data {
-            DataRef::Mutable(data) => RecursiveMutComposer::new(f).compose_mut(data, self.ctx, ui),
-            DataRef::Immutable(_) => {
+            RenderDataRef::Mutable(data) => {
+                RecursiveMutComposer::new(f).compose_mut(data, self.ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => {
                 panic!("Tried to do mut operation on immutable data");
             }
         }
@@ -417,7 +419,10 @@ impl<T> ContextMenuResponse<T> {
 }
 
 // Helper builders for common patterns
-impl<'a, T: FCopy + FContextMenu + FTitle> ContextMenuBuilder<'a, T> {
+impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T>
+where
+    T: FCopy,
+{
     pub fn add_copy(self) -> Self {
         self.add_action("📋 Copy".to_string(), |item, _| {
             item.copy_to_clipboard();
@@ -426,7 +431,10 @@ impl<'a, T: FCopy + FContextMenu + FTitle> ContextMenuBuilder<'a, T> {
     }
 }
 
-impl<'a, T: FPaste + FContextMenu + FTitle> ContextMenuBuilder<'a, T> {
+impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T>
+where
+    T: FPaste,
+{
     pub fn add_paste(self) -> Self {
         self.add_action("📋 Paste".to_string(), |_, _| {
             T::paste_from_clipboard().map(ActionResult::Replace)

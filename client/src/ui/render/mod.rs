@@ -1,6 +1,7 @@
 mod builder;
 mod composers;
 mod composers_advanced;
+mod editors;
 mod features;
 mod features_impl;
 mod integration;
@@ -9,6 +10,7 @@ mod test;
 pub use builder::*;
 pub use composers::*;
 pub use composers_advanced::*;
+pub use editors::*;
 pub use features::*;
 pub use integration::*;
 pub use test::*;

@@ -7,23 +7,23 @@ use crate::utils::*;
 use bevy::ecs::component::Mutable;
 use bevy_egui::egui::ScrollArea;
 
-pub struct BattleEditorPlugin;
+pub struct BattleEditorV2Plugin;
 
-impl Plugin for BattleEditorPlugin {
+impl Plugin for BattleEditorV2Plugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<BattleEditorState>()
+        app.init_resource::<BattleEditorV2State>()
             .add_systems(OnEnter(GameState::Loaded), Self::init);
     }
 }
 
 #[derive(Resource)]
-pub struct BattleEditorState {
+pub struct BattleEditorV2State {
     pub current_node: Option<BattleEditorNode>,
     pub navigation_stack: Vec<BattleEditorNode>,
     pub is_left_team: bool,
 }
 
-impl Default for BattleEditorState {
+impl Default for BattleEditorV2State {
     fn default() -> Self {
         Self {
             current_node: None,
@@ -40,14 +40,13 @@ pub enum BattleEditorNode {
     Unit(u64),
 }
 
-impl BattleEditorPlugin {
+impl BattleEditorV2Plugin {
     fn init(world: &mut World) {
-        let mut state = world.resource_mut::<BattleEditorState>();
+        let mut state = world.resource_mut::<BattleEditorV2State>();
         if state.current_node.is_none() {
             let id = pd().client_state.battle_test.0.root;
             if id > 0 {
-                state.current_node =
-                    Some(BattleEditorNode::Team(pd().client_state.battle_test.0.root))
+                state.current_node = Some(BattleEditorNode::Team(id));
             }
         }
     }
@@ -56,12 +55,13 @@ impl BattleEditorPlugin {
         let mut navigation_action: Option<BattleEditorAction> = None;
         let mut changed = false;
 
-        let is_left = world.resource::<BattleEditorState>().is_left_team;
+        let is_left = world.resource::<BattleEditorV2State>().is_left_team;
 
+        // Team selector header
         ui.horizontal(|ui| {
             ui.label("Editing:");
             if ui.selectable_label(is_left, "Left Team").clicked() {
-                world.resource_mut::<BattleEditorState>().is_left_team = true;
+                world.resource_mut::<BattleEditorV2State>().is_left_team = true;
 
                 let mut battle_data = world.remove_resource::<BattleData>().unwrap();
                 let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
@@ -75,7 +75,7 @@ impl BattleEditorPlugin {
                 )));
             }
             if ui.selectable_label(!is_left, "Right Team").clicked() {
-                world.resource_mut::<BattleEditorState>().is_left_team = false;
+                world.resource_mut::<BattleEditorV2State>().is_left_team = false;
 
                 let mut battle_data = world.remove_resource::<BattleData>().unwrap();
                 let team_id = Context::from_world_r(&mut battle_data.teams_world, |context| {
@@ -92,7 +92,8 @@ impl BattleEditorPlugin {
 
         ui.separator();
 
-        let state = world.resource::<BattleEditorState>();
+        // Navigation breadcrumb
+        let state = world.resource::<BattleEditorV2State>();
         ui.horizontal(|ui| {
             if !state.navigation_stack.is_empty() {
                 if ui.button("← Back").clicked() {
@@ -101,6 +102,7 @@ impl BattleEditorPlugin {
                 ui.separator();
             }
 
+            // Show current node using render system
             if let Some(current) = &state.current_node {
                 match current {
                     BattleEditorNode::Team(id) => {
@@ -118,7 +120,8 @@ impl BattleEditorPlugin {
             }
         });
 
-        let current_node = world.resource::<BattleEditorState>().current_node.clone();
+        // Main content area
+        let current_node = world.resource::<BattleEditorV2State>().current_node.clone();
         ScrollArea::vertical().show(ui, |ui| {
             let result = if let Some(current) = &current_node {
                 match current {
@@ -140,8 +143,9 @@ impl BattleEditorPlugin {
             }
         });
 
+        // Handle navigation actions
         if let Some(action) = navigation_action {
-            let mut state = world.resource_mut::<BattleEditorState>();
+            let mut state = world.resource_mut::<BattleEditorV2State>();
             match action {
                 BattleEditorAction::GoBack => {
                     if let Some(prev_node) = state.navigation_stack.pop() {
@@ -173,7 +177,7 @@ impl BattleEditorPlugin {
         world: &mut World,
     ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
         let mut action = None;
-        let is_left = world.resource::<BattleEditorState>().is_left_team;
+        let is_left = world.resource::<BattleEditorV2State>().is_left_team;
 
         ui.heading(if is_left { "Left Team" } else { "Right Team" });
         ui.separator();
@@ -187,7 +191,10 @@ impl BattleEditorPlugin {
             };
 
             if let Ok(team) = context.component::<NTeam>(team_entity) {
-                ui.label(format!("Team: {}", team.id));
+                // Use render system for team display
+                team.render(context).tag(ui);
+                ui.add_space(8.0);
+
                 if ui.button("Edit Team").clicked() {
                     action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
                         context.id(team_entity)?,
@@ -217,12 +224,15 @@ impl BattleEditorPlugin {
             const ACTION_DELETE_UNIT: &str = "Delete Unit";
 
             let team_entity = context.entity(id)?;
+
+            // Use TeamEditor widget for the main team editing
             let team_editor = TeamEditor::new(team_entity)
                 .empty_slot_action(ACTION_DEFAULT_UNIT)
                 .filled_slot_action(ACTION_UNIT_EDITOR)
                 .filled_slot_action(ACTION_DELETE_UNIT);
             let actions = team_editor.ui(ui, context)?;
 
+            // Process team editor actions
             for team_action in actions {
                 match team_action {
                     TeamAction::MoveUnit { unit_id, target } => {
@@ -254,7 +264,6 @@ impl BattleEditorPlugin {
                         Self::handle_add_slot(fusion_id, context)?;
                         changed = true;
                     }
-
                     TeamAction::ChangeActionRange {
                         slot_id,
                         start,
@@ -276,13 +285,39 @@ impl BattleEditorPlugin {
 
             ui.separator();
             "[h2 Houses]".cstr().label(ui);
-            let (houses_changed, house_action) =
-                Self::show_children_node_editors::<NHouse>(id, context, ui, id, |house_id| {
-                    BattleEditorAction::Navigate(BattleEditorNode::House(house_id))
-                })?;
-            changed |= houses_changed;
-            if house_action.is_some() {
-                action = house_action;
+
+            // Render houses using the new render system
+            let houses = context.collect_children_components::<NHouse>(id)?;
+            for house in &houses {
+                ui.horizontal(|ui| {
+                    // Use render system with context menu
+                    let response = house
+                        .render(context)
+                        .with_menu()
+                        .add_copy()
+                        .add_paste()
+                        .add_delete()
+                        .tag(ui);
+
+                    if ui.button("Edit").clicked() {
+                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::House(
+                            house.id(),
+                        )));
+                    }
+
+                    if let Some(deleted) = response.deleted() {
+                        context.despawn(house.entity()).log();
+                        changed = true;
+                    }
+                });
+            }
+
+            if ui
+                .button(format!("➕ Add {}", NHouse::kind_s().cstr()))
+                .clicked()
+            {
+                Self::create_node::<NHouse>(context, id).add_parent(context.world_mut()?, id);
+                changed = true;
             }
 
             Ok(())
@@ -303,72 +338,79 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            if Self::show_node_editor::<NHouse>(id, context, ui)? {
-                changed = true;
-            }
+            let entity = context.entity(id)?;
+            let house = context.component::<NHouse>(entity)?;
+
+            // Use render system for house display
+            ui.group(|ui| {
+                house.render(context).card(ui);
+            });
+
             ui.separator();
 
-            Self::show_parent_node_editor::<NHouseColor>(id, context, ui, id, &mut changed);
-
-            if let Some(action_id) =
-                Self::show_parent_node_editor::<NAbilityMagic>(id, context, ui, id, &mut changed)
-            {
-                if let Some(desc_id) = Self::show_parent_node_editor::<NAbilityDescription>(
-                    action_id,
-                    context,
-                    ui,
-                    id,
-                    &mut changed,
-                ) {
-                    Self::show_parent_node_editor::<NAbilityEffect>(
-                        desc_id,
-                        context,
-                        ui,
-                        id,
-                        &mut changed,
-                    );
+            // Edit house name
+            ui.horizontal(|ui| {
+                ui.label("House Name:");
+                let mut house_mut = context.component_mut::<NHouse>(entity)?;
+                if ui.text_edit_singleline(&mut house_mut.house_name).changed() {
+                    changed = true;
                 }
+            });
+
+            ui.separator();
+
+            // House color
+            if let Ok(color) = context.first_parent::<NHouseColor>(id) {
+                ui.group(|ui| {
+                    color.render(context).title(ui);
+                    color.render(context).display(ui);
+                });
             }
 
-            if let Some(status_id) =
-                Self::show_parent_node_editor::<NStatusMagic>(id, context, ui, id, &mut changed)
-            {
-                if let Some(desc_id) = Self::show_parent_node_editor::<NStatusDescription>(
-                    status_id,
-                    context,
-                    ui,
-                    id,
-                    &mut changed,
-                ) {
-                    Self::show_parent_node_editor::<NStatusBehavior>(
-                        desc_id,
-                        context,
-                        ui,
-                        id,
-                        &mut changed,
-                    );
+            // Abilities and statuses using render system
+            if let Ok(ability) = house.ability_load(context) {
+                ui.separator();
+                ui.label("Ability:");
+                ability.render(context).tag_card(ui);
+            }
 
-                    Self::show_parent_node_editor::<NStatusRepresentation>(
-                        status_id,
-                        context,
-                        ui,
-                        id,
-                        &mut changed,
-                    );
-                }
+            if let Ok(status) = house.status_load(context) {
+                ui.separator();
+                ui.label("Status:");
+                status.render(context).tag_card(ui);
             }
 
             ui.separator();
             "[h2 Units]".cstr().label(ui);
 
-            let (units_changed, unit_action) =
-                Self::show_children_node_editors::<NUnit>(id, context, ui, id, |unit_id| {
-                    BattleEditorAction::Navigate(BattleEditorNode::Unit(unit_id))
-                })?;
+            // Render units using the new render system
+            let units = context.collect_children_components::<NUnit>(id)?;
+            for unit in &units {
+                ui.horizontal(|ui| {
+                    let response = unit
+                        .render(context)
+                        .with_menu()
+                        .add_copy()
+                        .add_paste()
+                        .add_delete()
+                        .tag(ui);
 
-            changed |= units_changed;
-            if unit_action.is_some() {
-                action = unit_action;
+                    if ui.button("Edit").clicked() {
+                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
+                            unit.id(),
+                        )));
+                    }
+
+                    if let Some(deleted) = response.deleted() {
+                        context.despawn(unit.entity()).log();
+                        changed = true;
+                    }
+                });
+            }
+
+            if ui.button(format!("➕ Add Unit")).clicked() {
+                Self::create_default_unit(context, entity, id)?;
+                changed = true;
             }
 
             Ok(())
@@ -389,34 +431,75 @@ impl BattleEditorPlugin {
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
-            if Self::show_node_editor::<NUnit>(id, context, ui)? {
-                changed = true;
-            }
+            let entity = context.entity(id)?;
+            let unit = context.component::<NUnit>(entity)?;
+
+            // Use render system for unit display
+            ui.group(|ui| {
+                unit.render(context).card(ui);
+            });
+
             ui.separator();
-            Self::show_parent_node_editor::<NUnitStats>(id, context, ui, id, &mut changed);
-            Self::show_parent_node_editor::<NUnitState>(id, context, ui, id, &mut changed);
 
-            if let Some(desc_id) =
-                Self::show_parent_node_editor::<NUnitDescription>(id, context, ui, id, &mut changed)
-            {
-                context.with_owner(context.entity(id)?, |context| {
-                    Self::show_parent_node_editor::<NUnitRepresentation>(
-                        desc_id,
-                        context,
-                        ui,
-                        id,
-                        &mut changed,
-                    );
-                    Ok(())
-                })?;
+            // Edit unit name
+            ui.horizontal(|ui| {
+                ui.label("Unit Name:");
+                let mut unit_mut = context.component_mut::<NUnit>(entity)?;
+                if ui.text_edit_singleline(&mut unit_mut.unit_name).changed() {
+                    changed = true;
+                }
+            });
 
-                Self::show_parent_node_editor::<NUnitBehavior>(
-                    desc_id,
-                    context,
-                    ui,
-                    id,
-                    &mut changed,
-                );
+            ui.separator();
+
+            // Stats using render system
+            if let Ok(stats) = unit.stats_load(context) {
+                ui.group(|ui| {
+                    stats.render(context).title(ui);
+                    stats.render(context).display(ui);
+
+                    // Edit stats
+                    ui.horizontal(|ui| {
+                        ui.label("Power:");
+                        let mut stats_mut = context.component_mut::<NUnitStats>(stats.entity())?;
+                        if ui.add(egui::DragValue::new(&mut stats_mut.pwr)).changed() {
+                            changed = true;
+                        }
+                        ui.label("HP:");
+                        if ui.add(egui::DragValue::new(&mut stats_mut.hp)).changed() {
+                            changed = true;
+                        }
+                    });
+                });
+            }
+
+            // State
+            if let Ok(state) = unit.state_load(context) {
+                ui.separator();
+                ui.group(|ui| {
+                    state.render(context).title(ui);
+                    state.render(context).display(ui);
+                });
+            }
+
+            // Description
+            if let Ok(desc) = unit.description_load(context) {
+                ui.separator();
+                ui.group(|ui| {
+                    desc.render(context).display(ui);
+
+                    // Behavior
+                    if let Ok(behavior) = desc.behavior_load(context) {
+                        ui.separator();
+                        behavior.render(context).display(ui);
+                    }
+
+                    // Representation
+                    if let Ok(repr) = desc.representation_load(context) {
+                        ui.separator();
+                        repr.render(context).tag(ui);
+                    }
+                });
             }
 
             Ok(())
@@ -425,184 +508,6 @@ impl BattleEditorPlugin {
         world.insert_resource(battle_data);
         result?;
         Ok((action, changed))
-    }
-
-    fn show_node_editor<T>(
-        id: u64,
-        context: &mut Context,
-        ui: &mut Ui,
-    ) -> Result<bool, ExpressionError>
-    where
-        T: Node + 'static + View + SFnInfo + SFnShowMut,
-    {
-        let mut changed = false;
-
-        let entity = context.entity(id)?;
-        let mut node = context.component::<T>(entity).cloned().map_err(|_| {
-            ui.label(format!("{} not found", T::kind_s().cstr()));
-            ExpressionError::from("Node not found")
-        })?;
-        ui.group(|ui| {
-            // Use see system for info display since not all nodes implement FInfo
-            node.see(context).info().label(ui);
-            // Keep show_mut for editing since it's specific to the old system
-            changed |= node.see_mut(context).show_mut(ui);
-        });
-        if changed {
-            node.unpack_entity(context, entity).log();
-        }
-        Ok(changed)
-    }
-
-    fn show_parent_node_editor<T>(
-        child_id: u64,
-        context: &mut Context,
-        ui: &mut Ui,
-        owner: u64,
-        changed: &mut bool,
-    ) -> Option<u64>
-    where
-        T: Node + 'static + SFnInfo + SFnCstrTitle + SFnShowMut,
-    {
-        let mut parent_id = None;
-        if let Ok(parent) = context.first_parent::<T>(child_id) {
-            let parent_entity = parent.entity();
-            parent_id = Some(parent.id());
-
-            let mut parent_node = parent.clone();
-
-            ui.collapsing(format!("{}", T::kind_s().cstr()), |ui| {
-                let mut local_changed = false;
-                let mut was_deleted = false;
-
-                ui.horizontal(|ui| {
-                    // Still use old system for context button since it has complex logic
-                    let btn_response = parent_node.see(context).node_ctxbtn_full().ui(ui);
-
-                    // Use see system for info display since not all nodes implement FInfo
-                    parent_node.see(context).info().label(ui);
-
-                    if btn_response.deleted() {
-                        was_deleted = true;
-                    }
-                    if let Some(pasted_node) = btn_response.pasted_node_full() {
-                        if let Err(e) = pasted_node.clone().unpack_entity(context, parent_entity) {
-                            error!("Failed to unpack parent node: {}", e);
-                        } else {
-                            local_changed = true;
-                        }
-                    }
-                });
-
-                if !was_deleted {
-                    ui.group(|ui| {
-                        if parent_node.see_mut(context).show_mut(ui) {
-                            local_changed = true;
-                        }
-                    });
-                }
-
-                if was_deleted {
-                    context.despawn(parent_entity).log();
-                    *changed = true;
-                    parent_id = None;
-                } else if local_changed {
-                    parent_node.unpack_entity(context, parent_entity).log();
-                    *changed = true;
-                }
-            });
-        } else {
-            ui.label(format!("{} not set", T::kind_s().cstr()));
-            if ui
-                .button(format!("➕ Add Default {}", T::kind_s().cstr()))
-                .clicked()
-            {
-                Self::create_node::<T>(context, owner)
-                    .add_child(context.world_mut().unwrap(), child_id);
-                *changed = true;
-            }
-        }
-
-        parent_id
-    }
-
-    fn show_children_node_editors<T>(
-        parent_id: u64,
-        context: &mut Context,
-        ui: &mut Ui,
-        owner: u64,
-        action_callback: impl Fn(u64) -> BattleEditorAction,
-    ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError>
-    where
-        T: Node + 'static + Component<Mutability = Mutable> + SFnInfo + SFnCstrTitle,
-    {
-        let mut changed = false;
-        let mut action = None;
-
-        let children = context.collect_children_components::<T>(parent_id)?;
-        let mut children_to_delete = Vec::new();
-
-        let mut pasted: Option<(Entity, T)> = None;
-        let mut node_full_pasted: Option<(Entity, T)> = None;
-
-        for node in children {
-            ui.horizontal(|ui| {
-                // Still use old system for context button since it has complex logic
-                let btn_response = node.see(context).node_ctxbtn_full().ui(ui);
-                // Use see system for info display since not all nodes implement FInfo
-                node.see(context).info().label(ui);
-                if btn_response.clicked() {
-                    action = Some(action_callback(node.id()));
-                }
-
-                if btn_response.deleted() {
-                    children_to_delete.push(node.entity());
-                }
-
-                if let Some(pasted_data) = btn_response.pasted() {
-                    pasted = Some((node.entity(), pasted_data.clone()));
-                }
-
-                if let Some(pasted_node_full) = btn_response.pasted_node_full() {
-                    node_full_pasted = Some((node.entity(), pasted_node_full.clone()));
-                }
-            });
-        }
-
-        if let Some((entity, data)) = pasted {
-            if let Ok(mut node_mut) = context.component_mut::<T>(entity) {
-                let id = node_mut.id();
-                let owner = node_mut.owner();
-                *node_mut = data;
-                node_mut.set_id(id);
-                node_mut.set_owner(owner);
-                node_mut.set_entity(entity);
-                changed = true;
-            }
-        }
-
-        if let Some((entity, node_full_data)) = node_full_pasted {
-            if let Err(e) = node_full_data.unpack_entity(context, entity) {
-                error!("Failed to unpack node: {}", e);
-            } else {
-                changed = true;
-            }
-        }
-
-        for entity in children_to_delete {
-            context.despawn(entity).log();
-            changed = true;
-        }
-
-        if ui
-            .button(format!("➕ Add {}", T::kind_s().cstr()))
-            .clicked()
-        {
-            Self::create_node::<T>(context, owner).add_parent(context.world_mut()?, parent_id);
-            changed = true;
-        }
-
-        Ok((changed, action))
     }
 
     fn create_node<T>(context: &mut Context, owner: u64) -> u64
@@ -635,9 +540,55 @@ impl BattleEditorPlugin {
             }
             _ => {}
         }
+
         let component_entity = context.world_mut().unwrap().spawn_empty().id();
         component.unpack_entity(context, component_entity).log();
         id
+    }
+
+    fn create_default_unit(
+        context: &mut Context,
+        house_entity: Entity,
+        owner: u64,
+    ) -> Result<u64, ExpressionError> {
+        let unit_stats = NUnitStats::new_full(owner, 1, 1);
+        let unit_state = NUnitState::new_full(owner, 1);
+        let unit_behavior = NUnitBehavior::new_full(
+            owner,
+            Reaction {
+                trigger: Trigger::BattleStart,
+                actions: vec![Action::noop],
+            },
+            MagicType::Ability,
+        );
+        let unit_representation = NUnitRepresentation::new_full(
+            owner,
+            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+        );
+
+        let unit_description = NUnitDescription::new_full(
+            owner,
+            "Default Description".into(),
+            MagicType::Ability,
+            Trigger::BattleStart,
+            unit_representation,
+            unit_behavior,
+        );
+
+        let unit = NUnit::new_full(
+            owner,
+            "New Unit".to_string(),
+            unit_description,
+            unit_stats,
+            unit_state,
+        );
+
+        let unit_entity = context.world_mut()?.spawn_empty().id();
+        let unit_id = unit.id();
+        unit.unpack_entity(context, unit_entity)?;
+        context.link_parent_child_entity(house_entity, unit_entity)?;
+
+        Ok(unit_id)
     }
 
     fn save_team_changes(world: &mut World) {
@@ -711,40 +662,8 @@ impl BattleEditorPlugin {
             }
         };
 
-        let unit_stats = NUnitStats::new_full(team_owner, 1, 1);
-        let unit_state = NUnitState::new_full(team_owner, 1);
-        let unit_behavior = NUnitBehavior::new_full(
-            team_owner,
-            Reaction {
-                trigger: Trigger::BattleStart,
-                actions: vec![Action::noop],
-            },
-            MagicType::Ability,
-        );
-        let unit_representation = NUnitRepresentation::new_full(
-            team_owner,
-            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
-        );
-
-        let unit_description = NUnitDescription::new_full(
-            team_owner,
-            "Default Description".into(),
-            MagicType::Ability,
-            Trigger::BattleStart,
-            unit_representation,
-            unit_behavior,
-        );
-
-        let unit = NUnit::new_full(
-            team_owner,
-            "Default Unit".to_string(),
-            unit_description,
-            unit_stats,
-            unit_state,
-        );
-        let unit_entity = context.world_mut()?.spawn_empty().id();
-        unit.unpack_entity(context, unit_entity)?;
-        context.link_parent_child_entity(house_entity, unit_entity)?;
+        let unit_id = Self::create_default_unit(context, house_entity, team_owner)?;
+        let unit_entity = context.entity(unit_id)?;
         context.link_parent_child_entity(unit_entity, slot_entity)?;
 
         Ok(())
