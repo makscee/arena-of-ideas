@@ -1,5 +1,5 @@
 use super::*;
-use crate::ui::see::{CstrTrait, RecursiveFieldMut, RecursiveValueMut};
+use crate::ui::see::CstrTrait;
 
 /// A unified list composer that can render any list with custom item composers
 pub struct ListComposer<T, C> {
@@ -315,11 +315,15 @@ impl RecursiveListComposer {
 
 impl<T> ComposerMut<Vec<T>> for RecursiveListComposer
 where
-    T: FRecursive + ToRecursiveValueMut + Clone + Default,
+    T: FRecursive + Clone + Default,
 {
     fn compose_mut(&self, data: &mut Vec<T>, context: &Context, ui: &mut Ui) -> bool {
-        let item_composer = RecursiveComposer::new(default_field_renderer_mut)
-            .with_layout(RecursiveLayout::HorizontalVertical);
+        let item_composer = RecursiveComposer::new(
+            |ui: &mut Ui, context: &Context, field: &mut RecursiveFieldMut<'_>| -> bool {
+                call_on_recursive_value_mut!(field, edit, context, ui)
+            },
+        )
+        .with_layout(RecursiveLayout::HorizontalVertical);
 
         let list_composer = ListComposer::new(item_composer)
             .with_layout(self.layout)
@@ -332,11 +336,16 @@ where
 
 impl<T> Composer<Vec<T>> for RecursiveListComposer
 where
-    T: FRecursive + ToRecursiveValue + Clone,
+    T: FRecursive + Clone,
 {
     fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
-        let item_composer = RecursiveComposer::new(default_field_renderer)
-            .with_layout(RecursiveLayout::HorizontalVertical);
+        let item_composer = RecursiveComposer::new(
+            |ui: &mut Ui, context: &Context, field: &RecursiveField<'_>| -> Response {
+                call_on_recursive_value!(field, display, context, ui);
+                ui.label("")
+            },
+        )
+        .with_layout(RecursiveLayout::HorizontalVertical);
 
         let list_composer = ListComposer::new(item_composer)
             .with_layout(self.layout)
@@ -353,24 +362,24 @@ pub fn list_with_renderer<T, F>(
 ) -> ListComposer<T, impl Composer<T>>
 where
     T: Clone,
-    F: Fn(&T, &Context, &mut Ui) -> Response + Clone + 'static,
+    F: FnMut(&T, &Context, &mut Ui) -> Response + 'static,
 {
     struct RendererComposer<T, F> {
-        renderer: F,
+        renderer: std::cell::RefCell<F>,
         _phantom: PhantomData<T>,
     }
 
     impl<T, F> Composer<T> for RendererComposer<T, F>
     where
-        F: Fn(&T, &Context, &mut Ui) -> Response,
+        F: FnMut(&T, &Context, &mut Ui) -> Response,
     {
         fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-            (self.renderer)(data, context, ui)
+            (self.renderer.borrow_mut())(data, context, ui)
         }
     }
 
     ListComposer::new(RendererComposer {
-        renderer,
+        renderer: std::cell::RefCell::new(renderer),
         _phantom: PhantomData,
     })
     .with_layout(layout)
@@ -383,24 +392,24 @@ pub fn list_mut_with_renderer<T, F>(
 ) -> ListComposer<T, impl ComposerMut<T>>
 where
     T: Clone + Default,
-    F: Fn(&mut T, &Context, &mut Ui) -> bool + Clone + 'static,
+    F: FnMut(&mut T, &Context, &mut Ui) -> bool + 'static,
 {
     struct RendererComposerMut<T, F> {
-        renderer: F,
+        renderer: std::cell::RefCell<F>,
         _phantom: PhantomData<T>,
     }
 
     impl<T, F> ComposerMut<T> for RendererComposerMut<T, F>
     where
-        F: Fn(&mut T, &Context, &mut Ui) -> bool,
+        F: FnMut(&mut T, &Context, &mut Ui) -> bool,
     {
         fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool {
-            (self.renderer)(data, context, ui)
+            (self.renderer.borrow_mut())(data, context, ui)
         }
     }
 
     ListComposer::new(RendererComposerMut {
-        renderer,
+        renderer: std::cell::RefCell::new(renderer),
         _phantom: PhantomData,
     })
     .with_layout(layout)

@@ -408,7 +408,7 @@ impl BattleEditorPlugin {
                             ui.separator();
                             ui.label("Effect Actions:");
 
-                            if effect.actions.render_mut(context).edit_action_list(ui) {
+                            if effect.actions.render_mut(context).edit_recursive_list(ui) {
                                 effect.unpack_entity(context, effect_entity).log();
                                 changed = true;
                             }
@@ -442,7 +442,7 @@ impl BattleEditorPlugin {
                             if behavior
                                 .reactions
                                 .render_mut(context)
-                                .edit_reaction_list(ui)
+                                .edit_recursive_list(ui)
                             {
                                 behavior.unpack_entity(context, behavior_entity).log();
                                 changed = true;
@@ -456,7 +456,7 @@ impl BattleEditorPlugin {
                             ui.separator();
                             ui.label("Representation:");
 
-                            if repr_mut.material.render_mut(context).edit_material(ui) {
+                            if repr_mut.material.render_mut(context).edit(ui) {
                                 repr_mut.unpack_entity(context, repr_entity).log();
                                 changed = true;
                             }
@@ -635,7 +635,7 @@ impl BattleEditorPlugin {
                                     .reaction
                                     .actions
                                     .render_mut(context)
-                                    .edit_action_list(ui)
+                                    .edit_recursive_list(ui)
                                 {
                                     magic_type_changed = true;
                                 }
@@ -656,7 +656,11 @@ impl BattleEditorPlugin {
 
                     ui.separator();
                     ui.collapsing("Representation (Material)", |ui| {
-                        if repr_mut.material.render_mut(context).edit_material(ui) {
+                        if repr_mut
+                            .material
+                            .render_mut(context)
+                            .recursive_edit_tree(ui)
+                        {
                             repr_mut.unpack_entity(context, repr_entity).log();
                             changed = true;
                         }

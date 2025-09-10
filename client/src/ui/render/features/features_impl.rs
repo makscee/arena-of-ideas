@@ -1,9 +1,7 @@
 use super::*;
 use crate::ui::core::enum_colors::EnumColor;
-use crate::ui::see::{
-    Cstr, CstrTrait, RecursiveField, RecursiveFieldMut, RecursiveFields, RecursiveFieldsMut,
-    ToCstr, ToRecursiveValue, ToRecursiveValueMut,
-};
+use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
+use crate::ui::see::{Cstr, CstrTrait, ToCstr};
 
 // ============================================================================
 // Basic Types Implementations
@@ -285,13 +283,9 @@ impl FEdit for Expression {
     }
 }
 
-impl FRecursive for Expression {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        RecursiveFields::recursive_fields_old(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        RecursiveFieldsMut::recursive_fields_mut_old(self)
+impl FEdit for Trigger {
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        Selector.ui_enum(self, ui)
     }
 }
 
@@ -354,16 +348,6 @@ impl FEdit for Action {
     }
 }
 
-impl FRecursive for Action {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        RecursiveFields::recursive_fields_old(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        RecursiveFieldsMut::recursive_fields_mut_old(self)
-    }
-}
-
 // PainterAction
 impl FTitle for PainterAction {
     fn title(&self, _: &Context) -> Cstr {
@@ -391,15 +375,7 @@ impl FEdit for PainterAction {
     }
 }
 
-impl FRecursive for PainterAction {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        RecursiveFields::recursive_fields_old(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        RecursiveFieldsMut::recursive_fields_mut_old(self)
-    }
-}
+// FRecursive is implemented in recursive_impl.rs
 
 // Material
 impl FTitle for Material {
@@ -445,15 +421,7 @@ impl FEdit for Material {
     }
 }
 
-impl FRecursive for Material {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        RecursiveFields::recursive_fields_old(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        RecursiveFieldsMut::recursive_fields_mut_old(self)
-    }
-}
+// FRecursive is implemented in recursive_impl.rs
 
 // Reaction
 impl FTitle for Reaction {
@@ -468,15 +436,22 @@ impl FDisplay for Reaction {
     }
 }
 
-impl FRecursive for Reaction {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        RecursiveFields::recursive_fields_old(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        RecursiveFieldsMut::recursive_fields_mut_old(self)
+impl FEdit for Reaction {
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.vertical(|ui| {
+            ui.label("Trigger:");
+            changed |= self.trigger.edit(context, ui);
+            ui.label("Actions:");
+            for action in &mut self.actions {
+                changed |= action.edit(context, ui);
+            }
+        });
+        changed
     }
 }
+
+// FRecursive is implemented in recursive_impl.rs
 
 // ============================================================================
 // Node Implementations
@@ -1146,30 +1121,6 @@ impl FTag for NAbilityEffect {
     }
 }
 
-impl FRecursive for NAbilityEffect {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.actions
-            .iter()
-            .enumerate()
-            .map(|(i, action)| RecursiveField {
-                name: format!("Action {}", i),
-                value: action.to_recursive_value(),
-            })
-            .collect()
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.actions
-            .iter_mut()
-            .enumerate()
-            .map(|(i, action)| RecursiveFieldMut {
-                name: format!("Action {}", i),
-                value: action.to_recursive_value_mut(),
-            })
-            .collect()
-    }
-}
-
 impl FTitle for NStatusDescription {
     fn title(&self, _: &Context) -> Cstr {
         self.cstr()
@@ -1208,30 +1159,6 @@ impl FTag for NStatusBehavior {
     }
 }
 
-impl FRecursive for NStatusBehavior {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.reactions
-            .iter()
-            .enumerate()
-            .map(|(i, reaction)| RecursiveField {
-                name: format!("Reaction {}", i),
-                value: reaction.to_recursive_value(),
-            })
-            .collect()
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.reactions
-            .iter_mut()
-            .enumerate()
-            .map(|(i, reaction)| RecursiveFieldMut {
-                name: format!("Reaction {}", i),
-                value: reaction.to_recursive_value_mut(),
-            })
-            .collect()
-    }
-}
-
 impl FTitle for NStatusRepresentation {
     fn title(&self, _: &Context) -> Cstr {
         "Status Representation".cstr()
@@ -1261,22 +1188,6 @@ impl FTag for NStatusRepresentation {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(0, 128, 128)
-    }
-}
-
-impl FRecursive for NStatusRepresentation {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![RecursiveField::named(
-            "material",
-            self.material.to_recursive_value(),
-        )]
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![RecursiveFieldMut::named(
-            "material",
-            self.material.to_recursive_value_mut(),
-        )]
     }
 }
 
@@ -1902,22 +1813,6 @@ impl FEdit for NUnitBehavior {
     }
 }
 
-impl FRecursive for NUnitBehavior {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![RecursiveField::named(
-            "reaction",
-            self.reaction.to_recursive_value(),
-        )]
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![RecursiveFieldMut::named(
-            "reaction",
-            self.reaction.to_recursive_value_mut(),
-        )]
-    }
-}
-
 impl FTitle for NUnitRepresentation {
     fn title(&self, _: &Context) -> Cstr {
         "Unit Representation".cstr()
@@ -1950,22 +1845,6 @@ impl FTag for NUnitRepresentation {
     }
 }
 
-impl FRecursive for NUnitRepresentation {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![RecursiveField::named(
-            "material",
-            self.material.to_recursive_value(),
-        )]
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![RecursiveFieldMut::named(
-            "material",
-            self.material.to_recursive_value_mut(),
-        )]
-    }
-}
-
 // Implement for Vec<T> where appropriate
 impl<T: FDisplay> FDisplay for Vec<T> {
     fn display(&self, context: &Context, ui: &mut Ui) {
@@ -1982,31 +1861,6 @@ impl<T: FEdit> FEdit for Vec<T> {
             changed |= item.edit(context, ui);
         }
         changed
-    }
-}
-
-impl<T: FRecursive + ToRecursiveValue> FRecursive for Vec<T> {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.iter()
-            .enumerate()
-            .map(|(i, item)| RecursiveField {
-                name: i.to_string(),
-                value: item.to_recursive_value(),
-            })
-            .collect()
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>>
-    where
-        T: FRecursive,
-    {
-        self.iter_mut()
-            .enumerate()
-            .map(|(i, item)| RecursiveFieldMut {
-                name: i.to_string(),
-                value: item.to_recursive_value_mut(),
-            })
-            .collect()
     }
 }
 

@@ -1,6 +1,6 @@
 use super::*;
-use crate::ui::see::{Cstr, CstrTrait, RecursiveField, RecursiveFieldMut};
-use crate::{call_on_recursive_value, call_on_recursive_value_mut};
+use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
+use crate::ui::see::{Cstr, CstrTrait};
 
 pub enum RenderDataRef<'a, T> {
     Immutable(&'a T),
@@ -149,10 +149,10 @@ impl<'a, T: FRecursive> RenderBuilder<'a, T> {
 }
 
 // Extension methods for FRecursive with mutable support
-impl<'a, T: FRecursive + ToRecursiveValueMut> RenderBuilder<'a, T> {
+impl<'a, T: FRecursive> RenderBuilder<'a, T> {
     pub fn recursive_mut<F>(self, ui: &mut Ui, f: F) -> bool
     where
-        F: Fn(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool + Clone,
+        F: FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool,
     {
         match self.data {
             RenderDataRef::Mutable(data) => RecursiveComposer::new(f)
@@ -247,7 +247,7 @@ where
 // Extension methods for recursive list rendering
 impl<'a, T> RenderBuilder<'a, Vec<T>>
 where
-    T: FRecursive + ToRecursiveValue + Clone + Default,
+    T: FRecursive + Clone + Default,
 {
     /// Display a list of recursive items
     pub fn recursive_list(self, ui: &mut Ui) -> Response {
@@ -259,7 +259,7 @@ where
     /// Edit a list of recursive items
     pub fn edit_recursive_list(self, ui: &mut Ui) -> bool
     where
-        T: ToRecursiveValueMut,
+        T: FRecursive,
     {
         match self.data {
             RenderDataRef::Mutable(data) => RecursiveListComposer::new()

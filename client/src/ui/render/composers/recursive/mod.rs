@@ -1,10 +1,13 @@
 use super::super::*;
-use crate::ui::see::{RecursiveField, RecursiveFieldMut, RecursiveValue, RecursiveValueMut};
 use crate::{call_on_recursive_value, call_on_recursive_value_mut};
 use std::marker::PhantomData;
 
 mod list_composer;
+mod recursive_types;
+mod tree_composer;
 pub use list_composer::*;
+pub use recursive_types::*;
+pub use tree_composer::*;
 
 /// Layout mode for recursive rendering
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -24,7 +27,7 @@ pub enum RecursiveLayout {
 /// A unified recursive composer that traverses nested structures
 pub struct RecursiveComposer<F> {
     layout: RecursiveLayout,
-    field_renderer: F,
+    field_renderer: std::cell::RefCell<F>,
     show_field_names: bool,
     collapsible: bool,
 }
@@ -33,7 +36,7 @@ impl<F> RecursiveComposer<F> {
     pub fn new(field_renderer: F) -> Self {
         Self {
             layout: RecursiveLayout::HorizontalVertical,
-            field_renderer,
+            field_renderer: std::cell::RefCell::new(field_renderer),
             show_field_names: true,
             collapsible: false,
         }
@@ -57,8 +60,8 @@ impl<F> RecursiveComposer<F> {
 
 impl<T, F> Composer<T> for RecursiveComposer<F>
 where
-    T: FRecursive + ToRecursiveValue,
-    F: Fn(&mut Ui, &Context, &RecursiveField<'_>) -> Response + Clone,
+    T: FRecursive,
+    F: FnMut(&mut Ui, &Context, &RecursiveField<'_>) -> Response,
 {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
         let root = RecursiveField::named("root", data.to_recursive_value());
@@ -77,8 +80,8 @@ where
 
 impl<T, F> ComposerMut<T> for RecursiveComposer<F>
 where
-    T: FRecursive + ToRecursiveValueMut,
-    F: Fn(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool + Clone,
+    T: FRecursive,
+    F: FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool,
 {
     fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool {
         let mut root = RecursiveFieldMut::named("root", data.to_recursive_value_mut());
@@ -101,13 +104,13 @@ fn render_recursive_field<F>(
     context: &Context,
     ui: &mut Ui,
     layout: &RecursiveLayout,
-    renderer: &F,
+    renderer: &std::cell::RefCell<F>,
     show_names: bool,
     collapsible: bool,
     depth: usize,
 ) -> Response
 where
-    F: Fn(&mut Ui, &Context, &RecursiveField<'_>) -> Response + Clone,
+    F: FnMut(&mut Ui, &Context, &RecursiveField<'_>) -> Response,
 {
     let mut response = ui.label("");
 
@@ -119,10 +122,10 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    let field_response = renderer(ui, context, field);
+                    let field_response = renderer.borrow_mut()(ui, context, field);
 
                     // Get inner fields
-                    let inner_fields = call_on_recursive_value!(field, recursive_fields_old);
+                    let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                     if !inner_fields.is_empty() {
                         ui.vertical(|ui| {
                             for inner_field in inner_fields {
@@ -150,9 +153,9 @@ where
                     ui.label(format!("{}:", field.name));
                 }
 
-                response = renderer(ui, context, field);
+                response = renderer.borrow_mut()(ui, context, field);
 
-                let inner_fields = call_on_recursive_value!(field, recursive_fields_old);
+                let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
                     response = response.union(render_recursive_field(
                         &inner_field,
@@ -173,9 +176,9 @@ where
                     ui.label(format!("{}:", field.name));
                 }
 
-                response = renderer(ui, context, field);
+                response = renderer.borrow_mut()(ui, context, field);
 
-                let inner_fields = call_on_recursive_value!(field, recursive_fields_old);
+                let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
                     response = response.union(render_recursive_field(
                         &inner_field,
@@ -194,7 +197,7 @@ where
             ui.horizontal(|ui| {
                 ui.add_space(indent * depth as f32);
 
-                let inner_fields = call_on_recursive_value!(field, recursive_fields_old);
+                let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 let has_children = !inner_fields.is_empty();
 
                 if has_children && collapsible {
@@ -209,7 +212,7 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    response = renderer(ui, context, field);
+                    response = renderer.borrow_mut()(ui, context, field);
 
                     if expanded {
                         ui.vertical(|ui| {
@@ -232,7 +235,7 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    response = renderer(ui, context, field);
+                    response = renderer.borrow_mut()(ui, context, field);
 
                     if has_children {
                         ui.vertical(|ui| {
@@ -261,10 +264,10 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    response = renderer(ui, context, field);
+                    response = renderer.borrow_mut()(ui, context, field);
                     ui.end_row();
 
-                    let inner_fields = call_on_recursive_value!(field, recursive_fields_old);
+                    let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                     for (i, inner_field) in inner_fields.iter().enumerate() {
                         response = response.union(render_recursive_field(
                             inner_field,
@@ -293,13 +296,13 @@ fn render_recursive_field_mut<F>(
     context: &Context,
     ui: &mut Ui,
     layout: &RecursiveLayout,
-    renderer: &F,
+    renderer: &std::cell::RefCell<F>,
     show_names: bool,
     collapsible: bool,
     depth: usize,
 ) -> bool
 where
-    F: Fn(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool + Clone,
+    F: FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool,
 {
     let mut changed = false;
 
@@ -310,10 +313,10 @@ where
                     ui.label(format!("{}:", field.name));
                 }
 
-                changed |= renderer(ui, context, field);
+                changed |= renderer.borrow_mut()(ui, context, field);
 
                 // Get inner fields
-                let inner_fields = call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                 if !inner_fields.is_empty() {
                     ui.vertical(|ui| {
                         for mut inner_field in inner_fields {
@@ -338,9 +341,9 @@ where
                     ui.label(format!("{}:", field.name));
                 }
 
-                changed |= renderer(ui, context, field);
+                changed |= renderer.borrow_mut()(ui, context, field);
 
-                let inner_fields = call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                 for mut inner_field in inner_fields {
                     changed |= render_recursive_field_mut(
                         &mut inner_field,
@@ -361,9 +364,9 @@ where
                     ui.label(format!("{}:", field.name));
                 }
 
-                changed |= renderer(ui, context, field);
+                changed |= renderer.borrow_mut()(ui, context, field);
 
-                let inner_fields = call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                 for mut inner_field in inner_fields {
                     changed |= render_recursive_field_mut(
                         &mut inner_field,
@@ -382,8 +385,7 @@ where
             ui.horizontal(|ui| {
                 ui.add_space(indent * depth as f32);
 
-                let inner_fields_check =
-                    call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                let inner_fields_check = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                 let has_children = !inner_fields_check.is_empty();
 
                 if has_children && collapsible {
@@ -398,12 +400,12 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    changed |= renderer(ui, context, field);
+                    changed |= renderer.borrow_mut()(ui, context, field);
 
                     if expanded {
                         ui.vertical(|ui| {
                             let inner_fields =
-                                call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                                call_on_recursive_value_mut!(field, get_inner_fields_mut);
                             for mut inner_field in inner_fields {
                                 changed |= render_recursive_field_mut(
                                     &mut inner_field,
@@ -423,12 +425,12 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    changed |= renderer(ui, context, field);
+                    changed |= renderer.borrow_mut()(ui, context, field);
 
                     if has_children {
                         ui.vertical(|ui| {
                             let inner_fields =
-                                call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                                call_on_recursive_value_mut!(field, get_inner_fields_mut);
                             for mut inner_field in inner_fields {
                                 changed |= render_recursive_field_mut(
                                     &mut inner_field,
@@ -454,11 +456,10 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    changed |= renderer(ui, context, field);
+                    changed |= renderer.borrow_mut()(ui, context, field);
                     ui.end_row();
 
-                    let inner_fields =
-                        call_on_recursive_value_mut!(field, recursive_fields_mut_old);
+                    let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                     for (i, mut inner_field) in inner_fields.into_iter().enumerate() {
                         changed |= render_recursive_field_mut(
                             &mut inner_field,
@@ -503,13 +504,13 @@ pub fn default_field_renderer_mut(
 /// Helper to create a display composer with custom layout
 pub fn recursive_display_composer(
     layout: RecursiveLayout,
-) -> RecursiveComposer<impl Fn(&mut Ui, &Context, &RecursiveField<'_>) -> Response + Clone> {
+) -> RecursiveComposer<impl FnMut(&mut Ui, &Context, &RecursiveField<'_>) -> Response> {
     RecursiveComposer::new(default_field_renderer).with_layout(layout)
 }
 
 /// Helper to create an edit composer with custom layout
 pub fn recursive_edit_composer(
     layout: RecursiveLayout,
-) -> RecursiveComposer<impl Fn(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool + Clone> {
+) -> RecursiveComposer<impl FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool> {
     RecursiveComposer::new(default_field_renderer_mut).with_layout(layout)
 }

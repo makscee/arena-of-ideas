@@ -1,14 +1,12 @@
 use super::*;
-use crate::ui::see::{CstrTrait, RecursiveField, RecursiveFieldMut};
+use crate::ui::see::CstrTrait;
 use crate::ui::widgets::TagWidget;
-use crate::{call_on_recursive_value, call_on_recursive_value_mut};
-use std::cell::RefCell;
 
-mod editable_list;
-pub use editable_list::*;
-
-mod recursive;
+pub mod recursive;
 pub use recursive::*;
+
+mod advanced_composers;
+pub use advanced_composers::*;
 
 /// Base trait for composers that transform data into UI
 pub trait Composer<T> {
@@ -143,8 +141,6 @@ impl<T: FTag + FTitle + FDescription + FStats + Node> Composer<T> for TagCardCom
 
 // Legacy recursive composers are deprecated - use the new recursive module instead
 // These are kept for backwards compatibility but should be migrated
-
-use crate::ui::see::RecursiveValueMut;
 
 /// Composer for rating display
 pub struct RatingComposer;

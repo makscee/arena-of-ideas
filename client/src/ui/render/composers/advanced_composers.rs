@@ -2,52 +2,6 @@ use super::*;
 use crate::ui::see::CstrTrait;
 use std::marker::PhantomData;
 
-/// Composer for rendering lists of items
-pub struct ListComposer<T, C> {
-    item_composer: C,
-    max_items: Option<usize>,
-    _phantom: PhantomData<T>,
-}
-
-impl<T, C> ListComposer<T, C> {
-    pub fn new(item_composer: C) -> Self {
-        Self {
-            item_composer,
-            max_items: None,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn with_max_items(mut self, max: usize) -> Self {
-        self.max_items = Some(max);
-        self
-    }
-}
-
-impl<T: Clone, C: Composer<T>> Composer<Vec<T>> for ListComposer<T, C> {
-    fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-
-        let items = if let Some(max) = self.max_items {
-            &data[..data.len().min(max)]
-        } else {
-            data
-        };
-
-        for item in items {
-            response = response.union(self.item_composer.compose(item, context, ui));
-        }
-
-        if let Some(max) = self.max_items {
-            if data.len() > max {
-                ui.label(format!("... and {} more", data.len() - max));
-            }
-        }
-
-        response
-    }
-}
-
 /// Composer for selectable items
 pub struct SelectableComposer<T, C> {
     inner: C,
@@ -275,85 +229,6 @@ impl<T: Clone, C: Composer<T>, G: Ord + std::fmt::Display + Clone> Composer<Vec<
                 }
             });
         }
-
-        response
-    }
-}
-
-/// Composer for tree-like hierarchical rendering
-pub struct TreeComposer<T, C> {
-    node_composer: C,
-    children_fn: fn(&T, &Context) -> Vec<T>,
-    indent: f32,
-    _phantom: PhantomData<T>,
-}
-
-impl<T, C> TreeComposer<T, C> {
-    pub fn new(node_composer: C, children_fn: fn(&T, &Context) -> Vec<T>) -> Self {
-        Self {
-            node_composer,
-            children_fn,
-            indent: 16.0,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub fn with_indent(mut self, indent: f32) -> Self {
-        self.indent = indent;
-        self
-    }
-}
-
-impl<T: Clone, C: Composer<T> + Clone> Composer<T> for TreeComposer<T, C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        self.compose_tree_node(data, context, ui, 0)
-    }
-}
-
-impl<T: Clone, C: Composer<T> + Clone> TreeComposer<T, C> {
-    fn compose_tree_node(
-        &self,
-        data: &T,
-        context: &Context,
-        ui: &mut Ui,
-        depth: usize,
-    ) -> Response {
-        let mut response = ui.label("");
-
-        ui.horizontal(|ui| {
-            // Indent based on depth
-            ui.add_space(self.indent * depth as f32);
-
-            let children = (self.children_fn)(data, context);
-            let has_children = !children.is_empty();
-
-            if has_children {
-                let id = ui.id().with(data as *const _ as usize);
-                let expanded = ui.ctx().data(|r| r.get_temp::<bool>(id)).unwrap_or(false);
-
-                if ui.button(if expanded { "▼" } else { "▶" }).clicked() {
-                    ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
-                }
-
-                response = self.node_composer.compose(data, context, ui);
-
-                if expanded {
-                    ui.vertical(|ui| {
-                        for child in children {
-                            response = response.union(self.compose_tree_node(
-                                &child,
-                                context,
-                                ui,
-                                depth + 1,
-                            ));
-                        }
-                    });
-                }
-            } else {
-                ui.add_space(22.0); // Space for missing expand button
-                response = self.node_composer.compose(data, context, ui);
-            }
-        });
 
         response
     }

@@ -1,21 +1,15 @@
 mod builder;
 mod composers;
-mod composers_advanced;
 mod editors;
-mod example_unified;
 mod features;
-mod features_impl;
 mod integration;
-mod test;
+mod recursive_impl;
 
 pub use builder::*;
 pub use composers::*;
-pub use composers_advanced::*;
 pub use editors::*;
-pub use example_unified::*;
 pub use features::*;
 pub use integration::*;
-pub use test::*;
 
 use super::*;
 

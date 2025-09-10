@@ -395,46 +395,37 @@ impl SFnShowMut for Vec<u64> {
 }
 
 impl SFnShow for Vec<Action> {
-    fn show(&self, context: &Context, ui: &mut Ui) {
-        self.see(context).recursive_show(ui);
-    }
+    fn show(&self, context: &Context, ui: &mut Ui) {}
 }
 
 impl SFnShowMut for Vec<Action> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.see_mut(context).recursive_show_mut(ui)
+        false
     }
 }
 
 impl SFnShow for Reaction {
-    fn show(&self, context: &Context, ui: &mut Ui) {
-        self.see(context).recursive_show(ui);
-    }
+    fn show(&self, context: &Context, ui: &mut Ui) {}
 }
 
 impl SFnShowMut for Reaction {
     fn show_mut(&mut self, _context: &Context, _ui: &mut Ui) -> bool {
-        // self.see_mut(context).recursive_show_mut(ui)
         false
     }
 }
 
 impl SFnShow for Vec<Reaction> {
-    fn show(&self, context: &Context, ui: &mut Ui) {
-        self.see(context).recursive_show(ui);
-    }
+    fn show(&self, context: &Context, ui: &mut Ui) {}
 }
 
 impl SFnShowMut for Vec<Reaction> {
     fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.see_mut(context).recursive_show_mut(ui)
+        false
     }
 }
 
 impl SFnShow for Material {
-    fn show(&self, context: &Context, ui: &mut Ui) {
-        self.see(context).recursive_show(ui);
-    }
+    fn show(&self, context: &Context, ui: &mut Ui) {}
 }
 
 impl SFnShowMut for Material {
@@ -452,7 +443,7 @@ impl SFnShowMut for Material {
             Stroke::new(1.0, subtle_borders_and_separators()),
             egui::StrokeKind::Middle,
         );
-        self.0.see_mut(context).recursive_show_mut(ui)
+        false
     }
 }
 

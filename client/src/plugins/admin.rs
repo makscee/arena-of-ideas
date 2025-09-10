@@ -34,7 +34,7 @@ impl AdminPlugin {
         });
 
         fn handle_field_change(
-            mut field: RecursiveFieldMut,
+            field: &mut RecursiveFieldMut,
             context: &Context,
             ui: &mut Ui,
         ) -> bool {
@@ -89,43 +89,20 @@ impl AdminPlugin {
 
         Context::from_world(world, |context| {
             let mut changed = false;
-            e.render(context).recursive(ui, |ui, context, field| {
-                call_on_recursive_value!(field, show, context, ui);
-            });
             e.render_mut(context)
                 .recursive_mut(ui, |ui, context, field| {
                     ui.group(|ui| {
                         ui.vertical(|ui| {
                             format!("[tw [s {}]]", field.name).label(ui);
-                            changed |= handle_field_change(field, context, ui);
-                        });
-                    });
+                            changed = true;
+                            handle_field_change(field, context, ui)
+                        })
+                    })
+                    .inner
+                    .inner
                 });
-            e.see_mut(context).recursive(ui, |ui, context, field| {
-                ui.group(|ui| {
-                    ui.vertical(|ui| {
-                        format!("[tw [s {}]]", field.name).label(ui);
-                        changed |= handle_field_change(field, context, ui);
-                    });
-                });
-            });
             if changed {
                 ui.ctx().data_mut(|w| w.insert_persisted(id, e))
-            }
-        });
-
-        Context::from_world(world, |context| {
-            let mut changed = false;
-            a.see_mut(context).recursive(ui, |ui, context, field| {
-                ui.group(|ui| {
-                    ui.vertical(|ui| {
-                        format!("[tw [s {}]]", field.name).label(ui);
-                        changed |= handle_field_change(field, context, ui);
-                    });
-                });
-            });
-            if changed {
-                ui.ctx().data_mut(|w| w.insert_persisted(action_id, a))
             }
         });
 

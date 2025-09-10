@@ -1,5 +1,9 @@
 use super::*;
-use crate::ui::see::{Cstr, RecursiveField, RecursiveFieldMut};
+use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
+use crate::ui::see::Cstr;
+
+mod features_impl;
+pub use features_impl::*;
 
 /// Feature for types that can provide a title
 pub trait FTitle {
@@ -52,26 +56,16 @@ pub trait FRecursive {
     /// Get inner fields for read-only traversal
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>>;
 
-    /// Convert to a recursive value for unified handling
-    fn to_recursive_value(&self) -> RecursiveValue<'_>
-    where
-        Self: ToRecursiveValue,
-    {
-        ToRecursiveValue::to_recursive_value(self)
-    }
-
     /// Get mutable inner fields for editing
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         vec![]
     }
 
+    /// Convert to a recursive value for unified handling
+    fn to_recursive_value(&self) -> RecursiveValue<'_>;
+
     /// Convert to a mutable recursive value for unified handling
-    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_>
-    where
-        Self: ToRecursiveValueMut,
-    {
-        ToRecursiveValueMut::to_recursive_value_mut(self)
-    }
+    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_>;
 }
 
 /// Feature for types that can be displayed

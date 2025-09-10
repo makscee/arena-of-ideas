@@ -430,27 +430,6 @@ pub fn render_shop_view(context: &Context, ui: &mut Ui) {
     }
 }
 
-/// Node explorer using tree composer
-pub fn render_node_explorer(context: &Context, ui: &mut Ui) {
-    ui.heading("Node Explorer");
-
-    // Get root arena node
-    if let Ok(arena) = context.component::<NArena>(Entity::from_bits(0)) {
-        // Create tree composer for hierarchical navigation
-        let tree = TreeComposer::new(TagCardComposer::default(), |node: &NArena, ctx| {
-            // Return children nodes
-            let children = Vec::new();
-            // Add floor pools and bosses as children
-            children
-        })
-        .with_indent(20.0);
-
-        ScrollArea::vertical().show(ui, |ui| {
-            arena.render(context).with_composer(tree).compose(ui);
-        });
-    }
-}
-
 /// Debug view showing all features of a node
 pub fn render_debug_view<T>(item: &T, context: &Context, ui: &mut Ui)
 where
