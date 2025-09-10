@@ -602,6 +602,17 @@ impl FContextMenu for NUnit {
 impl FCopy for NUnit {}
 impl FPaste for NUnit {}
 
+impl FEdit for NUnit {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label("Name:");
+            changed |= ui.text_edit_singleline(&mut self.unit_name).changed();
+        });
+        changed
+    }
+}
+
 // NHouse
 impl FTitle for NHouse {
     fn title(&self, context: &Context) -> Cstr {
@@ -668,6 +679,17 @@ impl FContextMenu for NHouse {
 impl FCopy for NHouse {}
 impl FPaste for NHouse {}
 
+impl FEdit for NHouse {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label("Name:");
+            changed |= ui.text_edit_singleline(&mut self.house_name).changed();
+        });
+        changed
+    }
+}
+
 // NAbilityMagic
 impl FTitle for NAbilityMagic {
     fn title(&self, context: &Context) -> Cstr {
@@ -715,6 +737,23 @@ impl FContextMenu for NAbilityMagic {
 impl FCopy for NAbilityMagic {}
 impl FPaste for NAbilityMagic {}
 
+impl FInfo for NAbilityMagic {
+    fn info(&self, _context: &Context) -> Cstr {
+        format!("Ability: {}", self.ability_name).cstr()
+    }
+}
+
+impl FEdit for NAbilityMagic {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label("Name:");
+            changed |= ui.text_edit_singleline(&mut self.ability_name).changed();
+        });
+        changed
+    }
+}
+
 // NStatusMagic
 impl FTitle for NStatusMagic {
     fn title(&self, context: &Context) -> Cstr {
@@ -761,6 +800,23 @@ impl FContextMenu for NStatusMagic {
 
 impl FCopy for NStatusMagic {}
 impl FPaste for NStatusMagic {}
+
+impl FInfo for NStatusMagic {
+    fn info(&self, _context: &Context) -> Cstr {
+        format!("Status: {}", self.status_name).cstr()
+    }
+}
+
+impl FEdit for NStatusMagic {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label("Name:");
+            changed |= ui.text_edit_singleline(&mut self.status_name).changed();
+        });
+        changed
+    }
+}
 
 // Implement FTitle for other node types
 impl FTitle for NArena {

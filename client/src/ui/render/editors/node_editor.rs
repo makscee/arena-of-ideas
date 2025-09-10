@@ -310,7 +310,7 @@ pub trait InPlaceEdit: Node {
 
 // Implement InPlaceEdit for common node types
 impl InPlaceEdit for NUnit {
-    fn edit_in_place(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn edit_in_place(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
@@ -323,7 +323,7 @@ impl InPlaceEdit for NUnit {
 }
 
 impl InPlaceEdit for NHouse {
-    fn edit_in_place(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn edit_in_place(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
@@ -336,7 +336,7 @@ impl InPlaceEdit for NHouse {
 }
 
 impl InPlaceEdit for NAbilityMagic {
-    fn edit_in_place(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn edit_in_place(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
@@ -349,7 +349,7 @@ impl InPlaceEdit for NAbilityMagic {
 }
 
 impl InPlaceEdit for NStatusMagic {
-    fn edit_in_place(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn edit_in_place(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
         ui.horizontal(|ui| {
