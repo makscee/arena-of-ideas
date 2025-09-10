@@ -4,6 +4,9 @@ use crate::ui::widgets::TagWidget;
 use crate::{call_on_recursive_value, call_on_recursive_value_mut};
 use std::cell::RefCell;
 
+mod editable_list;
+pub use editable_list::*;
+
 /// Base trait for composers that transform data into UI
 pub trait Composer<T> {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response;

@@ -5,9 +5,6 @@ use crate::ui::render::*;
 use crate::ui::*;
 use crate::utils::*;
 
-use crate::ui::render::RecursiveEditor;
-use bevy_egui::egui::ScrollArea;
-
 pub struct BattleEditorPlugin;
 
 impl Plugin for BattleEditorPlugin {
@@ -121,28 +118,26 @@ impl BattleEditorPlugin {
             }
         });
 
-        // Main content area
+        // Main content area - NO SCROLL AREA
         let current_node = world.resource::<BattleEditorState>().current_node.clone();
-        ScrollArea::vertical().show(ui, |ui| {
-            let result = if let Some(current) = &current_node {
-                match current {
-                    BattleEditorNode::Team(id) => Self::render_team_editor(*id, ui, world),
-                    BattleEditorNode::House(id) => Self::render_house_editor(*id, ui, world),
-                    BattleEditorNode::Unit(id) => Self::render_unit_editor(*id, ui, world),
-                }
-            } else {
-                Self::render_team_selector(ui, world)
-            };
-
-            match result {
-                Ok((Some(action), _)) => navigation_action = Some(action),
-                Ok((_, true)) => changed = true,
-                Err(err) => {
-                    err.cstr().notify_error(world);
-                }
-                _ => {}
+        let result = if let Some(current) = &current_node {
+            match current {
+                BattleEditorNode::Team(id) => Self::render_team_editor(*id, ui, world),
+                BattleEditorNode::House(id) => Self::render_house_editor(*id, ui, world),
+                BattleEditorNode::Unit(id) => Self::render_unit_editor(*id, ui, world),
             }
-        });
+        } else {
+            Self::render_team_selector(ui, world)
+        };
+
+        match result {
+            Ok((Some(action), _)) => navigation_action = Some(action),
+            Ok((_, true)) => changed = true,
+            Err(err) => {
+                err.cstr().notify_error(world);
+            }
+            _ => {}
+        }
 
         // Handle navigation actions
         if let Some(action) = navigation_action {
@@ -361,11 +356,10 @@ impl BattleEditorPlugin {
             let entity = context.entity(id)?;
             let house = context.component::<NHouse>(entity).cloned()?;
 
-            // Use render system for house display
+            // Basic house info and editing
             ui.group(|ui| {
                 house.render(context).info().label(ui);
 
-                // Edit house using render_mut
                 let mut house_mut = house.clone();
                 if house_mut.render_mut(context).edit(ui) {
                     house_mut.unpack_entity(context, entity).log();
@@ -389,11 +383,12 @@ impl BattleEditorPlugin {
                 });
             }
 
-            // Abilities using render system with Material editor
+            // Abilities - directly edit the effect actions list
             if let Ok(mut ability) = house.ability_load(context).cloned() {
                 ui.separator();
                 ui.collapsing("Ability", |ui| {
                     ui.group(|ui| {
+                        // Basic ability info
                         ability.render(context).info().label(ui);
                         if ability.render_mut(context).edit(ui) {
                             ability
@@ -403,7 +398,7 @@ impl BattleEditorPlugin {
                             changed = true;
                         }
 
-                        // Edit ability effect with recursive editor
+                        // Effect actions list editor
                         if let Ok(mut effect) = ability
                             .description_load(context)
                             .and_then(|d| d.effect_load(context))
@@ -412,36 +407,29 @@ impl BattleEditorPlugin {
                             let effect_entity = effect.entity();
                             ui.separator();
                             ui.label("Effect Actions:");
-                            ui.group(|ui| {
-                                ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
-                                    if RecursiveEditor::edit_list(
-                                        &mut effect.actions,
-                                        context,
-                                        ui,
-                                        "Action",
-                                    ) {
-                                        effect.unpack_entity(context, effect_entity).log();
-                                        changed = true;
-                                    }
-                                });
-                            });
+
+                            if Self::edit_action_list(&mut effect.actions, context, ui) {
+                                effect.unpack_entity(context, effect_entity).log();
+                                changed = true;
+                            }
                         }
                     });
                 });
             }
 
-            // Statuses using render system with Material and Behavior editor
+            // Statuses
             if let Ok(mut status) = house.status_load(context).cloned() {
                 ui.separator();
                 ui.collapsing("Status", |ui| {
                     ui.group(|ui| {
+                        // Basic status info
                         status.render(context).info().label(ui);
                         if status.render_mut(context).edit(ui) {
                             status.clone().unpack_entity(context, status.entity()).log();
                             changed = true;
                         }
 
-                        // Edit status behavior with recursive editor
+                        // Behavior reactions list editor
                         if let Ok(mut behavior) = status
                             .description_load(context)
                             .and_then(|d| d.behavior_load(context))
@@ -450,37 +438,24 @@ impl BattleEditorPlugin {
                             let behavior_entity = behavior.entity();
                             ui.separator();
                             ui.label("Behavior Reactions:");
-                            ui.group(|ui| {
-                                ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
-                                    if RecursiveEditor::edit_list(
-                                        &mut behavior.reactions,
-                                        context,
-                                        ui,
-                                        "Reaction",
-                                    ) {
-                                        behavior.unpack_entity(context, behavior_entity).log();
-                                        changed = true;
-                                    }
-                                });
-                            });
+
+                            if Self::edit_reaction_list(&mut behavior.reactions, context, ui) {
+                                behavior.unpack_entity(context, behavior_entity).log();
+                                changed = true;
+                            }
                         }
 
-                        // Edit status representation (Material) with preview
+                        // Representation material editor
                         if let Ok(repr) = status.representation_load(context).cloned() {
                             let repr_entity = repr.entity();
                             let mut repr_mut = repr.clone();
                             ui.separator();
                             ui.label("Representation:");
-                            ui.group(|ui| {
-                                if RecursiveEditor::edit_material(
-                                    &mut repr_mut.material,
-                                    context,
-                                    ui,
-                                ) {
-                                    repr_mut.unpack_entity(context, repr_entity).log();
-                                    changed = true;
-                                }
-                            });
+
+                            if Self::edit_material(&mut repr_mut.material, context, ui) {
+                                repr_mut.unpack_entity(context, repr_entity).log();
+                                changed = true;
+                            }
                         }
                     });
                 });
@@ -489,7 +464,7 @@ impl BattleEditorPlugin {
             ui.separator();
             "[h2 Units]".cstr().label(ui);
 
-            // Render units using the new render system
+            // Render units
             let units = context.collect_children_components::<NUnit>(id)?;
             let mut units_to_delete = Vec::new();
             let mut units_to_replace = Vec::new();
@@ -559,11 +534,10 @@ impl BattleEditorPlugin {
             let entity = context.entity(id)?;
             let unit = context.component::<NUnit>(entity).cloned()?;
 
-            // Use render system for unit display
+            // Basic unit info
             ui.group(|ui| {
                 unit.render(context).info().label(ui);
 
-                // Edit unit using render_mut
                 let mut unit_mut = unit.clone();
                 if unit_mut.render_mut(context).edit(ui) {
                     unit_mut.unpack_entity(context, entity).log();
@@ -573,7 +547,7 @@ impl BattleEditorPlugin {
 
             ui.separator();
 
-            // Stats using render system
+            // Stats
             if let Ok(stats) = unit.stats_load(context) {
                 let stats_entity = stats.entity();
                 let stats_clone = stats.clone();
@@ -581,7 +555,6 @@ impl BattleEditorPlugin {
                     ui.label("Stats:");
                     stats_clone.render(context).title_label(ui);
 
-                    // Edit stats
                     let mut stats_mut = stats_clone.clone();
                     if stats_mut.render_mut(context).edit(ui) {
                         stats_mut.unpack_entity(context, stats_entity).log();
@@ -623,7 +596,7 @@ impl BattleEditorPlugin {
                     }
                 });
 
-                // Behavior with advanced recursive editor
+                // Behavior
                 let behavior_opt = desc.behavior_load(context).ok().cloned();
                 if let Some(behavior) = behavior_opt {
                     let behavior_entity = behavior.entity();
@@ -632,11 +605,23 @@ impl BattleEditorPlugin {
                     ui.separator();
                     ui.collapsing("Behavior", |ui| {
                         ui.group(|ui| {
-                            // Show current behavior info
-                            behavior_mut.render(context).info().label(ui);
+                            // Magic type
+                            let mut magic_type_changed = false;
+                            ui.horizontal(|ui| {
+                                ui.label("Magic Type:");
+                                if behavior_mut.magic_type.show_mut(context, ui) {
+                                    magic_type_changed = true;
+                                }
+                            });
 
-                            // Use the advanced recursive editor
-                            if RecursiveEditor::edit_behavior(&mut behavior_mut, context, ui) {
+                            ui.separator();
+
+                            // Edit the reaction directly
+                            ui.label("Reaction:");
+                            let reaction_changed =
+                                Self::edit_reaction(&mut behavior_mut.reaction, context, ui);
+
+                            if magic_type_changed || reaction_changed {
                                 behavior_mut.unpack_entity(context, behavior_entity).log();
                                 changed = true;
                             }
@@ -644,20 +629,17 @@ impl BattleEditorPlugin {
                     });
                 }
 
-                // Representation with Material editor
+                // Representation
                 if let Ok(repr) = desc.representation_load(context).cloned() {
                     let repr_entity = repr.entity();
                     let mut repr_mut = repr.clone();
 
                     ui.separator();
                     ui.collapsing("Representation (Material)", |ui| {
-                        ui.group(|ui| {
-                            // Use the advanced Material editor with preview
-                            if RecursiveEditor::edit_material(&mut repr_mut.material, context, ui) {
-                                repr_mut.unpack_entity(context, repr_entity).log();
-                                changed = true;
-                            }
-                        });
+                        if Self::edit_material(&mut repr_mut.material, context, ui) {
+                            repr_mut.unpack_entity(context, repr_entity).log();
+                            changed = true;
+                        }
                     });
                 }
             }
@@ -668,6 +650,40 @@ impl BattleEditorPlugin {
         world.insert_resource(battle_data);
         result?;
         Ok((action, changed))
+    }
+
+    // Unified list editor for Actions
+    fn edit_action_list(actions: &mut Vec<Action>, context: &Context, ui: &mut Ui) -> bool {
+        actions.render_mut(context).edit_action_list(ui)
+    }
+
+    // Unified list editor for Reactions
+    fn edit_reaction_list(reactions: &mut Vec<Reaction>, context: &Context, ui: &mut Ui) -> bool {
+        reactions.render_mut(context).edit_reaction_list(ui)
+    }
+
+    // Edit a single Reaction
+    fn edit_reaction(reaction: &mut Reaction, context: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
+        ui.horizontal(|ui| {
+            ui.label("Trigger:");
+            if reaction.trigger.show_mut(context, ui) {
+                changed = true;
+            }
+        });
+
+        ui.label("Actions:");
+        if Self::edit_action_list(&mut reaction.actions, context, ui) {
+            changed = true;
+        }
+
+        changed
+    }
+
+    // Unified Material editor with preview
+    fn edit_material(material: &mut Material, context: &Context, ui: &mut Ui) -> bool {
+        material.render_mut(context).edit_material(ui)
     }
 
     fn create_node<T>(context: &mut Context, owner: u64) -> u64
