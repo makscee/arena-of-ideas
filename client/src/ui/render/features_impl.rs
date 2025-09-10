@@ -1884,6 +1884,12 @@ impl FContextMenu for NUnitBehavior {
     }
 }
 
+impl FInfo for NUnitBehavior {
+    fn info(&self, _context: &Context) -> Cstr {
+        format!("{} {}", self.magic_type.cstr(), self.reaction.cstr())
+    }
+}
+
 impl FDisplay for NUnitBehavior {
     fn display(&self, context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {

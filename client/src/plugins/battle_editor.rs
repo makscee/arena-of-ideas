@@ -5,6 +5,7 @@ use crate::ui::render::*;
 use crate::ui::*;
 use crate::utils::*;
 
+use crate::ui::render::RecursiveEditor;
 use bevy_egui::egui::ScrollArea;
 
 pub struct BattleEditorPlugin;
@@ -388,35 +389,100 @@ impl BattleEditorPlugin {
                 });
             }
 
-            // Abilities using render system
-            if let Ok(ability) = house.ability_load(context) {
-                let ability_entity = ability.entity();
-                let ability_clone = ability.clone();
+            // Abilities using render system with Material editor
+            if let Ok(mut ability) = house.ability_load(context).cloned() {
                 ui.separator();
-                ui.label("Ability:");
-                ui.group(|ui| {
-                    ability_clone.render(context).info().label(ui);
-                    let mut ability_mut = ability_clone.clone();
-                    if ability_mut.render_mut(context).edit(ui) {
-                        ability_mut.unpack_entity(context, ability_entity).log();
-                        changed = true;
-                    }
+                ui.collapsing("Ability", |ui| {
+                    ui.group(|ui| {
+                        ability.render(context).info().label(ui);
+                        if ability.render_mut(context).edit(ui) {
+                            ability
+                                .clone()
+                                .unpack_entity(context, ability.entity())
+                                .log();
+                            changed = true;
+                        }
+
+                        // Edit ability effect with recursive editor
+                        if let Ok(mut effect) = ability
+                            .description_load(context)
+                            .and_then(|d| d.effect_load(context))
+                            .cloned()
+                        {
+                            let effect_entity = effect.entity();
+                            ui.separator();
+                            ui.label("Effect Actions:");
+                            ui.group(|ui| {
+                                ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
+                                    if RecursiveEditor::edit_list(
+                                        &mut effect.actions,
+                                        context,
+                                        ui,
+                                        "Action",
+                                    ) {
+                                        effect.unpack_entity(context, effect_entity).log();
+                                        changed = true;
+                                    }
+                                });
+                            });
+                        }
+                    });
                 });
             }
 
-            // Statuses using render system
-            if let Ok(status) = house.status_load(context) {
-                let status_entity = status.entity();
-                let status_clone = status.clone();
+            // Statuses using render system with Material and Behavior editor
+            if let Ok(mut status) = house.status_load(context).cloned() {
                 ui.separator();
-                ui.label("Status:");
-                ui.group(|ui| {
-                    status_clone.render(context).info().label(ui);
-                    let mut status_mut = status_clone.clone();
-                    if status_mut.render_mut(context).edit(ui) {
-                        status_mut.unpack_entity(context, status_entity).log();
-                        changed = true;
-                    }
+                ui.collapsing("Status", |ui| {
+                    ui.group(|ui| {
+                        status.render(context).info().label(ui);
+                        if status.render_mut(context).edit(ui) {
+                            status.clone().unpack_entity(context, status.entity()).log();
+                            changed = true;
+                        }
+
+                        // Edit status behavior with recursive editor
+                        if let Ok(mut behavior) = status
+                            .description_load(context)
+                            .and_then(|d| d.behavior_load(context))
+                            .cloned()
+                        {
+                            let behavior_entity = behavior.entity();
+                            ui.separator();
+                            ui.label("Behavior Reactions:");
+                            ui.group(|ui| {
+                                ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
+                                    if RecursiveEditor::edit_list(
+                                        &mut behavior.reactions,
+                                        context,
+                                        ui,
+                                        "Reaction",
+                                    ) {
+                                        behavior.unpack_entity(context, behavior_entity).log();
+                                        changed = true;
+                                    }
+                                });
+                            });
+                        }
+
+                        // Edit status representation (Material) with preview
+                        if let Ok(repr) = status.representation_load(context).cloned() {
+                            let repr_entity = repr.entity();
+                            let mut repr_mut = repr.clone();
+                            ui.separator();
+                            ui.label("Representation:");
+                            ui.group(|ui| {
+                                if RecursiveEditor::edit_material(
+                                    &mut repr_mut.material,
+                                    context,
+                                    ui,
+                                ) {
+                                    repr_mut.unpack_entity(context, repr_entity).log();
+                                    changed = true;
+                                }
+                            });
+                        }
+                    });
                 });
             }
 
@@ -557,26 +623,42 @@ impl BattleEditorPlugin {
                     }
                 });
 
-                // Behavior
+                // Behavior with advanced recursive editor
                 let behavior_opt = desc.behavior_load(context).ok().cloned();
                 if let Some(behavior) = behavior_opt {
                     let behavior_entity = behavior.entity();
-                    ui.separator();
-                    ui.label("Behavior:");
-                    behavior.render(context).title_label(ui);
-
                     let mut behavior_mut = behavior.clone();
-                    if behavior_mut.render_mut(context).edit(ui) {
-                        behavior_mut.unpack_entity(context, behavior_entity).log();
-                        changed = true;
-                    }
+
+                    ui.separator();
+                    ui.collapsing("Behavior", |ui| {
+                        ui.group(|ui| {
+                            // Show current behavior info
+                            behavior_mut.render(context).info().label(ui);
+
+                            // Use the advanced recursive editor
+                            if RecursiveEditor::edit_behavior(&mut behavior_mut, context, ui) {
+                                behavior_mut.unpack_entity(context, behavior_entity).log();
+                                changed = true;
+                            }
+                        });
+                    });
                 }
 
-                // Representation
-                if let Ok(repr) = desc.representation_load(context) {
+                // Representation with Material editor
+                if let Ok(repr) = desc.representation_load(context).cloned() {
+                    let repr_entity = repr.entity();
+                    let mut repr_mut = repr.clone();
+
                     ui.separator();
-                    ui.label("Representation:");
-                    repr.render(context).tag(ui);
+                    ui.collapsing("Representation (Material)", |ui| {
+                        ui.group(|ui| {
+                            // Use the advanced Material editor with preview
+                            if RecursiveEditor::edit_material(&mut repr_mut.material, context, ui) {
+                                repr_mut.unpack_entity(context, repr_entity).log();
+                                changed = true;
+                            }
+                        });
+                    });
                 }
             }
 
