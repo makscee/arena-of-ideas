@@ -54,7 +54,7 @@ impl TeamEditor {
     }
 
     pub fn ui(self, ui: &mut Ui, context: &Context) -> Result<Vec<TeamAction>, ExpressionError> {
-        let team = context.get::<NTeam>(self.team_entity)?;
+        let team = context.component::<NTeam>(self.team_entity)?;
         let mut actions = Vec::new();
 
         let state_id = egui::Id::new(self.team_entity.index()).with("team_editor_selected_fusion");
@@ -223,7 +223,7 @@ impl TeamEditor {
         };
 
         let new_fusion_id =
-            if let Ok(new_slot) = context.get::<NFusionSlot>(context.entity(target_id)?) {
+            if let Ok(new_slot) = context.component::<NFusionSlot>(context.entity(target_id)?) {
                 let new_fusion = context.first_child::<NFusion>(new_slot.id)?;
                 Some(new_fusion.id)
             } else {
@@ -246,7 +246,7 @@ impl TeamEditor {
 
             // Update trigger only if moving to different fusion (not same fusion)
             if !is_same_fusion {
-                let old_fusion = context.get::<NFusion>(context.entity(old_fusion_id)?)?;
+                let old_fusion = context.component::<NFusion>(context.entity(old_fusion_id)?)?;
                 if old_fusion.trigger_unit == unit_id {
                     let remaining_slots =
                         context.collect_parents_components::<NFusionSlot>(old_fusion_id)?;
@@ -276,7 +276,7 @@ impl TeamEditor {
 
         // Handle moving into new slot
         if let Some(new_fusion_id) = new_fusion_id {
-            let new_fusion = context.get::<NFusion>(context.entity(new_fusion_id)?)?;
+            let new_fusion = context.component::<NFusion>(context.entity(new_fusion_id)?)?;
 
             // If fusion has no trigger set (unit id is 0), set it to this unit
             if new_fusion.trigger_unit == 0 {
@@ -468,7 +468,7 @@ impl TeamEditor {
                 } else {
                     ui.vertical(|ui| {
                         for (unit_id, action) in fusion_actions {
-                            if let Ok(unit) = context.get_by_id::<NUnit>(unit_id) {
+                            if let Ok(unit) = context.component_by_id::<NUnit>(unit_id) {
                                 context
                                     .with_owner_ref(unit.entity(), |context| {
                                         action.view_title(

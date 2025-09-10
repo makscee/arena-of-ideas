@@ -165,7 +165,7 @@ impl BattleAction {
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pain.apply(context),
                         )?;
-                        let dmg = context.get::<NFusion>(*b)?.dmg + x;
+                        let dmg = context.component::<NFusion>(*b)?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     let text = animations().get("text").unwrap();
@@ -203,7 +203,7 @@ impl BattleAction {
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pleasure.apply(context),
                         )?;
-                        let dmg = (context.get::<NFusion>(*b)?.dmg - x).at_least(0);
+                        let dmg = (context.component::<NFusion>(*b)?.dmg - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         let text = animations().get("text").unwrap();
                         context.with_layers_r(
@@ -221,7 +221,7 @@ impl BattleAction {
                 }
                 BattleAction::var_set(entity, var, value) => {
                     let t = context.t()?;
-                    let mut ns = context.get_mut::<NodeState>(*entity)?;
+                    let mut ns = context.component_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
                         ns.kind.set_var(context, *entity, *var, value.clone());
                         true
@@ -378,14 +378,14 @@ impl BattleSimulation {
         Context::from_battle_simulation_r(self, |context| {
             for entity in entities {
                 let vars = context
-                    .get::<NodeState>(entity)?
+                    .component::<NodeState>(entity)?
                     .kind
                     .get_vars(context, entity);
                 for (var, value) in vars {
                     let value = Event::UpdateStat(var).update_value(context, value, entity);
                     let t = context.t()?;
                     context
-                        .get_mut::<NodeState>(entity)?
+                        .component_mut::<NodeState>(entity)?
                         .insert(t, 0.0, var, value);
                 }
             }
@@ -417,7 +417,7 @@ impl BattleSimulation {
         for entity in context.battle_simulation()?.all_fusions() {
             context
                 .with_owner(entity, |context| {
-                    match context.get::<NFusion>(entity)?.react(&event, context) {
+                    match context.component::<NFusion>(entity)?.react(&event, context) {
                         Ok(a) => battle_actions.extend(a),
                         Err(e) => error!("NFusion event {event} failed: {e}"),
                     };
@@ -454,9 +454,9 @@ impl BattleSimulation {
         let t = context.t()?;
         for child in context.children(context.id(target)?) {
             let child = context.entity(child)?;
-            if let Ok(child_status) = context.get::<NStatusMagic>(child) {
+            if let Ok(child_status) = context.component::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = context.get_mut::<NodeState>(child)?;
+                    let mut state = context.component_mut::<NodeState>(child)?;
                     let charges = state
                         .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
@@ -474,7 +474,7 @@ impl BattleSimulation {
         context.link_parent_child_entity(entity, rep_entity)?;
         context.link_parent_child_entity(target, entity)?;
 
-        let mut state = context.get_mut::<NodeState>(entity)?;
+        let mut state = context.component_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::charges, charges.into());
@@ -494,7 +494,7 @@ impl BattleSimulation {
         let mut actions: VecDeque<BattleAction> = default();
         Context::from_battle_simulation_r(self, |context| {
             for entity in context.battle_simulation()?.all_fusions() {
-                let dmg = context.get::<NFusion>(entity)?.dmg;
+                let dmg = context.component::<NFusion>(entity)?.dmg;
                 context.with_owner(entity, |context| {
                     if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
                         actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));

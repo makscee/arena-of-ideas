@@ -1,13 +1,13 @@
 use super::*;
 
 pub trait RecursiveFields {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         default()
     }
 }
 
 pub trait RecursiveFieldsMut {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         default()
     }
 }
@@ -585,7 +585,7 @@ where
             },
         );
         ui.vertical(|ui| {
-            for nested_field in call_on_recursive_value!(field, recursive_fields) {
+            for nested_field in call_on_recursive_value!(field, recursive_fields_old) {
                 render_field_recursive(nested_field, context, ui, f);
             }
         });
@@ -627,7 +627,7 @@ fn render_field_recursive_mut<F>(
 
         ui.vertical(|ui| {
             // Get nested fields after the function call
-            for nested_field in call_on_recursive_value_mut!(field, recursive_fields_mut) {
+            for nested_field in call_on_recursive_value_mut!(field, recursive_fields_mut_old) {
                 render_field_recursive_mut(nested_field, context, ui, f);
             }
         });
@@ -635,14 +635,14 @@ fn render_field_recursive_mut<F>(
 }
 
 impl<'a> RecursiveField<'a> {
-    fn named(name: &str, value: RecursiveValue<'a>) -> Self {
+    pub fn named(name: &str, value: RecursiveValue<'a>) -> Self {
         Self {
             name: name.to_string(),
             value,
         }
     }
 
-    fn indexed(index: usize, value: RecursiveValue<'a>) -> Self {
+    pub fn indexed(index: usize, value: RecursiveValue<'a>) -> Self {
         Self {
             name: index.to_string(),
             value,
@@ -651,14 +651,14 @@ impl<'a> RecursiveField<'a> {
 }
 
 impl<'a> RecursiveFieldMut<'a> {
-    fn named(name: &str, value: RecursiveValueMut<'a>) -> Self {
+    pub fn named(name: &str, value: RecursiveValueMut<'a>) -> Self {
         Self {
             name: name.to_string(),
             value,
         }
     }
 
-    fn indexed(index: usize, value: RecursiveValueMut<'a>) -> Self {
+    pub fn indexed(index: usize, value: RecursiveValueMut<'a>) -> Self {
         Self {
             name: index.to_string(),
             value,
@@ -684,7 +684,7 @@ impl RecursiveFieldsMut for HexColor {}
 impl RecursiveFieldsMut for Vec2 {}
 
 impl RecursiveFields for Box<Expression> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         self.as_ref().recursive_fields()
     }
 }
@@ -693,7 +693,7 @@ impl<T> RecursiveFields for Vec<T>
 where
     T: ToRecursiveValue,
 {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
             .map(|(i, item)| RecursiveField::indexed(i, item.to_recursive_value()))
@@ -702,7 +702,7 @@ where
 }
 
 impl RecursiveFields for Option<Expression> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         match self {
             Some(expr) => vec![RecursiveField::named("value", RecursiveValue::Expr(expr))],
             None => vec![], // None is a leaf node
@@ -711,7 +711,7 @@ impl RecursiveFields for Option<Expression> {
 }
 
 impl RecursiveFields for Expression {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         match self {
             Expression::one
             | Expression::zero
@@ -828,7 +828,7 @@ impl RecursiveFields for Expression {
 }
 
 impl RecursiveFields for Action {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         match self {
             Action::noop
             | Action::deal_damage
@@ -865,7 +865,7 @@ impl RecursiveFields for Action {
 }
 
 impl RecursiveFields for PainterAction {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         match self {
             PainterAction::paint => vec![],
 
@@ -961,7 +961,7 @@ impl RecursiveFields for PainterAction {
 }
 
 impl RecursiveFields for Reaction {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         self.actions
             .iter()
             .enumerate()
@@ -971,7 +971,7 @@ impl RecursiveFields for Reaction {
 }
 
 impl RecursiveFieldsMut for Expression {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         match self {
             Expression::one
             | Expression::zero
@@ -1107,7 +1107,7 @@ impl RecursiveFieldsMut for Expression {
 }
 
 impl RecursiveFieldsMut for Action {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         match self {
             Action::noop
             | Action::deal_damage
@@ -1144,7 +1144,7 @@ impl RecursiveFieldsMut for Action {
 }
 
 impl RecursiveFieldsMut for PainterAction {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         match self {
             PainterAction::paint => vec![],
 
@@ -1243,7 +1243,7 @@ impl RecursiveFieldsMut for PainterAction {
 }
 
 impl RecursiveFieldsMut for Reaction {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.actions
             .iter_mut()
             .enumerate()
@@ -1253,8 +1253,8 @@ impl RecursiveFieldsMut for Reaction {
 }
 
 impl RecursiveFieldsMut for Box<Expression> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.as_mut().recursive_fields_mut()
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+        self.as_mut().recursive_fields_mut_old()
     }
 }
 
@@ -1262,7 +1262,7 @@ impl<T> RecursiveFieldsMut for Vec<T>
 where
     T: ToRecursiveValueMut,
 {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.iter_mut()
             .enumerate()
             .map(|(i, item)| RecursiveFieldMut::indexed(i, item.to_recursive_value_mut()))
@@ -1271,7 +1271,7 @@ where
 }
 
 impl RecursiveFieldsMut for Option<Expression> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         match self {
             Some(expr) => vec![RecursiveFieldMut::named(
                 "value",
@@ -1283,7 +1283,7 @@ impl RecursiveFieldsMut for Option<Expression> {
 }
 
 impl RecursiveFields for Material {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn recursive_fields_old(&self) -> Vec<RecursiveField<'_>> {
         self.0
             .iter()
             .enumerate()
@@ -1293,7 +1293,7 @@ impl RecursiveFields for Material {
 }
 
 impl RecursiveFieldsMut for Material {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn recursive_fields_mut_old(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.0
             .iter_mut()
             .enumerate()

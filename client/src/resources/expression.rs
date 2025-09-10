@@ -37,7 +37,7 @@ impl ExpressionImpl for Expression {
             Expression::var_sum(var) => context.sum_var(*var),
             Expression::state_var(x, var) => {
                 let entity = x.get_entity(context)?;
-                context.get::<NodeState>(entity)?.get(*var).to_e(*var)
+                context.component::<NodeState>(entity)?.get(*var).to_e(*var)
             }
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),

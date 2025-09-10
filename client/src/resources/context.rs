@@ -38,6 +38,14 @@ pub enum ContextLayer {
 }
 
 impl<'w> Context<'w> {
+    pub fn empty() -> Self {
+        Self {
+            t: None,
+            rng: ChaCha8Rng::from_entropy(),
+            sources: default(),
+            layers: default(),
+        }
+    }
     pub fn from_world_r<T>(
         world: &mut World,
         f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
@@ -277,7 +285,7 @@ impl<'w> Context<'w> {
     }
     pub fn first_parent<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         for parent in self.parents(id) {
-            let c = self.get_by_id::<T>(parent);
+            let c = self.component_by_id::<T>(parent);
             if c.is_ok() {
                 return c;
             }
@@ -286,7 +294,7 @@ impl<'w> Context<'w> {
     }
     pub fn first_child<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
         for child in self.children(id) {
-            let c = self.get_by_id::<T>(child);
+            let c = self.component_by_id::<T>(child);
             if c.is_ok() {
                 return c;
             }
@@ -301,7 +309,7 @@ impl<'w> Context<'w> {
                 if !checked.insert(parent) {
                     continue;
                 }
-                if let Ok(c) = self.get_by_id::<T>(parent) {
+                if let Ok(c) = self.component_by_id::<T>(parent) {
                     return Ok(c);
                 }
                 q.push_back(parent);
@@ -317,7 +325,7 @@ impl<'w> Context<'w> {
                 if !checked.insert(child) {
                     continue;
                 }
-                if let Ok(c) = self.get_by_id::<T>(child) {
+                if let Ok(c) = self.component_by_id::<T>(child) {
                     return Ok(c);
                 }
                 q.push_back(child);
@@ -351,23 +359,23 @@ impl<'w> Context<'w> {
         self.world_mut()?.despawn_entity(entity);
         Ok(())
     }
-    pub fn get<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
+    pub fn component<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
         self.world()?.get::<T>(entity).to_e_not_found()
     }
-    pub fn get_mut<T: Component<Mutability = Mutable>>(
+    pub fn component_mut<T: Component<Mutability = Mutable>>(
         &mut self,
         entity: Entity,
     ) -> Result<Mut<T>, ExpressionError> {
         self.world_mut()?.get_mut::<T>(entity).to_e_not_found()
     }
-    pub fn get_by_id<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        self.get::<T>(self.entity(id)?)
+    pub fn component_by_id<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
+        self.component::<T>(self.entity(id)?)
     }
-    pub fn get_by_id_mut<T: Component<Mutability = Mutable>>(
+    pub fn component_by_id_mut<T: Component<Mutability = Mutable>>(
         &mut self,
         id: u64,
     ) -> Result<Mut<T>, ExpressionError> {
-        self.get_mut::<T>(self.entity(id)?)
+        self.component_mut::<T>(self.entity(id)?)
     }
     pub fn ids_to_entities(
         &self,
@@ -396,7 +404,7 @@ impl<'w> Context<'w> {
         Ok(self
             .ids_to_entities(ids)?
             .into_iter()
-            .filter_map(|entity| self.get::<T>(entity).ok())
+            .filter_map(|entity| self.component::<T>(entity).ok())
             .collect())
     }
     pub fn collect_parents_components<T: Component>(

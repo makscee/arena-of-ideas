@@ -126,12 +126,16 @@ impl MatchPlugin {
                                                 let resp = match slot.card_kind {
                                                     CardKind::Unit => {
                                                         let unit = context
-                                                            .get_by_id::<NUnit>(slot.node_id)?;
+                                                            .component_by_id::<NUnit>(
+                                                                slot.node_id,
+                                                            )?;
                                                         unit.see(context).card(ui)?
                                                     }
                                                     CardKind::House => {
                                                         let house = context
-                                                            .get_by_id::<NHouse>(slot.node_id)?;
+                                                            .component_by_id::<NHouse>(
+                                                                slot.node_id,
+                                                            )?;
                                                         house.see(context).card(ui)?
                                                     }
                                                 };
@@ -152,7 +156,7 @@ impl MatchPlugin {
             // Handle fusion unit selling with DndArea
             if let Some(payload) = DndArea::<(u64, usize, u64)>::new(available_rect)
                 .text_fn(ui, |(_, _, unit_id)| {
-                    if let Ok(unit) = context.get_by_id::<NUnit>(*unit_id) {
+                    if let Ok(unit) = context.component_by_id::<NUnit>(*unit_id) {
                         format!(
                             "sell {} [green +{}g]",
                             unit.unit_name,
@@ -316,7 +320,7 @@ impl MatchPlugin {
                     |context, ui, _, value| {
                         let id = value.get_u64()?;
                         context
-                            .get_by_id::<NPlayer>(id)?
+                            .component_by_id::<NPlayer>(id)?
                             .player_name
                             .cstr()
                             .label(ui);

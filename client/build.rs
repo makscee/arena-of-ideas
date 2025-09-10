@@ -83,7 +83,7 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                 match self {
                     Self::None => {}
                     #(Self::#names => {
-                        context.get_mut::<#names>(entity).unwrap().set_var(var, value);
+                        context.component_mut::<#names>(entity).unwrap().set_var(var, value);
                     })*
                 }
             }
@@ -91,7 +91,7 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                 match self {
                     Self::None => default(),
                     #(Self::#names => {
-                        context.get::<#names>(entity).unwrap().get_own_vars()
+                        context.component::<#names>(entity).unwrap().get_own_vars()
                     })*
                 }
             }
@@ -367,7 +367,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
             }
 
             pub fn load_with(loader: node_loaders::#loader_ident, ctx: &Context<'_>) -> Result<Self, String> {
-                let mut node = ctx.get_by_id::<#struct_ident>(loader.id)
+                let mut node = ctx.component_by_id::<#struct_ident>(loader.id)
                     .map_err(|e| format!("{} with id {} not found: {}", stringify!(#struct_ident), loader.id, e))?
                     .clone();
 
@@ -428,7 +428,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                     if let Some(v) = self.#one_fields.get_data()
                         .or_else(|| {
                             self.entity
-                                .and_then(|e| context.get::<#one_types>(e).ok())
+                                .and_then(|e| context.component::<#one_types>(e).ok())
                         })
                         .and_then(|d| d.get_var(var, context)).clone() {
                         return Some(v);
@@ -464,7 +464,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 #(
                     if let Some(d) = self.#one_fields.get_data().or_else(|| {
                         self.entity
-                            .and_then(|e| context.get::<#one_types>(e).ok())
+                            .and_then(|e| context.component::<#one_types>(e).ok())
                     }) {
                         vars.extend(d.get_vars(context));
                     }
@@ -657,7 +657,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 Some(d)
             }
             fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
-                let mut s = context.get::<Self>(entity)?.clone();
+                let mut s = context.component::<Self>(entity)?.clone();
                 #(
                     if let Some(data) = context.parents_entity(entity)?.into_iter().find_map(|e|
                         if let Ok(c) = #parent_types::pack_entity(context, e) {

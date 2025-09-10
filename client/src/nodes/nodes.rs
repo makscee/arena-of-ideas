@@ -86,10 +86,10 @@ where
         }
     }
     fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError> {
-        context.get::<Self>(entity)
+        context.component::<Self>(entity)
     }
     fn get_by_id<'a>(id: u64, context: &'a Context) -> Result<&'a Self, ExpressionError> {
-        context.get::<Self>(context.entity(id)?)
+        context.component::<Self>(context.entity(id)?)
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
@@ -153,7 +153,7 @@ impl NodeKindOnUnpack for NodeKind {
                     unit_rep().clone().unpack_entity(context, rep_entity)?;
                     context.link_parent_child_entity(entity, rep_entity)?;
                 }
-                context.get_mut::<NodeState>(entity)?.init_vars(
+                context.component_mut::<NodeState>(entity)?.init_vars(
                     [
                         (VarName::pwr, 0.into()),
                         (VarName::hp, 0.into()),

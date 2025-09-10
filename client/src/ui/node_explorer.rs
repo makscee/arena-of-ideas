@@ -74,7 +74,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
         ui.push_id(vctx.id, |ui| {
             let mut nodes = ids
                 .into_iter()
-                .filter_map(|id| context.get_by_id::<T>(*id).ok())
+                .filter_map(|id| context.component_by_id::<T>(*id).ok())
                 .collect_vec();
 
             // Sort by rating (descending) then by node_id (ascending)
@@ -222,7 +222,7 @@ impl NodeExplorerPlugin {
         id: u64,
     ) -> Result<(), ExpressionError> {
         data.inspected_node = Some(id);
-        let kind = context.get_by_id::<NodeState>(id)?.kind;
+        let kind = context.component_by_id::<NodeState>(id)?.kind;
         data.selected_kind = kind;
 
         let filter_ids = data.owner_filter.ids();
@@ -459,34 +459,34 @@ impl NodeExplorerPlugin {
             if format!("[red delete] #{id}").cstr().button(ui).clicked() {
                 cn().reducers.admin_delete_node(id).unwrap();
             }
-            let ns = context.get_by_id::<NodeState>(id)?;
+            let ns = context.component_by_id::<NodeState>(id)?;
             match ns.kind {
                 NodeKind::NHouse => context
-                    .get_by_id::<NHouse>(id)?
+                    .component_by_id::<NHouse>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
                 NodeKind::NAbilityMagic => context
-                    .get_by_id::<NAbilityMagic>(id)?
+                    .component_by_id::<NAbilityMagic>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
                 NodeKind::NStatusMagic => context
-                    .get_by_id::<NStatusMagic>(id)?
+                    .component_by_id::<NStatusMagic>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
                 NodeKind::NFusion => context
-                    .get_by_id::<NFusion>(id)?
+                    .component_by_id::<NFusion>(id)?
                     .show_card(context, ui)
                     .ui(ui),
                 NodeKind::NUnit => context
-                    .get_by_id::<NUnit>(id)?
+                    .component_by_id::<NUnit>(id)?
                     .see(context)
                     .tag_card(ui)
                     .ui(ui),
                 NodeKind::NUnitRepresentation => {
-                    context.get_by_id::<NUnitRepresentation>(id)?.view(
+                    context.component_by_id::<NUnitRepresentation>(id)?.view(
                         ViewContext::new(ui),
                         context,
                         ui,

@@ -186,7 +186,7 @@ impl BattleEditorPlugin {
                 battle_data.team_right
             };
 
-            if let Ok(team) = context.get::<NTeam>(team_entity) {
+            if let Ok(team) = context.component::<NTeam>(team_entity) {
                 ui.label(format!("Team: {}", team.id));
                 if ui.button("Edit Team").clicked() {
                     action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
@@ -438,7 +438,7 @@ impl BattleEditorPlugin {
         let mut changed = false;
 
         let entity = context.entity(id)?;
-        let mut node = context.get::<T>(entity).cloned().map_err(|_| {
+        let mut node = context.component::<T>(entity).cloned().map_err(|_| {
             ui.label(format!("{} not found", T::kind_s().cstr()));
             ExpressionError::from("Node not found")
         })?;
@@ -564,7 +564,7 @@ impl BattleEditorPlugin {
         }
 
         if let Some((entity, data)) = pasted {
-            if let Ok(mut node_mut) = context.get_mut::<T>(entity) {
+            if let Ok(mut node_mut) = context.component_mut::<T>(entity) {
                 let id = node_mut.id();
                 let owner = node_mut.owner();
                 *node_mut = data;
@@ -669,7 +669,7 @@ impl BattleEditorPlugin {
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
         let slot_entity = context.entity(slot_id)?;
-        let team = context.get::<NTeam>(team_entity)?;
+        let team = context.component::<NTeam>(team_entity)?;
         let team_owner = team.owner;
 
         let house_entity = {
@@ -748,7 +748,7 @@ impl BattleEditorPlugin {
 
     fn handle_add_slot(fusion_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
         let fusion_entity = context.entity(fusion_id)?;
-        let fusion = context.get::<NFusion>(fusion_entity)?;
+        let fusion = context.component::<NFusion>(fusion_entity)?;
 
         // Find the next slot index
         let existing_slots = context.collect_parents_components::<NFusionSlot>(fusion_id)?;
@@ -775,7 +775,7 @@ impl BattleEditorPlugin {
         length: u8,
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
-        let mut slot = context.get_mut::<NFusionSlot>(context.entity(slot_id)?)?;
+        let mut slot = context.component_mut::<NFusionSlot>(context.entity(slot_id)?)?;
         slot.actions.start = start;
         slot.actions.length = length;
         Ok(())
@@ -786,7 +786,7 @@ impl BattleEditorPlugin {
         trigger: u64,
         context: &mut Context,
     ) -> Result<(), ExpressionError> {
-        let mut fusion = context.get_mut::<NFusion>(context.entity(fusion_id)?)?;
+        let mut fusion = context.component_mut::<NFusion>(context.entity(fusion_id)?)?;
         fusion.trigger_unit = trigger;
         Ok(())
     }

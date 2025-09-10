@@ -110,3 +110,12 @@ impl EnumColor for Expression {
         }
     }
 }
+
+impl EnumColor for MagicType {
+    fn color(&self) -> Color32 {
+        match self {
+            MagicType::Ability => ORANGE,
+            MagicType::Status => PURPLE,
+        }
+    }
+}

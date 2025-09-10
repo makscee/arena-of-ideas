@@ -89,6 +89,18 @@ impl AdminPlugin {
 
         Context::from_world(world, |context| {
             let mut changed = false;
+            e.render(context).recursive(ui, |ui, context, field| {
+                call_on_recursive_value!(field, show, context, ui);
+            });
+            e.render_mut(context)
+                .recursive_mut(ui, |ui, context, field| {
+                    ui.group(|ui| {
+                        ui.vertical(|ui| {
+                            format!("[tw [s {}]]", field.name).label(ui);
+                            changed |= handle_field_change(field, context, ui);
+                        });
+                    });
+                });
             e.see_mut(context).recursive(ui, |ui, context, field| {
                 ui.group(|ui| {
                     ui.vertical(|ui| {

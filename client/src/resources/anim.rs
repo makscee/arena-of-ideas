@@ -56,7 +56,7 @@ impl AnimAction {
                 let pos = x.get_vec2(context)?;
                 let mut t = context.t()?;
                 for target in a.targets.iter().copied() {
-                    context.get_mut::<NodeState>(target)?.insert(
+                    context.component_mut::<NodeState>(target)?.insert(
                         t,
                         a.duration,
                         VarName::position,
@@ -95,7 +95,7 @@ impl AnimAction {
 
                 let mut t = context.t()?;
                 let vars_layers = context.get_vars_layers();
-                let mut state = context.get_mut::<NodeState>(entity)?;
+                let mut state = context.component_mut::<NodeState>(entity)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());

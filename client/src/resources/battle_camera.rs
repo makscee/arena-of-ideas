@@ -131,7 +131,7 @@ impl BattleCamera {
                         if !context.get_bool(VarName::visible)? {
                             return Ok(());
                         }
-                        let rep = context.get::<NUnitRepresentation>(entity)?;
+                        let rep = context.component::<NUnitRepresentation>(entity)?;
                         let rect = cam.rect_from_context(context)?;
                         rep.material.paint(rect, context, ui)
                     })
@@ -148,7 +148,7 @@ impl BattleCamera {
                         if !context.get_bool(VarName::visible)? {
                             return Ok(());
                         }
-                        let rep = context.get::<NStatusRepresentation>(entity)?;
+                        let rep = context.component::<NStatusRepresentation>(entity)?;
                         let rect = cam.rect_from_context(context)?;
                         rep.material.paint(rect, context, ui)
                     })

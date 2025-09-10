@@ -128,7 +128,7 @@ impl BattlePlugin {
                             selected = None;
                         }
                     });
-                    for (var, state) in &context.get::<NodeState>(entity)?.vars {
+                    for (var, state) in &context.component::<NodeState>(entity)?.vars {
                         ui.horizontal(|ui| {
                             var.cstr().label(ui);
                             state.value.cstr().label(ui);
@@ -138,13 +138,13 @@ impl BattlePlugin {
                         "parents".cstr().label(ui1);
                         "children".cstr().label(ui2);
                         for parent in context.parents_entity(entity)? {
-                            let kind = context.get::<NodeState>(parent)?.kind;
+                            let kind = context.component::<NodeState>(parent)?.kind;
                             if format!("{kind} {parent}").button(ui1).clicked() {
                                 selected = Some(parent);
                             }
                         }
                         for child in context.children_entity(entity)? {
-                            let kind = context.get::<NodeState>(child)?.kind;
+                            let kind = context.component::<NodeState>(child)?.kind;
                             if format!("{kind} {child}").button(ui2).clicked() {
                                 selected = Some(child);
                             }

@@ -70,14 +70,18 @@ impl NodeStatePlugin {
     ) -> Result<(), ExpressionError> {
         let t = context.t()?;
         let vars = kind.get_vars(context, entity);
-        let mut ns = context.get_mut::<NodeState>(entity)?;
+        let mut ns = context.component_mut::<NodeState>(entity)?;
         for (var, value) in vars {
             ns.insert(t, 0.0, var, value);
         }
         Ok(())
     }
     pub fn init_entity_vars(context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
-        Self::init_kind(context, context.get::<NodeState>(entity)?.kind, entity)
+        Self::init_kind(
+            context,
+            context.component::<NodeState>(entity)?.kind,
+            entity,
+        )
     }
 }
 
@@ -135,7 +139,7 @@ impl NodeState {
         true
     }
     pub fn get_var(context: &Context, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = context.get::<NodeState>(entity) {
+        if let Ok(ns) = context.component::<NodeState>(entity) {
             if let Some(t) = context.t {
                 ns.get_at(t, var)
             } else {
