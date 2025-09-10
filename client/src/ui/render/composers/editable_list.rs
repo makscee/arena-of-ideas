@@ -1,87 +1,197 @@
 use super::super::*;
 use crate::plugins::RepresentationPlugin;
-use crate::ui::see::{RecursiveValueMut, SFnShowMut};
-use crate::{Action, Expression, Material, PainterAction, Reaction, Trigger};
+use crate::ui::see::{RecursiveFieldMut, RecursiveValueMut, SFnShowMut, ToRecursiveValueMut};
+use crate::{Action, Expression, Material, PainterAction, Reaction};
 use egui::{Sense, Stroke};
 
-/// A composer for editing lists of recursive items with full manipulation controls
-pub struct EditableListComposer<T> {
-    item_name: String,
-    allow_reorder: bool,
-    allow_delete: bool,
-    allow_add: bool,
-    allow_copy_paste: bool,
-    default_item: Box<dyn Fn() -> T>,
-}
+/// Generic composer for any type that implements RecursiveValueMut
+pub struct RecursiveComposer;
 
-impl<T: Clone> EditableListComposer<T> {
-    pub fn new(item_name: impl Into<String>, default_item: impl Fn() -> T + 'static) -> Self {
-        Self {
-            item_name: item_name.into(),
-            allow_reorder: true,
-            allow_delete: true,
-            allow_add: true,
-            allow_copy_paste: true,
-            default_item: Box::new(default_item),
+impl RecursiveComposer {
+    /// Compose any type that can be converted to RecursiveValueMut
+    pub fn compose_recursive_value(
+        field: &mut RecursiveFieldMut,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+
+        match &mut field.value {
+            RecursiveValueMut::Expr(e) => {
+                let response = (**e)
+                    .see_mut(context)
+                    .ctxbtn()
+                    .add_copy()
+                    .add_paste()
+                    .ui_enum(ui);
+
+                if let Some(new_expr) = response.selector_changed() {
+                    RecursiveValueMut::replace_expr_and_move_fields(e, new_expr.clone());
+                    changed = true;
+                }
+
+                if let Some(replacement) = response.pasted() {
+                    **e = replacement.clone();
+                    changed = true;
+                }
+
+                ui.indent("expr_fields", |ui| {
+                    changed |= (**e).show_mut(context, ui);
+                });
+            }
+            RecursiveValueMut::Action(a) => {
+                let response = (**a)
+                    .see_mut(context)
+                    .ctxbtn()
+                    .add_copy()
+                    .add_paste()
+                    .ui_enum(ui);
+
+                if let Some(new_action) = response.selector_changed() {
+                    RecursiveValueMut::replace_action_and_move_fields(a, new_action.clone());
+                    changed = true;
+                }
+
+                if let Some(replacement) = response.pasted() {
+                    **a = replacement.clone();
+                    changed = true;
+                }
+
+                ui.indent("action_fields", |ui| {
+                    changed |= (**a).show_mut(context, ui);
+                });
+            }
+            RecursiveValueMut::PainterAction(pa) => {
+                let response = (**pa)
+                    .see_mut(context)
+                    .ctxbtn()
+                    .add_copy()
+                    .add_paste()
+                    .ui_enum(ui);
+
+                if let Some(new_action) = response.selector_changed() {
+                    RecursiveValueMut::replace_painter_action_and_move_fields(
+                        pa,
+                        new_action.clone(),
+                    );
+                    changed = true;
+                }
+
+                if let Some(replacement) = response.pasted() {
+                    **pa = replacement.clone();
+                    changed = true;
+                }
+
+                ui.indent("painter_fields", |ui| {
+                    changed |= (**pa).show_mut(context, ui);
+                });
+            }
+            RecursiveValueMut::Reaction(r) => {
+                ui.horizontal(|ui| {
+                    ui.label("Trigger:");
+                    if (**r).trigger.show_mut(context, ui) {
+                        changed = true;
+                    }
+                });
+
+                ui.label("Actions:");
+                ui.indent("reaction_actions", |ui| {
+                    changed |= RecursiveListEditor::edit_list(&mut (**r).actions, context, ui);
+                });
+            }
+            RecursiveValueMut::Material(m) => {
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.label("Preview:");
+                        let size = 100.0;
+                        let (rect, _) =
+                            ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+                        RepresentationPlugin::paint_rect(rect, context, *m, ui).ui(ui);
+                        ui.painter().rect_stroke(
+                            rect,
+                            0,
+                            Stroke::new(1.0, subtle_borders_and_separators()),
+                            egui::StrokeKind::Middle,
+                        );
+                    });
+
+                    ui.separator();
+
+                    ui.vertical(|ui| {
+                        ui.label("Painter Actions:");
+                        changed |= RecursiveListEditor::edit_list(&mut (**m).0, context, ui);
+                    });
+                });
+            }
+            RecursiveValueMut::Var(v) => {
+                changed |= (**v).show_mut(context, ui);
+            }
+            RecursiveValueMut::VarValue(v) => {
+                changed |= (**v).show_mut(context, ui);
+            }
+            RecursiveValueMut::HexColor(c) => {
+                changed |= (**c).show_mut(context, ui);
+            }
+            RecursiveValueMut::String(s) => {
+                changed |= (**s).show_mut(context, ui);
+            }
+            RecursiveValueMut::I32(i) => {
+                changed |= (**i).show_mut(context, ui);
+            }
+            RecursiveValueMut::F32(f) => {
+                changed |= (**f).show_mut(context, ui);
+            }
+            RecursiveValueMut::Bool(b) => {
+                changed |= (**b).show_mut(context, ui);
+            }
+            RecursiveValueMut::Vec2(v) => {
+                changed |= (**v).show_mut(context, ui);
+            }
         }
-    }
 
-    pub fn with_reorder(mut self, allow: bool) -> Self {
-        self.allow_reorder = allow;
-        self
-    }
-
-    pub fn with_delete(mut self, allow: bool) -> Self {
-        self.allow_delete = allow;
-        self
-    }
-
-    pub fn with_add(mut self, allow: bool) -> Self {
-        self.allow_add = allow;
-        self
-    }
-
-    pub fn with_copy_paste(mut self, allow: bool) -> Self {
-        self.allow_copy_paste = allow;
-        self
+        changed
     }
 }
 
-impl<T> ComposerMut<Vec<T>> for EditableListComposer<T>
-where
-    T: Clone + 'static,
-{
-    fn compose_mut(&self, data: &mut Vec<T>, _context: &Context, ui: &mut Ui) -> bool {
+/// Editor for lists of recursive types with full manipulation controls
+pub struct RecursiveListEditor;
+
+impl RecursiveListEditor {
+    /// Edit any list of types that implement ToRecursiveValueMut
+    pub fn edit_list<T>(data: &mut Vec<T>, context: &Context, ui: &mut Ui) -> bool
+    where
+        T: ToRecursiveValueMut + Clone + Default,
+    {
         let mut changed = false;
         let mut to_remove = None;
         let mut to_move = None;
         let len = data.len();
 
-        for (i, _item) in data.iter().enumerate() {
+        for (i, item) in data.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 // Reorder buttons
-                if self.allow_reorder {
-                    ui.vertical(|ui| {
-                        ui.add_enabled_ui(i > 0, |ui| {
-                            if ui.small_button("↑").clicked() && i > 0 {
-                                to_move = Some((i, i - 1));
-                            }
-                        });
-                        ui.add_enabled_ui(i < len - 1, |ui| {
-                            if ui.small_button("↓").clicked() && i < len - 1 {
-                                to_move = Some((i, i + 1));
-                            }
-                        });
-                    });
-                }
-
-                // Item content - this is where the type-specific rendering happens
                 ui.vertical(|ui| {
-                    ui.label(format!("{} #{}", self.item_name, i + 1));
+                    ui.add_enabled_ui(i > 0, |ui| {
+                        if ui.small_button("↑").clicked() && i > 0 {
+                            to_move = Some((i, i - 1));
+                        }
+                    });
+                    ui.add_enabled_ui(i < len - 1, |ui| {
+                        if ui.small_button("↓").clicked() && i < len - 1 {
+                            to_move = Some((i, i + 1));
+                        }
+                    });
+                });
+
+                // Item content
+                ui.vertical(|ui| {
+                    ui.label(format!("Item #{}", i + 1));
+                    let mut field = RecursiveFieldMut::indexed(i, item.to_recursive_value_mut());
+                    changed |= RecursiveComposer::compose_recursive_value(&mut field, context, ui);
                 });
 
                 // Delete button
-                if self.allow_delete && ui.small_button("🗑").clicked() {
+                if ui.small_button("🗑").clicked() {
                     to_remove = Some(i);
                 }
             });
@@ -102,519 +212,148 @@ where
         }
 
         // Add button
-        if self.allow_add && ui.button(format!("➕ Add {}", self.item_name)).clicked() {
-            data.push((self.default_item)());
+        if ui.button("➕ Add Item").clicked() {
+            data.push(T::default());
             changed = true;
         }
 
         changed
     }
-}
 
-/// Specialized composer for editing Action lists with recursive rendering
-pub struct ActionListComposer {
-    allow_reorder: bool,
-    allow_delete: bool,
-    allow_add: bool,
-}
-
-impl Default for ActionListComposer {
-    fn default() -> Self {
-        Self {
-            allow_reorder: true,
-            allow_delete: true,
-            allow_add: true,
-        }
-    }
-}
-
-impl ActionListComposer {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl ComposerMut<Vec<Action>> for ActionListComposer {
-    fn compose_mut(&self, data: &mut Vec<Action>, context: &Context, ui: &mut Ui) -> bool {
+    /// Edit any type with recursive fields
+    pub fn edit_recursive<T>(data: &mut T, context: &Context, ui: &mut Ui) -> bool
+    where
+        T: FRecursiveMut + ToRecursiveValueMut,
+    {
         let mut changed = false;
-        let mut to_remove = None;
-        let mut to_move = None;
-        let len = data.len();
+        let fields = data.recursive_fields_mut();
 
-        for (i, action) in data.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                // Reorder buttons
-                if self.allow_reorder {
-                    ui.vertical(|ui| {
-                        ui.add_enabled_ui(i > 0, |ui| {
-                            if ui.small_button("↑").clicked() {
-                                to_move = Some((i, i - 1));
-                            }
-                        });
-                        ui.add_enabled_ui(i < len - 1, |ui| {
-                            if ui.small_button("↓").clicked() {
-                                to_move = Some((i, i + 1));
-                            }
-                        });
-                    });
-                }
-
-                // Action selector and recursive fields
-                ui.vertical(|ui| {
-                    // Use the render system for the selector with context menu
-                    let response = action
-                        .see_mut(context)
-                        .ctxbtn()
-                        .add_copy()
-                        .add_paste()
-                        .ui_enum(ui);
-
-                    if let Some(new_action) = response.selector_changed() {
-                        // Preserve fields when changing action type
-                        RecursiveValueMut::replace_action_and_move_fields(
-                            action,
-                            new_action.clone(),
-                        );
-                        changed = true;
-                    }
-
-                    if let Some(replacement) = response.pasted() {
-                        *action = replacement.clone();
-                        changed = true;
-                    }
-
-                    // Show recursive fields for editing
-                    ui.indent("fields", |ui| {
-                        changed |= action.show_mut(context, ui);
-                    });
-                });
-
-                // Delete button
-                if self.allow_delete && ui.small_button("🗑").clicked() {
-                    to_remove = Some(i);
-                }
-            });
-        }
-
-        // Handle moves
-        if let Some((from, to)) = to_move {
-            data.swap(from, to);
-            changed = true;
-        }
-
-        // Handle removals
-        if let Some(idx) = to_remove {
-            data.remove(idx);
-            changed = true;
-        }
-
-        // Add button
-        if self.allow_add && ui.button("➕ Add Action").clicked() {
-            data.push(Action::noop);
-            changed = true;
-        }
-
-        changed
-    }
-}
-
-/// Specialized composer for editing PainterAction lists
-pub struct PainterActionListComposer {
-    allow_reorder: bool,
-    allow_delete: bool,
-    allow_add: bool,
-}
-
-impl Default for PainterActionListComposer {
-    fn default() -> Self {
-        Self {
-            allow_reorder: true,
-            allow_delete: true,
-            allow_add: true,
-        }
-    }
-}
-
-impl PainterActionListComposer {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl ComposerMut<Vec<PainterAction>> for PainterActionListComposer {
-    fn compose_mut(&self, data: &mut Vec<PainterAction>, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let mut to_remove = None;
-        let mut to_move = None;
-        let len = data.len();
-
-        for (i, action) in data.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                // Reorder buttons
-                if self.allow_reorder {
-                    ui.vertical(|ui| {
-                        ui.add_enabled_ui(i > 0, |ui| {
-                            if ui.small_button("↑").clicked() {
-                                to_move = Some((i, i - 1));
-                            }
-                        });
-                        ui.add_enabled_ui(i < len - 1, |ui| {
-                            if ui.small_button("↓").clicked() {
-                                to_move = Some((i, i + 1));
-                            }
-                        });
-                    });
-                }
-
-                // PainterAction selector and recursive fields
-                ui.vertical(|ui| {
-                    // Use the render system for the selector with context menu
-                    let response = action
-                        .see_mut(context)
-                        .ctxbtn()
-                        .add_copy()
-                        .add_paste()
-                        .ui_enum(ui);
-
-                    if let Some(new_action) = response.selector_changed() {
-                        // Preserve fields when changing action type
-                        RecursiveValueMut::replace_painter_action_and_move_fields(
-                            action,
-                            new_action.clone(),
-                        );
-                        changed = true;
-                    }
-
-                    if let Some(replacement) = response.pasted() {
-                        *action = replacement.clone();
-                        changed = true;
-                    }
-
-                    // Show recursive fields for editing
-                    ui.indent("fields", |ui| {
-                        changed |= action.show_mut(context, ui);
-                    });
-                });
-
-                // Delete button
-                if self.allow_delete && ui.small_button("🗑").clicked() {
-                    to_remove = Some(i);
-                }
-            });
-        }
-
-        // Handle moves
-        if let Some((from, to)) = to_move {
-            data.swap(from, to);
-            changed = true;
-        }
-
-        // Handle removals
-        if let Some(idx) = to_remove {
-            data.remove(idx);
-            changed = true;
-        }
-
-        // Add button
-        if self.allow_add && ui.button("➕ Add Painter Action").clicked() {
-            data.push(PainterAction::circle(Box::new(Expression::f32(0.5))));
-            changed = true;
-        }
-
-        changed
-    }
-}
-
-/// Specialized composer for editing Reaction lists
-pub struct ReactionListComposer {
-    allow_reorder: bool,
-    allow_delete: bool,
-    allow_add: bool,
-}
-
-impl Default for ReactionListComposer {
-    fn default() -> Self {
-        Self {
-            allow_reorder: true,
-            allow_delete: true,
-            allow_add: true,
-        }
-    }
-}
-
-impl ReactionListComposer {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl ComposerMut<Vec<Reaction>> for ReactionListComposer {
-    fn compose_mut(&self, data: &mut Vec<Reaction>, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let mut to_remove = None;
-        let mut to_move = None;
-        let len = data.len();
-
-        for (i, reaction) in data.iter_mut().enumerate() {
-            ui.group(|ui| {
-                ui.horizontal(|ui| {
-                    // Reorder buttons
-                    if self.allow_reorder {
-                        ui.vertical(|ui| {
-                            ui.add_enabled_ui(i > 0, |ui| {
-                                if ui.small_button("↑").clicked() {
-                                    to_move = Some((i, i - 1));
-                                }
-                            });
-                            ui.add_enabled_ui(i < len - 1, |ui| {
-                                if ui.small_button("↓").clicked() {
-                                    to_move = Some((i, i + 1));
-                                }
-                            });
-                        });
-                    }
-
-                    // Reaction content
-                    ui.vertical(|ui| {
-                        // Edit trigger
-                        ui.horizontal(|ui| {
-                            ui.label("Trigger:");
-                            if reaction.trigger.show_mut(context, ui) {
-                                changed = true;
-                            }
-                        });
-
-                        // Edit actions using ActionListComposer
-                        ui.label("Actions:");
-                        if ActionListComposer::new().compose_mut(&mut reaction.actions, context, ui)
-                        {
-                            changed = true;
-                        }
-                    });
-
-                    // Delete button
-                    if self.allow_delete && ui.small_button("🗑").clicked() {
-                        to_remove = Some(i);
-                    }
-                });
-            });
-        }
-
-        // Handle moves
-        if let Some((from, to)) = to_move {
-            data.swap(from, to);
-            changed = true;
-        }
-
-        // Handle removals
-        if let Some(idx) = to_remove {
-            data.remove(idx);
-            changed = true;
-        }
-
-        // Add button
-        if self.allow_add && ui.button("➕ Add Reaction").clicked() {
-            data.push(Reaction {
-                trigger: Trigger::BattleStart,
-                actions: vec![Action::noop],
-            });
-            changed = true;
-        }
-
-        changed
-    }
-}
-
-/// Composer for editing Material with preview
-pub struct MaterialComposer {
-    show_preview: bool,
-    preview_size: f32,
-}
-
-impl Default for MaterialComposer {
-    fn default() -> Self {
-        Self {
-            show_preview: true,
-            preview_size: 100.0,
-        }
-    }
-}
-
-impl MaterialComposer {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_preview_size(mut self, size: f32) -> Self {
-        self.preview_size = size;
-        self
-    }
-}
-
-impl ComposerMut<Material> for MaterialComposer {
-    fn compose_mut(&self, data: &mut Material, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.horizontal(|ui| {
-            // Preview
-            if self.show_preview {
-                ui.vertical(|ui| {
-                    ui.label("Preview:");
-                    let size = self.preview_size;
-                    let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-                    RepresentationPlugin::paint_rect(rect, context, data, ui).ui(ui);
-                    ui.painter().rect_stroke(
-                        rect,
-                        0,
-                        Stroke::new(1.0, subtle_borders_and_separators()),
-                        egui::StrokeKind::Middle,
-                    );
-                });
-
-                ui.separator();
+        for mut field in fields {
+            if !field.name.is_empty() {
+                ui.label(&field.name);
             }
 
-            // Painter actions editor
-            ui.vertical(|ui| {
-                ui.label("Painter Actions:");
-                if PainterActionListComposer::new().compose_mut(&mut data.0, context, ui) {
-                    changed = true;
-                }
+            ui.indent(format!("field_{}", field.name), |ui| {
+                changed |= RecursiveComposer::compose_recursive_value(&mut field, context, ui);
             });
-        });
+        }
 
         changed
     }
 }
 
-/// Extension methods for RenderBuilder to use these composers
-impl<'a> RenderBuilder<'a, Vec<Action>> {
-    pub fn edit_action_list(self, ui: &mut Ui) -> bool {
+/// Generic composer that works with any RecursiveValueMut type
+pub struct UniversalComposer;
+
+impl<T> ComposerMut<T> for UniversalComposer
+where
+    T: FRecursiveMut + ToRecursiveValueMut,
+{
+    fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool {
+        RecursiveListEditor::edit_recursive(data, context, ui)
+    }
+}
+
+/// Composer specifically for Vec<T> where T implements ToRecursiveValueMut
+pub struct VecComposer<T> {
+    _phantom: std::marker::PhantomData<T>,
+}
+
+impl<T> VecComposer<T> {
+    pub fn new() -> Self {
+        Self {
+            _phantom: std::marker::PhantomData,
+        }
+    }
+}
+
+impl<T> ComposerMut<Vec<T>> for VecComposer<T>
+where
+    T: ToRecursiveValueMut + Clone + Default,
+{
+    fn compose_mut(&self, data: &mut Vec<T>, context: &Context, ui: &mut Ui) -> bool {
+        RecursiveListEditor::edit_list(data, context, ui)
+    }
+}
+
+/// Extension methods for RenderBuilder to use recursive composers
+impl<'a, T> RenderBuilder<'a, T>
+where
+    T: FRecursiveMut + ToRecursiveValueMut,
+{
+    /// Edit any recursive type with full tree navigation
+    pub fn edit_recursive_value(self, ui: &mut Ui) -> bool {
         match self.data {
-            RenderDataRef::Mutable(data) => {
-                ActionListComposer::new().compose_mut(data, self.ctx, ui)
-            }
+            RenderDataRef::Mutable(data) => RecursiveListEditor::edit_recursive(data, self.ctx, ui),
             RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
         }
+    }
+}
+
+/// Extension for editing Vec<T> where T implements recursive traits
+impl<'a, T> RenderBuilder<'a, Vec<T>>
+where
+    T: ToRecursiveValueMut + Clone + Default,
+{
+    pub fn edit_recursive_list(self, ui: &mut Ui) -> bool {
+        match self.data {
+            RenderDataRef::Mutable(data) => RecursiveListEditor::edit_list(data, self.ctx, ui),
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+/// Specialized extensions for commonly used types
+impl<'a> RenderBuilder<'a, Vec<Action>> {
+    pub fn edit_action_list(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_list(ui)
     }
 }
 
 impl<'a> RenderBuilder<'a, Vec<PainterAction>> {
     pub fn edit_painter_action_list(self, ui: &mut Ui) -> bool {
-        match self.data {
-            RenderDataRef::Mutable(data) => {
-                PainterActionListComposer::new().compose_mut(data, self.ctx, ui)
-            }
-            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
-        }
-    }
-}
-
-impl<'a> RenderBuilder<'a, Vec<Reaction>> {
-    pub fn edit_reaction_list(self, ui: &mut Ui) -> bool {
-        match self.data {
-            RenderDataRef::Mutable(data) => {
-                ReactionListComposer::new().compose_mut(data, self.ctx, ui)
-            }
-            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
-        }
-    }
-}
-
-impl<'a> RenderBuilder<'a, Material> {
-    pub fn edit_material(self, ui: &mut Ui) -> bool {
-        match self.data {
-            RenderDataRef::Mutable(data) => MaterialComposer::new().compose_mut(data, self.ctx, ui),
-            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
-        }
-    }
-}
-
-/// Generic recursive list editor for Expression lists
-pub struct ExpressionListComposer;
-
-impl ComposerMut<Vec<Expression>> for ExpressionListComposer {
-    fn compose_mut(&self, data: &mut Vec<Expression>, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let mut to_remove = None;
-        let mut to_move = None;
-        let len = data.len();
-
-        for (i, expr) in data.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                // Reorder buttons
-                ui.vertical(|ui| {
-                    ui.add_enabled_ui(i > 0, |ui| {
-                        if ui.small_button("↑").clicked() {
-                            to_move = Some((i, i - 1));
-                        }
-                    });
-                    ui.add_enabled_ui(i < len - 1, |ui| {
-                        if ui.small_button("↓").clicked() {
-                            to_move = Some((i, i + 1));
-                        }
-                    });
-                });
-
-                // Expression selector and recursive fields
-                ui.vertical(|ui| {
-                    let response = expr
-                        .see_mut(context)
-                        .ctxbtn()
-                        .add_copy()
-                        .add_paste()
-                        .ui_enum(ui);
-
-                    if let Some(new_expr) = response.selector_changed() {
-                        RecursiveValueMut::replace_expr_and_move_fields(expr, new_expr.clone());
-                        changed = true;
-                    }
-
-                    if let Some(replacement) = response.pasted() {
-                        *expr = replacement.clone();
-                        changed = true;
-                    }
-
-                    // Show recursive fields
-                    ui.indent("fields", |ui| {
-                        changed |= expr.show_mut(context, ui);
-                    });
-                });
-
-                // Delete button
-                if ui.small_button("🗑").clicked() {
-                    to_remove = Some(i);
-                }
-            });
-        }
-
-        // Handle moves
-        if let Some((from, to)) = to_move {
-            data.swap(from, to);
-            changed = true;
-        }
-
-        // Handle removals
-        if let Some(idx) = to_remove {
-            data.remove(idx);
-            changed = true;
-        }
-
-        // Add button
-        if ui.button("➕ Add Expression").clicked() {
-            data.push(Expression::f32(0.0));
-            changed = true;
-        }
-
-        changed
+        self.edit_recursive_list(ui)
     }
 }
 
 impl<'a> RenderBuilder<'a, Vec<Expression>> {
     pub fn edit_expression_list(self, ui: &mut Ui) -> bool {
-        match self.data {
-            RenderDataRef::Mutable(data) => ExpressionListComposer.compose_mut(data, self.ctx, ui),
-            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
-        }
+        self.edit_recursive_list(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, Vec<Reaction>> {
+    pub fn edit_reaction_list(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_list(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, Material> {
+    pub fn edit_material(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_value(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, Expression> {
+    pub fn edit_expression(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_value(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, Action> {
+    pub fn edit_action(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_value(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, PainterAction> {
+    pub fn edit_painter_action(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_value(ui)
+    }
+}
+
+impl<'a> RenderBuilder<'a, Reaction> {
+    pub fn edit_reaction(self, ui: &mut Ui) -> bool {
+        self.edit_recursive_value(ui)
     }
 }

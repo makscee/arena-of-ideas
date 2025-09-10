@@ -408,7 +408,7 @@ impl BattleEditorPlugin {
                             ui.separator();
                             ui.label("Effect Actions:");
 
-                            if Self::edit_action_list(&mut effect.actions, context, ui) {
+                            if effect.actions.render_mut(context).edit_action_list(ui) {
                                 effect.unpack_entity(context, effect_entity).log();
                                 changed = true;
                             }
@@ -439,7 +439,11 @@ impl BattleEditorPlugin {
                             ui.separator();
                             ui.label("Behavior Reactions:");
 
-                            if Self::edit_reaction_list(&mut behavior.reactions, context, ui) {
+                            if behavior
+                                .reactions
+                                .render_mut(context)
+                                .edit_reaction_list(ui)
+                            {
                                 behavior.unpack_entity(context, behavior_entity).log();
                                 changed = true;
                             }
@@ -452,7 +456,7 @@ impl BattleEditorPlugin {
                             ui.separator();
                             ui.label("Representation:");
 
-                            if Self::edit_material(&mut repr_mut.material, context, ui) {
+                            if repr_mut.material.render_mut(context).edit_material(ui) {
                                 repr_mut.unpack_entity(context, repr_entity).log();
                                 changed = true;
                             }
@@ -618,10 +622,26 @@ impl BattleEditorPlugin {
 
                             // Edit the reaction directly
                             ui.label("Reaction:");
-                            let reaction_changed =
-                                Self::edit_reaction(&mut behavior_mut.reaction, context, ui);
+                            ui.group(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label("Trigger:");
+                                    if behavior_mut.reaction.trigger.show_mut(context, ui) {
+                                        magic_type_changed = true;
+                                    }
+                                });
 
-                            if magic_type_changed || reaction_changed {
+                                ui.label("Actions:");
+                                if behavior_mut
+                                    .reaction
+                                    .actions
+                                    .render_mut(context)
+                                    .edit_action_list(ui)
+                                {
+                                    magic_type_changed = true;
+                                }
+                            });
+
+                            if magic_type_changed {
                                 behavior_mut.unpack_entity(context, behavior_entity).log();
                                 changed = true;
                             }
@@ -636,7 +656,7 @@ impl BattleEditorPlugin {
 
                     ui.separator();
                     ui.collapsing("Representation (Material)", |ui| {
-                        if Self::edit_material(&mut repr_mut.material, context, ui) {
+                        if repr_mut.material.render_mut(context).edit_material(ui) {
                             repr_mut.unpack_entity(context, repr_entity).log();
                             changed = true;
                         }
@@ -650,40 +670,6 @@ impl BattleEditorPlugin {
         world.insert_resource(battle_data);
         result?;
         Ok((action, changed))
-    }
-
-    // Unified list editor for Actions
-    fn edit_action_list(actions: &mut Vec<Action>, context: &Context, ui: &mut Ui) -> bool {
-        actions.render_mut(context).edit_action_list(ui)
-    }
-
-    // Unified list editor for Reactions
-    fn edit_reaction_list(reactions: &mut Vec<Reaction>, context: &Context, ui: &mut Ui) -> bool {
-        reactions.render_mut(context).edit_reaction_list(ui)
-    }
-
-    // Edit a single Reaction
-    fn edit_reaction(reaction: &mut Reaction, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.horizontal(|ui| {
-            ui.label("Trigger:");
-            if reaction.trigger.show_mut(context, ui) {
-                changed = true;
-            }
-        });
-
-        ui.label("Actions:");
-        if Self::edit_action_list(&mut reaction.actions, context, ui) {
-            changed = true;
-        }
-
-        changed
-    }
-
-    // Unified Material editor with preview
-    fn edit_material(material: &mut Material, context: &Context, ui: &mut Ui) -> bool {
-        material.render_mut(context).edit_material(ui)
     }
 
     fn create_node<T>(context: &mut Context, owner: u64) -> u64
