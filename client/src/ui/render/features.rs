@@ -49,12 +49,29 @@ pub trait FInfo {
 
 /// Feature for types that can be recursively traversed
 pub trait FRecursive {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>>;
-}
+    /// Get inner fields for read-only traversal
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>>;
 
-/// Feature for types that can be recursively traversed mutably
-pub trait FRecursiveMut {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>>;
+    /// Convert to a recursive value for unified handling
+    fn to_recursive_value(&self) -> RecursiveValue<'_>
+    where
+        Self: ToRecursiveValue,
+    {
+        ToRecursiveValue::to_recursive_value(self)
+    }
+
+    /// Get mutable inner fields for editing
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+        vec![]
+    }
+
+    /// Convert to a mutable recursive value for unified handling
+    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_>
+    where
+        Self: ToRecursiveValueMut,
+    {
+        ToRecursiveValueMut::to_recursive_value_mut(self)
+    }
 }
 
 /// Feature for types that can be displayed

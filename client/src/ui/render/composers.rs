@@ -7,6 +7,9 @@ use std::cell::RefCell;
 mod editable_list;
 pub use editable_list::*;
 
+mod recursive;
+pub use recursive::*;
+
 /// Base trait for composers that transform data into UI
 pub trait Composer<T> {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response;
@@ -138,134 +141,8 @@ impl<T: FTag + FTitle + FDescription + FStats + Node> Composer<T> for TagCardCom
     }
 }
 
-/// Composer for recursive rendering
-pub struct RecursiveComposer<F> {
-    field_renderer: RefCell<F>,
-}
-
-impl<F> RecursiveComposer<F> {
-    pub fn new(field_renderer: F) -> Self {
-        Self {
-            field_renderer: RefCell::new(field_renderer),
-        }
-    }
-}
-
-impl<T, F> Composer<T> for RecursiveComposer<F>
-where
-    T: FRecursive + ToRecursiveValue,
-    F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
-{
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let root = data.to_recursive_value();
-        let root = RecursiveField::named("root", root);
-        render_field_recursive(root, context, ui, &self.field_renderer)
-    }
-}
-
-fn render_field_recursive<F>(
-    field: RecursiveField<'_>,
-    context: &Context,
-    ui: &mut Ui,
-    f: &RefCell<F>,
-) -> Response
-where
-    F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
-{
-    ui.horizontal(|ui| {
-        // Use RefCell for interior mutability
-        let mut f_mut = f.borrow_mut();
-
-        f_mut(
-            ui,
-            context,
-            RecursiveField {
-                name: field.name.clone(),
-                value: field.value,
-            },
-        );
-        drop(f_mut); // Explicitly drop the borrow before recursive calls
-
-        ui.vertical(|ui| {
-            for nested_field in call_on_recursive_value!(field, recursive_fields_old) {
-                render_field_recursive(nested_field, context, ui, f);
-            }
-        });
-    })
-    .response
-}
-
-/// Composer for recursive mutable rendering
-pub struct RecursiveMutComposer<F> {
-    field_renderer: RefCell<F>,
-}
-
-impl<F> RecursiveMutComposer<F> {
-    pub fn new(field_renderer: F) -> Self {
-        Self {
-            field_renderer: RefCell::new(field_renderer),
-        }
-    }
-}
-
-impl<T, F> ComposerMut<T> for RecursiveMutComposer<F>
-where
-    T: FRecursiveMut + ToRecursiveValueMut,
-    F: FnMut(&mut Ui, &Context, RecursiveFieldMut<'_>),
-{
-    fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let root = data.to_recursive_value_mut();
-        let root = RecursiveFieldMut::named("root", root);
-        render_field_recursive_mut(root, context, ui, &self.field_renderer, &mut changed);
-        changed
-    }
-}
-
-fn render_field_recursive_mut<F>(
-    mut field: RecursiveFieldMut<'_>,
-    context: &Context,
-    ui: &mut Ui,
-    f: &RefCell<F>,
-    changed: &mut bool,
-) where
-    F: FnMut(&mut Ui, &Context, RecursiveFieldMut<'_>),
-{
-    ui.horizontal(|ui| {
-        // Use RefCell for interior mutability
-        let mut f_mut = f.borrow_mut();
-
-        f_mut(
-            ui,
-            context,
-            RecursiveFieldMut {
-                name: field.name.clone(),
-                value: match &mut field.value {
-                    RecursiveValueMut::Expr(v) => RecursiveValueMut::Expr(*v),
-                    RecursiveValueMut::Action(v) => RecursiveValueMut::Action(*v),
-                    RecursiveValueMut::PainterAction(v) => RecursiveValueMut::PainterAction(*v),
-                    RecursiveValueMut::Var(v) => RecursiveValueMut::Var(*v),
-                    RecursiveValueMut::VarValue(v) => RecursiveValueMut::VarValue(*v),
-                    RecursiveValueMut::HexColor(v) => RecursiveValueMut::HexColor(*v),
-                    RecursiveValueMut::String(v) => RecursiveValueMut::String(*v),
-                    RecursiveValueMut::I32(v) => RecursiveValueMut::I32(*v),
-                    RecursiveValueMut::F32(v) => RecursiveValueMut::F32(*v),
-                    RecursiveValueMut::Bool(v) => RecursiveValueMut::Bool(*v),
-                    RecursiveValueMut::Vec2(v) => RecursiveValueMut::Vec2(*v),
-                    RecursiveValueMut::Reaction(v) => RecursiveValueMut::Reaction(*v),
-                    RecursiveValueMut::Material(v) => RecursiveValueMut::Material(*v),
-                },
-            },
-        );
-        drop(f_mut); // Explicitly drop the borrow before recursive calls
-
-        ui.vertical(|ui| {
-            for nested_field in call_on_recursive_value_mut!(field, recursive_fields_mut_old) {
-                render_field_recursive_mut(nested_field, context, ui, f, changed);
-            }
-        });
-    });
-}
+// Legacy recursive composers are deprecated - use the new recursive module instead
+// These are kept for backwards compatibility but should be migrated
 
 use crate::ui::see::RecursiveValueMut;
 

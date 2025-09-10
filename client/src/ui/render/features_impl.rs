@@ -286,13 +286,11 @@ impl FEdit for Expression {
 }
 
 impl FRecursive for Expression {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         RecursiveFields::recursive_fields_old(self)
     }
-}
 
-impl FRecursiveMut for Expression {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         RecursiveFieldsMut::recursive_fields_mut_old(self)
     }
 }
@@ -357,13 +355,11 @@ impl FEdit for Action {
 }
 
 impl FRecursive for Action {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         RecursiveFields::recursive_fields_old(self)
     }
-}
 
-impl FRecursiveMut for Action {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         RecursiveFieldsMut::recursive_fields_mut_old(self)
     }
 }
@@ -396,13 +392,11 @@ impl FEdit for PainterAction {
 }
 
 impl FRecursive for PainterAction {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         RecursiveFields::recursive_fields_old(self)
     }
-}
 
-impl FRecursiveMut for PainterAction {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         RecursiveFieldsMut::recursive_fields_mut_old(self)
     }
 }
@@ -452,13 +446,11 @@ impl FEdit for Material {
 }
 
 impl FRecursive for Material {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         RecursiveFields::recursive_fields_old(self)
     }
-}
 
-impl FRecursiveMut for Material {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         RecursiveFieldsMut::recursive_fields_mut_old(self)
     }
 }
@@ -477,13 +469,11 @@ impl FDisplay for Reaction {
 }
 
 impl FRecursive for Reaction {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         RecursiveFields::recursive_fields_old(self)
     }
-}
 
-impl FRecursiveMut for Reaction {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         RecursiveFieldsMut::recursive_fields_mut_old(self)
     }
 }
@@ -1157,7 +1147,7 @@ impl FTag for NAbilityEffect {
 }
 
 impl FRecursive for NAbilityEffect {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         self.actions
             .iter()
             .enumerate()
@@ -1167,10 +1157,8 @@ impl FRecursive for NAbilityEffect {
             })
             .collect()
     }
-}
 
-impl FRecursiveMut for NAbilityEffect {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.actions
             .iter_mut()
             .enumerate()
@@ -1221,7 +1209,7 @@ impl FTag for NStatusBehavior {
 }
 
 impl FRecursive for NStatusBehavior {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         self.reactions
             .iter()
             .enumerate()
@@ -1231,10 +1219,8 @@ impl FRecursive for NStatusBehavior {
             })
             .collect()
     }
-}
 
-impl FRecursiveMut for NStatusBehavior {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         self.reactions
             .iter_mut()
             .enumerate()
@@ -1279,16 +1265,14 @@ impl FTag for NStatusRepresentation {
 }
 
 impl FRecursive for NStatusRepresentation {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![RecursiveField::named(
             "material",
             self.material.to_recursive_value(),
         )]
     }
-}
 
-impl FRecursiveMut for NStatusRepresentation {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         vec![RecursiveFieldMut::named(
             "material",
             self.material.to_recursive_value_mut(),
@@ -1919,16 +1903,14 @@ impl FEdit for NUnitBehavior {
 }
 
 impl FRecursive for NUnitBehavior {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![RecursiveField::named(
             "reaction",
             self.reaction.to_recursive_value(),
         )]
     }
-}
 
-impl FRecursiveMut for NUnitBehavior {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         vec![RecursiveFieldMut::named(
             "reaction",
             self.reaction.to_recursive_value_mut(),
@@ -1969,16 +1951,14 @@ impl FTag for NUnitRepresentation {
 }
 
 impl FRecursive for NUnitRepresentation {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![RecursiveField::named(
             "material",
             self.material.to_recursive_value(),
         )]
     }
-}
 
-impl FRecursiveMut for NUnitRepresentation {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         vec![RecursiveFieldMut::named(
             "material",
             self.material.to_recursive_value_mut(),
@@ -2006,7 +1986,7 @@ impl<T: FEdit> FEdit for Vec<T> {
 }
 
 impl<T: FRecursive + ToRecursiveValue> FRecursive for Vec<T> {
-    fn recursive_fields(&self) -> Vec<RecursiveField<'_>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         self.iter()
             .enumerate()
             .map(|(i, item)| RecursiveField {
@@ -2015,10 +1995,11 @@ impl<T: FRecursive + ToRecursiveValue> FRecursive for Vec<T> {
             })
             .collect()
     }
-}
 
-impl<T: FRecursiveMut + ToRecursiveValueMut> FRecursiveMut for Vec<T> {
-    fn recursive_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>>
+    where
+        T: FRecursive,
+    {
         self.iter_mut()
             .enumerate()
             .map(|(i, item)| RecursiveFieldMut {

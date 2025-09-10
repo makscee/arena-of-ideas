@@ -1,5 +1,6 @@
 use super::*;
 use crate::ui::see::{Cstr, CstrTrait, RecursiveField, RecursiveFieldMut};
+use crate::{call_on_recursive_value, call_on_recursive_value_mut};
 
 pub enum RenderDataRef<'a, T> {
     Immutable(&'a T),
@@ -122,34 +123,41 @@ impl<'a, T: FEdit> RenderBuilder<'a, T> {
 }
 
 // Extension methods for FRecursive
-impl<'a, T: FRecursive + RecursiveFields + ToRecursiveValue> RenderBuilder<'a, T> {
-    pub fn recursive<F>(self, ui: &mut Ui, f: F)
+impl<'a, T: FRecursive> RenderBuilder<'a, T> {
+    pub fn recursive<F>(self, ui: &mut Ui, f: F) -> Response
     where
-        F: FnMut(&mut Ui, &Context, RecursiveField<'_>),
+        F: Fn(&mut Ui, &Context, &RecursiveField<'_>) -> Response + Clone,
     {
-        RecursiveComposer::new(f).compose(self.data.as_ref(), self.ctx, ui);
+        RecursiveComposer::new(f)
+            .with_layout(RecursiveLayout::HorizontalVertical)
+            .compose(self.data.as_ref(), self.ctx, ui)
     }
 
-    pub fn recursive_show(self, ui: &mut Ui) {
-        self.recursive(ui, |ui, context, field| {
-            if !field.name.is_empty() {
-                field.name.label(ui);
-            }
-            call_on_recursive_value!(field, display, context, ui);
-        })
+    pub fn recursive_show(self, ui: &mut Ui) -> Response {
+        recursive_display_composer(RecursiveLayout::HorizontalVertical).compose(
+            self.data.as_ref(),
+            self.ctx,
+            ui,
+        )
+    }
+
+    pub fn recursive_tree(self, ui: &mut Ui) -> Response {
+        recursive_display_composer(RecursiveLayout::Tree { indent: 16.0 })
+            .collapsible(true)
+            .compose(self.data.as_ref(), self.ctx, ui)
     }
 }
 
-// Extension methods for FRecursiveMut
-impl<'a, T: FRecursiveMut + RecursiveFieldsMut + ToRecursiveValueMut> RenderBuilder<'a, T> {
+// Extension methods for FRecursive with mutable support
+impl<'a, T: FRecursive + ToRecursiveValueMut> RenderBuilder<'a, T> {
     pub fn recursive_mut<F>(self, ui: &mut Ui, f: F) -> bool
     where
-        F: FnMut(&mut Ui, &Context, RecursiveFieldMut),
+        F: Fn(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool + Clone,
     {
         match self.data {
-            RenderDataRef::Mutable(data) => {
-                RecursiveMutComposer::new(f).compose_mut(data, self.ctx, ui)
-            }
+            RenderDataRef::Mutable(data) => RecursiveComposer::new(f)
+                .with_layout(RecursiveLayout::HorizontalVertical)
+                .compose_mut(data, self.ctx, ui),
             RenderDataRef::Immutable(_) => {
                 panic!("Tried to do mut operation on immutable data");
             }
@@ -157,14 +165,108 @@ impl<'a, T: FRecursiveMut + RecursiveFieldsMut + ToRecursiveValueMut> RenderBuil
     }
 
     pub fn recursive_edit(self, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        self.recursive_mut(ui, |ui, context, field| {
-            if !field.name.is_empty() {
-                field.name.label(ui);
+        match self.data {
+            RenderDataRef::Mutable(data) => {
+                recursive_edit_composer(RecursiveLayout::HorizontalVertical)
+                    .compose_mut(data, self.ctx, ui)
             }
-            changed |= call_on_recursive_value_mut!(field, show_mut, context, ui);
-        });
-        changed
+            RenderDataRef::Immutable(_) => {
+                panic!("Tried to do mut operation on immutable data");
+            }
+        }
+    }
+
+    pub fn recursive_edit_tree(self, ui: &mut Ui) -> bool {
+        match self.data {
+            RenderDataRef::Mutable(data) => {
+                recursive_edit_composer(RecursiveLayout::Tree { indent: 16.0 })
+                    .collapsible(true)
+                    .compose_mut(data, self.ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => {
+                panic!("Tried to do mut operation on immutable data");
+            }
+        }
+    }
+}
+
+// Extension methods for list rendering
+impl<'a, T> RenderBuilder<'a, Vec<T>>
+where
+    T: Clone + Default,
+{
+    /// Render a list with a custom item composer
+    pub fn list_with<C>(self, item_composer: C, ui: &mut Ui) -> Response
+    where
+        C: Composer<T>,
+    {
+        ListComposer::new(item_composer)
+            .with_layout(ListLayout::Vertical)
+            .compose(self.data.as_ref(), self.ctx, ui)
+    }
+
+    /// Edit a list with a custom item composer
+    pub fn edit_list_with<C>(self, item_composer: C, ui: &mut Ui) -> bool
+    where
+        C: ComposerMut<T>,
+    {
+        match self.data {
+            RenderDataRef::Mutable(data) => ListComposer::new(item_composer)
+                .with_controls(true, true, true)
+                .with_layout(ListLayout::Vertical)
+                .compose_mut(data, self.ctx, ui),
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+
+    /// Render a list in a grid layout
+    pub fn list_grid<C>(self, item_composer: C, columns: usize, ui: &mut Ui) -> Response
+    where
+        C: Composer<T>,
+    {
+        ListComposer::new(item_composer)
+            .with_layout(ListLayout::Grid { columns })
+            .compose(self.data.as_ref(), self.ctx, ui)
+    }
+
+    /// Edit a list in a grid layout
+    pub fn edit_list_grid<C>(self, item_composer: C, columns: usize, ui: &mut Ui) -> bool
+    where
+        C: ComposerMut<T>,
+    {
+        match self.data {
+            RenderDataRef::Mutable(data) => ListComposer::new(item_composer)
+                .with_controls(true, true, true)
+                .with_layout(ListLayout::Grid { columns })
+                .compose_mut(data, self.ctx, ui),
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+// Extension methods for recursive list rendering
+impl<'a, T> RenderBuilder<'a, Vec<T>>
+where
+    T: FRecursive + ToRecursiveValue + Clone + Default,
+{
+    /// Display a list of recursive items
+    pub fn recursive_list(self, ui: &mut Ui) -> Response {
+        RecursiveListComposer::new()
+            .with_layout(ListLayout::Vertical)
+            .compose(self.data.as_ref(), self.ctx, ui)
+    }
+
+    /// Edit a list of recursive items
+    pub fn edit_recursive_list(self, ui: &mut Ui) -> bool
+    where
+        T: ToRecursiveValueMut,
+    {
+        match self.data {
+            RenderDataRef::Mutable(data) => RecursiveListComposer::new()
+                .with_controls(true, true, true)
+                .compose_mut(data, self.ctx, ui),
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
     }
 }
 

@@ -93,7 +93,7 @@ impl RecursiveEditor {
     /// Render a full recursive editor UI for any type that supports recursive editing
     pub fn ui<T>(data: &mut T, context: &Context, ui: &mut Ui) -> bool
     where
-        T: FRecursiveMut + ToRecursiveValueMut + RecursiveFieldsMut,
+        T: FRecursive + ToRecursiveValueMut + RecursiveFieldsMut,
     {
         let mut changed = false;
         data.render_mut(context)
@@ -192,7 +192,7 @@ impl RecursiveEditor {
         id_salt: impl std::hash::Hash,
     ) -> bool
     where
-        T: FRecursiveMut + ToRecursiveValueMut + RecursiveFieldsMut + FTitle,
+        T: FRecursive + ToRecursiveValueMut + RecursiveFieldsMut + FTitle,
     {
         let mut changed = false;
 
@@ -213,7 +213,7 @@ impl RecursiveEditor {
         on_delete: impl FnOnce(),
     ) -> bool
     where
-        T: FRecursiveMut + ToRecursiveValueMut + RecursiveFieldsMut + FTitle + FCopy + FPaste,
+        T: FRecursive + ToRecursiveValueMut + RecursiveFieldsMut + FTitle + FCopy + FPaste,
     {
         let mut changed = false;
 
@@ -253,7 +253,7 @@ impl RecursiveEditor {
     /// Helper to render a list of recursive items with add/remove/reorder
     pub fn edit_list<T>(items: &mut Vec<T>, context: &Context, ui: &mut Ui, item_name: &str) -> bool
     where
-        T: FRecursiveMut + ToRecursiveValueMut + RecursiveFieldsMut + FTitle + Default + Clone,
+        T: FRecursive + ToRecursiveValueMut + RecursiveFieldsMut + FTitle + Default + Clone,
     {
         let mut changed = false;
         let mut to_remove = None;
@@ -336,7 +336,7 @@ impl BehaviorExt for NUnitBehavior {
 /// Extension for RenderBuilder to use recursive editor
 impl<'a, T> RenderBuilder<'a, T>
 where
-    T: FRecursiveMut + ToRecursiveValueMut + RecursiveFieldsMut,
+    T: FRecursive + ToRecursiveValueMut + RecursiveFieldsMut,
 {
     /// Edit with the recursive editor
     pub fn edit_recursive(self, ui: &mut Ui) -> bool {
