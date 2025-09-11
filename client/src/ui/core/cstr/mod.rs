@@ -72,12 +72,6 @@ pub trait CstrTrait {
     fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<egui::Galley>;
 }
 
-/// SFnCstrWidget is an alias for CstrTrait to follow the see module pattern
-pub trait SFnCstrWidget: CstrTrait {}
-
-/// Blanket implementation for all types that implement CstrTrait
-impl<T: CstrTrait> SFnCstrWidget for T {}
-
 impl CstrTrait for Cstr {
     fn widget(&self, a: f32, style: &Style) -> WidgetText {
         cstr_parse(&self.to_string(), a, style)

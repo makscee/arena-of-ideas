@@ -129,14 +129,16 @@ impl MatchPlugin {
                                                             .component_by_id::<NUnit>(
                                                                 slot.node_id,
                                                             )?;
-                                                        unit.see(context).card(ui)?
+                                                        unit.render(context).card(ui);
+                                                        ui.response()
                                                     }
                                                     CardKind::House => {
                                                         let house = context
                                                             .component_by_id::<NHouse>(
                                                                 slot.node_id,
                                                             )?;
-                                                        house.see(context).card(ui)?
+                                                        house.render(context).card(ui);
+                                                        ui.response()
                                                     }
                                                 };
                                                 resp.dnd_set_drag_payload((i, slot.clone()));
@@ -201,11 +203,7 @@ impl MatchPlugin {
                 |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     for house in team.houses_load(context) {
-                        house
-                            .clone()
-                            .see(context)
-                            .tag_card_expanded(true, ui)
-                            .ui(ui);
+                        house.clone().render(context).tag_card_expanded(true, ui);
                     }
                     Ok(())
                 },
@@ -412,7 +410,7 @@ impl MatchPlugin {
             .unit_rep_with_default(fusion.id)
             .ui(ui, context)
             .on_hover_ui(|ui| {
-                fusion.show_card(context, ui).ui(ui);
+                fusion.render(context).card(ui);
             });
         ui.label(format!(
             "{}/{}",
@@ -423,8 +421,7 @@ impl MatchPlugin {
         if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
-                let vctx = ViewContext::new(ui).non_interactible(true);
-                trigger.view_title(vctx, context, ui);
+                trigger.render(context).title_label(ui);
             });
         }
     }

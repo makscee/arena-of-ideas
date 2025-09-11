@@ -1,5 +1,5 @@
 use super::*;
-use crate::ui::see::CstrTrait;
+use crate::ui::core::CstrTrait;
 use std::marker::PhantomData;
 
 /// Composer for selectable items

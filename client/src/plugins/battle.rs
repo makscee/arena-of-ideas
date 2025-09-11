@@ -436,18 +436,16 @@ impl BattlePlugin {
                 } else {
                     &mut data.battle.right
                 };
-
-                if team
-                    .view_with_children_mut(ViewContext::new(ui), context, ui)
-                    .changed
-                    || team.view_mut(ViewContext::new(ui), context, ui).changed
-                {
-                    context
-                        .world_mut()
-                        .unwrap()
-                        .resource_mut::<ReloadData>()
-                        .reload_requested = true;
-                }
+                todo!("team tree render");
+                // if team.render(context)
+                //     || team.view_mut(ViewContext::new(ui), context, ui).changed
+                // {
+                //     context
+                //         .world_mut()
+                //         .unwrap()
+                //         .resource_mut::<ReloadData>()
+                //         .reload_requested = true;
+                // }
             });
         });
     }

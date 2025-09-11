@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use bevy_egui::egui::Grid;
 
 use super::*;
+use crate::ui::render::{FDisplay, FTitle};
 
 #[derive(Resource, Default, Clone)]
 pub struct NodeExplorerData {
@@ -54,24 +55,24 @@ pub struct NewNodeState {
     pub pack: Option<PackedNodes>,
 }
 
-pub struct NodesListWidget<T: NodeViewFns> {
+pub struct NodesListWidget<T> {
     pd: PhantomData<T>,
 }
 
-impl<T: NodeViewFns> NodesListWidget<T> {
+impl<T: FTitle + Node> NodesListWidget<T> {
     pub fn new() -> NodesListWidget<T> {
         Self { pd: PhantomData }
     }
     pub fn ui(
         &mut self,
         context: &Context,
-        vctx: ViewContext,
+        // vctx: ViewContext,
         ui: &mut Ui,
         ids: &Vec<u64>,
         selected: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
         let mut new_selected: Option<u64> = None;
-        ui.push_id(vctx.id, |ui| {
+        ui.push_id(1, |ui| {
             let mut nodes = ids
                 .into_iter()
                 .filter_map(|id| context.component_by_id::<T>(*id).ok())
@@ -90,37 +91,38 @@ impl<T: NodeViewFns> NodesListWidget<T> {
             let mut table = nodes.table().column(
                 "r",
                 move |context, ui, node, _value| {
-                    node.see(context).node_rating(ui);
+                    if let Some(rating) = node.id().node_rating() {
+                        ui.label(format!("{}", rating));
+                    }
                     Ok(())
                 },
                 |_, node| Ok(VarValue::i32(node.id().node_rating().unwrap_or_default())),
             );
-            if let Some((is_parent, id)) = vctx.link_rating {
-                table = table.column(
-                    "lr",
-                    move |context, ui, node, _value| {
-                        node.see(context).node_link_rating(ui, is_parent, id);
-                        Ok(())
-                    },
-                    move |context, node| {
-                        Ok(VarValue::i32(
-                            node.get_node_link_rating(context, is_parent, id)
-                                .unwrap_or_default()
-                                .0,
-                        ))
-                    },
-                );
-            }
+            todo!("link rating buttons");
+            // if let Some((is_parent, id)) = vctx.link_rating {
+            //     table = table.column(
+            //         "lr",
+            //         move |context, ui, node, _value| {
+            //             if let Some(link_rating) = node.id().node_link_rating(is_parent, id) {
+            //                 ui.label(format!("{}", link_rating));
+            //             }
+            //             Ok(())
+            //         },
+            //         move |context, node| {
+            //             Ok(VarValue::i32(
+            //                 node.get_node_link_rating(context, is_parent, id)
+            //                     .unwrap_or_default()
+            //                     .0,
+            //             ))
+            //         },
+            //     );
+            // }
             table = table
                 .column(
                     "node",
                     |context, ui, node, _value| {
                         ui.horizontal(|ui| {
-                            let response = node.view_title(
-                                vctx.selected(selected.is_some_and(|id| id == node.id())),
-                                context,
-                                ui,
-                            );
+                            let response = (*node).render(context).title_label(ui);
                             if node.owner() == ID_CORE {
                                 ui.painter().rect_stroke(
                                     response.rect,
@@ -135,7 +137,7 @@ impl<T: NodeViewFns> NodesListWidget<T> {
                                     ui.close_menu();
                                 }
                             });
-                            node.view_data(vctx.one_line(true), context, ui);
+                            node.display(context, ui);
                         });
                         Ok(())
                     },
@@ -341,41 +343,41 @@ impl NodeExplorerPlugin {
                     pack = Some(new_pack);
                 }
 
-                if let Some(ref mut pack) = pack {
-                    if let Ok(_view_response) = kind.view_pack_with_children_mut(context, ui, pack)
-                    {
-                        ui.horizontal(|ui| {
-                            if ui.button("Publish").clicked() {
-                                let pack_string = to_ron_string(pack);
-                                cn().reducers.content_publish_node(pack_string).ok();
-                                // Reset the pack after publishing
-                                let mut new_pack = PackedNodes::default();
-                                new_pack.root = 1;
-                                new_pack.add_node(kind.to_string(), kind.default_data(), 1);
-                                *pack = new_pack;
-                            }
+                // if let Some(ref mut pack) = pack {
+                //     if let Ok(_view_response) = kind.view_pack_with_children_mut(context, ui, pack)
+                //     {
+                //         ui.horizontal(|ui| {
+                //             if ui.button("Publish").clicked() {
+                //                 let pack_string = to_ron_string(pack);
+                //                 cn().reducers.content_publish_node(pack_string).ok();
+                //                 // Reset the pack after publishing
+                //                 let mut new_pack = PackedNodes::default();
+                //                 new_pack.root = 1;
+                //                 new_pack.add_node(kind.to_string(), kind.default_data(), 1);
+                //                 *pack = new_pack;
+                //             }
 
-                            if ui.button("Reset").clicked() {
-                                let mut new_pack = PackedNodes::default();
-                                new_pack.root = 1;
-                                new_pack.add_node(kind.to_string(), kind.default_data(), 1);
-                                *pack = new_pack;
-                            }
-                        });
-                    }
-                }
+                //             if ui.button("Reset").clicked() {
+                //                 let mut new_pack = PackedNodes::default();
+                //                 new_pack.root = 1;
+                //                 new_pack.add_node(kind.to_string(), kind.default_data(), 1);
+                //                 *pack = new_pack;
+                //             }
+                //         });
+                //     }
+                // }
             });
 
-            if let Some(selected) = kind.show_explorer(
-                context,
-                ViewContext::new(ui),
-                ui,
-                &nodes,
-                data.inspected_node,
-            )? {
-                Self::select_node(context, &mut data, selected)?;
-                should_switch_to_inspector = true;
-            }
+            // if let Some(selected) = kind.show_explorer(
+            //     context,
+            //     ViewContext::new(ui),
+            //     ui,
+            //     &nodes,
+            //     data.inspected_node,
+            // )? {
+            //     Self::select_node(context, &mut data, selected)?;
+            //     should_switch_to_inspector = true;
+            // }
             Ok(())
         });
 
@@ -426,15 +428,15 @@ impl NodeExplorerPlugin {
             .to_e_not_found()?;
         let r = Context::from_world_r(world, |context| {
             let kind = ned.selected_kind;
-            if let Some(selected) = kind.show_explorer(
-                context,
-                ViewContext::new(ui).one_line(true),
-                ui,
-                &ned.selected_ids,
-                ned.inspected_node,
-            )? {
-                Self::select_node(context, &mut ned, selected)?;
-            }
+            // if let Some(selected) = kind.show_explorer(
+            //     context,
+            //     ViewContext::new(ui).one_line(true),
+            //     ui,
+            //     &ned.selected_ids,
+            //     ned.inspected_node,
+            // )? {
+            //     Self::select_node(context, &mut ned, selected)?;
+            // }
             Ok(())
         });
         world.insert_resource(ned);
@@ -461,36 +463,40 @@ impl NodeExplorerPlugin {
             }
             let ns = context.component_by_id::<NodeState>(id)?;
             match ns.kind {
-                NodeKind::NHouse => context
-                    .component_by_id::<NHouse>(id)?
-                    .see(context)
-                    .tag_card(ui)
-                    .ui(ui),
-                NodeKind::NAbilityMagic => context
-                    .component_by_id::<NAbilityMagic>(id)?
-                    .see(context)
-                    .tag_card(ui)
-                    .ui(ui),
-                NodeKind::NStatusMagic => context
-                    .component_by_id::<NStatusMagic>(id)?
-                    .see(context)
-                    .tag_card(ui)
-                    .ui(ui),
-                NodeKind::NFusion => context
-                    .component_by_id::<NFusion>(id)?
-                    .show_card(context, ui)
-                    .ui(ui),
-                NodeKind::NUnit => context
-                    .component_by_id::<NUnit>(id)?
-                    .see(context)
-                    .tag_card(ui)
-                    .ui(ui),
+                NodeKind::NHouse => {
+                    context
+                        .component_by_id::<NHouse>(id)?
+                        .render(context)
+                        .tag_card(ui);
+                }
+                NodeKind::NAbilityMagic => {
+                    context
+                        .component_by_id::<NAbilityMagic>(id)?
+                        .render(context)
+                        .tag_card(ui);
+                }
+                NodeKind::NStatusMagic => {
+                    context
+                        .component_by_id::<NStatusMagic>(id)?
+                        .render(context)
+                        .tag_card(ui);
+                }
+                NodeKind::NFusion => {
+                    context
+                        .component_by_id::<NFusion>(id)?
+                        .render(context)
+                        .card(ui);
+                }
+                NodeKind::NUnit => {
+                    context
+                        .component_by_id::<NUnit>(id)?
+                        .render(context)
+                        .tag_card(ui);
+                }
                 NodeKind::NUnitRepresentation => {
-                    context.component_by_id::<NUnitRepresentation>(id)?.view(
-                        ViewContext::new(ui),
-                        context,
-                        ui,
-                    );
+                    if let Ok(repr) = context.component_by_id::<NUnitRepresentation>(id) {
+                        repr.display(context, ui);
+                    }
                 }
                 _ => {}
             }
@@ -546,38 +552,33 @@ impl NodeExplorerPlugin {
                                 }
 
                                 if let Some(ref mut pack) = pack {
-                                    if let Ok(_view_response) =
-                                        kind.view_pack_with_children_mut(context, ui, pack)
-                                    {
-                                        ui.horizontal(|ui| {
-                                            if ui.button("Publish").clicked() {
-                                                let pack_string = to_ron_string(pack);
-                                                cn().reducers
-                                                    .content_publish_node(pack_string)
-                                                    .ok();
-                                                // Reset the pack after publishing
-                                                let mut new_pack = PackedNodes::default();
-                                                new_pack.root = 1;
-                                                new_pack.add_node(
-                                                    kind.to_string(),
-                                                    kind.default_data(),
-                                                    1,
-                                                );
-                                                *pack = new_pack;
-                                            }
+                                    kind.render(context).selector(ui);
+                                    ui.horizontal(|ui| {
+                                        if ui.button("Publish").clicked() {
+                                            let pack_string = to_ron_string(pack);
+                                            cn().reducers.content_publish_node(pack_string).ok();
+                                            // Reset the pack after publishing
+                                            let mut new_pack = PackedNodes::default();
+                                            new_pack.root = 1;
+                                            new_pack.add_node(
+                                                kind.to_string(),
+                                                kind.default_data(),
+                                                1,
+                                            );
+                                            *pack = new_pack;
+                                        }
 
-                                            if ui.button("Reset").clicked() {
-                                                let mut new_pack = PackedNodes::default();
-                                                new_pack.root = 1;
-                                                new_pack.add_node(
-                                                    kind.to_string(),
-                                                    kind.default_data(),
-                                                    1,
-                                                );
-                                                *pack = new_pack;
-                                            }
-                                        });
-                                    }
+                                        if ui.button("Reset").clicked() {
+                                            let mut new_pack = PackedNodes::default();
+                                            new_pack.root = 1;
+                                            new_pack.add_node(
+                                                kind.to_string(),
+                                                kind.default_data(),
+                                                1,
+                                            );
+                                            *pack = new_pack;
+                                        }
+                                    });
                                 }
                             });
 
@@ -596,16 +597,11 @@ impl NodeExplorerPlugin {
                                 ids.extend(child_nodes.iter().map(|(id, _)| *id));
                             }
 
-                            let vctx = ViewContext::new(ui)
-                                .one_line(true)
-                                .link_rating(true, inspected_id)
-                                .link_rating(false, inspected_id);
-
-                            if let Ok(Some(id)) =
-                                kind.show_explorer(context, vctx, ui, &ids, ned.inspected_node)
-                            {
-                                selected = Some(id);
-                            }
+                            // if let Ok(Some(id)) =
+                            //     kind.show_explorer(context, vctx, ui, &ids, ned.inspected_node)
+                            // {
+                            //     selected = Some(id);
+                            // }
                         });
                     });
                 }

@@ -1,6 +1,5 @@
 use super::*;
 use crate::ui::core::enum_colors::EnumColor;
-use crate::ui::see::{Cstr, CstrTrait, ToCstr};
 
 // ============================================================================
 // Basic Types Implementations
@@ -190,7 +189,7 @@ impl FColoredTitle for VarName {
 
 impl FDisplay for VarName {
     fn display(&self, context: &Context, ui: &mut Ui) {
-        self.view(ViewContext::new(ui), context, ui);
+        self.render(context).colored_title(ui);
     }
 }
 
@@ -290,6 +289,12 @@ impl FEdit for Expression {
             .edit_selector_recursive(ui);
 
         response.custom_action().is_some() || response.pasted().is_some()
+    }
+}
+
+impl FTitle for Trigger {
+    fn title(&self, _context: &Context) -> Cstr {
+        self.as_ref().to_owned()
     }
 }
 
@@ -510,6 +515,12 @@ impl FStats for NUnit {
     }
 }
 
+impl FDisplay for NUnit {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NUnit {
     fn tag_name(&self, context: &Context) -> Cstr {
         context.get_string(VarName::unit_name).unwrap_or_default()
@@ -605,6 +616,12 @@ impl FStats for NHouse {
     }
 }
 
+impl FDisplay for NHouse {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NHouse {
     fn tag_name(&self, _: &Context) -> Cstr {
         self.house_name.clone()
@@ -680,6 +697,12 @@ impl FStats for NAbilityMagic {
     }
 }
 
+impl FDisplay for NAbilityMagic {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NAbilityMagic {
     fn tag_name(&self, _: &Context) -> Cstr {
         self.ability_name.clone()
@@ -738,6 +761,12 @@ impl FStats for NStatusMagic {
     }
 }
 
+impl FDisplay for NStatusMagic {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NStatusMagic {
     fn tag_name(&self, _: &Context) -> Cstr {
         self.status_name.clone()
@@ -793,6 +822,12 @@ impl FStats for NArena {
     }
 }
 
+impl FDisplay for NArena {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NArena {
     fn tag_name(&self, _: &Context) -> Cstr {
         "Arena".cstr()
@@ -825,6 +860,12 @@ impl FStats for NFloorPool {
     }
 }
 
+impl FDisplay for NFloorPool {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NFloorPool {
     fn tag_name(&self, _: &Context) -> Cstr {
         format!("F{}", self.floor).cstr()
@@ -854,6 +895,12 @@ impl FDescription for NFloorBoss {
 impl FStats for NFloorBoss {
     fn stats(&self, _: &Context) -> Vec<(VarName, VarValue)> {
         vec![(VarName::floor, VarValue::i32(self.floor))]
+    }
+}
+
+impl FDisplay for NFloorBoss {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
     }
 }
 
@@ -967,6 +1014,12 @@ impl FStats for NPlayerData {
     }
 }
 
+impl FDisplay for NPlayerData {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NPlayerData {
     fn tag_name(&self, _: &Context) -> Cstr {
         "Data".cstr()
@@ -1010,6 +1063,12 @@ impl FStats for NPlayerIdentity {
     }
 }
 
+impl FDisplay for NPlayerIdentity {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NPlayerIdentity {
     fn tag_name(&self, _: &Context) -> Cstr {
         "Identity".cstr()
@@ -1048,6 +1107,12 @@ impl FTitle for NHouseColor {
     }
 }
 
+impl FDisplay for NAbilityDescription {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTitle for NAbilityDescription {
     fn title(&self, _: &Context) -> Cstr {
         self.cstr()
@@ -1072,6 +1137,12 @@ impl FStats for NAbilityEffect {
     }
 }
 
+impl FDisplay for NAbilityEffect {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NAbilityEffect {
     fn tag_name(&self, _: &Context) -> Cstr {
         "Effect".cstr()
@@ -1083,6 +1154,12 @@ impl FTag for NAbilityEffect {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(255, 165, 0)
+    }
+}
+
+impl FDisplay for NStatusDescription {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
     }
 }
 
@@ -1110,6 +1187,12 @@ impl FStats for NStatusBehavior {
     }
 }
 
+impl FDisplay for NStatusBehavior {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+}
+
 impl FTag for NStatusBehavior {
     fn tag_name(&self, _: &Context) -> Cstr {
         "Behavior".cstr()
@@ -1121,6 +1204,12 @@ impl FTag for NStatusBehavior {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(255, 255, 0)
+    }
+}
+
+impl FDisplay for NStatusRepresentation {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.material.display(context, ui);
     }
 }
 
@@ -1244,6 +1333,12 @@ impl FDescription for NBattle {
 impl FStats for NBattle {
     fn stats(&self, _: &Context) -> Vec<(VarName, VarValue)> {
         vec![]
+    }
+}
+
+impl FDisplay for NBattle {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
     }
 }
 
@@ -1549,10 +1644,10 @@ impl FEdit for NUnitDescription {
             changed |= ui.text_edit_multiline(&mut self.description).changed();
             ui.horizontal(|ui| {
                 ui.label("Magic Type:");
-                changed |= self.magic_type.show_mut(context, ui);
+                changed |= self.magic_type.render_mut(context).edit_selector(ui);
                 ui.separator();
                 ui.label("Trigger:");
-                changed |= self.trigger.show_mut(context, ui);
+                changed |= self.trigger.render_mut(context).edit_selector(ui);
             });
         });
         changed
@@ -1733,10 +1828,10 @@ impl FEdit for NUnitBehavior {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.label("Magic Type:");
-                changed |= self.magic_type.show_mut(context, ui);
+                changed |= self.magic_type.render_mut(context).edit_selector(ui);
             });
             ui.label("Reaction:");
-            changed |= self.reaction.show_mut(context, ui);
+            changed |= self.reaction.render_mut(context).recursive_edit_tree(ui);
         });
         changed
     }
@@ -1771,6 +1866,18 @@ impl FTag for NUnitRepresentation {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(0, 128, 128)
+    }
+}
+
+impl FDisplay for NUnitRepresentation {
+    fn display(&self, context: &Context, ui: &mut Ui) {
+        self.material.display(context, ui);
+    }
+}
+
+impl FEdit for NUnitRepresentation {
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.material.edit(context, ui)
     }
 }
 

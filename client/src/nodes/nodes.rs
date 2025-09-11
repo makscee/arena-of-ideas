@@ -27,7 +27,7 @@ pub trait Node:
     + Component
     + Sized
     + GetVar
-    + SFnShow
+    + FDisplay
     + Debug
     + std::hash::Hash
     + StringData
@@ -178,74 +178,4 @@ impl NHouse {
 
 pub trait TableNodeView<T> {
     fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
-}
-
-pub fn node_menu<T: Node + NodeExt + ViewFns>(ui: &mut Ui, context: &Context) -> Option<T> {
-    let mut result = None;
-    fn show_node_list<T: Node + NodeExt + ViewFns>(
-        context: &Context,
-        ui: &mut Ui,
-        ids: Vec<u64>,
-    ) -> Option<T> {
-        let mut result: Option<T> = None;
-        ScrollArea::vertical()
-            .min_scrolled_height(500.0)
-            .show(ui, |ui| {
-                let vctx = ViewContext::new(ui);
-                let Ok(nodes) = context.collect_components::<T>(ids) else {
-                    return;
-                };
-                for d in nodes {
-                    let name = d.title_cstr(vctx, context);
-                    if ui
-                        .menu_button(name.widget(1.0, ui.style()), |ui| {
-                            ScrollArea::both().show(ui, |ui| {
-                                d.view(vctx, context, ui);
-                            });
-                        })
-                        .response
-                        .clicked()
-                    {
-                        result = T::pack_entity(context, d.entity()).ok();
-                        ui.close_menu();
-                    }
-                }
-            });
-        result
-    }
-    ui.menu_button("core", |ui| {
-        result = show_node_list(
-            context,
-            ui,
-            cn().db
-                .nodes_world()
-                .iter()
-                .filter_map(|n| if n.owner == ID_CORE { Some(n.id) } else { None })
-                .collect_vec(),
-        );
-    });
-    ui.menu_button("all", |ui| {
-        result = show_node_list(
-            context,
-            ui,
-            cn().db
-                .nodes_world()
-                .iter()
-                .filter_map(|n| if n.owner == 0 { Some(n.id) } else { None })
-                .collect_vec(),
-        );
-    });
-    result
-}
-pub fn new_node_btn<T: Node + NodeExt + ViewFns>(ui: &mut Ui) -> Option<T> {
-    if format!("add [b {}]", T::kind_s())
-        .cstr()
-        .button(ui)
-        .clicked()
-    {
-        let n = T::default();
-        Some(n)
-    } else {
-        None
-    }
 }

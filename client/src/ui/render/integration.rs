@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::ui::render::composers::menu::MenuAction;
-use crate::ui::see::CstrTrait;
 
 /// Main game UI using the render system
 pub fn render_game_ui(world: &World, ui: &mut Ui) {

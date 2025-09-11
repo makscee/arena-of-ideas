@@ -68,8 +68,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
             fn unpack(self, context: &mut Context, entity: Entity, node: &TNode);
             fn default_data(self) -> String;
             fn default_tnode(self) -> TNode;
-            fn show_explorer(self, context: &Context, vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError>;
-            fn view_pack_with_children_mut(self, context: &Context, ui: &mut Ui, pack: &mut PackedNodes) -> Result<ViewResponse, ExpressionError>;
             fn query_all_ids(self, world: &mut World) -> Vec<u64>;
             fn all_linked_parents(self) -> HashSet<NodeKind>;
             fn all_linked_children(self) -> HashSet<NodeKind>;
@@ -144,32 +142,6 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
                     )*
                 }
             }
-            fn show_explorer(self, context: &Context, mut vctx: ViewContext, ui: &mut Ui, ids: &Vec<u64>, selected: Option<u64>) -> Result<Option<u64>, ExpressionError> {
-                vctx = vctx.with_id(self);
-                match self {
-                    Self::None => Ok(None),
-                    #(
-                        Self::#names => {
-                            NodesListWidget::<#names>::new().ui(context, vctx, ui, ids, selected)
-                        }
-                    )*
-                }
-            }
-            fn view_pack_with_children_mut(self, context: &Context, ui: &mut Ui, pack: &mut PackedNodes) -> Result<ViewResponse, ExpressionError> {
-                match self {
-                    Self::None => unimplemented!(),
-                    #(
-                        Self::#names => {
-                            let mut n = #names::unpack_id(pack.root, pack).to_custom_e("Failed to unpack")?;
-                            let vr = n.view_with_children_mut(ViewContext::new(ui), context, ui);
-                            if vr.changed {
-                                *pack = n.pack();
-                            }
-                            Ok(vr)
-                        }
-                    )*
-                }
-            }
             fn query_all_ids(self, world: &mut World) -> Vec<u64> {
                 match self {
                     Self::None => default(),
@@ -191,7 +163,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
     let ParsedNodeFields {
         var_fields,
         var_types: _,
-        data_fields,
+        data_fields: _,
         data_types: _,
         all_data_fields,
         all_data_types,
@@ -476,39 +448,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         #[allow(unused)]
         #[allow(dead_code)]
         #[allow(unused_mut)]
-        impl SFnShow for #struct_ident {
-            fn show(&self, context: &Context, ui: &mut Ui) {
-                for (var, value) in self.get_own_vars() {
-                    value.show(context, ui);
-                }
-                #(
-                    self.#data_fields.show(context, ui);
-                )*
-            }
-        }
-
-        #[allow(unused)]
-        #[allow(dead_code)]
-        #[allow(unused_mut)]
-        impl SFnShowMut for #struct_ident {
-            fn show_mut(&mut self, context: &Context, ui: &mut Ui) -> bool {
-                let mut changed = false;
-                #(
-                    ui.vertical(|ui| {
-                        VarName::#var_fields.cstr().label(ui);
-                        changed |= self.#var_fields.show_mut(context, ui);
-                    });
-                )*
-                #(
-                    changed |= self.#data_fields.show_mut(context, ui);
-                )*
-                changed
-            }
-        }
-
-        #[allow(unused)]
-        #[allow(dead_code)]
-        #[allow(unused_mut)]
         impl Node for #struct_ident {
             #strings_conversions
             #common_trait_fns
@@ -743,83 +682,6 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 context.world_mut()?.entity_mut(entity).insert(self);
                 kind.on_unpack(context, entity);
                 Ok(())
-            }
-        }
-
-        #[allow(unused)]
-        #[allow(dead_code)]
-        #[allow(unused_mut)]
-        impl ViewFns for #struct_ident {
-            fn title_cstr(&self, vctx: ViewContext, context: &Context) -> Cstr {
-                self.node_title_cstr(vctx, context)
-            }
-            fn fn_view_data() -> Option<fn(&Self, ViewContext, &Context, &mut Ui)> {
-                Some(Self::view_data)
-            }
-            fn fn_view_data_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
-                Some(Self::view_data_mut)
-            }
-            fn fn_view_context_menu_extra_mut() -> Option<fn(&mut Self, ViewContext, &Context, &mut Ui) -> ViewResponse> {
-                Some(Self::view_context_menu_extra_mut)
-            }
-        }
-
-        #[allow(unused)]
-        #[allow(dead_code)]
-        #[allow(unused_mut)]
-        impl ViewChildren for #struct_ident {
-            fn view_children(
-                &self,
-                vctx: ViewContext,
-                context: &Context,
-                ui: &mut Ui,
-            ) -> ViewResponse {
-                let mut vr = ViewResponse::default();
-                #(
-                    if let Ok(d) = self.#child_load(context) {
-                        vr.merge(d.view_with_children(vctx, context, ui));
-                    }
-                )*
-                #(
-                    if let Ok(d) = self.#parent_load(context) {
-                        vr.merge(d.view_with_children(vctx, context, ui));
-                    }
-                )*
-                #(
-                    for (i, d) in self.#children_load(context).into_iter().enumerate() {
-                        vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
-                    }
-                )*
-                #(
-                    for (i, d) in self.#parents_load(context).into_iter().enumerate() {
-                        vr.merge(d.view_with_children(vctx.with_id(i), context, ui));
-                    }
-                )*
-                vr
-            }
-            fn view_children_mut(
-                &mut self,
-                vctx: ViewContext,
-                context: &Context,
-                ui: &mut Ui,
-            ) -> ViewResponse {
-                let mut vr = ViewResponse::default();
-                #(
-                    if let Some(d) = self.#one_fields.get_data_mut() {
-                        let mut child_resp = d.view_with_children_mut(vctx, context, ui);
-                        if child_resp.take_delete_me() {
-                            self.#one_fields.set_none();
-                        }
-                        vr.merge(child_resp);
-                    } else if let Some(d) = new_node_btn::<#one_types>(ui) {
-                        vr.changed = true;
-                        self.#one_fields.set_data(d);
-                    }
-                )*
-                #(
-                    vr.merge(self.#many_fields.view_with_children_mut(vctx, context, ui));
-                )*
-                vr
             }
         }
 

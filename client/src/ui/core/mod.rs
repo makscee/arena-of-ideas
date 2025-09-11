@@ -1,4 +1,5 @@
 pub mod colorix;
+pub mod cstr;
 pub mod descriptions;
 pub mod enum_colors;
 pub mod ui;
@@ -7,6 +8,7 @@ pub mod utils;
 use super::*;
 
 pub use colorix::*;
+pub use cstr::*;
 pub use descriptions::*;
 pub use enum_colors::*;
 pub use ui::*;

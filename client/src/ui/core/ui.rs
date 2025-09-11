@@ -3,7 +3,6 @@ use ecolor::linear_u8_from_linear_f32;
 use egui::{CornerRadius, Margin, Shadow};
 
 use super::*;
-use crate::ui::see::cstr::{CstrTrait, ToCstr};
 
 #[macro_export]
 macro_rules! hex_color_noa {

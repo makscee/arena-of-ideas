@@ -2,7 +2,7 @@ use parking_lot::{Mutex, MutexGuard};
 use serde::{Deserialize, Serialize};
 
 use super::*;
-use crate::ui::see::cstr::init_style_map;
+use crate::ui::core::cstr::init_style_map;
 use bevy::prelude::Resource;
 
 // Color space types for advanced color manipulation

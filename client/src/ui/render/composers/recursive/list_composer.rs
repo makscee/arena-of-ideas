@@ -1,5 +1,4 @@
 use super::*;
-use crate::ui::see::CstrTrait;
 
 /// A unified list composer that can render any list with custom item composers
 pub struct ListComposer<T, C> {

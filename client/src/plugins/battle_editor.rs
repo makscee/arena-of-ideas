@@ -613,7 +613,11 @@ impl BattleEditorPlugin {
                             let mut magic_type_changed = false;
                             ui.horizontal(|ui| {
                                 ui.label("Magic Type:");
-                                if behavior_mut.magic_type.show_mut(context, ui) {
+                                if behavior_mut
+                                    .magic_type
+                                    .render_mut(context)
+                                    .edit_selector(ui)
+                                {
                                     magic_type_changed = true;
                                 }
                             });
@@ -625,7 +629,12 @@ impl BattleEditorPlugin {
                             ui.group(|ui| {
                                 ui.horizontal(|ui| {
                                     ui.label("Trigger:");
-                                    if behavior_mut.reaction.trigger.show_mut(context, ui) {
+                                    if behavior_mut
+                                        .reaction
+                                        .trigger
+                                        .render_mut(context)
+                                        .edit_selector(ui)
+                                    {
                                         magic_type_changed = true;
                                     }
                                 });

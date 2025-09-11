@@ -1,6 +1,5 @@
 use super::super::*;
 use crate::nodes::*;
-use crate::ui::see::{CstrTrait, SFnCstrTitle, SFnShowMut};
 
 /// Extension trait for editing nodes with the render system
 pub trait NodeEditor: Node + Clone {
@@ -167,7 +166,7 @@ impl<T> ParentNodeEditorComposer<T> {
 
 impl<T> Composer<Option<T>> for ParentNodeEditorComposer<T>
 where
-    T: Node + FTitle + SFnCstrTitle + SFnShowMut + Clone + Default + 'static,
+    T: Node + FTitle + Clone + Default + 'static,
 {
     fn compose(&self, data: &Option<T>, context: &Context, ui: &mut Ui) -> Response {
         let mut response = ui.label("");

@@ -471,11 +471,7 @@ impl TeamEditor {
                             if let Ok(unit) = context.component_by_id::<NUnit>(unit_id) {
                                 context
                                     .with_owner_ref(unit.entity(), |context| {
-                                        action.view_title(
-                                            ViewContext::new(ui).non_interactible(true),
-                                            context,
-                                            ui,
-                                        );
+                                        action.render(context).title_label(ui);
                                         Ok(())
                                     })
                                     .ui(ui);
@@ -688,15 +684,13 @@ impl TeamEditor {
                                     |item_ui, ctx, action_idx, is_in_range| {
                                         let reaction = &unit_behavior.reaction;
                                         if let Some(action) = reaction.actions.get(action_idx) {
-                                            let vctx =
-                                                ViewContext::new(item_ui).non_interactible(true);
                                             if is_in_range {
                                                 Self::render_action_normal(
-                                                    item_ui, ctx, unit, action, vctx,
+                                                    item_ui, ctx, unit, action,
                                                 );
                                             } else {
                                                 Self::render_action_greyed(
-                                                    item_ui, ctx, unit, action, vctx,
+                                                    item_ui, ctx, unit, action,
                                                 );
                                             }
                                         }
@@ -727,25 +721,13 @@ impl TeamEditor {
         });
     }
 
-    fn render_action_normal(
-        ui: &mut Ui,
-        context: &Context,
-        _unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
+    fn render_action_normal(ui: &mut Ui, context: &Context, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
-            action.view_title(vctx, context, ui);
+            action.render(context).title_label(ui);
         });
     }
 
-    fn render_action_greyed(
-        ui: &mut Ui,
-        context: &Context,
-        _unit: &NUnit,
-        action: &Action,
-        vctx: ViewContext,
-    ) {
+    fn render_action_greyed(ui: &mut Ui, context: &Context, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
             ui.style_mut().visuals.widgets.inactive.weak_bg_fill = ui
                 .style()
@@ -754,7 +736,7 @@ impl TeamEditor {
                 .inactive
                 .weak_bg_fill
                 .gamma_multiply(0.5);
-            action.view_title(vctx, context, ui);
+            action.render(context).title_label(ui);
         });
     }
 }

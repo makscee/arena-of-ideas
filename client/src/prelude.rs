@@ -5,7 +5,7 @@ pub use crate::{nodes::*, plugins::*, resources::*, ui::*, utils::*};
 pub use anyhow::{Context as _, Result, anyhow};
 
 pub use crate::stdb::*;
-pub use crate::ui::see::cstr::{Cstr, CstrTrait, SFnCstr, SFnCstrWidget, ToCstr};
+pub use crate::ui::{Cstr, CstrTrait, FDisplay, FEdit, FTitle, ToCstr};
 pub use backtrace::Backtrace;
 pub use bevy::ecs::resource::Resource;
 pub use bevy::log::*;
