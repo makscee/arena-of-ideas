@@ -82,27 +82,6 @@ pub trait FEdit {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool;
 }
 
-/// Feature for types that can provide context menu actions
-pub trait FContextMenu: Clone {
-    fn context_actions(&self, context: &Context) -> Vec<ContextAction<Self>>;
-}
-
-pub enum ContextAction<T> {
-    Action(
-        String,
-        Box<dyn FnOnce(T, &Context) -> Option<ActionResult<T>>>,
-    ),
-    Submenu(String, Vec<ContextAction<T>>),
-    Separator,
-}
-
-pub enum ActionResult<T> {
-    Delete(T),
-    Replace(T),
-    Modified(T),
-    None,
-}
-
 /// Feature for types that can be copied to clipboard
 pub trait FCopy: StringData {
     fn copy_to_clipboard(&self) {

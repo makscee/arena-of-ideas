@@ -296,7 +296,7 @@ impl BattleEditorPlugin {
                         .add_copy()
                         .add_paste()
                         .add_delete()
-                        .title(ui);
+                        .show_with(ui, |builder, ui| builder.title_button(ui));
 
                     if ui.button("Edit").clicked() {
                         action = Some(BattleEditorAction::Navigate(BattleEditorNode::House(
@@ -308,7 +308,7 @@ impl BattleEditorPlugin {
                         houses_to_delete.push(house.entity());
                     }
 
-                    if let Some(replacement) = response.replaced() {
+                    if let Some(replacement) = response.pasted() {
                         houses_to_replace.push((house.entity(), replacement.clone()));
                     }
                 });
@@ -481,7 +481,7 @@ impl BattleEditorPlugin {
                         .add_copy()
                         .add_paste()
                         .add_delete()
-                        .title(ui);
+                        .show_with(ui, |builder, ui| builder.title_button(ui));
 
                     if ui.button("Edit").clicked() {
                         action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
@@ -493,7 +493,7 @@ impl BattleEditorPlugin {
                         units_to_delete.push(unit.entity());
                     }
 
-                    if let Some(replacement) = response.replaced() {
+                    if let Some(replacement) = response.pasted() {
                         units_to_replace.push((unit.entity(), replacement.clone()));
                     }
                 });

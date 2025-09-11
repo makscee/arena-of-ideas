@@ -324,7 +324,8 @@ impl SFnShow for Event {
 
 impl SFnShowMut for Event {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -518,7 +519,8 @@ impl SFnShow for MagicType {
 
 impl SFnShowMut for MagicType {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -530,7 +532,8 @@ impl SFnShow for Trigger {
 
 impl SFnShowMut for Trigger {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -542,7 +545,8 @@ impl SFnShow for Expression {
 
 impl SFnShowMut for Expression {
     fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -554,7 +558,8 @@ impl SFnShow for Action {
 
 impl SFnShowMut for Action {
     fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -566,6 +571,7 @@ impl SFnShow for PainterAction {
 
 impl SFnShowMut for PainterAction {
     fn show_mut(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }

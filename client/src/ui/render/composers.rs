@@ -8,6 +8,12 @@ pub use recursive::*;
 mod advanced_composers;
 pub use advanced_composers::*;
 
+mod selector_composer;
+pub use selector_composer::*;
+
+pub mod menu;
+pub use menu::*;
+
 /// Base trait for composers that transform data into UI
 pub trait Composer<T> {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response;

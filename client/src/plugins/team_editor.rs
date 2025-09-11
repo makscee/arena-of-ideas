@@ -649,7 +649,9 @@ impl TeamEditor {
                         };
 
                     let mut selected_trigger = current_trigger;
-                    if Selector::ui_iter(&mut selected_trigger, &available_triggers, ui) {
+                    let (changed, _response) =
+                        Selector::ui_iter(&mut selected_trigger, &available_triggers, ui);
+                    if changed {
                         if let Some(trigger_ref) = trigger_map.get(&selected_trigger) {
                             actions.push(TeamAction::ChangeTrigger {
                                 fusion_id: fusion.id,

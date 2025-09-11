@@ -332,8 +332,7 @@ impl<T: Default, C: Composer<T>> Composer<T> for LazyComposer<T, C> {
         if let Some(loaded_data) = (self.loader)(context) {
             self.inner.compose(&loaded_data, context, ui)
         } else {
-            ui.spinner();
-            ui.label("")
+            ui.spinner()
         }
     }
 }

@@ -65,9 +65,9 @@ impl<'a, T> RenderBuilder<'a, T> {
     }
 
     /// Apply all composers in sequence
-    pub fn compose(self, ui: &mut Ui) -> Response {
+    pub fn compose(&self, ui: &mut Ui) -> Response {
         let mut response = ui.label("");
-        for composer in self.composers {
+        for composer in &self.composers {
             response = response.union(composer.compose(self.data.as_ref(), self.ctx, ui));
         }
         response
@@ -288,10 +288,10 @@ impl<'a, T: FTag + FTitle + FDescription + FStats + Node> RenderBuilder<'a, T> {
     }
 }
 
-// Extension methods for context menu
-impl<'a, T: FContextMenu + FTitle> RenderBuilder<'a, T> {
-    pub fn with_menu(self) -> ContextMenuBuilder<'a, T> {
-        ContextMenuBuilder::new(self)
+// Extension method for menu (works with any Clone type)
+impl<'a, T: Clone> RenderBuilder<'a, T> {
+    pub fn with_menu(self) -> crate::ui::render::composers::menu::MenuBuilder<'a, T> {
+        crate::ui::render::composers::menu::MenuBuilder::new(self)
     }
 }
 
@@ -313,241 +313,5 @@ impl<'a, T: FPreview> RenderBuilder<'a, T> {
 impl<'a, T: FRating> RenderBuilder<'a, T> {
     pub fn rating(self, ui: &mut Ui) -> Response {
         RatingComposer.compose(self.data.as_ref(), self.ctx, ui)
-    }
-}
-
-// Context menu builder
-pub struct ContextMenuBuilder<'a, T: FContextMenu> {
-    builder: RenderBuilder<'a, T>,
-    actions: Vec<ContextAction<T>>,
-    dangerous_actions: Vec<ContextAction<T>>,
-}
-
-impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T> {
-    pub fn new(builder: RenderBuilder<'a, T>) -> Self {
-        let default_actions = builder.data.as_ref().context_actions(builder.ctx);
-        Self {
-            builder,
-            actions: default_actions,
-            dangerous_actions: Vec::new(),
-        }
-    }
-
-    pub fn add_action<F>(mut self, name: String, f: F) -> Self
-    where
-        F: FnOnce(T, &Context) -> Option<ActionResult<T>> + 'static,
-    {
-        self.actions.push(ContextAction::Action(name, Box::new(f)));
-        self
-    }
-
-    pub fn add_dangerous_action<F>(mut self, name: String, f: F) -> Self
-    where
-        F: FnOnce(T, &Context) -> Option<ActionResult<T>> + 'static,
-    {
-        self.dangerous_actions
-            .push(ContextAction::Action(name, Box::new(f)));
-        self
-    }
-
-    pub fn add_separator(mut self) -> Self {
-        self.actions.push(ContextAction::Separator);
-        self
-    }
-
-    pub fn add_dangerous_separator(mut self) -> Self {
-        self.dangerous_actions.push(ContextAction::Separator);
-        self
-    }
-
-    pub fn title(self, ui: &mut Ui) -> ContextMenuResponse<T> {
-        self.compose_with(ui, |builder, ui| builder.title_button(ui))
-    }
-
-    pub fn card(self, ui: &mut Ui) -> ContextMenuResponse<T>
-    where
-        T: FDescription + FStats,
-    {
-        self.compose_with(ui, |builder, ui| builder.card(ui))
-    }
-
-    fn compose_with<F>(mut self, ui: &mut Ui, f: F) -> ContextMenuResponse<T>
-    where
-        F: FnOnce(&mut RenderBuilder<'a, T>, &mut Ui) -> Response,
-    {
-        let mut action = None;
-
-        // Extract all necessary data before moving self
-        let actions = self.actions;
-        let dangerous_actions = self.dangerous_actions;
-
-        ui.horizontal(|ui| {
-            let response = f(&mut self.builder, ui);
-
-            // Render context menu button
-            let menu_response = RectButton::new_size(12.0.v2()).ui(ui, |color, rect, _, ui| {
-                const SIZE: f32 = 0.1;
-                ui.painter()
-                    .circle_filled(rect.center_top(), rect.width() * SIZE, color);
-                ui.painter()
-                    .circle_filled(rect.center(), rect.width() * SIZE, color);
-                ui.painter()
-                    .circle_filled(rect.center_bottom(), rect.width() * SIZE, color);
-            });
-
-            menu_response.bar_menu(|ui| {
-                action = Self::render_menu_items(
-                    actions,
-                    dangerous_actions,
-                    self.builder.data(),
-                    &self.builder.context(),
-                    ui,
-                );
-            });
-
-            if response.clicked() && action.is_none() {
-                action = Some(ActionResult::None);
-            }
-        });
-
-        ContextMenuResponse { action }
-    }
-
-    fn render_menu_items(
-        actions: Vec<ContextAction<T>>,
-        dangerous_actions: Vec<ContextAction<T>>,
-        data: &T,
-        context: &Context,
-        ui: &mut Ui,
-    ) -> Option<ActionResult<T>> {
-        let mut result = None;
-
-        for action in actions {
-            if let Some(r) = Self::render_menu_item(action, data, context, ui, false) {
-                result = Some(r);
-                break;
-            }
-        }
-
-        if !dangerous_actions.is_empty() {
-            ui.separator();
-        }
-
-        for action in dangerous_actions {
-            if let Some(r) = Self::render_menu_item(action, data, context, ui, true) {
-                result = Some(r);
-                break;
-            }
-        }
-
-        result
-    }
-
-    fn render_menu_item(
-        item: ContextAction<T>,
-        data: &T,
-        context: &Context,
-        ui: &mut Ui,
-        dangerous: bool,
-    ) -> Option<ActionResult<T>> {
-        match item {
-            ContextAction::Action(name, action) => {
-                let button = if dangerous {
-                    ui.add(
-                        egui::Button::new(&name)
-                            .fill(ui.visuals().error_fg_color.gamma_multiply(0.2)),
-                    )
-                } else {
-                    ui.button(&name)
-                };
-
-                if button.clicked() {
-                    ui.close_menu();
-                    return action(data.clone(), context);
-                }
-            }
-            ContextAction::Submenu(name, items) => {
-                ui.menu_button(&name, |ui| {
-                    for sub_item in items {
-                        if let Some(r) =
-                            Self::render_menu_item(sub_item, data, context, ui, dangerous)
-                        {
-                            return Some(r);
-                        }
-                    }
-                    None
-                });
-            }
-            ContextAction::Separator => {
-                ui.separator();
-            }
-        }
-        None
-    }
-}
-
-pub struct ContextMenuResponse<T> {
-    pub action: Option<ActionResult<T>>,
-}
-
-impl<T> ContextMenuResponse<T> {
-    pub fn clicked(&self) -> bool {
-        matches!(self.action, Some(ActionResult::None))
-    }
-
-    pub fn deleted(&self) -> Option<&T> {
-        if let Some(ActionResult::Delete(ref data)) = self.action {
-            Some(data)
-        } else {
-            None
-        }
-    }
-
-    pub fn replaced(&self) -> Option<&T> {
-        if let Some(ActionResult::Replace(ref data)) = self.action {
-            Some(data)
-        } else {
-            None
-        }
-    }
-
-    pub fn modified(&self) -> Option<&T> {
-        if let Some(ActionResult::Modified(ref data)) = self.action {
-            Some(data)
-        } else {
-            None
-        }
-    }
-}
-
-// Helper builders for common patterns
-impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T>
-where
-    T: FCopy,
-{
-    pub fn add_copy(self) -> Self {
-        self.add_action("📋 Copy".to_string(), |item, _| {
-            item.copy_to_clipboard();
-            None
-        })
-    }
-}
-
-impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T>
-where
-    T: FPaste,
-{
-    pub fn add_paste(self) -> Self {
-        self.add_action("📋 Paste".to_string(), |_, _| {
-            T::paste_from_clipboard().map(ActionResult::Replace)
-        })
-    }
-}
-
-impl<'a, T: FContextMenu + FTitle> ContextMenuBuilder<'a, T> {
-    pub fn add_delete(self) -> Self {
-        self.add_dangerous_action("🗑 Delete".to_string(), |item, _| {
-            Some(ActionResult::Delete(item))
-        })
     }
 }

@@ -58,7 +58,8 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                                 ui_widget = Some(quote! {
                                     ui.label(#label);
                                     let options = #fn_ident();
-                                    if Selector::ui_iter(&mut settings.#field_name, &options, ui) {
+                                    let (changed, _response) = Selector::ui_iter(&mut settings.#field_name, &options, ui);
+                                    if changed {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name);
                                     }
                                 });
@@ -67,7 +68,8 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                         } else if tokens_str.starts_with("enum") {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
-                                if Selector::ui_enum(&mut settings.#field_name, ui).is_some() {
+                                let (old_value, _response) = Selector::ui_enum(&mut settings.#field_name, ui);
+                                if old_value.is_some() {
                                     pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                 }
                             });

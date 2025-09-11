@@ -193,6 +193,8 @@ impl VarValue {
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(VarValue::f32(a.min(*b))),
             (VarValue::i32(a), VarValue::i32(b)) => Ok(VarValue::i32(*(a.min(b)))),
+            (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32((*a as f32).min(*b))),
+            (VarValue::f32(a), VarValue::i32(b)) => Ok(VarValue::f32(a.min(*b as f32))),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(VarValue::bool(*a && *b)),
             _ => Err(ExpressionError::not_supported_multiple(
                 "min",

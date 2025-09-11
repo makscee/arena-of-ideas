@@ -12,9 +12,7 @@ pub trait NodeEditor: Node + Clone {
         let response = NodeEditorResponse::default();
 
         ui.group(|ui| {
-            // Title with context menu
-            // Note: Context menu requires FContextMenu, FCopy, FPaste traits
-            // For now, just show the title
+            // Title without menu for now - can be extended with with_menu() if needed
             self.render(context).title(ui);
         });
 
@@ -243,7 +241,7 @@ impl<T> ChildrenNodeEditorComposer<T> {
 
 impl<T> Composer<Vec<T>> for ChildrenNodeEditorComposer<T>
 where
-    T: Node + FTitle + FContextMenu + Clone + 'static,
+    T: Node + FTitle + Clone + 'static,
 {
     fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
         let mut response = ui.label("");

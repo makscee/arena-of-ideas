@@ -4,26 +4,13 @@ use egui::ComboBox;
 pub struct Selector;
 
 impl Selector {
-    pub fn from_mut<E: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq + Inject>(
-        data: &mut E,
-        ui: &mut Ui,
-    ) -> bool {
-        let mut new_value = data.clone();
-        if Selector::ui_enum(&mut new_value, ui).is_some() {
-            new_value.move_inner(data);
-            *data = new_value;
-            true
-        } else {
-            false
-        }
-    }
     pub fn ui_enum<E: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq>(
         value: &mut E,
         ui: &mut Ui,
-    ) -> Option<E> {
+    ) -> (Option<E>, Response) {
         let mut changed = None;
         let lookup_id = ui.id();
-        let r = ComboBox::from_id_salt(ui.next_auto_id())
+        let combo_response = ComboBox::from_id_salt(ui.next_auto_id())
             .selected_text(value.cstr().widget(1.0, ui.style()))
             .show_ui(ui, |ui| {
                 let mut lookup = ui
@@ -84,24 +71,24 @@ impl Selector {
                         take_first = false;
                     }
                 }
-            })
-            .response;
-        if r.clicked() {
+            });
+        let response = combo_response.response;
+        if response.clicked() {
             ui.ctx()
                 .data_mut(|w| w.insert_temp(lookup_id, String::new()));
         };
-        changed
+        (changed, response)
     }
     pub fn ui_iter<'a, E: PartialEq + Clone + ToCstr + 'a, I>(
         value: &mut E,
         values: I,
         ui: &mut Ui,
-    ) -> bool
+    ) -> (bool, Response)
     where
         I: IntoIterator<Item = &'a E>,
     {
         let mut changed = false;
-        ComboBox::from_id_salt(ui.next_auto_id())
+        let combo_response = ComboBox::from_id_salt(ui.next_auto_id())
             .selected_text(
                 value
                     .cstr_c(name_color(&value.cstr().to_string()))
@@ -112,9 +99,11 @@ impl Selector {
                     let text = e
                         .cstr_c(name_color(&e.cstr().to_string()))
                         .widget(1.0, ui.style());
-                    changed |= ui.selectable_value(value, e.clone(), text).changed();
+                    if ui.selectable_value(value, e.clone(), text).changed() {
+                        changed = true;
+                    }
                 }
             });
-        changed
+        (changed, combo_response.response)
     }
 }

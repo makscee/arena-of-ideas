@@ -1,6 +1,7 @@
 //! Integration examples showing how to use the render system in real game UI scenarios
 
 use super::*;
+use crate::ui::render::composers::menu::MenuAction;
 use crate::ui::see::CstrTrait;
 
 /// Main game UI using the render system
@@ -133,11 +134,11 @@ fn render_team_builder(context: &Context, ui: &mut Ui) {
                         None
                     })
                     .add_action("📋 Duplicate".to_string(), |house, ctx| {
-                        Some(ActionResult::Modified(house))
+                        Some(MenuAction::Custom(Box::new(house)))
                     })
                     .add_dangerous_separator()
                     .add_delete()
-                    .title(ui);
+                    .show_with(ui, |builder, ui| builder.title_button(ui));
 
                 if let Some(deleted) = response.deleted() {
                     // Handle deletion

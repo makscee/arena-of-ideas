@@ -196,7 +196,8 @@ impl FDisplay for VarName {
 
 impl FEdit for VarName {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -236,7 +237,8 @@ impl FDisplay for VarValue {
 
 impl FEdit for VarValue {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let changed = Selector::ui_enum(self, ui).is_some();
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        let changed = old_value.is_some();
         ui.horizontal(|ui| match self {
             VarValue::i32(v) => v.edit(context, ui),
             VarValue::f32(v) => v.edit(context, ui),
@@ -279,18 +281,22 @@ impl FDisplay for Expression {
 }
 
 impl FEdit for Expression {
-    fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
-            self.move_inner_fields_from(&mut old_value);
-            return true;
-        }
-        false
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        let response = self
+            .render_mut(context)
+            .with_menu()
+            .add_copy()
+            .add_paste()
+            .edit_selector_recursive(ui);
+
+        response.custom_action().is_some() || response.pasted().is_some()
     }
 }
 
 impl FEdit for Trigger {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        Selector::ui_enum(self, ui).is_some()
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
     }
 }
 
@@ -349,8 +355,9 @@ impl FDisplay for Action {
 
 impl FEdit for Action {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
-            self.move_inner_fields_from(&mut old_value);
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        if let Some(mut old_val) = old_value {
+            self.move_inner_fields_from(&mut old_val);
             return true;
         }
         false
@@ -380,8 +387,9 @@ impl FDisplay for PainterAction {
 
 impl FEdit for PainterAction {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
-            self.move_inner_fields_from(&mut old_value);
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        if let Some(mut old_val) = old_value {
+            self.move_inner_fields_from(&mut old_val);
             return true;
         }
         false
@@ -419,7 +427,8 @@ impl FEdit for Material {
                 Stroke::new(1.0, subtle_borders_and_separators()),
                 egui::StrokeKind::Middle,
             );
-            self.0.render_mut(context).edit_recursive_list(ui)
+            ui.vertical(|ui| self.0.render_mut(context).edit_recursive_list(ui))
+                .inner
         })
         .inner
     }
@@ -562,12 +571,6 @@ impl FInfo for NUnit {
     }
 }
 
-impl FContextMenu for NUnit {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FCopy for NUnit {}
 impl FPaste for NUnit {}
 
@@ -639,12 +642,6 @@ impl FInfo for NHouse {
     }
 }
 
-impl FContextMenu for NHouse {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FCopy for NHouse {}
 impl FPaste for NHouse {}
 
@@ -694,12 +691,6 @@ impl FTag for NAbilityMagic {
 
     fn tag_color(&self, context: &Context) -> Color32 {
         context.get_color(VarName::color).unwrap_or(MISSING_COLOR)
-    }
-}
-
-impl FContextMenu for NAbilityMagic {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
@@ -761,12 +752,6 @@ impl FTag for NStatusMagic {
     }
 }
 
-impl FContextMenu for NStatusMagic {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FCopy for NStatusMagic {}
 impl FPaste for NStatusMagic {}
 
@@ -822,12 +807,6 @@ impl FTag for NArena {
     }
 }
 
-impl FContextMenu for NArena {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FTitle for NFloorPool {
     fn title(&self, _: &Context) -> Cstr {
         format!("Floor {} Pool", self.floor).cstr()
@@ -860,12 +839,6 @@ impl FTag for NFloorPool {
     }
 }
 
-impl FContextMenu for NFloorPool {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FTitle for NFloorBoss {
     fn title(&self, _: &Context) -> Cstr {
         format!("Floor {} Boss", self.floor).cstr()
@@ -895,12 +868,6 @@ impl FTag for NFloorBoss {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(255, 0, 0)
-    }
-}
-
-impl FContextMenu for NFloorBoss {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
@@ -949,12 +916,6 @@ impl FTag for NPlayer {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(0, 0, 255)
-    }
-}
-
-impl FContextMenu for NPlayer {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
@@ -1232,12 +1193,6 @@ impl FTag for NTeam {
     }
 }
 
-impl FContextMenu for NTeam {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FCopy for NTeam {}
 impl FPaste for NTeam {}
 
@@ -1316,12 +1271,6 @@ impl FTag for NBattle {
     }
 }
 
-impl FContextMenu for NBattle {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FTitle for NMatch {
     fn title(&self, _: &Context) -> Cstr {
         format!("Match F{}", self.floor).cstr()
@@ -1363,12 +1312,6 @@ impl FTag for NMatch {
         } else {
             Color32::from_rgb(128, 128, 128)
         }
-    }
-}
-
-impl FContextMenu for NMatch {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
@@ -1454,12 +1397,6 @@ impl FTag for NFusion {
     }
 }
 
-impl FContextMenu for NFusion {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
-    }
-}
-
 impl FCopy for NFusion {}
 impl FPaste for NFusion {}
 
@@ -1500,12 +1437,6 @@ impl FTag for NFusionSlot {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         Color32::from_rgb(128, 0, 128)
-    }
-}
-
-impl FContextMenu for NFusionSlot {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
@@ -1774,12 +1705,6 @@ impl FTag for NUnitBehavior {
 
     fn tag_color(&self, _: &Context) -> Color32 {
         self.magic_type.color()
-    }
-}
-
-impl FContextMenu for NUnitBehavior {
-    fn context_actions(&self, _: &Context) -> Vec<ContextAction<Self>> {
-        vec![]
     }
 }
 
