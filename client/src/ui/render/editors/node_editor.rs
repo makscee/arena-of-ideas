@@ -1,7 +1,6 @@
 use super::super::*;
 use crate::nodes::*;
 use crate::ui::see::{CstrTrait, SFnCstrTitle, SFnShowMut};
-use crate::ui::widgets::*;
 
 /// Extension trait for editing nodes with the render system
 pub trait NodeEditor: Node + Clone {
@@ -10,7 +9,7 @@ pub trait NodeEditor: Node + Clone {
     where
         Self: FTitle,
     {
-        let mut response = NodeEditorResponse::default();
+        let response = NodeEditorResponse::default();
 
         ui.group(|ui| {
             // Title with context menu

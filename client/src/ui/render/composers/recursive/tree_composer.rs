@@ -1,5 +1,4 @@
 use super::*;
-use crate::ui::see::CstrTrait;
 
 /// TreeComposer renders recursive tree structures with horizontal-first then vertical layout
 pub struct TreeComposer<T, C> {
@@ -64,7 +63,7 @@ impl<T: FRecursive + Clone, C: Composer<T>> TreeComposer<T, C> {
                     .data(|r| r.get_temp::<bool>(id))
                     .unwrap_or(self.expanded_by_default);
 
-                if ui.button(if expanded { "▼" } else { "▶" }).clicked() {
+                if ui.small_button(if expanded { "▼" } else { "▶" }).clicked() {
                     ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                 }
 
@@ -140,7 +139,7 @@ impl<T: FRecursive + Clone, C: ComposerMut<T>> TreeComposer<T, C> {
                     .data(|r| r.get_temp::<bool>(id))
                     .unwrap_or(self.expanded_by_default);
 
-                if ui.button(if expanded { "▼" } else { "▶" }).clicked() {
+                if ui.small_button(if expanded { "▼" } else { "▶" }).clicked() {
                     ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                 }
 
@@ -182,105 +181,6 @@ impl<T: FRecursive + Clone, C: ComposerMut<T>> TreeComposer<T, C> {
         });
 
         changed
-    }
-}
-
-/// Specialized tree composer for Expression editing
-pub struct ExpressionTreeComposer;
-
-impl ExpressionTreeComposer {
-    pub fn new()
-    -> RecursiveComposer<impl FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool> {
-        RecursiveComposer::new(
-            |ui: &mut Ui, context: &Context, field: &mut RecursiveFieldMut<'_>| -> bool {
-                match &mut field.value {
-                    RecursiveValueMut::Expr(e) => {
-                        if let Some(n) = (**e)
-                            .see_mut(context)
-                            .ctxbtn()
-                            .add_paste()
-                            .add_copy()
-                            .ui_enum(ui)
-                            .selector_changed()
-                        {
-                            RecursiveValueMut::replace_expr_and_move_fields(e, n.clone());
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    _ => call_on_recursive_value_mut!(field, edit, context, ui),
-                }
-            },
-        )
-        .with_layout(RecursiveLayout::HorizontalVertical)
-    }
-}
-
-/// Specialized tree composer for PainterAction editing
-pub struct PainterActionTreeComposer;
-
-impl PainterActionTreeComposer {
-    pub fn new()
-    -> RecursiveComposer<impl FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool> {
-        RecursiveComposer::new(
-            |ui: &mut Ui, context: &Context, field: &mut RecursiveFieldMut<'_>| -> bool {
-                match &mut field.value {
-                    RecursiveValueMut::PainterAction(pa) => {
-                        if let Some(n) = (**pa)
-                            .see_mut(context)
-                            .ctxbtn()
-                            .add_paste()
-                            .add_copy()
-                            .ui_enum(ui)
-                            .selector_changed()
-                        {
-                            RecursiveValueMut::replace_painter_action_and_move_fields(
-                                pa,
-                                n.clone(),
-                            );
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    _ => call_on_recursive_value_mut!(field, edit, context, ui),
-                }
-            },
-        )
-        .with_layout(RecursiveLayout::HorizontalVertical)
-    }
-}
-
-/// Specialized tree composer for Action editing
-pub struct ActionTreeComposer;
-
-impl ActionTreeComposer {
-    pub fn new()
-    -> RecursiveComposer<impl FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool> {
-        RecursiveComposer::new(
-            |ui: &mut Ui, context: &Context, field: &mut RecursiveFieldMut<'_>| -> bool {
-                match &mut field.value {
-                    RecursiveValueMut::Action(a) => {
-                        if let Some(n) = (**a)
-                            .see_mut(context)
-                            .ctxbtn()
-                            .add_paste()
-                            .add_copy()
-                            .ui_enum(ui)
-                            .selector_changed()
-                        {
-                            RecursiveValueMut::replace_action_and_move_fields(a, n.clone());
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    _ => call_on_recursive_value_mut!(field, edit, context, ui),
-                }
-            },
-        )
-        .with_layout(RecursiveLayout::HorizontalVertical)
     }
 }
 

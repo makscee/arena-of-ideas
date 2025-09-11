@@ -1,6 +1,5 @@
 use super::*;
 use crate::ui::core::enum_colors::EnumColor;
-use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
 use crate::ui::see::{Cstr, CstrTrait, ToCstr};
 
 // ============================================================================
@@ -196,8 +195,8 @@ impl FDisplay for VarName {
 }
 
 impl FEdit for VarName {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.view_mut(ViewContext::new(ui), context, ui).changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        Selector::ui_enum(self, ui).is_some()
     }
 }
 
@@ -237,6 +236,7 @@ impl FDisplay for VarValue {
 
 impl FEdit for VarValue {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        let changed = Selector::ui_enum(self, ui).is_some();
         ui.horizontal(|ui| match self {
             VarValue::i32(v) => v.edit(context, ui),
             VarValue::f32(v) => v.edit(context, ui),
@@ -255,6 +255,7 @@ impl FEdit for VarValue {
             }
         })
         .inner
+            || changed
     }
 }
 
@@ -279,13 +280,17 @@ impl FDisplay for Expression {
 
 impl FEdit for Expression {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector.ui_enum(self, ui)
+        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
+            self.move_inner_fields_from(&mut old_value);
+            return true;
+        }
+        false
     }
 }
 
 impl FEdit for Trigger {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        Selector.ui_enum(self, ui)
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        Selector::ui_enum(self, ui).is_some()
     }
 }
 
@@ -344,7 +349,11 @@ impl FDisplay for Action {
 
 impl FEdit for Action {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector.ui_enum(self, ui)
+        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
+            self.move_inner_fields_from(&mut old_value);
+            return true;
+        }
+        false
     }
 }
 
@@ -371,7 +380,11 @@ impl FDisplay for PainterAction {
 
 impl FEdit for PainterAction {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector.ui_enum(self, ui)
+        if let Some(mut old_value) = Selector::ui_enum(self, ui) {
+            self.move_inner_fields_from(&mut old_value);
+            return true;
+        }
+        false
     }
 }
 
@@ -392,32 +405,23 @@ impl FDisplay for Material {
 
 impl FEdit for Material {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let size_id = ui.id().with("view size");
-        let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
-        if DragValue::new(&mut size).ui(ui).changed() {
-            ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
-        }
-        let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-        RepresentationPlugin::paint_rect(rect, context, self, ui).ui(ui);
-        ui.painter().rect_stroke(
-            rect,
-            0,
-            Stroke::new(1.0, subtle_borders_and_separators()),
-            egui::StrokeKind::Middle,
-        );
-        // Vec<PainterAction> doesn't support recursive_edit directly
-        // Show a simple editor for the actions
-        let mut changed = false;
-        ui.vertical(|ui| {
-            ui.label("Painter Actions:");
-            for (i, action) in self.0.iter().enumerate() {
-                ui.horizontal(|ui| {
-                    ui.label(format!("[{}]", i));
-                    ui.label(format!("{:?}", action));
-                });
+        ui.horizontal(|ui| {
+            let size_id = ui.id().with("view size");
+            let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
+            if DragValue::new(&mut size).ui(ui).changed() {
+                ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
             }
-        });
-        changed
+            let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
+            RepresentationPlugin::paint_rect(rect, context, self, ui).ui(ui);
+            ui.painter().rect_stroke(
+                rect,
+                0,
+                Stroke::new(1.0, subtle_borders_and_separators()),
+                egui::StrokeKind::Middle,
+            );
+            self.0.render_mut(context).edit_recursive_list(ui)
+        })
+        .inner
     }
 }
 

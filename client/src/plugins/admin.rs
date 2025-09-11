@@ -27,66 +27,6 @@ impl AdminPlugin {
             .clone()
         });
 
-        let action_id = "action_test".into();
-        let mut a = ui.ctx().data_mut(|w| {
-            w.get_persisted_mut_or::<Action>(action_id, Action::default())
-                .clone()
-        });
-
-        fn handle_field_change(
-            field: &mut RecursiveFieldMut,
-            context: &Context,
-            ui: &mut Ui,
-        ) -> bool {
-            match &mut field.value {
-                RecursiveValueMut::Expr(e) => {
-                    if let Some(n) = (**e)
-                        .see_mut(context)
-                        .ctxbtn()
-                        .add_paste()
-                        .add_copy()
-                        .ui_enum(ui)
-                        .selector_changed()
-                    {
-                        RecursiveValueMut::replace_expr_and_move_fields(e, n.clone());
-                        true
-                    } else {
-                        false
-                    }
-                }
-                RecursiveValueMut::Action(action) => {
-                    if let Some(n) = (**action)
-                        .see_mut(context)
-                        .ctxbtn()
-                        .ui_enum(ui)
-                        .selector_changed()
-                    {
-                        RecursiveValueMut::replace_action_and_move_fields(action, n.clone());
-                        true
-                    } else {
-                        false
-                    }
-                }
-                RecursiveValueMut::PainterAction(painter_action) => {
-                    if let Some(n) = (**painter_action)
-                        .see_mut(context)
-                        .ctxbtn()
-                        .ui_enum(ui)
-                        .selector_changed()
-                    {
-                        RecursiveValueMut::replace_painter_action_and_move_fields(
-                            painter_action,
-                            n.clone(),
-                        );
-                        true
-                    } else {
-                        false
-                    }
-                }
-                _ => false,
-            }
-        }
-
         Context::from_world(world, |context| {
             let mut changed = false;
             e.render_mut(context)
@@ -94,8 +34,8 @@ impl AdminPlugin {
                     ui.group(|ui| {
                         ui.vertical(|ui| {
                             format!("[tw [s {}]]", field.name).label(ui);
-                            changed = true;
-                            handle_field_change(field, context, ui)
+                            changed |= call_on_recursive_value_mut!(field, edit, context, ui);
+                            changed
                         })
                     })
                     .inner

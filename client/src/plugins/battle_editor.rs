@@ -650,18 +650,12 @@ impl BattleEditorPlugin {
                 }
 
                 // Representation
-                if let Ok(repr) = desc.representation_load(context).cloned() {
+                if let Ok(mut repr) = desc.representation_load(context).cloned() {
                     let repr_entity = repr.entity();
-                    let mut repr_mut = repr.clone();
-
                     ui.separator();
                     ui.collapsing("Representation (Material)", |ui| {
-                        if repr_mut
-                            .material
-                            .render_mut(context)
-                            .recursive_edit_tree(ui)
-                        {
-                            repr_mut.unpack_entity(context, repr_entity).log();
+                        if repr.material.render_mut(context).edit(ui) {
+                            repr.clone().unpack_entity(context, repr_entity).log();
                             changed = true;
                         }
                     });

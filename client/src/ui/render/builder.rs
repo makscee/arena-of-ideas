@@ -179,7 +179,7 @@ impl<'a, T: FRecursive> RenderBuilder<'a, T> {
     pub fn recursive_edit_tree(self, ui: &mut Ui) -> bool {
         match self.data {
             RenderDataRef::Mutable(data) => {
-                recursive_edit_composer(RecursiveLayout::Tree { indent: 16.0 })
+                recursive_edit_composer(RecursiveLayout::Tree { indent: 0.0 })
                     .collapsible(true)
                     .compose_mut(data, self.ctx, ui)
             }

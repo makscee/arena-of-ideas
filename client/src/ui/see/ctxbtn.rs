@@ -338,7 +338,7 @@ impl<'a, T: Clone> CtxBtnBuilder<'a, T> {
         let mut data_clone = self.builder.data().clone();
 
         ui.horizontal(|ui| {
-            let selector_changed = Selector.ui_enum(&mut data_clone, ui);
+            let selector_changed = Selector::ui_enum(&mut data_clone, ui).is_some();
 
             if selector_changed {
                 action = Some(CtxBtnAction::SelectorChanged(data_clone.clone()));

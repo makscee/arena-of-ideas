@@ -118,11 +118,8 @@ where
         RecursiveLayout::HorizontalVertical => {
             response = ui
                 .horizontal(|ui| {
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    let field_response = renderer.borrow_mut()(ui, context, field);
+                    let field_response =
+                        show_grouped_field(field, context, renderer, show_names, ui);
 
                     // Get inner fields
                     let inner_fields = call_on_recursive_value!(field, get_inner_fields);
@@ -149,11 +146,7 @@ where
         }
         RecursiveLayout::Vertical => {
             ui.vertical(|ui| {
-                if show_names && !field.name.is_empty() && field.name != "root" {
-                    ui.label(format!("{}:", field.name));
-                }
-
-                response = renderer.borrow_mut()(ui, context, field);
+                response = show_grouped_field(field, context, renderer, show_names, ui);
 
                 let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
@@ -172,11 +165,7 @@ where
         }
         RecursiveLayout::Horizontal => {
             ui.horizontal(|ui| {
-                if show_names && !field.name.is_empty() && field.name != "root" {
-                    ui.label(format!("{}:", field.name));
-                }
-
-                response = renderer.borrow_mut()(ui, context, field);
+                response = show_grouped_field(field, context, renderer, show_names, ui);
 
                 let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
@@ -231,11 +220,7 @@ where
                         });
                     }
                 } else {
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    response = renderer.borrow_mut()(ui, context, field);
+                    response = show_grouped_field(field, context, renderer, show_names, ui);
 
                     if has_children {
                         ui.vertical(|ui| {
@@ -260,11 +245,7 @@ where
             egui::Grid::new(ui.id().with("recursive_grid").with(depth))
                 .num_columns(*columns)
                 .show(ui, |ui| {
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    response = renderer.borrow_mut()(ui, context, field);
+                    response = show_grouped_field(field, context, renderer, show_names, ui);
                     ui.end_row();
 
                     let inner_fields = call_on_recursive_value!(field, get_inner_fields);
@@ -309,13 +290,7 @@ where
     match layout {
         RecursiveLayout::HorizontalVertical => {
             ui.horizontal(|ui| {
-                if show_names && !field.name.is_empty() && field.name != "root" {
-                    ui.label(format!("{}:", field.name));
-                }
-
-                changed |= renderer.borrow_mut()(ui, context, field);
-
-                // Get inner fields
+                show_grouped_field_mut(field, context, renderer, show_names, &mut changed, ui);
                 let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
                 if !inner_fields.is_empty() {
                     ui.vertical(|ui| {
@@ -396,11 +371,7 @@ where
                         ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                     }
 
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    changed |= renderer.borrow_mut()(ui, context, field);
+                    show_grouped_field_mut(field, context, renderer, show_names, &mut changed, ui);
 
                     if expanded {
                         ui.vertical(|ui| {
@@ -421,11 +392,7 @@ where
                         });
                     }
                 } else {
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    changed |= renderer.borrow_mut()(ui, context, field);
+                    show_grouped_field_mut(field, context, renderer, show_names, &mut changed, ui);
 
                     if has_children {
                         ui.vertical(|ui| {
@@ -452,11 +419,7 @@ where
             egui::Grid::new(ui.id().with("recursive_grid_mut").with(depth))
                 .num_columns(*columns)
                 .show(ui, |ui| {
-                    if show_names && !field.name.is_empty() && field.name != "root" {
-                        ui.label(format!("{}:", field.name));
-                    }
-
-                    changed |= renderer.borrow_mut()(ui, context, field);
+                    show_grouped_field_mut(field, context, renderer, show_names, &mut changed, ui);
                     ui.end_row();
 
                     let inner_fields = call_on_recursive_value_mut!(field, get_inner_fields_mut);
@@ -480,6 +443,48 @@ where
     }
 
     changed
+}
+
+fn show_grouped_field_mut<F>(
+    field: &mut RecursiveFieldMut<'_>,
+    context: &Context<'_>,
+    renderer: &RefCell<F>,
+    show_names: bool,
+    changed: &mut bool,
+    ui: &mut Ui,
+) where
+    F: FnMut(&mut Ui, &Context, &mut RecursiveFieldMut<'_>) -> bool,
+{
+    ui.group(|ui| {
+        ui.vertical(|ui| {
+            if show_names && !field.name.is_empty() && field.name != "root" {
+                format!("[s {}:]", field.name).label(ui);
+            }
+            *changed |= renderer.borrow_mut()(ui, context, field);
+        });
+    });
+}
+
+fn show_grouped_field<F>(
+    field: &RecursiveField<'_>,
+    context: &Context<'_>,
+    renderer: &RefCell<F>,
+    show_names: bool,
+    ui: &mut Ui,
+) -> Response
+where
+    F: FnMut(&mut Ui, &Context, &RecursiveField<'_>) -> Response,
+{
+    ui.group(|ui| {
+        ui.vertical(|ui| {
+            if show_names && !field.name.is_empty() && field.name != "root" {
+                format!("[s {}:]", field.name).label(ui);
+            }
+            renderer.borrow_mut()(ui, context, field)
+        })
+    })
+    .inner
+    .inner
 }
 
 /// Default field renderer for display

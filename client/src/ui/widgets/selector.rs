@@ -9,7 +9,7 @@ impl Selector {
         ui: &mut Ui,
     ) -> bool {
         let mut new_value = data.clone();
-        if Selector.ui_enum(&mut new_value, ui) {
+        if Selector::ui_enum(&mut new_value, ui).is_some() {
             new_value.move_inner(data);
             *data = new_value;
             true
@@ -18,11 +18,10 @@ impl Selector {
         }
     }
     pub fn ui_enum<E: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq>(
-        &self,
         value: &mut E,
         ui: &mut Ui,
-    ) -> bool {
-        let mut changed = false;
+    ) -> Option<E> {
+        let mut changed = None;
         let lookup_id = ui.id();
         let r = ComboBox::from_id_salt(ui.next_auto_id())
             .selected_text(value.cstr().widget(1.0, ui.style()))
@@ -73,14 +72,17 @@ impl Selector {
                         e.cstr()
                     }
                     .widget(1.0, ui.style());
-                    let resp = ui.selectable_value(value, e.clone(), text);
-                    if take_first && !grayed_out {
+                    let mut response = ui.selectable_label(*value == e, text);
+                    if response.clicked() && *value != e {
+                        changed = Some(value.clone());
                         *value = e;
-                        changed = true;
+                        response.mark_changed();
+                    } else if take_first && !grayed_out {
+                        changed = Some(value.clone());
+                        *value = e;
                         ui.memory_mut(|w| w.close_popup());
                         take_first = false;
                     }
-                    changed |= resp.changed();
                 }
             })
             .response;
@@ -91,7 +93,6 @@ impl Selector {
         changed
     }
     pub fn ui_iter<'a, E: PartialEq + Clone + ToCstr + 'a, I>(
-        &self,
         value: &mut E,
         values: I,
         ui: &mut Ui,

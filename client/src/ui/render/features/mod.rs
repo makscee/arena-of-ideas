@@ -66,6 +66,10 @@ pub trait FRecursive {
 
     /// Convert to a mutable recursive value for unified handling
     fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_>;
+
+    fn move_inner_fields_from(&mut self, other: &mut impl FRecursive) {
+        self.get_inner_fields_mut().move_from(other);
+    }
 }
 
 /// Feature for types that can be displayed

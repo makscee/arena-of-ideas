@@ -162,24 +162,89 @@ macro_rules! call_pass_recursive_value_mut {
 }
 
 impl<'a> RecursiveValueMut<'a> {
-    /// Replace expression and move matching fields
-    pub fn replace_expr_and_move_fields(expr: &mut Expression, mut new_expr: Expression) {
-        std::mem::swap(expr, &mut new_expr);
-        // Note: In the new architecture, field preservation is handled at a higher level
-    }
+    /// Attempts to move one RecursiveFieldMut into another by matching field types.
+    /// Returns true if a move happened.
+    fn try_move_field_by_type<'b>(
+        source_field: &mut RecursiveFieldMut<'b>,
+        target_field: &mut RecursiveFieldMut<'b>,
+    ) -> bool {
+        use std::mem;
 
-    /// Replace action and move matching fields
-    pub fn replace_action_and_move_fields(action: &mut Action, mut new_action: Action) {
-        std::mem::swap(action, &mut new_action);
-        // Note: In the new architecture, field preservation is handled at a higher level
+        match (&mut source_field.value, &mut target_field.value) {
+            (RecursiveValueMut::Expr(source), RecursiveValueMut::Expr(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Action(source), RecursiveValueMut::Action(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (
+                RecursiveValueMut::PainterAction(source),
+                RecursiveValueMut::PainterAction(target),
+            ) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Var(source), RecursiveValueMut::Var(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::VarValue(source), RecursiveValueMut::VarValue(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::HexColor(source), RecursiveValueMut::HexColor(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::String(source), RecursiveValueMut::String(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::I32(source), RecursiveValueMut::I32(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::F32(source), RecursiveValueMut::F32(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Bool(source), RecursiveValueMut::Bool(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Vec2(source), RecursiveValueMut::Vec2(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Reaction(source), RecursiveValueMut::Reaction(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            (RecursiveValueMut::Material(source), RecursiveValueMut::Material(target)) => {
+                mem::swap(*source, *target);
+                true
+            }
+            _ => false,
+        }
     }
+}
 
-    /// Replace painter action and move matching fields
-    pub fn replace_painter_action_and_move_fields(
-        painter_action: &mut PainterAction,
-        mut new_painter_action: PainterAction,
-    ) {
-        std::mem::swap(painter_action, &mut new_painter_action);
-        // Note: In the new architecture, field preservation is handled at a higher level
+/// Extension trait to add move_from method to Vec<RecursiveFieldMut>
+pub trait FieldsMover<'a> {
+    fn move_from(&mut self, source: &'a mut impl FRecursive);
+}
+
+impl<'a> FieldsMover<'a> for Vec<RecursiveFieldMut<'a>> {
+    fn move_from(&mut self, source: &'a mut impl FRecursive) {
+        for source_field in source.get_inner_fields_mut().iter_mut() {
+            for i in 0..self.len() {
+                if RecursiveValueMut::try_move_field_by_type(source_field, &mut self[i]) {
+                    self.remove(i);
+                    break;
+                }
+            }
+        }
     }
 }

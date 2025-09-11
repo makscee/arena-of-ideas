@@ -130,7 +130,7 @@ impl SFnShow for WindowMode {
 
 impl SFnShowMut for WindowMode {
     fn show_mut(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        Selector.ui_enum(self, ui)
+        Selector::ui_enum(self, ui).is_some()
     }
 }
 
