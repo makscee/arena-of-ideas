@@ -48,6 +48,7 @@ pub trait Node:
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn load_recursive(world: &World, id: u64) -> Option<Self>;
+    fn with_parts(&mut self, context: &Context) -> &mut Self;
     fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError>;
     fn unpack_entity(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
     fn all_linked_parents() -> HashSet<NodeKind>;

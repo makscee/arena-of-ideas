@@ -149,16 +149,12 @@ impl NodeEditorComposer {
 
 /// Composer for parent node editing
 pub struct ParentNodeEditorComposer<T> {
-    child_id: u64,
-    owner_id: u64,
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> ParentNodeEditorComposer<T> {
-    pub fn new(child_id: u64, owner_id: u64) -> Self {
+    pub fn new() -> Self {
         Self {
-            child_id,
-            owner_id,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -202,22 +198,16 @@ where
 
 /// Composer for children node list editing
 pub struct ChildrenNodeEditorComposer<T> {
-    parent_id: u64,
-    owner_id: u64,
     allow_add: bool,
     allow_delete: bool,
-    allow_reorder: bool,
     _phantom: std::marker::PhantomData<T>,
 }
 
 impl<T> ChildrenNodeEditorComposer<T> {
-    pub fn new(parent_id: u64, owner_id: u64) -> Self {
+    pub fn new() -> Self {
         Self {
-            parent_id,
-            owner_id,
             allow_add: true,
             allow_delete: true,
-            allow_reorder: false,
             _phantom: std::marker::PhantomData,
         }
     }
@@ -231,11 +221,6 @@ impl<T> ChildrenNodeEditorComposer<T> {
         self.allow_delete = allow;
         self
     }
-
-    pub fn with_reorder(mut self, allow: bool) -> Self {
-        self.allow_reorder = allow;
-        self
-    }
 }
 
 impl<T> Composer<Vec<T>> for ChildrenNodeEditorComposer<T>
@@ -245,19 +230,8 @@ where
     fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
         let mut response = ui.label("");
 
-        for (i, node) in data.iter().enumerate() {
+        for node in data.iter() {
             ui.horizontal(|ui| {
-                if self.allow_reorder {
-                    ui.vertical(|ui| {
-                        if i > 0 && ui.small_button("↑").clicked() {
-                            // Handle move up
-                        }
-                        if i < data.len() - 1 && ui.small_button("↓").clicked() {
-                            // Handle move down
-                        }
-                    });
-                }
-
                 // Use render system - context menu requires specific traits
                 response = response.union(node.render(context).title(ui));
 
@@ -365,14 +339,10 @@ where
     T: InPlaceEdit + FTitle,
 {
     fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool {
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                data.render_mut(context).title_label(ui);
-                ui.separator();
-            });
-            data.edit_in_place(context, ui)
-        })
-        .inner
+        ui.horizontal(|ui| {
+            data.render_mut(context).title_label(ui);
+        });
+        data.edit_in_place(context, ui)
     }
 }
 
@@ -388,5 +358,480 @@ where
             RenderDataRef::Mutable(data) => InPlaceEditComposer.compose_mut(data, ctx, ui),
             RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
         }
+    }
+}
+
+/// Extension methods for NodePart editing (Parent relationship)
+impl<'a, T> RenderBuilder<'a, NodePart<Parent, T>>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    /// Edit a nested parent node with option to create if None
+    pub fn edit_nested(self, ui: &mut Ui) -> bool {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_part) => {
+                ParentNodeEditComposer::new().compose_mut(node_part, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+
+    /// Edit a nested parent node with custom callbacks for add/delete
+    pub fn edit_nested_with_callbacks<OnAdd, OnDelete>(
+        self,
+        ui: &mut Ui,
+        on_add: OnAdd,
+        on_delete: OnDelete,
+    ) -> bool
+    where
+        OnAdd: Fn(),
+        OnDelete: Fn(),
+    {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_part) => {
+                ParentNodeEditWithCallbacks::new(on_add, on_delete).compose_mut(node_part, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+/// Extension methods for NodePart editing (Child relationship)
+impl<'a, T> RenderBuilder<'a, NodePart<Child, T>>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    /// Edit a nested child node
+    pub fn edit_nested(self, ui: &mut Ui) -> bool {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_part) => {
+                ChildNodeEditComposer::new().compose_mut(node_part, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+/// Extension methods for NodeParts (plural) editing
+impl<'a, T> RenderBuilder<'a, NodeParts<Child, T>>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    /// Edit a list of child nodes with add/remove functionality
+    pub fn edit_list(self, ui: &mut Ui) -> bool {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_parts) => {
+                ChildrenListEditComposer::new().compose_mut(node_parts, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+
+    /// Edit a list of child nodes with custom callbacks for add/delete
+    pub fn edit_list_with_callbacks<OnAdd, OnDelete>(
+        self,
+        ui: &mut Ui,
+        on_add: OnAdd,
+        on_delete: OnDelete,
+    ) -> bool
+    where
+        OnAdd: Fn(),
+        OnDelete: Fn(usize),
+    {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_parts) => {
+                ChildrenListEditWithCallbacks::new(on_add, on_delete)
+                    .compose_mut(node_parts, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+impl<'a, T> RenderBuilder<'a, NodeParts<Parent, T>>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    /// Edit a list of parent nodes with add/remove functionality
+    pub fn edit_list(self, ui: &mut Ui) -> bool {
+        let RenderBuilder { data, ctx, .. } = self;
+        match data {
+            RenderDataRef::Mutable(node_parts) => {
+                ParentListEditComposer::new().compose_mut(node_parts, ctx, ui)
+            }
+            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+        }
+    }
+}
+
+/// Composer for editing parent nodes with create/delete options
+pub struct ParentNodeEditComposer;
+
+impl ParentNodeEditComposer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<T> ComposerMut<NodePart<Parent, T>> for ParentNodeEditComposer
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    fn compose_mut(
+        &self,
+        node_part: &mut NodePart<Parent, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+        let mut should_delete = false;
+
+        // Try to get mutable reference to the node
+        if let Some(node) = node_part.get_data_mut() {
+            ui.horizontal(|ui| {
+                node.title(context).button(ui);
+                if ui.small_button("🗑").on_hover_text("Delete").clicked() {
+                    should_delete = true;
+                    changed = true;
+                }
+            });
+
+            changed |= node.edit(context, ui);
+        } else {
+            ui.horizontal(|ui| {
+                ui.label(format!("{} not set", T::kind_s().cstr()));
+                if ui
+                    .button(format!("➕ Add {}", T::kind_s().cstr()))
+                    .clicked()
+                {
+                    let default_node = T::default();
+                    node_part.set_data(default_node);
+                    changed = true;
+                }
+            });
+        }
+
+        // Handle deletion outside the closure to avoid borrowing conflicts
+        if should_delete {
+            node_part.set_none();
+        }
+
+        changed
+    }
+}
+
+/// Composer for editing child nodes
+pub struct ChildNodeEditComposer;
+
+impl ChildNodeEditComposer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<T> ComposerMut<NodePart<Child, T>> for ChildNodeEditComposer
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    fn compose_mut(
+        &self,
+        node_part: &mut NodePart<Child, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+
+        // For child nodes, we can't create/delete directly, just edit if exists
+        if let Some(node) = node_part.get_data_mut() {
+            ui.horizontal(|ui| {
+                node.title(context).label(ui);
+            });
+            changed |= node.edit(context, ui);
+        } else {
+            ui.label(format!("{} not available", T::kind_s().cstr()));
+        }
+
+        changed
+    }
+}
+
+/// Composer for editing lists of child nodes
+pub struct ChildrenListEditComposer;
+
+impl ChildrenListEditComposer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<T> ComposerMut<NodeParts<Child, T>> for ChildrenListEditComposer
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    fn compose_mut(
+        &self,
+        node_parts: &mut NodeParts<Child, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+        let mut to_delete = Vec::new();
+
+        // Get mutable reference to child nodes
+        if let Some(children) = node_parts.get_data_mut() {
+            if children.is_empty() {
+                ui.label(format!("No {} items", T::kind_s().cstr()));
+            } else {
+                for (i, child) in children.iter_mut().enumerate() {
+                    ui.horizontal(|ui| {
+                        (&*child).render(context).title_button(ui);
+                        if ui.small_button("🗑").clicked() {
+                            to_delete.push(i);
+                            changed = true;
+                        }
+                    });
+
+                    changed |= child.edit(context, ui);
+                }
+            }
+
+            // Remove deleted items (in reverse order to maintain indices)
+            for &index in to_delete.iter().rev() {
+                children.remove(index);
+            }
+
+            if ui
+                .button(format!("➕ Add {}", T::kind_s().cstr()))
+                .clicked()
+            {
+                children.push(T::default());
+                changed = true;
+            }
+        } else {
+            ui.horizontal(|ui| {
+                ui.label(format!("No {} items", T::kind_s().cstr()));
+                if ui
+                    .button(format!("➕ Add {}", T::kind_s().cstr()))
+                    .clicked()
+                {
+                    node_parts.set_data(vec![T::default()]);
+                    changed = true;
+                }
+            });
+        }
+
+        changed
+    }
+}
+
+/// Composer for editing lists with closure callbacks
+pub struct ChildrenListEditWithCallbacks<OnAdd, OnDelete> {
+    on_add: OnAdd,
+    on_delete: OnDelete,
+}
+
+impl<OnAdd, OnDelete> ChildrenListEditWithCallbacks<OnAdd, OnDelete>
+where
+    OnAdd: Fn(),
+    OnDelete: Fn(usize),
+{
+    pub fn new(on_add: OnAdd, on_delete: OnDelete) -> Self {
+        Self { on_add, on_delete }
+    }
+}
+
+impl<T, OnAdd, OnDelete> ComposerMut<NodeParts<Child, T>>
+    for ChildrenListEditWithCallbacks<OnAdd, OnDelete>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+    OnAdd: Fn(),
+    OnDelete: Fn(usize),
+{
+    fn compose_mut(
+        &self,
+        node_parts: &mut NodeParts<Child, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+
+        // Get mutable reference to child nodes
+        if let Some(children) = node_parts.get_data_mut() {
+            if children.is_empty() {
+                ui.label(format!("No {} items", T::kind_s().cstr()));
+            } else {
+                for (i, child) in children.iter_mut().enumerate() {
+                    ui.horizontal(|ui| {
+                        (&*child).render(context).title_button(ui);
+                        if ui.small_button("🗑").clicked() {
+                            (self.on_delete)(i);
+                            changed = true;
+                        }
+                    });
+
+                    changed |= child.edit(context, ui);
+                }
+            }
+
+            if ui
+                .button(format!("➕ Add {}", T::kind_s().cstr()))
+                .clicked()
+            {
+                (self.on_add)();
+                changed = true;
+            }
+        } else {
+            ui.horizontal(|ui| {
+                ui.label(format!("No {} items", T::kind_s().cstr()));
+                if ui
+                    .button(format!("➕ Add {}", T::kind_s().cstr()))
+                    .clicked()
+                {
+                    (self.on_add)();
+                    changed = true;
+                }
+            });
+        }
+
+        changed
+    }
+}
+
+/// Composer for editing parent node with closure callbacks
+pub struct ParentNodeEditWithCallbacks<OnAdd, OnDelete> {
+    on_add: OnAdd,
+    on_delete: OnDelete,
+}
+
+impl<OnAdd, OnDelete> ParentNodeEditWithCallbacks<OnAdd, OnDelete>
+where
+    OnAdd: Fn(),
+    OnDelete: Fn(),
+{
+    pub fn new(on_add: OnAdd, on_delete: OnDelete) -> Self {
+        Self { on_add, on_delete }
+    }
+}
+
+impl<T, OnAdd, OnDelete> ComposerMut<NodePart<Parent, T>>
+    for ParentNodeEditWithCallbacks<OnAdd, OnDelete>
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+    OnAdd: Fn(),
+    OnDelete: Fn(),
+{
+    fn compose_mut(
+        &self,
+        node_part: &mut NodePart<Parent, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+
+        if let Some(node) = node_part.get_data_mut() {
+            ui.horizontal(|ui| {
+                node.title(context).button(ui);
+                if ui.small_button("🗑").on_hover_text("Delete").clicked() {
+                    (self.on_delete)();
+                    changed = true;
+                }
+            });
+
+            changed |= node.edit(context, ui);
+        } else {
+            ui.horizontal(|ui| {
+                ui.label(format!("{} not set", T::kind_s().cstr()));
+                if ui
+                    .button(format!("➕ Add {}", T::kind_s().cstr()))
+                    .clicked()
+                {
+                    (self.on_add)();
+                    changed = true;
+                }
+            });
+        }
+
+        changed
+    }
+}
+
+/// Composer for editing lists of parent nodes
+pub struct ParentListEditComposer;
+
+impl ParentListEditComposer {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl<T> ComposerMut<NodeParts<Parent, T>> for ParentListEditComposer
+where
+    T: Node + FEdit + FTitle + Default + Clone + 'static,
+{
+    fn compose_mut(
+        &self,
+        node_parts: &mut NodeParts<Parent, T>,
+        context: &Context,
+        ui: &mut Ui,
+    ) -> bool {
+        let mut changed = false;
+        let mut to_delete = Vec::new();
+
+        // Get all parent nodes (mutable)
+        let parents = if let Some(nodes) = node_parts.get_data_mut() {
+            nodes
+        } else {
+            // If no data exists yet, create an empty list for potential additions
+            if ui
+                .button(format!("➕ Add {}", T::kind_s().cstr()))
+                .clicked()
+            {
+                let new_node = T::default();
+                node_parts.set_data(vec![new_node]);
+                changed = true;
+            }
+            return changed;
+        };
+
+        if parents.is_empty() {
+            ui.label(format!("No {} items", T::kind_s().cstr()));
+        } else {
+            for (index, parent) in parents.iter_mut().enumerate() {
+                ui.horizontal(|ui| {
+                    parent.title(context).button(ui);
+                    if ui.small_button("🗑").on_hover_text("Delete").clicked() {
+                        to_delete.push(index);
+                        changed = true;
+                    }
+                });
+
+                changed |= parent.edit(context, ui);
+            }
+        }
+
+        if ui
+            .button(format!("➕ Add {}", T::kind_s().cstr()))
+            .clicked()
+        {
+            // Add a new default item to the list
+            let new_node = T::default();
+            parents.push(new_node);
+            changed = true;
+        }
+
+        // Remove items marked for deletion (in reverse order to preserve indices)
+        for &index in to_delete.iter().rev() {
+            if index < parents.len() {
+                parents.remove(index);
+                changed = true;
+            }
+        }
+
+        changed
     }
 }

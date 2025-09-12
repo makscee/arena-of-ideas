@@ -595,6 +595,45 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 )*
                 Some(d)
             }
+            fn with_parts(&mut self, context: &Context) -> &mut Self {
+                #(
+                    if let Ok(parent) = self.#parent_load(context) {
+                        let mut parent_clone = parent.clone();
+                        parent_clone.with_parts(context);
+                        self.#parent_fields.set_data(parent_clone);
+                    }
+                )*
+                #(
+                    if let Ok(child) = self.#child_load(context) {
+                        let mut child_clone = child.clone();
+                        child_clone.with_parts(context);
+                        self.#child_fields.set_data(child_clone);
+                    }
+                )*
+                #(
+                    let parents_data = self.#parents_load(context)
+                        .into_iter()
+                        .map(|p| {
+                            let mut p_clone = p.clone();
+                            p_clone.with_parts(context);
+                            p_clone
+                        })
+                        .collect();
+                    self.#parents_fields.set_data(parents_data);
+                )*
+                #(
+                    let children_data = self.#children_load(context)
+                        .into_iter()
+                        .map(|c| {
+                            let mut c_clone = c.clone();
+                            c_clone.with_parts(context);
+                            c_clone
+                        })
+                        .collect();
+                    self.#children_fields.set_data(children_data);
+                )*
+                self
+            }
             fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError> {
                 let mut s = context.component::<Self>(entity)?.clone();
                 #(

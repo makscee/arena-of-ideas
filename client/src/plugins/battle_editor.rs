@@ -354,116 +354,17 @@ impl BattleEditorPlugin {
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
             let entity = context.entity(id)?;
-            let house = context.component::<NHouse>(entity).cloned()?;
+            let mut house = context.component::<NHouse>(entity).cloned()?;
+            house.with_parts(context);
 
             // Basic house info and editing
             ui.group(|ui| {
                 house.render(context).info().label(ui);
-
-                let mut house_mut = house.clone();
-                if house_mut.render_mut(context).edit(ui) {
-                    house_mut.unpack_entity(context, entity).log();
+                if house.render_mut(context).edit(ui) {
+                    house.unpack_entity(context, entity).log();
                     changed = true;
                 }
             });
-
-            ui.separator();
-
-            // House color
-            if let Ok(color) = context.first_parent::<NHouseColor>(id) {
-                let color_entity = color.entity();
-                let color_clone = color.clone();
-                ui.group(|ui| {
-                    color_clone.render(context).title_label(ui);
-                    let mut color_mut = color_clone.clone();
-                    if color_mut.render_mut(context).edit(ui) {
-                        color_mut.unpack_entity(context, color_entity).log();
-                        changed = true;
-                    }
-                });
-            }
-
-            // Abilities - directly edit the effect actions list
-            if let Ok(mut ability) = house.ability_load(context).cloned() {
-                ui.separator();
-                ui.collapsing("Ability", |ui| {
-                    ui.group(|ui| {
-                        // Basic ability info
-                        ability.render(context).info().label(ui);
-                        if ability.render_mut(context).edit(ui) {
-                            ability
-                                .clone()
-                                .unpack_entity(context, ability.entity())
-                                .log();
-                            changed = true;
-                        }
-
-                        // Effect actions list editor
-                        if let Ok(mut effect) = ability
-                            .description_load(context)
-                            .and_then(|d| d.effect_load(context))
-                            .cloned()
-                        {
-                            let effect_entity = effect.entity();
-                            ui.separator();
-                            ui.label("Effect Actions:");
-
-                            if effect.actions.render_mut(context).edit_recursive_list(ui) {
-                                effect.unpack_entity(context, effect_entity).log();
-                                changed = true;
-                            }
-                        }
-                    });
-                });
-            }
-
-            // Statuses
-            if let Ok(mut status) = house.status_load(context).cloned() {
-                ui.separator();
-                ui.collapsing("Status", |ui| {
-                    ui.group(|ui| {
-                        // Basic status info
-                        status.render(context).info().label(ui);
-                        if status.render_mut(context).edit(ui) {
-                            status.clone().unpack_entity(context, status.entity()).log();
-                            changed = true;
-                        }
-
-                        // Behavior reactions list editor
-                        if let Ok(mut behavior) = status
-                            .description_load(context)
-                            .and_then(|d| d.behavior_load(context))
-                            .cloned()
-                        {
-                            let behavior_entity = behavior.entity();
-                            ui.separator();
-                            ui.label("Behavior Reactions:");
-
-                            if behavior
-                                .reactions
-                                .render_mut(context)
-                                .edit_recursive_list(ui)
-                            {
-                                behavior.unpack_entity(context, behavior_entity).log();
-                                changed = true;
-                            }
-                        }
-
-                        // Representation material editor
-                        if let Ok(repr) = status.representation_load(context).cloned() {
-                            let repr_entity = repr.entity();
-                            let mut repr_mut = repr.clone();
-                            ui.separator();
-                            ui.label("Representation:");
-
-                            if repr_mut.material.render_mut(context).edit(ui) {
-                                repr_mut.unpack_entity(context, repr_entity).log();
-                                changed = true;
-                            }
-                        }
-                    });
-                });
-            }
 
             ui.separator();
             "[h2 Units]".cstr().label(ui);
