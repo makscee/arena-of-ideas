@@ -170,6 +170,32 @@ impl FEdit for HexColor {
     }
 }
 
+// UnitActionRange
+impl FEdit for UnitActionRange {
+    fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.horizontal(|ui| {
+            ui.label("Trigger:");
+            changed |= ui.add(DragValue::new(&mut self.trigger)).changed();
+            ui.separator();
+            ui.label("Start:");
+            changed |= ui.add(DragValue::new(&mut self.start)).changed();
+            ui.separator();
+            ui.label("Length:");
+            changed |= ui.add(DragValue::new(&mut self.length)).changed();
+        });
+        changed
+    }
+}
+
+// MagicType
+impl FEdit for MagicType {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let (old_value, _response) = Selector::ui_enum(self, ui);
+        old_value.is_some()
+    }
+}
+
 // ============================================================================
 // Game Types Implementations
 // ============================================================================
@@ -458,8 +484,10 @@ impl FEdit for Reaction {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         ui.vertical(|ui| {
-            ui.label("Trigger:");
-            changed |= self.trigger.edit(context, ui);
+            ui.horizontal(|ui| {
+                ui.label("Trigger:");
+                changed |= self.trigger.edit(context, ui);
+            });
             ui.label("Actions:");
             for action in &mut self.actions {
                 changed |= action.edit(context, ui);
@@ -587,29 +615,25 @@ impl FInfo for NUnit {
 impl FCopy for NUnit {}
 impl FPaste for NUnit {}
 
+impl FPlaceholder for NUnit {
+    fn placeholder(owner: u64) -> Self {
+        NUnit::new_full(
+            owner,
+            "New Unit".to_string(),
+            NUnitDescription::placeholder(owner),
+            NUnitStats::placeholder(owner),
+            NUnitState::placeholder(owner),
+        )
+    }
+}
+
 impl FEdit for NUnit {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Unit Name:");
-                changed |= ui.text_edit_singleline(&mut self.unit_name).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Description", |ui| {
-                changed |= self.description.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("Stats", |ui| {
-                changed |= self.stats.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("State", |ui| {
-                changed |= self.state.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Unit Name:]".cstr().label(ui);
+            ui.text_edit_singleline(&mut self.unit_name).changed()
+        })
+        .inner
     }
 }
 
@@ -679,38 +703,26 @@ impl FInfo for NHouse {
 impl FCopy for NHouse {}
 impl FPaste for NHouse {}
 
+impl FPlaceholder for NHouse {
+    fn placeholder(owner: u64) -> Self {
+        NHouse::new_full(
+            owner,
+            "New House".to_string(),
+            NHouseColor::placeholder(owner),
+            NAbilityMagic::placeholder(owner),
+            NStatusMagic::placeholder(owner),
+            vec![],
+        )
+    }
+}
+
 impl FEdit for NHouse {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("House Name:");
-                changed |= ui.text_edit_singleline(&mut self.house_name).changed();
-            });
-            ui.collapsing("Color", |ui| {
-                changed |= self.color.render_mut(context).edit_nested(ui);
-            });
-            let color = self
-                .color
-                .get_data()
-                .cloned()
-                .map(|c| c.color.c32())
-                .unwrap_or(MISSING_COLOR);
-            context.with_layer_ref(ContextLayer::Var(VarName::color, color.into()), |context| {
-                ui.collapsing("Ability", |ui| {
-                    changed |= self.ability.render_mut(context).edit_nested(ui);
-                });
-                ui.collapsing("Status", |ui| {
-                    changed |= self.status.render_mut(context).edit_nested(ui);
-                });
-                ui.collapsing("Units", |ui| {
-                    changed |= self.units.render_mut(context).edit_list(ui);
-                });
-            });
-        });
-
-        changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw House Name:]".cstr().label(ui);
+            ui.text_edit_singleline(&mut self.house_name).changed()
+        })
+        .inner
     }
 }
 
@@ -761,6 +773,16 @@ impl FTag for NAbilityMagic {
 impl FCopy for NAbilityMagic {}
 impl FPaste for NAbilityMagic {}
 
+impl FPlaceholder for NAbilityMagic {
+    fn placeholder(owner: u64) -> Self {
+        NAbilityMagic::new_full(
+            owner,
+            "New Ability".to_string(),
+            NAbilityDescription::placeholder(owner),
+        )
+    }
+}
+
 impl FInfo for NAbilityMagic {
     fn info(&self, _context: &Context) -> Cstr {
         format!("Ability: {}", self.ability_name).cstr()
@@ -768,22 +790,12 @@ impl FInfo for NAbilityMagic {
 }
 
 impl FEdit for NAbilityMagic {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Ability Name:");
-                changed |= ui.text_edit_singleline(&mut self.ability_name).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Description", |ui| {
-                changed |= self.description.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Ability Name:]".cstr().label(ui);
+            ui.text_edit_singleline(&mut self.ability_name).changed()
+        })
+        .inner
     }
 }
 
@@ -834,6 +846,17 @@ impl FTag for NStatusMagic {
 impl FCopy for NStatusMagic {}
 impl FPaste for NStatusMagic {}
 
+impl FPlaceholder for NStatusMagic {
+    fn placeholder(owner: u64) -> Self {
+        NStatusMagic::new_full(
+            owner,
+            "New Status".to_string(),
+            NStatusDescription::placeholder(owner),
+            NStatusRepresentation::placeholder(owner),
+        )
+    }
+}
+
 impl FInfo for NStatusMagic {
     fn info(&self, _context: &Context) -> Cstr {
         format!("Status: {}", self.status_name).cstr()
@@ -841,25 +864,12 @@ impl FInfo for NStatusMagic {
 }
 
 impl FEdit for NStatusMagic {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Status Name:");
-                changed |= ui.text_edit_singleline(&mut self.status_name).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Description", |ui| {
-                changed |= self.description.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("Representation", |ui| {
-                changed |= self.representation.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Status Name:]".cstr().label(ui);
+            ui.text_edit_singleline(&mut self.status_name).changed()
+        })
+        .inner
     }
 }
 
@@ -1031,6 +1041,18 @@ impl FTag for NPlayer {
 impl FCopy for NPlayer {}
 impl FPaste for NPlayer {}
 
+impl FPlaceholder for NPlayer {
+    fn placeholder(owner: u64) -> Self {
+        NPlayer::new_full(
+            owner,
+            "New Player".to_string(),
+            NPlayerData::placeholder(owner),
+            NPlayerIdentity::placeholder(owner),
+            NMatch::placeholder(owner),
+        )
+    }
+}
+
 impl FDisplay for NPlayer {
     fn display(&self, context: &Context, ui: &mut Ui) {
         ui.horizontal(|ui| {
@@ -1049,28 +1071,12 @@ impl FDisplay for NPlayer {
 }
 
 impl FEdit for NPlayer {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Player Name:");
-                changed |= ui.text_edit_singleline(&mut self.player_name).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Player Data", |ui| {
-                changed |= self.player_data.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("Identity", |ui| {
-                changed |= self.identity.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("Active Match", |ui| {
-                changed |= self.active_match.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Player Name:]".cstr().label(ui);
+            ui.text_edit_singleline(&mut self.player_name).changed()
+        })
+        .inner
     }
 }
 
@@ -1179,13 +1185,23 @@ impl FDisplay for NHouseColor {
 
 impl FEdit for NHouseColor {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.color.edit(context, ui)
+        ui.horizontal(|ui| {
+            "[tw Color:]".cstr().label(ui);
+            self.color.edit(context, ui)
+        })
+        .inner
     }
 }
 
 impl FTitle for NHouseColor {
     fn title(&self, _: &Context) -> Cstr {
         self.cstr()
+    }
+}
+
+impl FPlaceholder for NHouseColor {
+    fn placeholder(owner: u64) -> Self {
+        NHouseColor::new_full(owner, HexColor("#FF0000".to_string()))
     }
 }
 
@@ -1198,6 +1214,16 @@ impl FDisplay for NAbilityDescription {
 impl FTitle for NAbilityDescription {
     fn title(&self, _: &Context) -> Cstr {
         self.cstr()
+    }
+}
+
+impl FPlaceholder for NAbilityDescription {
+    fn placeholder(owner: u64) -> Self {
+        NAbilityDescription::new_full(
+            owner,
+            "Default description".to_string(),
+            NAbilityEffect::placeholder(owner),
+        )
     }
 }
 
@@ -1248,6 +1274,16 @@ impl FDisplay for NStatusDescription {
 impl FTitle for NStatusDescription {
     fn title(&self, _: &Context) -> Cstr {
         self.cstr()
+    }
+}
+
+impl FPlaceholder for NStatusDescription {
+    fn placeholder(owner: u64) -> Self {
+        NStatusDescription::new_full(
+            owner,
+            "Default status description".to_string(),
+            NStatusBehavior::placeholder(owner),
+        )
     }
 }
 
@@ -1327,6 +1363,15 @@ impl FTag for NStatusRepresentation {
     }
 }
 
+impl FPlaceholder for NStatusRepresentation {
+    fn placeholder(owner: u64) -> Self {
+        NStatusRepresentation::new_full(
+            owner,
+            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+        )
+    }
+}
+
 impl FTitle for NTeam {
     fn title(&self, _: &Context) -> Cstr {
         format!("Team ({}h {}f)", self.houses.len(), self.fusions.len()).cstr()
@@ -1366,6 +1411,12 @@ impl FTag for NTeam {
 
 impl FCopy for NTeam {}
 impl FPaste for NTeam {}
+
+impl FPlaceholder for NTeam {
+    fn placeholder(owner: u64) -> Self {
+        NTeam::new_full(owner, vec![], vec![])
+    }
+}
 
 impl FDisplay for NTeam {
     fn display(&self, _context: &Context, ui: &mut Ui) {
@@ -1526,15 +1577,30 @@ impl FEdit for NMatch {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
-            ui.label("Gold:");
+            "[tw Gold:]".cstr().label(ui);
             changed |= ui.add(egui::DragValue::new(&mut self.g)).changed();
-            ui.label("Floor:");
+            "[tw Floor:]".cstr().label(ui);
             changed |= ui.add(egui::DragValue::new(&mut self.floor)).changed();
-            ui.label("Lives:");
+            "[tw Lives:]".cstr().label(ui);
             changed |= ui.add(egui::DragValue::new(&mut self.lives)).changed();
             ui.checkbox(&mut self.active, "Active");
         });
         changed
+    }
+}
+
+impl FPlaceholder for NMatch {
+    fn placeholder(owner: u64) -> Self {
+        NMatch::new_full(
+            owner,
+            0,
+            1,
+            3,
+            false,
+            vec![],
+            NTeam::placeholder(owner),
+            vec![],
+        )
     }
 }
 
@@ -1576,6 +1642,12 @@ impl FTag for NFusion {
 
 impl FCopy for NFusion {}
 impl FPaste for NFusion {}
+
+impl FPlaceholder for NFusion {
+    fn placeholder(owner: u64) -> Self {
+        NFusion::new_full(owner, 1, 0, 0, 1, 1, 1, vec![])
+    }
+}
 
 impl FTitle for NFusionSlot {
     fn title(&self, _: &Context) -> Cstr {
@@ -1724,24 +1796,15 @@ impl FEdit for NUnitDescription {
 
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                ui.label("Description:");
+                "[tw Description:]".cstr().label(ui);
                 changed |= ui.text_edit_multiline(&mut self.description).changed();
             });
-
             ui.horizontal(|ui| {
-                ui.label("Magic Type:");
-                changed |= self.magic_type.render_mut(context).edit_selector(ui);
+                "[tw Magic Type:]".cstr().label(ui);
+                changed |= self.magic_type.edit(context, ui);
                 ui.separator();
-                ui.label("Trigger:");
-                changed |= self.trigger.render_mut(context).edit_selector(ui);
-            });
-
-            ui.separator();
-            ui.collapsing("Representation", |ui| {
-                changed |= self.representation.render_mut(context).edit_nested(ui);
-            });
-            ui.collapsing("Behavior", |ui| {
-                changed |= self.behavior.render_mut(context).edit_nested(ui);
+                "[tw Trigger:]".cstr().label(ui);
+                changed |= self.trigger.edit(context, ui);
             });
         });
 
@@ -1802,10 +1865,10 @@ impl FEdit for NUnitStats {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
         ui.horizontal(|ui| {
-            ui.label("Power:");
+            "[tw Power:]".cstr().label(ui);
             changed |= ui.add(egui::DragValue::new(&mut self.pwr)).changed();
             ui.separator();
-            ui.label("Health:");
+            "[tw Health:]".cstr().label(ui);
             changed |= ui.add(egui::DragValue::new(&mut self.hp)).changed();
         });
         changed
@@ -1858,7 +1921,7 @@ impl FDisplay for NUnitState {
 impl FEdit for NUnitState {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
-            ui.label("Stacks:");
+            "[tw Stacks:]".cstr().label(ui);
             ui.add(egui::DragValue::new(&mut self.stacks))
         })
         .inner
@@ -1922,11 +1985,11 @@ impl FEdit for NUnitBehavior {
         let mut changed = false;
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
-                ui.label("Magic Type:");
-                changed |= self.magic_type.render_mut(context).edit_selector(ui);
+                "[tw Magic Type:]".cstr().label(ui);
+                changed |= self.magic_type.edit(context, ui);
             });
-            ui.label("Reaction:");
-            changed |= self.reaction.render_mut(context).recursive_edit_tree(ui);
+            "[tw Reaction:]".cstr().label(ui);
+            changed |= self.reaction.edit(context, ui);
         });
         changed
     }
@@ -1972,7 +2035,11 @@ impl FDisplay for NUnitRepresentation {
 
 impl FEdit for NUnitRepresentation {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        self.material.edit(context, ui)
+        ui.group(|ui| {
+            "[tw Material:]".cstr().label(ui);
+            self.material.edit(context, ui)
+        })
+        .inner
     }
 }
 
@@ -1982,61 +2049,47 @@ impl FEdit for NUnitRepresentation {
 // ============================================================================
 
 impl FEdit for NArena {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.label("Arena");
+        false
+    }
+}
 
-        ui.group(|ui| {
-            ui.label("Arena");
-            ui.separator();
-            ui.collapsing("Floor Pools", |ui| {
-                changed |= self.floor_pools.render_mut(context).edit_list(ui);
-            });
-            ui.collapsing("Floor Bosses", |ui| {
-                changed |= self.floor_bosses.render_mut(context).edit_list(ui);
-            });
-        });
-
-        changed
+impl FPlaceholder for NArena {
+    fn placeholder(owner: u64) -> Self {
+        NArena::new_full(owner, vec![], vec![])
     }
 }
 
 impl FEdit for NFloorPool {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Floor:]".cstr().label(ui);
+            ui.add(DragValue::new(&mut self.floor)).changed()
+        })
+        .inner
+    }
+}
 
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Floor:");
-                changed |= ui.add(DragValue::new(&mut self.floor)).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Teams", |ui| {
-                changed |= self.teams.render_mut(context).edit_list(ui);
-            });
-        });
-
-        changed
+impl FPlaceholder for NFloorPool {
+    fn placeholder(owner: u64) -> Self {
+        NFloorPool::new_full(owner, 1, vec![])
     }
 }
 
 impl FEdit for NFloorBoss {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Floor:]".cstr().label(ui);
+            ui.add(DragValue::new(&mut self.floor)).changed()
+        })
+        .inner
+    }
+}
 
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Floor:");
-                changed |= ui.add(DragValue::new(&mut self.floor)).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Team", |ui| {
-                changed |= self.team.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
+impl FPlaceholder for NFloorBoss {
+    fn placeholder(owner: u64) -> Self {
+        NFloorBoss::new_full(owner, 1, NTeam::placeholder(owner))
     }
 }
 
@@ -2044,90 +2097,29 @@ impl FEdit for NPlayerData {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Pass Hash:");
-                if let Some(ref mut hash) = self.pass_hash {
-                    changed |= ui.text_edit_singleline(hash).changed();
-                } else {
-                    if ui.button("Set Password").clicked() {
-                        self.pass_hash = Some("".to_string());
-                        changed = true;
-                    }
-                }
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Online:");
-                changed |= ui.checkbox(&mut self.online, "").changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Last Login:");
-                let mut last_login = self.last_login as i64;
-                if ui.add(DragValue::new(&mut last_login)).changed() {
-                    self.last_login = last_login as u64;
+        ui.horizontal(|ui| {
+            "[tw Pass Hash:]".cstr().label(ui);
+            if let Some(ref mut hash) = self.pass_hash {
+                changed |= ui.text_edit_singleline(hash).changed();
+            } else {
+                if ui.button("Set Password").clicked() {
+                    self.pass_hash = Some("".to_string());
                     changed = true;
                 }
-            });
+            }
         });
 
-        changed
-    }
-}
-
-impl FEdit for NPlayerIdentity {
-    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Identity Data:");
-                if let Some(ref mut data) = self.data {
-                    changed |= ui.text_edit_multiline(data).changed();
-                } else {
-                    if ui.button("Set Identity").clicked() {
-                        self.data = Some("".to_string());
-                        changed = true;
-                    }
-                }
-            });
+        ui.horizontal(|ui| {
+            "[tw Online:]".cstr().label(ui);
+            changed |= ui.checkbox(&mut self.online, "").changed();
         });
 
-        changed
-    }
-}
-
-impl FEdit for NAbilityDescription {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Description:");
-                changed |= ui.text_edit_multiline(&mut self.description).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Effect", |ui| {
-                changed |= self.effect.render_mut(context).edit_nested(ui);
-            });
-        });
-
-        changed
-    }
-}
-
-impl FEdit for NAbilityEffect {
-    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        let changed = false;
-
-        ui.group(|ui| {
-            ui.label("Actions:");
-            // For now, just show count - could be enhanced with action editor
-            ui.label(format!("{} actions configured", self.actions.len()));
-            if ui.button("Edit Actions").clicked() {
-                // Could open a detailed action editor
+        ui.horizontal(|ui| {
+            "[tw Last Login:]".cstr().label(ui);
+            let mut last_login = self.last_login as i64;
+            if ui.add(DragValue::new(&mut last_login)).changed() {
+                self.last_login = last_login as u64;
+                changed = true;
             }
         });
 
@@ -2135,23 +2127,83 @@ impl FEdit for NAbilityEffect {
     }
 }
 
-impl FEdit for NStatusDescription {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+impl FPlaceholder for NPlayerData {
+    fn placeholder(owner: u64) -> Self {
+        NPlayerData::new_full(owner, None, true, 0)
+    }
+}
+
+impl FPlaceholder for NAbilityEffect {
+    fn placeholder(owner: u64) -> Self {
+        NAbilityEffect::new_full(owner, vec![Action::noop])
+    }
+}
+
+impl FEdit for NPlayerIdentity {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
 
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Description:");
-                changed |= ui.text_edit_multiline(&mut self.description).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Behavior", |ui| {
-                changed |= self.behavior.render_mut(context).edit_nested(ui);
-            });
+        ui.horizontal(|ui| {
+            "[tw Identity Data:]".cstr().label(ui);
+            if let Some(ref mut data) = self.data {
+                changed |= ui.text_edit_multiline(data).changed();
+            } else {
+                if ui.button("Set Identity").clicked() {
+                    self.data = Some("".to_string());
+                    changed = true;
+                }
+            }
         });
 
         changed
+    }
+}
+
+impl FPlaceholder for NPlayerIdentity {
+    fn placeholder(owner: u64) -> Self {
+        NPlayerIdentity::new_full(owner, None)
+    }
+}
+
+impl FPlaceholder for NStatusBehavior {
+    fn placeholder(owner: u64) -> Self {
+        NStatusBehavior::new_full(
+            owner,
+            vec![Reaction {
+                trigger: Trigger::BattleStart,
+                actions: vec![Action::noop],
+            }],
+        )
+    }
+}
+
+impl FEdit for NAbilityDescription {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Description:]".cstr().label(ui);
+            ui.text_edit_multiline(&mut self.description).changed()
+        })
+        .inner
+    }
+}
+
+impl FEdit for NAbilityEffect {
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Actions:]".cstr().label(ui);
+            self.actions.edit(context, ui)
+        })
+        .inner
+    }
+}
+
+impl FEdit for NStatusDescription {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        ui.horizontal(|ui| {
+            "[tw Description:]".cstr().label(ui);
+            ui.text_edit_multiline(&mut self.description).changed()
+        })
+        .inner
     }
 }
 
@@ -2173,33 +2225,17 @@ impl FEdit for NStatusBehavior {
 }
 
 impl FEdit for NStatusRepresentation {
-    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
-        let changed = false;
-
-        ui.group(|ui| {
-            ui.label("Material:");
-            // For now, just show material info - could be enhanced with material editor
-            ui.label("Material editor would go here");
-        });
-
-        changed
+    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+        self.material.edit(context, ui)
     }
 }
 
 impl FEdit for NTeam {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
+        let _changed = false;
+        ui.label("Team");
 
-        ui.group(|ui| {
-            ui.collapsing("Houses", |ui| {
-                changed |= self.houses.render_mut(context).edit_list(ui);
-            });
-            ui.collapsing("Fusions", |ui| {
-                changed |= self.fusions.render_mut(context).edit_list(ui);
-            });
-        });
-
-        changed
+        false
     }
 }
 
@@ -2252,77 +2288,64 @@ impl FEdit for NBattle {
     }
 }
 
+impl FPlaceholder for NBattle {
+    fn placeholder(owner: u64) -> Self {
+        NBattle::new_full(owner, 0, 0, 0, 0, None)
+    }
+}
+
 impl FEdit for NFusion {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Trigger Unit:");
-                let mut trigger_unit = self.trigger_unit as i64;
-                if ui.add(DragValue::new(&mut trigger_unit)).changed() {
-                    self.trigger_unit = trigger_unit as u64;
-                    changed = true;
-                }
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Index:");
-                changed |= ui.add(DragValue::new(&mut self.index)).changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Power:");
-                changed |= ui.add(DragValue::new(&mut self.pwr)).changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("HP:");
-                changed |= ui.add(DragValue::new(&mut self.hp)).changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Damage:");
-                changed |= ui.add(DragValue::new(&mut self.dmg)).changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Actions Limit:");
-                changed |= ui.add(DragValue::new(&mut self.actions_limit)).changed();
-            });
-
-            ui.separator();
-            ui.collapsing("Slots", |ui| {
-                changed |= self.slots.render_mut(context).edit_list(ui);
-            });
+        ui.horizontal(|ui| {
+            "[tw Trigger Unit:]".cstr().label(ui);
+            let mut trigger_unit = self.trigger_unit as i64;
+            if ui.add(DragValue::new(&mut trigger_unit)).changed() {
+                self.trigger_unit = trigger_unit as u64;
+                changed = true;
+            }
         });
-
+        ui.horizontal(|ui| {
+            "[tw Index:]".cstr().label(ui);
+            changed |= ui.add(DragValue::new(&mut self.index)).changed();
+        });
+        ui.horizontal(|ui| {
+            "[tw Power:]".cstr().label(ui);
+            changed |= ui.add(DragValue::new(&mut self.pwr)).changed();
+        });
+        ui.horizontal(|ui| {
+            "[tw HP:]".cstr().label(ui);
+            changed |= ui.add(DragValue::new(&mut self.hp)).changed();
+        });
+        ui.horizontal(|ui| {
+            "[tw Damage:]".cstr().label(ui);
+            changed |= ui.add(DragValue::new(&mut self.dmg)).changed();
+        });
+        ui.horizontal(|ui| {
+            "[tw Actions Limit:]".cstr().label(ui);
+            changed |= ui.add(DragValue::new(&mut self.actions_limit)).changed();
+        });
         changed
+    }
+}
+
+impl FPlaceholder for NFusionSlot {
+    fn placeholder(owner: u64) -> Self {
+        NFusionSlot::new_full(owner, 0, default(), NUnit::placeholder(owner))
     }
 }
 
 impl FEdit for NFusionSlot {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
         let mut changed = false;
-
-        ui.group(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Index:");
-                changed |= ui.add(DragValue::new(&mut self.index)).changed();
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Actions:");
-                // For now, just show the actions info - could be enhanced with range editor
-                ui.label("Action range editor would go here");
-            });
-
-            ui.separator();
-            ui.collapsing("Unit", |ui| {
-                changed |= self.unit.render_mut(context).edit_nested(ui);
-            });
+        ui.horizontal(|ui| {
+            ui.label("Index:");
+            changed |= ui.add(DragValue::new(&mut self.index)).changed();
         });
-
+        ui.horizontal(|ui| {
+            ui.label("Actions:");
+            changed |= self.actions.edit(context, ui);
+        });
         changed
     }
 }
@@ -2345,6 +2368,44 @@ impl<T: FEdit> FEdit for Vec<T> {
             changed |= item.edit(context, ui);
         }
         changed
+    }
+}
+
+impl FPlaceholder for NUnitBehavior {
+    fn placeholder(owner: u64) -> Self {
+        NUnitBehavior::new_full(
+            owner,
+            Reaction {
+                trigger: Trigger::BattleStart,
+                actions: vec![Action::noop],
+            },
+            MagicType::Ability,
+        )
+    }
+}
+
+impl FPlaceholder for NUnitState {
+    fn placeholder(owner: u64) -> Self {
+        NUnitState::new_full(owner, 1)
+    }
+}
+
+impl FPlaceholder for NUnitStats {
+    fn placeholder(owner: u64) -> Self {
+        NUnitStats::new_full(owner, 1, 1)
+    }
+}
+
+impl FPlaceholder for NUnitDescription {
+    fn placeholder(owner: u64) -> Self {
+        NUnitDescription::new_full(
+            owner,
+            "Default Description".to_string(),
+            MagicType::Ability,
+            Trigger::BattleStart,
+            NUnitRepresentation::placeholder(owner),
+            NUnitBehavior::placeholder(owner),
+        )
     }
 }
 
@@ -2375,5 +2436,14 @@ impl<T: FEdit + Default> FEdit for Option<T> {
         } else {
             false
         }
+    }
+}
+
+impl FPlaceholder for NUnitRepresentation {
+    fn placeholder(owner: u64) -> Self {
+        NUnitRepresentation::new_full(
+            owner,
+            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+        )
     }
 }

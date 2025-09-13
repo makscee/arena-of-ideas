@@ -1,9 +1,4 @@
 use super::*;
-use crate::nodes::*;
-use crate::resources::*;
-use crate::ui::render::*;
-use crate::ui::*;
-use crate::utils::*;
 
 pub struct BattleEditorPlugin;
 
@@ -47,6 +42,127 @@ impl BattleEditorPlugin {
                 state.current_node = Some(BattleEditorNode::Team(id));
             }
         }
+    }
+
+    // Generic helper for managing node parts
+    fn manage_part<T: FPlaceholder + FEdit + Node + Clone + 'static>(
+        ui: &mut Ui,
+        context: &mut Context,
+        id: u64,
+        owner: u64,
+        is_child_part: bool, // true if T is a child of part_owner_entity
+    ) -> Result<(u64, bool), ExpressionError> {
+        let mut changed = false;
+        let mut part_id = 0;
+        let entity = context.entity(id)?;
+        let part_result = if is_child_part {
+            context.first_child::<T>(id)
+        } else {
+            context.first_parent::<T>(id)
+        };
+
+        match part_result {
+            Ok(part) => {
+                part_id = part.id();
+                let part_entity = part.entity();
+                let mut part = part.clone();
+
+                ui.group(|ui| {
+                    ui.label(format!("{}:", part.kind()));
+                    if part.edit(context, ui) {
+                        part.clone().unpack_entity(context, part_entity).log();
+                        changed = true;
+                    }
+                    if "[red Delete]".cstr().button(ui).clicked() {
+                        context.despawn(part_entity).log();
+                        changed = true;
+                    }
+                });
+            }
+            Err(_) => {
+                if ui.button(format!("➕ Add {}", T::kind_s())).clicked() {
+                    let part = T::placeholder(owner);
+                    part_id = part.id();
+                    let part_entity = context.world_mut()?.spawn_empty().id();
+                    part.unpack_entity(context, part_entity)?;
+
+                    if is_child_part {
+                        context.link_parent_child_entity(entity, part_entity)?;
+                    } else {
+                        context.link_parent_child_entity(part_entity, entity)?;
+                    }
+                    changed = true;
+                }
+            }
+        }
+
+        Ok((part_id, changed))
+    }
+
+    // Generic helper for managing collections of child nodes
+    fn manage_parts<T: FPlaceholder + FTitle + FCopy + FPaste + Node + Clone + 'static>(
+        ui: &mut Ui,
+        context: &mut Context,
+        parent_entity: Entity,
+        owner: u64,
+        collection_name: &str,
+        get_children_fn: impl Fn() -> Result<Vec<T>, ExpressionError>,
+        on_edit: impl Fn(T) -> Option<BattleEditorAction>,
+    ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError> {
+        let mut changed = false;
+        let mut navigation_action = None;
+
+        ui.label(format!("{}:", collection_name));
+        let children = get_children_fn()?;
+        let mut children_to_delete = Vec::new();
+        let mut children_to_replace = Vec::new();
+
+        for child in children {
+            ui.horizontal(|ui| {
+                child.render(context).title_label(ui);
+
+                if ui.button("Edit").clicked() {
+                    navigation_action = on_edit(child.clone());
+                }
+
+                if ui.button("📋 Copy").clicked() {
+                    child.copy_to_clipboard();
+                }
+
+                if ui.button("📋 Paste").clicked() {
+                    if let Some(replacement) = T::paste_from_clipboard() {
+                        children_to_replace.push((child.entity(), replacement));
+                    }
+                }
+
+                if ui.button("🗑 Delete").clicked() {
+                    children_to_delete.push(child.entity());
+                }
+            });
+        }
+
+        for (entity, replacement) in children_to_replace {
+            if let Err(e) = replacement.unpack_entity(context, entity) {
+                error!("Failed to replace {}: {}", collection_name, e);
+            } else {
+                changed = true;
+            }
+        }
+
+        for entity in children_to_delete {
+            context.despawn(entity).log();
+            changed = true;
+        }
+
+        if ui.button(format!("➕ Add {}", collection_name)).clicked() {
+            let item = T::placeholder(owner);
+            let item_entity = context.world_mut()?.spawn_empty().id();
+            item.unpack_entity(context, item_entity)?;
+            context.link_parent_child_entity(parent_entity, item_entity)?;
+            changed = true;
+        }
+
+        Ok((changed, navigation_action))
     }
 
     pub fn pane(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
@@ -134,7 +250,7 @@ impl BattleEditorPlugin {
             Ok((Some(action), _)) => navigation_action = Some(action),
             Ok((_, true)) => changed = true,
             Err(err) => {
-                err.cstr().notify_error(world);
+                err.ui(ui);
             }
             _ => {}
         }
@@ -188,7 +304,7 @@ impl BattleEditorPlugin {
 
             if let Ok(team) = context.component::<NTeam>(team_entity) {
                 // Use render system for team display
-                team.render(context).tag(ui);
+                team.render(context).title_label(ui);
                 ui.add_space(8.0);
 
                 if ui.button("Edit Team").clicked() {
@@ -282,57 +398,30 @@ impl BattleEditorPlugin {
             ui.separator();
             "[h2 Houses]".cstr().label(ui);
 
-            // Render houses using the new render system
-            let houses = context.collect_children_components::<NHouse>(id)?;
-            let mut houses_to_delete = Vec::new();
-            let mut houses_to_replace = Vec::new();
-
-            for house in houses {
-                ui.horizontal(|ui| {
-                    // Use render system with context menu
-                    let response = house
-                        .render(context)
-                        .with_menu()
-                        .add_copy()
-                        .add_paste()
-                        .add_delete()
-                        .show_with(ui, |builder, ui| builder.title_button(ui));
-
-                    if ui.button("Edit").clicked() {
-                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::House(
-                            house.id(),
-                        )));
-                    }
-
-                    if let Some(_) = response.deleted() {
-                        houses_to_delete.push(house.entity());
-                    }
-
-                    if let Some(replacement) = response.pasted() {
-                        houses_to_replace.push((house.entity(), replacement.clone()));
-                    }
-                });
-            }
-
-            for (entity, replacement) in houses_to_replace {
-                if let Err(e) = replacement.unpack_entity(context, entity) {
-                    error!("Failed to replace house: {}", e);
-                } else {
-                    changed = true;
-                }
-            }
-
-            for entity in houses_to_delete {
-                context.despawn(entity).log();
-                changed = true;
-            }
-
-            if ui
-                .button(format!("➕ Add {}", NHouse::kind_s().cstr()))
-                .clicked()
-            {
-                Self::create_node::<NHouse>(context, id).add_parent(context.world_mut()?, id);
-                changed = true;
+            // Use generic collection management for houses
+            let team = context.component::<NTeam>(team_entity)?;
+            let team_owner = team.owner;
+            let houses: Vec<NHouse> = context
+                .collect_children_components::<NHouse>(id)?
+                .into_iter()
+                .cloned()
+                .collect();
+            let (houses_changed, houses_action) = Self::manage_parts::<NHouse>(
+                ui,
+                context,
+                team_entity,
+                team_owner,
+                "House",
+                || Ok(houses.clone()),
+                |house| {
+                    Some(BattleEditorAction::Navigate(BattleEditorNode::House(
+                        house.id(),
+                    )))
+                },
+            )?;
+            changed |= houses_changed;
+            if action.is_none() {
+                action = houses_action;
             }
 
             Ok(())
@@ -355,67 +444,55 @@ impl BattleEditorPlugin {
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
             let entity = context.entity(id)?;
             let mut house = context.component::<NHouse>(entity).cloned()?;
-            house.with_parts(context);
-
-            // Basic house info and editing
+            let owner = house.owner;
+            let units = house.units_load(context).into_iter().cloned().collect_vec();
             ui.group(|ui| {
-                house.render(context).info().label(ui);
-                if house.render_mut(context).edit(ui) {
+                house.render(context).title_label(ui);
+                if house.edit(context, ui) {
                     house.unpack_entity(context, entity).log();
                     changed = true;
                 }
             });
+            changed |= Self::manage_part::<NHouseColor>(ui, context, id, owner, false)?.1;
+            ui.collapsing("Ability", |ui| -> Result<(), ExpressionError> {
+                let (id, part_changed) =
+                    Self::manage_part::<NAbilityMagic>(ui, context, id, owner, false)?;
+                changed |= part_changed;
+                if id > 0 {
+                    let (id, part_changed) =
+                        Self::manage_part::<NAbilityDescription>(ui, context, id, owner, false)?;
+                    changed |= part_changed;
+                    if id > 0 {
+                        Self::manage_part::<NAbilityEffect>(ui, context, id, owner, false)?;
+                    }
+                }
+                Ok(())
+            })
+            .body_returned
+            .unwrap_or(Ok(()))?;
+
+            changed |= Self::manage_part::<NStatusMagic>(ui, context, id, owner, false)?.1;
 
             ui.separator();
             "[h2 Units]".cstr().label(ui);
 
-            // Render units
-            let units = context.collect_children_components::<NUnit>(id)?;
-            let mut units_to_delete = Vec::new();
-            let mut units_to_replace = Vec::new();
-
-            for unit in units {
-                ui.horizontal(|ui| {
-                    let response = unit
-                        .render(context)
-                        .with_menu()
-                        .add_copy()
-                        .add_paste()
-                        .add_delete()
-                        .show_with(ui, |builder, ui| builder.title_button(ui));
-
-                    if ui.button("Edit").clicked() {
-                        action = Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
-                            unit.id(),
-                        )));
-                    }
-
-                    if let Some(_) = response.deleted() {
-                        units_to_delete.push(unit.entity());
-                    }
-
-                    if let Some(replacement) = response.pasted() {
-                        units_to_replace.push((unit.entity(), replacement.clone()));
-                    }
-                });
-            }
-
-            for (entity, replacement) in units_to_replace {
-                if let Err(e) = replacement.unpack_entity(context, entity) {
-                    error!("Failed to replace unit: {}", e);
-                } else {
-                    changed = true;
-                }
-            }
-
-            for entity in units_to_delete {
-                context.despawn(entity).log();
-                changed = true;
-            }
-
-            if ui.button(format!("➕ Add Unit")).clicked() {
-                Self::create_default_unit(context, entity, id)?;
-                changed = true;
+            // Use generic collection management for units
+            let (units_changed, units_action) = Self::manage_parts::<NUnit>(
+                ui,
+                context,
+                entity,
+                owner,
+                "Unit",
+                || Ok(units.clone()),
+                |unit| {
+                    Some(BattleEditorAction::Navigate(BattleEditorNode::Unit(
+                        unit.id(),
+                    )))
+                },
+            )?;
+            changed |= units_changed;
+            if action.is_none() {
+                action = units_action;
             }
 
             Ok(())
@@ -437,140 +514,23 @@ impl BattleEditorPlugin {
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
         let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
             let entity = context.entity(id)?;
-            let unit = context.component::<NUnit>(entity).cloned()?;
+            let mut unit = context.component::<NUnit>(entity).cloned()?;
 
-            // Basic unit info
             ui.group(|ui| {
-                unit.render(context).info().label(ui);
-
-                let mut unit_mut = unit.clone();
-                if unit_mut.render_mut(context).edit(ui) {
-                    unit_mut.unpack_entity(context, entity).log();
+                unit.render(context).title_label(ui);
+                if unit.edit(context, ui) {
+                    unit.clone().unpack_entity(context, entity).log();
                     changed = true;
                 }
             });
 
             ui.separator();
 
-            // Stats
-            if let Ok(stats) = unit.stats_load(context) {
-                let stats_entity = stats.entity();
-                let stats_clone = stats.clone();
-                ui.group(|ui| {
-                    ui.label("Stats:");
-                    stats_clone.render(context).title_label(ui);
+            changed |= Self::manage_part::<NUnitStats>(ui, context, unit.id, unit.owner, true)?.1;
 
-                    let mut stats_mut = stats_clone.clone();
-                    if stats_mut.render_mut(context).edit(ui) {
-                        stats_mut.unpack_entity(context, stats_entity).log();
-                        changed = true;
-                    }
-                });
-            }
-
-            // State
-            if let Ok(state) = unit.state_load(context) {
-                let state_entity = state.entity();
-                let state_clone = state.clone();
-                ui.separator();
-                ui.group(|ui| {
-                    ui.label("State:");
-                    state_clone.render(context).title_label(ui);
-
-                    let mut state_mut = state_clone.clone();
-                    if state_mut.render_mut(context).edit(ui) {
-                        state_mut.unpack_entity(context, state_entity).log();
-                        changed = true;
-                    }
-                });
-            }
-
-            // Description
-            if let Ok(desc) = unit.description_load(context).cloned() {
-                let desc_entity = desc.entity();
-
-                ui.separator();
-                ui.group(|ui| {
-                    ui.label("Description:");
-                    desc.render(context).title_label(ui);
-
-                    let mut desc_mut = desc.clone();
-                    if desc_mut.render_mut(context).edit(ui) {
-                        desc_mut.unpack_entity(context, desc_entity).log();
-                        changed = true;
-                    }
-                });
-
-                // Behavior
-                let behavior_opt = desc.behavior_load(context).ok().cloned();
-                if let Some(behavior) = behavior_opt {
-                    let behavior_entity = behavior.entity();
-                    let mut behavior_mut = behavior.clone();
-
-                    ui.separator();
-                    ui.collapsing("Behavior", |ui| {
-                        ui.group(|ui| {
-                            // Magic type
-                            let mut magic_type_changed = false;
-                            ui.horizontal(|ui| {
-                                ui.label("Magic Type:");
-                                if behavior_mut
-                                    .magic_type
-                                    .render_mut(context)
-                                    .edit_selector(ui)
-                                {
-                                    magic_type_changed = true;
-                                }
-                            });
-
-                            ui.separator();
-
-                            // Edit the reaction directly
-                            ui.label("Reaction:");
-                            ui.group(|ui| {
-                                ui.horizontal(|ui| {
-                                    ui.label("Trigger:");
-                                    if behavior_mut
-                                        .reaction
-                                        .trigger
-                                        .render_mut(context)
-                                        .edit_selector(ui)
-                                    {
-                                        magic_type_changed = true;
-                                    }
-                                });
-
-                                ui.label("Actions:");
-                                if behavior_mut
-                                    .reaction
-                                    .actions
-                                    .render_mut(context)
-                                    .edit_recursive_list(ui)
-                                {
-                                    magic_type_changed = true;
-                                }
-                            });
-
-                            if magic_type_changed {
-                                behavior_mut.unpack_entity(context, behavior_entity).log();
-                                changed = true;
-                            }
-                        });
-                    });
-                }
-
-                // Representation
-                if let Ok(mut repr) = desc.representation_load(context).cloned() {
-                    let repr_entity = repr.entity();
-                    ui.separator();
-                    ui.collapsing("Representation (Material)", |ui| {
-                        if repr.material.render_mut(context).edit(ui) {
-                            repr.clone().unpack_entity(context, repr_entity).log();
-                            changed = true;
-                        }
-                    });
-                }
-            }
+            changed |= Self::manage_part::<NUnitState>(ui, context, unit.id, unit.owner, true)?.1;
+            changed |=
+                Self::manage_part::<NUnitDescription>(ui, context, unit.id, unit.owner, true)?.1;
 
             Ok(())
         });
@@ -578,87 +538,6 @@ impl BattleEditorPlugin {
         world.insert_resource(battle_data);
         result?;
         Ok((action, changed))
-    }
-
-    fn create_node<T>(context: &mut Context, owner: u64) -> u64
-    where
-        T: Node + 'static,
-    {
-        let mut component = T::default();
-        component.set_owner(owner);
-        let id = next_id();
-        component.set_id(id);
-
-        // Set default values for specific types
-        match T::kind_s().cstr().as_str() {
-            "NHouse" => {
-                if let Some(house) =
-                    (&mut component as &mut dyn std::any::Any).downcast_mut::<NHouse>()
-                {
-                    house.house_name = "New House".to_string();
-                }
-            }
-            "NFusion" => {
-                if let Some(fusion) =
-                    (&mut component as &mut dyn std::any::Any).downcast_mut::<NFusion>()
-                {
-                    fusion.pwr = 1;
-                    fusion.hp = 1;
-                    fusion.dmg = 1;
-                    fusion.actions_limit = 1;
-                }
-            }
-            _ => {}
-        }
-
-        let component_entity = context.world_mut().unwrap().spawn_empty().id();
-        component.unpack_entity(context, component_entity).log();
-        id
-    }
-
-    fn create_default_unit(
-        context: &mut Context,
-        house_entity: Entity,
-        owner: u64,
-    ) -> Result<u64, ExpressionError> {
-        let unit_stats = NUnitStats::new_full(owner, 1, 1);
-        let unit_state = NUnitState::new_full(owner, 1);
-        let unit_behavior = NUnitBehavior::new_full(
-            owner,
-            Reaction {
-                trigger: Trigger::BattleStart,
-                actions: vec![Action::noop],
-            },
-            MagicType::Ability,
-        );
-        let unit_representation = NUnitRepresentation::new_full(
-            owner,
-            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
-        );
-
-        let unit_description = NUnitDescription::new_full(
-            owner,
-            "Default Description".into(),
-            MagicType::Ability,
-            Trigger::BattleStart,
-            unit_representation,
-            unit_behavior,
-        );
-
-        let unit = NUnit::new_full(
-            owner,
-            "New Unit".to_string(),
-            unit_description,
-            unit_stats,
-            unit_state,
-        );
-
-        let unit_entity = context.world_mut()?.spawn_empty().id();
-        let unit_id = unit.id();
-        unit.unpack_entity(context, unit_entity)?;
-        context.link_parent_child_entity(house_entity, unit_entity)?;
-
-        Ok(unit_id)
     }
 
     fn save_team_changes(world: &mut World) {
@@ -707,24 +586,7 @@ impl BattleEditorPlugin {
             if let Some(existing_house) = default_house {
                 existing_house.entity()
             } else {
-                let house_color = NHouseColor::new_full(team_owner, default());
-                let action_ability =
-                    NAbilityMagic::new_full(team_owner, "Default Action".to_string(), default());
-                let status_ability = NStatusMagic::new_full(
-                    team_owner,
-                    "Default Status".to_string(),
-                    default(),
-                    default(),
-                );
-                let house = NHouse::new_full(
-                    team_owner,
-                    "Default House".to_string(),
-                    house_color,
-                    action_ability,
-                    status_ability,
-                    vec![],
-                );
-
+                let house = NHouse::placeholder(team_owner);
                 let house_entity = context.world_mut()?.spawn_empty().id();
                 house.clone().unpack_entity(context, house_entity)?;
                 context.link_parent_child_entity(team_entity, house_entity)?;
@@ -732,7 +594,11 @@ impl BattleEditorPlugin {
             }
         };
 
-        let unit_id = Self::create_default_unit(context, house_entity, team_owner)?;
+        let unit = NUnit::placeholder(team_owner);
+        let unit_entity = context.world_mut()?.spawn_empty().id();
+        let unit_id = unit.id();
+        unit.unpack_entity(context, unit_entity)?;
+        context.link_parent_child_entity(house_entity, unit_entity)?;
         let unit_entity = context.entity(unit_id)?;
         context.link_parent_child_entity(unit_entity, slot_entity)?;
 

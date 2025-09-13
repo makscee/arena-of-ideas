@@ -1,13 +1,11 @@
 mod builder;
 mod composers;
-mod editors;
 mod features;
 mod integration;
 mod recursive_impl;
 
 pub use builder::*;
 pub use composers::*;
-pub use editors::*;
 pub use features::*;
 pub use integration::*;
 

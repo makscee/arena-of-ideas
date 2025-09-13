@@ -168,3 +168,8 @@ pub trait FDirty {
     fn mark_clean(&mut self);
     fn mark_dirty(&mut self);
 }
+
+// FPlaceholder - creates placeholder instances for nodes
+pub trait FPlaceholder {
+    fn placeholder(owner: u64) -> Self;
+}
