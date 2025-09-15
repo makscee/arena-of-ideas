@@ -8,7 +8,11 @@ pub struct StdbPlugin;
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Events<StdbEvent>>();
-        app.add_systems(Update, Self::handle_stdb_events);
+        app.init_resource::<Events<StdbLinkEvent>>();
+        app.add_systems(
+            Update,
+            (Self::handle_stdb_events, Self::handle_stdb_link_events),
+        );
     }
 }
 
@@ -17,6 +21,7 @@ pub enum StdbChange {
     Insert,
     Delete,
 }
+
 #[derive(Event)]
 pub struct StdbEvent {
     pub entity: Entity,
@@ -24,10 +29,30 @@ pub struct StdbEvent {
     pub change: StdbChange,
 }
 
+#[derive(Event)]
+pub struct StdbLinkEvent {
+    pub parent: u64,
+    pub child: u64,
+    pub parent_kind: String,
+    pub child_kind: String,
+    pub rating: i32,
+    pub solid: bool,
+    pub change: StdbChange,
+}
+
 impl StdbPlugin {
     fn handle_stdb_events(mut events: EventReader<StdbEvent>, state: Res<State<GameState>>) {
         for event in events.read() {
             Self::process_stdb_event(event, state.get());
+        }
+    }
+
+    fn handle_stdb_link_events(
+        mut events: EventReader<StdbLinkEvent>,
+        state: Res<State<GameState>>,
+    ) {
+        for event in events.read() {
+            Self::process_stdb_link_event(event, state.get());
         }
     }
 
@@ -42,119 +67,52 @@ impl StdbPlugin {
                         "Reloading Explorer cache due to node change: {}#{}",
                         event.node.kind, event.node.id
                     );
-                    // Use op() to schedule the cache reload
                     op(|world| {
                         crate::ui::NodeExplorerPlugin::load_kinds(world);
                     });
                 }
             }
         }
-    }
 
-    /// Subscribe to StdbEvents while in a specific GameState
-    ///
-    /// # Examples
-    /// ```
-    /// // Subscribe to all events in the Explorer state
-    /// let subscriber = StdbPlugin::subscribe_in_state(
-    ///     GameState::Explorer,
-    ///     |_event| true
-    /// );
-    ///
-    /// // Subscribe to specific node types
-    /// let subscriber = StdbPlugin::subscribe_in_state(
-    ///     GameState::Explorer,
-    ///     |event| event.node.kind == "NUnit"
-    /// );
-    /// ```
-    pub fn subscribe_in_state<F>(state: GameState, filter: F) -> impl Fn(&StdbEvent, &GameState)
-    where
-        F: Fn(&StdbEvent) -> bool + Clone + 'static,
-    {
-        move |event, current_state| {
-            if *current_state == state && filter(event) {
-                Self::process_stdb_event(event, current_state);
+        // Handle ContentExplorer cache refresh for node changes
+        if *current_state == GameState::ContentExplorer
+            && (event.node.owner == 0 || event.node.owner == ID_CORE)
+        {
+            match event.change {
+                StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
+                    info!(
+                        "Reloading ContentExplorer cache due to node change: {}#{}",
+                        event.node.kind, event.node.id
+                    );
+                    op(|world| {
+                        if let Some(mut data) = world.get_resource_mut::<ContentExplorerData>() {
+                            data.needs_refresh = true;
+                        }
+                    });
+                }
             }
         }
     }
 
-    /// Subscribe to StdbEvents for nodes with specific owners
-    ///
-    /// # Examples
-    /// ```
-    /// // Subscribe to core content changes (owner 0 and ID_CORE) in Explorer
-    /// let subscriber = StdbPlugin::subscribe_owner_changes(
-    ///     GameState::Explorer,
-    ///     vec![0, ID_CORE]
-    /// );
-    ///
-    /// // Subscribe to player-specific changes
-    /// let subscriber = StdbPlugin::subscribe_owner_changes(
-    ///     GameState::Shop,
-    ///     vec![player_id()]
-    /// );
-    /// ```
-    pub fn subscribe_owner_changes(
-        state: GameState,
-        owners: Vec<u64>,
-    ) -> impl Fn(&StdbEvent, &GameState) {
-        move |event, current_state| {
-            if *current_state == state && owners.contains(&event.node.owner) {
-                Self::process_stdb_event(event, current_state);
-            }
-        }
-    }
-
-    /// Subscribe to StdbEvents for specific node changes
-    ///
-    /// # Examples
-    /// ```
-    /// // Subscribe to unit insertions only
-    /// let subscriber = StdbPlugin::subscribe_node_changes(
-    ///     GameState::Explorer,
-    ///     |event| event.node.kind == "NUnit",
-    ///     |event| matches!(event.change, StdbChange::Insert)
-    /// );
-    /// ```
-    pub fn subscribe_node_changes<F, C>(
-        state: GameState,
-        node_filter: F,
-        change_filter: C,
-    ) -> impl Fn(&StdbEvent, &GameState)
-    where
-        F: Fn(&StdbEvent) -> bool + Clone + 'static,
-        C: Fn(&StdbEvent) -> bool + Clone + 'static,
-    {
-        move |event, current_state| {
-            if *current_state == state && node_filter(event) && change_filter(event) {
-                Self::process_stdb_event(event, current_state);
+    fn process_stdb_link_event(event: &StdbLinkEvent, current_state: &GameState) {
+        // Handle ContentExplorer cache refresh for link changes
+        if *current_state == GameState::ContentExplorer {
+            match event.change {
+                StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
+                    info!(
+                        "Reloading ContentExplorer cache due to link change: {}->{}",
+                        event.parent, event.child
+                    );
+                    op(|world| {
+                        if let Some(mut data) = world.get_resource_mut::<ContentExplorerData>() {
+                            data.needs_refresh = true;
+                        }
+                    });
+                }
             }
         }
     }
 }
-
-// Usage examples for the StdbEvent subscription system:
-//
-// 1. Basic subscription for Explorer state:
-// ```
-// StdbPlugin::subscribe_in_state(GameState::Explorer, |event| {
-//     event.node.kind == "NUnit" && event.node.owner == 0
-// });
-// ```
-//
-// 2. Subscribe to core content changes:
-// ```
-// StdbPlugin::subscribe_owner_changes(GameState::Explorer, vec![0, ID_CORE]);
-// ```
-//
-// 3. Subscribe to specific node and change types:
-// ```
-// StdbPlugin::subscribe_node_changes(
-//     GameState::Explorer,
-//     |event| event.node.kind == "NHouse",
-//     |event| matches!(event.change, StdbChange::Insert | StdbChange::Delete)
-// );
-// ```
 
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
@@ -187,11 +145,22 @@ fn subscribe_table_updates() {
         let child = link.child;
         let rating = link.rating;
         let solid = link.solid;
+        let parent_kind = link.parent_kind.clone();
+        let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
                 world.link_parent_child(parent, child);
             }
             world.set_link_rating(parent, child, rating, solid);
+            world.send_event(StdbLinkEvent {
+                parent,
+                child,
+                parent_kind,
+                child_kind,
+                rating,
+                solid,
+                change: StdbChange::Insert,
+            });
         });
     });
     db.node_links().on_update(|_, _, link| {
@@ -200,6 +169,8 @@ fn subscribe_table_updates() {
         let child = link.child;
         let rating = link.rating;
         let solid = link.solid;
+        let parent_kind = link.parent_kind.clone();
+        let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
                 world.link_parent_child(parent, child);
@@ -207,17 +178,39 @@ fn subscribe_table_updates() {
                 world.unlink_parent_child(parent, child);
             }
             world.set_link_rating(parent, child, rating, solid);
+            world.send_event(StdbLinkEvent {
+                parent,
+                child,
+                parent_kind,
+                child_kind,
+                rating,
+                solid,
+                change: StdbChange::Update,
+            });
         });
     });
     db.node_links().on_delete(|_, link| {
         debug!("remove link {link:?}");
         let parent = link.parent;
         let child = link.child;
-        if link.solid {
-            op(move |world| {
+        let rating = link.rating;
+        let solid = link.solid;
+        let parent_kind = link.parent_kind.clone();
+        let child_kind = link.child_kind.clone();
+        op(move |world| {
+            if solid {
                 world.unlink_parent_child(parent, child);
+            }
+            world.send_event(StdbLinkEvent {
+                parent,
+                child,
+                parent_kind,
+                child_kind,
+                rating,
+                solid,
+                change: StdbChange::Delete,
             });
-        }
+        });
     });
 }
 

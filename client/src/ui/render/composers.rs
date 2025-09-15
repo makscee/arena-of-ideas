@@ -143,9 +143,6 @@ impl<T: FTag + FTitle + FDescription + FStats + Node> Composer<T> for TagCardCom
     }
 }
 
-// Legacy recursive composers are deprecated - use the new recursive module instead
-// These are kept for backwards compatibility but should be migrated
-
 /// Composer for rating display
 pub struct RatingComposer;
 

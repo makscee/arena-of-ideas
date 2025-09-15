@@ -127,69 +127,38 @@ impl GameState {
             GameState::ContentExplorer => {
                 let mut tiles = Tiles::default();
 
-                // Units list (left column)
+                // Left column: Units list and Houses list
                 let units_list =
                     tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::UnitsList));
-
-                // Current unit display and linked lists (right side, arranged vertically)
-                let current_representation = tiles.insert_pane(Pane::ContentExplorer(
-                    ContentExplorerPane::CurrentRepresentation,
-                ));
-                let representations_list = tiles.insert_pane(Pane::ContentExplorer(
-                    ContentExplorerPane::RepresentationsList,
-                ));
-                let current_description = tiles.insert_pane(Pane::ContentExplorer(
-                    ContentExplorerPane::CurrentDescription,
-                ));
-                let descriptions_list =
-                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::DescriptionsList));
-                let current_behavior =
-                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::CurrentBehavior));
-                let behaviors_list =
-                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::BehaviorsList));
-                let current_stats =
-                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::CurrentStats));
-                let stats_list =
-                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::StatsList));
                 let houses_list =
                     tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::HousesList));
+                let left_column = tiles.insert_vertical_tile([units_list, houses_list].into());
 
-                // Arrange representation section
-                let representation_section = tiles
-                    .insert_horizontal_tile([current_representation, representations_list].into());
+                // Right side: 2x2 grid of component panes
+                let representations_pane = tiles.insert_pane(Pane::ContentExplorer(
+                    ContentExplorerPane::RepresentationsList,
+                ));
+                let descriptions_pane =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::DescriptionsList));
+                let behaviors_pane =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::BehaviorsList));
+                let stats_pane =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::StatsList));
 
-                // Arrange description section
-                let description_section =
-                    tiles.insert_horizontal_tile([current_description, descriptions_list].into());
+                // Arrange in 2x2 grid
+                let top_row =
+                    tiles.insert_horizontal_tile([representations_pane, descriptions_pane].into());
+                let bottom_row = tiles.insert_horizontal_tile([behaviors_pane, stats_pane].into());
+                let right_grid = tiles.insert_vertical_tile([top_row, bottom_row].into());
 
-                // Arrange behavior section
-                let behavior_section =
-                    tiles.insert_horizontal_tile([current_behavior, behaviors_list].into());
+                // Main layout: left column and right grid
+                let root = tiles.insert_horizontal_tile([left_column, right_grid].into());
 
-                // Arrange stats section
-                let stats_section =
-                    tiles.insert_horizontal_tile([current_stats, stats_list].into());
-
-                // Right column: stack all sections vertically
-                let right_column = tiles.insert_vertical_tile(
-                    [
-                        representation_section,
-                        description_section,
-                        behavior_section,
-                        stats_section,
-                        houses_list,
-                    ]
-                    .into(),
-                );
-
-                // Main layout: units list on left, details on right
-                let root = tiles.insert_horizontal_tile([units_list, right_column].into());
-
-                // Set proportions: units list gets 1/3, details get 2/3
+                // Set proportions: left column gets 1/3, right grid gets 2/3
                 if let Tile::Container(container) = tiles.get_mut(root).unwrap() {
                     if let Container::Linear(linear) = container {
-                        linear.shares.set_share(units_list, 1.0);
-                        linear.shares.set_share(right_column, 2.0);
+                        linear.shares.set_share(left_column, 1.0);
+                        linear.shares.set_share(right_grid, 2.0);
                     }
                 }
 
@@ -274,13 +243,9 @@ pub enum InspectorPane {
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ContentExplorerPane {
     UnitsList,
-    CurrentRepresentation,
     RepresentationsList,
-    CurrentDescription,
     DescriptionsList,
-    CurrentBehavior,
     BehaviorsList,
-    CurrentStats,
     StatsList,
     HousesList,
 }
@@ -360,47 +325,19 @@ impl Pane {
             }
             Pane::ContentExplorer(pane) => match pane {
                 ContentExplorerPane::UnitsList => {
-                    "All Units".cstr_s(CstrStyle::Heading2).label(ui);
                     ContentExplorerPlugin::pane_units_list(ui, world)?
                 }
-                ContentExplorerPane::CurrentRepresentation => {
-                    "Current Representation"
-                        .cstr_s(CstrStyle::Heading2)
-                        .label(ui);
-                    ContentExplorerPlugin::pane_current_representation(ui, world)?
-                }
                 ContentExplorerPane::RepresentationsList => {
-                    "Representations".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_representations_list(ui, world)?
-                }
-                ContentExplorerPane::CurrentDescription => {
-                    "Current Description".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_current_description(ui, world)?
+                    ContentExplorerPlugin::pane_representations(ui, world)?
                 }
                 ContentExplorerPane::DescriptionsList => {
-                    "Descriptions".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_descriptions_list(ui, world)?
-                }
-                ContentExplorerPane::CurrentBehavior => {
-                    "Current Behavior".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_current_behavior(ui, world)?
+                    ContentExplorerPlugin::pane_descriptions(ui, world)?
                 }
                 ContentExplorerPane::BehaviorsList => {
-                    "Behaviors".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_behaviors_list(ui, world)?
+                    ContentExplorerPlugin::pane_behaviors(ui, world)?
                 }
-                ContentExplorerPane::CurrentStats => {
-                    "Current Stats".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_current_stats(ui, world)?
-                }
-                ContentExplorerPane::StatsList => {
-                    "Stats".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_stats_list(ui, world)?
-                }
-                ContentExplorerPane::HousesList => {
-                    "Houses".cstr_s(CstrStyle::Heading2).label(ui);
-                    ContentExplorerPlugin::pane_houses_list(ui, world)?
-                }
+                ContentExplorerPane::StatsList => ContentExplorerPlugin::pane_stats(ui, world)?,
+                ContentExplorerPane::HousesList => ContentExplorerPlugin::pane_houses(ui, world)?,
             },
         };
         Ok(())

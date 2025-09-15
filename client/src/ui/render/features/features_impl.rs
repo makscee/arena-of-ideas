@@ -438,26 +438,14 @@ impl FTitle for Material {
 
 impl FDisplay for Material {
     fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).recursive_show(ui);
+        self.paint_viewer(context, ui).ui(ui);
     }
 }
 
 impl FEdit for Material {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
         ui.horizontal(|ui| {
-            let size_id = ui.id().with("view size");
-            let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 60.0));
-            if DragValue::new(&mut size).ui(ui).changed() {
-                ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
-            }
-            let (rect, _) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-            RepresentationPlugin::paint_rect(rect, context, self, ui).ui(ui);
-            ui.painter().rect_stroke(
-                rect,
-                0,
-                Stroke::new(1.0, subtle_borders_and_separators()),
-                egui::StrokeKind::Middle,
-            );
+            self.paint_viewer(context, ui).ui(ui);
             ui.vertical(|ui| self.0.render_mut(context).edit_recursive_list(ui))
                 .inner
         })
