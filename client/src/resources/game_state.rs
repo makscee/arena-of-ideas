@@ -27,6 +27,7 @@ pub enum GameState {
     Editor,
     Explorer,
     Inspector,
+    ContentExplorer,
 }
 
 const TREE_ID: &str = "tree";
@@ -123,6 +124,77 @@ impl GameState {
                 let root = tiles.insert_tab_tile(categories);
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
+            GameState::ContentExplorer => {
+                let mut tiles = Tiles::default();
+
+                // Units list (left column)
+                let units_list =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::UnitsList));
+
+                // Current unit display and linked lists (right side, arranged vertically)
+                let current_representation = tiles.insert_pane(Pane::ContentExplorer(
+                    ContentExplorerPane::CurrentRepresentation,
+                ));
+                let representations_list = tiles.insert_pane(Pane::ContentExplorer(
+                    ContentExplorerPane::RepresentationsList,
+                ));
+                let current_description = tiles.insert_pane(Pane::ContentExplorer(
+                    ContentExplorerPane::CurrentDescription,
+                ));
+                let descriptions_list =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::DescriptionsList));
+                let current_behavior =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::CurrentBehavior));
+                let behaviors_list =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::BehaviorsList));
+                let current_stats =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::CurrentStats));
+                let stats_list =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::StatsList));
+                let houses_list =
+                    tiles.insert_pane(Pane::ContentExplorer(ContentExplorerPane::HousesList));
+
+                // Arrange representation section
+                let representation_section = tiles
+                    .insert_horizontal_tile([current_representation, representations_list].into());
+
+                // Arrange description section
+                let description_section =
+                    tiles.insert_horizontal_tile([current_description, descriptions_list].into());
+
+                // Arrange behavior section
+                let behavior_section =
+                    tiles.insert_horizontal_tile([current_behavior, behaviors_list].into());
+
+                // Arrange stats section
+                let stats_section =
+                    tiles.insert_horizontal_tile([current_stats, stats_list].into());
+
+                // Right column: stack all sections vertically
+                let right_column = tiles.insert_vertical_tile(
+                    [
+                        representation_section,
+                        description_section,
+                        behavior_section,
+                        stats_section,
+                        houses_list,
+                    ]
+                    .into(),
+                );
+
+                // Main layout: units list on left, details on right
+                let root = tiles.insert_horizontal_tile([units_list, right_column].into());
+
+                // Set proportions: units list gets 1/3, details get 2/3
+                if let Tile::Container(container) = tiles.get_mut(root).unwrap() {
+                    if let Container::Linear(linear) = container {
+                        linear.shares.set_share(units_list, 1.0);
+                        linear.shares.set_share(right_column, 2.0);
+                    }
+                }
+
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
+            }
             GameState::Shop => {
                 let mut tiles = Tiles::default();
                 let shop = tiles.insert_pane(Pane::Shop(ShopPane::Shop));
@@ -175,6 +247,7 @@ pub enum Pane {
     Admin,
     ExplorerList(NodeKind),
     Inspector(InspectorPane),
+    ContentExplorer(ContentExplorerPane),
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -197,6 +270,19 @@ pub enum InspectorPane {
     LinkedNodes,
     SameKind,
     Node,
+}
+#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+pub enum ContentExplorerPane {
+    UnitsList,
+    CurrentRepresentation,
+    RepresentationsList,
+    CurrentDescription,
+    DescriptionsList,
+    CurrentBehavior,
+    BehaviorsList,
+    CurrentStats,
+    StatsList,
+    HousesList,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -272,6 +358,50 @@ impl Pane {
                 kind.cstr_s(CstrStyle::Heading2).label(ui);
                 NodeExplorerPlugin::pane_kind_list(ui, world, kind)?
             }
+            Pane::ContentExplorer(pane) => match pane {
+                ContentExplorerPane::UnitsList => {
+                    "All Units".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_units_list(ui, world)?
+                }
+                ContentExplorerPane::CurrentRepresentation => {
+                    "Current Representation"
+                        .cstr_s(CstrStyle::Heading2)
+                        .label(ui);
+                    ContentExplorerPlugin::pane_current_representation(ui, world)?
+                }
+                ContentExplorerPane::RepresentationsList => {
+                    "Representations".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_representations_list(ui, world)?
+                }
+                ContentExplorerPane::CurrentDescription => {
+                    "Current Description".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_current_description(ui, world)?
+                }
+                ContentExplorerPane::DescriptionsList => {
+                    "Descriptions".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_descriptions_list(ui, world)?
+                }
+                ContentExplorerPane::CurrentBehavior => {
+                    "Current Behavior".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_current_behavior(ui, world)?
+                }
+                ContentExplorerPane::BehaviorsList => {
+                    "Behaviors".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_behaviors_list(ui, world)?
+                }
+                ContentExplorerPane::CurrentStats => {
+                    "Current Stats".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_current_stats(ui, world)?
+                }
+                ContentExplorerPane::StatsList => {
+                    "Stats".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_stats_list(ui, world)?
+                }
+                ContentExplorerPane::HousesList => {
+                    "Houses".cstr_s(CstrStyle::Heading2).label(ui);
+                    ContentExplorerPlugin::pane_houses_list(ui, world)?
+                }
+            },
         };
         Ok(())
     }
