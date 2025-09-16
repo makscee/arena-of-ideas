@@ -73,7 +73,7 @@ pub trait FRecursive {
 
 /// Feature for types that can be displayed
 pub trait FDisplay {
-    fn display(&self, context: &Context, ui: &mut Ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response;
 }
 
 /// Feature for types that can be edited
@@ -167,6 +167,15 @@ pub trait FDirty {
     fn is_dirty(&self) -> bool;
     fn mark_clean(&mut self);
     fn mark_dirty(&mut self);
+}
+
+/// Feature for types that can provide a compact view with hover details
+pub trait FCompactView {
+    /// Render the compact view
+    fn render_compact(&self, context: &Context, ui: &mut Ui);
+
+    /// Render the hover view
+    fn render_hover(&self, context: &Context, ui: &mut Ui);
 }
 
 // FPlaceholder - creates placeholder instances for nodes

@@ -47,6 +47,51 @@ impl<T: FTag> Composer<T> for TagComposer {
     }
 }
 
+/// Composer for rendering compact views with hover details
+pub struct CompactViewComposer {
+    pub as_button: bool,
+}
+
+impl CompactViewComposer {
+    pub fn new() -> Self {
+        Self { as_button: false }
+    }
+
+    pub fn as_button() -> Self {
+        Self { as_button: true }
+    }
+}
+
+impl<T: FCompactView> Composer<T> for CompactViewComposer {
+    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
+        let response = ui
+            .horizontal(|ui| {
+                data.render_compact(context, ui);
+            })
+            .response;
+        let response = ui.allocate_rect(
+            response.rect,
+            if self.as_button {
+                Sense::click()
+            } else {
+                Sense::hover()
+            },
+        );
+        let color = if response.hovered() {
+            YELLOW
+        } else {
+            ui.visuals().weak_text_color()
+        };
+        ui.painter().rect_stroke(
+            response.rect,
+            ROUNDING,
+            color.stroke(),
+            egui::StrokeKind::Outside,
+        );
+        response.on_hover_ui(|ui| data.render_hover(context, ui))
+    }
+}
+
 /// Composer for rendering cards
 pub struct CardComposer;
 

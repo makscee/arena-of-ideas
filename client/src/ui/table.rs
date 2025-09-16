@@ -36,6 +36,7 @@ pub struct TableColumn<'a, T> {
     >,
     initial_width: Option<f32>,
     remainder: bool,
+    on_hover_ui: Option<Box<dyn Fn(&mut Ui) + 'a + Send + Sync>>,
 }
 
 impl<'a, T> RowGetter<'a, T> {
@@ -218,6 +219,7 @@ impl<'a, T> Table<'a, T> {
             value: Some(Box::new(value_fn)),
             initial_width: None,
             remainder: false,
+            on_hover_ui: None,
         });
         self
     }
@@ -236,6 +238,7 @@ impl<'a, T> Table<'a, T> {
             value: None,
             initial_width: None,
             remainder: false,
+            on_hover_ui: None,
         });
         self
     }
@@ -271,6 +274,43 @@ impl<'a, T> Table<'a, T> {
     pub fn default_sort(mut self, column_index: usize, ascending: bool) -> Self {
         self.default_sort = Some((column_index, ascending));
         self
+    }
+
+    /// Adds hover UI for the last added column header.
+    /// When hovering over the column header, the provided closure will be called to render UI.
+    ///
+    /// # Arguments
+    /// * `hover_fn` - Function to render UI when hovering over the column header
+    pub fn column_on_hover_ui(mut self, hover_fn: impl Fn(&mut Ui) + 'a + Send + Sync) -> Self {
+        if let Some(last_column) = self.columns.last_mut() {
+            last_column.on_hover_ui = Some(Box::new(hover_fn));
+        }
+        self
+    }
+
+    /// Convenience method to add a column with hover text on the header.
+    /// This is a shorthand for calling column() followed by column_on_hover_ui().
+    ///
+    /// # Arguments
+    /// * `name` - Column header text
+    /// * `hover_text` - Text to display when hovering over the column header
+    /// * `show_fn` - Function to render the column content
+    /// * `value_fn` - Function to extract the sortable value
+    pub fn column_with_hover_text(
+        self,
+        name: impl Into<String>,
+        hover_text: impl Into<String> + 'a,
+        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+        + 'a
+        + Send
+        + Sync,
+        value_fn: impl FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
+    ) -> Self {
+        let hover_text = hover_text.into();
+        self.column(name, show_fn, value_fn)
+            .column_on_hover_ui(move |ui| {
+                ui.label(&hover_text);
+            })
     }
 
     fn show_row(&mut self, context: &Context, state: &mut TableState, row: &mut TableRow) {
@@ -414,7 +454,15 @@ impl<'a, T> Table<'a, T> {
                                 }
                             }
 
-                            let response = ui.button(&header_text);
+                            let mut response = ui.button(&header_text);
+
+                            // Add hover UI if configured
+                            if let Some(hover_fn) = &column.on_hover_ui {
+                                response = response.on_hover_ui(|ui| {
+                                    hover_fn(ui);
+                                });
+                            }
+
                             if column.value.is_some() {
                                 response.bar_menu(|ui| {
                                     ui.vertical(|ui| {

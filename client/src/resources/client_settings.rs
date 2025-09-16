@@ -105,8 +105,8 @@ fn get_resolution_options() -> Vec<Vec2> {
 }
 
 impl FDisplay for &'static str {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
@@ -123,8 +123,8 @@ impl ToCstr for WindowMode {
 }
 
 impl FDisplay for WindowMode {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.to_string().cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.to_string().cstr().label(ui)
     }
 }
 
@@ -136,10 +136,11 @@ impl FEdit for WindowMode {
 }
 
 impl FDisplay for Colorix {
-    fn display(&self, _: &Context, ui: &mut Ui) {
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
         ui.menu_button("Theme".cstr_c(self.color(0)), |ui| {
-            "Theme".cstr_c(self.color(0)).label(ui);
-        });
+            "Theme".cstr_c(self.color(0)).label(ui)
+        })
+        .response
     }
 }
 

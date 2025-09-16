@@ -1,16 +1,11 @@
 use super::*;
 
-#[derive(Resource, Default)]
-pub struct TempNodeStorage(HashMap<String, String>);
-
-impl TempNodeStorage {
-    pub fn insert(&mut self, key: String, value: String) {
-        self.0.insert(key, value);
-    }
-
-    pub fn get(&self, key: &str) -> Option<&String> {
-        self.0.get(key)
-    }
+#[derive(Clone, Default)]
+pub struct EditState {
+    pub is_editing: bool,
+    pub has_changes: bool,
+    pub original_data: String,
+    pub current_data: String,
 }
 
 #[derive(Resource, Default, Clone)]
@@ -42,6 +37,7 @@ pub struct ContentExplorerData {
     pub current_description: Option<u64>,
     pub current_behavior: Option<u64>,
     pub current_stats: Option<u64>,
+    pub current_house: Option<u64>,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Default)]
@@ -83,8 +79,7 @@ impl Plugin for ContentExplorerPlugin {
             .add_systems(
                 Update,
                 Self::check_for_refresh.run_if(in_state(GameState::ContentExplorer)),
-            )
-            .init_resource::<TempNodeStorage>();
+            );
     }
 }
 
@@ -162,19 +157,37 @@ impl ContentExplorerPlugin {
         data.linked_stats = Self::get_linked_nodes(unit_id, NodeKind::NUnitStats);
         data.linked_houses = Self::get_linked_nodes(unit_id, NodeKind::NHouse);
 
-        // Set current selections to first linked item if none selected
-        if data.current_representation.is_none() {
-            data.current_representation = data.linked_representations.first().map(|(id, _)| *id);
-        }
-        if data.current_description.is_none() {
-            data.current_description = data.linked_descriptions.first().map(|(id, _)| *id);
-        }
-        if data.current_behavior.is_none() {
-            data.current_behavior = data.linked_behaviors.first().map(|(id, _)| *id);
-        }
-        if data.current_stats.is_none() {
-            data.current_stats = data.linked_stats.first().map(|(id, _)| *id);
-        }
+        // Always set current selections to first linked item or highest rated available
+        data.current_representation = data.linked_representations.first().map(|(id, _)| *id);
+        data.current_description = data.linked_descriptions.first().map(|(id, _)| *id);
+        data.current_behavior = data.linked_behaviors.first().map(|(id, _)| *id);
+        data.current_stats = data.linked_stats.first().map(|(id, _)| *id);
+        data.current_house = data.linked_houses.first().map(|(id, _)| *id);
+        data.representations_view_mode = if data.current_representation.is_some() {
+            ViewMode::Current
+        } else {
+            ViewMode::All
+        };
+        data.descriptions_view_mode = if data.current_description.is_some() {
+            ViewMode::Current
+        } else {
+            ViewMode::All
+        };
+        data.behaviors_view_mode = if data.current_behavior.is_some() {
+            ViewMode::Current
+        } else {
+            ViewMode::All
+        };
+        data.stats_view_mode = if data.current_stats.is_some() {
+            ViewMode::Current
+        } else {
+            ViewMode::All
+        };
+        data.houses_view_mode = if data.current_house.is_some() {
+            ViewMode::Current
+        } else {
+            ViewMode::All
+        };
     }
 
     fn get_linked_nodes(unit_id: u64, target_kind: NodeKind) -> Vec<(u64, Option<i32>)> {
@@ -207,7 +220,7 @@ impl ContentExplorerPlugin {
         nodes
     }
 
-    fn generic_merged_pane<T: FTitle + Node + FEdit + FDisplay>(
+    fn generic_merged_pane<T: FTitle + Node + FEdit + FDisplay + FCompactView + StringData>(
         ui: &mut Ui,
         world: &mut World,
         pane_name: &str,
@@ -259,21 +272,89 @@ impl ContentExplorerPlugin {
         Ok((new_view_mode, new_current_selection))
     }
 
-    fn render_current_view<T: FTitle + FDisplay + Node>(
+    fn render_current_view<T: FTitle + FDisplay + Node + FEdit + StringData>(
         ui: &mut Ui,
         world: &mut World,
         current_selection: Option<u64>,
     ) -> Result<(), ExpressionError> {
         Context::from_world_r(world, |context| {
             if let Some(node_id) = current_selection {
-                if let Ok(node) = context.component_by_id::<T>(node_id) {
+                if let Ok(original_node) = context.component_by_id::<T>(node_id) {
+                    let edit_id = ui.id().with("edit").with(node_id);
+
+                    let mut edit_state = ui
+                        .ctx()
+                        .data_mut(|d| d.get_temp_mut_or(edit_id, EditState::default()).clone());
+
                     ui.horizontal(|ui| {
-                        if ui.button("Edit").clicked() {
-                            // TODO: Implement editing functionality
+                        if !edit_state.is_editing {
+                            if ui.button("Edit").clicked() {
+                                edit_state.is_editing = true;
+                                edit_state.original_data = original_node.get_data();
+                                edit_state.current_data = original_node.get_data();
+                                edit_state.has_changes = false;
+                            }
+                        } else {
+                            let has_changes = edit_state.current_data != edit_state.original_data;
+                            let save_button =
+                                ui.add_enabled(has_changes, egui::Button::new("Save"));
+                            if save_button.clicked() {
+                                edit_state.is_editing = false;
+                                edit_state.has_changes = true;
+                            }
+                            if ui.button("Cancel").clicked() {
+                                edit_state.is_editing = false;
+                                edit_state.current_data = edit_state.original_data.clone();
+                                edit_state.has_changes = false;
+                            }
+                        }
+
+                        if edit_state.has_changes && !edit_state.is_editing {
+                            if ui.button("Publish").clicked() {
+                                let mut pack = PackedNodes::default();
+                                pack.root = 1;
+                                pack.add_node(
+                                    T::kind_s().to_string(),
+                                    edit_state.current_data.clone(),
+                                    1,
+                                );
+                                let pack_string = to_ron_string(&pack);
+
+                                if let Err(e) = cn().reducers.content_publish_node(pack_string) {
+                                    error!("Failed to publish node: {}", e);
+                                } else {
+                                    info!("Published edited {} node", T::kind_s().as_ref());
+                                    edit_state.has_changes = false;
+                                }
+                            }
                         }
                     });
+
                     ui.separator();
-                    node.display(context, ui);
+
+                    if edit_state.is_editing {
+                        let mut temp_node = original_node.clone();
+                        if temp_node.inject_data(&edit_state.current_data).is_ok() {
+                            let changed = temp_node.edit(context, ui);
+                            if changed {
+                                edit_state.current_data = temp_node.get_data();
+                            }
+                        }
+                    } else {
+                        let display_node = if edit_state.has_changes {
+                            let mut temp_node = original_node.clone();
+                            if temp_node.inject_data(&edit_state.current_data).is_ok() {
+                                temp_node
+                            } else {
+                                original_node.clone()
+                            }
+                        } else {
+                            original_node.clone()
+                        };
+                        display_node.display(context, ui);
+                    }
+
+                    ui.ctx().data_mut(|d| d.insert_temp(edit_id, edit_state));
                     return Ok(());
                 }
             }
@@ -282,7 +363,7 @@ impl ContentExplorerPlugin {
         })
     }
 
-    fn render_all_view<T: FTitle + Node + FEdit>(
+    fn render_all_view<T: FTitle + Node + FEdit + FCompactView>(
         ui: &mut Ui,
         world: &mut World,
         linked_nodes: &[(u64, Option<i32>)],
@@ -332,7 +413,7 @@ impl ContentExplorerPlugin {
                 .column(
                     "Name",
                     |context, ui, (node, node_id, _, _, _, is_current), _| {
-                        let response = node.title(context).button(ui);
+                        let response = node.render(context).compact_view_button(ui);
                         if response.clicked() {
                             new_current_selection = Some(*node_id);
                         }
@@ -350,7 +431,8 @@ impl ContentExplorerPlugin {
                         Ok(VarValue::String(node.title(context).to_string()))
                     },
                 )
-                .column(
+                .column_with_hover_text(
+                    "⭐",
                     "Node Rating",
                     |_context, ui, (_, node_id, _node_rating, _, _, _), value| {
                         if let VarValue::i32(rating) = value {
@@ -381,7 +463,8 @@ impl ContentExplorerPlugin {
                     },
                     |_context, (_, _, node_rating, _, _, _)| Ok(VarValue::i32(*node_rating)),
                 )
-                .column(
+                .column_with_hover_text(
+                    "🔗",
                     "Link Rating",
                     |_context, ui, (_, node_id, _, _link_rating, is_linked, _), value| {
                         if *is_linked {
@@ -512,7 +595,7 @@ impl ContentExplorerPlugin {
                     "Name",
                     |context, ui, (unit, unit_id, _), _| {
                         let is_selected = data.selected_unit == Some(*unit_id);
-                        let response = unit.title(context).button(ui);
+                        let response = unit.render(context).compact_view_button(ui);
 
                         if response.clicked() {
                             data.selected_unit = Some(*unit_id);
@@ -532,8 +615,9 @@ impl ContentExplorerPlugin {
                     },
                     |context, (unit, _, _)| Ok(VarValue::String(unit.title(context).to_string())),
                 )
-                .column(
-                    "Rating",
+                .column_with_hover_text(
+                    "⭐",
+                    "Unit Rating",
                     |_context, ui, (_, unit_id, _rating), value| {
                         if let VarValue::i32(rating_val) = value {
                             let response = rating_val.to_string().button(ui);
@@ -670,7 +754,7 @@ impl ContentExplorerPlugin {
             &data.cached_all_houses,
             data.selected_unit,
             data.houses_view_mode,
-            None, // Houses don't have a current selection
+            data.current_house,
         )?;
         data.houses_view_mode = new_view_mode;
         world.insert_resource(data);
@@ -679,47 +763,44 @@ impl ContentExplorerPlugin {
 
     fn open_create_node_window<T: Node + FEdit + StringData + Default>(world: &mut World) {
         let kind = T::kind_s();
-        let window_id = format!("create_{}", kind.as_ref());
-
+        let window_id = format!("Create {}", kind.cstr());
         if WindowPlugin::is_open(&window_id, world) {
             return;
         }
-
-        Window::new(window_id.clone(), move |ui, world| {
-            Self::create_node_content::<T>(ui, world, window_id.clone())
+        Window::new(window_id, move |ui, world| {
+            Self::create_node_content::<T>(ui, world)
         })
         .default_width(600.0)
         .default_height(400.0)
         .push(world);
     }
 
-    fn create_node_content<T: Node + FEdit + StringData + Default>(
-        ui: &mut Ui,
-        world: &mut World,
-        window_id: String,
-    ) {
+    fn create_node_content<T: Node + FEdit + StringData + Default>(ui: &mut Ui, world: &mut World) {
         let kind = T::kind_s();
         ui.vertical(|ui| {
             ui.heading(format!("Create New {}", kind.as_ref()));
             ui.separator();
 
-            if let Ok(mut node) = Self::get_or_create_temp_node::<T>(world, &window_id) {
+            if let Ok(mut node) = Self::get_or_create_temp_node::<T>(ui) {
                 let changed = Context::from_world_r(world, |context| Ok(node.edit(context, ui)))
                     .unwrap_or(false);
 
                 if changed {
-                    Self::set_temp_node(world, &window_id, node);
+                    Self::set_temp_node(ui, node);
                 }
             }
 
             ui.separator();
             ui.horizontal(|ui| {
                 if ui.button("Publish").clicked() {
-                    if let Some(packed_data) = Self::get_temp_node_data(world, &window_id) {
+                    if let Ok(node) = Self::get_or_create_temp_node::<T>(ui) {
+                        let packed_data = node.get_data();
+                        dbg!(&node, &packed_data);
                         let mut pack = PackedNodes::default();
                         pack.root = 1;
                         pack.add_node(kind.to_string(), packed_data, 1);
                         let pack_string = to_ron_string(&pack);
+                        dbg!(&pack_string);
 
                         if let Err(e) = cn().reducers.content_publish_node(pack_string) {
                             error!("Failed to publish node: {}", e);
@@ -738,41 +819,26 @@ impl ContentExplorerPlugin {
     }
 
     fn get_or_create_temp_node<T: Node + Default + StringData>(
-        world: &World,
-        window_id: &str,
+        ui: &mut Ui,
     ) -> Result<T, ExpressionError> {
-        let storage_key = format!("temp_node_{}", window_id);
-
-        if let Some(stored_data) = world
-            .get_resource::<TempNodeStorage>()
-            .and_then(|storage| storage.get(&storage_key))
-        {
+        let storage_id = Self::temp_node_id::<T>();
+        let stored_data = ui.ctx().data(|d| d.get_temp::<String>(storage_id));
+        if let Some(data) = stored_data {
             let mut node = T::default();
-            node.inject_data(stored_data)?;
+            node.inject_data(&data)?;
             Ok(node)
         } else {
             Ok(T::default())
         }
     }
 
-    fn set_temp_node<T: Node + StringData>(world: &mut World, window_id: &str, node: T) {
-        let storage_key = format!("temp_node_{}", window_id);
-        let data = node.get_data();
-
-        if let Some(mut storage) = world.get_resource_mut::<TempNodeStorage>() {
-            storage.insert(storage_key, data);
-        } else {
-            let mut storage = TempNodeStorage::default();
-            storage.insert(storage_key, data);
-            world.insert_resource(storage);
-        }
+    fn temp_node_id<T: Node>() -> Id {
+        Id::new(T::kind_s()).with("temp_node")
     }
 
-    fn get_temp_node_data(world: &World, window_id: &str) -> Option<String> {
-        let storage_key = format!("temp_node_{}", window_id);
-        world
-            .get_resource::<TempNodeStorage>()?
-            .get(&storage_key)
-            .cloned()
+    fn set_temp_node<T: Node + StringData>(ui: &mut Ui, node: T) {
+        let storage_id = Self::temp_node_id::<T>();
+        let data = node.get_data();
+        ui.ctx().data_mut(|d| d.insert_temp(storage_id, data));
     }
 }

@@ -69,30 +69,31 @@ impl<T, C> ListComposer<T, C> {
 /// Immutable list rendering
 impl<T: Clone, C: Composer<T>> Composer<Vec<T>> for ListComposer<T, C> {
     fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-
         match self.layout {
             ListLayout::Vertical => {
                 ui.vertical(|ui| {
                     for (i, item) in data.iter().enumerate() {
-                        response = response.union(self.render_item(item, i, context, ui));
+                        self.render_item(item, i, context, ui);
                     }
-                });
+                })
+                .response
             }
             ListLayout::Horizontal => {
                 ui.horizontal(|ui| {
                     for (i, item) in data.iter().enumerate() {
-                        response = response.union(self.render_item(item, i, context, ui));
+                        self.render_item(item, i, context, ui);
                     }
-                });
+                })
+                .response
             }
             ListLayout::Wrapped { max_width } => {
                 ui.horizontal_wrapped(|ui| {
                     ui.set_max_width(max_width);
                     for (i, item) in data.iter().enumerate() {
-                        response = response.union(self.render_item(item, i, context, ui));
+                        self.render_item(item, i, context, ui);
                     }
-                });
+                })
+                .response
             }
             ListLayout::Grid { columns } => {
                 egui::Grid::new(ui.id().with("list_grid"))
@@ -100,16 +101,15 @@ impl<T: Clone, C: Composer<T>> Composer<Vec<T>> for ListComposer<T, C> {
                     .spacing([4.0, 4.0])
                     .show(ui, |ui| {
                         for (i, item) in data.iter().enumerate() {
-                            response = response.union(self.render_item(item, i, context, ui));
+                            self.render_item(item, i, context, ui);
                             if (i + 1) % columns == 0 {
                                 ui.end_row();
                             }
                         }
-                    });
+                    })
+                    .response
             }
         }
-
-        response
     }
 }
 
@@ -340,8 +340,7 @@ where
     fn compose(&self, data: &Vec<T>, context: &Context, ui: &mut Ui) -> Response {
         let item_composer = RecursiveComposer::new(
             |ui: &mut Ui, context: &Context, field: &RecursiveField<'_>| -> Response {
-                call_on_recursive_value!(field, display, context, ui);
-                ui.label("")
+                call_on_recursive_value!(field, display, context, ui)
             },
         )
         .with_layout(RecursiveLayout::HorizontalVertical);

@@ -50,44 +50,44 @@ impl FTitle for HexColor {
 
 // FDisplay implementations for basic types
 impl FDisplay for i32 {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
 impl FDisplay for f32 {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
 impl FDisplay for String {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label_t(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label_t(ui)
     }
 }
 
 impl FDisplay for bool {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
 impl FDisplay for Vec2 {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
 impl FDisplay for Color32 {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
 impl FDisplay for HexColor {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
@@ -214,8 +214,8 @@ impl FColoredTitle for VarName {
 }
 
 impl FDisplay for VarName {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).colored_title(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).colored_title(ui)
     }
 }
 
@@ -234,29 +234,28 @@ impl FTitle for VarValue {
 }
 
 impl FDisplay for VarValue {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| match self {
             VarValue::String(v) => v.display(context, ui),
             VarValue::i32(v) => v.display(context, ui),
             VarValue::f32(v) => v.display(context, ui),
-            VarValue::u64(v) => {
-                v.cstr().label(ui);
-            }
+            VarValue::u64(v) => v.cstr().label(ui),
             VarValue::bool(v) => v.display(context, ui),
             VarValue::Vec2(v) => v.display(context, ui),
             VarValue::Color32(v) => v.display(context, ui),
-            VarValue::Entity(v) => {
-                Entity::from_bits(*v).to_string().label(ui);
-            }
+            VarValue::Entity(v) => Entity::from_bits(*v).to_string().label(ui),
             VarValue::list(v) => {
                 ui.horizontal(|ui| {
-                    "[tw List: ]".cstr().label(ui);
+                    let resp = "[tw List: ]".cstr().label(ui);
                     for v in v {
                         v.display(context, ui);
                     }
-                });
+                    resp
+                })
+                .inner
             }
-        });
+        })
+        .inner
     }
 }
 
@@ -300,8 +299,8 @@ impl FColoredTitle for Expression {
 }
 
 impl FDisplay for Expression {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
@@ -379,8 +378,8 @@ impl FColoredTitle for Action {
 }
 
 impl FDisplay for Action {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
@@ -411,8 +410,8 @@ impl FColoredTitle for PainterAction {
 }
 
 impl FDisplay for PainterAction {
-    fn display(&self, _: &Context, ui: &mut Ui) {
-        self.cstr().label(ui);
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
     }
 }
 
@@ -437,19 +436,16 @@ impl FTitle for Material {
 }
 
 impl FDisplay for Material {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.paint_viewer(context, ui).ui(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.paint_viewer(context, ui)
     }
 }
 
 impl FEdit for Material {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> bool {
-        ui.horizontal(|ui| {
-            self.paint_viewer(context, ui).ui(ui);
-            ui.vertical(|ui| self.0.render_mut(context).edit_recursive_list(ui))
-                .inner
-        })
-        .inner
+        self.paint_viewer(context, ui);
+        ui.vertical(|ui| self.0.render_mut(context).edit_recursive_list(ui))
+            .inner
     }
 }
 
@@ -462,9 +458,15 @@ impl FTitle for Reaction {
     }
 }
 
+impl FDisplay for Trigger {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
+    }
+}
+
 impl FDisplay for Reaction {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).recursive_show(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.trigger.display(context, ui) | self.actions.render(context).recursive_list(ui)
     }
 }
 
@@ -477,9 +479,7 @@ impl FEdit for Reaction {
                 changed |= self.trigger.edit(context, ui);
             });
             ui.label("Actions:");
-            for action in &mut self.actions {
-                changed |= action.edit(context, ui);
-            }
+            changed |= self.actions.render_mut(context).edit_recursive_list(ui);
         });
         changed
     }
@@ -534,8 +534,8 @@ impl FStats for NUnit {
 }
 
 impl FDisplay for NUnit {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -646,8 +646,8 @@ impl FStats for NHouse {
 }
 
 impl FDisplay for NHouse {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -739,8 +739,8 @@ impl FStats for NAbilityMagic {
 }
 
 impl FDisplay for NAbilityMagic {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -812,8 +812,8 @@ impl FStats for NStatusMagic {
 }
 
 impl FDisplay for NStatusMagic {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -883,8 +883,8 @@ impl FStats for NArena {
 }
 
 impl FDisplay for NArena {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -921,8 +921,8 @@ impl FStats for NFloorPool {
 }
 
 impl FDisplay for NFloorPool {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -959,8 +959,8 @@ impl FStats for NFloorBoss {
 }
 
 impl FDisplay for NFloorBoss {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1042,9 +1042,10 @@ impl FPlaceholder for NPlayer {
 }
 
 impl FDisplay for NPlayer {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
-            self.player_name
+            let response = self
+                .player_name
                 .cstr_c(Color32::from_rgb(0, 0, 255))
                 .label(ui);
             if let Ok(data) = self.player_data_load(context) {
@@ -1054,7 +1055,9 @@ impl FDisplay for NPlayer {
                     "○".cstr_c(Color32::from_rgb(128, 128, 128)).label(ui);
                 }
             }
-        });
+            response
+        })
+        .inner
     }
 }
 
@@ -1091,8 +1094,8 @@ impl FStats for NPlayerData {
 }
 
 impl FDisplay for NPlayerData {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1140,8 +1143,8 @@ impl FStats for NPlayerIdentity {
 }
 
 impl FDisplay for NPlayerIdentity {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1160,14 +1163,13 @@ impl FTag for NPlayerIdentity {
 }
 
 impl FDisplay for NHouseColor {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         Frame::new()
             .fill(self.color.c32())
             .corner_radius(2.0)
             .inner_margin(4.0)
-            .show(ui, |ui| {
-                ui.label(&self.color.0);
-            });
+            .show(ui, |ui| ui.label(&self.color.0))
+            .inner
     }
 }
 
@@ -1194,8 +1196,8 @@ impl FPlaceholder for NHouseColor {
 }
 
 impl FDisplay for NAbilityDescription {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1234,8 +1236,8 @@ impl FStats for NAbilityEffect {
 }
 
 impl FDisplay for NAbilityEffect {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1254,8 +1256,8 @@ impl FTag for NAbilityEffect {
 }
 
 impl FDisplay for NStatusDescription {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1294,8 +1296,8 @@ impl FStats for NStatusBehavior {
 }
 
 impl FDisplay for NStatusBehavior {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1314,8 +1316,8 @@ impl FTag for NStatusBehavior {
 }
 
 impl FDisplay for NStatusRepresentation {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.material.display(context, ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.material.display(context, ui)
     }
 }
 
@@ -1407,7 +1409,7 @@ impl FPlaceholder for NTeam {
 }
 
 impl FDisplay for NTeam {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             if let Some(houses) = self.houses.get_data() {
                 ui.label(format!("Houses ({})", houses.len()));
@@ -1427,7 +1429,8 @@ impl FDisplay for NTeam {
                     });
                 }
             }
-        });
+        })
+        .response
     }
 }
 
@@ -1458,8 +1461,8 @@ impl FStats for NBattle {
 }
 
 impl FDisplay for NBattle {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.render(context).title_label(ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.render(context).title_label(ui)
     }
 }
 
@@ -1532,7 +1535,7 @@ impl FTag for NMatch {
 }
 
 impl FDisplay for NMatch {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             format!("Floor {}", self.floor)
                 .cstr_c(Color32::from_rgb(255, 165, 0))
@@ -1557,7 +1560,8 @@ impl FDisplay for NMatch {
                     .cstr_c(Color32::from_rgb(128, 128, 128))
                     .label(ui);
             }
-        });
+        })
+        .response
     }
 }
 
@@ -1678,29 +1682,33 @@ impl FTag for NFusionSlot {
 }
 
 impl FDisplay for NFusion {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             // Display fusion stats
-            ui.horizontal(|ui| {
-                ui.label("Power:");
-                self.pwr.to_string().cstr_c(Color32::LIGHT_BLUE).label(ui);
-                ui.add_space(8.0);
-                ui.label("HP:");
-                self.hp.to_string().cstr_c(Color32::LIGHT_GREEN).label(ui);
-                ui.add_space(8.0);
-                ui.label("DMG:");
-                self.dmg.to_string().cstr_c(Color32::LIGHT_RED).label(ui);
-            });
+            let mut response = ui
+                .horizontal(|ui| {
+                    ui.label("Power:");
+                    let mut response = self.pwr.cstr_c(Color32::LIGHT_BLUE).label(ui);
+                    ui.add_space(8.0);
+                    ui.label("HP:");
+                    response |= self.hp.cstr_c(Color32::LIGHT_GREEN).label(ui);
+                    ui.add_space(8.0);
+                    ui.label("DMG:");
+                    response |= self.dmg.cstr_c(Color32::LIGHT_RED).label(ui);
+                    response
+                })
+                .inner;
 
             ui.horizontal(|ui| {
                 ui.label("Actions Limit:");
-                self.actions_limit
+                response |= self
+                    .actions_limit
                     .to_string()
                     .cstr_c(Color32::YELLOW)
                     .label(ui);
                 ui.add_space(8.0);
                 ui.label("Index:");
-                self.index.to_string().cstr_c(Color32::GRAY).label(ui);
+                response |= self.index.to_string().cstr_c(Color32::GRAY).label(ui);
             });
 
             // Display slots
@@ -1708,26 +1716,29 @@ impl FDisplay for NFusion {
                 ui.separator();
                 ui.label("Slots:");
                 for slot in slots {
-                    slot.render(context).display(ui);
+                    response |= slot.render(context).display(ui);
                 }
             }
-        });
+            response
+        })
+        .inner
     }
 }
 
 impl FDisplay for NFusionSlot {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             format!("Slot #{}", self.index)
                 .cstr_c(Color32::from_rgb(128, 0, 128))
                 .label(ui);
             ui.label(":");
             if let Ok(unit) = self.unit_load(context) {
-                unit.unit_name.cstr().label(ui);
+                unit.unit_name.cstr().label(ui)
             } else {
-                "Empty".cstr_c(Color32::from_rgb(128, 128, 128)).label(ui);
+                "Empty".cstr_c(Color32::from_rgb(128, 128, 128)).label(ui)
             }
-        });
+        })
+        .inner
     }
 }
 
@@ -1764,17 +1775,19 @@ impl FTag for NUnitDescription {
 }
 
 impl FDisplay for NUnitDescription {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
-            self.description.cstr().label_w(ui);
+            let mut response = self.description.cstr().label_w(ui);
             ui.horizontal(|ui| {
                 ui.label("Type:");
-                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
+                response |= self.magic_type.cstr_c(self.magic_type.color()).label(ui);
                 ui.separator();
                 ui.label("Trigger:");
-                self.trigger.cstr().label(ui);
+                response |= self.trigger.cstr().label(ui);
             });
-        });
+            response
+        })
+        .inner
     }
 }
 
@@ -1836,16 +1849,18 @@ impl FTag for NUnitStats {
 }
 
 impl FDisplay for NUnitStats {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
-            format!("PWR: {}", self.pwr)
+            let mut response = format!("PWR: {}", self.pwr)
                 .cstr_c(VarName::pwr.color())
                 .label(ui);
             ui.separator();
-            format!("HP: {}", self.hp)
+            response |= format!("HP: {}", self.hp)
                 .cstr_c(VarName::hp.color())
                 .label(ui);
-        });
+            response
+        })
+        .inner
     }
 }
 
@@ -1896,13 +1911,14 @@ impl FTag for NUnitState {
 }
 
 impl FDisplay for NUnitState {
-    fn display(&self, _context: &Context, ui: &mut Ui) {
+    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             ui.label("Stacks:");
             format!("{}", self.stacks)
                 .cstr_c(Color32::from_rgb(255, 255, 0))
                 .label(ui);
-        });
+        })
+        .response
     }
 }
 
@@ -1956,15 +1972,16 @@ impl FInfo for NUnitBehavior {
 }
 
 impl FDisplay for NUnitBehavior {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.label("Type:");
                 self.magic_type.cstr_c(self.magic_type.color()).label(ui);
             });
             ui.label("Reaction:");
-            self.reaction.display(context, ui);
-        });
+            self.reaction.display(context, ui)
+        })
+        .inner
     }
 }
 
@@ -2016,8 +2033,8 @@ impl FTag for NUnitRepresentation {
 }
 
 impl FDisplay for NUnitRepresentation {
-    fn display(&self, context: &Context, ui: &mut Ui) {
-        self.material.display(context, ui);
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.material.display(context, ui)
     }
 }
 
@@ -2342,10 +2359,12 @@ impl FEdit for NFusionSlot {
 
 // Implement for Vec<T> where appropriate
 impl<T: FDisplay> FDisplay for Vec<T> {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        let mut response = format!("List ({})", self.len()).label(ui);
         for item in self {
-            item.display(context, ui);
+            response |= item.display(context, ui);
         }
+        response
     }
 }
 
@@ -2399,11 +2418,11 @@ impl FPlaceholder for NUnitDescription {
 
 // Implement for Option<T> where appropriate
 impl<T: FDisplay> FDisplay for Option<T> {
-    fn display(&self, context: &Context, ui: &mut Ui) {
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
         if let Some(v) = self {
-            v.display(context, ui);
+            v.display(context, ui)
         } else {
-            "[tw none]".cstr().label(ui);
+            "[tw none]".cstr().label(ui)
         }
     }
 }
@@ -2433,5 +2452,233 @@ impl FPlaceholder for NUnitRepresentation {
             owner,
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
+    }
+}
+
+// ============================================================================
+// FCompactView Implementations
+// ============================================================================
+
+impl FCompactView for Material {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let (rect, _) = ui.allocate_exact_size((LINE_HEIGHT * 2.0).v2(), Sense::click());
+        self.paint(rect, context, ui).ui(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        self.display(context, ui);
+        self.0.render(context).recursive_list(ui);
+    }
+}
+
+impl FCompactView for NUnit {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let color = context
+            .with_owner_ref(self.entity(), |context| context.get_color(VarName::color))
+            .unwrap_or(MISSING_COLOR);
+        self.unit_name.cstr_c(color).label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong(format!("Unit: {}", self.unit_name));
+            if let Ok(stats) = self.stats_load(context) {
+                ui.label(format!("Power: {}, HP: {}", stats.pwr, stats.hp));
+            }
+            if let Ok(desc) = self.description_load(context) {
+                if !desc.description.is_empty() {
+                    ui.separator();
+                    desc.description.cstr().label_w(ui);
+                }
+            }
+            if let Ok(house) = context.first_parent::<NHouse>(self.id()) {
+                ui.separator();
+                ui.label(format!("House: {}", house.house_name));
+            }
+        });
+    }
+}
+
+impl FCompactView for NHouse {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let color = self.color_for_text(context);
+        self.house_name.cstr_c(color).label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong(format!("House: {}", self.house_name));
+            if let Ok(ability) = self.ability_load(context) {
+                ui.label(format!("Ability: {}", ability.ability_name));
+            }
+            if let Ok(status) = self.status_load(context) {
+                ui.label(format!("Status: {}", status.status_name));
+            }
+            let units_count = context
+                .collect_children_components::<NUnit>(self.id())
+                .map(|u| u.len())
+                .unwrap_or_default();
+            if units_count > 0 {
+                ui.separator();
+                ui.label(format!("Units: {}", units_count));
+            }
+        });
+    }
+}
+
+impl FCompactView for NUnitRepresentation {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        self.material.render_compact(context, ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        self.material.render_hover(context, ui);
+    }
+}
+
+impl FCompactView for NUnitDescription {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let preview = if self.description.len() > 30 {
+            format!("{}...", &self.description[..30])
+        } else {
+            self.description.clone()
+        };
+
+        ui.horizontal(|ui| {
+            preview.cstr_c(self.magic_type.color()).label(ui);
+            ui.add_space(4.0);
+            format!("[{}]", self.magic_type.as_ref()).cstr().label(ui);
+        });
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong("Unit Description");
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Type:");
+                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
+            });
+            ui.separator();
+            self.description.cstr().label_w(ui);
+        });
+    }
+}
+
+impl FCompactView for NUnitBehavior {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let actions_count = self.reaction.actions.len();
+        let tier = self.reaction.tier();
+
+        ui.horizontal(|ui| {
+            format!("{} actions", actions_count)
+                .cstr_c(self.magic_type.color())
+                .label(ui);
+            ui.add_space(4.0);
+            format!("T{} [{}]", tier, self.magic_type.as_ref())
+                .cstr()
+                .label(ui);
+        });
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong("Unit Behavior");
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Type:");
+                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
+            });
+            ui.horizontal(|ui| {
+                ui.label("Trigger:");
+                self.reaction.trigger.cstr().label(ui);
+            });
+            ui.horizontal(|ui| {
+                ui.label("Tier:");
+                format!("{}", self.reaction.tier())
+                    .cstr_c(VarName::tier.color())
+                    .label(ui);
+            });
+            ui.separator();
+            ui.label(format!("Actions ({})", self.reaction.actions.len()));
+            for (i, action) in self.reaction.actions.iter().take(3).enumerate() {
+                ui.horizontal(|ui| {
+                    ui.label(format!("{}.", i + 1));
+                    action.cstr().label(ui);
+                });
+            }
+            if self.reaction.actions.len() > 3 {
+                ui.label(format!("... and {} more", self.reaction.actions.len() - 3));
+            }
+        });
+    }
+}
+
+impl FCompactView for NUnitStats {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        format!("{}/{}", self.pwr, self.hp)
+            .cstr_c(Color32::WHITE)
+            .label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong("Unit Stats");
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label("Power:");
+                format!("{}", self.pwr)
+                    .cstr_c(VarName::pwr.color())
+                    .label(ui);
+            });
+            ui.horizontal(|ui| {
+                ui.label("Health:");
+                format!("{}", self.hp).cstr_c(VarName::hp.color()).label(ui);
+            });
+        });
+    }
+}
+
+impl FCompactView for NAbilityMagic {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let color = context.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        self.ability_name.cstr_c(color).label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong(format!("Ability: {}", self.ability_name));
+            if let Ok(desc) = self.description_load(context) {
+                ui.separator();
+                desc.description.cstr().label_w(ui);
+            }
+        });
+    }
+}
+
+impl FCompactView for NStatusMagic {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        let color = context.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        self.status_name.cstr_c(color).label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        ui.vertical(|ui| {
+            ui.strong(format!("Status: {}", self.status_name));
+            if let Ok(desc) = self.description_load(context) {
+                ui.separator();
+                desc.description.cstr().label_w(ui);
+            }
+        });
+    }
+}
+
+impl<T: FCompactView> FCompactView for &T {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        (*self).render_compact(context, ui)
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        (*self).render_hover(context, ui)
     }
 }

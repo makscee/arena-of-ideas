@@ -65,11 +65,14 @@ impl<'a, T> RenderBuilder<'a, T> {
 
     /// Apply all composers in sequence
     pub fn compose(&self, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-        for composer in &self.composers {
-            response = response.union(composer.compose(self.data.as_ref(), self.ctx, ui));
+        if self.composers.is_empty() {
+            panic!("Tried to compose without any composers")
         }
-        response
+        self.composers
+            .iter()
+            .map(|c| c.compose(self.data(), self.ctx, ui))
+            .reduce(|a, b| a.union(b))
+            .unwrap()
     }
 }
 
@@ -102,9 +105,20 @@ impl<'a, T: FTag> RenderBuilder<'a, T> {
     }
 }
 
+// Extension methods for FCompactView
+impl<'a, T: FCompactView> RenderBuilder<'a, T> {
+    pub fn compact_view(self, ui: &mut Ui) -> Response {
+        CompactViewComposer::new().compose(self.data.as_ref(), self.ctx, ui)
+    }
+
+    pub fn compact_view_button(self, ui: &mut Ui) -> Response {
+        CompactViewComposer::as_button().compose(self.data.as_ref(), self.ctx, ui)
+    }
+}
+
 // Extension methods for FDisplay
 impl<'a, T: FDisplay> RenderBuilder<'a, T> {
-    pub fn display(self, ui: &mut Ui) {
+    pub fn display(self, ui: &mut Ui) -> Response {
         self.data().display(self.ctx, ui)
     }
 }
@@ -250,9 +264,7 @@ where
 {
     /// Display a list of recursive items
     pub fn recursive_list(self, ui: &mut Ui) -> Response {
-        RecursiveListComposer::new()
-            .with_layout(ListLayout::Vertical)
-            .compose(self.data.as_ref(), self.ctx, ui)
+        RecursiveListComposer::new().compose(self.data.as_ref(), self.ctx, ui)
     }
 
     /// Edit a list of recursive items

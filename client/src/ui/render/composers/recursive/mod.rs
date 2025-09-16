@@ -112,45 +112,41 @@ fn render_recursive_field<F>(
 where
     F: FnMut(&mut Ui, &Context, &RecursiveField<'_>) -> Response,
 {
-    let mut response = ui.label("");
-
     match layout {
         RecursiveLayout::HorizontalVertical => {
-            response = ui
-                .horizontal(|ui| {
-                    let field_response =
-                        show_grouped_field(field, context, renderer, show_names, ui);
+            ui.horizontal(|ui| {
+                let field_response = show_grouped_field(field, context, renderer, show_names, ui);
 
-                    // Get inner fields
-                    let inner_fields = call_on_recursive_value!(field, get_inner_fields);
-                    if !inner_fields.is_empty() {
-                        ui.vertical(|ui| {
-                            for inner_field in inner_fields {
-                                render_recursive_field(
-                                    &inner_field,
-                                    context,
-                                    ui,
-                                    layout,
-                                    renderer,
-                                    show_names,
-                                    collapsible,
-                                    depth + 1,
-                                );
-                            }
-                        });
-                    }
+                // Get inner fields
+                let inner_fields = call_on_recursive_value!(field, get_inner_fields);
+                if !inner_fields.is_empty() {
+                    ui.vertical(|ui| {
+                        for inner_field in inner_fields {
+                            render_recursive_field(
+                                &inner_field,
+                                context,
+                                ui,
+                                layout,
+                                renderer,
+                                show_names,
+                                collapsible,
+                                depth + 1,
+                            );
+                        }
+                    });
+                }
 
-                    field_response
-                })
-                .inner;
+                field_response
+            })
+            .inner
         }
         RecursiveLayout::Vertical => {
             ui.vertical(|ui| {
-                response = show_grouped_field(field, context, renderer, show_names, ui);
+                let mut response = show_grouped_field(field, context, renderer, show_names, ui);
 
                 let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
-                    response = response.union(render_recursive_field(
+                    response |= response.union(render_recursive_field(
                         &inner_field,
                         context,
                         ui,
@@ -161,15 +157,17 @@ where
                         depth + 1,
                     ));
                 }
-            });
+                response
+            })
+            .inner
         }
         RecursiveLayout::Horizontal => {
             ui.horizontal(|ui| {
-                response = show_grouped_field(field, context, renderer, show_names, ui);
+                let mut response = show_grouped_field(field, context, renderer, show_names, ui);
 
                 let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                 for inner_field in inner_fields {
-                    response = response.union(render_recursive_field(
+                    response |= response.union(render_recursive_field(
                         &inner_field,
                         context,
                         ui,
@@ -180,7 +178,9 @@ where
                         depth + 1,
                     ));
                 }
-            });
+                response
+            })
+            .inner
         }
         RecursiveLayout::Tree { indent } => {
             ui.horizontal(|ui| {
@@ -201,12 +201,12 @@ where
                         ui.label(format!("{}:", field.name));
                     }
 
-                    response = renderer.borrow_mut()(ui, context, field);
+                    let mut response = renderer.borrow_mut()(ui, context, field);
 
                     if expanded {
                         ui.vertical(|ui| {
                             for inner_field in inner_fields {
-                                response = response.union(render_recursive_field(
+                                response |= response.union(render_recursive_field(
                                     &inner_field,
                                     context,
                                     ui,
@@ -219,13 +219,14 @@ where
                             }
                         });
                     }
+                    response
                 } else {
-                    response = show_grouped_field(field, context, renderer, show_names, ui);
+                    let mut response = show_grouped_field(field, context, renderer, show_names, ui);
 
                     if has_children {
                         ui.vertical(|ui| {
                             for inner_field in inner_fields {
-                                response = response.union(render_recursive_field(
+                                response |= response.union(render_recursive_field(
                                     &inner_field,
                                     context,
                                     ui,
@@ -238,19 +239,21 @@ where
                             }
                         });
                     }
+                    response
                 }
-            });
+            })
+            .inner
         }
         RecursiveLayout::Grid { columns } => {
             egui::Grid::new(ui.id().with("recursive_grid").with(depth))
                 .num_columns(*columns)
                 .show(ui, |ui| {
-                    response = show_grouped_field(field, context, renderer, show_names, ui);
+                    let mut response = show_grouped_field(field, context, renderer, show_names, ui);
                     ui.end_row();
 
                     let inner_fields = call_on_recursive_value!(field, get_inner_fields);
                     for (i, inner_field) in inner_fields.iter().enumerate() {
-                        response = response.union(render_recursive_field(
+                        response |= response.union(render_recursive_field(
                             inner_field,
                             context,
                             ui,
@@ -264,11 +267,11 @@ where
                             ui.end_row();
                         }
                     }
-                });
+                    response
+                })
+                .inner
         }
     }
-
-    response
 }
 
 /// Render a mutable recursive field based on layout
