@@ -57,8 +57,8 @@ impl StdbPlugin {
     }
 
     fn process_stdb_event(event: &StdbEvent, current_state: &GameState) {
-        // Handle Explorer cache refresh for nodes with owner 0 or 1
-        if (*current_state == GameState::Explorer)
+        // Handle Explorer cache refresh for node changes
+        if *current_state == GameState::Explorer
             && (event.node.owner == 0 || event.node.owner == ID_CORE)
         {
             match event.change {
@@ -68,24 +68,7 @@ impl StdbPlugin {
                         event.node.kind, event.node.id
                     );
                     op(|world| {
-                        crate::ui::NodeExplorerPlugin::load_kinds(world);
-                    });
-                }
-            }
-        }
-
-        // Handle ContentExplorer cache refresh for node changes
-        if *current_state == GameState::ContentExplorer
-            && (event.node.owner == 0 || event.node.owner == ID_CORE)
-        {
-            match event.change {
-                StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    info!(
-                        "Reloading ContentExplorer cache due to node change: {}#{}",
-                        event.node.kind, event.node.id
-                    );
-                    op(|world| {
-                        if let Some(mut data) = world.get_resource_mut::<ContentExplorerData>() {
+                        if let Some(mut data) = world.get_resource_mut::<ExplorerData>() {
                             data.needs_refresh = true;
                         }
                     });
@@ -95,16 +78,16 @@ impl StdbPlugin {
     }
 
     fn process_stdb_link_event(event: &StdbLinkEvent, current_state: &GameState) {
-        // Handle ContentExplorer cache refresh for link changes
-        if *current_state == GameState::ContentExplorer {
+        // Handle Explorer cache refresh for link changes
+        if *current_state == GameState::Explorer {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
                     info!(
-                        "Reloading ContentExplorer cache due to link change: {}->{}",
+                        "Reloading Explorer cache due to link change: {}->{}",
                         event.parent, event.child
                     );
                     op(|world| {
-                        if let Some(mut data) = world.get_resource_mut::<ContentExplorerData>() {
+                        if let Some(mut data) = world.get_resource_mut::<ExplorerData>() {
                             data.needs_refresh = true;
                         }
                     });

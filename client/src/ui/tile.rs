@@ -37,23 +37,23 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
     fn simplification_options(&self) -> SimplificationOptions {
         SimplificationOptions {
-            all_panes_must_have_tabs: false,
+            all_panes_must_have_tabs: true,
             ..default()
         }
     }
     fn tab_text_color(
         &self,
-        _visuals: &egui::Visuals,
+        visuals: &egui::Visuals,
         _tiles: &Tiles<Pane>,
         _tile_id: TileId,
         state: &egui_tiles::TabState,
     ) -> Color32 {
         if state.active {
-            YELLOW
+            high_contrast_text()
         } else if state.is_being_dragged {
-            hovered_ui_element_border()
+            YELLOW
         } else {
-            low_contrast_text()
+            visuals.weak_text_color()
         }
     }
     fn tab_bar_color(&self, _: &egui::Visuals) -> Color32 {
@@ -100,7 +100,10 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
     }
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
-        format!("{view:?}").to_string().into()
+        match view {
+            Pane::Explorer(pane) => pane.as_ref().to_case(Case::Title).into(),
+            _ => view.as_ref().into(),
+        }
     }
 
     fn is_tab_closable(&self, _tiles: &Tiles<Pane>, _tile_id: TileId) -> bool {
@@ -195,5 +198,15 @@ impl TreeExt for Tree<Pane> {
         }
         self.make_active(|tile_id, _| tile_id == new);
         Ok(())
+    }
+}
+
+pub trait TileIdExt {
+    fn to_tab(self, tiles: &mut Tiles<Pane>) -> TileId;
+}
+
+impl TileIdExt for TileId {
+    fn to_tab(self, tiles: &mut Tiles<Pane>) -> TileId {
+        tiles.insert_tab_tile([self].into())
     }
 }

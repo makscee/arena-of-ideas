@@ -38,6 +38,7 @@ impl MaterialPaint for Material {
         let size_id = ui.id().with("view size");
         let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 100.0));
         if DragValue::new(&mut size).ui(ui).changed() {
+            size = size.at_least(10.0);
             ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
         }
         let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());

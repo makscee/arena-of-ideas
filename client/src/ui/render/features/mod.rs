@@ -2,7 +2,6 @@ use super::*;
 use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
 
 mod features_impl;
-pub use features_impl::*;
 
 /// Feature for types that can provide a title
 pub trait FTitle {

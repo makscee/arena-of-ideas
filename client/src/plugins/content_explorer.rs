@@ -9,35 +9,51 @@ pub struct EditState {
 }
 
 #[derive(Resource, Default, Clone)]
-pub struct ContentExplorerData {
+pub struct ExplorerData {
     pub selected_unit: Option<u64>,
+    pub selected_house: Option<u64>,
     pub owner_filter: OwnerFilter,
     pub units: Vec<u64>,
+    pub houses: Vec<u64>,
     pub linked_representations: Vec<(u64, Option<i32>)>,
     pub linked_descriptions: Vec<(u64, Option<i32>)>,
     pub linked_behaviors: Vec<(u64, Option<i32>)>,
     pub linked_stats: Vec<(u64, Option<i32>)>,
     pub linked_houses: Vec<(u64, Option<i32>)>,
+    pub linked_house_colors: Vec<(u64, Option<i32>)>,
+    pub linked_ability_magic: Vec<(u64, Option<i32>)>,
+    pub linked_status_magic: Vec<(u64, Option<i32>)>,
+    pub linked_house_units: Vec<(u64, Option<i32>)>,
     pub needs_refresh: bool,
     pub cached_all_representations: Vec<(u64, Option<i32>)>,
     pub cached_all_descriptions: Vec<(u64, Option<i32>)>,
     pub cached_all_behaviors: Vec<(u64, Option<i32>)>,
     pub cached_all_stats: Vec<(u64, Option<i32>)>,
     pub cached_all_houses: Vec<(u64, Option<i32>)>,
+    pub cached_all_house_colors: Vec<(u64, Option<i32>)>,
+    pub cached_all_ability_magic: Vec<(u64, Option<i32>)>,
+    pub cached_all_status_magic: Vec<(u64, Option<i32>)>,
+    pub cached_all_units: Vec<(u64, Option<i32>)>,
 
-    // View modes for each pane
     pub representations_view_mode: ViewMode,
     pub descriptions_view_mode: ViewMode,
     pub behaviors_view_mode: ViewMode,
     pub stats_view_mode: ViewMode,
     pub houses_view_mode: ViewMode,
+    pub house_colors_view_mode: ViewMode,
+    pub ability_magic_view_mode: ViewMode,
+    pub status_magic_view_mode: ViewMode,
+    pub house_units_view_mode: ViewMode,
 
-    // Current selections for each component type
     pub current_representation: Option<u64>,
     pub current_description: Option<u64>,
     pub current_behavior: Option<u64>,
     pub current_stats: Option<u64>,
     pub current_house: Option<u64>,
+    pub current_house_color: Option<u64>,
+    pub current_ability_magic: Option<u64>,
+    pub current_status_magic: Option<u64>,
+    pub current_house_unit: Option<u64>,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Default)]
@@ -71,29 +87,36 @@ impl OwnerFilter {
     }
 }
 
-pub struct ContentExplorerPlugin;
+pub struct ExplorerPlugin;
 
-impl Plugin for ContentExplorerPlugin {
+impl Plugin for ExplorerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::ContentExplorer), Self::init)
+        app.add_systems(OnEnter(GameState::Explorer), Self::init)
             .add_systems(
                 Update,
-                Self::check_for_refresh.run_if(in_state(GameState::ContentExplorer)),
+                Self::check_for_refresh.run_if(in_state(GameState::Explorer)),
             );
     }
 }
 
-impl ContentExplorerPlugin {
+impl ExplorerPlugin {
     pub fn init(world: &mut World) {
-        let mut data = ContentExplorerData::default();
+        let mut data = ExplorerData::default();
         data.owner_filter = OwnerFilter::Content;
         data.needs_refresh = false;
+
         Self::load_units(&mut data);
+        Self::load_houses(&mut data);
         Self::load_all_cached_data(&mut data);
 
         if let Some(&first_unit) = data.units.first() {
             data.selected_unit = Some(first_unit);
-            Self::load_linked_data(&mut data, first_unit);
+            Self::load_unit_linked_data(&mut data, first_unit);
+        }
+
+        if let Some(&first_house) = data.houses.first() {
+            data.selected_house = Some(first_house);
+            Self::load_house_linked_data(&mut data, first_house);
         }
 
         world.insert_resource(data);
@@ -101,23 +124,28 @@ impl ContentExplorerPlugin {
 
     fn check_for_refresh(world: &mut World) {
         let needs_refresh = {
-            let data = world.resource::<ContentExplorerData>();
+            let data = world.resource::<ExplorerData>();
             data.needs_refresh
         };
 
         if needs_refresh {
-            let mut data = world.resource_mut::<ContentExplorerData>();
+            let mut data = world.resource_mut::<ExplorerData>();
             data.needs_refresh = false;
             Self::load_units(&mut data);
+            Self::load_houses(&mut data);
             Self::load_all_cached_data(&mut data);
 
             if let Some(selected_unit) = data.selected_unit {
-                Self::load_linked_data(&mut data, selected_unit);
+                Self::load_unit_linked_data(&mut data, selected_unit);
+            }
+
+            if let Some(selected_house) = data.selected_house {
+                Self::load_house_linked_data(&mut data, selected_house);
             }
         }
     }
 
-    fn load_all_cached_data(data: &mut ContentExplorerData) {
+    fn load_all_cached_data(data: &mut ExplorerData) {
         data.cached_all_representations =
             Self::get_all_nodes_of_kind(NodeKind::NUnitRepresentation, data.owner_filter);
         data.cached_all_descriptions =
@@ -127,9 +155,16 @@ impl ContentExplorerPlugin {
         data.cached_all_stats =
             Self::get_all_nodes_of_kind(NodeKind::NUnitStats, data.owner_filter);
         data.cached_all_houses = Self::get_all_nodes_of_kind(NodeKind::NHouse, data.owner_filter);
+        data.cached_all_house_colors =
+            Self::get_all_nodes_of_kind(NodeKind::NHouseColor, data.owner_filter);
+        data.cached_all_ability_magic =
+            Self::get_all_nodes_of_kind(NodeKind::NAbilityMagic, data.owner_filter);
+        data.cached_all_status_magic =
+            Self::get_all_nodes_of_kind(NodeKind::NStatusMagic, data.owner_filter);
+        data.cached_all_units = Self::get_all_nodes_of_kind(NodeKind::NUnit, data.owner_filter);
     }
 
-    fn load_units(data: &mut ContentExplorerData) {
+    fn load_units(data: &mut ExplorerData) {
         data.units = cn()
             .db
             .nodes_world()
@@ -149,7 +184,27 @@ impl ContentExplorerPlugin {
         data.units.reverse();
     }
 
-    fn load_linked_data(data: &mut ContentExplorerData, unit_id: u64) {
+    fn load_houses(data: &mut ExplorerData) {
+        data.houses = cn()
+            .db
+            .nodes_world()
+            .iter()
+            .filter(|node| node.kind == "NHouse" && data.owner_filter.should_include(node.owner))
+            .map(|node| node.id)
+            .collect();
+
+        data.houses.sort_by_key(|id| {
+            cn().db
+                .nodes_world()
+                .id()
+                .find(id)
+                .map(|node| node.rating)
+                .unwrap_or_default()
+        });
+        data.houses.reverse();
+    }
+
+    fn load_unit_linked_data(data: &mut ExplorerData, unit_id: u64) {
         data.linked_representations =
             Self::get_linked_nodes(unit_id, NodeKind::NUnitRepresentation);
         data.linked_descriptions = Self::get_linked_nodes(unit_id, NodeKind::NUnitDescription);
@@ -157,47 +212,33 @@ impl ContentExplorerPlugin {
         data.linked_stats = Self::get_linked_nodes(unit_id, NodeKind::NUnitStats);
         data.linked_houses = Self::get_linked_nodes(unit_id, NodeKind::NHouse);
 
-        // Always set current selections to first linked item or highest rated available
         data.current_representation = data.linked_representations.first().map(|(id, _)| *id);
         data.current_description = data.linked_descriptions.first().map(|(id, _)| *id);
         data.current_behavior = data.linked_behaviors.first().map(|(id, _)| *id);
         data.current_stats = data.linked_stats.first().map(|(id, _)| *id);
         data.current_house = data.linked_houses.first().map(|(id, _)| *id);
-        data.representations_view_mode = if data.current_representation.is_some() {
-            ViewMode::Current
-        } else {
-            ViewMode::All
-        };
-        data.descriptions_view_mode = if data.current_description.is_some() {
-            ViewMode::Current
-        } else {
-            ViewMode::All
-        };
-        data.behaviors_view_mode = if data.current_behavior.is_some() {
-            ViewMode::Current
-        } else {
-            ViewMode::All
-        };
-        data.stats_view_mode = if data.current_stats.is_some() {
-            ViewMode::Current
-        } else {
-            ViewMode::All
-        };
-        data.houses_view_mode = if data.current_house.is_some() {
-            ViewMode::Current
-        } else {
-            ViewMode::All
-        };
     }
 
-    fn get_linked_nodes(unit_id: u64, target_kind: NodeKind) -> Vec<(u64, Option<i32>)> {
+    fn load_house_linked_data(data: &mut ExplorerData, house_id: u64) {
+        data.linked_house_colors = Self::get_linked_nodes(house_id, NodeKind::NHouseColor);
+        data.linked_ability_magic = Self::get_linked_nodes(house_id, NodeKind::NAbilityMagic);
+        data.linked_status_magic = Self::get_linked_nodes(house_id, NodeKind::NStatusMagic);
+        data.linked_house_units = Self::get_linked_nodes(house_id, NodeKind::NUnit);
+
+        data.current_house_color = data.linked_house_colors.first().map(|(id, _)| *id);
+        data.current_ability_magic = data.linked_ability_magic.first().map(|(id, _)| *id);
+        data.current_status_magic = data.linked_status_magic.first().map(|(id, _)| *id);
+        data.current_house_unit = data.linked_house_units.first().map(|(id, _)| *id);
+    }
+
+    fn get_linked_nodes(node_id: u64, target_kind: NodeKind) -> Vec<(u64, Option<i32>)> {
         let target_kind_str = target_kind.as_ref();
         let mut nodes = Vec::new();
 
         for link in cn().db.node_links().iter() {
-            if link.parent == unit_id && link.child_kind == target_kind_str {
+            if link.parent == node_id && link.child_kind == target_kind_str {
                 nodes.push((link.child, Some(link.rating)));
-            } else if link.child == unit_id && link.parent_kind == target_kind_str {
+            } else if link.child == node_id && link.parent_kind == target_kind_str {
                 nodes.push((link.parent, Some(link.rating)));
             }
         }
@@ -223,11 +264,9 @@ impl ContentExplorerPlugin {
     fn generic_merged_pane<T: FTitle + Node + FEdit + FDisplay + FCompactView + StringData>(
         ui: &mut Ui,
         world: &mut World,
-        pane_name: &str,
-        kind: NodeKind,
         linked_nodes: &[(u64, Option<i32>)],
         cached_all_nodes: &[(u64, Option<i32>)],
-        selected_unit: Option<u64>,
+        selected_main_node: Option<u64>,
         view_mode: ViewMode,
         current_selection: Option<u64>,
     ) -> Result<(ViewMode, Option<u64>), ExpressionError> {
@@ -235,8 +274,6 @@ impl ContentExplorerPlugin {
         let mut new_current_selection = current_selection;
 
         ui.horizontal(|ui| {
-            pane_name.cstr_s(CstrStyle::Heading2).label(ui);
-
             let all_count = cached_all_nodes.len();
             let mode_text = match view_mode {
                 ViewMode::Current => format!("Show All ({})", all_count),
@@ -263,7 +300,7 @@ impl ContentExplorerPlugin {
                     world,
                     linked_nodes,
                     cached_all_nodes,
-                    selected_unit,
+                    selected_main_node,
                     current_selection,
                 )?;
             }
@@ -330,8 +367,6 @@ impl ContentExplorerPlugin {
                         }
                     });
 
-                    ui.separator();
-
                     if edit_state.is_editing {
                         let mut temp_node = original_node.clone();
                         if temp_node.inject_data(&edit_state.current_data).is_ok() {
@@ -368,13 +403,13 @@ impl ContentExplorerPlugin {
         world: &mut World,
         linked_nodes: &[(u64, Option<i32>)],
         cached_all_nodes: &[(u64, Option<i32>)],
-        selected_unit: Option<u64>,
+        selected_main_node: Option<u64>,
         current_selection: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
         let mut new_current_selection = current_selection;
         Context::from_world_r(world, |context| {
-            if selected_unit.is_none() {
-                ui.label("No unit selected");
+            if selected_main_node.is_none() {
+                ui.label("No main item selected");
                 return Ok(());
             }
 
@@ -475,7 +510,7 @@ impl ContentExplorerPlugin {
                                         "Link Rating".cstr().label(ui);
                                         ui.horizontal(|ui| {
                                             if "[red [b -]]".cstr().button(ui).clicked() {
-                                                if let Some(selected) = selected_unit {
+                                                if let Some(selected) = selected_main_node {
                                                     if let Err(e) = cn().reducers.content_vote_link(
                                                         selected, *node_id, false,
                                                     ) {
@@ -484,7 +519,7 @@ impl ContentExplorerPlugin {
                                                 }
                                             }
                                             if "[green [b +]]".cstr().button(ui).clicked() {
-                                                if let Some(selected) = selected_unit {
+                                                if let Some(selected) = selected_main_node {
                                                     if let Err(e) = cn()
                                                         .reducers
                                                         .content_vote_link(selected, *node_id, true)
@@ -499,7 +534,7 @@ impl ContentExplorerPlugin {
                             }
                         } else {
                             if ui.button("Link").clicked() {
-                                if let Some(selected) = selected_unit {
+                                if let Some(selected) = selected_main_node {
                                     if let Err(e) =
                                         cn().reducers.content_vote_link(selected, *node_id, true)
                                     {
@@ -544,7 +579,7 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_units_list(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
+        let mut data = world.resource::<ExplorerData>().clone();
 
         ui.horizontal(|ui| {
             "Units".cstr_s(CstrStyle::Heading2).label(ui);
@@ -563,7 +598,7 @@ impl ContentExplorerPlugin {
                     data.owner_filter = filter;
                     Self::load_units(&mut data);
                     if let Some(selected) = data.selected_unit {
-                        Self::load_linked_data(&mut data, selected);
+                        Self::load_unit_linked_data(&mut data, selected);
                     }
                 }
             }
@@ -575,16 +610,16 @@ impl ContentExplorerPlugin {
             let items: Vec<_> = data
                 .units
                 .iter()
-                .filter_map(|unit_id| {
-                    context.component_by_id::<NUnit>(*unit_id).ok().map(|unit| {
+                .filter_map(|node_id| {
+                    context.component_by_id::<NUnit>(*node_id).ok().map(|node| {
                         let rating = cn()
                             .db
                             .nodes_world()
                             .id()
-                            .find(unit_id)
+                            .find(node_id)
                             .map(|node| node.rating)
                             .unwrap_or_default();
-                        (unit, *unit_id, rating)
+                        (node, *node_id, rating)
                     })
                 })
                 .collect();
@@ -593,13 +628,13 @@ impl ContentExplorerPlugin {
                 .table()
                 .column(
                     "Name",
-                    |context, ui, (unit, unit_id, _), _| {
-                        let is_selected = data.selected_unit == Some(*unit_id);
-                        let response = unit.render(context).compact_view_button(ui);
+                    |context, ui, (node, node_id, _), _| {
+                        let is_selected = data.selected_unit == Some(*node_id);
+                        let response = node.render(context).compact_view_button(ui);
 
                         if response.clicked() {
-                            data.selected_unit = Some(*unit_id);
-                            Self::load_linked_data(&mut data, *unit_id);
+                            data.selected_unit = Some(*node_id);
+                            Self::load_unit_linked_data(&mut data, *node_id);
                         }
 
                         if is_selected {
@@ -613,12 +648,12 @@ impl ContentExplorerPlugin {
 
                         Ok(())
                     },
-                    |context, (unit, _, _)| Ok(VarValue::String(unit.title(context).to_string())),
+                    |context, (node, _, _)| Ok(VarValue::String(node.title(context).to_string())),
                 )
                 .column_with_hover_text(
                     "⭐",
-                    "Unit Rating",
-                    |_context, ui, (_, unit_id, _rating), value| {
+                    "Rating",
+                    |_context, ui, (_, node_id, _rating), value| {
                         if let VarValue::i32(rating_val) = value {
                             let response = rating_val.to_string().button(ui);
                             response.bar_menu(|ui| {
@@ -627,14 +662,14 @@ impl ContentExplorerPlugin {
                                     ui.horizontal(|ui| {
                                         if "[red [b -]]".cstr().button(ui).clicked() {
                                             if let Err(e) =
-                                                cn().reducers.content_vote_node(*unit_id, false)
+                                                cn().reducers.content_vote_node(*node_id, false)
                                             {
                                                 error!("Failed to vote down unit: {}", e);
                                             }
                                         }
                                         if "[green [b +]]".cstr().button(ui).clicked() {
                                             if let Err(e) =
-                                                cn().reducers.content_vote_node(*unit_id, true)
+                                                cn().reducers.content_vote_node(*node_id, true)
                                             {
                                                 error!("Failed to vote up unit: {}", e);
                                             }
@@ -649,15 +684,142 @@ impl ContentExplorerPlugin {
                 )
                 .column(
                     "ID",
-                    |_context, ui, (_, _unit_id, _), value| {
+                    |_context, ui, (_, _node_id, _), value| {
                         if let VarValue::u64(id) = value {
                             format!("#{}", id).cstr_c(Color32::GRAY).label(ui);
                         }
                         Ok(())
                     },
-                    |_context, (_, unit_id, _)| Ok(VarValue::u64(*unit_id)),
+                    |_context, (_, node_id, _)| Ok(VarValue::u64(*node_id)),
                 )
-                .default_sort(1, false) // Sort by rating descending
+                .default_sort(1, false)
+                .ui(context, ui);
+
+            Ok(())
+        })?;
+
+        world.insert_resource(data);
+        Ok(())
+    }
+
+    pub fn pane_houses_list(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource::<ExplorerData>().clone();
+
+        ui.horizontal(|ui| {
+            "Houses".cstr_s(CstrStyle::Heading2).label(ui);
+            if ui.button("+ Add New").clicked() {
+                Self::open_create_node_window::<NHouse>(world);
+            }
+        });
+
+        ui.horizontal(|ui| {
+            ui.label("Filter:");
+            for filter in OwnerFilter::iter() {
+                if ui
+                    .selectable_label(data.owner_filter == filter, filter.cstr())
+                    .clicked()
+                {
+                    data.owner_filter = filter;
+                    Self::load_houses(&mut data);
+                    if let Some(selected) = data.selected_house {
+                        Self::load_house_linked_data(&mut data, selected);
+                    }
+                }
+            }
+        });
+
+        ui.separator();
+
+        Context::from_world_r(world, |context| {
+            let items: Vec<_> = data
+                .houses
+                .iter()
+                .filter_map(|node_id| {
+                    context
+                        .component_by_id::<NHouse>(*node_id)
+                        .ok()
+                        .map(|node| {
+                            let rating = cn()
+                                .db
+                                .nodes_world()
+                                .id()
+                                .find(node_id)
+                                .map(|node| node.rating)
+                                .unwrap_or_default();
+                            (node, *node_id, rating)
+                        })
+                })
+                .collect();
+
+            items
+                .table()
+                .column(
+                    "Name",
+                    |context, ui, (node, node_id, _), _| {
+                        let is_selected = data.selected_house == Some(*node_id);
+                        let response = node.render(context).compact_view_button(ui);
+
+                        if response.clicked() {
+                            data.selected_house = Some(*node_id);
+                            Self::load_house_linked_data(&mut data, *node_id);
+                        }
+
+                        if is_selected {
+                            ui.painter().rect_stroke(
+                                response.rect.expand(2.0),
+                                0.0,
+                                Stroke::new(2.0, GREEN),
+                                egui::StrokeKind::Middle,
+                            );
+                        }
+
+                        Ok(())
+                    },
+                    |context, (node, _, _)| Ok(VarValue::String(node.title(context).to_string())),
+                )
+                .column_with_hover_text(
+                    "⭐",
+                    "Rating",
+                    |_context, ui, (_, node_id, _rating), value| {
+                        if let VarValue::i32(rating_val) = value {
+                            let response = rating_val.to_string().button(ui);
+                            response.bar_menu(|ui| {
+                                ui.vertical(|ui| {
+                                    "Rating".cstr().label(ui);
+                                    ui.horizontal(|ui| {
+                                        if "[red [b -]]".cstr().button(ui).clicked() {
+                                            if let Err(e) =
+                                                cn().reducers.content_vote_node(*node_id, false)
+                                            {
+                                                error!("Failed to vote down house: {}", e);
+                                            }
+                                        }
+                                        if "[green [b +]]".cstr().button(ui).clicked() {
+                                            if let Err(e) =
+                                                cn().reducers.content_vote_node(*node_id, true)
+                                            {
+                                                error!("Failed to vote up house: {}", e);
+                                            }
+                                        }
+                                    });
+                                });
+                            });
+                        }
+                        Ok(())
+                    },
+                    |_context, (_, _, rating)| Ok(VarValue::i32(*rating)),
+                )
+                .column(
+                    "ID",
+                    |_context, ui, (_, _node_id, _), value| {
+                        if let VarValue::u64(id) = value {
+                            format!("#{}", id).cstr_c(Color32::GRAY).label(ui);
+                        }
+                        Ok(())
+                    },
+                    |_context, (_, node_id, _)| Ok(VarValue::u64(*node_id)),
+                )
+                .default_sort(1, false)
                 .ui(context, ui);
 
             Ok(())
@@ -668,12 +830,10 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_representations(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
+        let mut data = world.resource::<ExplorerData>().clone();
         let (new_view_mode, new_current) = Self::generic_merged_pane::<NUnitRepresentation>(
             ui,
             world,
-            "Representations",
-            NodeKind::NUnitRepresentation,
             &data.linked_representations,
             &data.cached_all_representations,
             data.selected_unit,
@@ -687,12 +847,10 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_descriptions(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
+        let mut data = world.resource::<ExplorerData>().clone();
         let (new_view_mode, new_current) = Self::generic_merged_pane::<NUnitDescription>(
             ui,
             world,
-            "Descriptions",
-            NodeKind::NUnitDescription,
             &data.linked_descriptions,
             &data.cached_all_descriptions,
             data.selected_unit,
@@ -706,12 +864,10 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_behaviors(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
+        let mut data = world.resource::<ExplorerData>().clone();
         let (new_view_mode, new_current) = Self::generic_merged_pane::<NUnitBehavior>(
             ui,
             world,
-            "Behaviors",
-            NodeKind::NUnitBehavior,
             &data.linked_behaviors,
             &data.cached_all_behaviors,
             data.selected_unit,
@@ -725,12 +881,10 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_stats(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
+        let mut data = world.resource::<ExplorerData>().clone();
         let (new_view_mode, new_current) = Self::generic_merged_pane::<NUnitStats>(
             ui,
             world,
-            "Stats",
-            NodeKind::NUnitStats,
             &data.linked_stats,
             &data.cached_all_stats,
             data.selected_unit,
@@ -744,12 +898,10 @@ impl ContentExplorerPlugin {
     }
 
     pub fn pane_houses(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ContentExplorerData>().clone();
-        let (new_view_mode, _) = Self::generic_merged_pane::<NHouse>(
+        let mut data = world.resource::<ExplorerData>().clone();
+        let (new_view_mode, new_current) = Self::generic_merged_pane::<NHouse>(
             ui,
             world,
-            "Houses",
-            NodeKind::NHouse,
             &data.linked_houses,
             &data.cached_all_houses,
             data.selected_unit,
@@ -757,6 +909,75 @@ impl ContentExplorerPlugin {
             data.current_house,
         )?;
         data.houses_view_mode = new_view_mode;
+        data.current_house = new_current;
+        world.insert_resource(data);
+        Ok(())
+    }
+
+    pub fn pane_house_colors(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource::<ExplorerData>().clone();
+        let (new_view_mode, new_current) = Self::generic_merged_pane::<NHouseColor>(
+            ui,
+            world,
+            &data.linked_houses,
+            &data.cached_all_house_colors,
+            data.selected_house,
+            data.house_colors_view_mode,
+            data.current_house_color,
+        )?;
+        data.house_colors_view_mode = new_view_mode;
+        data.current_house_color = new_current;
+        world.insert_resource(data);
+        Ok(())
+    }
+
+    pub fn pane_ability_magic(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource::<ExplorerData>().clone();
+        let (new_view_mode, new_current) = Self::generic_merged_pane::<NAbilityMagic>(
+            ui,
+            world,
+            &data.linked_ability_magic,
+            &data.cached_all_ability_magic,
+            data.selected_house,
+            data.ability_magic_view_mode,
+            data.current_ability_magic,
+        )?;
+        data.ability_magic_view_mode = new_view_mode;
+        data.current_ability_magic = new_current;
+        world.insert_resource(data);
+        Ok(())
+    }
+
+    pub fn pane_status_magic(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource::<ExplorerData>().clone();
+        let (new_view_mode, new_current) = Self::generic_merged_pane::<NStatusMagic>(
+            ui,
+            world,
+            &data.linked_status_magic,
+            &data.cached_all_status_magic,
+            data.selected_house,
+            data.status_magic_view_mode,
+            data.current_status_magic,
+        )?;
+        data.status_magic_view_mode = new_view_mode;
+        data.current_status_magic = new_current;
+        world.insert_resource(data);
+        Ok(())
+    }
+
+    pub fn pane_house_units(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+        let mut data = world.resource::<ExplorerData>().clone();
+        let (new_view_mode, new_current) = Self::generic_merged_pane::<NUnit>(
+            ui,
+            world,
+            &data.linked_house_units,
+            &data.cached_all_units,
+            data.selected_house,
+            data.house_units_view_mode,
+            data.current_house_unit,
+        )?;
+        data.house_units_view_mode = new_view_mode;
+        data.current_house_unit = new_current;
         world.insert_resource(data);
         Ok(())
     }

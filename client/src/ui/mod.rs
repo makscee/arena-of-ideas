@@ -1,6 +1,5 @@
 mod core;
 mod mat_rect;
-mod node_explorer;
 mod range_selector;
 pub mod render;
 mod table;
@@ -12,7 +11,6 @@ use super::*;
 
 pub use core::*;
 pub use mat_rect::*;
-pub use node_explorer::*;
 pub use range_selector::*;
 pub use render::*;
 pub use table::*;

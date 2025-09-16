@@ -1163,13 +1163,8 @@ impl FTag for NPlayerIdentity {
 }
 
 impl FDisplay for NHouseColor {
-    fn display(&self, _context: &Context, ui: &mut Ui) -> Response {
-        Frame::new()
-            .fill(self.color.c32())
-            .corner_radius(2.0)
-            .inner_margin(4.0)
-            .show(ui, |ui| ui.label(&self.color.0))
-            .inner
+    fn display(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.color.display(context, ui)
     }
 }
 
@@ -1185,7 +1180,7 @@ impl FEdit for NHouseColor {
 
 impl FTitle for NHouseColor {
     fn title(&self, _: &Context) -> Cstr {
-        self.cstr()
+        self.color.cstr()
     }
 }
 
@@ -2537,7 +2532,7 @@ impl FCompactView for NUnitRepresentation {
 }
 
 impl FCompactView for NUnitDescription {
-    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+    fn render_compact(&self, _context: &Context, ui: &mut Ui) {
         let preview = if self.description.len() > 30 {
             format!("{}...", &self.description[..30])
         } else {
@@ -2551,7 +2546,7 @@ impl FCompactView for NUnitDescription {
         });
     }
 
-    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+    fn render_hover(&self, _context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Description");
             ui.separator();
@@ -2566,7 +2561,7 @@ impl FCompactView for NUnitDescription {
 }
 
 impl FCompactView for NUnitBehavior {
-    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+    fn render_compact(&self, _context: &Context, ui: &mut Ui) {
         let actions_count = self.reaction.actions.len();
         let tier = self.reaction.tier();
 
@@ -2581,7 +2576,7 @@ impl FCompactView for NUnitBehavior {
         });
     }
 
-    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+    fn render_hover(&self, _context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Behavior");
             ui.separator();
@@ -2615,13 +2610,13 @@ impl FCompactView for NUnitBehavior {
 }
 
 impl FCompactView for NUnitStats {
-    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+    fn render_compact(&self, _context: &Context, ui: &mut Ui) {
         format!("{}/{}", self.pwr, self.hp)
             .cstr_c(Color32::WHITE)
             .label(ui);
     }
 
-    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+    fn render_hover(&self, _context: &Context, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Stats");
             ui.separator();
@@ -2670,6 +2665,16 @@ impl FCompactView for NStatusMagic {
                 desc.description.cstr().label_w(ui);
             }
         });
+    }
+}
+
+impl FCompactView for NHouseColor {
+    fn render_compact(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
+    }
+
+    fn render_hover(&self, context: &Context, ui: &mut Ui) {
+        self.render(context).title_label(ui);
     }
 }
 
