@@ -12,7 +12,6 @@ pub struct EditState {
 pub struct NodeData {
     pub linked_nodes: Vec<(u64, Option<i32>)>,
     pub cached_all_nodes: Vec<(u64, Option<i32>)>,
-    pub view_mode: ViewMode,
     pub current_selection: Option<u64>,
 }
 
@@ -25,19 +24,13 @@ pub struct ExplorerData {
     pub houses: Vec<u64>,
     pub node_data: HashMap<NodeKind, NodeData>,
     pub needs_refresh: bool,
+    pub node_colors: HashMap<u64, Color32>,
 }
 
 impl ExplorerData {
     pub fn get_node_data(&mut self, kind: NodeKind) -> &mut NodeData {
         self.node_data.entry(kind).or_default()
     }
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Default)]
-pub enum ViewMode {
-    #[default]
-    Current,
-    All,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, AsRefStr, Default, EnumIter)]
@@ -86,17 +79,21 @@ impl ExplorerPlugin {
         Self::load_houses(&mut data);
         Self::load_all_cached_data(&mut data);
 
-        if let Some(&first_unit) = data.units.first() {
+        let selected_unit = data.units.first().copied();
+        let selected_house = data.houses.first().copied();
+
+        if let Some(first_unit) = selected_unit {
             data.selected_unit = Some(first_unit);
             Self::load_unit_linked_data(&mut data, first_unit);
         }
 
-        if let Some(&first_house) = data.houses.first() {
+        if let Some(first_house) = selected_house {
             data.selected_house = Some(first_house);
             Self::load_house_linked_data(&mut data, first_house);
         }
 
         world.insert_resource(data);
+        Self::load_node_colors_with_world(world);
     }
 
     fn check_for_refresh(world: &mut World) {
@@ -106,19 +103,26 @@ impl ExplorerPlugin {
         };
 
         if needs_refresh {
-            let mut data = world.resource_mut::<ExplorerData>();
-            data.needs_refresh = false;
-            Self::load_units(&mut data);
-            Self::load_houses(&mut data);
-            Self::load_all_cached_data(&mut data);
+            Self::reload_explorer_data(world);
+        }
+    }
 
-            if let Some(selected_unit) = data.selected_unit {
-                Self::load_unit_linked_data(&mut data, selected_unit);
-            }
+    fn reload_explorer_data(world: &mut World) {
+        let mut data = world.resource_mut::<ExplorerData>();
+        data.needs_refresh = false;
+        Self::load_units(&mut data);
+        Self::load_houses(&mut data);
+        Self::load_all_cached_data(&mut data);
 
-            if let Some(selected_house) = data.selected_house {
-                Self::load_house_linked_data(&mut data, selected_house);
-            }
+        Self::load_node_colors_with_world(world);
+
+        let mut data = world.resource_mut::<ExplorerData>();
+        if let Some(selected_unit) = data.selected_unit {
+            Self::load_unit_linked_data(&mut data, selected_unit);
+        }
+
+        if let Some(selected_house) = data.selected_house {
+            Self::load_house_linked_data(&mut data, selected_house);
         }
     }
 
@@ -166,7 +170,10 @@ impl ExplorerPlugin {
             .db
             .nodes_world()
             .iter()
-            .filter(|node| node.kind == "NHouse" && data.owner_filter.should_include(node.owner))
+            .filter(|node| {
+                node.kind == NodeKind::NHouse.as_ref()
+                    && data.owner_filter.should_include(node.owner)
+            })
             .map(|node| node.id)
             .collect();
 
@@ -248,24 +255,30 @@ impl ExplorerPlugin {
         linked_nodes: &[(u64, Option<i32>)],
         cached_all_nodes: &[(u64, Option<i32>)],
         selected_main_node: Option<u64>,
-        view_mode: ViewMode,
         current_selection: Option<u64>,
-    ) -> Result<(ViewMode, Option<u64>), ExpressionError> {
-        let mut new_view_mode = view_mode;
+    ) -> Result<Option<u64>, ExpressionError> {
         let mut new_current_selection = current_selection;
 
         ui.horizontal(|ui| {
-            let all_count = cached_all_nodes.len();
-            let mode_text = match view_mode {
-                ViewMode::Current => format!("Show All ({})", all_count),
-                ViewMode::All => "Show Current".to_string(),
-            };
+            if let Some(node_id) = current_selection {
+                let edit_id = Id::new("edit_state").with(node_id);
+                let mut edit_state = ui
+                    .ctx()
+                    .data_mut(|d| d.get_temp_mut_or(edit_id, EditState::default()).clone());
 
-            if ui.button(mode_text).clicked() {
-                new_view_mode = match view_mode {
-                    ViewMode::Current => ViewMode::All,
-                    ViewMode::All => ViewMode::Current,
-                };
+                if ui.button("Edit").clicked() && !edit_state.is_editing {
+                    edit_state.is_editing = true;
+                    let _ = Context::from_world_r(world, |context| {
+                        if let Ok(node) = context.component_by_id::<T>(node_id) {
+                            edit_state.original_data = node.get_data();
+                            edit_state.current_data = node.get_data();
+                            edit_state.has_changes = false;
+                        }
+                        Ok(())
+                    });
+                }
+
+                ui.ctx().data_mut(|d| d.insert_temp(edit_id, edit_state));
             }
 
             if ui.button("+ Add New").clicked() {
@@ -273,21 +286,20 @@ impl ExplorerPlugin {
             }
         });
 
-        match view_mode {
-            ViewMode::Current => Self::render_current_view::<T>(ui, world, current_selection)?,
-            ViewMode::All => {
-                new_current_selection = Self::render_all_view::<T>(
-                    ui,
-                    world,
-                    linked_nodes,
-                    cached_all_nodes,
-                    selected_main_node,
-                    current_selection,
-                )?;
-            }
-        }
+        Self::render_current_view::<T>(ui, world, current_selection)?;
 
-        Ok((new_view_mode, new_current_selection))
+        ui.separator();
+
+        new_current_selection = Self::render_all_view::<T>(
+            ui,
+            world,
+            linked_nodes,
+            cached_all_nodes,
+            selected_main_node,
+            current_selection,
+        )?;
+
+        Ok(new_current_selection)
     }
 
     fn render_current_view<T: FTitle + FDisplay + Node + FEdit + StringData>(
@@ -295,24 +307,18 @@ impl ExplorerPlugin {
         world: &mut World,
         current_selection: Option<u64>,
     ) -> Result<(), ExpressionError> {
+        let node_colors = world.resource::<ExplorerData>().node_colors.clone();
         Context::from_world_r(world, |context| {
             if let Some(node_id) = current_selection {
                 if let Ok(original_node) = context.component_by_id::<T>(node_id) {
-                    let edit_id = ui.id().with("edit").with(node_id);
+                    let edit_id = Id::new("edit_state").with(node_id);
 
                     let mut edit_state = ui
                         .ctx()
                         .data_mut(|d| d.get_temp_mut_or(edit_id, EditState::default()).clone());
 
-                    ui.horizontal(|ui| {
-                        if !edit_state.is_editing {
-                            if ui.button("Edit").clicked() {
-                                edit_state.is_editing = true;
-                                edit_state.original_data = original_node.get_data();
-                                edit_state.current_data = original_node.get_data();
-                                edit_state.has_changes = false;
-                            }
-                        } else {
+                    if edit_state.is_editing {
+                        ui.horizontal(|ui| {
                             let has_changes = edit_state.current_data != edit_state.original_data;
                             let save_button =
                                 ui.add_enabled(has_changes, egui::Button::new("Save"));
@@ -325,9 +331,11 @@ impl ExplorerPlugin {
                                 edit_state.current_data = edit_state.original_data.clone();
                                 edit_state.has_changes = false;
                             }
-                        }
+                        });
+                    }
 
-                        if edit_state.has_changes && !edit_state.is_editing {
+                    if edit_state.has_changes && !edit_state.is_editing {
+                        ui.horizontal(|ui| {
                             if ui.button("Publish").clicked() {
                                 let mut pack = PackedNodes::default();
                                 pack.root = 1;
@@ -345,8 +353,8 @@ impl ExplorerPlugin {
                                     edit_state.has_changes = false;
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
 
                     if edit_state.is_editing {
                         let mut temp_node = original_node.clone();
@@ -367,7 +375,18 @@ impl ExplorerPlugin {
                         } else {
                             original_node.clone()
                         };
-                        display_node.display(context, ui);
+
+                        // Set color context based on cached house color and display
+                        if let Some(&color) = node_colors.get(&node_id) {
+                            context.with_layer(
+                                ContextLayer::Var(VarName::color, VarValue::Color32(color)),
+                                |context| {
+                                    display_node.display(context, ui);
+                                },
+                            );
+                        } else {
+                            display_node.display(context, ui);
+                        }
                     }
 
                     ui.ctx().data_mut(|d| d.insert_temp(edit_id, edit_state));
@@ -393,9 +412,8 @@ impl ExplorerPlugin {
                 ui.label("No main item selected");
                 return Ok(());
             }
-
             let linked_ids: HashSet<u64> = linked_nodes.iter().map(|(id, _)| *id).collect();
-
+            let node_colors = &context.world()?.resource::<ExplorerData>().node_colors;
             let items: Vec<_> = cached_all_nodes
                 .iter()
                 .filter_map(|(node_id, node_rating)| {
@@ -429,7 +447,16 @@ impl ExplorerPlugin {
                 .column(
                     "Name",
                     |context, ui, (node, node_id, _, _, _, is_current), _| {
-                        let response = node.render(context).compact_view_button(ui);
+                        let response = context.with_layer_ref_r(
+                            ContextLayer::Var(
+                                VarName::color,
+                                VarValue::Color32(
+                                    node_colors.get(node_id).copied().unwrap_or(MISSING_COLOR),
+                                ),
+                            ),
+                            |context| Ok(node.render(context).compact_view_button(ui)),
+                        )?;
+
                         if response.clicked() {
                             new_current_selection = Some(*node_id);
                         }
@@ -443,8 +470,9 @@ impl ExplorerPlugin {
                         }
                         Ok(())
                     },
-                    |context, (node, _, _, _, _, _)| {
-                        Ok(VarValue::String(node.title(context).to_string()))
+                    |context, (node, _node_id, _, _, _, _)| {
+                        let title = node.title(context).to_string();
+                        Ok(VarValue::String(title))
                     },
                 )
                 .column_with_hover_text(
@@ -567,7 +595,8 @@ impl ExplorerPlugin {
         selected_node: Option<u64>,
         on_select: impl Fn(&mut ExplorerData, u64) + Send + Sync,
     ) -> Result<(), ExpressionError> {
-        let mut data = world.resource::<ExplorerData>().clone();
+        let mut data = world.remove_resource::<ExplorerData>().unwrap();
+        let node_colors = data.node_colors.clone();
 
         ui.horizontal(|ui| {
             title.cstr_s(CstrStyle::Heading2).label(ui);
@@ -624,7 +653,15 @@ impl ExplorerPlugin {
                     "Name",
                     |context, ui, (node, node_id, _), _| {
                         let is_selected = selected_node == Some(*node_id);
-                        let response = node.render(context).compact_view_button(ui);
+                        let response = context.with_layer_ref_r(
+                            ContextLayer::Var(
+                                VarName::color,
+                                VarValue::Color32(
+                                    node_colors.get(node_id).copied().unwrap_or(MISSING_COLOR),
+                                ),
+                            ),
+                            |context| Ok(node.render(context).compact_view_button(ui)),
+                        )?;
 
                         if response.clicked() {
                             on_select(&mut data, *node_id);
@@ -641,7 +678,10 @@ impl ExplorerPlugin {
 
                         Ok(())
                     },
-                    |context, (node, _, _)| Ok(VarValue::String(node.title(context).to_string())),
+                    |context, (node, _node_id, _)| {
+                        let title = node.title(context).to_string();
+                        Ok(VarValue::String(title))
+                    },
                 )
                 .column_with_hover_text(
                     "⭐",
@@ -734,21 +774,18 @@ impl ExplorerPlugin {
         let node_data = data.get_node_data(kind);
         let linked_nodes = node_data.linked_nodes.clone();
         let cached_all_nodes = node_data.cached_all_nodes.clone();
-        let view_mode = node_data.view_mode;
         let current_selection = node_data.current_selection;
 
-        let (new_view_mode, new_current) = Self::generic_merged_pane::<T>(
+        let new_current = Self::generic_merged_pane::<T>(
             ui,
             world,
             &linked_nodes,
             &cached_all_nodes,
             selected_main_node,
-            view_mode,
             current_selection,
         )?;
 
         let node_data = data.get_node_data(kind);
-        node_data.view_mode = new_view_mode;
         node_data.current_selection = new_current;
         world.insert_resource(data);
         Ok(())
@@ -888,5 +925,75 @@ impl ExplorerPlugin {
         let storage_id = Self::temp_node_id::<T>();
         let data = node.get_data();
         ui.ctx().data_mut(|d| d.insert_temp(storage_id, data));
+    }
+
+    fn load_node_colors_with_world(world: &mut World) {
+        let owner_filter = world.resource::<ExplorerData>().owner_filter;
+
+        // Get all nodes that should have colors
+        let all_node_ids: Vec<u64> = cn()
+            .db
+            .nodes_world()
+            .iter()
+            .filter(|node| {
+                matches!(
+                    node.kind.to_kind(),
+                    NodeKind::NUnit
+                        | NodeKind::NHouse
+                        | NodeKind::NAbilityMagic
+                        | NodeKind::NStatusMagic
+                ) && owner_filter.should_include(node.owner)
+            })
+            .map(|node| node.id)
+            .collect();
+
+        let mut node_colors = HashMap::new();
+        Context::from_world(world, |context| {
+            for node_id in all_node_ids {
+                if let Some(color) = Self::get_house_color_for_node_with_context(context, node_id) {
+                    node_colors.insert(node_id, color);
+                }
+            }
+        });
+
+        world.resource_mut::<ExplorerData>().node_colors = node_colors;
+    }
+
+    fn get_house_color_for_node_with_context(context: &Context, node_id: u64) -> Option<Color32> {
+        // Find the house linked to this node
+        let house_id = Self::find_linked_house(node_id)?;
+
+        // Find the house color linked to the house
+        let house_color_id = Self::find_linked_house_color(house_id)?;
+
+        // Get the actual color from the house color node
+        if let Ok(house_color_node) = context.component_by_id::<NHouseColor>(house_color_id) {
+            return Some(house_color_node.color.c32());
+        }
+
+        None
+    }
+
+    fn find_linked_house(node_id: u64) -> Option<u64> {
+        let mut links: Vec<(u64, i32)> = default();
+        for link in cn().db.node_links().iter() {
+            if link.child == node_id && link.parent_kind == NodeKind::NHouse.as_ref() {
+                links.push((link.parent, link.rating));
+            }
+            if link.parent == node_id && link.child_kind == NodeKind::NHouse.as_ref() {
+                links.push((link.child, link.rating));
+            }
+        }
+        links.into_iter().max_by_key(|(_, r)| *r).map(|(id, _)| id)
+    }
+
+    fn find_linked_house_color(house_id: u64) -> Option<u64> {
+        let mut links: Vec<(u64, i32)> = default();
+        for link in cn().db.node_links().iter() {
+            if link.parent == house_id && link.child_kind == NodeKind::NHouseColor.as_ref() {
+                links.push((link.child, link.rating));
+            }
+        }
+        links.into_iter().max_by_key(|(_, r)| *r).map(|(id, _)| id)
     }
 }

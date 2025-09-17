@@ -2468,9 +2468,7 @@ impl FCompactView for Material {
 
 impl FCompactView for NUnit {
     fn render_compact(&self, context: &Context, ui: &mut Ui) {
-        let color = context
-            .with_owner_ref(self.entity(), |context| context.get_color(VarName::color))
-            .unwrap_or(MISSING_COLOR);
+        let color = context.get_color(VarName::color).unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color).label(ui);
     }
 
