@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_egui::egui::color_picker::color_picker_hsva_2d;
 use ecolor::Hsva;
-use settings_derive::Settings;
+use proc_macros::Settings;
 
 use super::*;
 

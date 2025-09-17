@@ -11,7 +11,7 @@ utils = { path = "../utils" }
 schema = { path = "../schema" }
 raw-nodes = { path = "../raw-nodes" }
 utils-client = { path = "../utils-client" }
-settings-derive = { path = "../settings-derive" }
+proc-macros = { path = "../proc-macros" }
 node-loaders = { path = "../node-loaders", features = ["client"] }
 
 spacetimedb-sdk = { workspace = true }

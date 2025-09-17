@@ -8,6 +8,7 @@ serde = { workspace = true, features = ["derive"] }
 schema = { path = "../schema" }
 strum = { version = "0.26", features = ["derive"] }
 strum_macros = "0.26"
+proc-macros = { path = "../proc-macros" }
 
 [build-dependencies]
 syn = { version = "2.0", features = ["full"] }

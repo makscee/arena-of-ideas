@@ -255,10 +255,8 @@ impl ExplorerPlugin {
         linked_nodes: &[(u64, Option<i32>)],
         cached_all_nodes: &[(u64, Option<i32>)],
         selected_main_node: Option<u64>,
-        current_selection: Option<u64>,
+        mut current_selection: Option<u64>,
     ) -> Result<Option<u64>, ExpressionError> {
-        let mut new_current_selection = current_selection;
-
         ui.horizontal(|ui| {
             if let Some(node_id) = current_selection {
                 let edit_id = Id::new("edit_state").with(node_id);
@@ -290,7 +288,7 @@ impl ExplorerPlugin {
 
         ui.separator();
 
-        new_current_selection = Self::render_all_view::<T>(
+        current_selection = Self::render_all_view::<T>(
             ui,
             world,
             linked_nodes,
@@ -299,7 +297,7 @@ impl ExplorerPlugin {
             current_selection,
         )?;
 
-        Ok(new_current_selection)
+        Ok(current_selection)
     }
 
     fn render_current_view<T: FTitle + FDisplay + Node + FEdit + StringData>(

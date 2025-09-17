@@ -23,9 +23,25 @@ fn main() {
 
     let mut structs = Vec::new();
     let mut names: Vec<_> = Vec::new();
+    let mut named_nodes: Vec<_> = Vec::new();
+
     for item in syntax_tree.items {
-        if let Item::Struct(item_struct) = item {
-            names.push(item_struct.ident.clone());
+        if let Item::Struct(mut item_struct) = item {
+            let struct_name = item_struct.ident.clone();
+            names.push(struct_name.clone());
+
+            // Check if this struct has the #[named_node] attribute
+            for attr in &item_struct.attrs {
+                if attr.path().is_ident("named_node") {
+                    // Validate and get the name field
+                    if let Some(_name_field) = get_named_node_field(&item_struct) {
+                        named_nodes.push(struct_name.clone());
+                    }
+                    break;
+                }
+            }
+            item_struct.attrs.clear();
+
             structs.push(item_struct);
         }
     }
@@ -33,7 +49,7 @@ fn main() {
     let node_kinds_impl = generate_client_trait_impls(&names);
     let client_impls: Vec<_> = structs
         .into_iter()
-        .map(|item| generate_impl(item))
+        .map(|item| generate_impl(item, &named_nodes))
         .collect();
 
     let output = quote! {
@@ -156,7 +172,7 @@ fn generate_client_trait_impls(names: &[Ident]) -> TokenStream {
     }
 }
 
-fn generate_impl(mut item: ItemStruct) -> TokenStream {
+fn generate_impl(mut item: ItemStruct, named_nodes: &[Ident]) -> TokenStream {
     let struct_ident = &item.ident;
     let loader_ident = quote::format_ident!("{}Loader", struct_ident);
     let pnf = parse_node_fields(&item.fields);
@@ -240,7 +256,7 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         &many_types,
     );
 
-    quote! {
+    let base_impl = quote! {
         #[derive(Component, Clone, Debug, Hash)]
         pub #item
 
@@ -256,10 +272,10 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                         #one_fields: Default::default(),
                     )*
                     #(
-                        #many_fields: std::default::Default::default(),
+                        #many_fields: Default::default(),
                     )*
                     #(
-                        #all_data_fields: std::default::Default::default(),
+                        #all_data_fields: Default::default(),
                     )*
                 }
             }
@@ -731,5 +747,55 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
                 d
             }
         }
+    };
+
+    let is_named_node = named_nodes.iter().any(|n| n == struct_ident);
+
+    let named_node_impl = if is_named_node {
+        let name_field = get_named_node_field(&item).unwrap();
+        quote! {
+            impl NamedNode for #struct_ident {
+                fn get_name(&self) -> &str {
+                    &self.#name_field
+                }
+
+                fn set_name(&mut self, name: String) {
+                    self.#name_field = name;
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    quote! {
+        #base_impl
+        #named_node_impl
     }
+}
+
+fn get_named_node_field(item_struct: &ItemStruct) -> Option<Ident> {
+    let mut string_fields = Vec::new();
+
+    for field in &item_struct.fields {
+        if let Some(field_name) = &field.ident {
+            if let Type::Path(type_path) = &field.ty {
+                if let Some(segment) = type_path.path.segments.last() {
+                    // Check if it's a String field (not NodePart or NodeParts)
+                    if segment.ident == "String" {
+                        string_fields.push(field_name.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    if string_fields.len() != 1 {
+        panic!(
+            "Named node {} must have exactly one String field that is not a NodePart, found: {:?}",
+            item_struct.ident, string_fields
+        );
+    }
+
+    Some(string_fields.remove(0))
 }

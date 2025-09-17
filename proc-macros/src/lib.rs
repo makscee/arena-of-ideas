@@ -2,6 +2,20 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
 
+#[proc_macro_attribute]
+pub fn named_node(_args: TokenStream, input: TokenStream) -> TokenStream {
+    use syn::{parse_macro_input, ItemStruct};
+
+    let mut item_struct = parse_macro_input!(input as ItemStruct);
+
+    // Remove the named_node attribute from the output
+    item_struct
+        .attrs
+        .retain(|attr| !attr.path().is_ident("named_node"));
+
+    quote::quote! { #item_struct }.into()
+}
+
 #[proc_macro_derive(Settings, attributes(setting))]
 pub fn derive_settings(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

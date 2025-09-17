@@ -181,3 +181,7 @@ pub trait FCompactView {
 pub trait FPlaceholder {
     fn placeholder(owner: u64) -> Self;
 }
+
+pub trait FCard {
+    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response;
+}

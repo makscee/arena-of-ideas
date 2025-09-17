@@ -1,6 +1,6 @@
 [package]
-name = "settings-derive"
-version = "0.1.0"
+name = "proc-macros"
+version = "1.8.2"
 edition = "2021"
 
 [lib]

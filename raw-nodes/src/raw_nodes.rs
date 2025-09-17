@@ -32,6 +32,7 @@ struct NPlayerIdentity {
     pub data: Option<String>,
 }
 
+#[named_node]
 struct NHouse {
     pub house_name: String,
     pub color: NodePart<Parent, NHouseColor>,
@@ -44,6 +45,7 @@ struct NHouseColor {
     pub color: HexColor,
 }
 
+#[named_node]
 struct NAbilityMagic {
     pub ability_name: String,
     pub description: NodePart<Parent, NAbilityDescription>,
@@ -58,6 +60,7 @@ struct NAbilityEffect {
     pub actions: Vec<Action>,
 }
 
+#[named_node]
 struct NStatusMagic {
     pub status_name: String,
     pub description: NodePart<Parent, NStatusDescription>,
@@ -116,6 +119,7 @@ struct NFusionSlot {
     pub unit: NodePart<Parent, NUnit>,
 }
 
+#[named_node]
 struct NUnit {
     pub unit_name: String,
     pub description: NodePart<Parent, NUnitDescription>,

@@ -5,7 +5,7 @@ members = [
     "server",
     "utils",
     "utils-client",
-    "settings-derive",
+    "proc-macros",
     "client",
     "node-loaders",
 ]

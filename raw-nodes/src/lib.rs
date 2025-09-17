@@ -1,3 +1,4 @@
+pub use proc_macros::named_node;
 use schema::*;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
