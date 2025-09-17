@@ -265,7 +265,7 @@ impl ToCstr for Trigger {
 
 impl ToCstr for MagicType {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr()
+        self.as_ref().cstr_c(self.color())
     }
 }
 

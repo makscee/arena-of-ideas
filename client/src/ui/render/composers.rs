@@ -66,7 +66,9 @@ impl<T: FCompactView> Composer<T> for CompactViewComposer {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
         let response = ui
             .horizontal(|ui| {
+                ui.add_space(5.0);
                 data.render_compact(context, ui);
+                ui.add_space(0.0);
             })
             .response;
         let response = ui.allocate_rect(

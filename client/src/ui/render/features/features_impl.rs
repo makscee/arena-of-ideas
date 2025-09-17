@@ -2533,16 +2533,11 @@ impl FCompactView for NUnitRepresentation {
 
 impl FCompactView for NUnitDescription {
     fn render_compact(&self, _context: &Context, ui: &mut Ui) {
-        let preview = if self.description.len() > 30 {
-            format!("{}...", &self.description[..30])
-        } else {
-            self.description.clone()
-        };
-
-        ui.horizontal(|ui| {
-            preview.cstr_c(self.magic_type.color()).label(ui);
-            ui.add_space(4.0);
-            format!("[{}]", self.magic_type.as_ref()).cstr().label(ui);
+        ui.vertical(|ui| {
+            ui.set_max_width(200.0);
+            self.description.cstr().label_w(ui);
+            self.trigger.cstr().label(ui);
+            self.magic_type.cstr().label(ui);
         });
     }
 
@@ -2611,9 +2606,12 @@ impl FCompactView for NUnitBehavior {
 
 impl FCompactView for NUnitStats {
     fn render_compact(&self, _context: &Context, ui: &mut Ui) {
-        format!("{}/{}", self.pwr, self.hp)
-            .cstr_c(Color32::WHITE)
-            .label(ui);
+        format!(
+            "{}[tw /]{}",
+            self.pwr.cstr_c(VarName::pwr.color()),
+            self.hp.cstr_c(VarName::hp.color())
+        )
+        .label(ui);
     }
 
     fn render_hover(&self, _context: &Context, ui: &mut Ui) {
