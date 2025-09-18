@@ -101,7 +101,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
         match view {
-            Pane::Explorer(pane) => pane.as_ref().to_case(Case::Title).into(),
+            // Pane::Explorer(pane) => pane.as_ref().to_case(Case::Title).into(),
             _ => view.as_ref().into(),
         }
     }

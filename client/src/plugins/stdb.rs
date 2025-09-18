@@ -63,15 +63,7 @@ impl StdbPlugin {
         {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    info!(
-                        "Reloading Explorer cache due to node change: {}#{}",
-                        event.node.kind, event.node.id
-                    );
-                    op(|world| {
-                        if let Some(mut data) = world.get_resource_mut::<ExplorerData>() {
-                            data.needs_refresh = true;
-                        }
-                    });
+                    todo!()
                 }
             }
         }
@@ -82,15 +74,7 @@ impl StdbPlugin {
         if *current_state == GameState::Explorer {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    info!(
-                        "Reloading Explorer cache due to link change: {}->{}",
-                        event.parent, event.child
-                    );
-                    op(|world| {
-                        if let Some(mut data) = world.get_resource_mut::<ExplorerData>() {
-                            data.needs_refresh = true;
-                        }
-                    });
+                    todo!()
                 }
             }
         }

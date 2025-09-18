@@ -428,25 +428,5 @@ impl BattlePlugin {
         Ok(())
     }
 
-    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|world, mut data: Mut<BattleData>| {
-            Context::from_world(world, |context| {
-                let team = if left {
-                    &mut data.battle.left
-                } else {
-                    &mut data.battle.right
-                };
-                todo!("team tree render");
-                // if team.render(context)
-                //     || team.view_mut(ViewContext::new(ui), context, ui).changed
-                // {
-                //     context
-                //         .world_mut()
-                //         .unwrap()
-                //         .resource_mut::<ReloadData>()
-                //         .reload_requested = true;
-                // }
-            });
-        });
-    }
+    pub fn pane_edit_graph(_left: bool, _ui: &mut Ui, _world: &mut World) {}
 }

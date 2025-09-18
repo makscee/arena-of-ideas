@@ -99,7 +99,6 @@ pub fn run() {
             MatchPlugin,
             PersistentDataPlugin,
             BattlePlugin,
-            ExplorerPlugin,
             BattleEditorPlugin,
         ))
         .add_plugins((
