@@ -518,21 +518,21 @@ impl ExplorerPlugin {
                                         ui.horizontal(|ui| {
                                             if "[red [b -]]".cstr().button(ui).clicked() {
                                                 if let Some(selected) = selected_main_node {
-                                                    if let Err(e) = cn().reducers.content_vote_link(
-                                                        selected, *node_id, false,
-                                                    ) {
-                                                        error!("Failed to vote down link: {}", e);
-                                                    }
+                                                    // if let Err(e) = cn().reducers.content_vote_link(
+                                                    //     selected, *node_id, false,
+                                                    // ) {
+                                                    //     error!("Failed to vote down link: {}", e);
+                                                    // }
                                                 }
                                             }
                                             if "[green [b +]]".cstr().button(ui).clicked() {
                                                 if let Some(selected) = selected_main_node {
-                                                    if let Err(e) = cn()
-                                                        .reducers
-                                                        .content_vote_link(selected, *node_id, true)
-                                                    {
-                                                        error!("Failed to vote up link: {}", e);
-                                                    }
+                                                    // if let Err(e) = cn()
+                                                    //     .reducers
+                                                    //     .content_vote_link(selected, *node_id, true)
+                                                    // {
+                                                    //     error!("Failed to vote up link: {}", e);
+                                                    // }
                                                 }
                                             }
                                         });
@@ -542,11 +542,11 @@ impl ExplorerPlugin {
                         } else {
                             if ui.button("Link").clicked() {
                                 if let Some(selected) = selected_main_node {
-                                    if let Err(e) =
-                                        cn().reducers.content_vote_link(selected, *node_id, true)
-                                    {
-                                        error!("Failed to create link: {}", e);
-                                    }
+                                    // if let Err(e) =
+                                    //     cn().reducers.content_vote_link(selected, *node_id, true)
+                                    // {
+                                    //     error!("Failed to create link: {}", e);
+                                    // }
                                 }
                             }
                         }
