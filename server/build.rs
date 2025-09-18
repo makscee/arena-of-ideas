@@ -21,30 +21,7 @@ fn main() {
         fs::read_to_string("../raw-nodes/src/raw_nodes.rs").expect("Failed to read raw_nodes.rs");
     let syntax_tree = parse_file(&input).expect("Failed to parse raw_nodes.rs");
 
-    let mut structs = Vec::new();
-    let mut names: Vec<_> = Vec::new();
-    let mut named_nodes: Vec<_> = Vec::new();
-
-    for item in syntax_tree.items {
-        if let Item::Struct(mut item_struct) = item {
-            let struct_name = item_struct.ident.clone();
-            names.push(struct_name.clone());
-
-            // Check if this struct has the #[named_node] attribute
-            for attr in &item_struct.attrs {
-                if attr.path().is_ident("named_node") {
-                    // Validate and get the name field
-                    if let Some(_name_field) = get_named_node_field(&item_struct) {
-                        named_nodes.push(struct_name.clone());
-                    }
-                    break;
-                }
-            }
-            item_struct.attrs.clear();
-
-            structs.push(item_struct);
-        }
-    }
+    let (structs, names, _) = parse_node_file(syntax_tree);
     let server_trait_impls = generate_server_trait_impls(&names);
     let server_impls: Vec<_> = structs
         .into_iter()
@@ -546,30 +523,4 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         }
     }
     .into()
-}
-
-fn get_named_node_field(item_struct: &ItemStruct) -> Option<Ident> {
-    let mut string_fields = Vec::new();
-
-    for field in &item_struct.fields {
-        if let Some(field_name) = &field.ident {
-            if let Type::Path(type_path) = &field.ty {
-                if let Some(segment) = type_path.path.segments.last() {
-                    // Check if it's a String field (not NodePart or NodeParts)
-                    if segment.ident == "String" {
-                        string_fields.push(field_name.clone());
-                    }
-                }
-            }
-        }
-    }
-
-    if string_fields.len() != 1 {
-        panic!(
-            "Named node {} must have exactly one String field that is not a NodePart, found: {:?}",
-            item_struct.ident, string_fields
-        );
-    }
-
-    Some(string_fields.into_iter().next().unwrap())
 }

@@ -2,6 +2,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use strum::VariantNames;
 use syn::{Fields, GenericArgument, Ident, PathArguments, Type, TypePath};
+use syn::{File, ItemStruct};
 
 use crate::VarName;
 use crate::VarValue;
@@ -503,4 +504,57 @@ pub fn shared_unpack_id(
             Some(d)
         }
     }
+}
+pub fn get_named_node_field(item_struct: &ItemStruct) -> Option<Ident> {
+    let mut string_fields = Vec::new();
+
+    for field in &item_struct.fields {
+        if let Some(field_name) = &field.ident {
+            if let Type::Path(type_path) = &field.ty {
+                if let Some(segment) = type_path.path.segments.last() {
+                    // Check if it's a String field (not NodePart or NodeParts)
+                    if segment.ident == "String" {
+                        string_fields.push(field_name.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    if string_fields.len() != 1 {
+        panic!(
+            "Named node {} must have exactly one String field that is not a NodePart, found: {:?}",
+            item_struct.ident, string_fields
+        );
+    }
+
+    Some(string_fields.remove(0))
+}
+pub fn parse_node_file(syntax_tree: File) -> (Vec<ItemStruct>, Vec<Ident>, Vec<Ident>) {
+    let mut structs = Vec::new();
+    let mut names: Vec<_> = Vec::new();
+    let mut named_nodes: Vec<_> = Vec::new();
+    for item in syntax_tree.items {
+        if let syn::Item::Struct(mut item_struct) = item {
+            let struct_name = item_struct.ident.clone();
+            names.push(struct_name.clone());
+
+            for attr in &item_struct.attrs {
+                if attr.path().is_ident("node") {
+                    let arg = attr.parse_args::<Ident>().unwrap();
+                    if arg == "named" && get_named_node_field(&item_struct).is_some() {
+                        named_nodes.push(struct_name.clone());
+                    }
+                    break;
+                }
+            }
+            item_struct.attrs.clear();
+            for field in item_struct.fields.iter_mut() {
+                field.attrs.clear();
+            }
+
+            structs.push(item_struct);
+        }
+    }
+    (structs, names, named_nodes)
 }

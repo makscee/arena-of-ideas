@@ -2,8 +2,6 @@ use std::collections::VecDeque;
 
 use super::*;
 
-use raw_nodes::NodeKind;
-
 #[table(public, name = nodes_world,
     index(name = kind_owner, btree(columns = [kind, owner])),
     index(name = kind_data, btree(columns = [kind, data])))]
@@ -18,6 +16,22 @@ pub struct TNode {
     #[index(btree)]
     pub data: String,
     pub rating: i32,
+}
+
+#[table(public, name = player_link_selections)]
+#[derive(Clone, Debug)]
+pub struct TPlayerLinkSelection {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub player_id: u64,
+    #[index(btree)]
+    pub source_id: u64,
+    #[index(btree)]
+    pub kind: String,
+    #[index(btree)]
+    pub selected_link_id: u64,
 }
 
 #[table(public, name = node_links,
@@ -60,7 +74,7 @@ impl TNodeLink {
         parent_kind: String,
         child_kind: String,
         solid: bool,
-    ) -> Result<(), String> {
+    ) -> Result<Self, String> {
         if ctx
             .db
             .node_links()
@@ -71,7 +85,7 @@ impl TNodeLink {
         {
             return Err("Link already present".into());
         }
-        ctx.db.node_links().insert(Self {
+        Ok(ctx.db.node_links().insert(Self {
             id: 0,
             child,
             parent,
@@ -79,15 +93,14 @@ impl TNodeLink {
             parent_kind,
             rating: 0,
             solid,
-        });
-        Ok(())
+        }))
     }
     pub fn add(
         ctx: &ReducerContext,
         child: &TNode,
         parent: &TNode,
         solid: bool,
-    ) -> Result<(), String> {
+    ) -> Result<Self, String> {
         Self::add_by_id(
             ctx,
             parent.id,
@@ -148,29 +161,10 @@ impl TNodeLink {
     pub fn insert(self, ctx: &ReducerContext) {
         ctx.db.node_links().insert(self);
     }
-    pub fn vote(ctx: &ReducerContext, parent: &TNode, child: &TNode, vote: bool) {
-        let vote = if vote { 1 } else { -1 };
-        if let Some(mut link) = ctx
-            .db
-            .node_links()
-            .parent_child()
-            .filter((&parent.id, &child.id))
-            .next()
-        {
-            link.rating += vote;
-            link.update(ctx);
-        } else {
-            Self {
-                id: 0,
-                parent: parent.id,
-                child: child.id,
-                parent_kind: parent.kind.clone(),
-                child_kind: child.kind.clone(),
-                rating: vote,
-                solid: false,
-            }
-            .insert(ctx);
-        }
+
+    pub fn sync_rating_with_selections(mut self, ctx: &ReducerContext) {
+        self.rating = TPlayerLinkSelection::count_selections_for_link(ctx, self.id);
+        self.update(ctx);
     }
 }
 
@@ -378,6 +372,131 @@ impl NodeIdExt for u64 {
             .parent_child()
             .filter((self, id))
             .any(|l| l.solid)
+    }
+}
+
+impl TPlayerLinkSelection {
+    pub fn count_selections_for_link(ctx: &ReducerContext, link_id: u64) -> i32 {
+        ctx.db
+            .player_link_selections()
+            .selected_link_id()
+            .filter(link_id)
+            .count() as i32
+    }
+
+    fn determine_source_and_kind(
+        ctx: &ReducerContext,
+        parent_id: u64,
+        child_id: u64,
+    ) -> Result<(u64, String), String> {
+        let parent = parent_id.load_tnode_err(ctx)?;
+        let child = child_id.load_tnode_err(ctx)?;
+
+        let parent_kind = parent.kind();
+        let child_kind = child.kind();
+
+        // Check if parent can be source of child
+        if parent_kind.source_of().contains(&child_kind) {
+            Ok((parent_id, child_kind.to_string()))
+        }
+        // Check if child can be source of parent
+        else if child_kind.source_of().contains(&parent_kind) {
+            Ok((child_id, parent_kind.to_string()))
+        } else {
+            Err(format!(
+                "No valid source relationship between {} and {}",
+                parent_kind, child_kind
+            ))
+        }
+    }
+
+    pub fn select_link(
+        ctx: &ReducerContext,
+        player_id: u64,
+        parent_id: u64,
+        child_id: u64,
+    ) -> Result<(), String> {
+        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
+
+        // Find the link between parent and child
+        let link = ctx
+            .db
+            .node_links()
+            .parent_child()
+            .filter((&parent_id, &child_id))
+            .next()
+            .ok_or_else(|| {
+                format!("Link between parent#{parent_id} and child#{child_id} not found")
+            })?;
+
+        // Remove any existing selection for this player, source, and kind
+        if let Some(existing) = Self::find_selection(ctx, player_id, source_id, &kind) {
+            // Decrease rating of previously selected link
+            if let Some(mut prev_link) = ctx.db.node_links().id().find(existing.selected_link_id) {
+                prev_link.rating -= 1;
+                prev_link.update(ctx);
+            }
+            ctx.db.player_link_selections().id().delete(existing.id);
+        }
+
+        // Add new selection
+        ctx.db
+            .player_link_selections()
+            .insert(TPlayerLinkSelection {
+                id: 0,
+                player_id,
+                source_id,
+                kind: kind.to_string(),
+                selected_link_id: link.id,
+            });
+
+        // Increase rating of newly selected link
+        let mut link = ctx.db.node_links().id().find(link.id).unwrap_or_else(|| {
+            TNodeLink::add(
+                ctx,
+                &child_id.load_tnode(ctx).unwrap(),
+                &parent_id.load_tnode(ctx).unwrap(),
+                false,
+            )
+            .unwrap()
+        });
+        link.rating += 1;
+        link.update(ctx);
+
+        Ok(())
+    }
+    pub fn deselect_link(
+        ctx: &ReducerContext,
+        player_id: u64,
+        parent_id: u64,
+        child_id: u64,
+    ) -> Result<(), String> {
+        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
+        if let Some(selection) = Self::find_selection(ctx, player_id, source_id, &kind) {
+            // Decrease rating of the link
+            if let Some(mut link) = ctx.db.node_links().id().find(selection.selected_link_id) {
+                link.rating -= 1;
+                link.update(ctx);
+            }
+            ctx.db.player_link_selections().id().delete(selection.id);
+            Ok(())
+        } else {
+            Err("No selection found to remove".to_string())
+        }
+    }
+
+    fn find_selection(
+        ctx: &ReducerContext,
+        player_id: u64,
+        source_id: u64,
+        kind: &str,
+    ) -> Option<Self> {
+        ctx.db
+            .player_link_selections()
+            .player_id()
+            .filter(&player_id)
+            .filter(|s| s.source_id == source_id && s.kind == kind)
+            .next()
     }
 }
 

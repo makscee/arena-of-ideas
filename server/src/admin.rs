@@ -27,7 +27,6 @@ impl AdminCheck for &ReducerContext {
     }
 }
 
-// Content admin reducers
 #[reducer]
 fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
@@ -110,26 +109,24 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 error!("ability description failed");
             }
         };
-        if house.ability.is_none() {
-            if let Some(mut status) = house.mutual_top_parent::<NStatusMagic>(ctx) {
-                if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
-                    if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
-                        description.behavior.set_data(behavior);
-                        status.description.set_data(description);
-                        house.status.set_data(status);
-                    } else {
-                        error!("status behavior failed");
-                    }
+        if let Some(mut status) = house.mutual_top_parent::<NStatusMagic>(ctx) {
+            if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
+                if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
+                    description.behavior.set_data(behavior);
+                    status.description.set_data(description);
+                    house.status.set_data(status);
                 } else {
-                    error!("status description failed");
+                    error!("status behavior failed");
                 }
             } else {
-                error!("status magic failed");
+                error!("status description failed");
             }
-            if house.status.is_none() {
-                error!("failed to get ability for house");
-                continue;
-            }
+        } else {
+            error!("status magic failed");
+        }
+        if house.status.is_none() {
+            error!("failed to get ability for house");
+            continue;
         }
         if let Some(units) = units.remove(&house.id) {
             house.units.set_data(units);
@@ -223,5 +220,18 @@ fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     m.g += 10;
     player.save(ctx);
+    Ok(())
+}
+
+#[reducer]
+fn admin_sync_link_ratings(ctx: &ReducerContext) -> Result<(), String> {
+    ctx.is_admin()?;
+    info!("syncing link ratings with selection counts");
+
+    for link in ctx.db.node_links().iter() {
+        link.sync_rating_with_selections(ctx);
+    }
+
+    info!("link ratings sync complete");
     Ok(())
 }

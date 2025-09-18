@@ -1,7 +1,5 @@
 use super::*;
 
-use raw_nodes::NodeKindExt;
-
 #[reducer]
 fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
     let _ = ctx.player()?;
@@ -47,15 +45,15 @@ fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), St
 }
 
 #[reducer]
-fn content_vote_link(
+fn content_select_link(ctx: &ReducerContext, parent_id: u64, child_id: u64) -> Result<(), String> {
+    TPlayerLinkSelection::select_link(ctx, ctx.player()?.id, parent_id, child_id)
+}
+
+#[reducer]
+fn content_deselect_link(
     ctx: &ReducerContext,
-    parent: u64,
-    child: u64,
-    vote: bool,
+    parent_id: u64,
+    child_id: u64,
 ) -> Result<(), String> {
-    let _ = ctx.player()?;
-    let parent = parent.load_tnode_err(ctx)?;
-    let child = child.load_tnode_err(ctx)?;
-    TNodeLink::vote(ctx, &parent, &child, vote);
-    Ok(())
+    TPlayerLinkSelection::deselect_link(ctx, ctx.player()?.id, parent_id, child_id)
 }

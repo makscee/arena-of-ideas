@@ -1,19 +1,22 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, ItemStruct, Meta};
 
 #[proc_macro_attribute]
-pub fn named_node(_args: TokenStream, input: TokenStream) -> TokenStream {
-    use syn::{parse_macro_input, ItemStruct};
+pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
+    let args_str = args.to_string();
+    match args_str.trim() {
+        "named" | "content" | "system" => {}
+        _ => panic!("Invalid node type. Use 'named', 'content', or 'system'"),
+    };
 
     let mut item_struct = parse_macro_input!(input as ItemStruct);
+    item_struct.attrs.clear();
+    for field in item_struct.fields.iter_mut() {
+        field.attrs.clear();
+    }
 
-    // Remove the named_node attribute from the output
-    item_struct
-        .attrs
-        .retain(|attr| !attr.path().is_ident("named_node"));
-
-    quote::quote! { #item_struct }.into()
+    quote! { #item_struct }.into()
 }
 
 #[proc_macro_derive(Settings, attributes(setting))]
