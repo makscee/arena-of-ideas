@@ -2684,7 +2684,7 @@ impl<T: FCompactView> FCompactView for &T {
     }
 }
 
-impl crate::ui::render::FCard for NUnit {
+impl FCard for NUnit {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
         let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
         let response = ui.allocate_rect(rect, egui::Sense::hover());
@@ -2715,7 +2715,7 @@ impl crate::ui::render::FCard for NUnit {
     }
 }
 
-impl crate::ui::render::FCard for NHouse {
+impl FCard for NHouse {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
         let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
         let response = ui.allocate_rect(rect, egui::Sense::hover());
@@ -2746,7 +2746,7 @@ impl crate::ui::render::FCard for NHouse {
     }
 }
 
-impl crate::ui::render::FCard for NAbilityMagic {
+impl FCard for NAbilityMagic {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
         let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
         let response = ui.allocate_rect(rect, egui::Sense::hover());
@@ -2777,7 +2777,7 @@ impl crate::ui::render::FCard for NAbilityMagic {
     }
 }
 
-impl crate::ui::render::FCard for NStatusMagic {
+impl FCard for NStatusMagic {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
         let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
         let response = ui.allocate_rect(rect, egui::Sense::hover());

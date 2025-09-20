@@ -13,7 +13,7 @@ pub struct Confirmation {
     accept_name: String,
     cancel: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     cancel_name: String,
-    content: Option<Box<dyn Fn(&mut Ui, &mut World) + Send + Sync>>,
+    content: Option<Box<dyn Fn(&mut Ui, &mut World) -> bool + Send + Sync>>,
     fullscreen: bool,
 }
 
@@ -63,7 +63,7 @@ impl Confirmation {
     #[must_use]
     pub fn content(
         mut self,
-        content: impl Fn(&mut Ui, &mut World) + Send + Sync + 'static,
+        content: impl Fn(&mut Ui, &mut World) -> bool + Send + Sync + 'static,
     ) -> Self {
         self.content = Some(Box::new(content));
         self
@@ -80,7 +80,9 @@ impl Confirmation {
             });
             if let Some(content) = &self.content {
                 ui.vertical(|ui| {
-                    (content)(ui, world);
+                    if (content)(ui, world) {
+                        Self::close_current(world);
+                    }
                 });
             }
             space(ui);

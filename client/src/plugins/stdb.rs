@@ -2,6 +2,7 @@ use bevy::ecs::event::{Event, EventReader, Events};
 use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 
 use super::*;
+use crate::plugins::explorer::ExplorerState;
 
 pub struct StdbPlugin;
 
@@ -63,7 +64,13 @@ impl StdbPlugin {
         {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    todo!()
+                    // Refresh Explorer cache when content nodes change
+                    op(move |world| {
+                        if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
+                        {
+                            explorer_state.refresh_all_caches();
+                        }
+                    });
                 }
             }
         }
@@ -74,7 +81,13 @@ impl StdbPlugin {
         if *current_state == GameState::Explorer {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    todo!()
+                    // Refresh Explorer cache when links change
+                    op(move |world| {
+                        if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
+                        {
+                            explorer_state.refresh_all_caches();
+                        }
+                    });
                 }
             }
         }
@@ -211,13 +224,6 @@ fn on_delete(node: &TNode) {
             context.despawn(entity)
         })
         .log();
-
-        // Send StdbEvent at world level as well
-        world.send_event(StdbEvent {
-            entity: Entity::PLACEHOLDER,
-            node,
-            change: StdbChange::Delete,
-        });
     });
 }
 
@@ -236,13 +242,6 @@ fn on_update(node: &TNode) {
             Ok(())
         })
         .log();
-
-        // Send StdbEvent at world level as well
-        world.send_event(StdbEvent {
-            entity: Entity::PLACEHOLDER,
-            node,
-            change: StdbChange::Update,
-        });
     });
 }
 

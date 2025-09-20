@@ -100,6 +100,7 @@ pub fn run() {
             PersistentDataPlugin,
             BattlePlugin,
             BattleEditorPlugin,
+            ExplorerPlugin,
         ))
         .add_plugins((
             OperationsPlugin,
