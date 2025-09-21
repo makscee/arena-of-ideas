@@ -47,10 +47,13 @@ impl UiPlugin {
 }
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let ctx = ctx.single_mut().unwrap().get().clone();
-    let mut colorix = pd().client_settings.theme.clone();
-    colorix.generate_scale();
-    colorix.apply(&ctx);
-    colorix.save();
+    pd_mut(|d| {
+        let colorix = &mut d.client_settings.theme;
+        colorix.generate_scale();
+        colorix.apply(&ctx);
+        colorix.clone().save();
+    });
+
     ctx.add_font(FontInsert::new(
         "mono_regular",
         FontData::from_static(include_bytes!(

@@ -49,7 +49,6 @@ impl LinSrgb {
 
 impl Okhsl {
     fn from_color(color: LinSrgb) -> Self {
-        // Simplified conversion from RGB to OKHSL
         let max = color.r.max(color.g).max(color.b);
         let min = color.r.min(color.g).min(color.b);
         let delta = max - min;
@@ -100,7 +99,6 @@ impl Okhsl {
     }
 
     fn to_u8(&self) -> [u8; 3] {
-        // Simplified conversion from OKHSL to RGB
         let c = (1.0 - (2.0 * self.lightness - 1.0).abs()) * self.saturation;
         let x = c * (1.0 - ((self.hue.to_degrees() / 60.0) % 2.0 - 1.0).abs());
         let m = self.lightness - c / 2.0;
@@ -132,7 +130,6 @@ fn from_degrees(degrees: f32) -> f32 {
 }
 
 fn estimate_lc(bg: egui::Color32, fg: egui::Color32) -> f32 {
-    // Simplified contrast estimation
     let bg_lum = {
         let [r, g, b, _] = bg.to_array();
         0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32
@@ -142,124 +139,106 @@ fn estimate_lc(bg: egui::Color32, fg: egui::Color32) -> f32 {
         0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32
     };
 
-    (bg_lum - fg_lum) / 2.55 // Normalize to approximate APCA scale
+    (bg_lum - fg_lum) / 2.55
 }
 
-// Main Colorix struct with arrays of raw and generated colors
-#[derive(Resource, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Colorix {
-    // Raw colors (serialized) - 12 color slots
-    pub raw_colors: [egui::Color32; 12],
-    dark_mode: bool,
-
-    // Generated colors (not serialized)
-    #[serde(skip)]
-    colors: Option<[egui::Color32; 12]>,
+// Radix preset colors
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsRefStr, EnumIter)]
+pub enum RadixColor {
+    Tomato,
+    Red,
+    Ruby,
+    Crimson,
+    Pink,
+    Plum,
+    Purple,
+    Violet,
+    Iris,
+    Indigo,
+    Blue,
+    Cyan,
+    Teal,
+    Jade,
+    Green,
+    Grass,
+    Bronze,
+    Gold,
+    Brown,
+    Orange,
+    Amber,
+    Yellow,
+    Lime,
+    Mint,
+    Sky,
+    Gray,
+    Slate,
+    Custom(egui::Color32),
 }
 
-impl Default for Colorix {
-    fn default() -> Self {
-        Self {
-            raw_colors: [egui::Color32::GRAY; 12],
-            dark_mode: true,
-            colors: None,
+impl ToCstr for RadixColor {
+    fn cstr(&self) -> Cstr {
+        format!("[{} {}]", self.to_color32().to_hex(), self.as_ref())
+    }
+}
+
+impl RadixColor {
+    pub fn to_color32(&self) -> egui::Color32 {
+        match self {
+            Self::Tomato => egui::Color32::from_rgb(229, 77, 46),
+            Self::Red => egui::Color32::from_rgb(229, 72, 77),
+            Self::Ruby => egui::Color32::from_rgb(229, 70, 102),
+            Self::Crimson => egui::Color32::from_rgb(233, 61, 130),
+            Self::Pink => egui::Color32::from_rgb(214, 64, 159),
+            Self::Plum => egui::Color32::from_rgb(171, 74, 186),
+            Self::Purple => egui::Color32::from_rgb(142, 78, 198),
+            Self::Violet => egui::Color32::from_rgb(117, 91, 223),
+            Self::Iris => egui::Color32::from_rgb(91, 91, 214),
+            Self::Indigo => egui::Color32::from_rgb(62, 99, 221),
+            Self::Blue => egui::Color32::from_rgb(0, 112, 243),
+            Self::Cyan => egui::Color32::from_rgb(0, 157, 196),
+            Self::Teal => egui::Color32::from_rgb(18, 165, 148),
+            Self::Jade => egui::Color32::from_rgb(29, 167, 139),
+            Self::Green => egui::Color32::from_rgb(48, 164, 108),
+            Self::Grass => egui::Color32::from_rgb(70, 167, 88),
+            Self::Bronze => egui::Color32::from_rgb(161, 128, 114),
+            Self::Gold => egui::Color32::from_rgb(151, 117, 68),
+            Self::Brown => egui::Color32::from_rgb(173, 127, 88),
+            Self::Orange => egui::Color32::from_rgb(247, 107, 21),
+            Self::Amber => egui::Color32::from_rgb(255, 190, 10),
+            Self::Yellow => egui::Color32::from_rgb(252, 211, 78),
+            Self::Lime => egui::Color32::from_rgb(189, 222, 61),
+            Self::Mint => egui::Color32::from_rgb(134, 225, 187),
+            Self::Sky => egui::Color32::from_rgb(117, 199, 240),
+            Self::Gray => egui::Color32::from_rgb(141, 141, 141),
+            Self::Slate => egui::Color32::from_rgb(136, 144, 162),
+            Self::Custom(color) => *color,
         }
     }
 }
 
-impl Colorix {
-    pub fn new(base_color: egui::Color32, dark_mode: bool) -> Self {
-        let mut colorix = Self {
-            raw_colors: [base_color; 12],
-            dark_mode,
-            colors: None,
-        };
-        colorix.generate_scale();
-        colorix
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, AsRefStr)]
+pub enum Semantic {
+    Accent,
+    Success,
+    Error,
+    Warning,
+    Background,
+}
+
+// A 12-step color palette
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ColorPalette {
+    colors: [egui::Color32; 12],
+}
+
+impl ColorPalette {
+    fn new(base_color: egui::Color32, dark_mode: bool) -> Self {
+        let colors = Self::generate_color_scale(base_color, dark_mode);
+        Self { colors }
     }
 
-    pub fn from_rgb(rgb: [u8; 3], dark_mode: bool) -> Self {
-        let base_color = egui::Color32::from_rgb(rgb[0], rgb[1], rgb[2]);
-        Self::new(base_color, dark_mode)
-    }
-
-    // Individual color setters by index
-    pub fn set_app_background(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[0] = color;
-        self
-    }
-
-    pub fn set_subtle_background(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[1] = color;
-        self
-    }
-
-    pub fn set_ui_element_background(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[2] = color;
-        self
-    }
-
-    pub fn set_hovered_ui_element_background(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[3] = color;
-        self
-    }
-
-    pub fn set_active_ui_element_background(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[4] = color;
-        self
-    }
-
-    pub fn set_subtle_borders_and_separators(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[5] = color;
-        self
-    }
-
-    pub fn set_ui_element_border_and_focus_rings(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[6] = color;
-        self
-    }
-
-    pub fn set_hovered_ui_element_border(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[7] = color;
-        self
-    }
-
-    pub fn set_solid_backgrounds(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[8] = color;
-        self
-    }
-
-    pub fn set_hovered_solid_backgrounds(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[9] = color;
-        self
-    }
-
-    pub fn set_low_contrast_text(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[10] = color;
-        self
-    }
-
-    pub fn set_high_contrast_text(&mut self, color: egui::Color32) -> &mut Self {
-        self.raw_colors[11] = color;
-        self
-    }
-
-    // Generate color scale and store in colors array
-    pub fn generate_scale(&mut self) -> &mut Self {
-        let generated_colors = Self::generate_color_scale(self.raw_colors, self.dark_mode);
-        self.colors = Some(generated_colors);
-        self
-    }
-
-    // Generate 12-step color scale from array of raw colors
-    fn generate_color_scale(
-        raw_colors: [egui::Color32; 12],
-        dark_mode: bool,
-    ) -> [egui::Color32; 12] {
-        // Use the base color from slot 8 (solid_backgrounds) as the primary color
-        let base_color = raw_colors[8];
+    fn generate_color_scale(base_color: egui::Color32, dark_mode: bool) -> [egui::Color32; 12] {
         let srgb = LinSrgb::from_color32(base_color);
-
         let mut okhsl = [Okhsl::from_color(srgb); 12];
         let mut rgbs = [srgb; 12];
         let mut scale = [egui::Color32::GRAY; 12];
@@ -268,7 +247,6 @@ impl Colorix {
         let hue = hsl.as_degrees();
 
         if dark_mode {
-            // Dark mode scale generation
             rgbs[8] = srgb;
             okhsl[8] = hsl;
 
@@ -334,7 +312,6 @@ impl Colorix {
                 okhsl[9].saturation = hsl.saturation;
             }
         } else {
-            // Light mode scale generation
             rgbs[8] = srgb;
             okhsl[8] = hsl;
 
@@ -350,7 +327,6 @@ impl Colorix {
                 if (0..9).contains(&i) {
                     okhsl[i] = Okhsl::from_color(rgbs[i]);
                     if i != 8 {
-                        // adapt hue to compensate for temperature shift
                         if hue > 0. && hue < 90. {
                             okhsl[i].hue = from_degrees(okhsl[i].as_degrees() + 10_f32 - i as f32);
                         }
@@ -363,7 +339,6 @@ impl Colorix {
                     okhsl[i] = Okhsl::from_color(srgb).darken(darken_values[i - 9]);
                 }
                 if i != 8 {
-                    // enhance saturation for all values (except original) and diminish for certain hues (greenish)
                     let hue_u8 = hue as u8;
                     let sat_val = match hue_u8 {
                         159..=216 => ((hue_u8 - 159) as f32 / 58_f32) * 0.25,
@@ -407,65 +382,361 @@ impl Colorix {
         scale
     }
 
-    // Get generated colors with panic on uninitialized access
-    fn get_colors(&self) -> &[egui::Color32; 12] {
-        self.colors
-            .as_ref()
-            .expect("Colorix not initialized! Call generate_scale() first.")
+    // Named accessors for color steps
+    pub fn bg_0(&self) -> egui::Color32 {
+        self.colors[0]
     }
 
-    // Color accessor methods
+    pub fn bg_1(&self) -> egui::Color32 {
+        self.colors[1]
+    }
+
+    pub fn interactive_0(&self) -> egui::Color32 {
+        self.colors[2]
+    }
+
+    pub fn interactive_1(&self) -> egui::Color32 {
+        self.colors[3]
+    }
+
+    pub fn interactive_2(&self) -> egui::Color32 {
+        self.colors[4]
+    }
+
+    pub fn border_0(&self) -> egui::Color32 {
+        self.colors[5]
+    }
+
+    pub fn border_1(&self) -> egui::Color32 {
+        self.colors[6]
+    }
+
+    pub fn border_2(&self) -> egui::Color32 {
+        self.colors[7]
+    }
+
+    pub fn solid_0(&self) -> egui::Color32 {
+        self.colors[8]
+    }
+
+    pub fn solid_1(&self) -> egui::Color32 {
+        self.colors[9]
+    }
+
+    pub fn text_0(&self) -> egui::Color32 {
+        self.colors[10]
+    }
+
+    pub fn text_1(&self) -> egui::Color32 {
+        self.colors[11]
+    }
+
+    // Indexed accessor
+    pub fn step(&self, index: usize) -> egui::Color32 {
+        self.colors[index.min(11)]
+    }
+}
+
+// Color theme definition
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ColorTheme {
+    pub accent: RadixColor,
+    pub success: RadixColor,
+    pub error: RadixColor,
+    pub warning: RadixColor,
+    pub background: RadixColor,
+}
+
+impl Default for ColorTheme {
+    fn default() -> Self {
+        Self {
+            accent: RadixColor::Blue,
+            error: RadixColor::Red,
+            success: RadixColor::Green,
+            warning: RadixColor::Amber,
+            background: RadixColor::Slate,
+        }
+    }
+}
+
+impl ColorTheme {
+    pub fn get_color(&self, semantic: Semantic) -> RadixColor {
+        match semantic {
+            Semantic::Accent => self.accent,
+            Semantic::Error => self.error,
+            Semantic::Success => self.success,
+            Semantic::Warning => self.warning,
+            Semantic::Background => self.background,
+        }
+    }
+    pub fn set_color(&mut self, semantic: Semantic, color: RadixColor) {
+        match semantic {
+            Semantic::Accent => self.accent = color,
+            Semantic::Error => self.error = color,
+            Semantic::Success => self.success = color,
+            Semantic::Warning => self.warning = color,
+            Semantic::Background => self.background = color,
+        }
+    }
+}
+
+// Main Colorix struct
+#[derive(Resource, Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Colorix {
+    theme: ColorTheme,
+    dark_mode: bool,
+
+    #[serde(skip)]
+    palettes: Option<SemanticPalettes>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SemanticPalettes {
+    accent: ColorPalette,
+    error: ColorPalette,
+    success: ColorPalette,
+    warning: ColorPalette,
+    background: ColorPalette,
+}
+
+impl Default for Colorix {
+    fn default() -> Self {
+        let mut colorix = Self {
+            theme: ColorTheme::default(),
+            dark_mode: true,
+            palettes: None,
+        };
+        colorix.generate_palettes();
+        colorix
+    }
+}
+
+impl Colorix {
+    pub fn new(base_color: egui::Color32, dark_mode: bool) -> Self {
+        let theme = ColorTheme {
+            accent: RadixColor::Custom(base_color),
+            error: RadixColor::Red,
+            success: RadixColor::Green,
+            warning: RadixColor::Amber,
+            background: RadixColor::Custom(base_color),
+        };
+        Self::with_theme(theme, dark_mode)
+    }
+
+    pub fn with_theme(theme: ColorTheme, dark_mode: bool) -> Self {
+        let mut colorix = Self {
+            theme,
+            dark_mode,
+            palettes: None,
+        };
+        colorix.generate_palettes();
+        colorix
+    }
+
+    pub fn set_theme(&mut self, theme: ColorTheme) -> &mut Self {
+        self.theme = theme;
+        self.generate_palettes();
+        self
+    }
+
+    pub fn set_dark_mode(&mut self, dark_mode: bool) -> &mut Self {
+        self.dark_mode = dark_mode;
+        self.generate_palettes();
+        self
+    }
+
+    pub fn dark_mode(&self) -> bool {
+        self.dark_mode
+    }
+
+    pub fn theme(&self) -> ColorTheme {
+        self.theme
+    }
+
+    // Alias for generate_palettes for backward compatibility
+    pub fn generate_scale(&mut self) -> &mut Self {
+        self.generate_palettes()
+    }
+
+    pub fn generate_palettes(&mut self) -> &mut Self {
+        let palettes = SemanticPalettes {
+            accent: ColorPalette::new(self.theme.accent.to_color32(), self.dark_mode),
+            error: ColorPalette::new(self.theme.error.to_color32(), self.dark_mode),
+            success: ColorPalette::new(self.theme.success.to_color32(), self.dark_mode),
+            warning: ColorPalette::new(self.theme.warning.to_color32(), self.dark_mode),
+            background: ColorPalette::new(self.theme.background.to_color32(), self.dark_mode),
+        };
+        self.palettes = Some(palettes);
+        self
+    }
+
+    fn get_palettes(&self) -> &SemanticPalettes {
+        self.palettes
+            .as_ref()
+            .expect("Colorix not initialized! Call generate_palettes() first.")
+    }
+
+    fn color_dropdown(ui: &mut egui::Ui, color: &mut RadixColor) -> bool {
+        let mut changed = Selector::ui_enum(color, ui).0.is_some();
+        if let RadixColor::Custom(c) = color {
+            if c.edit(&mut default(), ui) {
+                changed = true;
+            }
+        }
+
+        changed
+    }
+
+    fn show_palette_squares(ui: &mut egui::Ui, palette: &ColorPalette) {
+        ui.horizontal(|ui| {
+            for i in 0..12 {
+                let color = palette.step(i);
+                let size = egui::vec2(12.0, 12.0);
+                let (rect, response) = ui.allocate_exact_size(size, Sense::HOVER);
+                ui.painter().rect_filled(rect, 1.0, color);
+
+                if response.hovered() {
+                    let tooltip_text = match i {
+                        0 => "bg_0",
+                        1 => "bg_1",
+                        2 => "interactive_0",
+                        3 => "interactive_1",
+                        4 => "interactive_2",
+                        5 => "border_0",
+                        6 => "border_1",
+                        7 => "border_2",
+                        8 => "solid_0",
+                        9 => "solid_1",
+                        10 => "text_0",
+                        11 => "text_1",
+                        _ => "unknown",
+                    };
+                    response.on_hover_text(tooltip_text);
+                }
+            }
+        });
+    }
+
+    pub fn show_semantic_editor(&mut self, semantic: Semantic, ui: &mut Ui) -> bool {
+        let mut changed = false;
+        ui.group(|ui| {
+            ui.label(semantic.as_ref());
+            let mut color = self.theme().get_color(semantic);
+            ui.horizontal(|ui| {
+                if Self::color_dropdown(ui, &mut color) {
+                    let mut theme = self.theme();
+                    theme.set_color(semantic, color);
+                    self.set_theme(theme);
+                    changed = true;
+                }
+                Self::show_palette_squares(ui, self.get_palette(semantic));
+            });
+        });
+        changed
+    }
+
+    pub fn get_palette(&self, semantic: Semantic) -> &ColorPalette {
+        let palettes = self.get_palettes();
+        match semantic {
+            Semantic::Accent => &palettes.accent,
+            Semantic::Success => &palettes.success,
+            Semantic::Error => &palettes.error,
+            Semantic::Warning => &palettes.warning,
+            Semantic::Background => &palettes.background,
+        }
+    }
+
+    pub fn accent(&self) -> &ColorPalette {
+        &self.get_palettes().accent
+    }
+
+    pub fn error(&self) -> &ColorPalette {
+        &self.get_palettes().error
+    }
+
+    pub fn success(&self) -> &ColorPalette {
+        &self.get_palettes().success
+    }
+
+    pub fn warning(&self) -> &ColorPalette {
+        &self.get_palettes().warning
+    }
+
+    pub fn background(&self) -> &ColorPalette {
+        &self.get_palettes().background
+    }
+
+    // Legacy compatibility methods
     pub fn app_background(&self) -> egui::Color32 {
-        self.get_colors()[0]
+        self.background().bg_0()
     }
 
     pub fn subtle_background(&self) -> egui::Color32 {
-        self.get_colors()[1]
+        self.background().bg_1()
     }
 
     pub fn ui_element_background(&self) -> egui::Color32 {
-        self.get_colors()[2]
+        self.background().interactive_0()
     }
 
     pub fn hovered_ui_element_background(&self) -> egui::Color32 {
-        self.get_colors()[3]
+        self.background().interactive_1()
     }
 
     pub fn active_ui_element_background(&self) -> egui::Color32 {
-        self.get_colors()[4]
+        self.background().interactive_2()
     }
 
     pub fn subtle_borders_and_separators(&self) -> egui::Color32 {
-        self.get_colors()[5]
+        self.background().border_0()
     }
 
     pub fn ui_element_border_and_focus_rings(&self) -> egui::Color32 {
-        self.get_colors()[6]
+        self.background().border_1()
     }
 
     pub fn hovered_ui_element_border(&self) -> egui::Color32 {
-        self.get_colors()[7]
+        self.background().border_2()
     }
 
     pub fn solid_backgrounds(&self) -> egui::Color32 {
-        self.get_colors()[8]
+        self.accent().solid_0()
     }
 
     pub fn hovered_solid_backgrounds(&self) -> egui::Color32 {
-        self.get_colors()[9]
+        self.accent().solid_1()
     }
 
     pub fn low_contrast_text(&self) -> egui::Color32 {
-        self.get_colors()[10]
+        self.background().text_0()
     }
 
     pub fn high_contrast_text(&self) -> egui::Color32 {
-        self.get_colors()[11]
+        self.background().text_1()
     }
 
-    // Get color by index (0-11)
+    // Get color by index (0-11) for backward compatibility
     pub fn color(&self, index: usize) -> egui::Color32 {
-        self.get_colors()[index.min(11)]
+        self.background().step(index)
+    }
+
+    // Raw colors getter for backward compatibility
+    pub fn raw_colors(&self) -> [egui::Color32; 12] {
+        let bg = self.background();
+        [
+            bg.bg_0(),
+            bg.bg_1(),
+            bg.interactive_0(),
+            bg.interactive_1(),
+            bg.interactive_2(),
+            bg.border_0(),
+            bg.border_1(),
+            bg.border_2(),
+            bg.solid_0(),
+            bg.solid_1(),
+            bg.text_0(),
+            bg.text_1(),
+        ]
     }
 
     pub fn set_egui_style(&self, style: &mut egui::style::Style) {
@@ -486,23 +757,23 @@ impl Colorix {
             noninteractive: egui::style::WidgetVisuals {
                 weak_bg_fill: self.subtle_background(),
                 bg_fill: self.subtle_background(),
-                bg_stroke: egui::Stroke::new(1.0, self.subtle_borders_and_separators()), // separators, indentation lines
-                fg_stroke: egui::Stroke::new(1.0, self.low_contrast_text()), // normal text color
+                bg_stroke: egui::Stroke::new(1.0, self.subtle_borders_and_separators()),
+                fg_stroke: egui::Stroke::new(1.0, self.low_contrast_text()),
                 corner_radius: ROUNDING,
                 expansion: 0.0,
             },
             inactive: egui::style::WidgetVisuals {
-                weak_bg_fill: self.ui_element_background(), // button background
-                bg_fill: self.ui_element_background(),      // checkbox background
+                weak_bg_fill: self.ui_element_background(),
+                bg_fill: self.ui_element_background(),
                 bg_stroke: egui::Stroke::new(1.0, self.ui_element_background()),
-                fg_stroke: egui::Stroke::new(1.0, self.low_contrast_text()), // button text
+                fg_stroke: egui::Stroke::new(1.0, self.low_contrast_text()),
                 corner_radius: ROUNDING,
                 expansion: 0.0,
             },
             hovered: egui::style::WidgetVisuals {
                 weak_bg_fill: self.hovered_ui_element_background(),
                 bg_fill: self.hovered_ui_element_background(),
-                bg_stroke: egui::Stroke::new(1.0, self.hovered_ui_element_border()), // e.g. hover over window edge or button
+                bg_stroke: egui::Stroke::new(1.0, self.hovered_ui_element_border()),
                 fg_stroke: egui::Stroke::new(1.5, self.high_contrast_text()),
                 corner_radius: egui::CornerRadius::same(3),
                 expansion: 1.0,
@@ -527,13 +798,90 @@ impl Colorix {
         style.visuals.selection = selection;
         style.visuals.widgets = widgets;
         style.visuals.text_cursor = text_cursor;
-        style.visuals.extreme_bg_color = self.app_background(); // e.g. TextEdit background
-        style.visuals.faint_bg_color = self.app_background(); // striped grid is originally from_additive_luminance(5)
+        style.visuals.extreme_bg_color = self.app_background();
+        style.visuals.faint_bg_color = self.app_background();
         style.visuals.code_bg_color = self.ui_element_background();
         style.visuals.window_fill = self.subtle_background();
         style.visuals.window_stroke = egui::Stroke::new(1.0, self.subtle_borders_and_separators());
         style.visuals.panel_fill = self.subtle_background();
         style.visuals.hyperlink_color = self.hovered_solid_backgrounds();
+        style.visuals.window_shadow.color = shadow;
+    }
+
+    pub fn set_egui_style_for_semantic(&self, style: &mut egui::style::Style, semantic: Semantic) {
+        let palette = match semantic {
+            Semantic::Accent => &self.get_palettes().accent,
+            Semantic::Error => &self.get_palettes().error,
+            Semantic::Success => &self.get_palettes().success,
+            Semantic::Warning => &self.get_palettes().warning,
+            Semantic::Background => &self.get_palettes().background,
+        };
+
+        let shadow = if self.dark_mode {
+            egui::Color32::from_black_alpha(96)
+        } else {
+            egui::Color32::from_black_alpha(25)
+        };
+        let selection = egui::style::Selection {
+            bg_fill: palette.solid_0(),
+            stroke: egui::Stroke::new(1.0, palette.text_1()),
+        };
+        let text_cursor = egui::style::TextCursorStyle {
+            stroke: egui::Stroke::new(2.0, palette.text_0()),
+            ..Default::default()
+        };
+        let widgets = egui::style::Widgets {
+            noninteractive: egui::style::WidgetVisuals {
+                weak_bg_fill: palette.bg_1(),
+                bg_fill: palette.bg_1(),
+                bg_stroke: egui::Stroke::new(1.0, palette.border_0()),
+                fg_stroke: egui::Stroke::new(1.0, palette.text_0()),
+                corner_radius: ROUNDING,
+                expansion: 0.0,
+            },
+            inactive: egui::style::WidgetVisuals {
+                weak_bg_fill: palette.interactive_0(),
+                bg_fill: palette.interactive_0(),
+                bg_stroke: egui::Stroke::new(1.0, palette.border_0()),
+                fg_stroke: egui::Stroke::new(1.0, palette.text_0()),
+                corner_radius: ROUNDING,
+                expansion: 0.0,
+            },
+            hovered: egui::style::WidgetVisuals {
+                weak_bg_fill: palette.interactive_1(),
+                bg_fill: palette.interactive_1(),
+                bg_stroke: egui::Stroke::new(1.0, palette.border_2()),
+                fg_stroke: egui::Stroke::new(1.5, palette.text_1()),
+                corner_radius: egui::CornerRadius::same(3),
+                expansion: 1.0,
+            },
+            active: egui::style::WidgetVisuals {
+                weak_bg_fill: palette.interactive_2(),
+                bg_fill: palette.interactive_2(),
+                bg_stroke: egui::Stroke::new(1.0, palette.border_1()),
+                fg_stroke: egui::Stroke::new(2.0, palette.text_1()),
+                corner_radius: ROUNDING,
+                expansion: 1.0,
+            },
+            open: egui::style::WidgetVisuals {
+                weak_bg_fill: palette.interactive_2(),
+                bg_fill: palette.interactive_2(),
+                bg_stroke: egui::Stroke::new(1.0, palette.border_1()),
+                fg_stroke: egui::Stroke::new(1.0, palette.text_1()),
+                corner_radius: ROUNDING,
+                expansion: 0.0,
+            },
+        };
+        style.visuals.selection = selection;
+        style.visuals.widgets = widgets;
+        style.visuals.text_cursor = text_cursor;
+        style.visuals.extreme_bg_color = palette.bg_0();
+        style.visuals.faint_bg_color = palette.bg_0();
+        style.visuals.code_bg_color = palette.interactive_0();
+        style.visuals.window_fill = palette.bg_1();
+        style.visuals.window_stroke = egui::Stroke::new(1.0, palette.border_0());
+        style.visuals.panel_fill = palette.bg_1();
+        style.visuals.hyperlink_color = palette.solid_1();
         style.visuals.window_shadow.color = shadow;
     }
 
@@ -549,10 +897,33 @@ impl Colorix {
     }
 }
 
+// Extension trait for Ui to apply semantic coloring
+pub trait UiColorixExt {
+    fn colorix_semantic<R>(&mut self, semantic: Semantic, f: impl FnOnce(&mut egui::Ui) -> R) -> R;
+}
+
+impl UiColorixExt for egui::Ui {
+    fn colorix_semantic<R>(&mut self, semantic: Semantic, f: impl FnOnce(&mut egui::Ui) -> R) -> R {
+        let original_style = (*self.ctx().style()).clone();
+        self.ctx().style_mut(|style| {
+            colorix().set_egui_style_for_semantic(style, semantic);
+        });
+        let result = f(self);
+        self.ctx().set_style(original_style);
+        result
+    }
+}
+
 static COLORIX: Mutex<Colorix> = Mutex::new(Colorix {
-    raw_colors: [egui::Color32::GRAY; 12],
+    theme: ColorTheme {
+        accent: RadixColor::Blue,
+        error: RadixColor::Red,
+        success: RadixColor::Green,
+        warning: RadixColor::Amber,
+        background: RadixColor::Slate,
+    },
     dark_mode: true,
-    colors: None,
+    palettes: None,
 });
 
 pub fn colorix() -> MutexGuard<'static, Colorix> {

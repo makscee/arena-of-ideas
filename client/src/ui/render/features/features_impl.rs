@@ -2684,6 +2684,51 @@ impl<T: FCompactView> FCompactView for &T {
     }
 }
 
+// Colorix implementation
+impl FDisplay for Colorix {
+    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
+        ui.menu_button("Theme".cstr_c(self.color(0)), |ui| {
+            "Theme".cstr_c(self.color(0)).label(ui)
+        })
+        .response
+    }
+}
+
+impl FEdit for Colorix {
+    fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
+        let mut changed = false;
+
+        ui.group(|ui| {
+            ui.label("Theme Configuration");
+
+            ui.horizontal(|ui| {
+                ui.label("Dark Mode:");
+                let mut dark_mode = self.dark_mode();
+                if ui.checkbox(&mut dark_mode, "").changed() {
+                    self.set_dark_mode(dark_mode);
+                    changed = true;
+                }
+            });
+
+            // Semantic color selectors
+            ui.vertical(|ui| {
+                changed |= self.show_semantic_editor(Semantic::Accent, ui);
+                changed |= self.show_semantic_editor(Semantic::Background, ui);
+                changed |= self.show_semantic_editor(Semantic::Success, ui);
+                changed |= self.show_semantic_editor(Semantic::Error, ui);
+                changed |= self.show_semantic_editor(Semantic::Warning, ui);
+            });
+        });
+
+        if changed {
+            self.apply(ui.ctx());
+            self.clone().save();
+        }
+
+        changed
+    }
+}
+
 impl FCard for NUnit {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
         let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);

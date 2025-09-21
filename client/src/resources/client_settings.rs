@@ -2,8 +2,7 @@ use bevy::{
     ecs::event::EventReader,
     window::{PresentMode, VideoModeSelection, WindowResized},
 };
-use bevy_egui::egui::color_picker::color_picker_hsva_2d;
-use ecolor::Hsva;
+
 use proc_macros::Settings;
 
 use super::*;
@@ -132,40 +131,6 @@ impl FEdit for WindowMode {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
         let (old_value, _response) = Selector::ui_enum(self, ui);
         old_value.is_some()
-    }
-}
-
-impl FDisplay for Colorix {
-    fn display(&self, _: &Context, ui: &mut Ui) -> Response {
-        ui.menu_button("Theme".cstr_c(self.color(0)), |ui| {
-            "Theme".cstr_c(self.color(0)).label(ui)
-        })
-        .response
-    }
-}
-
-impl FEdit for Colorix {
-    fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        let mut changed = false;
-        let mut hsva = Hsva::from_srgba_unmultiplied(self.raw_colors[0].to_array());
-        ui.horizontal(|ui| {
-            for i in 0_usize..12 {
-                let rect = ui.allocate_space(LINE_HEIGHT.v2()).1;
-                ui.painter().rect_filled(rect, 0, colorix().color(i));
-            }
-        });
-        if color_picker_hsva_2d(ui, &mut hsva, egui::color_picker::Alpha::Opaque) {
-            let c = hsva.to_srgba_unmultiplied();
-            let color = Color32::from_rgba_unmultiplied(c[0], c[1], c[2], c[3]);
-            for c in &mut self.raw_colors {
-                *c = color;
-            }
-            self.generate_scale();
-            self.apply(ui.ctx());
-            self.clone().save();
-            changed = true;
-        }
-        changed
     }
 }
 
