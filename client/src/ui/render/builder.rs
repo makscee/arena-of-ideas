@@ -57,6 +57,24 @@ impl<'a, T> RenderBuilder<'a, T> {
         matches!(self.data, RenderDataRef::Mutable(_))
     }
 
+    pub fn has_composers(&self) -> bool {
+        !self.composers.is_empty()
+    }
+
+    pub fn compose_safe(&self, ui: &mut Ui) -> Option<Response> {
+        if self.composers.is_empty() {
+            None
+        } else {
+            Some(
+                self.composers
+                    .iter()
+                    .map(|c| c.compose(self.data(), self.ctx, ui))
+                    .reduce(|a, b| a.union(b))
+                    .unwrap(),
+            )
+        }
+    }
+
     /// Add a composer to the pipeline
     pub fn with_composer<C: Composer<T> + 'a>(mut self, composer: C) -> Self {
         self.composers.push(Box::new(composer));

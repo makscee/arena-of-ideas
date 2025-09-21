@@ -12,6 +12,9 @@ pub use selector_composer::*;
 pub mod menu;
 pub use menu::*;
 
+mod button_composer;
+pub use button_composer::*;
+
 /// Base trait for composers that transform data into UI
 pub trait Composer<T> {
     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response;
