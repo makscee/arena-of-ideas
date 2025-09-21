@@ -3,58 +3,47 @@ use crate::IntoEnumIterator;
 use crate::ui::widgets::Selector;
 
 /// Composer for rendering enum selectors
-pub struct SelectorComposer<T> {
-    _phantom: std::marker::PhantomData<T>,
+pub struct SelectorComposer<'a, T> {
+    data: DataRef<'a, T>,
 }
 
-impl<T> Default for SelectorComposer<T> {
-    fn default() -> Self {
+impl<'a, T> SelectorComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
         Self {
-            _phantom: std::marker::PhantomData,
+            data: DataRef::Immutable(data),
+        }
+    }
+
+    pub fn new_mut(data: &'a mut T) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
         }
     }
 }
 
-impl<T> SelectorComposer<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}
-
-impl<T: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq> Composer<T>
-    for SelectorComposer<T>
+impl<'a, T: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq> Composer<T>
+    for SelectorComposer<'a, T>
 {
-    fn compose(&self, data: &T, _context: &Context, ui: &mut Ui) -> Response {
-        let mut data_clone = data.clone();
-        let (_old_value, response) = Selector::ui_enum(&mut data_clone, ui);
-        response
-    }
-}
-
-impl<T: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq> ComposerMut<T>
-    for SelectorComposer<T>
-{
-    fn compose_mut(&self, data: &mut T, _context: &Context, ui: &mut Ui) -> bool {
-        let (old_value, _response) = Selector::ui_enum(data, ui);
-        old_value.is_some()
-    }
-}
-
-/// Extension methods for RenderBuilder to use selector composers
-impl<'a, T> RenderBuilder<'a, T>
-where
-    T: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq,
-{
-    /// Render as a selector
-    pub fn selector(self, ui: &mut Ui) -> Response {
-        SelectorComposer::new().compose(self.data(), self.context(), ui)
+    fn data(&self) -> &T {
+        self.data.as_ref()
     }
 
-    /// Edit as a selector
-    pub fn edit_selector(self, ui: &mut Ui) -> bool {
-        match self.data {
-            RenderDataRef::Mutable(data) => SelectorComposer::new().compose_mut(data, self.ctx, ui),
-            RenderDataRef::Immutable(_) => panic!("Cannot edit immutable data"),
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, _context: &Context, ui: &mut Ui) -> Response {
+        if self.is_mutable() {
+            let mut data_clone = self.data().clone();
+            let (_old_value, response) = Selector::ui_enum(&mut data_clone, ui);
+            response
+        } else {
+            let data_clone = self.data().clone();
+            ui.label(data_clone.as_ref())
         }
     }
 }

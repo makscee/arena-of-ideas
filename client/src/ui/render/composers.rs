@@ -12,33 +12,273 @@ pub use selector_composer::*;
 pub mod menu;
 pub use menu::*;
 
-mod button_composer;
-pub use button_composer::*;
-
-/// Base trait for composers that transform data into UI
+/// Base trait for all composers - they wrap data and can be composed
 pub trait Composer<T> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response;
+    /// Get immutable reference to the wrapped data
+    fn data(&self) -> &T;
+
+    /// Get mutable reference to the wrapped data - panics if data is not mutable
+    fn data_mut(&mut self) -> &mut T;
+
+    /// Check if the data reference is mutable
+    fn is_mutable(&self) -> bool;
+
+    /// Compose (render) the data to UI
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response;
 }
 
-/// Trait for composers that can modify data
-pub trait ComposerMut<T> {
-    fn compose_mut(&self, data: &mut T, context: &Context, ui: &mut Ui) -> bool;
+/// Reference wrapper that composers use to hold data
+pub enum DataRef<'a, T> {
+    Immutable(&'a T),
+    Mutable(&'a mut T),
 }
 
-/// Composer for rendering titles
-pub struct TitleComposer;
+impl<'a, T> DataRef<'a, T> {
+    pub fn as_ref(&self) -> &T {
+        match self {
+            DataRef::Immutable(data) => data,
+            DataRef::Mutable(data) => data,
+        }
+    }
 
-impl<T: FTitle> Composer<T> for TitleComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        data.title(context).button(ui)
+    pub fn as_mut(&mut self) -> &mut T {
+        match self {
+            DataRef::Immutable(_) => {
+                panic!("Attempted to get mutable reference from immutable data")
+            }
+            DataRef::Mutable(data) => data,
+        }
+    }
+
+    pub fn is_mutable(&self) -> bool {
+        matches!(self, DataRef::Mutable(_))
     }
 }
 
-/// Composer for rendering tags
-pub struct TagComposer;
+/// Basic composer that just wraps data
+pub struct DataComposer<'a, T> {
+    data: DataRef<'a, T>,
+}
 
-impl<T: FTag> Composer<T> for TagComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
+impl<'a, T> DataComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+        }
+    }
+
+    pub fn new_mut(data: &'a mut T) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
+        }
+    }
+}
+
+impl<'a, T: FDisplay> Composer<T> for DataComposer<'a, T> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.data.as_ref().display(context, ui)
+    }
+}
+
+/// Title composer - wraps data that implements FTitle
+pub struct TitleComposer<'a, T: FTitle> {
+    data: DataRef<'a, T>,
+}
+
+impl<'a, T: FTitle> TitleComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+        }
+    }
+
+    pub fn new_mut(data: &'a mut T) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
+        }
+    }
+}
+
+impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        self.data.as_ref().title(context).button(ui)
+    }
+}
+
+/// Button composer - wraps another composer and makes it clickable
+pub struct ButtonComposer<C> {
+    inner: C,
+    semantic: Option<crate::ui::core::colorix::Semantic>,
+    disabled: bool,
+    min_width: Option<f32>,
+}
+
+impl<C> ButtonComposer<C> {
+    pub fn new(inner: C) -> Self {
+        Self {
+            inner,
+            semantic: None,
+            disabled: false,
+            min_width: None,
+        }
+    }
+
+    pub fn semantic(mut self, semantic: crate::ui::core::colorix::Semantic) -> Self {
+        self.semantic = Some(semantic);
+        self
+    }
+
+    pub fn accent(mut self) -> Self {
+        self.semantic = Some(crate::ui::core::colorix::Semantic::Accent);
+        self
+    }
+
+    pub fn disabled(mut self) -> Self {
+        self.disabled = true;
+        self
+    }
+
+    pub fn min_width(mut self, width: f32) -> Self {
+        self.min_width = Some(width);
+        self
+    }
+}
+
+impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
+    fn data(&self) -> &T {
+        self.inner.data()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.inner.data_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.inner.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        use crate::ui::core::colorix::UiColorixExt;
+
+        if self.disabled {
+            ui.disable();
+        }
+
+        let response = if let Some(semantic) = self.semantic {
+            ui.colorix_semantic(semantic, |ui| self.render_button_internal(context, ui))
+        } else {
+            self.render_button_internal(context, ui)
+        };
+
+        response
+    }
+}
+
+impl<C> ButtonComposer<C> {
+    fn render_button_internal<T>(&self, context: &Context, ui: &mut Ui) -> Response
+    where
+        C: Composer<T>,
+    {
+        // Get the body content from inner composer
+        let body_response = self.inner.compose(context, ui);
+
+        let sense = if self.disabled {
+            egui::Sense::hover()
+        } else {
+            egui::Sense::click()
+        };
+
+        let button_rect = body_response.rect;
+
+        // Apply minimum width if specified
+        let final_rect = if let Some(min_width) = self.min_width {
+            if button_rect.width() < min_width {
+                egui::Rect::from_min_size(
+                    button_rect.min,
+                    egui::vec2(min_width, button_rect.height()),
+                )
+            } else {
+                button_rect
+            }
+        } else {
+            button_rect
+        };
+
+        let button_response = ui.interact(final_rect, body_response.id, sense);
+
+        // Apply hover effects to the frame
+        if button_response.hovered() && !self.disabled {
+            let hover_color = ui.style().interact(&button_response).bg_stroke.color;
+            ui.painter().rect_stroke(
+                final_rect,
+                egui::CornerRadius::same(4),
+                egui::Stroke::new(1.0, hover_color),
+                egui::StrokeKind::Outside,
+            );
+        }
+
+        button_response
+    }
+}
+
+/// Tag composer for compact tag view
+pub struct TagComposer<'a, T: FTag> {
+    data: DataRef<'a, T>,
+}
+
+impl<'a, T: FTag> TagComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+        }
+    }
+
+    pub fn new_mut(data: &'a mut T) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
+        }
+    }
+}
+
+impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        let data = self.data.as_ref();
         let name = data.tag_name(context);
         let color = data.tag_color(context);
 
@@ -50,83 +290,105 @@ impl<T: FTag> Composer<T> for TagComposer {
     }
 }
 
-/// Composer for rendering compact views with hover details
-pub struct CompactViewComposer {
-    pub as_button: bool,
+/// List composer that wraps Vec<T> and an element composer function
+pub struct ListComposer<'a, T, F> {
+    data: DataRef<'a, Vec<T>>,
+    element_composer: F,
 }
 
-impl CompactViewComposer {
-    pub fn new() -> Self {
-        Self { as_button: false }
+impl<'a, T, F> ListComposer<'a, T, F>
+where
+    F: Fn(&T) -> Box<dyn Composer<T> + 'a>,
+{
+    pub fn new(data: &'a Vec<T>, element_composer: F) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+            element_composer,
+        }
     }
 
-    pub fn as_button() -> Self {
-        Self { as_button: true }
-    }
-}
-
-impl<T: FCompactView> Composer<T> for CompactViewComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let response = ui
-            .horizontal(|ui| {
-                ui.add_space(8.0);
-                data.render_compact(context, ui);
-                ui.add_space(0.0);
-            })
-            .response;
-        let response = ui.allocate_rect(
-            response.rect,
-            if self.as_button {
-                Sense::click()
-            } else {
-                Sense::hover()
-            },
-        );
-        let color = if response.hovered() {
-            YELLOW
-        } else {
-            ui.visuals().weak_text_color()
-        };
-        ui.painter().rect_stroke(
-            response.rect,
-            ROUNDING,
-            color.stroke(),
-            egui::StrokeKind::Outside,
-        );
-        response.on_hover_ui(|ui| data.render_hover(context, ui))
+    pub fn new_mut(data: &'a mut Vec<T>, element_composer: F) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
+            element_composer,
+        }
     }
 }
 
-/// Composer for rendering cards
-pub struct CardComposer;
+impl<'a, T, F> Composer<Vec<T>> for ListComposer<'a, T, F>
+where
+    F: Fn(&T) -> Box<dyn Composer<T> + '_>,
+{
+    fn data(&self) -> &Vec<T> {
+        self.data.as_ref()
+    }
 
-impl<T: FTitle + FDescription + FStats> Composer<T> for CardComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
+    fn data_mut(&mut self) -> &mut Vec<T> {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        let mut response = ui.label("");
+        for item in self.data.as_ref() {
+            let composer = (self.element_composer)(item);
+            response = response.union(composer.compose(context, ui));
+        }
+        response
+    }
+}
+
+/// Extension trait to enable chaining composers
+pub trait ComposerExt<T>: Sized {
+    fn as_button(self) -> ButtonComposer<Self> {
+        ButtonComposer::new(self)
+    }
+}
+
+impl<T, C: Composer<T>> ComposerExt<T> for C {}
+
+/// Card composer for full card views
+pub struct CardComposer<'a, T: FTitle + FDescription + FStats> {
+    data: DataRef<'a, T>,
+}
+
+impl<'a, T: FTitle + FDescription + FStats> CardComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+        }
+    }
+}
+
+impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        let data = self.data.as_ref();
         let color = context.color(ui);
 
-        let inner_response = Frame::new()
+        Frame::new()
             .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(color.stroke())
             .show(ui, |ui| {
-                let resp = ui
-                    .horizontal(|ui| {
-                        let resp = data.title(context).button(ui);
+                let resp = ui.horizontal(|ui| data.title(context).button(ui)).inner;
 
-                        // Optional menu button
-                        let _ = RectButton::new_size(5.0.v2()).ui(ui, |color, rect, _, ui| {
-                            ui.painter()
-                                .circle_filled(rect.center(), rect.width() * 0.5, color);
-                        });
-
-                        resp
-                    })
-                    .inner;
-
-                // Description
                 data.description(context).label_w(ui);
 
-                // Stats
                 ui.horizontal(|ui| {
                     for (var_name, var_value) in data.stats(context) {
                         TagWidget::new_var_value(var_name, var_value).ui(ui);
@@ -135,91 +397,11 @@ impl<T: FTitle + FDescription + FStats> Composer<T> for CardComposer {
 
                 resp
             })
-            .inner;
-
-        inner_response
+            .inner
     }
 }
 
-/// Composer for expandable tag/card views
-#[derive(Clone)]
-pub struct TagCardComposer {
-    default_expanded: bool,
-}
-
-impl Default for TagCardComposer {
-    fn default() -> Self {
-        Self {
-            default_expanded: false,
-        }
-    }
-}
-
-impl TagCardComposer {
-    pub fn new(expanded: bool) -> Self {
-        Self {
-            default_expanded: expanded,
-        }
-    }
-}
-
-impl<T: FTag + FTitle + FDescription + FStats + Node> Composer<T> for TagCardComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let expanded_id = data.egui_id().with(ui.id()).with("expanded");
-        let expanded = ui
-            .ctx()
-            .data(|r| r.get_temp::<bool>(expanded_id))
-            .unwrap_or(self.default_expanded);
-
-        let response_result =
-            context.with_layer_ref_r(ContextLayer::Owner(data.entity()), |context| {
-                if expanded {
-                    Ok(CardComposer.compose(data, context, ui))
-                } else {
-                    Ok(TagComposer.compose(data, context, ui))
-                }
-            });
-
-        let response = match response_result {
-            Ok(r) => r,
-            Err(_) => ui.label("Error loading data"),
-        };
-
-        if response.clicked() {
-            ui.ctx().data_mut(|w| w.insert_temp(expanded_id, !expanded));
-        }
-
-        response
-    }
-}
-
-/// Composer for rating display
-pub struct RatingComposer;
-
-impl<T: FRating> Composer<T> for RatingComposer {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let rating = data.rating(context).unwrap_or(0);
-        let text = rating.cstr_expanded();
-
-        let response = text.as_button().ui(ui);
-        response.clone().bar_menu(|ui| {
-            ui.vertical(|ui| {
-                "rating".cstr().label(ui);
-                ui.horizontal(|ui| {
-                    if "[red [b -]]".cstr().button(ui).clicked() {
-                        // Handle downvote
-                    }
-                    if "[green [b +]]".cstr().button(ui).clicked() {
-                        // Handle upvote
-                    }
-                });
-            });
-        });
-        response
-    }
-}
-
-/// Composer wrapper that adds a frame
+/// Frame composer that adds a frame around another composer
 pub struct FramedComposer<C> {
     inner: C,
     color: Option<Color32>,
@@ -237,172 +419,26 @@ impl<C> FramedComposer<C> {
 }
 
 impl<T, C: Composer<T>> Composer<T> for FramedComposer<C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
+    fn data(&self) -> &T {
+        self.inner.data()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.inner.data_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.inner.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
         let color = self.color.unwrap_or_else(|| context.color(ui));
 
         Frame::new()
             .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(color.stroke())
-            .show(ui, |ui| self.inner.compose(data, context, ui))
+            .show(ui, |ui| self.inner.compose(context, ui))
             .inner
-    }
-}
-
-/// Composer that shows info on hover
-pub struct WithTooltipComposer<C> {
-    inner: C,
-}
-
-impl<C> WithTooltipComposer<C> {
-    pub fn new(inner: C) -> Self {
-        Self { inner }
-    }
-}
-
-impl<T: FInfo, C: Composer<T>> Composer<T> for WithTooltipComposer<C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        self.inner
-            .compose(data, context, ui)
-            .on_hover_text(data.info(context).get_text())
-    }
-}
-
-/// Composer that adds validation feedback
-pub struct ValidatedComposer<C> {
-    inner: C,
-}
-
-impl<C> ValidatedComposer<C> {
-    pub fn new(inner: C) -> Self {
-        Self { inner }
-    }
-}
-
-impl<T: FValidate, C: Composer<T>> Composer<T> for ValidatedComposer<C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let response = self.inner.compose(data, context, ui);
-
-        if let Err(errors) = data.validate(context) {
-            ui.vertical(|ui| {
-                for error in errors {
-                    error.cstr_c(RED).label(ui);
-                }
-            });
-        }
-
-        response
-    }
-}
-
-/// Composer for showing children
-/// Note: Currently disabled due to associated type constraints with NodeExt
-// pub struct ChildrenComposer<C> {
-//     child_composer: C,
-// }
-
-// impl<C> ChildrenComposer<C> {
-//     pub fn new(child_composer: C) -> Self {
-//         Self { child_composer }
-//     }
-// }
-
-// impl<T: FChildren, C: Clone> Composer<T> for ChildrenComposer<C>
-// where
-//     C: for<'a> Composer<Box<dyn NodeExt + 'a>>,
-// {
-//     fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-//         ui.vertical(|ui| {
-//             if let Ok(children) = data.children(context) {
-//                 for child in children {
-//                     self.child_composer.compose(&child, context, ui);
-//                 }
-//             }
-//         })
-//         .response
-//     }
-// }
-
-/// Composer that adds search/filter functionality
-pub struct SearchableComposer<C> {
-    inner: C,
-    search_query: String,
-}
-
-impl<C> SearchableComposer<C> {
-    pub fn new(inner: C) -> Self {
-        Self {
-            inner,
-            search_query: String::new(),
-        }
-    }
-}
-
-impl<T: FSearchable, C: Composer<T>> Composer<T> for SearchableComposer<C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        if self.search_query.is_empty() || data.matches_search(&self.search_query, context) {
-            self.inner.compose(data, context, ui)
-        } else {
-            ui.label("")
-        }
-    }
-}
-
-/// Composer chain that applies multiple composers in sequence
-pub struct ComposerChain<T> {
-    composers: Vec<Box<dyn Composer<T>>>,
-}
-
-impl<T> ComposerChain<T> {
-    pub fn new() -> Self {
-        Self {
-            composers: Vec::new(),
-        }
-    }
-
-    pub fn add<C: Composer<T> + 'static>(mut self, composer: C) -> Self {
-        self.composers.push(Box::new(composer));
-        self
-    }
-}
-
-impl<T> Composer<T> for ComposerChain<T> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-        for composer in &self.composers {
-            response = response.union(composer.compose(data, context, ui));
-        }
-        response
-    }
-}
-
-/// Composer that renders in a collapsing header
-pub struct CollapsingComposer<C> {
-    inner: C,
-    title: String,
-    default_open: bool,
-}
-
-impl<C> CollapsingComposer<C> {
-    pub fn new(inner: C, title: String) -> Self {
-        Self {
-            inner,
-            title,
-            default_open: false,
-        }
-    }
-
-    pub fn default_open(mut self, open: bool) -> Self {
-        self.default_open = open;
-        self
-    }
-}
-
-impl<T, C: Composer<T>> Composer<T> for CollapsingComposer<C> {
-    fn compose(&self, data: &T, context: &Context, ui: &mut Ui) -> Response {
-        ui.collapsing(self.title.clone(), |ui| {
-            self.inner.compose(data, context, ui)
-        })
-        .header_response
     }
 }

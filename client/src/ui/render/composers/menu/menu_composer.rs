@@ -1,5 +1,4 @@
 use super::*;
-use crate::ui::render::builder::{RenderBuilder, RenderDataRef};
 use crate::ui::widgets::RectButton;
 use crate::{clipboard_get, clipboard_set};
 use egui::{Response, Ui};
@@ -60,17 +59,28 @@ impl<T: Clone> MenuResponse<T> {
     }
 }
 
-/// Builder for adding a menu to any RenderBuilder
-pub struct MenuBuilder<'a, T: Clone> {
-    render_builder: RenderBuilder<'a, T>,
+/// Menu composer that wraps another composer and adds a menu button
+pub struct MenuComposer<'a, T: Clone, C> {
+    inner: C,
+    data: DataRef<'a, T>,
     actions: Vec<MenuItem<'a, T>>,
     dangerous_actions: Vec<MenuItem<'a, T>>,
 }
 
-impl<'a, T: Clone> MenuBuilder<'a, T> {
-    pub fn new(render_builder: RenderBuilder<'a, T>) -> Self {
+impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
+    pub fn new(inner: C, data: &'a T) -> Self {
         Self {
-            render_builder,
+            inner,
+            data: DataRef::Immutable(data),
+            actions: Vec::new(),
+            dangerous_actions: Vec::new(),
+        }
+    }
+
+    pub fn new_mut(inner: C, data: &'a mut T) -> Self {
+        Self {
+            inner,
+            data: DataRef::Mutable(data),
             actions: Vec::new(),
             dangerous_actions: Vec::new(),
         }
@@ -133,27 +143,27 @@ impl<'a, T: Clone> MenuBuilder<'a, T> {
         })
     }
 
-    /// Show content with menu using a custom composer function
-    pub fn show_with<F>(mut self, ui: &mut Ui, composer: F) -> MenuResponse<T>
+    /// Compose with menu - returns MenuResponse instead of Response
+    pub fn compose_with_menu(&mut self, context: &Context, ui: &mut Ui) -> MenuResponse<T>
     where
-        F: FnOnce(&mut RenderBuilder<'a, T>, &mut Ui) -> Response,
+        C: Composer<T>,
     {
         let mut action = None;
 
         let inner_response = ui
             .horizontal(|ui| {
-                // Render the content using the provided composer
-                let inner_response = composer(&mut self.render_builder, ui);
+                // Render the content using the inner composer
+                let inner_response = self.inner.compose(context, ui);
 
                 // Render menu button
-                action = self.render_menu_button(ui);
+                action = self.render_menu_button(context, ui);
                 inner_response
             })
             .inner;
 
         // Handle paste action if data is mutable
         if let Some(MenuAction::Paste(ref new_data)) = action {
-            if let RenderDataRef::Mutable(data) = &mut self.render_builder.data {
+            if let DataRef::Mutable(data) = &mut self.data {
                 **data = new_data.clone();
             }
         }
@@ -164,105 +174,7 @@ impl<'a, T: Clone> MenuBuilder<'a, T> {
         }
     }
 
-    /// Show content with menu using the default compose method
-    pub fn show(self, ui: &mut Ui) -> MenuResponse<T> {
-        self.show_with(ui, |builder, ui| builder.compose(ui))
-    }
-
-    /// Edit selector with menu
-    pub fn edit_selector(mut self, ui: &mut Ui) -> MenuResponse<T>
-    where
-        T: ToCstr + AsRef<str> + IntoEnumIterator + PartialEq,
-    {
-        let mut changed = false;
-        let mut action = None;
-        let mut selector_response = None;
-
-        ui.horizontal(|ui| {
-            // Edit selector
-            if let RenderDataRef::Mutable(data) = &mut self.render_builder.data {
-                let (old_value, response) = Selector::ui_enum(*data, ui);
-                selector_response = Some(response);
-                if old_value.is_some() {
-                    changed = true;
-                }
-            }
-
-            // Render menu button
-            action = self.render_menu_button(ui);
-        });
-
-        // Handle paste action
-        if let Some(MenuAction::Paste(ref new_data)) = action {
-            if let RenderDataRef::Mutable(data) = &mut self.render_builder.data {
-                **data = new_data.clone();
-                changed = true;
-            }
-        }
-
-        MenuResponse {
-            response: selector_response.unwrap_or_else(|| ui.label("")),
-            action: action.or_else(|| {
-                if changed {
-                    Some(MenuAction::Custom(Box::new(
-                        self.render_builder.data().clone(),
-                    )))
-                } else {
-                    None
-                }
-            }),
-        }
-    }
-
-    /// Edit selector with field moving for FRecursive types
-    pub fn edit_selector_recursive(mut self, ui: &mut Ui) -> MenuResponse<T>
-    where
-        T: ToCstr + AsRef<str> + IntoEnumIterator + PartialEq + FRecursive,
-    {
-        let mut changed = false;
-        let mut action = None;
-        let mut selector_response = None;
-
-        ui.horizontal(|ui| {
-            // Edit selector with field moving
-            if let RenderDataRef::Mutable(data) = &mut self.render_builder.data {
-                let mut old_value = (*data).clone();
-                let (old_val, response) = crate::ui::widgets::Selector::ui_enum(*data, ui);
-                selector_response = Some(response);
-                if old_val.is_some() {
-                    // Move inner fields from old value to new value
-                    data.move_inner_fields_from(&mut old_value);
-                    changed = true;
-                }
-            }
-
-            // Render menu button
-            action = self.render_menu_button(ui);
-        });
-
-        // Handle paste action
-        if let Some(MenuAction::Paste(ref new_data)) = action {
-            if let RenderDataRef::Mutable(data) = &mut self.render_builder.data {
-                **data = new_data.clone();
-                changed = true;
-            }
-        }
-
-        MenuResponse {
-            response: selector_response.unwrap_or_else(|| ui.label("")),
-            action: action.or_else(|| {
-                if changed {
-                    Some(MenuAction::Custom(Box::new(
-                        self.render_builder.data().clone(),
-                    )))
-                } else {
-                    None
-                }
-            }),
-        }
-    }
-
-    fn render_menu_button(&mut self, ui: &mut Ui) -> Option<MenuAction<T>> {
+    fn render_menu_button(&mut self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
         let circle_size = 12.0;
 
         let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -278,9 +190,8 @@ impl<'a, T: Clone> MenuBuilder<'a, T> {
             },
         );
 
-        // Store data and context to use in closure
-        let data = self.render_builder.data().clone();
-        let context = self.render_builder.context();
+        // Store data to use in closure
+        let data = self.data.as_ref().clone();
 
         // Move actions out of self to avoid cloning
         let actions = std::mem::take(&mut self.actions);
@@ -356,3 +267,35 @@ impl<'a, T: Clone> MenuBuilder<'a, T> {
         None
     }
 }
+
+impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+        // For regular compose, just render the inner composer without menu
+        self.inner.compose(context, ui)
+    }
+}
+
+/// Extension trait to add menu support to any composer
+pub trait WithMenu<T: Clone>: Composer<T> + Sized {
+    fn with_menu<'a>(self, data: &'a T) -> MenuComposer<'a, T, Self> {
+        MenuComposer::new(self, data)
+    }
+
+    fn with_menu_mut<'a>(self, data: &'a mut T) -> MenuComposer<'a, T, Self> {
+        MenuComposer::new_mut(self, data)
+    }
+}
+
+impl<T: Clone, C: Composer<T>> WithMenu<T> for C {}
