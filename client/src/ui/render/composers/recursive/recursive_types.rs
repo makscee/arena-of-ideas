@@ -79,8 +79,8 @@ impl<'a> RecursiveFieldMut<'a> {
 
 #[macro_export]
 macro_rules! call_on_recursive_value {
-    ($field:expr, $func:ident $(, $arg:expr)*) => {
-        match $field.value {
+    ($value:expr, $func:ident $(, $arg:expr)*) => {
+        match $value {
             RecursiveValue::Expr(v) => v.$func($($arg),*),
             RecursiveValue::Action(v) => v.$func($($arg),*),
             RecursiveValue::PainterAction(v) => v.$func($($arg),*),
@@ -100,8 +100,8 @@ macro_rules! call_on_recursive_value {
 
 #[macro_export]
 macro_rules! call_pass_recursive_value {
-    ($field:expr, $func:ident $(, $arg:expr)*) => {
-        match $field.value {
+    ($value:expr, $func:ident $(, $arg:expr)*) => {
+        match $value {
             RecursiveValue::Expr(v) => $func(v, $($arg),*),
             RecursiveValue::Action(v) => $func(v, $($arg),*),
             RecursiveValue::PainterAction(v) => $func(v, $($arg),*),
@@ -121,8 +121,8 @@ macro_rules! call_pass_recursive_value {
 
 #[macro_export]
 macro_rules! call_on_recursive_value_mut {
-    ($field:expr, $func:ident $(, $arg:expr)*) => {
-        match &mut $field.value {
+    ($value:expr, $func:ident $(, $arg:expr)*) => {
+        match $value {
             RecursiveValueMut::Expr(v) => v.$func($($arg),*),
             RecursiveValueMut::Action(v) => v.$func($($arg),*),
             RecursiveValueMut::PainterAction(v) => v.$func($($arg),*),
@@ -142,8 +142,8 @@ macro_rules! call_on_recursive_value_mut {
 
 #[macro_export]
 macro_rules! call_pass_recursive_value_mut {
-    ($field:expr, $func:ident $(, $arg:expr)*) => {
-        match &mut $field.value {
+    ($value:expr, $func:ident $(, $arg:expr)*) => {
+        match $value {
             RecursiveValueMut::Expr(v) => $func(v, $($arg),*),
             RecursiveValueMut::Action(v) => $func(v, $($arg),*),
             RecursiveValueMut::PainterAction(v) => $func(v, $($arg),*),

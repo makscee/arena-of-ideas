@@ -29,18 +29,12 @@ impl AdminPlugin {
 
         Context::from_world(world, |context| {
             let mut changed = false;
-            e.render_mut(context)
-                .recursive_mut(ui, |ui, context, field| {
-                    ui.group(|ui| {
-                        ui.vertical(|ui| {
-                            format!("[tw [s {}]]", field.name).label(ui);
-                            changed |= call_on_recursive_value_mut!(field, edit, context, ui);
-                            changed
-                        })
-                    })
-                    .inner
-                    .inner
-                });
+            e.as_recursive_mut(|context, ui, mut value| {
+                let response = call_on_recursive_value_mut!(value, edit, context, ui);
+                changed |= response.changed();
+                response
+            })
+            .compose(context, ui);
             if changed {
                 ui.ctx().data_mut(|w| w.insert_persisted(id, e))
             }

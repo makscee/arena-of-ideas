@@ -80,6 +80,22 @@ pub trait Render: Sized {
     {
         CardComposer::new(self)
     }
+
+    fn as_recursive<F>(&self, f: F) -> RecursiveComposer<'_, F>
+    where
+        Self: FRecursive,
+        F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
+    {
+        RecursiveComposer::new(self.to_recursive_value(), f)
+    }
+
+    fn as_recursive_mut<F>(&mut self, f: F) -> RecursiveComposerMut<'_, F>
+    where
+        Self: FRecursive,
+        F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
+    {
+        RecursiveComposerMut::new(self.to_recursive_value_mut(), f)
+    }
 }
 
 /// Blanket implementation for all types
@@ -91,18 +107,18 @@ pub trait RenderList<T> {
     fn as_list<'a, F>(
         &'a self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T) -> Box<dyn Composer<T> + 'a>>
+    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
     where
-        F: Fn(&T) -> Box<dyn Composer<T> + 'a> + 'a,
+        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
         T: 'a;
 
     /// Create a mutable list composer with a closure that creates composers for each element
     fn as_list_mut<'a, F>(
         &'a mut self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T) -> Box<dyn Composer<T> + 'a>>
+    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
     where
-        F: Fn(&T) -> Box<dyn Composer<T> + 'a> + 'a,
+        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
         T: 'a;
 }
 
@@ -110,9 +126,9 @@ impl<T> RenderList<T> for Vec<T> {
     fn as_list<'a, F>(
         &'a self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T) -> Box<dyn Composer<T> + 'a>>
+    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
     where
-        F: Fn(&T) -> Box<dyn Composer<T> + 'a> + 'a,
+        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new(self, f)
@@ -121,9 +137,9 @@ impl<T> RenderList<T> for Vec<T> {
     fn as_list_mut<'a, F>(
         &'a mut self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T) -> Box<dyn Composer<T> + 'a>>
+    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
     where
-        F: Fn(&T) -> Box<dyn Composer<T> + 'a> + 'a,
+        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new_mut(self, f)
@@ -171,7 +187,7 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         (self.render_fn)(self.data.as_ref(), context, ui)
     }
 }

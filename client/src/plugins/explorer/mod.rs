@@ -120,7 +120,7 @@ impl ExplorerPlugin {
                             let is_selected = selected == Some(item_id);
                             if let Ok(entity) = context.entity(item_id) {
                                 if let Ok(node) = context.component::<T>(entity) {
-                                    if node.render(context).title_button(ui).clicked() {
+                                    if node.as_title().compose(context, ui).clicked() {
                                         op(move |world| {
                                             world
                                                 .resource_mut::<ExplorerSelection>()

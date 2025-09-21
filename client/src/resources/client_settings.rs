@@ -109,12 +109,6 @@ impl FDisplay for &'static str {
     }
 }
 
-impl FEdit for &'static str {
-    fn edit(&mut self, _: &Context, _ui: &mut Ui) -> bool {
-        false
-    }
-}
-
 impl ToCstr for WindowMode {
     fn cstr(&self) -> Cstr {
         self.to_string()
@@ -128,9 +122,9 @@ impl FDisplay for WindowMode {
 }
 
 impl FEdit for WindowMode {
-    fn edit(&mut self, _: &Context, ui: &mut Ui) -> bool {
-        let (old_value, _response) = Selector::ui_enum(self, ui);
-        old_value.is_some()
+    fn edit(&mut self, _: &Context, ui: &mut Ui) -> Response {
+        let (old_value, response) = Selector::ui_enum(self, ui);
+        response
     }
 }
 

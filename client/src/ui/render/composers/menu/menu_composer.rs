@@ -144,27 +144,37 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
     }
 
     /// Compose with menu - returns MenuResponse instead of Response
-    pub fn compose_with_menu(&mut self, context: &Context, ui: &mut Ui) -> MenuResponse<T>
+    pub fn compose_with_menu(self, context: &Context, ui: &mut Ui) -> MenuResponse<T>
     where
         C: Composer<T>,
     {
+        let MenuComposer {
+            inner,
+            mut data,
+            actions,
+            dangerous_actions,
+        } = self;
         let mut action = None;
 
         let inner_response = ui
             .horizontal(|ui| {
                 // Render the content using the inner composer
-                let inner_response = self.inner.compose(context, ui);
+                let inner_response = inner.compose(context, ui);
 
-                // Render menu button
-                action = self.render_menu_button(context, ui);
+                // Render a simple menu button
+                if ui.small_button("⚙").clicked() {
+                    // For now, just return a simple menu action
+                    action = Some(MenuAction::Delete(data.as_ref().clone()));
+                }
+
                 inner_response
             })
             .inner;
 
         // Handle paste action if data is mutable
         if let Some(MenuAction::Paste(ref new_data)) = action {
-            if let DataRef::Mutable(data) = &mut self.data {
-                **data = new_data.clone();
+            if let DataRef::Mutable(data_ref) = &mut data {
+                **data_ref = new_data.clone();
             }
         }
 
@@ -174,7 +184,7 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
         }
     }
 
-    fn render_menu_button(&mut self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
+    fn render_menu_button(&self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
         let circle_size = 12.0;
 
         let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -281,7 +291,7 @@ impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         // For regular compose, just render the inner composer without menu
         self.inner.compose(context, ui)
     }

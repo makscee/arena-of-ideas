@@ -24,7 +24,7 @@ pub trait Composer<T> {
     fn is_mutable(&self) -> bool;
 
     /// Compose (render) the data to UI
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response;
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response;
 }
 
 /// Reference wrapper that composers use to hold data
@@ -87,7 +87,7 @@ impl<'a, T: FDisplay> Composer<T> for DataComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         self.data.as_ref().display(context, ui)
     }
 }
@@ -124,7 +124,7 @@ impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         self.data.as_ref().title(context).button(ui)
     }
 }
@@ -181,17 +181,28 @@ impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         use crate::ui::core::colorix::UiColorixExt;
 
         if self.disabled {
             ui.disable();
         }
-
+        let ButtonComposer {
+            inner,
+            semantic: _,
+            disabled,
+            min_width,
+        } = self;
         let response = if let Some(semantic) = self.semantic {
-            ui.colorix_semantic(semantic, |ui| self.render_button_internal(context, ui))
+            ui.colorix_semantic(semantic, |ui| {
+                // Get the body content from inner composer
+                let body_response = inner.compose(context, ui);
+                Self::apply_button_styling(body_response, disabled, min_width, ui)
+            })
         } else {
-            self.render_button_internal(context, ui)
+            // Get the body content from inner composer
+            let body_response = inner.compose(context, ui);
+            Self::apply_button_styling(body_response, disabled, min_width, ui)
         };
 
         response
@@ -199,14 +210,13 @@ impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
 }
 
 impl<C> ButtonComposer<C> {
-    fn render_button_internal<T>(&self, context: &Context, ui: &mut Ui) -> Response
-    where
-        C: Composer<T>,
-    {
-        // Get the body content from inner composer
-        let body_response = self.inner.compose(context, ui);
-
-        let sense = if self.disabled {
+    fn apply_button_styling(
+        body_response: Response,
+        disabled: bool,
+        min_width: Option<f32>,
+        ui: &mut Ui,
+    ) -> Response {
+        let sense = if disabled {
             egui::Sense::hover()
         } else {
             egui::Sense::click()
@@ -215,7 +225,7 @@ impl<C> ButtonComposer<C> {
         let button_rect = body_response.rect;
 
         // Apply minimum width if specified
-        let final_rect = if let Some(min_width) = self.min_width {
+        let final_rect = if let Some(min_width) = min_width {
             if button_rect.width() < min_width {
                 egui::Rect::from_min_size(
                     button_rect.min,
@@ -231,7 +241,7 @@ impl<C> ButtonComposer<C> {
         let button_response = ui.interact(final_rect, body_response.id, sense);
 
         // Apply hover effects to the frame
-        if button_response.hovered() && !self.disabled {
+        if button_response.hovered() && !disabled {
             let hover_color = ui.style().interact(&button_response).bg_stroke.color;
             ui.painter().rect_stroke(
                 final_rect,
@@ -277,7 +287,7 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
         let name = data.tag_name(context);
         let color = data.tag_color(context);
@@ -293,31 +303,31 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
 /// List composer that wraps Vec<T> and an element composer function
 pub struct ListComposer<'a, T, F> {
     data: DataRef<'a, Vec<T>>,
-    element_composer: F,
+    element_fn: F,
 }
 
 impl<'a, T, F> ListComposer<'a, T, F>
 where
-    F: Fn(&T) -> Box<dyn Composer<T> + 'a>,
+    F: Fn(&T, &Context, &mut Ui) -> Response,
 {
-    pub fn new(data: &'a Vec<T>, element_composer: F) -> Self {
+    pub fn new(data: &'a Vec<T>, element_fn: F) -> Self {
         Self {
             data: DataRef::Immutable(data),
-            element_composer,
+            element_fn,
         }
     }
 
-    pub fn new_mut(data: &'a mut Vec<T>, element_composer: F) -> Self {
+    pub fn new_mut(data: &'a mut Vec<T>, element_fn: F) -> Self {
         Self {
             data: DataRef::Mutable(data),
-            element_composer,
+            element_fn,
         }
     }
 }
 
 impl<'a, T, F> Composer<Vec<T>> for ListComposer<'a, T, F>
 where
-    F: Fn(&T) -> Box<dyn Composer<T> + '_>,
+    F: Fn(&T, &Context, &mut Ui) -> Response,
 {
     fn data(&self) -> &Vec<T> {
         self.data.as_ref()
@@ -331,11 +341,10 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         let mut response = ui.label("");
         for item in self.data.as_ref() {
-            let composer = (self.element_composer)(item);
-            response = response.union(composer.compose(context, ui));
+            response = response.union((self.element_fn)(item, context, ui));
         }
         response
     }
@@ -376,7 +385,7 @@ impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> 
         self.data.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
         let color = context.color(ui);
 
@@ -431,7 +440,7 @@ impl<T, C: Composer<T>> Composer<T> for FramedComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(&self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         let color = self.color.unwrap_or_else(|| context.color(ui));
 
         Frame::new()

@@ -115,7 +115,7 @@ impl BattleCamera {
                         fusion.paint(rect, &context, ui)?;
                         if ui.rect_contains_pointer(rect) {
                             cursor_window(ui.ctx(), |ui| {
-                                fusion.render(context).card(ui);
+                                fusion.as_card().compose(context, ui);
                                 Ok(())
                             });
                         }

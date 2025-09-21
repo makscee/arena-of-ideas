@@ -471,7 +471,7 @@ impl TeamEditor {
                             if let Ok(unit) = context.component_by_id::<NUnit>(unit_id) {
                                 context
                                     .with_owner_ref(unit.entity(), |context| {
-                                        action.render(context).title_label(ui);
+                                        action.title(context).label(ui);
                                         Ok(())
                                     })
                                     .ui(ui);
@@ -723,7 +723,7 @@ impl TeamEditor {
 
     fn render_action_normal(ui: &mut Ui, context: &Context, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
-            action.render(context).title_label(ui);
+            action.title(context).label(ui);
         });
     }
 
@@ -736,7 +736,7 @@ impl TeamEditor {
                 .inactive
                 .weak_bg_fill
                 .gamma_multiply(0.5);
-            action.render(context).title_label(ui);
+            action.title(context).label(ui);
         });
     }
 }

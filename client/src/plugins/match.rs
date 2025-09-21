@@ -129,7 +129,7 @@ impl MatchPlugin {
                                                             .component_by_id::<NUnit>(
                                                                 slot.node_id,
                                                             )?;
-                                                        unit.render(context).card(ui);
+                                                        unit.as_card().compose(context, ui);
                                                         ui.response()
                                                     }
                                                     CardKind::House => {
@@ -137,7 +137,7 @@ impl MatchPlugin {
                                                             .component_by_id::<NHouse>(
                                                                 slot.node_id,
                                                             )?;
-                                                        house.render(context).card(ui);
+                                                        house.as_card().compose(context, ui);
                                                         ui.response()
                                                     }
                                                 };
@@ -203,7 +203,7 @@ impl MatchPlugin {
                 |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     for house in team.houses_load(context) {
-                        house.clone().render(context).tag_card_expanded(true, ui);
+                        house.as_card().compose(context, ui);
                     }
                     Ok(())
                 },
@@ -410,7 +410,7 @@ impl MatchPlugin {
             .unit_rep_with_default(fusion.id)
             .ui(ui, context)
             .on_hover_ui(|ui| {
-                fusion.render(context).card(ui);
+                fusion.as_card().compose(context, ui);
             });
         ui.label(format!(
             "{}/{}",
@@ -421,7 +421,7 @@ impl MatchPlugin {
         if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
-                trigger.render(context).title_label(ui);
+                trigger.title(context).label(ui);
             });
         }
     }

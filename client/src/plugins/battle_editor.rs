@@ -69,7 +69,7 @@ impl BattleEditorPlugin {
 
                 ui.group(|ui| {
                     ui.label(format!("{}:", part.kind()));
-                    if part.edit(context, ui) {
+                    if part.edit(context, ui).changed() {
                         part.clone().unpack_entity(context, part_entity).log();
                         changed = true;
                     }
@@ -119,7 +119,7 @@ impl BattleEditorPlugin {
 
         for child in children {
             ui.horizontal(|ui| {
-                child.render(context).title_label(ui);
+                child.title(context).label(ui);
 
                 if ui.button("Edit").clicked() {
                     navigation_action = on_edit(child.clone());
@@ -304,7 +304,7 @@ impl BattleEditorPlugin {
 
             if let Ok(team) = context.component::<NTeam>(team_entity) {
                 // Use render system for team display
-                team.render(context).title_label(ui);
+                team.title(context).label(ui);
                 ui.add_space(8.0);
 
                 if ui.button("Edit Team").clicked() {
@@ -447,8 +447,8 @@ impl BattleEditorPlugin {
             let owner = house.owner;
             let units = house.units_load(context).into_iter().cloned().collect_vec();
             ui.group(|ui| {
-                house.render(context).title_label(ui);
-                if house.edit(context, ui) {
+                house.title(context).label(ui);
+                if house.edit(context, ui).changed() {
                     house.unpack_entity(context, entity).log();
                     changed = true;
                 }
@@ -517,8 +517,8 @@ impl BattleEditorPlugin {
             let mut unit = context.component::<NUnit>(entity).cloned()?;
 
             ui.group(|ui| {
-                unit.render(context).title_label(ui);
-                if unit.edit(context, ui) {
+                unit.title(context).label(ui);
+                if unit.edit(context, ui).changed() {
                     unit.clone().unpack_entity(context, entity).log();
                     changed = true;
                 }

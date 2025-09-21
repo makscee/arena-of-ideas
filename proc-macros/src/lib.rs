@@ -94,7 +94,7 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
                                 ui.collapsing("edit", |ui| {
-                                    if settings.#field_name.edit(&crate::prelude::Context::default(), ui) {
+                                    if settings.#field_name.edit(&crate::prelude::Context::default(), ui).changed() {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                     }
                                 });
