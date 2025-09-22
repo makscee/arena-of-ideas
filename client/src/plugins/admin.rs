@@ -34,6 +34,7 @@ impl AdminPlugin {
                 changed |= response.changed();
                 response
             })
+            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
             .compose(context, ui);
             if changed {
                 ui.ctx().data_mut(|w| w.insert_persisted(id, e))

@@ -3,10 +3,7 @@ use super::*;
 pub struct GameTimerPlugin;
 impl Plugin for GameTimerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, || {
-            GAME_TIMER.set(default()).unwrap();
-        })
-        .add_systems(Update, update);
+        app.add_systems(Update, update);
     }
 }
 

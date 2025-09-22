@@ -72,11 +72,14 @@ impl Selector {
                     }
                 }
             });
-        let response = combo_response.response;
+        let mut response = combo_response.response;
         if response.clicked() {
             ui.ctx()
                 .data_mut(|w| w.insert_temp(lookup_id, String::new()));
         };
+        if changed.is_some() {
+            response.mark_changed();
+        }
         (changed, response)
     }
     pub fn ui_iter<'a, E: PartialEq + Clone + ToCstr + 'a, I>(

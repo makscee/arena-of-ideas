@@ -81,20 +81,27 @@ pub trait Render: Sized {
         CardComposer::new(self)
     }
 
-    fn as_recursive<F>(&self, f: F) -> RecursiveComposer<'_, F>
+    fn as_recursive<F>(&self, f: F) -> RecursiveComposer<'_, Self, F>
     where
         Self: FRecursive,
         F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
     {
-        RecursiveComposer::new(self.to_recursive_value(), f)
+        RecursiveComposer::new(self, f)
     }
 
-    fn as_recursive_mut<F>(&mut self, f: F) -> RecursiveComposerMut<'_, F>
+    fn as_recursive_mut<F>(&mut self, f: F) -> RecursiveComposerMut<'_, Self, F>
     where
         Self: FRecursive,
         F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
     {
-        RecursiveComposerMut::new(self.to_recursive_value_mut(), f)
+        RecursiveComposerMut::new_mut(self, f)
+    }
+
+    fn as_selector_mut(&mut self) -> SelectorComposer<'_, Self>
+    where
+        Self: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq,
+    {
+        SelectorComposer::new_mut(self)
     }
 }
 

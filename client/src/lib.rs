@@ -57,6 +57,7 @@ pub fn run() {
         RunMode::MigrationUpload => GameState::MigrationUpload,
     };
     PersistentDataPlugin::load();
+    GAME_TIMER.set(default()).unwrap();
     parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins

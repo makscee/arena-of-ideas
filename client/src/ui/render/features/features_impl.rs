@@ -301,11 +301,12 @@ impl FDisplay for Expression {
 }
 
 impl FEdit for Expression {
-    fn edit(&mut self, context: &Context, ui: &mut Ui) -> Response {
-        self.as_recursive_mut(|context, ui, value| {
-            crate::call_on_recursive_value_mut!(value, edit, context, ui)
-        })
-        .compose(context, ui)
+    fn edit(&mut self, _context: &Context, ui: &mut Ui) -> Response {
+        let (old_value, response) = Selector::ui_enum(self, ui);
+        if let Some(mut old_value) = old_value {
+            self.move_inner_fields_from(&mut old_value);
+        }
+        response
     }
 }
 
