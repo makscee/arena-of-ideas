@@ -104,7 +104,7 @@ impl ExplorerPlugin {
     fn render_named_list<T: Node + NamedNode + FTitle + Component>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
 
-        let mut state = world.remove_resource::<ExplorerState>().unwrap();
+        let state = world.remove_resource::<ExplorerState>().unwrap();
         let selection = world.resource::<ExplorerSelection>();
 
         let items = state.named_nodes.get(&kind).cloned();
@@ -145,10 +145,10 @@ impl ExplorerPlugin {
                                 ui.label(item.2.to_string());
                                 let id = item.0;
                                 if ui.button("↑").clicked() {
-                                    cn().reducers.content_vote_node(id, true);
+                                    cn().reducers.content_vote_node(id, true).notify_error_op();
                                 }
                                 if ui.button("↓").clicked() {
-                                    cn().reducers.content_vote_node(id, false);
+                                    cn().reducers.content_vote_node(id, false).notify_error_op();
                                 }
                             });
                             Ok(())
@@ -218,25 +218,23 @@ impl ExplorerPlugin {
 
             if let Some(node_id) = selected_node_id {
                 Context::from_world(world, |context| {
-                    if let Ok(entity) = context.entity(node_id) {
-                        // Get linked content based on the parent node's type and field
-                        // For example, if viewing NUnitDescription, we need to get it from the unit's description field
-                        let linked_nodes = context.children(node_id);
-                        let mut found = false;
+                    // Get linked content based on the parent node's type and field
+                    // For example, if viewing NUnitDescription, we need to get it from the unit's description field
+                    let linked_nodes = context.children(node_id);
+                    let mut found = false;
 
-                        for child_id in linked_nodes {
-                            if let Ok(child_entity) = context.entity(child_id) {
-                                if let Ok(content) = context.component::<T>(child_entity) {
-                                    content.display(context, ui);
-                                    found = true;
-                                    break;
-                                }
+                    for child_id in linked_nodes {
+                        if let Ok(child_entity) = context.entity(child_id) {
+                            if let Ok(content) = context.component::<T>(child_entity) {
+                                content.display(context, ui);
+                                found = true;
+                                break;
                             }
                         }
+                    }
 
-                        if !found {
-                            ui.label("No linked content");
-                        }
+                    if !found {
+                        ui.label("No linked content");
                     }
                 });
             } else {
@@ -381,22 +379,19 @@ impl ExplorerPlugin {
                 Confirmation::new("Select Content")
                     .content(move |ui, world| {
                         let mut selected = None;
-                        Context::from_world(world, |context| {
-                            for id in &nodes {
-                                if let Ok(entity) = context.entity(*id) {
-                                    // Use entity to get the node and display it
-                                    ui.horizontal(|ui| {
-                                        if ui.button(format!("Node #{}", id)).clicked() {
-                                            selected = Some(*id);
-                                        }
-                                    });
+                        for id in &nodes {
+                            ui.horizontal(|ui| {
+                                if ui.button(format!("Node #{}", id)).clicked() {
+                                    selected = Some(*id);
                                 }
-                            }
-                        });
+                            });
+                        }
 
                         // If something was selected, link it and close
                         if let Some(id) = selected {
-                            cn().reducers.content_select_link(parent_id, id);
+                            cn().reducers
+                                .content_select_link(parent_id, id)
+                                .notify_error(world);
                             return true; // Close the confirmation
                         }
                         false

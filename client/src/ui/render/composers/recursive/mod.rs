@@ -3,9 +3,6 @@ use super::*;
 mod recursive_types;
 pub use recursive_types::*;
 
-mod list_composer;
-pub use list_composer::*;
-
 macro_rules! call_on_recursive_field {
     ($field:expr, $method:ident $(, $args:expr)*) => {
         match $field.value {
@@ -332,7 +329,7 @@ where
         true
     }
 
-    fn compose(mut self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
         let RecursiveComposerMut {
             data,
             mut composer_fn,

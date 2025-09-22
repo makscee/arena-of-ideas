@@ -123,7 +123,7 @@ impl FDisplay for WindowMode {
 
 impl FEdit for WindowMode {
     fn edit(&mut self, _: &Context, ui: &mut Ui) -> Response {
-        let (old_value, response) = Selector::ui_enum(self, ui);
+        let (_, response) = Selector::ui_enum(self, ui);
         response
     }
 }

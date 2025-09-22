@@ -1,8 +1,4 @@
 use super::*;
-use crate::ui::widgets::RectButton;
-use crate::{clipboard_get, clipboard_set};
-use egui::{Response, Ui};
-use schema::StringData;
 
 /// Result of a menu action
 #[derive(Debug, Clone)]
@@ -60,27 +56,16 @@ impl<T: Clone> MenuResponse<T> {
 }
 
 /// Menu composer that wraps another composer and adds a menu button
-pub struct MenuComposer<'a, T: Clone, C> {
+pub struct MenuComposer<'a, T: Clone, C: Composer<T>> {
     inner: C,
-    data: DataRef<'a, T>,
     actions: Vec<MenuItem<'a, T>>,
     dangerous_actions: Vec<MenuItem<'a, T>>,
 }
 
-impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
-    pub fn new(inner: C, data: &'a T) -> Self {
+impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
+    pub fn new(inner: C) -> Self {
         Self {
             inner,
-            data: DataRef::Immutable(data),
-            actions: Vec::new(),
-            dangerous_actions: Vec::new(),
-        }
-    }
-
-    pub fn new_mut(inner: C, data: &'a mut T) -> Self {
-        Self {
-            inner,
-            data: DataRef::Mutable(data),
             actions: Vec::new(),
             dangerous_actions: Vec::new(),
         }
@@ -144,39 +129,17 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
     }
 
     /// Compose with menu - returns MenuResponse instead of Response
-    pub fn compose_with_menu(self, context: &Context, ui: &mut Ui) -> MenuResponse<T>
-    where
-        C: Composer<T>,
-    {
-        let MenuComposer {
-            inner,
-            mut data,
-            actions,
-            dangerous_actions,
-        } = self;
+    pub fn compose_with_menu(mut self, context: &Context, ui: &mut Ui) -> MenuResponse<T> {
         let mut action = None;
 
         let inner_response = ui
             .horizontal(|ui| {
-                // Render the content using the inner composer
-                let inner_response = inner.compose(context, ui);
-
-                // Render a simple menu button
-                if ui.small_button("⚙").clicked() {
-                    // For now, just return a simple menu action
-                    action = Some(MenuAction::Delete(data.as_ref().clone()));
-                }
+                action = self.render_menu_button(context, ui);
+                let inner_response = self.inner.compose(context, ui);
 
                 inner_response
             })
             .inner;
-
-        // Handle paste action if data is mutable
-        if let Some(MenuAction::Paste(ref new_data)) = action {
-            if let DataRef::Mutable(data_ref) = &mut data {
-                **data_ref = new_data.clone();
-            }
-        }
 
         MenuResponse {
             response: inner_response,
@@ -184,7 +147,7 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
         }
     }
 
-    fn render_menu_button(&self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
+    fn render_menu_button(&mut self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
         let circle_size = 12.0;
 
         let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -200,8 +163,8 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
             },
         );
 
-        // Store data to use in closure
-        let data = self.data.as_ref().clone();
+        // Get data from inner composer
+        let data = self.inner.data().clone();
 
         // Move actions out of self to avoid cloning
         let actions = std::mem::take(&mut self.actions);
@@ -280,15 +243,15 @@ impl<'a, T: Clone, C> MenuComposer<'a, T, C> {
 
 impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
     fn data(&self) -> &T {
-        self.data.as_ref()
+        self.inner.data()
     }
 
     fn data_mut(&mut self) -> &mut T {
-        self.data.as_mut()
+        self.inner.data_mut()
     }
 
     fn is_mutable(&self) -> bool {
-        self.data.is_mutable()
+        self.inner.is_mutable()
     }
 
     fn compose(self, context: &Context, ui: &mut Ui) -> Response {
@@ -299,12 +262,8 @@ impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
 
 /// Extension trait to add menu support to any composer
 pub trait WithMenu<T: Clone>: Composer<T> + Sized {
-    fn with_menu<'a>(self, data: &'a T) -> MenuComposer<'a, T, Self> {
-        MenuComposer::new(self, data)
-    }
-
-    fn with_menu_mut<'a>(self, data: &'a mut T) -> MenuComposer<'a, T, Self> {
-        MenuComposer::new_mut(self, data)
+    fn with_menu<'a>(self) -> MenuComposer<'a, T, Self> {
+        MenuComposer::new(self)
     }
 }
 

@@ -29,7 +29,7 @@ impl AdminPlugin {
 
         Context::from_world(world, |context| {
             let mut changed = false;
-            e.as_recursive_mut(|context, ui, mut value| {
+            e.as_recursive_mut(|context, ui, value| {
                 let response = call_on_recursive_value_mut!(value, edit, context, ui);
                 changed |= response.changed();
                 response

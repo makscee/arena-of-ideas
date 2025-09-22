@@ -257,7 +257,7 @@ impl FDisplay for VarValue {
 
 impl FEdit for VarValue {
     fn edit(&mut self, context: &Context, ui: &mut Ui) -> Response {
-        let (old_value, selector_response) = Selector::ui_enum(self, ui);
+        let (_, selector_response) = Selector::ui_enum(self, ui);
         let edit_response = ui
             .horizontal(|ui| match self {
                 VarValue::i32(v) => v.edit(context, ui),
