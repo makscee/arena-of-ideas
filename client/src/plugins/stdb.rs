@@ -68,7 +68,7 @@ impl StdbPlugin {
                     op(move |world| {
                         if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
                         {
-                            explorer_state.refresh_all_caches();
+                            explorer_state.refresh_named_cache();
                         }
                     });
                 }
@@ -85,7 +85,7 @@ impl StdbPlugin {
                     op(move |world| {
                         if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
                         {
-                            explorer_state.refresh_all_caches();
+                            explorer_state.refresh_named_cache();
                         }
                     });
                 }
