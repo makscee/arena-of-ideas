@@ -212,6 +212,16 @@ fn generate_node_kind_enum(
                 NodeKind::from_str(self).unwrap()
             }
         }
+        impl NodeKindExt for NamedNodeKind {
+            fn to_kind(&self) -> NodeKind {
+                match self {
+                    #(
+                        Self::#named_node_kinds => NodeKind::#named_node_kinds,
+                    )*
+
+                }
+            }
+        }
 
         pub trait NamedNode {
             fn get_name(&self) -> &str;

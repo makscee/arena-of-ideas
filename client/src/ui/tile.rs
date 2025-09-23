@@ -101,7 +101,13 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
         match view {
-            // Pane::Explorer(pane) => pane.as_ref().to_case(Case::Title).into(),
+            Pane::Explorer(pane) => match pane {
+                ExplorerPane::NamedList(kind) => format!("{} List", kind.to_kind().cstr()),
+                ExplorerPane::NamedCard(kind) => format!("{} Card", kind.to_kind().cstr()),
+                ExplorerPane::NamedSelector(kind) => format!("{} Selector", kind.to_kind().cstr()),
+                ExplorerPane::ContentPane(kind) => format!("{} Content", kind.cstr()),
+            }
+            .into(),
             _ => view.as_ref().into(),
         }
     }
@@ -202,11 +208,17 @@ impl TreeExt for Tree<Pane> {
 }
 
 pub trait TileIdExt {
-    fn to_tab(self, tiles: &mut Tiles<Pane>) -> TileId;
+    fn to_tab(self, tiles: &mut Tiles<Pane>) -> Self;
+    fn with_name(self, tile_tree: &mut TileTree, name: impl ToString) -> Self;
 }
 
 impl TileIdExt for TileId {
     fn to_tab(self, tiles: &mut Tiles<Pane>) -> TileId {
         tiles.insert_tab_tile([self].into())
+    }
+
+    fn with_name(self, tile_tree: &mut TileTree, name: impl ToString) -> Self {
+        tile_tree.behavior.tile_names.insert(self, name.to_string());
+        self
     }
 }

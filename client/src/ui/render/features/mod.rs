@@ -52,7 +52,9 @@ pub trait FInfo {
 /// Feature for types that can be recursively traversed
 pub trait FRecursive {
     /// Get inner fields for read-only traversal
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>>;
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
+        vec![]
+    }
 
     /// Get mutable inner fields for editing
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {

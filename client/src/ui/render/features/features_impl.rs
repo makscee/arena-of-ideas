@@ -318,8 +318,7 @@ impl FTitle for Trigger {
 
 impl FEdit for Trigger {
     fn edit(&mut self, _context: &Context, ui: &mut Ui) -> Response {
-        let (_old_value, response) = Selector::ui_enum(self, ui);
-        response
+        Selector::ui_enum(self, ui).1
     }
 }
 

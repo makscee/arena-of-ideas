@@ -62,7 +62,7 @@ pub trait CstrTrait {
     fn as_label(&self, style: &Style) -> Label;
     fn as_label_alpha(&self, a: f32, style: &Style) -> Label;
     fn button(self, ui: &mut Ui) -> Response;
-    fn as_button(self) -> Button;
+    fn to_button(self) -> Button;
     fn get_text(&self) -> String;
     fn to_colored(&self) -> String;
     fn print(&self);
@@ -108,10 +108,10 @@ impl CstrTrait for Cstr {
     }
 
     fn button(self, ui: &mut Ui) -> Response {
-        self.as_button().ui(ui)
+        self.to_button().ui(ui)
     }
 
-    fn as_button(self) -> Button {
+    fn to_button(self) -> Button {
         Button::new(self)
     }
 

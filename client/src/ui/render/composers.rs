@@ -351,13 +351,13 @@ where
 }
 
 /// Extension trait to enable chaining composers
-pub trait ComposerExt<T>: Sized {
-    fn as_button(self) -> ButtonComposer<Self> {
-        ButtonComposer::new(self)
-    }
-}
+// pub trait ComposerExt<T>: Sized {
+//     fn as_button(self) -> ButtonComposer<Self> {
+//         ButtonComposer::new(self)
+//     }
+// }
 
-impl<T, C: Composer<T>> ComposerExt<T> for C {}
+// impl<T, C: Composer<T>> ComposerExt<T> for C {}
 
 /// Card composer for full card views
 pub struct CardComposer<'a, T: FTitle + FDescription + FStats> {

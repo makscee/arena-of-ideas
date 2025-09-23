@@ -94,7 +94,9 @@ impl GameState {
                 let unit_bottom =
                     tiles.insert_horizontal_tile([unit_stats, unit_repr, unit_house].into());
                 let unit_content = tiles.insert_vertical_tile([unit_top, unit_bottom].into());
-                let units_tab = tiles.insert_horizontal_tile([units_list, unit_content].into());
+                let units_tab = tiles
+                    .insert_horizontal_tile([units_list, unit_content].into())
+                    .with_name(tile_tree, "Units");
                 if let Tile::Container(h) = tiles.get_mut(units_tab).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(units_list, 1.0);
@@ -126,7 +128,9 @@ impl GameState {
                     .insert_vertical_tile([house_units, house_abilities, house_statuses].into());
                 let house_bottom = tiles.insert_horizontal_tile([house_color, house_lists].into());
                 let house_content = tiles.insert_vertical_tile([house_card, house_bottom].into());
-                let houses_tab = tiles.insert_horizontal_tile([houses_list, house_content].into());
+                let houses_tab = tiles
+                    .insert_horizontal_tile([houses_list, house_content].into())
+                    .with_name(tile_tree, "Houses");
                 if let Tile::Container(h) = tiles.get_mut(houses_tab).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(houses_list, 1.0);
@@ -156,8 +160,9 @@ impl GameState {
                     tiles.insert_horizontal_tile([ability_effect, ability_house].into());
                 let ability_content =
                     tiles.insert_vertical_tile([ability_top, ability_bottom].into());
-                let abilities_tab =
-                    tiles.insert_horizontal_tile([abilities_list, ability_content].into());
+                let abilities_tab = tiles
+                    .insert_horizontal_tile([abilities_list, ability_content].into())
+                    .with_name(tile_tree, "Abilities");
                 if let Tile::Container(h) = tiles.get_mut(abilities_tab).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(abilities_list, 1.0);
@@ -189,8 +194,9 @@ impl GameState {
                 let status_bottom = tiles
                     .insert_horizontal_tile([status_behavior, status_repr, status_house].into());
                 let status_content = tiles.insert_vertical_tile([status_top, status_bottom].into());
-                let statuses_tab =
-                    tiles.insert_horizontal_tile([statuses_list, status_content].into());
+                let statuses_tab = tiles
+                    .insert_horizontal_tile([statuses_list, status_content].into())
+                    .with_name(tile_tree, "Statuses");
                 if let Tile::Container(h) = tiles.get_mut(statuses_tab).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(statuses_list, 1.0);

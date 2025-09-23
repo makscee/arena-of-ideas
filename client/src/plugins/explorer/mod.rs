@@ -189,7 +189,10 @@ impl ExplorerPlugin {
     }
 
     // Generic content pane renderer
-    fn render_content_pane<T: Node + FDisplay + FEdit + Component>(ui: &mut Ui, world: &mut World) {
+    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Component>(
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
         let kind = T::kind_s();
         let mut state = world.remove_resource::<ExplorerState>().unwrap();
         let view_mode = *state.view_mode.entry(kind).or_insert(ViewMode::Current);
@@ -362,30 +365,33 @@ impl ExplorerPlugin {
         }
     }
 
-    fn open_content_selector<T: Node + Component>(world: &mut World, parent_id: Option<u64>) {
+    fn open_content_selector<T: Node + Component + FTitle>(
+        world: &mut World,
+        parent_id: Option<u64>,
+    ) {
         if let Some(parent_id) = parent_id {
             let kind = T::kind_s();
 
             // Get available content nodes
-            let nodes: Vec<u64> = cn()
+            let nodes: Vec<T> = cn()
                 .db()
                 .nodes_world()
                 .iter()
                 .filter(|n| n.kind == kind.as_ref() && (n.owner == ID_CORE || n.owner == 0))
-                .map(|n| n.id)
+                .filter_map(|n| n.to_node().ok())
                 .collect();
 
             if !nodes.is_empty() {
                 Confirmation::new("Select Content")
                     .content(move |ui, world| {
                         let mut selected = None;
-                        for id in &nodes {
-                            ui.horizontal(|ui| {
-                                if ui.button(format!("Node #{}", id)).clicked() {
-                                    selected = Some(*id);
+                        Context::from_world(world, |context| {
+                            for node in &nodes {
+                                if node.as_title().as_button().compose(context, ui).clicked() {
+                                    selected = Some(node.id());
                                 }
-                            });
-                        }
+                            }
+                        });
 
                         // If something was selected, link it and close
                         if let Some(id) = selected {

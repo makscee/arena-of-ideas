@@ -602,10 +602,6 @@ impl FRecursive for Reaction {
 
 // Primitive types have no inner fields
 impl FRecursive for i32 {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::I32(self)
     }
@@ -616,10 +612,6 @@ impl FRecursive for i32 {
 }
 
 impl FRecursive for f32 {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::F32(self)
     }
@@ -630,10 +622,6 @@ impl FRecursive for f32 {
 }
 
 impl FRecursive for String {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::String(self)
     }
@@ -644,10 +632,6 @@ impl FRecursive for String {
 }
 
 impl FRecursive for bool {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::Bool(self)
     }
@@ -658,10 +642,6 @@ impl FRecursive for bool {
 }
 
 impl FRecursive for VarName {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::Var(self)
     }
@@ -672,10 +652,6 @@ impl FRecursive for VarName {
 }
 
 impl FRecursive for VarValue {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::VarValue(self)
     }
@@ -686,10 +662,6 @@ impl FRecursive for VarValue {
 }
 
 impl FRecursive for HexColor {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::HexColor(self)
     }
@@ -700,10 +672,6 @@ impl FRecursive for HexColor {
 }
 
 impl FRecursive for Vec2 {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
         RecursiveValue::Vec2(self)
     }

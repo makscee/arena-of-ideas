@@ -103,6 +103,13 @@ pub trait Render: Sized {
     {
         SelectorComposer::new_mut(self)
     }
+
+    fn as_button<T>(self) -> ButtonComposer<Self>
+    where
+        Self: Composer<T>,
+    {
+        ButtonComposer::new(self)
+    }
 }
 
 /// Blanket implementation for all types
