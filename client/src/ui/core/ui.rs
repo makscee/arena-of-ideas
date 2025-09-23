@@ -28,7 +28,7 @@ pub const CREDITS_SYM: char = '¤';
 
 pub const SHADOW: Shadow = Shadow {
     offset: [8, 8],
-    blur: 15,
+    blur: 0,
     spread: 0,
     color: Color32::from_rgba_premultiplied(20, 20, 20, 35),
 };
@@ -44,7 +44,7 @@ pub fn dark_frame() -> Frame {
         inner_margin: Margin::same(5),
         outer_margin: Margin::same(5),
         corner_radius: ROUNDING,
-        shadow: Shadow::NONE,
+        shadow: SHADOW,
         fill: subtle_background(),
         stroke: subtle_borders_and_separators().stroke(),
     }

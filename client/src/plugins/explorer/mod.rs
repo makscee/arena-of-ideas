@@ -1,5 +1,5 @@
 use super::*;
-use crate::ui::{Confirmation, Table};
+use crate::ui::Confirmation;
 use spacetimedb_sdk::DbContext;
 use std::collections::HashMap;
 
@@ -15,20 +15,18 @@ impl Plugin for ExplorerPlugin {
 
 #[derive(Resource, Default)]
 pub struct ExplorerState {
-    // Cache for each named node kind
     named_nodes: HashMap<NamedNodeKind, Vec<(u64, String, i32)>>,
-
-    // Track whether viewing current or selected parts
     view_mode: HashMap<NodeKind, ViewMode>,
-
-    // Cache for content nodes
     content_cache: HashMap<NodeKind, Vec<TNode>>,
+    active_player_id: Option<u64>,
+    player_selections_cache: HashMap<NodeKind, Option<u64>>,
 }
 
 #[derive(Resource, Default)]
 pub struct ExplorerSelection {
-    // Currently selected nodes for viewing
     selected: HashMap<NamedNodeKind, u64>,
+    content_selected: HashMap<(NodeKind, u64), u64>,
+    content_current: HashMap<(NodeKind, u64), u64>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -39,16 +37,9 @@ pub enum ViewMode {
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ExplorerPane {
-    // Lists for named nodes
     NamedList(NamedNodeKind),
-
-    // Card previews
     NamedCard(NamedNodeKind),
-
-    // Content node panes
     ContentPane(NodeKind),
-
-    // Named node selection panes
     NamedSelector(NamedNodeKind),
 }
 
@@ -100,7 +91,6 @@ impl ExplorerPlugin {
         }
     }
 
-    // Generic list renderer for named nodes
     fn render_named_list<T: Node + NamedNode + FTitle + Component>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
 
@@ -108,54 +98,42 @@ impl ExplorerPlugin {
         let selection = world.resource::<ExplorerSelection>();
 
         let items = state.named_nodes.get(&kind).cloned();
-        let _selected = selection.selected.get(&kind).copied();
+        let selected_id = selection.selected.get(&kind).copied();
 
         if let Some(items) = items {
             Context::from_world(world, |context| {
-                Table::from_data(&items)
-                    .column(
-                        "Name",
-                        |_, ui, item, _| {
-                            let item_id = item.0;
+                items
+                    .as_list(|item, context, ui| {
+                        let item_id = item.0;
+                        let is_selected = selected_id == Some(item_id);
 
-                            if let Ok(entity) = context.entity(item_id) {
-                                if let Ok(node) = context.component::<T>(entity) {
-                                    if node.as_title().as_button().compose(context, ui).clicked() {
-                                        op(move |world| {
-                                            world
-                                                .resource_mut::<ExplorerSelection>()
-                                                .selected
-                                                .insert(kind, item_id);
-                                        });
-                                    }
-                                } else {
-                                    ui.label(&item.1);
-                                }
+                        ui.set_width(ui.available_width());
+
+                        if is_selected {
+                            ui.visuals_mut().override_text_color = Some(context.color(ui));
+                        }
+
+                        ui.horizontal(|ui| {
+                            ui.label(format!("[{}]", item.2));
+                            if let Ok(node) = context.component_by_id::<T>(item_id) {
+                                node.as_title().compose(context, ui);
                             } else {
-                                ui.label(&item.1);
                             }
-                            Ok(())
-                        },
-                        |_, item| Ok(VarValue::String(item.1.clone())),
-                    )
-                    .column(
-                        "Rating",
-                        |_, ui, item, _| {
-                            ui.horizontal(|ui| {
-                                ui.label(item.2.to_string());
-                                let id = item.0;
-                                if ui.button("↑").clicked() {
-                                    cn().reducers.content_vote_node(id, true).notify_error_op();
-                                }
-                                if ui.button("↓").clicked() {
-                                    cn().reducers.content_vote_node(id, false).notify_error_op();
-                                }
+                        })
+                        .response
+                    })
+                    .with_hover(|item, _, ui| {
+                        let id = item.0;
+                        if ui.button("Select").clicked() {
+                            op(move |world| {
+                                world
+                                    .resource_mut::<ExplorerSelection>()
+                                    .selected
+                                    .insert(kind, id);
                             });
-                            Ok(())
-                        },
-                        |_, item| Ok(VarValue::i32(item.2)),
-                    )
-                    .ui(context, ui);
+                        }
+                    })
+                    .compose(context, ui);
             });
         } else {
             ui.centered_and_justified(|ui| {
@@ -163,11 +141,9 @@ impl ExplorerPlugin {
             });
         }
 
-        // Reinsert the state
         world.insert_resource(state);
     }
 
-    // Generic card preview renderer using FCard trait
     fn render_named_card<T: Node + NamedNode + FCard + Component>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
         let selection = world.resource::<ExplorerSelection>();
@@ -188,7 +164,6 @@ impl ExplorerPlugin {
         }
     }
 
-    // Generic content pane renderer
     fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Component>(
         ui: &mut Ui,
         world: &mut World,
@@ -196,9 +171,9 @@ impl ExplorerPlugin {
         let kind = T::kind_s();
         let mut state = world.remove_resource::<ExplorerState>().unwrap();
         let view_mode = *state.view_mode.entry(kind).or_insert(ViewMode::Current);
+
         kind.cstr().label(ui);
         ui.vertical(|ui| {
-            // View mode toggle
             ui.horizontal(|ui| {
                 if ui
                     .selectable_label(view_mode == ViewMode::Current, "Current")
@@ -211,13 +186,17 @@ impl ExplorerPlugin {
                     .clicked()
                 {
                     state.view_mode.insert(kind, ViewMode::Selected);
+                    state.cache_player_selection(kind);
                 }
             });
 
             ui.separator();
 
-            // Get the currently selected named node based on context
-            let selected_node_id = Self::get_current_selected_node(kind, world);
+            let selected_node_id = if view_mode == ViewMode::Selected {
+                state.get_player_selected_node(kind)
+            } else {
+                Self::get_current_selected_node(kind, world)
+            };
 
             if let Some(node_id) = selected_node_id {
                 Context::from_world(world, |context| match context.top_linked::<T>(node_id) {
@@ -236,10 +215,9 @@ impl ExplorerPlugin {
 
             ui.separator();
 
-            // Action buttons
             ui.horizontal(|ui| {
                 if ui.button("Select Different").clicked() {
-                    Self::open_content_selector::<T>(world, selected_node_id);
+                    Self::open_content_selector::<T>(world, selected_node_id, kind);
                 }
                 if ui.button("Create New").clicked() {
                     Self::open_content_creator::<T>(world, selected_node_id);
@@ -249,19 +227,13 @@ impl ExplorerPlugin {
         world.insert_resource(state);
     }
 
-    // Generic named node selector
     fn render_named_selector(selector_kind: NamedNodeKind, ui: &mut Ui, world: &mut World) {
         let state = world.resource::<ExplorerState>();
         let selection = world.resource::<ExplorerSelection>();
 
-        // Determine which nodes to show based on selector kind
         let (nodes_to_show, current_parent) = match selector_kind {
-            NamedNodeKind::NHouse => {
-                // For house selector, show all houses
-                (state.named_nodes.get(&NamedNodeKind::NHouse), None)
-            }
+            NamedNodeKind::NHouse => (state.named_nodes.get(&NamedNodeKind::NHouse), None),
             NamedNodeKind::NUnit => {
-                // For units selector (used in house view), show units belonging to selected house
                 let selected_house = selection.selected.get(&NamedNodeKind::NHouse).copied();
                 (state.named_nodes.get(&NamedNodeKind::NUnit), selected_house)
             }
@@ -287,9 +259,7 @@ impl ExplorerPlugin {
             if let Some(nodes) = nodes_to_show {
                 for (id, name, _rating) in nodes {
                     ui.horizontal(|ui| {
-                        // Check if this node is linked to parent
                         let is_linked = if let Some(parent_id) = current_parent {
-                            // Check actual link in database
                             cn().db()
                                 .node_links()
                                 .iter()
@@ -299,22 +269,18 @@ impl ExplorerPlugin {
                         };
 
                         if selector_kind == NamedNodeKind::NUnit {
-                            // Multi-select for units
                             let mut checked = is_linked;
                             if ui.checkbox(&mut checked, "").changed() {
                                 if checked {
                                     cn().reducers
                                         .content_select_link(current_parent.unwrap(), *id)
                                         .notify_error_op();
-                                } else {
-                                    // Unlink if needed
                                 }
                             }
                         }
 
                         let id = *id;
                         if ui.link(name).clicked() {
-                            // Switch to appropriate tab and select the node
                             op(move |world| {
                                 world
                                     .resource_mut::<ExplorerSelection>()
@@ -328,79 +294,144 @@ impl ExplorerPlugin {
         });
     }
 
-    // Helper functions
     fn get_current_selected_node(content_kind: NodeKind, world: &World) -> Option<u64> {
         let selection = world.resource::<ExplorerSelection>();
 
-        // Determine which named node is currently selected based on content type
+        let (_parent_kind, relationship) = Self::get_node_relationship(content_kind);
+
+        match relationship {
+            NodeRelationship::DirectParent(named_kind) => {
+                selection.selected.get(&named_kind).copied()
+            }
+            NodeRelationship::IndirectParent(named_kind) => {
+                selection.selected.get(&named_kind).copied()
+            }
+        }
+    }
+
+    fn get_node_relationship(content_kind: NodeKind) -> (NodeKind, NodeRelationship) {
         match content_kind {
-            NodeKind::NHouseColor => selection.selected.get(&NamedNodeKind::NHouse).copied(),
-            NodeKind::NUnitDescription
-            | NodeKind::NUnitBehavior
-            | NodeKind::NUnitRepresentation
-            | NodeKind::NUnitStats => selection.selected.get(&NamedNodeKind::NUnit).copied(),
-            NodeKind::NStatusDescription
-            | NodeKind::NStatusBehavior
-            | NodeKind::NStatusRepresentation => selection
-                .selected
-                .get(&NamedNodeKind::NStatusMagic)
-                .copied(),
-            NodeKind::NAbilityDescription | NodeKind::NAbilityEffect => selection
-                .selected
-                .get(&NamedNodeKind::NAbilityMagic)
-                .copied(),
-            _ => None,
+            NodeKind::NHouseColor => (
+                NodeKind::NHouse,
+                NodeRelationship::DirectParent(NamedNodeKind::NHouse),
+            ),
+            NodeKind::NUnitDescription => (
+                NodeKind::NUnit,
+                NodeRelationship::DirectParent(NamedNodeKind::NUnit),
+            ),
+            NodeKind::NUnitBehavior => (
+                NodeKind::NUnitDescription,
+                NodeRelationship::IndirectParent(NamedNodeKind::NUnit),
+            ),
+            NodeKind::NUnitRepresentation => (
+                NodeKind::NUnitDescription,
+                NodeRelationship::IndirectParent(NamedNodeKind::NUnit),
+            ),
+            NodeKind::NUnitStats => (
+                NodeKind::NUnit,
+                NodeRelationship::DirectParent(NamedNodeKind::NUnit),
+            ),
+            NodeKind::NStatusDescription => (
+                NodeKind::NStatusMagic,
+                NodeRelationship::DirectParent(NamedNodeKind::NStatusMagic),
+            ),
+            NodeKind::NStatusBehavior => (
+                NodeKind::NStatusDescription,
+                NodeRelationship::IndirectParent(NamedNodeKind::NStatusMagic),
+            ),
+            NodeKind::NStatusRepresentation => (
+                NodeKind::NStatusMagic,
+                NodeRelationship::DirectParent(NamedNodeKind::NStatusMagic),
+            ),
+            NodeKind::NAbilityDescription => (
+                NodeKind::NAbilityMagic,
+                NodeRelationship::DirectParent(NamedNodeKind::NAbilityMagic),
+            ),
+            NodeKind::NAbilityEffect => (
+                NodeKind::NAbilityDescription,
+                NodeRelationship::IndirectParent(NamedNodeKind::NAbilityMagic),
+            ),
+            _ => (
+                content_kind,
+                NodeRelationship::DirectParent(NamedNodeKind::NUnit),
+            ),
         }
     }
 
     fn open_content_selector<T: Node + Component + FTitle>(
         world: &mut World,
         parent_id: Option<u64>,
+        content_kind: NodeKind,
     ) {
-        if let Some(parent_id) = parent_id {
-            let kind = T::kind_s();
+        let parent_id = match parent_id {
+            Some(id) => id,
+            None => return,
+        };
 
-            // Get available content nodes
-            let nodes: Vec<T> = cn()
-                .db()
-                .nodes_world()
-                .iter()
-                .filter(|n| n.kind == kind.as_ref() && (n.owner == ID_CORE || n.owner == 0))
-                .filter_map(|n| n.to_node().ok())
-                .collect();
+        let kind = T::kind_s();
 
-            if !nodes.is_empty() {
-                Confirmation::new("Select Content")
-                    .content(move |ui, world| {
-                        let mut selected = None;
-                        Context::from_world(world, |context| {
-                            let filter_id = ui.id().with("content_selector_filter");
+        let nodes: Vec<T> = cn()
+            .db()
+            .nodes_world()
+            .iter()
+            .filter(|n| n.kind == kind.as_ref() && (n.owner == ID_CORE || n.owner == 0))
+            .filter_map(|n| n.to_node().ok())
+            .collect();
 
-                            nodes
-                                .as_list(|n, context, ui| n.as_title().compose(context, ui))
-                                .with_filter(filter_id, |text, n, context| {
-                                    n.title(context).contains(text)
-                                })
-                                .with_hover(|n, _, ui| {
-                                    if ui.button("Select").clicked() {
-                                        selected = Some(n.id());
-                                    }
-                                })
-                                .compose(context, ui);
-                        });
-
-                        // If something was selected, link it and close
-                        if let Some(id) = selected {
-                            cn().reducers
-                                .content_select_link(parent_id, id)
-                                .notify_error(world);
-                            return true; // Close the confirmation
-                        }
-                        false
-                    })
-                    .push(world);
-            }
+        if nodes.is_empty() {
+            return;
         }
+
+        let selection = world.resource::<ExplorerSelection>();
+        let current_selected = selection
+            .content_current
+            .get(&(content_kind, parent_id))
+            .copied();
+        let user_selected = selection
+            .content_selected
+            .get(&(content_kind, parent_id))
+            .copied();
+
+        Confirmation::new("Select Content")
+            .content(move |ui, world| {
+                let mut selected = None;
+                Context::from_world(world, |context| {
+                    let _filter_id = ui.id().with("content_selector_filter");
+
+                    for node in &nodes {
+                        let node_id = node.id();
+                        ui.horizontal(|ui| {
+                            node.as_title().compose(context, ui);
+
+                            if Some(node_id) == current_selected {
+                                ui.label("●");
+                            }
+                            if Some(node_id) == user_selected {
+                                ui.label("★");
+                            }
+
+                            if ui.button("Select").clicked() {
+                                selected = Some(node_id);
+                            }
+                        });
+                    }
+                });
+
+                if let Some(id) = selected {
+                    cn().reducers
+                        .content_select_link(parent_id, id)
+                        .notify_error(world);
+
+                    world
+                        .resource_mut::<ExplorerSelection>()
+                        .content_selected
+                        .insert((content_kind, parent_id), id);
+
+                    return true;
+                }
+                false
+            })
+            .push(world);
     }
 
     fn open_content_creator<T: Node + Component + Default>(
@@ -411,7 +442,6 @@ impl ExplorerPlugin {
             Confirmation::new("Create New Content")
                 .content(move |ui, _world| {
                     ui.label(format!("Create new {}", T::kind_s()));
-                    // TODO: Implement actual node creation with FEdit
                     false
                 })
                 .push(world);
@@ -421,14 +451,13 @@ impl ExplorerPlugin {
 
 impl ExplorerState {
     pub fn refresh_all_caches(&mut self) {
-        // Refresh named nodes
         self.refresh_named_cache(NamedNodeKind::NHouse);
         self.refresh_named_cache(NamedNodeKind::NUnit);
         self.refresh_named_cache(NamedNodeKind::NAbilityMagic);
         self.refresh_named_cache(NamedNodeKind::NStatusMagic);
 
-        // Refresh content nodes
         self.refresh_content_cache();
+        self.refresh_active_player();
     }
 
     fn refresh_named_cache(&mut self, kind: NamedNodeKind) {
@@ -446,7 +475,6 @@ impl ExplorerState {
             .filter(|n| n.kind == kind_str && (n.owner == ID_CORE || n.owner == 0))
             .map(|n| {
                 let name = if !n.data.is_empty() {
-                    // Extract name from data based on node kind
                     match serde_json::from_str::<serde_json::Value>(&n.data) {
                         Ok(json) => json
                             .get(match kind {
@@ -498,4 +526,36 @@ impl ExplorerState {
             self.content_cache.insert(kind, nodes);
         }
     }
+
+    fn refresh_active_player(&mut self) {
+        // For now, just clear the player ID cache
+        // TODO: Implement when player identity is available
+        self.active_player_id = None;
+    }
+
+    fn cache_player_selection(&mut self, content_kind: NodeKind) {
+        if let Some(player_id) = self.active_player_id {
+            let selected = cn()
+                .db()
+                .player_link_selections()
+                .iter()
+                .find(|s| s.player_id == player_id && s.kind == content_kind.as_ref())
+                .map(|s| s.selected_link_id);
+
+            self.player_selections_cache.insert(content_kind, selected);
+        }
+    }
+
+    fn get_player_selected_node(&self, content_kind: NodeKind) -> Option<u64> {
+        self.player_selections_cache
+            .get(&content_kind)
+            .copied()
+            .flatten()
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum NodeRelationship {
+    DirectParent(NamedNodeKind),
+    IndirectParent(NamedNodeKind),
 }
