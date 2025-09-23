@@ -120,7 +120,7 @@ impl ExplorerPlugin {
 
                             if let Ok(entity) = context.entity(item_id) {
                                 if let Ok(node) = context.component::<T>(entity) {
-                                    if node.as_title().compose(context, ui).clicked() {
+                                    if node.as_title().as_button().compose(context, ui).clicked() {
                                         op(move |world| {
                                             world
                                                 .resource_mut::<ExplorerSelection>()
@@ -374,31 +374,19 @@ impl ExplorerPlugin {
                     .content(move |ui, world| {
                         let mut selected = None;
                         Context::from_world(world, |context| {
-                            let current_top = context.top_linked::<T>(parent_id).ok();
-                            let world_ref = context.world().ok();
+                            let filter_id = ui.id().with("content_selector_filter");
 
-                            for node in &nodes {
-                                ui.horizontal(|ui| {
-                                    let is_current = current_top
-                                        .map(|top| top.id() == node.id())
-                                        .unwrap_or(false);
-
-                                    if is_current {
-                                        ui.label("★");
+                            nodes
+                                .as_list(|n, context, ui| n.as_title().compose(context, ui))
+                                .with_filter(filter_id, |text, n, context| {
+                                    n.title(context).contains(text)
+                                })
+                                .with_hover(|n, _, ui| {
+                                    if ui.button("Select").clicked() {
+                                        selected = Some(n.id());
                                     }
-
-                                    let rating = world_ref
-                                        .and_then(|w| w.get_any_link_rating(parent_id, node.id()))
-                                        .map(|(rating, _)| rating)
-                                        .unwrap_or(0);
-
-                                    ui.label(format!("({})", rating));
-
-                                    if node.as_title().as_button().compose(context, ui).clicked() {
-                                        selected = Some(node.id());
-                                    }
-                                });
-                            }
+                                })
+                                .compose(context, ui);
                         });
 
                         // If something was selected, link it and close

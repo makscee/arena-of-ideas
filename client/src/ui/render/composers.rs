@@ -125,7 +125,7 @@ impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
     }
 
     fn compose(self, context: &Context, ui: &mut Ui) -> Response {
-        self.data.as_ref().title(context).button(ui)
+        self.data.as_ref().title(context).label(ui)
     }
 }
 
@@ -304,6 +304,9 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
 pub struct ListComposer<'a, T, F> {
     data: DataRef<'a, Vec<T>>,
     element_fn: F,
+    hover_fn: Option<Box<dyn FnMut(&T, &Context, &mut Ui) + 'a>>,
+    filter_fn: Option<Box<dyn Fn(&str, &T, &Context) -> bool>>,
+    filter_id: Option<egui::Id>,
 }
 
 impl<'a, T, F> ListComposer<'a, T, F>
@@ -314,6 +317,9 @@ where
         Self {
             data: DataRef::Immutable(data),
             element_fn,
+            hover_fn: None,
+            filter_fn: None,
+            filter_id: None,
         }
     }
 
@@ -321,7 +327,27 @@ where
         Self {
             data: DataRef::Mutable(data),
             element_fn,
+            hover_fn: None,
+            filter_fn: None,
+            filter_id: None,
         }
+    }
+
+    pub fn with_hover<H>(mut self, hover_fn: H) -> Self
+    where
+        H: FnMut(&T, &Context, &mut Ui) + 'a,
+    {
+        self.hover_fn = Some(Box::new(hover_fn));
+        self
+    }
+
+    pub fn with_filter<G>(mut self, filter_id: egui::Id, filter_fn: G) -> Self
+    where
+        G: Fn(&str, &T, &Context) -> bool + 'static,
+    {
+        self.filter_id = Some(filter_id);
+        self.filter_fn = Some(Box::new(filter_fn));
+        self
     }
 }
 
@@ -341,23 +367,60 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-        for item in self.data.as_ref() {
-            response = response.union((self.element_fn)(item, context, ui));
+    fn compose(mut self, context: &Context, ui: &mut Ui) -> Response {
+        let mut response = "[tw List:]".cstr().label(ui);
+        let items: Vec<&T> =
+            if let (Some(filter_id), Some(filter_fn)) = (self.filter_id, &self.filter_fn) {
+                let filter_text: String = ui
+                    .ctx()
+                    .data_mut(|d| d.get_persisted_mut_or(filter_id, String::new()).clone());
+
+                ui.horizontal(|ui| {
+                    ui.label("Filter:");
+                    let mut filter_input = filter_text.clone();
+                    if ui.text_edit_singleline(&mut filter_input).changed() {
+                        ui.ctx().data_mut(|d| {
+                            d.insert_persisted(filter_id, filter_input.clone());
+                        });
+                    }
+                });
+
+                if filter_text.is_empty() {
+                    self.data.as_ref().iter().collect()
+                } else {
+                    self.data
+                        .as_ref()
+                        .iter()
+                        .filter(|item| filter_fn(&filter_text, item, context))
+                        .collect()
+                }
+            } else {
+                self.data.as_ref().iter().collect()
+            };
+
+        for item in items {
+            let item_response = ui.group(|ui| {
+                ui.expand_to_include_x(ui.available_rect_before_wrap().right());
+                (self.element_fn)(item, context, ui)
+            });
+            response = response.union(item_response.inner);
+
+            if let Some(hover_fn) = self.hover_fn.as_mut() {
+                if ui.rect_contains_pointer(item_response.response.rect) {
+                    let ui = &mut ui.new_child(
+                        UiBuilder::new()
+                            .max_rect(item_response.response.rect)
+                            .layout(Layout::right_to_left(Align::Center)),
+                    );
+                    ui.add_space(5.0);
+                    hover_fn(item, context, ui);
+                }
+            }
         }
+
         response
     }
 }
-
-/// Extension trait to enable chaining composers
-// pub trait ComposerExt<T>: Sized {
-//     fn as_button(self) -> ButtonComposer<Self> {
-//         ButtonComposer::new(self)
-//     }
-// }
-
-// impl<T, C: Composer<T>> ComposerExt<T> for C {}
 
 /// Card composer for full card views
 pub struct CardComposer<'a, T: FTitle + FDescription + FStats> {
