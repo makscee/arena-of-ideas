@@ -711,6 +711,7 @@ fn generate_impl(mut item: ItemStruct, named_nodes: &[Ident]) -> TokenStream {
                     }
                 )*
                 let kind = self.kind();
+                context.set_id_kind(self.id, kind);
                 context.world_mut()?.entity_mut(entity).insert(self);
                 kind.on_unpack(context, entity);
                 Ok(())

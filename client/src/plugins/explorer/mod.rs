@@ -108,7 +108,7 @@ impl ExplorerPlugin {
         let selection = world.resource::<ExplorerSelection>();
 
         let items = state.named_nodes.get(&kind).cloned();
-        let selected = selection.selected.get(&kind).copied();
+        let _selected = selection.selected.get(&kind).copied();
 
         if let Some(items) = items {
             Context::from_world(world, |context| {
@@ -117,7 +117,7 @@ impl ExplorerPlugin {
                         "Name",
                         |_, ui, item, _| {
                             let item_id = item.0;
-                            let is_selected = selected == Some(item_id);
+
                             if let Ok(entity) = context.entity(item_id) {
                                 if let Ok(node) = context.component::<T>(entity) {
                                     if node.as_title().compose(context, ui).clicked() {
@@ -196,7 +196,7 @@ impl ExplorerPlugin {
         let kind = T::kind_s();
         let mut state = world.remove_resource::<ExplorerState>().unwrap();
         let view_mode = *state.view_mode.entry(kind).or_insert(ViewMode::Current);
-
+        kind.cstr().label(ui);
         ui.vertical(|ui| {
             // View mode toggle
             ui.horizontal(|ui| {
@@ -220,23 +220,11 @@ impl ExplorerPlugin {
             let selected_node_id = Self::get_current_selected_node(kind, world);
 
             if let Some(node_id) = selected_node_id {
-                Context::from_world(world, |context| {
-                    // Get linked content based on the parent node's type and field
-                    // For example, if viewing NUnitDescription, we need to get it from the unit's description field
-                    let linked_nodes = context.children(node_id);
-                    let mut found = false;
-
-                    for child_id in linked_nodes {
-                        if let Ok(child_entity) = context.entity(child_id) {
-                            if let Ok(content) = context.component::<T>(child_entity) {
-                                content.display(context, ui);
-                                found = true;
-                                break;
-                            }
-                        }
+                Context::from_world(world, |context| match context.top_linked::<T>(node_id) {
+                    Ok(content) => {
+                        content.display(context, ui);
                     }
-
-                    if !found {
+                    Err(_) => {
                         ui.label("No linked content");
                     }
                 });
@@ -386,10 +374,30 @@ impl ExplorerPlugin {
                     .content(move |ui, world| {
                         let mut selected = None;
                         Context::from_world(world, |context| {
+                            let current_top = context.top_linked::<T>(parent_id).ok();
+                            let world_ref = context.world().ok();
+
                             for node in &nodes {
-                                if node.as_title().as_button().compose(context, ui).clicked() {
-                                    selected = Some(node.id());
-                                }
+                                ui.horizontal(|ui| {
+                                    let is_current = current_top
+                                        .map(|top| top.id() == node.id())
+                                        .unwrap_or(false);
+
+                                    if is_current {
+                                        ui.label("★");
+                                    }
+
+                                    let rating = world_ref
+                                        .and_then(|w| w.get_any_link_rating(parent_id, node.id()))
+                                        .map(|(rating, _)| rating)
+                                        .unwrap_or(0);
+
+                                    ui.label(format!("({})", rating));
+
+                                    if node.as_title().as_button().compose(context, ui).clicked() {
+                                        selected = Some(node.id());
+                                    }
+                                });
                             }
                         });
 

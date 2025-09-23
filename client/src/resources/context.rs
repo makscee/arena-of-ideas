@@ -249,6 +249,18 @@ impl<'w> Context<'w> {
             .and_then(|w| w.parents_children_map().get(&id).cloned())
             .unwrap_or_default()
     }
+    pub fn parents_all(&self, id: u64) -> HashSet<u64> {
+        self.world()
+            .ok()
+            .and_then(|w| w.children_parents_all_map().get(&id).cloned())
+            .unwrap_or_default()
+    }
+    pub fn children_all(&self, id: u64) -> HashSet<u64> {
+        self.world()
+            .ok()
+            .and_then(|w| w.parents_children_all_map().get(&id).cloned())
+            .unwrap_or_default()
+    }
     pub fn parents_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
         let id = entity.id(self)?;
         self.ids_to_entities(self.parents(id))
@@ -256,6 +268,14 @@ impl<'w> Context<'w> {
     pub fn children_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
         let id = entity.id(self)?;
         self.ids_to_entities(self.children(id))
+    }
+    pub fn parents_all_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
+        let id = entity.id(self)?;
+        self.ids_to_entities(self.parents_all(id))
+    }
+    pub fn children_all_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
+        let id = entity.id(self)?;
+        self.ids_to_entities(self.children_all(id))
     }
     pub fn parents_recursive(&self, id: u64) -> HashSet<u64> {
         let mut result: HashSet<u64> = default();
@@ -333,8 +353,78 @@ impl<'w> Context<'w> {
         }
         Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
     }
+    pub fn top_child<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
+        let world = self.world()?;
+        let links_rating_all = world.links_rating_all_map();
+        let id_kind_map = world.id_kind_map();
+        let target_kind = T::kind_s();
+
+        let mut best_child = None;
+        let mut best_rating = i32::MIN;
+
+        for child in self.children_all(id) {
+            if let Some(child_kind) = id_kind_map.get(&child) {
+                if child_kind != &target_kind {
+                    continue;
+                }
+            }
+
+            if let Ok(component) = self.component_by_id::<T>(child) {
+                let rating = links_rating_all
+                    .get(&(id, child))
+                    .map(|(rating, _)| *rating)
+                    .unwrap_or(0);
+
+                if rating > best_rating {
+                    best_rating = rating;
+                    best_child = Some(component);
+                }
+            }
+        }
+
+        best_child.ok_or_else(|| ExpressionErrorVariants::NotFound(T::kind_s().to_string()).into())
+    }
+    pub fn top_parent<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
+        let world = self.world()?;
+        let links_rating_all = world.links_rating_all_map();
+        let id_kind_map = world.id_kind_map();
+        let target_kind = T::kind_s();
+
+        let mut best_parent = None;
+        let mut best_rating = i32::MIN;
+
+        for parent in self.parents_all(id) {
+            if let Some(parent_kind) = id_kind_map.get(&parent) {
+                if parent_kind != &target_kind {
+                    continue;
+                }
+            }
+
+            if let Ok(component) = self.component_by_id::<T>(parent) {
+                let rating = links_rating_all
+                    .get(&(parent, id))
+                    .map(|(rating, _)| *rating)
+                    .unwrap_or(0);
+
+                if rating > best_rating {
+                    best_rating = rating;
+                    best_parent = Some(component);
+                }
+            }
+        }
+
+        best_parent.ok_or_else(|| ExpressionErrorVariants::NotFound(T::kind_s().to_string()).into())
+    }
+    pub fn top_linked<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
+        self.top_child::<T>(id)
+            .or_else(|_| self.top_parent::<T>(id))
+    }
     pub fn link_id_entity(&mut self, id: u64, entity: Entity) -> Result<(), ExpressionError> {
         self.world_mut()?.link_id_entity(id, entity);
+        Ok(())
+    }
+    pub fn set_id_kind(&mut self, id: u64, kind: NodeKind) -> Result<(), ExpressionError> {
+        self.world_mut()?.set_id_kind(id, kind);
         Ok(())
     }
     pub fn link_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
@@ -430,6 +520,18 @@ impl<'w> Context<'w> {
         id: u64,
     ) -> Result<Vec<&T>, ExpressionError> {
         self.collect_components(self.children_recursive(id))
+    }
+    pub fn collect_parents_all_components<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.parents_all(id))
+    }
+    pub fn collect_children_all_components<T: Component>(
+        &self,
+        id: u64,
+    ) -> Result<Vec<&T>, ExpressionError> {
+        self.collect_components(self.children_all(id))
     }
 
     pub fn owner_entity(&self) -> Result<Entity, ExpressionError> {
