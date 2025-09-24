@@ -43,10 +43,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
             unit.id.add_parent(ctx, house.id)?;
         }
         CardKind::House => {
-            let house = NHouse::loader(node_id)
-                .with_all_parts()
-                .without_units()
-                .load(ctx)?;
+            let house = NHouse::loader(node_id).with_all_parts().load(ctx)?;
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
                 .houses

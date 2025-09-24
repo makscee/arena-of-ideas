@@ -1,5 +1,5 @@
 use super::*;
-use itertools::Itertools;
+
 use log::{error, info};
 use spacetimedb::{Identity, ReducerContext, reducer};
 use std::collections::{HashMap, VecDeque};
@@ -74,17 +74,33 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         true
     });
     info!("retained units {}", units.len());
-    let mut units: HashMap<u64, Vec<NUnit>> = units
-        .into_iter()
-        .filter_map(|n| {
-            if let Some(house) = n.top_parent::<NHouse>(ctx) {
-                Some((house.id, n))
-            } else {
-                None
+    // Group units by their magic type (ability or status)
+    let mut ability_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
+    let mut status_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
+
+    for unit in units {
+        if let Some(description) = unit.description.get_data() {
+            match description.magic_type {
+                MagicType::Ability => {
+                    // Find the ability magic this unit should belong to
+                    if let Some(ability) = unit.top_parent::<NAbilityMagic>(ctx) {
+                        ability_units.entry(ability.id).or_default().push(unit);
+                    }
+                }
+                MagicType::Status => {
+                    // Find the status magic this unit should belong to
+                    if let Some(status) = unit.top_parent::<NStatusMagic>(ctx) {
+                        status_units.entry(status.id).or_default().push(unit);
+                    }
+                }
             }
-        })
-        .into_group_map();
-    info!("units with house {}", units.len());
+        }
+    }
+    info!(
+        "ability units: {}, status units: {}",
+        ability_units.len(),
+        status_units.len()
+    );
 
     let mut houses: VecDeque<NHouse> = VecDeque::from_iter(NHouse::collect_owner(ctx, 0));
     while let Some(mut house) = houses.pop_front() {
@@ -96,11 +112,16 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             error!("color failed");
             continue;
         }
-        if let Some(mut ability) = house.mutual_top_parent::<NAbilityMagic>(ctx) {
+        if let Some(mut ability) = house.mutual_top_child::<NAbilityMagic>(ctx) {
             if let Some(mut description) = ability.mutual_top_parent::<NAbilityDescription>(ctx) {
                 if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
                     description.effect.set_data(effect);
                     ability.description.set_data(description);
+
+                    if let Some(units) = ability_units.remove(&ability.id) {
+                        ability.units.set_data(units);
+                    }
+
                     house.ability.set_data(ability);
                 } else {
                     error!("ability effect failed");
@@ -109,11 +130,15 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                 error!("ability description failed");
             }
         };
-        if let Some(mut status) = house.mutual_top_parent::<NStatusMagic>(ctx) {
+        if let Some(mut status) = house.mutual_top_child::<NStatusMagic>(ctx) {
             if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
                 if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
                     description.behavior.set_data(behavior);
                     status.description.set_data(description);
+                    if let Some(units) = status_units.remove(&status.id) {
+                        status.units.set_data(units);
+                    }
+
                     house.status.set_data(status);
                 } else {
                     error!("status behavior failed");
@@ -125,15 +150,13 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             error!("status magic failed");
         }
         if house.status.is_none() {
+            error!("failed to get status for house");
+            continue;
+        }
+        if house.ability.is_none() {
             error!("failed to get ability for house");
             continue;
         }
-        if let Some(units) = units.remove(&house.id) {
-            house.units.set_data(units);
-        } else {
-            error!("units failed");
-            continue;
-        };
 
         info!("solidifying house {}", house.house_name);
         for id in house.collect_ids() {

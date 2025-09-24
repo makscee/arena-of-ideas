@@ -44,11 +44,9 @@ struct NHouse {
     #[link_cardinality(one_to_one)]
     pub color: NodePart<Parent, NHouseColor>,
     #[link_cardinality(one_to_one)]
-    pub ability: NodePart<Parent, NAbilityMagic>,
+    pub ability: NodePart<Child, NAbilityMagic>,
     #[link_cardinality(one_to_one)]
-    pub status: NodePart<Parent, NStatusMagic>,
-    #[link_cardinality(one_to_many)]
-    pub units: NodeParts<Child, NUnit>,
+    pub status: NodePart<Child, NStatusMagic>,
 }
 
 #[node(content)]
@@ -61,6 +59,8 @@ struct NAbilityMagic {
     pub ability_name: String,
     #[link_cardinality(one_to_one)]
     pub description: NodePart<Parent, NAbilityDescription>,
+    #[link_cardinality(one_to_many)]
+    pub units: NodeParts<Child, NUnit>,
 }
 
 #[node(content)]
@@ -82,6 +82,8 @@ struct NStatusMagic {
     pub description: NodePart<Parent, NStatusDescription>,
     #[link_cardinality(one_to_one)]
     pub representation: NodePart<Parent, NStatusRepresentation>,
+    #[link_cardinality(one_to_many)]
+    pub units: NodeParts<Child, NUnit>,
 }
 
 #[node(content)]

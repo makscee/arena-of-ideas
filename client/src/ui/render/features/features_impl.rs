@@ -677,10 +677,13 @@ impl FInfo for NHouse {
     fn info(&self, context: &Context) -> Cstr {
         let mut info_parts = Vec::new();
 
-        let units_count = context
-            .collect_children_components::<NUnit>(self.id)
-            .map(|u| u.len())
-            .unwrap_or_default();
+        let mut units_count = 0;
+        if let Ok(ability) = self.ability_load(context) {
+            units_count += ability.units_load(context).len();
+        }
+        if let Ok(status) = self.status_load(context) {
+            units_count += status.units_load(context).len();
+        }
         if units_count > 0 {
             info_parts.push(format!("units: {}", units_count));
         }
@@ -704,10 +707,9 @@ impl FPlaceholder for NHouse {
         NHouse::new_full(
             owner,
             "New House".to_string(),
-            NHouseColor::placeholder(owner),
             NAbilityMagic::placeholder(owner),
             NStatusMagic::placeholder(owner),
-            vec![],
+            NHouseColor::placeholder(owner),
         )
     }
 }
@@ -775,6 +777,7 @@ impl FPlaceholder for NAbilityMagic {
             owner,
             "New Ability".to_string(),
             NAbilityDescription::placeholder(owner),
+            default(),
         )
     }
 }
@@ -849,6 +852,7 @@ impl FPlaceholder for NStatusMagic {
             "New Status".to_string(),
             NStatusDescription::placeholder(owner),
             NStatusRepresentation::placeholder(owner),
+            vec![],
         )
     }
 }
@@ -2612,10 +2616,19 @@ impl FCompactView for NHouse {
             if let Ok(status) = self.status_load(context) {
                 ui.label(format!("Status: {}", status.status_name));
             }
-            let units_count = context
-                .collect_children_components::<NUnit>(self.id())
-                .map(|u| u.len())
-                .unwrap_or_default();
+            let mut units_count = 0;
+            if let Ok(ability) = self.ability_load(context) {
+                units_count += context
+                    .collect_children_components::<NUnit>(ability.id)
+                    .map(|u| u.len())
+                    .unwrap_or_default();
+            }
+            if let Ok(status) = self.status_load(context) {
+                units_count += context
+                    .collect_children_components::<NUnit>(status.id)
+                    .map(|u| u.len())
+                    .unwrap_or_default();
+            }
             if units_count > 0 {
                 ui.separator();
                 ui.label(format!("Units: {}", units_count));

@@ -206,14 +206,14 @@ fn generate_impl(mut item: ItemStruct) -> TokenStream {
         impl #struct_ident {
             #shared_new_fns
             #(
-                pub fn #parent_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                pub fn #parent_set(&mut self, ctx: &ReducerContext, mut node: #parent_types) -> Result<&mut Self, String> {
                     self.id.add_parent(ctx, node.id)?;
                     self.#parent_fields.set_data(node);
                     Ok(self)
                 }
             )*
             #(
-                pub fn #child_set(&mut self, ctx: &ReducerContext, mut node: #one_types) -> Result<&mut Self, String> {
+                pub fn #child_set(&mut self, ctx: &ReducerContext, mut node: #child_types) -> Result<&mut Self, String> {
                     self.id.add_child(ctx, node.id)?;
                     self.#child_fields.set_data(node);
                     Ok(self)

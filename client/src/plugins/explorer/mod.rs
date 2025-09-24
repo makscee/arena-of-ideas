@@ -222,7 +222,15 @@ impl ExplorerPlugin {
 
         let nodes_to_show = state.named_nodes.get(&selector_kind);
         let current_parent = match selector_kind {
-            NamedNodeKind::NUnit | NamedNodeKind::NAbilityMagic | NamedNodeKind::NStatusMagic => {
+            NamedNodeKind::NUnit => {
+                // For units, parent could be either ability or status
+                state
+                    .inspected
+                    .get(&NamedNodeKind::NAbilityMagic)
+                    .copied()
+                    .or_else(|| state.inspected.get(&NamedNodeKind::NStatusMagic).copied())
+            }
+            NamedNodeKind::NAbilityMagic | NamedNodeKind::NStatusMagic => {
                 state.inspected.get(&NamedNodeKind::NHouse).copied()
             }
             _ => None,
@@ -247,9 +255,11 @@ impl ExplorerPlugin {
                             let mut checked = is_linked;
                             if ui.checkbox(&mut checked, "").changed() {
                                 if checked {
-                                    cn().reducers
-                                        .content_select_link(current_parent.unwrap(), *id)
-                                        .notify_error_op();
+                                    if let Some(parent_id) = current_parent {
+                                        cn().reducers
+                                            .content_select_link(parent_id, *id)
+                                            .notify_error_op();
+                                    }
                                 }
                             }
                         }

@@ -30,14 +30,13 @@ pub fn get_node_relationships(kind: NodeKind) -> Vec<NodeLink> {
             NodeLink::new(
                 NodeKind::NHouse,
                 NodeKind::NAbilityMagic,
-                NodeRelation::Parent,
+                NodeRelation::Child,
             ),
             NodeLink::new(
                 NodeKind::NHouse,
                 NodeKind::NStatusMagic,
-                NodeRelation::Parent,
+                NodeRelation::Child,
             ),
-            NodeLink::new(NodeKind::NHouse, NodeKind::NUnit, NodeRelation::Child),
         ],
         NodeKind::NUnit => vec![
             NodeLink::new(
@@ -47,7 +46,12 @@ pub fn get_node_relationships(kind: NodeKind) -> Vec<NodeLink> {
             ),
             NodeLink::new(NodeKind::NUnit, NodeKind::NUnitStats, NodeRelation::Parent),
             NodeLink::new(NodeKind::NUnit, NodeKind::NUnitState, NodeRelation::Parent),
-            NodeLink::new(NodeKind::NUnit, NodeKind::NHouse, NodeRelation::Child),
+            NodeLink::new(
+                NodeKind::NUnit,
+                NodeKind::NAbilityMagic,
+                NodeRelation::Child,
+            ),
+            NodeLink::new(NodeKind::NUnit, NodeKind::NStatusMagic, NodeRelation::Child),
         ],
         NodeKind::NUnitDescription => vec![
             NodeLink::new(
@@ -74,8 +78,13 @@ pub fn get_node_relationships(kind: NodeKind) -> Vec<NodeLink> {
             ),
             NodeLink::new(
                 NodeKind::NAbilityMagic,
-                NodeKind::NHouse,
+                NodeKind::NUnit,
                 NodeRelation::Child,
+            ),
+            NodeLink::new(
+                NodeKind::NAbilityMagic,
+                NodeKind::NHouse,
+                NodeRelation::Parent,
             ),
         ],
         NodeKind::NAbilityDescription => vec![
@@ -101,10 +110,11 @@ pub fn get_node_relationships(kind: NodeKind) -> Vec<NodeLink> {
                 NodeKind::NStatusRepresentation,
                 NodeRelation::Parent,
             ),
+            NodeLink::new(NodeKind::NStatusMagic, NodeKind::NUnit, NodeRelation::Child),
             NodeLink::new(
                 NodeKind::NStatusMagic,
                 NodeKind::NHouse,
-                NodeRelation::Child,
+                NodeRelation::Parent,
             ),
         ],
         NodeKind::NStatusDescription => vec![

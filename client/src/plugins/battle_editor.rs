@@ -445,7 +445,13 @@ impl BattleEditorPlugin {
             let entity = context.entity(id)?;
             let mut house = context.component::<NHouse>(entity).cloned()?;
             let owner = house.owner;
-            let units = house.units_load(context).into_iter().cloned().collect_vec();
+            let mut units = vec![]; // TODO: Uncomment after code generation
+            if let Ok(ability) = house.ability_load(context) {
+                units.extend(ability.units_load(context).into_iter().cloned());
+            }
+            if let Ok(status) = house.status_load(context) {
+                units.extend(status.units_load(context).into_iter().cloned());
+            }
             ui.group(|ui| {
                 house.title(context).label(ui);
                 if house.edit(context, ui).changed() {
