@@ -2,6 +2,7 @@ use super::*;
 use crate::ui::Confirmation;
 use spacetimedb_sdk::DbContext;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 mod relationships;
 pub use relationships::*;
@@ -134,7 +135,22 @@ impl ExplorerPlugin {
             });
         } else {
             ui.centered_and_justified(|ui| {
-                ui.label(format!("No {} available", kind));
+                ui.vertical(|ui| {
+                    ui.label(format!("No {} available", kind));
+                    ui.add_space(10.0);
+                    if ui.button(format!("➕ Create New {}", kind)).clicked() {
+                        match kind {
+                            NamedNodeKind::NHouse => Self::open_content_creator::<NHouse>(world),
+                            NamedNodeKind::NUnit => Self::open_content_creator::<NUnit>(world),
+                            NamedNodeKind::NAbilityMagic => {
+                                Self::open_content_creator::<NAbilityMagic>(world)
+                            }
+                            NamedNodeKind::NStatusMagic => {
+                                Self::open_content_creator::<NStatusMagic>(world)
+                            }
+                        }
+                    }
+                });
             });
         }
 
@@ -156,18 +172,39 @@ impl ExplorerPlugin {
             });
         } else {
             ui.centered_and_justified(|ui| {
-                ui.label(format!("Select a {} to preview", kind));
+                ui.vertical(|ui| {
+                    ui.label(format!("Select a {} to preview", kind));
+                    ui.add_space(10.0);
+                    if ui.button(format!("➕ Create New {}", kind)).clicked() {
+                        match kind {
+                            NamedNodeKind::NHouse => Self::open_content_creator::<NHouse>(world),
+                            NamedNodeKind::NUnit => Self::open_content_creator::<NUnit>(world),
+                            NamedNodeKind::NAbilityMagic => {
+                                Self::open_content_creator::<NAbilityMagic>(world)
+                            }
+                            NamedNodeKind::NStatusMagic => {
+                                Self::open_content_creator::<NStatusMagic>(world)
+                            }
+                        }
+                    }
+                });
             });
         }
     }
 
-    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Component>(
+    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Component + Serialize>(
         ui: &mut Ui,
         world: &mut World,
     ) {
         let kind = T::kind_s();
         let mut state = world.remove_resource::<ExplorerState>().unwrap();
         let view_mode = *state.view_mode.entry(kind).or_insert(ViewMode::Current);
+
+        let parent_kind = get_named_parent(kind);
+        let has_inspected_parent = parent_kind
+            .and_then(|pk| state.inspected.get(&pk).copied())
+            .is_some();
+
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 if ui
@@ -193,12 +230,14 @@ impl ExplorerPlugin {
             };
 
             ui.horizontal_wrapped(|ui| {
-                if ui.button("🔄 Select Different").clicked() {
-                    Self::open_content_selector::<T>(world, &state);
+                if has_inspected_parent && node_id.is_some() {
+                    if ui.button("🔄 Select Different").clicked() {
+                        Self::open_content_selector::<T>(world, &state);
+                    }
+                    ui.add_space(5.0);
                 }
-                ui.add_space(5.0);
-                if ui.button("➕ Create New").clicked() {
-                    Self::open_content_creator::<T>(world, &state);
+                if has_inspected_parent && ui.button("➕ Add New").clicked() {
+                    Self::open_content_creator::<T>(world);
                 }
             });
 
@@ -208,9 +247,13 @@ impl ExplorerPlugin {
                     Ok(())
                 })
                 .ui(ui);
+            } else if has_inspected_parent {
+                ui.centered_and_justified(|ui| {
+                    ui.label("No content available - click 'Add New' to create");
+                });
             } else {
                 ui.centered_and_justified(|ui| {
-                    ui.label("Select a node to view its content");
+                    ui.label("Select a parent node to view content");
                 });
             }
         });
@@ -346,22 +389,48 @@ impl ExplorerPlugin {
             .push(world);
     }
 
-    fn open_content_creator<T: Node + Component + Default>(
+    fn open_content_creator<T: Node + Component + Default + FEdit + Clone + Serialize + 'static>(
         world: &mut World,
-        state: &ExplorerState,
     ) {
         let kind = T::kind_s();
-        let parent_kind = get_named_parent(kind);
-        let parent_id = parent_kind.and_then(|pk| state.inspected.get(&pk).copied());
 
-        if let Some(_parent_id) = parent_id {
-            Confirmation::new("Create New Content")
-                .content(move |ui, _world| {
-                    ui.label(format!("Create new {}", kind));
-                    false
-                })
-                .push(world);
-        }
+        let new_node = Arc::new(Mutex::new(T::default()));
+        let new_node_clone = new_node.clone();
+
+        Confirmation::new(&format!("Create New {}", kind))
+            .accept_name("Publish")
+            .cancel_name("Cancel")
+            .content(move |ui, world| {
+                ui.vertical(|ui| {
+                    ui.label("Edit new node:");
+                    ui.separator();
+
+                    Context::from_world(world, |context| {
+                        if let Ok(mut node) = new_node.lock() {
+                            node.edit(context, ui);
+                        }
+                    });
+                });
+                false
+            })
+            .accept(move |_| {
+                if let Ok(node) = new_node_clone.lock() {
+                    let node = node.clone();
+                    Self::publish_new_node::<T>(node);
+                }
+            })
+            .push(world);
+    }
+
+    fn publish_new_node<T: Node + Component + Clone + Serialize>(node: T) {
+        let packed_string = ron::to_string(&node.pack()).unwrap_or_default();
+        cn().reducers
+            .content_publish_node(packed_string)
+            .notify_error_op();
+        op(|world| {
+            let mut state = world.resource_mut::<ExplorerState>();
+            state.refresh_named_cache();
+        });
     }
 }
 
