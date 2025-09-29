@@ -17,7 +17,6 @@ chrono = { workspace = true }
 glam = { workspace = true }
 ron = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 anyhow = "1.0"
 log = "0.4"
 itertools = { workspace = true }

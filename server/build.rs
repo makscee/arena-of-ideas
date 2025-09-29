@@ -52,7 +52,7 @@ fn generate_server_nodes(
 
         // All nodes get SpacetimeDB derives for server
         let derives = quote! {
-            #[derive(Debug, Clone, spacetimedb::SpacetimeType, serde::Serialize, serde::Deserialize)]
+            #[derive(Debug, Clone)]
         };
 
         quote! {

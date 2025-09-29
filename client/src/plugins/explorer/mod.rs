@@ -487,7 +487,7 @@ impl ExplorerState {
                 .filter(|n| n.kind == kind_str && (n.owner == ID_CORE || n.owner == 0))
                 .map(|n| {
                     let name = if !n.data.is_empty() {
-                        match serde_json::from_str::<serde_json::Value>(&n.data) {
+                        match ron::from_str::<serde_json::Value>(&n.data) {
                             Ok(json) => json
                                 .get(match kind {
                                     NamedNodeKind::NHouse => "house_name",

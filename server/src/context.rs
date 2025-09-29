@@ -1,7 +1,7 @@
 use crate::nodes_table::*;
-use schema::{Context, ContextLayer, ContextSource, NodeError, NodeKind, NodeResult};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use serde_json;
+use itertools::Itertools;
+use schema::{Context, ContextLayer, ContextSource, NodeError, NodeKind, NodeResult, ToNodeKind};
+use serde::de::DeserializeOwned;
 use spacetimedb::{Identity, ReducerContext};
 
 /// ContextSource implementation for SpacetimeDB
@@ -21,39 +21,48 @@ impl<'a> ServerSource<'a> {
 
 impl<'a> ContextSource for ServerSource<'a> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
-        id.kind().ok_or(NodeError::NotFound(id))
+        id.kind(&self.ctx).ok_or(NodeError::NotFound(id))
     }
 
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
-        Ok(from_id.collect_children_recursive())
+        Ok(from_id
+            .collect_children_recursive(&self.ctx)
+            .into_iter()
+            .collect_vec())
     }
 
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        Ok(from_id.collect_kind_children(kind))
+        Ok(from_id
+            .collect_kind_children(&self.ctx, kind)
+            .into_iter()
+            .collect_vec())
     }
 
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
-        Ok(id.collect_parents_recursive())
+        Ok(id
+            .collect_parents_recursive(&self.ctx)
+            .into_iter()
+            .collect_vec())
     }
 
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        Ok(id.collect_kind_parents(kind))
+        Ok(id.collect_kind_parents(&self.ctx, kind))
     }
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         from_id
-            .add_child(to_id)
+            .add_child(&self.ctx, to_id)
             .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to add link: {}", e)))
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         from_id
-            .remove_child(to_id)
+            .remove_child(&self.ctx, to_id)
             .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to remove link: {}", e)))
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
-        Ok(from_id.has_child(to_id))
+        Ok(from_id.has_child(&self.ctx, to_id))
     }
 }
 
@@ -96,18 +105,17 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
         T: 'static + schema::Node + DeserializeOwned,
     {
         let node = id
-            .load_tnode_err()
+            .load_tnode_err(&self.source().ctx)
             .map_err(|e| NodeError::LoadError(format!("Failed to load TNode: {}", e)))?;
 
-        let expected_kind = T::node_kind();
-        if node.kind != expected_kind {
+        let expected_kind = T::kind_s();
+        if node.kind.to_kind() != expected_kind {
             return Err(NodeError::InvalidKind {
                 expected: expected_kind,
-                actual: node.kind,
+                actual: node.kind.to_kind(),
             });
         }
-
-        serde_json::from_slice::<T>(&node.data)
+        ron::from_str::<T>(&node.data)
             .map_err(|e| NodeError::LoadError(format!("Failed to deserialize: {}", e)))
     }
 
@@ -132,7 +140,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
         T: 'static + schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
-        if let Some(id) = from_id.top_child(kind) {
+        if let Some(id) = from_id.top_child(&self.source().ctx, kind) {
             Ok(Some(self.load::<T>(id)?))
         } else {
             Ok(None)
@@ -153,7 +161,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
         T: 'static + schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
-        if let Some(id) = id.top_parent(kind) {
+        if let Some(id) = id.top_parent(&self.source().ctx, kind) {
             Ok(Some(self.load::<T>(id)?))
         } else {
             Ok(None)
@@ -176,72 +184,5 @@ impl ReducerContextExt for ReducerContext {
     {
         let source = ServerSource::new(self);
         Context::exec(source, f)
-    }
-}
-
-/// Helper module for node operations
-pub mod node_ops {
-    use super::*;
-
-    /// Create a new node
-    pub fn create_node(
-        _ctx: &ReducerContext,
-        owner: Identity,
-        kind: NodeKind,
-        data: Vec<u8>,
-    ) -> NodeResult<u64> {
-        let node = TNode::new(0, owner, kind, data);
-        let inserted = node.insert().map_err(|e| {
-            NodeError::ContextError(anyhow::anyhow!("Failed to insert node: {}", e))
-        })?;
-        Ok(inserted.id)
-    }
-
-    /// Update node data
-    pub fn update_node(ctx: &ReducerContext, id: u64, data: Vec<u8>) -> NodeResult<()> {
-        if let Some(mut node) = id.load_tnode(ctx) {
-            node.data = data;
-            node.update(ctx).map_err(|e| {
-                NodeError::ContextError(anyhow::anyhow!("Failed to update node: {}", e))
-            })?;
-        }
-        Ok(())
-    }
-
-    /// Delete a node and all its children recursively
-    pub fn delete_node_recursive(_ctx: &ReducerContext, id: u64) -> NodeResult<()> {
-        TNode::delete_by_id_recursive(&id)
-            .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to delete node: {}", e)))
-    }
-
-    /// Delete a node without deleting children
-    pub fn delete_node_only(_ctx: &ReducerContext, id: u64) -> NodeResult<()> {
-        TNode::delete_by_id(&id)
-            .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to delete node: {}", e)))
-    }
-
-    /// Solidify a link between two nodes
-    pub fn solidify_link(ctx: &ReducerContext, parent_id: u64, child_id: u64) -> NodeResult<()> {
-        TNodeLink::solidify(ctx, parent_id, child_id)
-            .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to solidify link: {}", e)))
-    }
-
-    /// Get all nodes of a specific kind
-    pub fn get_nodes_by_kind(_ctx: &ReducerContext, kind: NodeKind) -> Vec<TNode> {
-        TNode::filter_by_kind(&kind).collect()
-    }
-
-    /// Get all nodes owned by a specific identity
-    pub fn get_nodes_by_owner(_ctx: &ReducerContext, owner: Identity) -> Vec<TNode> {
-        TNode::filter_by_owner(&owner).collect()
-    }
-
-    /// Get all nodes of a specific kind owned by a specific identity
-    pub fn get_nodes_by_kind_and_owner(
-        _ctx: &ReducerContext,
-        kind: NodeKind,
-        owner: Identity,
-    ) -> Vec<TNode> {
-        TNode::collect_kind_owner(kind, owner)
     }
 }
