@@ -1,0 +1,352 @@
+pub use schema::VarName;
+
+// Re-export from raw-nodes-v2
+pub use raw_nodes_v2::{
+    Component, ContentNodeKind, LinkState, NamedNodeKind, NodeKind, Owned, Ref,
+};
+
+// Common error type
+#[derive(Debug, thiserror::Error)]
+pub enum NodeError {
+    #[error("Node not found: {0}")]
+    NotFound(u64),
+
+    #[error("Invalid node kind: expected {expected}, got {actual}")]
+    InvalidKind {
+        expected: NodeKind,
+        actual: NodeKind,
+    },
+
+    #[error("Failed to load node: {0}")]
+    LoadError(String),
+
+    #[error("Failed to cast node")]
+    CastError,
+
+    #[error("Context error: {0}")]
+    ContextError(#[from] anyhow::Error),
+}
+
+pub type NodeResult<T> = Result<T, NodeError>;
+
+// Common traits that both client and server will implement
+pub trait Node: Send + Sync {
+    fn id(&self) -> Option<u64>;
+    fn kind(&self) -> NodeKind;
+}
+
+pub trait ContentNode: Node {
+    fn content_kind(&self) -> ContentNodeKind;
+}
+
+pub trait NamedNode: Node {
+    fn named_kind(&self) -> NamedNodeKind;
+    fn name(&self) -> &str;
+    fn set_name(&mut self, name: String);
+}
+
+/// Trait for types that have an associated NodeKind
+pub trait HasNodeKind {
+    fn node_kind() -> NodeKind;
+}
+
+// Helper trait for converting between node types
+pub trait NodeKindConvert {
+    fn to_node_kind(&self) -> NodeKind;
+    fn from_node_kind(kind: NodeKind) -> Option<Self>
+    where
+        Self: Sized;
+}
+
+impl NodeKindConvert for ContentNodeKind {
+    fn to_node_kind(&self) -> NodeKind {
+        (*self).into()
+    }
+
+    fn from_node_kind(kind: NodeKind) -> Option<Self> {
+        kind.try_into().ok()
+    }
+}
+
+impl NodeKindConvert for NamedNodeKind {
+    fn to_node_kind(&self) -> NodeKind {
+        (*self).into()
+    }
+
+    fn from_node_kind(kind: NodeKind) -> Option<Self> {
+        kind.try_into().ok()
+    }
+}
+
+// Context system
+
+/// Source for Context to retrieve node data and manage links
+pub trait ContextSource {
+    /// Get node kind by ID
+    fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind>;
+
+    /// Get all linked child IDs
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>>;
+
+    /// Get children of specific kind
+    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+
+    /// Get all parent IDs
+    fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>>;
+
+    /// Get parents of specific kind
+    fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+
+    /// Add a link between two nodes
+    fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
+
+    /// Remove a link between two nodes
+    fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
+
+    /// Check if two nodes are linked
+    fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
+}
+
+/// Context layer for scoping operations
+#[derive(Debug, Clone)]
+pub enum ContextLayer {
+    Owner(u64),
+    Target(u64),
+    Caster(u64),
+    Parent(u64),
+    Child(u64),
+    Var(VarName, String),
+}
+
+/// Generic context that wraps a ContextSource
+pub struct Context<S: ContextSource> {
+    source: S,
+    layers: Vec<ContextLayer>,
+}
+
+impl<S: ContextSource> Context<S> {
+    /// Create a new context from a source
+    pub fn new(source: S) -> Self {
+        Self {
+            source,
+            layers: Vec::new(),
+        }
+    }
+
+    /// Create a new context with initial layers
+    pub fn with_layers(source: S, layers: Vec<ContextLayer>) -> Self {
+        Self { source, layers }
+    }
+
+    /// Get the underlying source
+    pub fn source(&self) -> &S {
+        &self.source
+    }
+
+    /// Get the underlying source mutably
+    pub fn source_mut(&mut self) -> &mut S {
+        &mut self.source
+    }
+
+    /// Execute with a new context
+    pub fn exec<R, F>(source: S, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        let mut ctx = Self::new(source);
+        f(&mut ctx)
+    }
+
+    /// Execute with a new context with initial layers
+    pub fn exec_with_layers<R, F>(source: S, layers: Vec<ContextLayer>, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        let mut ctx = Self::with_layers(source, layers);
+        f(&mut ctx)
+    }
+
+    /// Execute a closure with a new context layer
+    pub fn with_layer<R, F>(&mut self, layer: ContextLayer, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.layers.push(layer);
+        let result = f(self);
+        self.layers.pop();
+        result
+    }
+
+    /// Execute with multiple context layers
+    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        let len = layers.len();
+        for layer in layers {
+            self.layers.push(layer);
+        }
+        let result = f(self);
+        for _ in 0..len {
+            self.layers.pop();
+        }
+        result
+    }
+
+    /// Execute with owner context
+    pub fn with_owner<R, F>(&mut self, owner_id: u64, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.with_layer(ContextLayer::Owner(owner_id), f)
+    }
+
+    /// Execute with target context
+    pub fn with_target<R, F>(&mut self, target_id: u64, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.with_layer(ContextLayer::Target(target_id), f)
+    }
+
+    /// Execute with caster context
+    pub fn with_caster<R, F>(&mut self, caster_id: u64, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.with_layer(ContextLayer::Caster(caster_id), f)
+    }
+
+    /// Execute with parent context
+    pub fn with_parent<R, F>(&mut self, parent_id: u64, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.with_layer(ContextLayer::Parent(parent_id), f)
+    }
+
+    /// Execute with child context
+    pub fn with_child<R, F>(&mut self, child_id: u64, f: F) -> R
+    where
+        F: FnOnce(&mut Self) -> R,
+    {
+        self.with_layer(ContextLayer::Child(child_id), f)
+    }
+
+    /// Get current owner ID from context layers
+    pub fn owner(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Owner(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get current target ID from context layers
+    pub fn target(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Target(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get current caster ID from context layers
+    pub fn caster(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Caster(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get current parent ID from context layers
+    pub fn parent(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Parent(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get current child ID from context layers
+    pub fn child(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Child(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get variable value from context layers
+    pub fn get_var(&self, name: &VarName) -> Option<String> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Var(var_name, value) = layer {
+                if var_name == name {
+                    return Some(value.clone());
+                }
+            }
+        }
+        None
+    }
+
+    /// Set a variable in the context
+    pub fn set_var(&mut self, name: VarName, value: String) {
+        self.layers.push(ContextLayer::Var(name, value));
+    }
+
+    /// Get node kind by ID
+    pub fn get_kind(&self, id: u64) -> NodeResult<NodeKind> {
+        self.source.get_node_kind(id)
+    }
+
+    /// Get all child node IDs
+    pub fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        self.source.get_children(from_id)
+    }
+
+    /// Get children of specific kind
+    pub fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        self.source.get_children_of_kind(from_id, kind)
+    }
+
+    /// Get all parent node IDs
+    pub fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
+        self.source.get_parents(id)
+    }
+
+    /// Get parents of specific kind
+    pub fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        self.source.get_parents_of_kind(id, kind)
+    }
+
+    /// Add a link between two nodes
+    pub fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        self.source.add_link(from_id, to_id)
+    }
+
+    /// Remove a link between two nodes
+    pub fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        self.source.remove_link(from_id, to_id)
+    }
+
+    /// Check if two nodes are linked
+    pub fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
+        self.source.is_linked(from_id, to_id)
+    }
+
+    /// Clear all layers
+    pub fn clear_layers(&mut self) {
+        self.layers.clear();
+    }
+
+    /// Get the current layer stack depth
+    pub fn layer_depth(&self) -> usize {
+        self.layers.len()
+    }
+}

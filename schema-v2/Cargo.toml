@@ -1,0 +1,16 @@
+[package]
+name = "schema-v2"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+raw-nodes-v2 = { path = "../raw-nodes-v2" }
+schema = { path = "../schema" }
+serde = { workspace = true, features = ["derive"] }
+strum = { workspace = true }
+strum_macros = { workspace = true }
+anyhow = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

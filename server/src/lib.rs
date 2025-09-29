@@ -6,7 +6,7 @@ mod global_settings;
 mod inflating_number;
 mod r#match;
 mod nodes;
-mod nodes_table;
+pub mod nodes_table;
 mod player;
 mod votes;
 
@@ -17,7 +17,7 @@ use global_settings::*;
 use itertools::Itertools;
 use log::{debug, error, info};
 use nodes::*;
-use nodes_table::*;
+pub use nodes_table::*;
 use player::*;
 use raw_nodes::*;
 use schema::*;

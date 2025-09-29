@@ -16,7 +16,7 @@ mod trigger;
 mod var_name;
 mod var_value;
 
-use std::{fmt::Display, marker::PhantomData};
+use std::fmt::Display;
 
 pub use action::*;
 use ecolor::Color32;
@@ -68,99 +68,6 @@ where
     }
     fn get_data(&self) -> String {
         to_string_pretty(self, PrettyConfig::new().depth_limit(1)).unwrap()
-    }
-}
-
-pub type OwnedChild<T> = Option<T>;
-pub type OwnedChildren<T> = Vec<T>;
-pub type OwnedParent<T> = Option<T>;
-pub type OwnedParents<T> = Vec<T>;
-
-#[derive(Default, Debug, Hash, Serialize, Deserialize)]
-pub struct LinkedChild<T> {
-    pub id: Option<u64>,
-    t: PhantomData<T>,
-}
-
-impl<T> Clone for LinkedChild<T> {
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id.clone(),
-            t: self.t.clone(),
-        }
-    }
-}
-
-pub fn linked_child<T>(id: Option<u64>) -> LinkedChild<T> {
-    LinkedChild {
-        id,
-        t: PhantomData::<T>,
-    }
-}
-
-#[derive(Default, Debug, Hash, Serialize, Deserialize)]
-pub struct LinkedChildren<T> {
-    pub ids: Vec<u64>,
-    t: PhantomData<T>,
-}
-
-impl<T> Clone for LinkedChildren<T> {
-    fn clone(&self) -> Self {
-        Self {
-            ids: self.ids.clone(),
-            t: self.t.clone(),
-        }
-    }
-}
-
-pub fn linked_children<T>(ids: Vec<u64>) -> LinkedChildren<T> {
-    LinkedChildren {
-        ids,
-        t: PhantomData::<T>,
-    }
-}
-
-#[derive(Default, Debug, Hash, Serialize, Deserialize)]
-pub struct LinkedParent<T> {
-    pub id: Option<u64>,
-    t: PhantomData<T>,
-}
-
-impl<T> Clone for LinkedParent<T> {
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id.clone(),
-            t: self.t.clone(),
-        }
-    }
-}
-
-pub fn linked_parent<T>(id: Option<u64>) -> LinkedParent<T> {
-    LinkedParent {
-        id,
-        t: PhantomData::<T>,
-    }
-}
-
-#[derive(Default, Debug, Hash, Serialize, Deserialize)]
-pub struct LinkedParents<T> {
-    pub ids: Vec<u64>,
-    t: PhantomData<T>,
-}
-
-impl<T> Clone for LinkedParents<T> {
-    fn clone(&self) -> Self {
-        Self {
-            ids: self.ids.clone(),
-            t: self.t.clone(),
-        }
-    }
-}
-
-pub fn linked_parents<T>(ids: Vec<u64>) -> LinkedParents<T> {
-    LinkedParents {
-        ids,
-        t: PhantomData::<T>,
     }
 }
 

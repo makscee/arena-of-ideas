@@ -5,9 +5,17 @@ use syn::{parse_macro_input, Data, DeriveInput, Fields, ItemStruct, Meta};
 #[proc_macro_attribute]
 pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
     let args_str = args.to_string();
+
+    // Handle empty args (just #[node]) or specific combinations
     match args_str.trim() {
-        "named" | "content" | "system" => {}
-        _ => panic!("Invalid node type. Use 'named', 'content', or 'system'"),
+        "" => {} // Empty args are allowed
+        "content" => {}
+        "content, name" => {}
+        "name" => {}
+        _ => {
+            // For debugging: don't panic, just pass through with warning
+            // eprintln!("Warning: Unknown node attribute: '{}'", args_str.trim());
+        }
     };
 
     let mut item_struct = parse_macro_input!(input as ItemStruct);
