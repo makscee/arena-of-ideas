@@ -1,12 +1,7 @@
-pub use schema::VarName;
-
-// Re-export from raw-nodes-v2
-pub use raw_nodes_v2::{
-    Component, ContentNodeKind, LinkState, NamedNodeKind, NodeKind, Owned, Ref,
-};
+use super::*;
 
 // Common error type
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Error)]
 pub enum NodeError {
     #[error("Node not found: {0}")]
     NotFound(u64),
@@ -31,23 +26,15 @@ pub type NodeResult<T> = Result<T, NodeError>;
 
 // Common traits that both client and server will implement
 pub trait Node: Send + Sync {
-    fn id(&self) -> Option<u64>;
+    fn id(&self) -> u64;
+    fn set_id(&mut self, id: u64);
+    fn owner(&self) -> u64;
+    fn set_owner(&mut self, owner: u64);
     fn kind(&self) -> NodeKind;
-}
-
-pub trait ContentNode: Node {
-    fn content_kind(&self) -> ContentNodeKind;
-}
-
-pub trait NamedNode: Node {
-    fn named_kind(&self) -> NamedNodeKind;
-    fn name(&self) -> &str;
-    fn set_name(&mut self, name: String);
-}
-
-/// Trait for types that have an associated NodeKind
-pub trait HasNodeKind {
-    fn node_kind() -> NodeKind;
+    fn reassign_ids(&mut self, next_id: &mut u64);
+    fn kind_s() -> NodeKind
+    where
+        Self: Sized;
 }
 
 // Helper trait for converting between node types
@@ -56,26 +43,6 @@ pub trait NodeKindConvert {
     fn from_node_kind(kind: NodeKind) -> Option<Self>
     where
         Self: Sized;
-}
-
-impl NodeKindConvert for ContentNodeKind {
-    fn to_node_kind(&self) -> NodeKind {
-        (*self).into()
-    }
-
-    fn from_node_kind(kind: NodeKind) -> Option<Self> {
-        kind.try_into().ok()
-    }
-}
-
-impl NodeKindConvert for NamedNodeKind {
-    fn to_node_kind(&self) -> NodeKind {
-        (*self).into()
-    }
-
-    fn from_node_kind(kind: NodeKind) -> Option<Self> {
-        kind.try_into().ok()
-    }
 }
 
 // Context system
@@ -115,16 +82,19 @@ pub enum ContextLayer {
     Caster(u64),
     Parent(u64),
     Child(u64),
-    Var(VarName, String),
+    Var(VarName, VarValue),
 }
 
 /// Generic context that wraps a ContextSource
-pub struct Context<S: ContextSource> {
+pub struct Context<S> {
     source: S,
     layers: Vec<ContextLayer>,
 }
 
-impl<S: ContextSource> Context<S> {
+impl<S> Context<S>
+where
+    S: ContextSource,
+{
     /// Create a new context from a source
     pub fn new(source: S) -> Self {
         Self {
@@ -284,10 +254,10 @@ impl<S: ContextSource> Context<S> {
     }
 
     /// Get variable value from context layers
-    pub fn get_var(&self, name: &VarName) -> Option<String> {
+    pub fn get_var(&self, var: VarName) -> Option<VarValue> {
         for layer in self.layers.iter().rev() {
             if let ContextLayer::Var(var_name, value) = layer {
-                if var_name == name {
+                if *var_name == var {
                     return Some(value.clone());
                 }
             }
@@ -295,8 +265,24 @@ impl<S: ContextSource> Context<S> {
         None
     }
 
+    pub fn get_color(&self, var: VarName) -> Option<Color32> {
+        self.get_var(var).and_then(|v| v.get_color().ok())
+    }
+
+    pub fn get_i32(&self, var: VarName) -> Option<i32> {
+        self.get_var(var).and_then(|v| v.get_i32().ok())
+    }
+
+    pub fn get_f32(&self, var: VarName) -> Option<f32> {
+        self.get_var(var).and_then(|v| v.get_f32().ok())
+    }
+
+    pub fn get_string(&self, var: VarName) -> Option<String> {
+        self.get_var(var).and_then(|v| v.get_string().ok())
+    }
+
     /// Set a variable in the context
-    pub fn set_var(&mut self, name: VarName, value: String) {
+    pub fn set_var(&mut self, name: VarName, value: VarValue) {
         self.layers.push(ContextLayer::Var(name, value));
     }
 

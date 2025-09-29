@@ -370,3 +370,183 @@ pub fn format_code(token_stream: &TokenStream) -> String {
         Err(_) => token_stream.to_string(),
     }
 }
+
+pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStream {
+    match field.link_type {
+        LinkType::Component => {
+            let target = if field.target_type.is_empty() {
+                quote! { String }
+            } else {
+                let target_ident = format_ident!("{}", field.target_type);
+                quote! { #target_ident }
+            };
+
+            if field.is_optional {
+                let component_path = if schema_prefix.is_empty() {
+                    quote! { Component<Option<#target>> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Component<Option<#target>> }
+                };
+                component_path
+            } else {
+                let component_path = if schema_prefix.is_empty() {
+                    quote! { Component<#target> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Component<#target> }
+                };
+                component_path
+            }
+        }
+        LinkType::Owned => {
+            let target = if field.target_type.is_empty() {
+                quote! { String }
+            } else {
+                let target_ident = format_ident!("{}", field.target_type);
+                quote! { #target_ident }
+            };
+
+            if field.is_vec {
+                let owned_path = if schema_prefix.is_empty() {
+                    quote! { Owned<Vec<#target>> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Owned<Vec<#target>> }
+                };
+                owned_path
+            } else if field.is_optional {
+                let owned_path = if schema_prefix.is_empty() {
+                    quote! { Owned<Option<#target>> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Owned<Option<#target>> }
+                };
+                owned_path
+            } else {
+                let owned_path = if schema_prefix.is_empty() {
+                    quote! { Owned<#target> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Owned<#target> }
+                };
+                owned_path
+            }
+        }
+        LinkType::Ref => {
+            let target = if field.target_type.is_empty() {
+                quote! { String }
+            } else {
+                let target_ident = format_ident!("{}", field.target_type);
+                quote! { #target_ident }
+            };
+
+            if field.is_optional {
+                let ref_path = if schema_prefix.is_empty() {
+                    quote! { Ref<Option<#target>> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Ref<Option<#target>> }
+                };
+                ref_path
+            } else {
+                let ref_path = if schema_prefix.is_empty() {
+                    quote! { Ref<#target> }
+                } else {
+                    let prefix = format_ident!("{}", schema_prefix);
+                    quote! { #prefix::Ref<#target> }
+                };
+                ref_path
+            }
+        }
+        LinkType::None => {
+            // For primitive types, use the raw type directly
+            if field.raw_type.is_empty() {
+                quote! { String }
+            } else {
+                let tokens: TokenStream =
+                    field.raw_type.parse().unwrap_or_else(|_| quote! { String });
+                tokens
+            }
+        }
+    }
+}
+
+pub fn generate_accessors(node: &NodeInfo) -> Vec<TokenStream> {
+    node.fields
+        .iter()
+        .map(|field| {
+            let field_name = &field.name;
+            match field.link_type {
+                LinkType::Component | LinkType::Owned | LinkType::Ref => {
+                    quote! { #field_name: Default::default(), }
+                }
+                LinkType::None => {
+                    // Generate default values for primitive types
+                    if field.raw_type.contains("Option") {
+                        quote! { #field_name: None, }
+                    } else if field.raw_type.contains("String") {
+                        quote! { #field_name: String::new(), }
+                    } else if field.raw_type.contains("i32") {
+                        quote! { #field_name: 0, }
+                    } else if field.raw_type.contains("u64") {
+                        quote! { #field_name: 0, }
+                    } else if field.raw_type.contains("bool") {
+                        quote! { #field_name: false, }
+                    } else if field.raw_type.contains("Vec") {
+                        quote! { #field_name: Vec::new(), }
+                    } else {
+                        quote! { #field_name: Default::default(), }
+                    }
+                }
+            }
+        })
+        .collect()
+}
+
+pub fn generate_conversions(nodes: &[NodeInfo]) -> TokenStream {
+    let node_trait_impls = nodes.iter().map(|node| {
+        let struct_name = &node.name;
+        let node_kind_variant = &node.name;
+
+        quote! {
+            impl SchemaNode for #struct_name {
+                fn id(&self) -> u64 {
+                    self.id.unwrap_or(0)
+                }
+
+                fn set_id(&mut self, id: u64) {
+                    self.id = Some(id);
+                }
+
+                fn owner(&self) -> u64 {
+                    // Client nodes don't typically track owner directly
+                    0
+                }
+
+                fn set_owner(&mut self, _owner: u64) {
+                    // Client nodes don't typically track owner directly
+                }
+
+                fn kind(&self) -> NodeKind {
+                    NodeKind::#node_kind_variant
+                }
+
+                fn reassign_ids(&mut self, next_id: &mut u64) {
+                    if self.id.is_none() {
+                        self.set_id(*next_id);
+                        *next_id += 1;
+                    }
+                }
+
+                fn kind_s() -> NodeKind {
+                    NodeKind::#node_kind_variant
+                }
+            }
+        }
+    });
+
+    quote! {
+        #(#node_trait_impls)*
+    }
+}

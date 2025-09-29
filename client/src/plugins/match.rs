@@ -380,7 +380,7 @@ impl MatchPlugin {
 
     fn render_fusion_headers(
         ui: &mut Ui,
-        context: &Context,
+        context: &ClientContext,
         fusions: &[&NFusion],
     ) -> Result<(), ExpressionError> {
         ui.columns(fusions.len(), |columns| {
@@ -392,7 +392,7 @@ impl MatchPlugin {
         Ok(())
     }
 
-    fn render_fusion_header(ui: &mut Ui, context: &Context, fusion: &NFusion) {
+    fn render_fusion_header(ui: &mut Ui, context: &ClientContext, fusion: &NFusion) {
         let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
 
         if let Ok(units) = context.collect_parents_components::<NUnit>(fusion.id) {
@@ -428,7 +428,7 @@ impl MatchPlugin {
 
     fn render_fusion_units(
         ui: &mut Ui,
-        context: &Context,
+        context: &ClientContext,
         fusions: &[&NFusion],
     ) -> Result<(), ExpressionError> {
         ui.columns(fusions.len(), |columns| {
@@ -445,7 +445,7 @@ impl MatchPlugin {
 
     fn render_fusion_column(
         ui: &mut Ui,
-        context: &Context,
+        context: &ClientContext,
         fusion: &NFusion,
         fusion_idx: usize,
     ) -> Result<(), ExpressionError> {
@@ -466,7 +466,7 @@ impl MatchPlugin {
         .inner
     }
 
-    fn render_unit_icon(ui: &mut Ui, context: &Context, unit: &NUnit) {
+    fn render_unit_icon(ui: &mut Ui, context: &ClientContext, unit: &NUnit) {
         let _resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id)
         {
             MatRect::new(egui::Vec2::new(60.0, 60.0))
@@ -484,7 +484,7 @@ impl MatchPlugin {
 
     fn render_empty_slot(
         ui: &mut Ui,
-        context: &Context,
+        context: &ClientContext,
         _fusion: &NFusion,
         _fusion_idx: usize,
         _slot_idx: usize,

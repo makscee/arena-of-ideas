@@ -1,11 +1,17 @@
 use super::*;
 
 pub trait EventImpl {
-    fn update_value(&self, context: &mut Context, value: VarValue, owner: Entity) -> VarValue;
+    fn update_value(&self, context: &mut ClientContext, value: VarValue, owner: Entity)
+    -> VarValue;
 }
 
 impl EventImpl for Event {
-    fn update_value(&self, context: &mut Context, value: VarValue, owner: Entity) -> VarValue {
+    fn update_value(
+        &self,
+        context: &mut ClientContext,
+        value: VarValue,
+        owner: Entity,
+    ) -> VarValue {
         match context.with_layers_r(
             [
                 ContextLayer::Owner(owner),

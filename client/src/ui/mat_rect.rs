@@ -166,7 +166,7 @@ impl<'a> MatRect<'a> {
         owner_id: u64,
         rect: Rect,
         config: &RenderConfig,
-        context: &Context,
+        context: &ClientContext,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {
         let scaled_rect = if config.scale != 1.0 {
@@ -196,7 +196,7 @@ impl<'a> MatRect<'a> {
         Ok(())
     }
 
-    pub fn ui(self, ui: &mut Ui, context: &Context) -> Response {
+    pub fn ui(self, ui: &mut Ui, context: &ClientContext) -> Response {
         let button = RectButton::new_size(self.size)
             .enabled(self.enabled)
             .active(self.active);

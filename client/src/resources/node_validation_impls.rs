@@ -19,7 +19,10 @@ impl NodeValidation for NUnitBehavior {
 
 impl NUnitDescription {
     /// Gets the processed description with macros replaced
-    pub fn get_processed_description(&self, context: &Context) -> Result<String, ExpressionError> {
+    pub fn get_processed_description(
+        &self,
+        context: &ClientContext,
+    ) -> Result<String, ExpressionError> {
         replace_description_macros(&self.description, self.magic_type, self.trigger, context)
     }
 }
@@ -70,7 +73,7 @@ pub fn replace_description_macros(
     description: &str,
     magic_type: MagicType,
     trigger: Trigger,
-    context: &Context,
+    context: &ClientContext,
 ) -> Result<String, ExpressionError> {
     let mut result = description.to_string();
 

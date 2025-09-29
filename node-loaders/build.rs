@@ -6,7 +6,7 @@ use std::path::Path;
 use syn::*;
 
 fn main() {
-    println!("cargo:rerun-if-changed=../raw-nodes/src/raw_nodes.rs");
+    println!("cargo:rerun-if-changed=../schema/src/raw_nodes.rs");
     println!("cargo::rerun-if-changed=build.rs");
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
@@ -14,7 +14,7 @@ fn main() {
 
     // Read the raw nodes file
     let input =
-        fs::read_to_string("../raw-nodes/src/raw_nodes.rs").expect("Failed to read raw_nodes.rs");
+        fs::read_to_string("../schema/src/raw_nodes.rs").expect("Failed to read raw_nodes.rs");
     let syntax_tree = parse_file(&input).expect("Failed to parse raw_nodes.rs");
 
     let mut structs = Vec::new();

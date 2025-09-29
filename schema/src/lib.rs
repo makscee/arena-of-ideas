@@ -1,9 +1,11 @@
 mod action;
+mod context;
 mod error;
 mod event;
 mod expression;
 mod fusion;
 mod inject;
+mod links;
 mod macro_fn;
 mod r#match;
 mod node_assets;
@@ -16,18 +18,27 @@ mod trigger;
 mod var_name;
 mod var_value;
 
-use std::fmt::Display;
+#[allow(dead_code)]
+mod raw_nodes;
+
+// Re-export node macro and types from raw_nodes
+pub use proc_macros::node;
+
+use std::{fmt::Display, str::FromStr};
 
 pub use action::*;
+pub use context::*;
 use ecolor::Color32;
 pub use error::*;
 pub use event::*;
 pub use expression::*;
 pub use fusion::*;
 pub use inject::*;
+pub use links::*;
 pub use macro_fn::*;
 pub use r#match::*;
 pub use node_assets::*;
+
 pub use node_part::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
@@ -41,6 +52,7 @@ pub use var_value::*;
 pub use glam::Vec2;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
+pub use thiserror::Error;
 pub use utils::*;
 
 pub const ID_CORE: u64 = 1;
@@ -48,6 +60,19 @@ pub const ID_PLAYERS: u64 = 2;
 pub const ID_ARENA: u64 = 3;
 
 pub const NODE_CONTAINERS: [u64; 3] = [ID_CORE, ID_PLAYERS, ID_ARENA];
+
+// Include generated NodeKind enum
+include!(concat!(env!("OUT_DIR"), "/node_kind.rs"));
+
+pub trait ToNodeKind {
+    fn to_kind(&self) -> NodeKind;
+}
+
+impl ToNodeKind for String {
+    fn to_kind(&self) -> NodeKind {
+        NodeKind::from_str(self.as_str()).unwrap()
+    }
+}
 
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;

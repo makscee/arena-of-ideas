@@ -24,7 +24,7 @@ where
 impl<'a, T, F> RecursiveComposer<'a, T, F>
 where
     T: FRecursive,
-    F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
+    F: FnMut(&ClientContext, &mut Ui, RecursiveValue<'_>) -> Response,
 {
     pub fn new(data: &'a T, composer_fn: F) -> Self {
         Self {
@@ -58,7 +58,7 @@ where
 impl<'a, T, F> Composer<T> for RecursiveComposer<'a, T, F>
 where
     T: FRecursive,
-    F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
+    F: FnMut(&ClientContext, &mut Ui, RecursiveValue<'_>) -> Response,
 {
     fn data(&self) -> &T {
         self.data.as_ref()
@@ -72,7 +72,7 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let RecursiveComposer {
             data,
             mut composer_fn,
@@ -85,7 +85,7 @@ where
 
         fn render_field<F>(
             field: &RecursiveField<'_>,
-            context: &Context,
+            context: &ClientContext,
             ui: &mut Ui,
             composer_fn: &mut F,
             layout: RecursiveLayout,
@@ -93,7 +93,7 @@ where
             depth: usize,
         ) -> Response
         where
-            F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
+            F: FnMut(&ClientContext, &mut Ui, RecursiveValue<'_>) -> Response,
         {
             let inner_fields = call_on_recursive_value!(field.value, get_inner_fields);
 
@@ -259,7 +259,7 @@ where
 impl<'a, T, F> RecursiveComposerMut<'a, T, F>
 where
     T: FRecursive,
-    F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
+    F: FnMut(&ClientContext, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
 {
     pub fn new_mut(data: &'a mut T, composer_fn: F) -> Self {
         Self {
@@ -284,7 +284,7 @@ where
 impl<'a, T, F> Composer<T> for RecursiveComposerMut<'a, T, F>
 where
     T: FRecursive,
-    F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
+    F: FnMut(&ClientContext, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
 {
     fn data(&self) -> &T {
         self.data.as_ref()
@@ -298,7 +298,7 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let RecursiveComposerMut {
             mut data,
             mut composer_fn,
@@ -311,7 +311,7 @@ where
 
         fn render_field_mut<F>(
             field: &mut RecursiveFieldMut<'_>,
-            context: &Context,
+            context: &ClientContext,
             ui: &mut Ui,
             composer_fn: &mut F,
             layout: RecursiveLayout,
@@ -319,7 +319,7 @@ where
             depth: usize,
         ) -> Response
         where
-            F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
+            F: FnMut(&ClientContext, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
         {
             let field_name = field.name.clone();
 
@@ -473,9 +473,9 @@ where
 fn render_self(
     field_name: &String,
     show_field_names: bool,
-    context: &Context<'_>,
+    context: &ClientContext,
     ui: &mut Ui,
-    content: impl FnOnce(&Context, &mut Ui) -> Response,
+    content: impl FnOnce(&ClientContext, &mut Ui) -> Response,
 ) -> Response {
     ui.group(|ui| {
         ui.vertical(|ui| {

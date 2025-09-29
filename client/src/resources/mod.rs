@@ -4,7 +4,7 @@ mod battle;
 mod battle_camera;
 mod client_settings;
 mod client_state;
-mod context;
+pub mod context;
 mod event;
 mod expression;
 mod fusion;

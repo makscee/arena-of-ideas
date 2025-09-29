@@ -1,6 +1,5 @@
 use super::*;
 
-use raw_nodes::NodeKind;
 use schema::*;
 use serde::{Deserialize, Serialize};
 use serde::{
@@ -8,15 +7,10 @@ use serde::{
     ser::SerializeTuple,
 };
 
-include!(concat!(env!("OUT_DIR"), "/server_impls.rs"));
+include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
 
 #[allow(unused)]
-pub trait Node: Default + Sized + StringData {
-    fn id(&self) -> u64;
-    fn set_id(&mut self, id: u64);
-    fn owner(&self) -> u64;
-    fn set_owner(&mut self, id: u64);
-    fn reassign_ids(&mut self, next_id: &mut u64);
+pub trait ServerNode: Default + Sized + StringData + schema::Node {
     fn pack_fill(&self, pn: &mut PackedNodes);
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
@@ -24,17 +18,9 @@ pub trait Node: Default + Sized + StringData {
     fn save(&self, ctx: &ReducerContext);
     fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ReducerContext, owner: u64) -> Self;
-    fn all_linked_parents() -> HashSet<NodeKind>;
-    fn all_linked_children() -> HashSet<NodeKind>;
     fn collect_ids(&self) -> Vec<u64>;
     fn solidify_links(&self, ctx: &ReducerContext) -> Result<(), String>;
     fn delete_with_parts(&self, ctx: &ReducerContext);
-    fn kind(&self) -> NodeKind {
-        NodeKind::from_str(type_name_of_val_short(self)).unwrap()
-    }
-    fn kind_s() -> NodeKind {
-        NodeKind::from_str(type_name_short::<Self>()).unwrap()
-    }
 
     fn take(&mut self) -> Self {
         std::mem::take(self)
@@ -76,7 +62,7 @@ pub trait ServerLoader<N> {
 }
 
 #[allow(dead_code)]
-pub trait NodeExt: Sized + Node + StringData {
+pub trait NodeExt: Sized + ServerNode + StringData {
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self>;
     fn parent<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
     fn child<P: NodeExt>(&self, ctx: &ReducerContext) -> Option<P>;
@@ -93,7 +79,7 @@ pub trait NodeExt: Sized + Node + StringData {
 
 impl<T> NodeExt for T
 where
-    T: Node + StringData,
+    T: ServerNode + StringData,
 {
     fn get(ctx: &ReducerContext, id: u64) -> Option<Self> {
         let kind = Self::kind_s().to_string();

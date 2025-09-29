@@ -1,15 +1,8 @@
-pub use schema_v2::*;
-
-// Re-export from schema
-pub use schema_v2::{Context, ContextLayer, ContextSource};
-
-// Re-export generated code
-include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
-
+use crate::nodes_table::*;
+use schema::{Context, ContextLayer, ContextSource, NodeError, NodeKind, NodeResult};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json;
 use spacetimedb::{Identity, ReducerContext};
-
-use server::nodes_table::*;
 
 /// ContextSource implementation for SpacetimeDB
 pub struct ServerSource<'a> {
@@ -69,38 +62,38 @@ pub trait ServerContextExt<S: ContextSource> {
     /// Load a node by ID with type checking
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 
     /// Load multiple nodes
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 
     /// Load linked nodes
-    fn load_children<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
+    fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 
     /// Load top child node
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 
     /// Load parent nodes
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 
     /// Load top parent node
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned;
+        T: 'static + schema::Node + DeserializeOwned;
 }
 
 impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
         let node = id
             .load_tnode_err()
@@ -120,25 +113,25 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
         ids.iter().map(|id| self.load::<T>(*id)).collect()
     }
 
-    fn load_children<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
+    fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
-        let kind = T::node_kind();
+        let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
         self.load_many(&ids)
     }
 
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
-        let kind = T::node_kind();
+        let kind = T::kind_s();
         if let Some(id) = from_id.top_child(kind) {
             Ok(Some(self.load::<T>(id)?))
         } else {
@@ -148,18 +141,18 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
-        let kind = T::node_kind();
+        let kind = T::kind_s();
         let ids = self.get_parents_of_kind(id, kind)?;
         self.load_many(&ids)
     }
 
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + HasNodeKind + serde::de::DeserializeOwned,
+        T: 'static + schema::Node + DeserializeOwned,
     {
-        let kind = T::node_kind();
+        let kind = T::kind_s();
         if let Some(id) = id.top_parent(kind) {
             Ok(Some(self.load::<T>(id)?))
         } else {
@@ -184,12 +177,6 @@ impl ReducerContextExt for ReducerContext {
         let source = ServerSource::new(self);
         Context::exec(source, f)
     }
-}
-
-/// Initialize the SpacetimeDB module
-// TODO: Add proper SpacetimeDB init when implementing actual tables
-pub fn init() {
-    // Initialize server state if needed
 }
 
 /// Helper module for node operations
@@ -229,7 +216,7 @@ pub mod node_ops {
 
     /// Delete a node without deleting children
     pub fn delete_node_only(_ctx: &ReducerContext, id: u64) -> NodeResult<()> {
-        TNode::delete_by_id(_ctx, &id)
+        TNode::delete_by_id(&id)
             .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to delete node: {}", e)))
     }
 

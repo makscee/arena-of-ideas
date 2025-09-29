@@ -84,7 +84,7 @@ pub trait Render: Sized {
     fn as_recursive<F>(&self, f: F) -> RecursiveComposer<'_, Self, F>
     where
         Self: FRecursive,
-        F: FnMut(&Context, &mut Ui, RecursiveValue<'_>) -> Response,
+        F: FnMut(&ClientContext, &mut Ui, RecursiveValue<'_>) -> Response,
     {
         RecursiveComposer::new(self, f)
     }
@@ -92,7 +92,7 @@ pub trait Render: Sized {
     fn as_recursive_mut<F>(&mut self, f: F) -> RecursiveComposerMut<'_, Self, F>
     where
         Self: FRecursive,
-        F: FnMut(&Context, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
+        F: FnMut(&ClientContext, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
     {
         RecursiveComposerMut::new_mut(self, f)
     }
@@ -121,18 +121,18 @@ pub trait RenderList<T> {
     fn as_list<'a, F>(
         &'a self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
+    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
     where
-        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
+        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 
     /// Create a mutable list composer with a closure that creates composers for each element
     fn as_list_mut<'a, F>(
         &'a mut self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
+    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
     where
-        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
+        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 }
 
@@ -140,9 +140,9 @@ impl<T> RenderList<T> for Vec<T> {
     fn as_list<'a, F>(
         &'a self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
+    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
     where
-        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
+        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new(self, f)
@@ -151,9 +151,9 @@ impl<T> RenderList<T> for Vec<T> {
     fn as_list_mut<'a, F>(
         &'a mut self,
         f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &Context, &mut Ui) -> Response>
+    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
     where
-        F: Fn(&T, &Context, &mut Ui) -> Response + 'a,
+        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new_mut(self, f)
@@ -168,7 +168,7 @@ pub struct FnComposer<'a, T, F> {
 
 impl<'a, T, F> FnComposer<'a, T, F>
 where
-    F: Fn(&T, &Context, &mut Ui) -> Response,
+    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
 {
     pub fn new(data: &'a T, render_fn: F) -> Self {
         Self {
@@ -187,7 +187,7 @@ where
 
 impl<'a, T, F> Composer<T> for FnComposer<'a, T, F>
 where
-    F: Fn(&T, &Context, &mut Ui) -> Response,
+    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
 {
     fn data(&self) -> &T {
         self.data.as_ref()
@@ -201,7 +201,7 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         (self.render_fn)(self.data.as_ref(), context, ui)
     }
 }

@@ -47,22 +47,6 @@ struct VarChange {
 }
 
 impl NodeStatePlugin {
-    // fn inject_vars(mut nodes: Query<(&mut NodeState, &dyn GetVar, &GlobalTransform)>) {
-    //     let t = gt().play_head();
-    //     for (mut state, gv, transform) in &mut nodes {
-    //         state.insert(
-    //             t,
-    //             0.1,
-    //             VarName::position,
-    //             transform.translation().xy().into(),
-    //         );
-    //         for v in gv {
-    //             for (var, value) in v.get_own_vars() {
-    //                 state.insert(t, 0.0, var, value);
-    //             }
-    //         }
-    //     }
-    // }
     pub fn init_kind(
         context: &mut Context,
         kind: NodeKind,
@@ -138,7 +122,7 @@ impl NodeState {
         }
         true
     }
-    pub fn get_var(context: &Context, var: VarName, entity: Entity) -> Option<VarValue> {
+    pub fn get_var(context: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
         if let Ok(ns) = context.component::<NodeState>(entity) {
             if let Some(t) = context.t {
                 ns.get_at(t, var)
@@ -149,7 +133,7 @@ impl NodeState {
             None
         }
     }
-    pub fn find_var(context: &Context, var: VarName, entity: Entity) -> Option<VarValue> {
+    pub fn find_var(context: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
         let mut checked: HashSet<Entity> = default();
         let mut q = VecDeque::from([entity]);
         while let Some(entity) = q.pop_front() {
@@ -172,7 +156,7 @@ impl NodeState {
         None
     }
     pub fn sum_var(
-        context: &Context,
+        context: &ClientContext,
         var: VarName,
         entity: Entity,
     ) -> Result<VarValue, ExpressionError> {

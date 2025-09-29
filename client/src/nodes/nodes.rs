@@ -1,44 +1,23 @@
 use include_dir::{Dir, DirEntry};
 
 use super::*;
-use serde::{
-    de::{self, Visitor},
-    ser::SerializeTuple,
-};
 use spacetimedb_sats::serde::SerdeWrapper;
 use std::fmt::Debug;
 
-include!(concat!(env!("OUT_DIR"), "/client_impls.rs"));
+include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 
-pub trait GetVar: Debug {
-    fn get_own_var(&self, var: VarName) -> Option<VarValue>;
-    fn get_var(&self, var: VarName, context: &Context) -> Option<VarValue>;
-    fn get_own_vars(&self) -> Vec<(VarName, VarValue)>;
-    fn get_vars(&self, context: &Context) -> Vec<(VarName, VarValue)>;
-    fn set_var(&mut self, var: VarName, value: VarValue);
-}
-
-pub trait ClientLoader<N> {
-    fn load(self, ctx: &Context) -> Result<N, ExpressionError>;
-}
-
-pub trait Node:
+pub trait ClientNode:
     Default
     + Component
     + Sized
-    + GetVar
     + FDisplay
     + Debug
     + std::hash::Hash
     + StringData
     + Clone
     + ToCstr
+    + schema::Node
 {
-    fn id(&self) -> u64;
-    fn set_id(&mut self, id: u64);
-    fn reassign_ids(&mut self, next_id: &mut u64);
-    fn owner(&self) -> u64;
-    fn set_owner(&mut self, owner: u64);
     fn entity(&self) -> Entity;
     fn get_entity(&self) -> Option<Entity>;
     fn set_entity(&mut self, entity: Entity);
@@ -48,49 +27,35 @@ pub trait Node:
     fn pack(&self) -> PackedNodes;
     fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
     fn load_recursive(world: &World, id: u64) -> Option<Self>;
-    fn with_parts(&mut self, context: &Context) -> &mut Self;
-    fn pack_entity(context: &Context, entity: Entity) -> Result<Self, ExpressionError>;
-    fn unpack_entity(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
-    fn all_linked_parents() -> HashSet<NodeKind>;
-    fn all_linked_children() -> HashSet<NodeKind>;
+    fn with_parts(&mut self, context: &ClientContext) -> &mut Self;
+    fn pack_entity(
+        &mut self,
+        context: &ClientContext,
+        entity: Entity,
+    ) -> Result<Self, ExpressionError>;
+    fn unpack_entity(
+        self,
+        context: &mut ClientContext,
+        entity: Entity,
+    ) -> Result<(), ExpressionError>;
     fn egui_id(&self) -> Id {
         Id::new(self.id())
     }
-    fn kind(&self) -> NodeKind {
-        NodeKind::from_str(type_name_of_val_short(self)).unwrap()
-    }
-    fn kind_s() -> NodeKind {
-        NodeKind::from_str(type_name_short::<Self>()).unwrap()
-    }
 }
 
-pub trait NodeExt: Sized + Node {
+pub trait NodeExt: Sized + ClientNode + StringData {
     fn view_id(&self) -> Id {
         Id::new(self.get_entity()).with(self.id()).with(self.kind())
     }
     fn to_tnode(&self) -> TNode;
-    fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError>;
-    fn get_by_id<'a>(id: u64, context: &'a Context) -> Result<&'a Self, ExpressionError>;
-    fn load(id: u64) -> Option<Self>;
-}
-impl<T> NodeExt for T
-where
-    T: Node + StringData,
-{
-    fn to_tnode(&self) -> TNode {
-        TNode {
-            id: self.id(),
-            owner: self.owner(),
-            kind: self.kind().to_string(),
-            data: self.get_data(),
-            rating: 0,
-        }
+    fn get<'a>(
+        entity: Entity,
+        context: &'a ClientContext<'a>,
+    ) -> Result<&'a Self, ExpressionError> {
+        todo!()
     }
-    fn get<'a>(entity: Entity, context: &'a Context) -> Result<&'a Self, ExpressionError> {
-        context.component::<Self>(entity)
-    }
-    fn get_by_id<'a>(id: u64, context: &'a Context) -> Result<&'a Self, ExpressionError> {
-        context.component::<Self>(context.entity(id)?)
+    fn get_by_id<'a>(id: u64, context: &'a ClientContext<'a>) -> NodeResult<&'a Self> {
+        context.load::<Self>(id)
     }
     fn load(id: u64) -> Option<Self> {
         cn().db.nodes_world().id().find(&id)?.to_node().ok()
@@ -104,14 +69,14 @@ impl TNode {
     pub fn kind(&self) -> NodeKind {
         self.kind.to_kind()
     }
-    pub fn to_node<T: Node + StringData>(&self) -> Result<T, ExpressionError> {
+    pub fn to_node<T: ClientNode + StringData>(&self) -> Result<T, ExpressionError> {
         let mut d = T::default();
         d.inject_data(&self.data)?;
         d.set_id(self.id);
         d.set_owner(self.owner);
         Ok(d)
     }
-    pub fn unpack(&self, context: &mut Context, entity: Entity) {
+    pub fn unpack(&self, context: &mut ClientContext, entity: Entity) {
         self.kind().unpack(context, entity, self);
     }
     pub fn to_ron(self) -> String {
@@ -120,11 +85,11 @@ impl TNode {
 }
 
 pub trait NodeKindOnUnpack {
-    fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError>;
+    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> Result<(), ExpressionError>;
 }
 
 impl NodeKindOnUnpack for NodeKind {
-    fn on_unpack(self, context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
+    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> Result<(), ExpressionError> {
         let vars = self.get_vars(context, entity);
         let mut emut = context.world_mut()?.entity_mut(entity);
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
@@ -170,7 +135,7 @@ impl NodeKindOnUnpack for NodeKind {
 }
 
 impl NHouse {
-    pub fn color_for_text(&self, context: &Context) -> Color32 {
+    pub fn color_for_text(&self, context: &ClientContext) -> Color32 {
         self.color_load(context)
             .map(|c| c.color.c32())
             .unwrap_or_else(|_| colorix().low_contrast_text())

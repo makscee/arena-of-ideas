@@ -39,7 +39,7 @@ impl<'a, T: FDisplay + PartialEq + Clone> Composer<T> for SelectableComposer<'a,
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
         let is_selected = self.selected.as_ref().map_or(false, |s| s == data);
 

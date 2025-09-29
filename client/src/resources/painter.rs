@@ -44,14 +44,18 @@ fn new_tesselator(feathering: f32, ctx: &egui::Context) -> Tessellator {
 }
 
 pub trait Paint {
-    fn paint(&self, context: &Context, p: &mut Painter, ui: &mut Ui)
-    -> Result<(), ExpressionError>;
+    fn paint(
+        &self,
+        context: &ClientContext,
+        p: &mut Painter,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError>;
 }
 
 impl Paint for PainterAction {
     fn paint(
         &self,
-        context: &Context,
+        context: &ClientContext,
         p: &mut Painter,
         ui: &mut Ui,
     ) -> Result<(), ExpressionError> {

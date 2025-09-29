@@ -13,7 +13,7 @@ pub enum MenuAction<T: Clone> {
 pub enum MenuItem<'a, T: Clone> {
     Action(
         String,
-        Box<dyn FnOnce(T, &Context) -> Option<MenuAction<T>> + 'a>,
+        Box<dyn FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a>,
     ),
     Submenu(String, Vec<MenuItem<'a, T>>),
     Separator,
@@ -73,7 +73,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
 
     pub fn add_action<F>(mut self, name: String, f: F) -> Self
     where
-        F: FnOnce(T, &Context) -> Option<MenuAction<T>> + 'a,
+        F: FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a,
     {
         self.actions.push(MenuItem::Action(name, Box::new(f)));
         self
@@ -81,7 +81,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
 
     pub fn add_dangerous_action<F>(mut self, name: String, f: F) -> Self
     where
-        F: FnOnce(T, &Context) -> Option<MenuAction<T>> + 'a,
+        F: FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a,
     {
         self.dangerous_actions
             .push(MenuItem::Action(name, Box::new(f)));
@@ -129,7 +129,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
     }
 
     /// Compose with menu - returns MenuResponse instead of Response
-    pub fn compose_with_menu(mut self, context: &Context, ui: &mut Ui) -> MenuResponse<T> {
+    pub fn compose_with_menu(mut self, context: &ClientContext, ui: &mut Ui) -> MenuResponse<T> {
         let mut action = None;
 
         let inner_response = ui
@@ -147,7 +147,11 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
         }
     }
 
-    fn render_menu_button(&mut self, context: &Context, ui: &mut Ui) -> Option<MenuAction<T>> {
+    fn render_menu_button(
+        &mut self,
+        context: &ClientContext,
+        ui: &mut Ui,
+    ) -> Option<MenuAction<T>> {
         let circle_size = 12.0;
 
         let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -201,7 +205,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
     fn render_menu_item(
         item: MenuItem<'_, T>,
         data: &T,
-        context: &Context,
+        context: &ClientContext,
         ui: &mut egui::Ui,
         dangerous: bool,
     ) -> Option<MenuAction<T>> {
@@ -254,7 +258,7 @@ impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         // For regular compose, just render the inner composer without menu
         self.inner.compose(context, ui)
     }

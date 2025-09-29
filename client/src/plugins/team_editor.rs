@@ -53,7 +53,11 @@ impl TeamEditor {
         self
     }
 
-    pub fn ui(self, ui: &mut Ui, context: &Context) -> Result<Vec<TeamAction>, ExpressionError> {
+    pub fn ui(
+        self,
+        ui: &mut Ui,
+        context: &ClientContext,
+    ) -> Result<Vec<TeamAction>, ExpressionError> {
         let team = context.component::<NTeam>(self.team_entity)?;
         let mut actions = Vec::new();
 
@@ -184,7 +188,7 @@ impl TeamEditor {
 
     fn get_available_triggers(
         &self,
-        context: &Context,
+        context: &ClientContext,
         slots: &[&NFusionSlot],
     ) -> Result<(Vec<Trigger>, HashMap<Trigger, u64>), ExpressionError> {
         let mut trigger_map = HashMap::new();
@@ -211,7 +215,7 @@ impl TeamEditor {
         &self,
         unit_id: u64,
         target_id: u64,
-        context: &Context,
+        context: &ClientContext,
     ) -> Result<Vec<TeamAction>, ExpressionError> {
         let mut additional_actions = Vec::new();
 
@@ -308,7 +312,7 @@ impl TeamEditor {
     fn get_bench_unit_additional_actions(
         &self,
         unit_id: u64,
-        context: &Context,
+        context: &ClientContext,
     ) -> Result<Vec<TeamAction>, ExpressionError> {
         let mut additional_actions = Vec::new();
 
@@ -357,7 +361,7 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unlinked_units: &[&NUnit],
-        context: &Context,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -418,7 +422,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        context: &Context,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) -> bool {
         let mut clicked = false;
@@ -453,7 +457,12 @@ impl TeamEditor {
         clicked
     }
 
-    fn render_fusion_action_sequence(&self, fusion: &NFusion, context: &Context, ui: &mut Ui) {
+    fn render_fusion_action_sequence(
+        &self,
+        fusion: &NFusion,
+        context: &ClientContext,
+        ui: &mut Ui,
+    ) {
         if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
@@ -490,7 +499,7 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         slot_id: u64,
-        context: &Context,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         let current_unit = Self::get_slot_unit(slot_id, context);
@@ -529,7 +538,7 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unit: Option<&NUnit>,
-        context: &Context,
+        context: &ClientContext,
     ) -> Response {
         let size = egui::Vec2::new(60.0, 60.0);
 
@@ -545,7 +554,7 @@ impl TeamEditor {
         ui: &mut Ui,
         unit: &NUnit,
         size: egui::Vec2,
-        context: &Context,
+        context: &ClientContext,
     ) -> Response {
         let mut mat_rect = MatRect::new(size);
 
@@ -567,7 +576,7 @@ impl TeamEditor {
         resp
     }
 
-    fn render_empty_slot(ui: &mut Ui, size: egui::Vec2, context: &Context) -> Response {
+    fn render_empty_slot(ui: &mut Ui, size: egui::Vec2, context: &ClientContext) -> Response {
         MatRect::new(size).ui(ui, context)
     }
 
@@ -623,7 +632,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        context: &Context,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -721,13 +730,13 @@ impl TeamEditor {
         });
     }
 
-    fn render_action_normal(ui: &mut Ui, context: &Context, _unit: &NUnit, action: &Action) {
+    fn render_action_normal(ui: &mut Ui, context: &ClientContext, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
             action.title(context).label(ui);
         });
     }
 
-    fn render_action_greyed(ui: &mut Ui, context: &Context, _unit: &NUnit, action: &Action) {
+    fn render_action_greyed(ui: &mut Ui, context: &ClientContext, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
             ui.style_mut().visuals.widgets.inactive.weak_bg_fill = ui
                 .style()

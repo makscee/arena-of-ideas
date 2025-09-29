@@ -1,721 +1,365 @@
-use bevy::ecs::component::Mutable;
+use crate::prelude::*;
+use bevy::prelude::*;
+use schema::{Context, ContextSource, NodeError, NodeResult};
+use std::collections::HashMap;
 
-use super::*;
-
-#[derive(Debug)]
-pub struct Context<'w> {
-    pub t: Option<f32>,
-    rng: ChaCha8Rng,
-    sources: Vec<ContextSource<'w>>,
-    layers: Vec<ContextLayer>,
+/// Resource for mapping node IDs to entities
+#[derive(Resource, Default)]
+pub struct NodeEntityMap {
+    id_to_entity: HashMap<u64, Entity>,
+    entity_to_id: HashMap<Entity, u64>,
 }
 
-impl Default for Context<'_> {
-    fn default() -> Self {
-        Self {
-            t: None,
-            rng: rng_seeded(now_micros() as u64),
-            sources: default(),
-            layers: default(),
+impl NodeEntityMap {
+    pub fn insert(&mut self, id: u64, entity: Entity) {
+        self.id_to_entity.insert(id, entity);
+        self.entity_to_id.insert(entity, id);
+    }
+
+    pub fn get_entity(&self, id: u64) -> Option<Entity> {
+        self.id_to_entity.get(&id).copied()
+    }
+
+    pub fn get_id(&self, entity: Entity) -> Option<u64> {
+        self.entity_to_id.get(&entity).copied()
+    }
+
+    pub fn remove_by_id(&mut self, id: u64) -> Option<Entity> {
+        if let Some(entity) = self.id_to_entity.remove(&id) {
+            self.entity_to_id.remove(&entity);
+            Some(entity)
+        } else {
+            None
         }
+    }
+
+    pub fn remove_by_entity(&mut self, entity: Entity) -> Option<u64> {
+        if let Some(id) = self.entity_to_id.remove(&entity) {
+            self.id_to_entity.remove(&id);
+            Some(id)
+        } else {
+            None
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.id_to_entity.clear();
+        self.entity_to_id.clear();
     }
 }
 
-#[derive(Debug)]
-pub enum ContextSource<'w> {
-    Context(&'w Context<'w>),
-    WorldRef(&'w World),
-    WorldOwned(World),
-    BattleSimulation(BattleSimulation),
+/// Resource for tracking node links in the client
+#[derive(Resource, Default)]
+pub struct NodeLinks {
+    links: HashMap<u64, Vec<(u64, NodeKind)>>, // (to_id, to_kind)
+    reverse_links: HashMap<u64, Vec<(u64, NodeKind)>>, // child -> parents
 }
 
-#[derive(Debug, Clone)]
-pub enum ContextLayer {
-    Owner(Entity),
-    Target(Entity),
-    Caster(Entity),
-    Var(VarName, VarValue),
-}
+impl NodeLinks {
+    pub fn add_link(&mut self, from_id: u64, to_id: u64, to_kind: NodeKind) {
+        self.links
+            .entry(from_id)
+            .or_insert_with(Vec::new)
+            .push((to_id, to_kind));
 
-impl<'w> Context<'w> {
-    pub fn empty() -> Self {
-        Self {
-            t: None,
-            rng: ChaCha8Rng::from_entropy(),
-            sources: default(),
-            layers: default(),
-        }
+        self.reverse_links
+            .entry(to_id)
+            .or_insert_with(Vec::new)
+            .push((from_id, to_kind));
     }
-    pub fn from_world_r<T>(
-        world: &mut World,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        let mut t = mem::take(world);
-        t.init_links();
-        let cs = ContextSource::WorldOwned(t);
-        let mut context = Context {
-            sources: [cs].into(),
-            ..default()
-        };
-        let r = f(&mut context);
-        let ContextSource::WorldOwned(t) = context.sources.remove(0) else {
-            unreachable!()
-        };
-        *world = t;
-        r
-    }
-    pub fn from_world(world: &mut World, f: impl FnOnce(&mut Self)) {
-        Self::from_world_r(world, |context| {
-            f(context);
-            Ok(())
-        })
-        .log();
-    }
-    pub fn from_world_ref_r<T>(
-        world: &'w World,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        let mut context = Context {
-            sources: [ContextSource::WorldRef(world)].into(),
-            ..default()
-        };
-        f(&mut context)
-    }
-    pub fn from_battle_simulation_r<T>(
-        bs: &mut BattleSimulation,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        let t = bs.duration;
-        let mut context = Context {
-            t: Some(t),
-            sources: [ContextSource::BattleSimulation(mem::take(bs))].into(),
-            rng: rng_seeded(bs.seed),
-            layers: default(),
-        };
-        let r = f(&mut context);
-        let ContextSource::BattleSimulation(t) = context.sources.remove(0) else {
-            unreachable!()
-        };
-        *bs = t;
-        r
-    }
-    pub fn from_battle_simulation(bs: &mut BattleSimulation, f: impl FnOnce(&mut Self)) {
-        Self::from_battle_simulation_r(bs, |context| {
-            f(context);
-            Ok(())
-        })
-        .log();
-    }
-    pub fn world_mut<'a>(&'a mut self) -> Result<&'a mut World, ExpressionError> {
-        for s in &mut self.sources {
-            let w = s.world_mut();
-            if let Some(w) = w {
-                return Ok(w);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound("World not set for Context".into()).into())
-    }
-    pub fn world<'a>(&'a self) -> Result<&'a World, ExpressionError> {
-        for s in &self.sources {
-            let w = s.world();
-            if let Some(w) = w {
-                return Ok(w);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound("World not set for Context".into()).into())
-    }
-    pub fn rng<'a>(&'a mut self) -> &'a mut impl Rng {
-        &mut self.rng
-    }
-    pub fn battle_simulation_mut<'a>(
-        &'a mut self,
-    ) -> Result<&'a mut BattleSimulation, ExpressionError> {
-        for s in &mut self.sources {
-            let bs = s.battle_simulation_mut();
-            if let Some(bs) = bs {
-                return Ok(bs);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound("BattleSimulation not set for Context".into()).into())
-    }
-    pub fn battle_simulation<'a>(&'a self) -> Result<&'a BattleSimulation, ExpressionError> {
-        for s in &self.sources {
-            let bs = s.battle_simulation();
-            if let Some(bs) = bs {
-                return Ok(bs);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound("BattleSimulation not set for Context".into()).into())
-    }
-    pub fn with_layer_r<T>(
-        &mut self,
-        layer: ContextLayer,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        self.with_layers_r([layer].into(), f)
-    }
-    pub fn with_layers_r<T>(
-        &mut self,
-        mut layers: Vec<ContextLayer>,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        let old_layers = self.layers.clone();
-        self.layers.append(&mut layers);
-        let r = f(self);
-        self.layers = old_layers;
-        r
-    }
-    pub fn with_layer(&mut self, layer: ContextLayer, f: impl FnOnce(&mut Self)) {
-        self.with_layer_r(layer, |context| {
-            f(context);
-            Ok(())
-        })
-        .log();
-    }
-    pub fn with_layers(&mut self, layers: Vec<ContextLayer>, f: impl FnOnce(&mut Self)) {
-        self.with_layers_r(layers, |context| {
-            f(context);
-            Ok(())
-        })
-        .log();
-    }
-    pub fn with_layer_ref_r<T>(
-        &'w self,
-        layer: ContextLayer,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        self.with_layers_ref_r([layer].into(), f)
-    }
-    pub fn with_layers_ref_r<T>(
-        &'w self,
-        mut layers: Vec<ContextLayer>,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        let mut all_layers = self.layers.clone();
-        all_layers.append(&mut layers);
-        let mut context = Self {
-            t: self.t,
-            sources: [ContextSource::Context(self)].into(),
-            layers: all_layers,
-            rng: self.rng.clone(),
-        };
-        f(&mut context)
-    }
-    pub fn with_layers_ref(&'w self, layers: Vec<ContextLayer>, f: impl FnOnce(&mut Self)) {
-        self.with_layers_ref_r(layers, |context| {
-            f(context);
-            Ok(())
-        })
-        .log();
-    }
-    pub fn with_layer_ref(&'w self, layer: ContextLayer, f: impl FnOnce(&mut Self)) {
-        self.with_layers_ref([layer].into(), f);
-    }
-    pub fn with_owner<T>(
-        &mut self,
-        entity: Entity,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        self.with_layer_r(ContextLayer::Owner(entity), f)
-    }
-    pub fn with_owner_ref<T>(
-        &'w self,
-        entity: Entity,
-        f: impl FnOnce(&mut Self) -> Result<T, ExpressionError>,
-    ) -> Result<T, ExpressionError> {
-        self.with_layer_ref_r(ContextLayer::Owner(entity), f)
-    }
-    pub fn t(&self) -> Result<f32, ExpressionError> {
-        self.t.to_custom_e("Context t not set")
-    }
-    pub fn t_mut(&mut self) -> Result<&mut f32, ExpressionError> {
-        self.t.as_mut().to_custom_e("Context t not set")
-    }
-    pub fn id(&self, entity: Entity) -> Result<u64, ExpressionError> {
-        self.world()?.entity_id(entity).to_e(entity)
-    }
-    pub fn entity(&self, id: u64) -> Result<Entity, ExpressionError> {
-        self.world()?.id_entity(id).to_e(id)
-    }
-    pub fn parents(&self, id: u64) -> HashSet<u64> {
-        self.world()
-            .ok()
-            .and_then(|w| w.children_parents_map().get(&id).cloned())
+
+    pub fn get_children(&self, from_id: u64) -> Vec<u64> {
+        self.links
+            .get(&from_id)
+            .map(|links| links.iter().map(|(id, _)| *id).collect())
             .unwrap_or_default()
     }
-    pub fn children(&self, id: u64) -> HashSet<u64> {
-        self.world()
-            .ok()
-            .and_then(|w| w.parents_children_map().get(&id).cloned())
+
+    pub fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> Vec<u64> {
+        self.links
+            .get(&from_id)
+            .map(|links| {
+                links
+                    .iter()
+                    .filter(|(_, node_kind)| *node_kind == kind)
+                    .map(|(id, _)| *id)
+                    .collect()
+            })
             .unwrap_or_default()
     }
-    pub fn parents_all(&self, id: u64) -> HashSet<u64> {
-        self.world()
-            .ok()
-            .and_then(|w| w.children_parents_all_map().get(&id).cloned())
+
+    pub fn get_parents(&self, child_id: u64) -> Vec<u64> {
+        self.reverse_links
+            .get(&child_id)
+            .map(|parents| parents.iter().map(|(id, _)| *id).collect())
             .unwrap_or_default()
     }
-    pub fn children_all(&self, id: u64) -> HashSet<u64> {
-        self.world()
-            .ok()
-            .and_then(|w| w.parents_children_all_map().get(&id).cloned())
+
+    pub fn get_parents_of_kind(&self, child_id: u64, kind: NodeKind) -> Vec<u64> {
+        self.reverse_links
+            .get(&child_id)
+            .map(|parents| {
+                parents
+                    .iter()
+                    .filter(|(_, node_kind)| *node_kind == kind)
+                    .map(|(id, _)| *id)
+                    .collect()
+            })
             .unwrap_or_default()
     }
-    pub fn parents_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
-        let id = entity.id(self)?;
-        self.ids_to_entities(self.parents(id))
-    }
-    pub fn children_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
-        let id = entity.id(self)?;
-        self.ids_to_entities(self.children(id))
-    }
-    pub fn parents_all_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
-        let id = entity.id(self)?;
-        self.ids_to_entities(self.parents_all(id))
-    }
-    pub fn children_all_entity(&self, entity: Entity) -> Result<Vec<Entity>, ExpressionError> {
-        let id = entity.id(self)?;
-        self.ids_to_entities(self.children_all(id))
-    }
-    pub fn parents_recursive(&self, id: u64) -> HashSet<u64> {
-        let mut result: HashSet<u64> = default();
-        let mut q = VecDeque::from([id]);
-        while let Some(id) = q.pop_front() {
-            for parent in self.parents(id) {
-                if !result.insert(parent) {
-                    continue;
-                }
-                q.push_back(parent);
-            }
-        }
-        result
-    }
-    pub fn children_recursive(&self, id: u64) -> HashSet<u64> {
-        let mut result: HashSet<u64> = default();
-        let mut q = VecDeque::from([id]);
-        while let Some(id) = q.pop_front() {
-            for child in self.children(id) {
-                if !result.insert(child) {
-                    continue;
-                }
-                q.push_back(child);
-            }
-        }
-        result
-    }
-    pub fn first_parent<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        for parent in self.parents(id) {
-            let c = self.component_by_id::<T>(parent);
-            if c.is_ok() {
-                return c;
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
-    }
-    pub fn first_child<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        for child in self.children(id) {
-            let c = self.component_by_id::<T>(child);
-            if c.is_ok() {
-                return c;
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
-    }
-    pub fn first_parent_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        let mut checked: HashSet<u64> = default();
-        let mut q = VecDeque::from([id]);
-        while let Some(id) = q.pop_front() {
-            for parent in self.parents(id) {
-                if !checked.insert(parent) {
-                    continue;
-                }
-                if let Ok(c) = self.component_by_id::<T>(parent) {
-                    return Ok(c);
-                }
-                q.push_back(parent);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
-    }
-    pub fn first_child_recursive<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        let mut checked: HashSet<u64> = default();
-        let mut q = VecDeque::from([id]);
-        while let Some(id) = q.pop_front() {
-            for child in self.children(id) {
-                if !checked.insert(child) {
-                    continue;
-                }
-                if let Ok(c) = self.component_by_id::<T>(child) {
-                    return Ok(c);
-                }
-                q.push_back(child);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound(type_name_short::<T>().to_owned()).into())
-    }
-    pub fn top_child<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
-        let world = self.world()?;
-        let links_rating_all = world.links_rating_all_map();
-        let id_kind_map = world.id_kind_map();
-        let target_kind = T::kind_s();
 
-        let mut best_child = None;
-        let mut best_rating = i32::MIN;
-
-        for child in self.children_all(id) {
-            if let Some(child_kind) = id_kind_map.get(&child) {
-                if child_kind != &target_kind {
-                    continue;
-                }
-            }
-
-            if let Ok(component) = self.component_by_id::<T>(child) {
-                let rating = links_rating_all
-                    .get(&(id, child))
-                    .map(|(rating, _)| *rating)
-                    .unwrap_or(0);
-
-                if rating > best_rating {
-                    best_rating = rating;
-                    best_child = Some(component);
-                }
-            }
-        }
-
-        best_child.ok_or_else(|| ExpressionErrorVariants::NotFound(T::kind_s().to_string()).into())
-    }
-    pub fn top_parent<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
-        let world = self.world()?;
-        let links_rating_all = world.links_rating_all_map();
-        let id_kind_map = world.id_kind_map();
-        let target_kind = T::kind_s();
-
-        let mut best_parent = None;
-        let mut best_rating = i32::MIN;
-
-        for parent in self.parents_all(id) {
-            if let Some(parent_kind) = id_kind_map.get(&parent) {
-                if parent_kind != &target_kind {
-                    continue;
-                }
-            }
-
-            if let Ok(component) = self.component_by_id::<T>(parent) {
-                let rating = links_rating_all
-                    .get(&(parent, id))
-                    .map(|(rating, _)| *rating)
-                    .unwrap_or(0);
-
-                if rating > best_rating {
-                    best_rating = rating;
-                    best_parent = Some(component);
-                }
-            }
-        }
-
-        best_parent.ok_or_else(|| ExpressionErrorVariants::NotFound(T::kind_s().to_string()).into())
-    }
-    pub fn top_linked<T: Node>(&self, id: u64) -> Result<&T, ExpressionError> {
-        self.top_child::<T>(id)
-            .or_else(|_| self.top_parent::<T>(id))
-    }
-    pub fn link_id_entity(&mut self, id: u64, entity: Entity) -> Result<(), ExpressionError> {
-        self.world_mut()?.link_id_entity(id, entity);
-        Ok(())
-    }
-    pub fn set_id_kind(&mut self, id: u64, kind: NodeKind) -> Result<(), ExpressionError> {
-        self.world_mut()?.set_id_kind(id, kind);
-        Ok(())
-    }
-    pub fn link_parent_child(&mut self, parent: u64, child: u64) -> Result<(), ExpressionError> {
-        self.world_mut()?.link_parent_child(parent, child);
-        Ok(())
-    }
-    pub fn unlink_parent_child(
-        &mut self,
-        parent: u64,
-        child: u64,
-    ) -> Result<bool, ExpressionError> {
-        Ok(self.world_mut()?.unlink_parent_child(parent, child))
-    }
-    pub fn link_parent_child_entity(
-        &mut self,
-        parent: Entity,
-        child: Entity,
-    ) -> Result<(), ExpressionError> {
-        self.link_parent_child(self.id(parent)?, self.id(child)?)
-    }
-    pub fn despawn(&mut self, entity: Entity) -> Result<(), ExpressionError> {
-        self.world_mut()?.despawn_entity(entity);
-        Ok(())
-    }
-    pub fn component<T: Component>(&self, entity: Entity) -> Result<&T, ExpressionError> {
-        self.world()?.get::<T>(entity).to_e_not_found()
-    }
-    pub fn component_mut<T: Component<Mutability = Mutable>>(
-        &mut self,
-        entity: Entity,
-    ) -> Result<Mut<T>, ExpressionError> {
-        self.world_mut()?.get_mut::<T>(entity).to_e_not_found()
-    }
-    pub fn component_by_id<T: Component>(&self, id: u64) -> Result<&T, ExpressionError> {
-        self.component::<T>(self.entity(id)?)
-    }
-    pub fn component_by_id_mut<T: Component<Mutability = Mutable>>(
-        &mut self,
-        id: u64,
-    ) -> Result<Mut<T>, ExpressionError> {
-        self.component_mut::<T>(self.entity(id)?)
-    }
-    pub fn ids_to_entities(
-        &self,
-        ids: impl IntoIterator<Item = u64>,
-    ) -> Result<Vec<Entity>, ExpressionError> {
-        let m = self.world()?.id_to_entity_map();
-        Ok(ids
-            .into_iter()
-            .filter_map(|id| m.get(&id).copied())
-            .collect())
-    }
-    pub fn entities_to_ids(
-        &self,
-        entities: impl IntoIterator<Item = Entity>,
-    ) -> Result<Vec<u64>, ExpressionError> {
-        let m = self.world()?.entity_to_id_map();
-        Ok(entities
-            .into_iter()
-            .filter_map(|entity| m.get(&entity).copied())
-            .collect())
-    }
-    pub fn collect_components<T: Component>(
-        &self,
-        ids: impl IntoIterator<Item = u64>,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        Ok(self
-            .ids_to_entities(ids)?
-            .into_iter()
-            .filter_map(|entity| self.component::<T>(entity).ok())
-            .collect())
-    }
-    pub fn collect_parents_components<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.parents(id))
-    }
-    pub fn collect_children_components<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.children(id))
-    }
-    pub fn collect_parents_components_recursive<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.parents_recursive(id))
-    }
-    pub fn collect_children_components_recursive<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.children_recursive(id))
-    }
-    pub fn collect_parents_all_components<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.parents_all(id))
-    }
-    pub fn collect_children_all_components<T: Component>(
-        &self,
-        id: u64,
-    ) -> Result<Vec<&T>, ExpressionError> {
-        self.collect_components(self.children_all(id))
+    pub fn has_link(&self, from_id: u64, to_id: u64) -> bool {
+        self.links
+            .get(&from_id)
+            .map(|links| links.iter().any(|(id, _)| *id == to_id))
+            .unwrap_or(false)
     }
 
-    pub fn owner_entity(&self) -> Result<Entity, ExpressionError> {
-        for l in self.layers.iter().rev() {
-            if let Some(e) = l.get_owner() {
-                return Ok(e);
-            }
+    pub fn remove_link(&mut self, from_id: u64, to_id: u64) {
+        if let Some(links) = self.links.get_mut(&from_id) {
+            links.retain(|(id, _)| *id != to_id);
         }
-        Err(ExpressionErrorVariants::NotFound("Owner not set".into()).into())
-    }
-    pub fn target_entity(&self) -> Result<Entity, ExpressionError> {
-        for l in self.layers.iter().rev() {
-            if let Some(e) = l.get_target() {
-                return Ok(e);
-            }
+
+        if let Some(parents) = self.reverse_links.get_mut(&to_id) {
+            parents.retain(|(id, _)| *id != from_id);
         }
-        Err(ExpressionErrorVariants::NotFound("Target not set".into()).into())
-    }
-    pub fn caster_entity(&self) -> Result<Entity, ExpressionError> {
-        for l in self.layers.iter().rev() {
-            if let Some(e) = l.get_caster() {
-                return Ok(e);
-            }
-        }
-        Err(ExpressionErrorVariants::NotFound("Caster not set".into()).into())
-    }
-    pub fn collect_targets(&self) -> Vec<Entity> {
-        self.layers.iter().filter_map(|l| l.get_target()).collect()
-    }
-    pub fn add_owner(&mut self, owner: Entity) -> &mut Self {
-        self.layers.push(ContextLayer::Owner(owner));
-        self
-    }
-    pub fn add_target(&mut self, target: Entity) -> &mut Self {
-        self.layers.push(ContextLayer::Target(target));
-        self
-    }
-    pub fn add_caster(&mut self, caster: Entity) -> &mut Self {
-        self.layers.push(ContextLayer::Caster(caster));
-        self
-    }
-    pub fn get_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        for l in self.layers.iter().rev() {
-            if let Some(v) = l.get_var(self, var) {
-                return Ok(v);
-            }
-        }
-        Err(ExpressionErrorVariants::ValueNotFound(var).into())
-    }
-    pub fn sum_var(&self, var: VarName) -> Result<VarValue, ExpressionError> {
-        let mut value = VarValue::default();
-        for l in &self.layers {
-            value = l.sum_var(self, var, value)?;
-        }
-        Ok(value)
-    }
-    pub fn get_value(&self) -> Result<VarValue, ExpressionError> {
-        self.get_var(VarName::value)
-    }
-    pub fn set_var(&mut self, var: VarName, value: VarValue) -> &mut Self {
-        self.layers.push(ContextLayer::Var(var, value));
-        self
-    }
-    pub fn set_value_var(&mut self, value: VarValue) -> &mut Self {
-        self.set_var(VarName::value, value);
-        self
     }
 
-    pub fn get_i32(&self, var: VarName) -> Result<i32, ExpressionError> {
-        self.get_var(var)?.get_i32()
-    }
-    pub fn get_f32(&self, var: VarName) -> Result<f32, ExpressionError> {
-        self.get_var(var)?.get_f32()
-    }
-    pub fn get_vec2(&self, var: VarName) -> Result<Vec2, ExpressionError> {
-        self.get_var(var)?.get_vec2()
-    }
-    pub fn get_bool(&self, var: VarName) -> Result<bool, ExpressionError> {
-        self.get_var(var)?.get_bool()
-    }
-    pub fn get_color(&self, var: VarName) -> Result<Color32, ExpressionError> {
-        self.get_var(var)?.get_color()
-    }
-    pub fn color(&self, ui: &mut Ui) -> Color32 {
-        self.get_color(VarName::color)
-            .unwrap_or(ui.visuals().text_color())
-    }
-    pub fn get_string(&self, var: VarName) -> Result<String, ExpressionError> {
-        self.get_var(var)?.get_string()
-    }
-
-    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
-        let mut result: HashMap<VarName, VarValue> = default();
-        for l in self.layers.iter().rev() {
-            match l {
-                ContextLayer::Var(var, value) => {
-                    result.insert(*var, value.clone());
-                }
-                _ => {}
-            }
-        }
-        result
+    pub fn clear(&mut self) {
+        self.links.clear();
+        self.reverse_links.clear();
     }
 }
 
-impl ContextSource<'_> {
+/// Marker component for entities with nodes
+#[derive(Component)]
+pub struct NodeEntity {
+    pub id: u64,
+    pub kind: NodeKind,
+}
+
+/// Unified WorldSource enum for both immutable and mutable World access
+pub enum WorldSource<'w> {
+    Immutable(&'w World),
+    Mutable(&'w mut World),
+}
+
+impl<'w> WorldSource<'w> {
+    pub fn new_immutable(world: &'w World) -> Self {
+        Self::Immutable(world)
+    }
+
+    pub fn new_mutable(world: &'w mut World) -> Self {
+        Self::Mutable(world)
+    }
+
+    fn world(&self) -> &World {
+        match self {
+            Self::Immutable(world) => world,
+            Self::Mutable(world) => world,
+        }
+    }
+
     fn world_mut(&mut self) -> Option<&mut World> {
         match self {
-            ContextSource::WorldOwned(world) => Some(world),
-            ContextSource::BattleSimulation(bs) => Some(&mut bs.world),
-            _ => None,
-        }
-    }
-    fn world(&self) -> Option<&World> {
-        match self {
-            ContextSource::WorldOwned(world) => Some(world),
-            ContextSource::BattleSimulation(bs) => Some(&bs.world),
-            ContextSource::WorldRef(world) => Some(*world),
-            ContextSource::Context(context) => context.world().ok(),
-        }
-    }
-    fn battle_simulation_mut(&mut self) -> Option<&mut BattleSimulation> {
-        match self {
-            ContextSource::BattleSimulation(bs) => Some(bs),
-            _ => None,
-        }
-    }
-    fn battle_simulation(&self) -> Option<&BattleSimulation> {
-        match self {
-            ContextSource::Context(context) => context.battle_simulation().ok(),
-            ContextSource::BattleSimulation(bs) => Some(bs),
-            _ => None,
+            Self::Immutable(_) => None,
+            Self::Mutable(world) => Some(world),
         }
     }
 }
 
-impl ContextLayer {
-    fn get_owner(&self) -> Option<Entity> {
-        match self {
-            ContextLayer::Owner(entity) => Some(*entity),
-            _ => None,
-        }
-    }
-    fn get_target(&self) -> Option<Entity> {
-        match self {
-            ContextLayer::Target(entity) => Some(*entity),
-            _ => None,
-        }
-    }
-    fn get_caster(&self) -> Option<Entity> {
-        match self {
-            ContextLayer::Caster(entity) => Some(*entity),
-            _ => None,
-        }
-    }
-    fn get_var(&self, context: &Context, var: VarName) -> Option<VarValue> {
-        match self {
-            ContextLayer::Var(vr, vl) => {
-                if *vr == var {
-                    Some(vl.clone())
-                } else {
-                    None
+impl<'w> ContextSource for WorldSource<'w> {
+    fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
+        let world = self.world();
+        if let Some(map) = world.get_resource::<NodeEntityMap>() {
+            if let Some(entity) = map.get_entity(id) {
+                if let Some(node) = world.get::<NodeEntity>(entity) {
+                    return Ok(node.kind);
                 }
             }
-            ContextLayer::Owner(entity) => NodeState::find_var(context, var, *entity),
-            _ => None,
+        }
+        Err(NodeError::NotFound(id))
+    }
+
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        let world = self.world();
+        if let Some(links) = world.get_resource::<NodeLinks>() {
+            Ok(links.get_children(from_id))
+        } else {
+            Ok(Vec::new())
         }
     }
-    fn sum_var(
-        &self,
-        context: &Context,
-        var: VarName,
-        value: VarValue,
-    ) -> Result<VarValue, ExpressionError> {
-        match self {
-            ContextLayer::Owner(entity) => NodeState::sum_var(context, var, *entity),
-            ContextLayer::Var(vr, vl) => {
-                if *vr == var {
-                    value.add(vl)
-                } else {
-                    Ok(value)
-                }
+
+    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let world = self.world();
+        if let Some(links) = world.get_resource::<NodeLinks>() {
+            Ok(links.get_children_of_kind(from_id, kind))
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
+        let world = self.world();
+        if let Some(links) = world.get_resource::<NodeLinks>() {
+            Ok(links.get_parents(id))
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let world = self.world();
+        if let Some(links) = world.get_resource::<NodeLinks>() {
+            Ok(links.get_parents_of_kind(id, kind))
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        if let Some(world) = self.world_mut() {
+            let to_kind = self.get_node_kind(to_id)?;
+
+            if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
+                links.add_link(from_id, to_id, to_kind);
+                Ok(())
+            } else {
+                Err(NodeError::ContextError(anyhow::anyhow!(
+                    "NodeLinks resource not found"
+                )))
             }
-            _ => Ok(value),
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "Cannot modify links with immutable WorldSource"
+            )))
+        }
+    }
+
+    fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        if let Some(world) = self.world_mut() {
+            if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
+                links.remove_link(from_id, to_id);
+                Ok(())
+            } else {
+                Err(NodeError::ContextError(anyhow::anyhow!(
+                    "NodeLinks resource not found"
+                )))
+            }
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "Cannot modify links with immutable WorldSource"
+            )))
+        }
+    }
+
+    fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
+        let world = self.world();
+        if let Some(links) = world.get_resource::<NodeLinks>() {
+            Ok(links.has_link(from_id, to_id))
+        } else {
+            Ok(false)
         }
     }
 }
+
+/// Extension trait for Context to load nodes in client
+pub trait ClientContextExt {
+    /// Load a node by ID - requires access to World through the source
+    fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
+    where
+        T: 'static + schema::Node + Component + Clone;
+
+    /// Load multiple nodes
+    fn load_many<'a, T>(&'a self, ids: &[u64]) -> NodeResult<Vec<&'a T>>
+    where
+        T: 'static + schema::Node + Component + Clone;
+
+    /// Load linked nodes
+    fn load_linked<'a, T>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>
+    where
+        T: 'static + schema::Node + Component + Clone;
+    fn world<'a>(&'a self) -> Option<&'a World>;
+    fn world_mut<'a>(&'a mut self) -> Option<&'a mut World>;
+}
+
+impl<'w> ClientContextExt for Context<WorldSource<'w>> {
+    fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
+    where
+        T: 'static + schema::Node + Component + Clone,
+    {
+        let world = self.source().world();
+        if let Some(map) = world.get_resource::<NodeEntityMap>() {
+            if let Some(entity) = map.get_entity(id) {
+                if let Some(component) = world.get::<T>(entity) {
+                    return Ok(component);
+                } else {
+                    return Err(NodeError::CastError);
+                }
+            }
+        }
+        Err(NodeError::NotFound(id))
+    }
+
+    fn load_many<'a, T>(&'a self, ids: &[u64]) -> NodeResult<Vec<&'a T>>
+    where
+        T: 'static + schema::Node + Component + Clone,
+    {
+        let mut results = Vec::new();
+        for id in ids {
+            results.push(self.load::<T>(*id)?);
+        }
+        Ok(results)
+    }
+
+    fn load_linked<'a, T>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>
+    where
+        T: 'static + schema::Node + Component + Clone,
+    {
+        let kind = T::kind_s();
+        let ids = self.get_children_of_kind(from_id, kind)?;
+        self.load_many(&ids)
+    }
+
+    fn world<'a>(&'a self) -> Option<&'a World> {
+        Some(self.source().world())
+    }
+
+    fn world_mut<'a>(&'a mut self) -> Option<&'a mut World> {
+        self.source_mut().world_mut()
+    }
+}
+
+/// Extension for using Context with Bevy World
+pub trait WorldContextExt {
+    /// Execute with a context using this world as the source (immutable)
+    fn with_context<R, F>(&self, f: F) -> R
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> R;
+
+    /// Execute with a context using this world as the source (mutable)
+    fn with_context_mut<R, F>(&mut self, f: F) -> R
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> R;
+}
+
+impl WorldContextExt for World {
+    fn with_context<R, F>(&self, f: F) -> R
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> R,
+    {
+        let source = WorldSource::new_immutable(self);
+        Context::exec(source, f)
+    }
+
+    fn with_context_mut<R, F>(&mut self, f: F) -> R
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> R,
+    {
+        let source = WorldSource::new_mutable(self);
+        Context::exec(source, f)
+    }
+}
+
+/// Type alias for convenience
+pub type ClientContext<'w> = Context<WorldSource<'w>>;

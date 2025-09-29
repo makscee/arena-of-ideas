@@ -9,16 +9,16 @@ impl NFusion {
         Ok(())
     }
 
-    pub fn get_action_count(&self, context: &Context) -> Result<usize, ExpressionError> {
+    pub fn get_action_count(&self, context: &ClientContext) -> Result<usize, ExpressionError> {
         let slots = self.get_slots(context)?;
         Ok(slots.iter().map(|slot| slot.actions.length as usize).sum())
     }
 
-    pub fn can_add_action(&self, context: &Context) -> Result<bool, ExpressionError> {
+    pub fn can_add_action(&self, context: &ClientContext) -> Result<bool, ExpressionError> {
         Ok(self.get_action_count(context)? < self.actions_limit as usize)
     }
 
-    pub fn get_unit_tier(context: &Context, unit_id: u64) -> Result<u8, ExpressionError> {
+    pub fn get_unit_tier(context: &ClientContext, unit_id: u64) -> Result<u8, ExpressionError> {
         if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
             Ok(behavior.reaction.tier())
         } else {
@@ -26,7 +26,7 @@ impl NFusion {
         }
     }
 
-    pub fn units<'a>(&self, context: &'a Context) -> Result<Vec<&'a NUnit>, ExpressionError> {
+    pub fn units<'a>(&self, context: &'a ClientContext) -> Result<Vec<&'a NUnit>, ExpressionError> {
         let slots = self.get_slots(context)?;
         let mut units = Vec::new();
         for slot in slots {
@@ -39,7 +39,7 @@ impl NFusion {
 
     pub fn get_slots<'a>(
         &self,
-        context: &'a Context,
+        context: &'a ClientContext,
     ) -> Result<Vec<&'a NFusionSlot>, ExpressionError> {
         let mut slots = context.collect_parents_components::<NFusionSlot>(self.id)?;
         slots.sort_by_key(|s| s.index);
@@ -48,7 +48,7 @@ impl NFusion {
 
     pub fn gather_fusion_actions<'a>(
         &self,
-        context: &'a Context,
+        context: &'a ClientContext,
     ) -> Result<Vec<(u64, &'a Action)>, ExpressionError> {
         let slots = self.get_slots(context)?;
         let mut all_actions = Vec::new();
@@ -74,14 +74,14 @@ impl NFusion {
     }
 
     fn get_behavior<'a>(
-        context: &'a Context,
+        context: &'a ClientContext,
         unit: u64,
     ) -> Result<&'a NUnitBehavior, ExpressionError> {
         context.first_parent_recursive::<NUnitBehavior>(unit)
     }
 
     pub fn get_trigger<'a>(
-        context: &'a Context,
+        context: &'a ClientContext,
         unit_id: u64,
     ) -> Result<&'a Trigger, ExpressionError> {
         Ok(&Self::get_behavior(context, unit_id)?.reaction.trigger)
@@ -90,7 +90,7 @@ impl NFusion {
     pub fn react(
         &self,
         event: &Event,
-        context: &Context,
+        context: &ClientContext,
     ) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut battle_actions: Vec<BattleAction> = default();
 
@@ -117,7 +117,12 @@ impl NFusion {
         Ok(battle_actions)
     }
 
-    pub fn paint(&self, rect: Rect, context: &Context, ui: &mut Ui) -> Result<(), ExpressionError> {
+    pub fn paint(
+        &self,
+        rect: Rect,
+        context: &ClientContext,
+        ui: &mut Ui,
+    ) -> Result<(), ExpressionError> {
         let entity = self.entity();
         let units = self.units(context)?;
         for unit in units {

@@ -30,7 +30,7 @@ impl<'a, T: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq> Composer
         self.data.is_mutable()
     }
 
-    fn compose(mut self, _context: &Context, ui: &mut Ui) -> Response {
+    fn compose(mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
         if self.is_mutable() {
             let (_old_value, response) = Selector::ui_enum(self.data_mut(), ui);
             response

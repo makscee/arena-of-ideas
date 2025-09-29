@@ -1,16 +1,11 @@
 [workspace]
 members = [
-    "raw-nodes",
-    "raw-nodes-v2",
     "schema",
-    "schema-v2",
     "server",
-    "server-v2",
     "utils",
     "utils-client",
     "proc-macros",
     "client",
-    "client-v2",
     "node-loaders",
     "node-build-utils",
 ]

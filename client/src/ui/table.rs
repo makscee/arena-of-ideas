@@ -12,7 +12,7 @@ enum RowGetter<'a, T> {
     Data(&'a Vec<T>),
     FnRow(
         usize,
-        Box<dyn Fn(&Context, usize) -> Option<&'a T> + 'a + Send + Sync>,
+        Box<dyn Fn(&ClientContext, usize) -> Option<&'a T> + 'a + Send + Sync>,
     ),
 }
 
@@ -26,13 +26,13 @@ pub struct TableState {
 pub struct TableColumn<'a, T> {
     name: String,
     show: Box<
-        dyn FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+        dyn FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
             + 'a
             + Send
             + Sync,
     >,
     value: Option<
-        Box<dyn FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
+        Box<dyn FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
     >,
     initial_width: Option<f32>,
     remainder: bool,
@@ -47,7 +47,7 @@ impl<'a, T> RowGetter<'a, T> {
         }
     }
 
-    fn get(&self, context: &Context, index: usize) -> Option<&T> {
+    fn get(&self, context: &ClientContext, index: usize) -> Option<&T> {
         match self {
             RowGetter::Data(vec) => vec.get(index),
             RowGetter::FnRow(_, getter) => getter(context, index),
@@ -68,7 +68,7 @@ impl TableState {
     fn apply_sorting<T>(
         &mut self,
         table: &mut Table<T>,
-        context: &Context,
+        context: &ClientContext,
         column_index: usize,
         ascending: bool,
     ) {
@@ -107,7 +107,7 @@ impl TableState {
         self.sorting = Some((column_index, ascending));
     }
 
-    fn apply_filters<T>(&mut self, table: &mut Table<T>, context: &Context) {
+    fn apply_filters<T>(&mut self, table: &mut Table<T>, context: &ClientContext) {
         if self.filters.is_empty() {
             return;
         }
@@ -173,7 +173,7 @@ impl<'a, T> Table<'a, T> {
 
     pub fn from_fn_row(
         len: usize,
-        getter: impl Fn(&Context, usize) -> Option<&'a T> + Send + Sync + 'a,
+        getter: impl Fn(&ClientContext, usize) -> Option<&'a T> + Send + Sync + 'a,
     ) -> Self {
         Self {
             row_getter: RowGetter::FnRow(len, Box::new(getter)),
@@ -185,7 +185,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_cstr(
         self,
         name: impl Into<String>,
-        f: impl Fn(&Context, &T) -> Result<String, ExpressionError> + 'a + Send + Sync + Clone,
+        f: impl Fn(&ClientContext, &T) -> Result<String, ExpressionError> + 'a + Send + Sync + Clone,
     ) -> Self {
         let f_clone = f.clone();
         self.column(
@@ -207,11 +207,11 @@ impl<'a, T> Table<'a, T> {
     pub fn column(
         mut self,
         name: impl Into<String>,
-        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
         + 'a
         + Send
         + Sync,
-        value_fn: impl FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
+        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -227,7 +227,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_no_sort(
         mut self,
         name: impl Into<String>,
-        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
         + 'a
         + Send
         + Sync,
@@ -300,11 +300,11 @@ impl<'a, T> Table<'a, T> {
         self,
         name: impl Into<String>,
         hover_text: impl Into<String> + 'a,
-        show_fn: impl FnMut(&Context, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
         + 'a
         + Send
         + Sync,
-        value_fn: impl FnMut(&Context, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
+        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
     ) -> Self {
         let hover_text = hover_text.into();
         self.column(name, show_fn, value_fn)
@@ -313,7 +313,7 @@ impl<'a, T> Table<'a, T> {
             })
     }
 
-    fn show_row(&mut self, context: &Context, state: &mut TableState, row: &mut TableRow) {
+    fn show_row(&mut self, context: &ClientContext, state: &mut TableState, row: &mut TableRow) {
         let i = *state.indices.get(row.index()).unwrap();
         if let Some(data) = self.row_getter.get(context, i) {
             for column in self.columns.iter_mut() {
@@ -337,7 +337,7 @@ impl<'a, T> Table<'a, T> {
         }
     }
 
-    pub fn ui(mut self, context: &Context, ui: &mut Ui) {
+    pub fn ui(mut self, context: &ClientContext, ui: &mut Ui) {
         let table_id = ui.id().with("table");
         let mut state = ui
             .ctx()

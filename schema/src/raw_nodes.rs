@@ -1,4 +1,5 @@
 use crate::*;
+pub use proc_macros::node;
 
 #[node]
 pub struct NArena {
@@ -136,7 +137,7 @@ pub struct NFusionSlot {
     pub unit: Ref<Option<NUnit>>,
 }
 
-#[node(content)]
+#[node(content, name)]
 pub struct NUnit {
     pub unit_name: String,
     pub description: Component<NUnitDescription>,

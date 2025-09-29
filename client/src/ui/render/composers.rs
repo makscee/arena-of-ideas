@@ -24,7 +24,7 @@ pub trait Composer<T> {
     fn is_mutable(&self) -> bool;
 
     /// Compose (render) the data to UI
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response;
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response;
 }
 
 /// Reference wrapper that composers use to hold data
@@ -87,7 +87,7 @@ impl<'a, T: FDisplay> Composer<T> for DataComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         self.data.as_ref().display(context, ui)
     }
 }
@@ -124,7 +124,7 @@ impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         self.data.as_ref().title(context).label(ui)
     }
 }
@@ -181,7 +181,7 @@ impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         use crate::ui::core::colorix::UiColorixExt;
 
         if self.disabled {
@@ -287,7 +287,7 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
         let name = data.tag_name(context);
         let color = data.tag_color(context);
@@ -304,14 +304,14 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
 pub struct ListComposer<'a, T, F> {
     data: DataRef<'a, Vec<T>>,
     element_fn: F,
-    hover_fn: Option<Box<dyn FnMut(&T, &Context, &mut Ui) + 'a>>,
-    filter_fn: Option<Box<dyn Fn(&str, &T, &Context) -> bool>>,
+    hover_fn: Option<Box<dyn FnMut(&T, &ClientContext, &mut Ui) + 'a>>,
+    filter_fn: Option<Box<dyn Fn(&str, &T, &ClientContext) -> bool>>,
     filter_id: Option<egui::Id>,
 }
 
 impl<'a, T, F> ListComposer<'a, T, F>
 where
-    F: Fn(&T, &Context, &mut Ui) -> Response,
+    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
 {
     pub fn new(data: &'a Vec<T>, element_fn: F) -> Self {
         Self {
@@ -335,7 +335,7 @@ where
 
     pub fn with_hover<H>(mut self, hover_fn: H) -> Self
     where
-        H: FnMut(&T, &Context, &mut Ui) + 'a,
+        H: FnMut(&T, &ClientContext, &mut Ui) + 'a,
     {
         self.hover_fn = Some(Box::new(hover_fn));
         self
@@ -343,7 +343,7 @@ where
 
     pub fn with_filter<G>(mut self, filter_id: egui::Id, filter_fn: G) -> Self
     where
-        G: Fn(&str, &T, &Context) -> bool + 'static,
+        G: Fn(&str, &T, &ClientContext) -> bool + 'static,
     {
         self.filter_id = Some(filter_id);
         self.filter_fn = Some(Box::new(filter_fn));
@@ -353,7 +353,7 @@ where
 
 impl<'a, T, F> Composer<Vec<T>> for ListComposer<'a, T, F>
 where
-    F: Fn(&T, &Context, &mut Ui) -> Response,
+    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
 {
     fn data(&self) -> &Vec<T> {
         self.data.as_ref()
@@ -367,7 +367,7 @@ where
         self.data.is_mutable()
     }
 
-    fn compose(mut self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(mut self, context: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = "[tw List:]".cstr().label(ui);
         let items: Vec<&T> =
             if let (Some(filter_id), Some(filter_fn)) = (self.filter_id, &self.filter_fn) {
@@ -448,7 +448,7 @@ impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> 
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
         let color = context.color(ui);
 
@@ -503,7 +503,7 @@ impl<T, C: Composer<T>> Composer<T> for FramedComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &Context, ui: &mut Ui) -> Response {
+    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
         let color = self.color.unwrap_or_else(|| context.color(ui));
 
         Frame::new()

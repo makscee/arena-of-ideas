@@ -4,7 +4,7 @@ use schema::OptionExpressionCustomError;
 
 use super::*;
 
-use raw_nodes::NodeKind;
+use schema::NodeKind;
 
 #[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {

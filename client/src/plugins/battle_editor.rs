@@ -638,7 +638,7 @@ impl BattleEditorPlugin {
         slot_id: u64,
         start: u8,
         length: u8,
-        context: &mut Context,
+        context: &mut ClientContext,
     ) -> Result<(), ExpressionError> {
         let mut slot = context.component_mut::<NFusionSlot>(context.entity(slot_id)?)?;
         slot.actions.start = start;

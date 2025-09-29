@@ -70,11 +70,11 @@ impl RangeSelector {
     pub fn ui<F>(
         mut self,
         ui: &mut Ui,
-        context: &Context,
+        context: &ClientContext,
         render_item: F,
     ) -> (Response, Option<(u8, u8)>)
     where
-        F: Fn(&mut Ui, &Context, usize, bool) -> Result<(), ExpressionError>,
+        F: Fn(&mut Ui, &ClientContext, usize, bool) -> Result<(), ExpressionError>,
     {
         let mut range_changed = None;
 
