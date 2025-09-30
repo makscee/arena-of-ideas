@@ -17,14 +17,14 @@ pub trait Link<T> {
     fn none() -> Self;
     fn unknown() -> Self;
 
-    fn get(&self) -> Option<&T> {
+    fn get<'a>(&'a self) -> Option<&'a T> {
         match self.state() {
             LinkState::Loaded(val) => Some(val),
             _ => None,
         }
     }
 
-    fn get_mut(&mut self) -> Option<&mut T> {
+    fn get_mut<'a>(&'a mut self) -> Option<&'a mut T> {
         match self.state_mut() {
             LinkState::Loaded(val) => Some(val),
             _ => None,

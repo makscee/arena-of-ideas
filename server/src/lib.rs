@@ -23,6 +23,7 @@ pub use nodes_table::*;
 use player::*;
 
 use schema::*;
+use serde::{Deserialize, Serialize};
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table, Timestamp, reducer, table};
 use std::collections::{HashMap, HashSet};
 

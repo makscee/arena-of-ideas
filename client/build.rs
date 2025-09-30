@@ -1,4 +1,6 @@
 use node_build_utils::*;
+use quote::ToTokens;
+use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -59,6 +61,13 @@ fn generate_client_nodes(
         // Generate ClientNode implementation
         let client_node_impl = generate_client_node_impl(node, node_map);
 
+        // Generate link loading methods
+        let link_methods = generate_link_methods(
+            node,
+            format_ident!("ClientContext"),
+            Some(quote! {.cloned()}.to_token_stream()),
+        );
+
         // All nodes are Components in client
         let derives = quote! {
             #[derive(Debug, Clone, BevyComponent, Serialize, Deserialize)]
@@ -81,6 +90,8 @@ fn generate_client_nodes(
                     self.id = id;
                     self
                 }
+
+                #link_methods
             }
 
             #client_node_impl
@@ -125,6 +136,8 @@ fn generate_client_nodes(
     });
 
     quote! {
+        use schema::{Context, ContextSource, NodeError, NodeKind, LinkState, Link};
+        use crate::resources::context::ClientContextExt;
 
         #(#node_structs)*
 
