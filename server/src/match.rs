@@ -39,7 +39,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
             let mut unit = unit.clone(ctx, pid);
-            unit.state_set(ctx, NUnitState::new_full(pid, 1).insert(ctx))?;
+            unit.state_set(ctx, NUnitState::new(pid, 1).insert(ctx))?;
             unit.id.add_parent(ctx, house.id)?;
         }
         CardKind::House => {

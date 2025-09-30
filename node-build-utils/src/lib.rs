@@ -519,13 +519,39 @@ pub fn generate_with_components(node: &NodeInfo) -> TokenStream {
 
     let params = component_fields.iter().map(|field| {
         let field_name = &field.name;
-        let field_type = generate_field_type(field);
-        quote! { #field_name: #field_type }
+        let target = if field.target_type.is_empty() {
+            quote! { String }
+        } else {
+            let target_ident = format_ident!("{}", field.target_type);
+            quote! { #target_ident }
+        };
+
+        let param_type = if field.is_optional {
+            quote! { Option<#target> }
+        } else if field.is_vec {
+            quote! { Vec<#target> }
+        } else {
+            quote! { #target }
+        };
+
+        quote! { #field_name: #param_type }
     });
 
     let field_assignments = component_fields.iter().map(|field| {
         let field_name = &field.name;
-        quote! { self.#field_name = #field_name; }
+        let wrapped_value = match field.link_type {
+            LinkType::Component => {
+                quote! { Component::new_loaded(#field_name) }
+            }
+            LinkType::Owned => {
+                quote! { Owned::new_loaded(#field_name) }
+            }
+            LinkType::Ref => {
+                quote! { Ref::new_loaded(#field_name) }
+            }
+            _ => quote! { #field_name },
+        };
+        quote! { self.#field_name = #wrapped_value; }
     });
 
     quote! {

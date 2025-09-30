@@ -175,9 +175,7 @@ fn generate_client_node_impl(
                     if field.is_vec {
                         quote! {
                             for component in &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    world.entity_mut(entity).insert(loaded.clone());
-                                }
+                                world.entity_mut(entity).insert(component.clone());
                             }
                         }
                     } else {
@@ -226,11 +224,9 @@ fn generate_client_node_impl(
                     if field.is_vec {
                         quote! {
                             for owned in &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    let child_entity = world.spawn_empty().id();
-                                    loaded.clone().spawn(world);
-                                    world.entity_mut(child_entity).set_parent(entity);
-                                }
+                                let child_entity = world.spawn_empty().id();
+                                owned.clone().spawn(world);
+                                world.entity_mut(child_entity).set_parent(entity);
                             }
                         }
                     } else {

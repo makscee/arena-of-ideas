@@ -140,9 +140,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for component in &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    loaded.save(ctx);
-                                }
+                                component.save(ctx);
                             }
                         })
                     } else {
@@ -180,9 +178,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for owned in &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    loaded.save(ctx);
-                                }
+                                owned.save(ctx);
                             }
                         })
                     } else {
@@ -220,9 +216,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for ref_link in &self.#field_name {
-                                if let Some(loaded) = ref_link.get() {
-                                    loaded.save(ctx);
-                                }
+                                ref_link.save(ctx);
                             }
                         })
                     } else {
