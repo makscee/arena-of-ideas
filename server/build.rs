@@ -1,4 +1,5 @@
 use node_build_utils::*;
+use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -59,6 +60,9 @@ fn generate_server_nodes(
         // Generate ServerNode implementation
         let server_node_impl = generate_server_node_impl(node, node_map);
 
+        // Generate link loading methods
+        let link_methods = generate_link_methods(node, format_ident!("ServerContext"), None);
+
         // All nodes get SpacetimeDB derives for server
         let derives = quote! {
             #[derive(Debug, Serialize, Deserialize)]
@@ -81,6 +85,8 @@ fn generate_server_nodes(
                     self.id = id;
                     self
                 }
+
+                #link_methods
             }
 
             #server_node_impl
@@ -93,10 +99,6 @@ fn generate_server_nodes(
     let conversions = generate_conversions(nodes);
 
     quote! {
-        use schema::{Node, NodeKind, Component, Owned, Ref};
-        use schema::{HexColor, Action, Reaction, Material, ShopOffer, UnitActionRange, MagicType, Trigger};
-        use serde::{Serialize, Deserialize};
-
         #(#node_structs)*
 
         #conversions
@@ -140,9 +142,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for component in &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    loaded.save(ctx);
-                                }
+                                component.save(ctx);
                             }
                         })
                     } else {
@@ -180,9 +180,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for owned in &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    loaded.save(ctx);
-                                }
+                                owned.save(ctx);
                             }
                         })
                     } else {
@@ -220,9 +218,7 @@ fn generate_server_node_impl(
                     if field.is_vec {
                         Some(quote! {
                             for ref_link in &self.#field_name {
-                                if let Some(loaded) = ref_link.get() {
-                                    loaded.save(ctx);
-                                }
+                                ref_link.save(ctx);
                             }
                         })
                     } else {

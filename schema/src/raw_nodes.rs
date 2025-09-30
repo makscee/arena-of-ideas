@@ -134,7 +134,7 @@ pub struct NFusion {
 pub struct NFusionSlot {
     pub index: i32,
     pub actions: UnitActionRange,
-    pub unit: Ref<Option<NUnit>>,
+    pub unit: Ref<NUnit>,
 }
 
 #[node(content, name)]

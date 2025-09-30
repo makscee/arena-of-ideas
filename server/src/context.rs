@@ -186,3 +186,5 @@ impl ReducerContextExt for ReducerContext {
         Context::exec(source, f)
     }
 }
+
+pub type ServerContext<'a> = Context<ServerSource<'a>>;

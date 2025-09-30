@@ -613,9 +613,7 @@ impl FPaste for NUnit {}
 
 impl FPlaceholder for NUnit {
     fn placeholder(owner: u64) -> Self {
-        NUnit::new_full(
-            owner,
-            "New Unit".to_string(),
+        NUnit::new(owner, "New Unit".to_string()).with_components(
             NUnitDescription::placeholder(owner),
             NUnitStats::placeholder(owner),
             NUnitState::placeholder(owner),
@@ -704,12 +702,11 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder(owner: u64) -> Self {
-        NHouse::new_full(
-            owner,
-            "New House".to_string(),
+        NHouse::new(owner, "New House".to_string()).with_components(
+            NHouseColor::placeholder(owner),
             NAbilityMagic::placeholder(owner),
             NStatusMagic::placeholder(owner),
-            NHouseColor::placeholder(owner),
+            default(),
         )
     }
 }
@@ -773,12 +770,8 @@ impl FPaste for NAbilityMagic {}
 
 impl FPlaceholder for NAbilityMagic {
     fn placeholder(owner: u64) -> Self {
-        NAbilityMagic::new_full(
-            owner,
-            "New Ability".to_string(),
-            NAbilityDescription::placeholder(owner),
-            default(),
-        )
+        NAbilityMagic::new(owner, "New Ability".to_string())
+            .with_components(NAbilityDescription::placeholder(owner))
     }
 }
 
@@ -847,12 +840,9 @@ impl FPaste for NStatusMagic {}
 
 impl FPlaceholder for NStatusMagic {
     fn placeholder(owner: u64) -> Self {
-        NStatusMagic::new_full(
-            owner,
-            "New Status".to_string(),
+        NStatusMagic::new(owner, "New Status".to_string()).with_components(
             NStatusDescription::placeholder(owner),
             NStatusRepresentation::placeholder(owner),
-            vec![],
         )
     }
 }
@@ -1043,9 +1033,7 @@ impl FPaste for NPlayer {}
 
 impl FPlaceholder for NPlayer {
     fn placeholder(owner: u64) -> Self {
-        NPlayer::new_full(
-            owner,
-            "New Player".to_string(),
+        NPlayer::new(owner, "New Player".to_string()).with_components(
             NPlayerData::placeholder(owner),
             NPlayerIdentity::placeholder(owner),
             NMatch::placeholder(owner),
@@ -1198,7 +1186,7 @@ impl FTitle for NHouseColor {
 
 impl FPlaceholder for NHouseColor {
     fn placeholder(owner: u64) -> Self {
-        NHouseColor::new_full(owner, HexColor("#FF0000".to_string()))
+        NHouseColor::new(owner, HexColor("#FF0000".to_string()))
     }
 }
 
@@ -1216,11 +1204,8 @@ impl FTitle for NAbilityDescription {
 
 impl FPlaceholder for NAbilityDescription {
     fn placeholder(owner: u64) -> Self {
-        NAbilityDescription::new_full(
-            owner,
-            "Default description".to_string(),
-            NAbilityEffect::placeholder(owner),
-        )
+        NAbilityDescription::new(owner, "Default description".to_string())
+            .with_components(NAbilityEffect::placeholder(owner))
     }
 }
 
@@ -1276,11 +1261,8 @@ impl FTitle for NStatusDescription {
 
 impl FPlaceholder for NStatusDescription {
     fn placeholder(owner: u64) -> Self {
-        NStatusDescription::new_full(
-            owner,
-            "Default status description".to_string(),
-            NStatusBehavior::placeholder(owner),
-        )
+        NStatusDescription::new(owner, "Default status description".to_string())
+            .with_components(NStatusBehavior::placeholder(owner))
     }
 }
 
@@ -1362,7 +1344,7 @@ impl FTag for NStatusRepresentation {
 
 impl FPlaceholder for NStatusRepresentation {
     fn placeholder(owner: u64) -> Self {
-        NStatusRepresentation::new_full(
+        NStatusRepresentation::new(
             owner,
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
@@ -1411,7 +1393,7 @@ impl FPaste for NTeam {}
 
 impl FPlaceholder for NTeam {
     fn placeholder(owner: u64) -> Self {
-        NTeam::new_full(owner, vec![], vec![])
+        NTeam::new(owner)
     }
 }
 
@@ -1589,16 +1571,8 @@ impl FEdit for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder(owner: u64) -> Self {
-        NMatch::new_full(
-            owner,
-            0,
-            1,
-            3,
-            false,
-            vec![],
-            NTeam::placeholder(owner),
-            vec![],
-        )
+        NMatch::new(owner, 0, 1, 3, false, vec![])
+            .with_components(NTeam::placeholder(owner), default())
     }
 }
 
@@ -1643,7 +1617,11 @@ impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
     fn placeholder(owner: u64) -> Self {
-        NFusion::new_full(owner, 1, 0, 0, 1, 1, 1, vec![])
+        NFusion::new(owner, 1, 0, 0, 1, 1, 1).with_components(
+            (0..5)
+                .map(|_| NFusionSlot::placeholder(owner))
+                .collect_vec(),
+        )
     }
 }
 
@@ -2155,13 +2133,13 @@ impl FEdit for NPlayerData {
 
 impl FPlaceholder for NPlayerData {
     fn placeholder(owner: u64) -> Self {
-        NPlayerData::new_full(owner, None, true, 0)
+        NPlayerData::new(owner, None, true, 0)
     }
 }
 
 impl FPlaceholder for NAbilityEffect {
     fn placeholder(owner: u64) -> Self {
-        NAbilityEffect::new_full(owner, vec![Action::noop])
+        NAbilityEffect::new(owner, vec![Action::noop])
     }
 }
 
@@ -2184,13 +2162,13 @@ impl FEdit for NPlayerIdentity {
 
 impl FPlaceholder for NPlayerIdentity {
     fn placeholder(owner: u64) -> Self {
-        NPlayerIdentity::new_full(owner, None)
+        NPlayerIdentity::new(owner, None)
     }
 }
 
 impl FPlaceholder for NStatusBehavior {
     fn placeholder(owner: u64) -> Self {
-        NStatusBehavior::new_full(
+        NStatusBehavior::new(
             owner,
             vec![Reaction {
                 trigger: Trigger::BattleStart,
@@ -2318,7 +2296,7 @@ impl FEdit for NBattle {
 
 impl FPlaceholder for NBattle {
     fn placeholder(owner: u64) -> Self {
-        NBattle::new_full(owner, 0, 0, 0, 0, None)
+        NBattle::new(owner, 0, 0, 0, 0, None)
     }
 }
 
@@ -2380,7 +2358,7 @@ impl FEdit for NFusion {
 
 impl FPlaceholder for NFusionSlot {
     fn placeholder(owner: u64) -> Self {
-        NFusionSlot::new_full(owner, 0, default(), NUnit::placeholder(owner))
+        NFusionSlot::new(owner, 0, default()).with_components(NUnit::placeholder(owner))
     }
 }
 
@@ -2428,7 +2406,7 @@ impl<T: FEdit> FEdit for Vec<T> {
 
 impl FPlaceholder for NUnitBehavior {
     fn placeholder(owner: u64) -> Self {
-        NUnitBehavior::new_full(
+        NUnitBehavior::new(
             owner,
             Reaction {
                 trigger: Trigger::BattleStart,
@@ -2441,23 +2419,25 @@ impl FPlaceholder for NUnitBehavior {
 
 impl FPlaceholder for NUnitState {
     fn placeholder(owner: u64) -> Self {
-        NUnitState::new_full(owner, 1)
+        NUnitState::new(owner, 1)
     }
 }
 
 impl FPlaceholder for NUnitStats {
     fn placeholder(owner: u64) -> Self {
-        NUnitStats::new_full(owner, 1, 1)
+        NUnitStats::new(owner, 1, 1)
     }
 }
 
 impl FPlaceholder for NUnitDescription {
     fn placeholder(owner: u64) -> Self {
-        NUnitDescription::new_full(
+        NUnitDescription::new(
             owner,
             "Default Description".to_string(),
             MagicType::Ability,
             Trigger::BattleStart,
+        )
+        .with_components(
             NUnitRepresentation::placeholder(owner),
             NUnitBehavior::placeholder(owner),
         )
@@ -2550,7 +2530,7 @@ impl FEdit for Colorix {
 
 impl FPlaceholder for NUnitRepresentation {
     fn placeholder(owner: u64) -> Self {
-        NUnitRepresentation::new_full(
+        NUnitRepresentation::new(
             owner,
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
