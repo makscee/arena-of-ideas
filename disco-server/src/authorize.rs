@@ -7,7 +7,7 @@ use reqwest::StatusCode;
 use serde::Deserialize;
 
 use crate::{
-    SharedCache, db,
+    SharedCache,
     secret::{APP_SECRET, APPLICATION_ID},
 };
 
