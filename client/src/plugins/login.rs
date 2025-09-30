@@ -1,3 +1,7 @@
+use bevy::ecs::event::{EventReader, Events};
+use bevy_http_client::{
+    HttpClient, HttpClientPlugin, HttpRequest, HttpResponse, HttpResponseError,
+};
 use spacetimedb_sdk::Table;
 
 use crate::login;
@@ -16,7 +20,9 @@ pub struct LoginPlugin;
 
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Login), Self::login)
+        app.add_plugins(HttpClientPlugin)
+            .add_systems(OnEnter(GameState::Login), Self::login)
+            .add_systems(Update, (handle_response, handle_error))
             .init_resource::<LoginData>();
     }
 }
@@ -85,17 +91,41 @@ impl LoginPlugin {
         });
     }
     pub fn pane_register(ui: &mut Ui, world: &mut World) {
+        let client_identity = ConnectOption::get(world).identity;
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
             "New Player"
                 .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
                 .label(ui);
-            let mut ld = world.resource_mut::<LoginData>();
-            Input::new("name").ui_string(&mut ld.name_field, ui);
-            Input::new("password")
-                .password()
-                .ui_string(&mut ld.pass_field, ui);
+            {
+                let mut ld = world.resource_mut::<LoginData>();
+                Input::new("name").ui_string(&mut ld.name_field, ui);
+                Input::new("password")
+                    .password()
+                    .ui_string(&mut ld.pass_field, ui);
+            }
+            if Button::new("Link to Discord")
+                .enabled(is_connected())
+                .ui(ui)
+                .clicked()
+            {
+                let url = format!(
+                    "http://localhost:42069/csrf/{}",
+                    client_identity.to_string()
+                );
+                match HttpClient::new().get(url).try_build() {
+                    Ok(request) => {
+                        if let Some(mut events) = world.get_resource_mut::<Events<HttpRequest>>() {
+                            events.send(request);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to build request: {}", e);
+                    }
+                }
+            }
+            let ld = world.resource_mut::<LoginData>();
             if Button::new("Submit").ui(ui).clicked() {
                 cn().reducers.on_register(|e, _, _| {
                     if !e.check_identity() {
@@ -169,5 +199,23 @@ impl LoginPlugin {
                 }
             }
         });
+    }
+}
+
+fn handle_response(mut ev_resp: EventReader<HttpResponse>) {
+    for response in ev_resp.read() {
+        info!("response {}", response.text().unwrap());
+        let authorize_url = format!(
+            "https://discord.com/oauth2/authorize?client_id=1415091415574118560&state={}&response_type=code&redirect_uri=http%3A%2F%2Flocalhost%3A42069%2F&scope=identify+guilds.members.read",
+            response.text().unwrap().to_string()
+        );
+        println!("url: {:#?}", authorize_url);
+        let _jh = open::that_in_background(authorize_url);
+    }
+}
+
+fn handle_error(mut ev_error: EventReader<HttpResponseError>) {
+    for error in ev_error.read() {
+        println!("Error retrieving IP: {}", error.err);
     }
 }

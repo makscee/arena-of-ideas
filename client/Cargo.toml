@@ -59,6 +59,8 @@ home = "0.5.5"
 egui_commonmark = "0.20.0"
 bevy_tasks = "0.16.1"
 regex = "1.10.5"
+bevy_http_client = "0.8.3"
+open = "5.3.2"
 
 [dependencies.winit]
 version = "0.30.9"
