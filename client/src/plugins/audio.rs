@@ -46,7 +46,7 @@ struct AudioResource {
     bg_cur: usize,
 }
 
-#[derive(Component)]
+#[derive(BevyComponent)]
 struct BackgroundAudioMarker;
 
 #[derive(

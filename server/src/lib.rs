@@ -38,7 +38,7 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalData::init(ctx);
     GlobalSettings::default().replace(ctx);
     NArena {
-        id: Some(ID_ARENA),
+        id: ID_ARENA,
         ..Default::default()
     }
     .insert(ctx);

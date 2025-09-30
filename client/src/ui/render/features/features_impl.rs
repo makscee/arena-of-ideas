@@ -2073,7 +2073,7 @@ impl FEdit for NArena {
 
 impl FPlaceholder for NArena {
     fn placeholder(owner: u64) -> Self {
-        NArena::new_full(owner, vec![], vec![])
+        NArena::new(owner)
     }
 }
 
@@ -2089,7 +2089,7 @@ impl FEdit for NFloorPool {
 
 impl FPlaceholder for NFloorPool {
     fn placeholder(owner: u64) -> Self {
-        NFloorPool::new_full(owner, 1, vec![])
+        NFloorPool::new(owner, 1)
     }
 }
 
@@ -2105,7 +2105,7 @@ impl FEdit for NFloorBoss {
 
 impl FPlaceholder for NFloorBoss {
     fn placeholder(owner: u64) -> Self {
-        NFloorBoss::new_full(owner, 1, NTeam::placeholder(owner))
+        NFloorBoss::new(owner, 1).with_components(NTeam::placeholder(owner))
     }
 }
 

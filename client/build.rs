@@ -32,7 +32,7 @@ fn main() {
 
 fn generate_client_nodes(
     nodes: &[NodeInfo],
-    _node_map: &HashMap<String, NodeInfo>,
+    node_map: &HashMap<String, NodeInfo>,
 ) -> proc_macro2::TokenStream {
     let node_structs = nodes.iter().map(|node| {
         let struct_name = &node.name;
@@ -40,52 +40,69 @@ fn generate_client_nodes(
         // Generate fields
         let fields = node.fields.iter().map(|field| {
             let field_name = &field.name;
-            let field_type = generate_field_type(field, "schema");
+            let field_type = generate_field_type(field);
 
             quote! {
                 pub #field_name: #field_type
             }
         });
 
-        // Generate accessor methods
-        let accessors = generate_accessors(node);
+        // Generate new() method with parameters
+        let new_method = generate_new(node);
+
+        // Generate with_components() method
+        let with_components_method = generate_with_components(node);
+
+        // Generate default implementation
+        let default_impl = generate_default_impl(node);
+
+        // Generate ClientNode implementation
+        let client_node_impl = generate_client_node_impl(node, node_map);
 
         // All nodes are Components in client
         let derives = quote! {
-            #[derive(Debug, Clone, Component, Serialize, Deserialize)]
+            #[derive(Debug, Clone, BevyComponent, Serialize, Deserialize)]
         };
 
         quote! {
             #derives
             pub struct #struct_name {
-                pub id: Option<u64>,
+                pub id: u64,
+                pub owner: u64,
                 #(#fields,)*
             }
 
             impl #struct_name {
-                pub fn new() -> Self {
-                    Self {
-                        id: None,
-                        #(#accessors)*
-                    }
-                }
+                #new_method
+
+                #with_components_method
 
                 pub fn with_id(mut self, id: u64) -> Self {
-                    self.id = Some(id);
+                    self.id = id;
                     self
                 }
             }
 
-            impl Default for #struct_name {
-                fn default() -> Self {
-                    Self::new()
-                }
-            }
+            #client_node_impl
+
+            #default_impl
         }
     });
 
     // Generate conversion traits
     let conversions = generate_conversions(nodes);
+
+    // Generate ToCstr and FDisplay implementations
+    let tocstr_impls = nodes.iter().map(|node| {
+        let struct_name = &node.name;
+        quote! {
+            impl ToCstr for #struct_name {
+                fn cstr(&self) -> Cstr {
+                    format!("{}({})", stringify!(#struct_name), self.id)
+                }
+            }
+        }
+    });
 
     // Generate NamedNode trait and implementations
     let named_node_trait = quote! {
@@ -108,16 +125,230 @@ fn generate_client_nodes(
     });
 
     quote! {
-        use serde::{Deserialize, Serialize};
-        use schema::{NodeKind, Node as SchemaNode, NamedNodeKind};
-        use schema::{HexColor, Action, Reaction, Material, ShopOffer, UnitActionRange, MagicType, Trigger};
 
         #(#node_structs)*
 
         #conversions
 
+        #(#tocstr_impls)*
+
         #named_node_trait
 
         #(#named_node_impls)*
+    }
+}
+
+fn generate_client_node_impl(
+    node: &NodeInfo,
+    _node_map: &HashMap<String, NodeInfo>,
+) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+
+    // Generate spawn implementation that handles entity creation and linking
+    let spawn_components = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Component => {
+                let field_name = &field.name;
+                Some(if field.is_optional {
+                    if field.is_vec {
+                        quote! {
+                            for item in &self.#field_name {
+                                if let Some(component) = item.as_ref() {
+                                    if let Some(loaded) = component.get() {
+                                        world.entity_mut(entity).insert(loaded.clone());
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(component) = &self.#field_name {
+                                if let Some(loaded) = component.get() {
+                                    world.entity_mut(entity).insert(loaded.clone());
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if field.is_vec {
+                        quote! {
+                            for component in &self.#field_name {
+                                if let Some(loaded) = component.get() {
+                                    world.entity_mut(entity).insert(loaded.clone());
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(loaded) = self.#field_name.get() {
+                                world.entity_mut(entity).insert(loaded.clone());
+                            }
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    let spawn_owned = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Owned => {
+                let field_name = &field.name;
+                Some(if field.is_optional {
+                    if field.is_vec {
+                        quote! {
+                            for item in &self.#field_name {
+                                if let Some(owned) = item.as_ref() {
+                                    if let Some(loaded) = owned.get() {
+                                        let child_entity = world.spawn_empty().id();
+                                        loaded.clone().spawn(world);
+                                        world.entity_mut(child_entity).set_parent(entity);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(owned) = &self.#field_name {
+                                if let Some(loaded) = owned.get() {
+                                    let child_entity = world.spawn_empty().id();
+                                    loaded.clone().spawn(world);
+                                    world.entity_mut(child_entity).set_parent(entity);
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if field.is_vec {
+                        quote! {
+                            for owned in &self.#field_name {
+                                if let Some(loaded) = owned.get() {
+                                    let child_entity = world.spawn_empty().id();
+                                    loaded.clone().spawn(world);
+                                    world.entity_mut(child_entity).set_parent(entity);
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(loaded) = self.#field_name.get() {
+                                let child_entity = world.spawn_empty().id();
+                                loaded.clone().spawn(world);
+                                world.entity_mut(child_entity).set_parent(entity);
+                            }
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    let spawn_refs = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Ref => {
+                let field_name = &field.name;
+                Some(if field.is_optional {
+                    if field.is_vec {
+                        quote! {
+                            for item in &self.#field_name {
+                                if let Some(ref_link) = item.as_ref() {
+                                    if let Some(id) = ref_link.id() {
+                                        // Check if entity with this id already exists
+                                        let mut found_entity = None;
+                                        if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
+                                            found_entity = node_entity_map.get_entity(id);
+                                        }
+                                        if found_entity.is_none() {
+                                            if let Some(loaded) = ref_link.get() {
+                                                loaded.clone().spawn(world);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(ref_link) = &self.#field_name {
+                                if let Some(id) = ref_link.id() {
+                                    // Check if entity with this id already exists
+                                    let mut found_entity = None;
+                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
+                                        found_entity = node_entity_map.get_entity(id);
+                                    }
+                                    if found_entity.is_none() {
+                                        if let Some(loaded) = ref_link.get() {
+                                            loaded.clone().spawn(world);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    if field.is_vec {
+                        quote! {
+                            for ref_link in &self.#field_name {
+                                if let Some(id) = ref_link.id() {
+                                    // Check if entity with this id already exists
+                                    let mut found_entity = None;
+                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
+                                        found_entity = node_entity_map.get_entity(id);
+                                    }
+                                    if found_entity.is_none() {
+                                        if let Some(loaded) = ref_link.get() {
+                                            loaded.clone().spawn(world);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        quote! {
+                            if let Some(id) = self.#field_name.id() {
+                                // Check if entity with this id already exists
+                                let mut found_entity = None;
+                                if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
+                                    found_entity = node_entity_map.get_entity(id);
+                                }
+                                if found_entity.is_none() {
+                                    if let Some(loaded) = self.#field_name.get() {
+                                        loaded.clone().spawn(world);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    quote! {
+        impl ClientNode for #struct_name {
+            fn spawn(self, world: &mut World) {
+                let entity = world.spawn(self.clone()).id();
+
+                // Register id-entity mapping in NodeEntityMap
+                if let Some(mut node_entity_map) = world.get_resource_mut::<NodeEntityMap>() {
+                    node_entity_map.insert(self.id, entity);
+                }
+
+                // Add component links to same entity
+                #(#spawn_components)*
+
+                // Create child entities for owned links
+                #(#spawn_owned)*
+
+                // Handle ref links with id-entity checking
+                #(#spawn_refs)*
+            }
+        }
     }
 }

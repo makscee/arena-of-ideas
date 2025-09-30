@@ -371,7 +371,7 @@ pub fn format_code(token_stream: &TokenStream) -> String {
     }
 }
 
-pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStream {
+pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
     match field.link_type {
         LinkType::Component => {
             let target = if field.target_type.is_empty() {
@@ -382,21 +382,9 @@ pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStrea
             };
 
             if field.is_optional {
-                let component_path = if schema_prefix.is_empty() {
-                    quote! { Component<Option<#target>> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Component<Option<#target>> }
-                };
-                component_path
+                quote! { Component<Option<#target>> }
             } else {
-                let component_path = if schema_prefix.is_empty() {
-                    quote! { Component<#target> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Component<#target> }
-                };
-                component_path
+                quote! { Component<#target> }
             }
         }
         LinkType::Owned => {
@@ -408,29 +396,11 @@ pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStrea
             };
 
             if field.is_vec {
-                let owned_path = if schema_prefix.is_empty() {
-                    quote! { Owned<Vec<#target>> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Owned<Vec<#target>> }
-                };
-                owned_path
+                quote! { Owned<Vec<#target>> }
             } else if field.is_optional {
-                let owned_path = if schema_prefix.is_empty() {
-                    quote! { Owned<Option<#target>> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Owned<Option<#target>> }
-                };
-                owned_path
+                quote! { Owned<Option<#target>> }
             } else {
-                let owned_path = if schema_prefix.is_empty() {
-                    quote! { Owned<#target> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Owned<#target> }
-                };
-                owned_path
+                quote! { Owned<#target> }
             }
         }
         LinkType::Ref => {
@@ -442,21 +412,9 @@ pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStrea
             };
 
             if field.is_optional {
-                let ref_path = if schema_prefix.is_empty() {
-                    quote! { Ref<Option<#target>> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Ref<Option<#target>> }
-                };
-                ref_path
+                quote! { Ref<Option<#target>> }
             } else {
-                let ref_path = if schema_prefix.is_empty() {
-                    quote! { Ref<#target> }
-                } else {
-                    let prefix = format_ident!("{}", schema_prefix);
-                    quote! { #prefix::Ref<#target> }
-                };
-                ref_path
+                quote! { Ref<#target> }
             }
         }
         LinkType::None => {
@@ -472,7 +430,7 @@ pub fn generate_field_type(field: &FieldInfo, schema_prefix: &str) -> TokenStrea
     }
 }
 
-pub fn generate_accessors(node: &NodeInfo) -> Vec<TokenStream> {
+pub fn generate_default_accessors(node: &NodeInfo) -> Vec<TokenStream> {
     node.fields
         .iter()
         .map(|field| {
@@ -504,28 +462,136 @@ pub fn generate_accessors(node: &NodeInfo) -> Vec<TokenStream> {
         .collect()
 }
 
+pub fn generate_new(node: &NodeInfo) -> TokenStream {
+    let data_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::None)
+        .collect();
+
+    let params = std::iter::once(quote! { owner_id: u64 }).chain(data_fields.iter().map(|field| {
+        let field_name = &field.name;
+        let field_type = generate_field_type(field);
+        quote! { #field_name: #field_type }
+    }));
+
+    let field_assignments = data_fields.iter().map(|field| {
+        let field_name = &field.name;
+        quote! { #field_name, }
+    });
+
+    let component_defaults = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type != LinkType::None)
+        .map(|field| {
+            let field_name = &field.name;
+            quote! { #field_name: Default::default(), }
+        });
+
+    quote! {
+        pub fn new(#(#params),*) -> Self {
+            Self {
+                id: 0,
+                owner: owner_id,
+                #(#field_assignments)*
+                #(#component_defaults)*
+            }
+        }
+    }
+}
+
+pub fn generate_with_components(node: &NodeInfo) -> TokenStream {
+    let component_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| {
+            matches!(
+                field.link_type,
+                LinkType::Component | LinkType::Owned | LinkType::Ref
+            )
+        })
+        .collect();
+
+    if component_fields.is_empty() {
+        return quote! {};
+    }
+
+    let params = component_fields.iter().map(|field| {
+        let field_name = &field.name;
+        let field_type = generate_field_type(field);
+        quote! { #field_name: #field_type }
+    });
+
+    let field_assignments = component_fields.iter().map(|field| {
+        let field_name = &field.name;
+        quote! { self.#field_name = #field_name; }
+    });
+
+    quote! {
+        pub fn with_components(mut self, #(#params),*) -> Self {
+            #(#field_assignments)*
+            self
+        }
+    }
+}
+
+pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
+    let struct_name = &node.name;
+    let data_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::None)
+        .collect();
+
+    let default_params = std::iter::once(quote! { 0 }).chain(data_fields.iter().map(|field| {
+        if field.raw_type.contains("Option") {
+            quote! { None }
+        } else if field.raw_type.contains("String") {
+            quote! { String::new() }
+        } else if field.raw_type.contains("i32") {
+            quote! { 0 }
+        } else if field.raw_type.contains("u64") {
+            quote! { 0 }
+        } else if field.raw_type.contains("bool") {
+            quote! { false }
+        } else if field.raw_type.contains("Vec") {
+            quote! { Vec::new() }
+        } else {
+            quote! { Default::default() }
+        }
+    }));
+
+    quote! {
+        impl Default for #struct_name {
+            fn default() -> Self {
+                Self::new(#(#default_params),*)
+            }
+        }
+    }
+}
+
 pub fn generate_conversions(nodes: &[NodeInfo]) -> TokenStream {
     let node_trait_impls = nodes.iter().map(|node| {
         let struct_name = &node.name;
         let node_kind_variant = &node.name;
 
         quote! {
-            impl SchemaNode for #struct_name {
+            impl Node for #struct_name {
                 fn id(&self) -> u64 {
-                    self.id.unwrap_or(0)
+                    self.id
                 }
 
                 fn set_id(&mut self, id: u64) {
-                    self.id = Some(id);
+                    self.id = id;
                 }
 
                 fn owner(&self) -> u64 {
-                    // Client nodes don't typically track owner directly
-                    0
+                    self.owner
                 }
 
-                fn set_owner(&mut self, _owner: u64) {
-                    // Client nodes don't typically track owner directly
+                fn set_owner(&mut self, owner: u64) {
+                    self.owner = owner;
                 }
 
                 fn kind(&self) -> NodeKind {
@@ -533,7 +599,7 @@ pub fn generate_conversions(nodes: &[NodeInfo]) -> TokenStream {
                 }
 
                 fn reassign_ids(&mut self, next_id: &mut u64) {
-                    if self.id.is_none() {
+                    if self.id == 0 {
                         self.set_id(*next_id);
                         *next_id += 1;
                     }

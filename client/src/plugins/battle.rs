@@ -24,7 +24,7 @@ pub struct BattleData {
     pub playback_speed: f32,
     pub playing: bool,
     pub on_done: Option<fn(u64, bool, u64)>,
-    pub slot_actions: Vec<(String, fn(i32, Entity, &mut Context))>,
+    pub slot_actions: Vec<(String, fn(i32, Entity, &mut ClientContext))>,
 }
 
 #[derive(Resource, Default)]

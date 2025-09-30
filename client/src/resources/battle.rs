@@ -22,7 +22,7 @@ pub struct BattleLog {
     pub actions: Vec<BattleAction>,
 }
 
-#[derive(Component)]
+#[derive(BevyComponent)]
 pub struct Corpse;
 #[derive(Clone, Debug)]
 #[allow(non_camel_case_types)]
@@ -409,7 +409,7 @@ impl BattleSimulation {
     }
     #[must_use]
     fn send_event(
-        context: &mut Context,
+        context: &mut ClientContext,
         event: Event,
     ) -> Result<VecDeque<BattleAction>, ExpressionError> {
         info!("{} {event}", "event:".dimmed().blue());
@@ -445,7 +445,7 @@ impl BattleSimulation {
         Ok(battle_actions)
     }
     fn apply_status(
-        context: &mut Context,
+        context: &mut ClientContext,
         target: Entity,
         status: NStatusMagic,
         charges: i32,
@@ -509,7 +509,10 @@ impl BattleSimulation {
         actions
     }
     #[must_use]
-    fn die(context: &mut Context, entity: Entity) -> Result<Vec<BattleAction>, ExpressionError> {
+    fn die(
+        context: &mut ClientContext,
+        entity: Entity,
+    ) -> Result<Vec<BattleAction>, ExpressionError> {
         context.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
         let bs = context.battle_simulation_mut()?;

@@ -93,7 +93,10 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_named_list<T: Node + NamedNode + FTitle + Component>(ui: &mut Ui, world: &mut World) {
+    fn render_named_list<T: Node + NamedNode + FTitle + bevy::ecs::component::Component>(
+        ui: &mut Ui,
+        world: &mut World,
+    ) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
 
         let state = world.remove_resource::<ExplorerState>().unwrap();
@@ -157,7 +160,7 @@ impl ExplorerPlugin {
         world.insert_resource(state);
     }
 
-    fn render_named_card<T: Node + NamedNode + FCard + Component>(ui: &mut Ui, world: &mut World) {
+    fn render_named_card<T: Node + NamedNode + FCard>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
         let state = world.resource::<ExplorerState>();
 
@@ -192,7 +195,7 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Component + Serialize>(
+    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Serialize>(
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -320,10 +323,7 @@ impl ExplorerPlugin {
         });
     }
 
-    fn open_content_selector<T: Node + Component + FTitle>(
-        world: &mut World,
-        state: &ExplorerState,
-    ) {
+    fn open_content_selector<T: Node + FTitle>(world: &mut World, state: &ExplorerState) {
         let kind = T::kind_s();
 
         let parent_kind = get_named_parent(kind);
@@ -389,7 +389,7 @@ impl ExplorerPlugin {
             .push(world);
     }
 
-    fn open_content_creator<T: Node + Component + Default + FEdit + Clone + Serialize + 'static>(
+    fn open_content_creator<T: Node + Default + FEdit + Clone + Serialize + 'static>(
         world: &mut World,
     ) {
         let kind = T::kind_s();
@@ -422,7 +422,7 @@ impl ExplorerPlugin {
             .push(world);
     }
 
-    fn publish_new_node<T: Node + Component + Clone + Serialize>(node: T) {
+    fn publish_new_node<T: ClientNode + Clone + Serialize>(node: T) {
         let packed_string = ron::to_string(&node.pack()).unwrap_or_default();
         cn().reducers
             .content_publish_node(packed_string)
@@ -487,19 +487,7 @@ impl ExplorerState {
                 .filter(|n| n.kind == kind_str && (n.owner == ID_CORE || n.owner == 0))
                 .map(|n| {
                     let name = if !n.data.is_empty() {
-                        match ron::from_str::<serde_json::Value>(&n.data) {
-                            Ok(json) => json
-                                .get(match kind {
-                                    NamedNodeKind::NHouse => "house_name",
-                                    NamedNodeKind::NUnit => "unit_name",
-                                    NamedNodeKind::NAbilityMagic => "ability_name",
-                                    NamedNodeKind::NStatusMagic => "status_name",
-                                })
-                                .and_then(|v| v.as_str())
-                                .unwrap_or(&format!("{}#{}", kind, n.id))
-                                .to_string(),
-                            Err(_) => format!("{}#{}", kind, n.id),
-                        }
+                        todo!()
                     } else {
                         format!("{}#{}", kind, n.id)
                     };

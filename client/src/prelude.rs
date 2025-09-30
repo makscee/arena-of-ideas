@@ -15,7 +15,7 @@ pub use bevy::{
     color::{Color, LinearRgba, Mix},
     diagnostic::DiagnosticsStore,
     ecs::{
-        component::Component,
+        component::Component as BevyComponent,
         entity::Entity,
         query::{Or, With},
         resource::Resource,

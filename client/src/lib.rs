@@ -6,9 +6,6 @@ mod stdb;
 mod ui;
 mod utils;
 
-// Include generated client nodes
-include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
-
 use bevy::{
     app::PreStartup, asset::AssetPlugin, diagnostic::FrameTimeDiagnosticsPlugin,
     state::app::AppExtStates,

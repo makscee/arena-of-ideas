@@ -47,7 +47,7 @@ impl BattleEditorPlugin {
     // Generic helper for managing node parts
     fn manage_part<T: FPlaceholder + FEdit + Node + Clone + 'static>(
         ui: &mut Ui,
-        context: &mut Context,
+        context: &mut ClientContext,
         id: u64,
         owner: u64,
         is_child_part: bool, // true if T is a child of part_owner_entity
@@ -102,7 +102,7 @@ impl BattleEditorPlugin {
     // Generic helper for managing collections of child nodes
     fn manage_parts<T: FPlaceholder + FTitle + FCopy + FPaste + Node + Clone + 'static>(
         ui: &mut Ui,
-        context: &mut Context,
+        context: &mut ClientContext,
         parent_entity: Entity,
         owner: u64,
         collection_name: &str,
@@ -553,7 +553,7 @@ impl BattleEditorPlugin {
     fn handle_move_unit(
         unit_id: u64,
         target_id: u64,
-        context: &mut Context,
+        context: &mut ClientContext,
     ) -> Result<(), ExpressionError> {
         if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
             context.unlink_parent_child(unit_id, slot.id)?;
@@ -562,7 +562,7 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_bench_unit(unit_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+    fn handle_bench_unit(unit_id: u64, context: &mut ClientContext) -> Result<(), ExpressionError> {
         if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
             context.unlink_parent_child(unit_id, slot.id)?;
         } else {
@@ -576,7 +576,7 @@ impl BattleEditorPlugin {
     fn handle_add_default_unit_to_slot(
         team_entity: Entity,
         slot_id: u64,
-        context: &mut Context,
+        context: &mut ClientContext,
     ) -> Result<(), ExpressionError> {
         let slot_entity = context.entity(slot_id)?;
         let team = context.component::<NTeam>(team_entity)?;
@@ -611,7 +611,7 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_add_slot(fusion_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+    fn handle_add_slot(fusion_id: u64, context: &mut ClientContext) -> Result<(), ExpressionError> {
         let fusion_entity = context.entity(fusion_id)?;
         let fusion = context.component::<NFusion>(fusion_entity)?;
 
@@ -628,7 +628,10 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_delete_unit(unit_id: u64, context: &mut Context) -> Result<(), ExpressionError> {
+    fn handle_delete_unit(
+        unit_id: u64,
+        context: &mut ClientContext,
+    ) -> Result<(), ExpressionError> {
         let unit_entity = context.entity(unit_id)?;
         context.despawn(unit_entity).log();
         Ok(())
@@ -649,7 +652,7 @@ impl BattleEditorPlugin {
     fn handle_change_trigger(
         fusion_id: u64,
         trigger: u64,
-        context: &mut Context,
+        context: &mut ClientContext,
     ) -> Result<(), ExpressionError> {
         let mut fusion = context.component_mut::<NFusion>(context.entity(fusion_id)?)?;
         fusion.trigger_unit = trigger;

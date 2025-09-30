@@ -1,15 +1,15 @@
 use super::*;
 
 pub trait ActionsImpl {
-    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError>;
+    fn process(&self, context: &mut ClientContext) -> Result<Vec<BattleAction>, ExpressionError>;
 }
 
 pub trait ActionImpl {
-    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError>;
+    fn process(&self, context: &mut ClientContext) -> Result<Vec<BattleAction>, ExpressionError>;
 }
 
 impl ActionsImpl for Vec<Action> {
-    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
+    fn process(&self, context: &mut ClientContext) -> Result<Vec<BattleAction>, ExpressionError> {
         let mut actions: Vec<BattleAction> = default();
         for a in self {
             actions.extend(a.process(context)?);
@@ -19,7 +19,7 @@ impl ActionsImpl for Vec<Action> {
 }
 
 impl ActionImpl for Action {
-    fn process(&self, context: &mut Context) -> Result<Vec<BattleAction>, ExpressionError> {
+    fn process(&self, context: &mut ClientContext) -> Result<Vec<BattleAction>, ExpressionError> {
         info!(
             "{} {}",
             "action:".dimmed().purple(),

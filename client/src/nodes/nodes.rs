@@ -1,5 +1,3 @@
-use include_dir::{Dir, DirEntry};
-
 use super::*;
 use spacetimedb_sats::serde::SerdeWrapper;
 use std::fmt::Debug;
@@ -7,47 +5,12 @@ use std::fmt::Debug;
 include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 
 pub trait ClientNode:
-    Default
-    + Component
-    + Sized
-    + FDisplay
-    + Debug
-    + std::hash::Hash
-    + StringData
-    + Clone
-    + ToCstr
-    + schema::Node
+    Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
-    fn entity(&self) -> Entity;
-    fn get_entity(&self) -> Option<Entity>;
-    fn set_entity(&mut self, entity: Entity);
-    fn from_dir(path: String, dir: &Dir) -> Option<Self>;
-    fn to_dir<'a>(&self, path: String) -> &'a [DirEntry<'a>];
-    fn pack_fill(&self, pn: &mut PackedNodes);
-    fn pack(&self) -> PackedNodes;
-    fn unpack_id(id: u64, pn: &PackedNodes) -> Option<Self>;
-    fn load_recursive(world: &World, id: u64) -> Option<Self>;
-    fn with_parts(&mut self, context: &ClientContext) -> &mut Self;
-    fn pack_entity(
-        &mut self,
-        context: &ClientContext,
-        entity: Entity,
-    ) -> Result<Self, ExpressionError>;
-    fn unpack_entity(
-        self,
-        context: &mut ClientContext,
-        entity: Entity,
-    ) -> Result<(), ExpressionError>;
-    fn egui_id(&self) -> Id {
-        Id::new(self.id())
-    }
+    fn spawn(self, world: &mut World);
 }
 
 pub trait NodeExt: Sized + ClientNode + StringData {
-    fn view_id(&self) -> Id {
-        Id::new(self.get_entity()).with(self.id()).with(self.kind())
-    }
-    fn to_tnode(&self) -> TNode;
     fn get<'a>(
         entity: Entity,
         context: &'a ClientContext<'a>,

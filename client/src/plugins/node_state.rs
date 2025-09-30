@@ -8,7 +8,7 @@ impl Plugin for NodeStatePlugin {
     }
 }
 
-#[derive(Component, Debug, Default)]
+#[derive(BevyComponent, Debug, Default)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarState>,
     pub kind: NodeKind,
@@ -46,28 +46,7 @@ struct VarChange {
     tween: Tween,
 }
 
-impl NodeStatePlugin {
-    pub fn init_kind(
-        context: &mut Context,
-        kind: NodeKind,
-        entity: Entity,
-    ) -> Result<(), ExpressionError> {
-        let t = context.t()?;
-        let vars = kind.get_vars(context, entity);
-        let mut ns = context.component_mut::<NodeState>(entity)?;
-        for (var, value) in vars {
-            ns.insert(t, 0.0, var, value);
-        }
-        Ok(())
-    }
-    pub fn init_entity_vars(context: &mut Context, entity: Entity) -> Result<(), ExpressionError> {
-        Self::init_kind(
-            context,
-            context.component::<NodeState>(entity)?.kind,
-            entity,
-        )
-    }
-}
+impl NodeStatePlugin {}
 
 impl NodeState {
     pub fn new_with(var: VarName, value: VarValue) -> Self {

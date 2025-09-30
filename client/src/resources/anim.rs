@@ -33,7 +33,7 @@ impl Anim {
             actions: actions.into_iter().map(|a| Box::new(a)).collect(),
         }
     }
-    pub fn apply(&self, context: &mut Context) -> Result<(), ExpressionError> {
+    pub fn apply(&self, context: &mut ClientContext) -> Result<(), ExpressionError> {
         let a = &mut Animator::new();
         for action in &self.actions {
             action.apply(a, context)?;
@@ -46,11 +46,11 @@ impl Anim {
     }
 }
 
-#[derive(Component)]
+#[derive(BevyComponent)]
 pub struct Vfx;
 
 impl AnimAction {
-    fn apply(&self, a: &mut Animator, context: &mut Context) -> Result<(), ExpressionError> {
+    fn apply(&self, a: &mut Animator, context: &mut ClientContext) -> Result<(), ExpressionError> {
         match self {
             AnimAction::translate(x) => {
                 let pos = x.get_vec2(context)?;

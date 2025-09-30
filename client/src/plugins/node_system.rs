@@ -1,6 +1,4 @@
-use crate::prelude::*;
-use crate::resources::context::{NodeEntityMap, NodeLinks};
-use bevy::prelude::*;
+use super::*;
 
 /// Plugin to add node system resources
 pub struct NodeSystemPlugin;

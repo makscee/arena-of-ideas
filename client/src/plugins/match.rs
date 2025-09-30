@@ -333,31 +333,6 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn load_battle(context: &mut Context) -> Result<(), ExpressionError> {
-        let battles = player(context)?
-            .active_match_load(context)?
-            .battles_load(context);
-        if battles.is_empty() {
-            return Err("No battles in current match".into());
-        }
-        let battle = *battles.last().unwrap();
-        let left = NTeam::load_recursive(context.world()?, battle.team_left)
-            .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_left))?;
-        let right = NTeam::load_recursive(context.world()?, battle.team_right)
-            .to_custom_e_fn(|| format!("Failed to load Team#{}", battle.team_right))?;
-        let bid = battle.id;
-        let world = context.world_mut()?;
-        BattlePlugin::load_teams(bid, left, right, world);
-        BattlePlugin::on_done_callback(
-            |id, result, hash| {
-                cn().reducers()
-                    .match_submit_battle_result(id, result, hash)
-                    .notify_error_op();
-            },
-            world,
-        );
-        Ok(())
-    }
 
     pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
         Context::from_world_ref_r(world, |context| {

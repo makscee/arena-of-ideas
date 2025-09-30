@@ -174,7 +174,7 @@ impl TeamEditor {
 
     fn get_unlinked_units<'a>(
         &self,
-        context: &'a Context,
+        context: &'a ClientContext,
         _fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
     ) -> Result<Vec<&'a NUnit>, ExpressionError> {
         let all_units = context
@@ -530,7 +530,7 @@ impl TeamEditor {
         }
     }
 
-    fn get_slot_unit<'b>(slot_id: u64, context: &'b Context) -> Option<&'b NUnit> {
+    fn get_slot_unit<'b>(slot_id: u64, context: &'b ClientContext) -> Option<&'b NUnit> {
         context.first_parent::<NUnit>(slot_id).ok()
     }
 
