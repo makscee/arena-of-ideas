@@ -9,12 +9,12 @@ use crate::{
 
 mod authorize;
 mod csrf;
-mod secret;
 
 pub(crate) type SharedCache = Arc<Mutex<CsrfCache>>;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv()?;
     // Axum Routes
     let addr = "0.0.0.0:42069";
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
