@@ -54,6 +54,12 @@ impl NodeState {
         state.insert(0.0, 0.0, var, value);
         state
     }
+    pub fn load<'a>(entity: Entity, ctx: &'a ClientContext) -> Result<&'a Self, ExpressionError> {
+        ctx.world()
+            .to_e_not_found()?
+            .get::<Self>(entity)
+            .to_e_not_found()
+    }
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }

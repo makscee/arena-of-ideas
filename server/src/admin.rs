@@ -56,18 +56,18 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             return false;
         };
         if let Some(behavior) = description.mutual_top_parent::<NUnitBehavior>(ctx) {
-            description.behavior.set_data(behavior);
+            description.behavior.state_mut().set(behavior);
         } else {
             return false;
         }
         if let Some(representation) = description.mutual_top_parent::<NUnitRepresentation>(ctx) {
-            description.representation.set_data(representation);
+            description.representation.state_mut().set(representation);
         } else {
             return false;
         }
-        unit.description.set_data(description);
+        unit.description.state_mut().set(description);
         if let Some(stats) = unit.top_parent::<NUnitStats>(ctx) {
-            unit.stats.set_data(stats);
+            unit.stats.state_mut().set(stats);
         } else {
             return false;
         }
@@ -79,7 +79,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     let mut status_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
 
     for unit in units {
-        if let Some(description) = unit.description.get_data() {
+        if let Some(description) = unit.description.get() {
             match description.magic_type {
                 MagicType::Ability => {
                     // Find the ability magic this unit should belong to
@@ -107,7 +107,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         info!("start house {}", house.house_name);
         if let Some(color) = house.mutual_top_parent::<NHouseColor>(ctx) {
             info!("color: {}", color.color.0);
-            house.color.set_data(color);
+            house.color.state_mut().set(color);
         } else {
             error!("color failed");
             continue;
@@ -115,14 +115,13 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         if let Some(mut ability) = house.mutual_top_child::<NAbilityMagic>(ctx) {
             if let Some(mut description) = ability.mutual_top_parent::<NAbilityDescription>(ctx) {
                 if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
-                    description.effect.set_data(effect);
-                    ability.description.set_data(description);
-
-                    if let Some(units) = ability_units.remove(&ability.id) {
-                        ability.units.set_data(units);
-                    }
-
-                    house.ability.set_data(ability);
+                    description.effect.state_mut().set(effect);
+                    ability.description.state_mut().set(description);
+                    house.ability.state_mut().set(ability);
+                    todo!();
+                    // if let Some(units) = ability_units.remove(&ability.id) {
+                    //     ability.units.state_mut().set(units);
+                    // }
                 } else {
                     error!("ability effect failed");
                 }
@@ -133,13 +132,13 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         if let Some(mut status) = house.mutual_top_child::<NStatusMagic>(ctx) {
             if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
                 if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
-                    description.behavior.set_data(behavior);
-                    status.description.set_data(description);
-                    if let Some(units) = status_units.remove(&status.id) {
-                        status.units.set_data(units);
-                    }
-
-                    house.status.set_data(status);
+                    description.behavior.state_mut().set(behavior);
+                    status.description.state_mut().set(description);
+                    house.status.state_mut().set(status);
+                    todo!();
+                    // if let Some(units) = status_units.remove(&status.id) {
+                    //     status.units.set_data(units);
+                    // }
                 } else {
                     error!("status behavior failed");
                 }
@@ -240,9 +239,12 @@ fn admin_upload_world(
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    m.g += 10;
-    player.save(ctx);
+    ctx.with_context(|ctx| {
+        let m = player.active_match_load(ctx)?;
+        m.g += 10;
+        player.save(ctx.source().reducer_context());
+        Ok(())
+    });
     Ok(())
 }
 

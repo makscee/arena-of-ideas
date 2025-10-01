@@ -22,10 +22,22 @@ pub enum NodeError {
     ContextError(#[from] anyhow::Error),
 }
 
+impl From<NodeError> for String {
+    fn from(value: NodeError) -> Self {
+        value.to_string()
+    }
+}
+
+impl From<ExpressionError> for NodeError {
+    fn from(value: ExpressionError) -> Self {
+        NodeError::ContextError(value.into())
+    }
+}
+
 pub type NodeResult<T> = Result<T, NodeError>;
 
 // Common traits that both client and server will implement
-pub trait Node: Send + Sync {
+pub trait Node: Send + Sync + Default + StringData {
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;

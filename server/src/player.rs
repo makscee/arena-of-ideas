@@ -143,6 +143,6 @@ impl GetPlayer for ReducerContext {
             .id
             .find_kind_child(self, NodeKind::NPlayer)
             .to_custom_e_s("Failed to find Player by Identity")?;
-        NPlayer::get(self, id).to_custom_e_s("Identity exists but Player does not")
+        NPlayer::load(self, id).to_custom_e_s("Identity exists but Player does not")
     }
 }

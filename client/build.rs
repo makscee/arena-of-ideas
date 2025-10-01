@@ -62,11 +62,7 @@ fn generate_client_nodes(
         let client_node_impl = generate_client_node_impl(node, node_map);
 
         // Generate link loading methods
-        let link_methods = generate_link_methods(
-            node,
-            format_ident!("ClientContext"),
-            Some(quote! {.cloned()}.to_token_stream()),
-        );
+        let link_methods = generate_client_link_methods(node);
 
         // All nodes are Components in client
         let derives = quote! {

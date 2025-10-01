@@ -172,18 +172,23 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 /// Extension for using Context with ReducerContext
 pub trait ReducerContextExt {
     /// Execute with a context
-    fn with_context<R, F>(&self, f: F) -> R
+    fn with_context<F>(&self, f: F) -> Result<(), String>
     where
-        F: FnOnce(&mut Context<ServerSource>) -> R;
+        F: FnOnce(&mut Context<ServerSource>) -> Result<(), NodeError>;
+    fn as_context(&self) -> ServerContext;
 }
 
 impl ReducerContextExt for ReducerContext {
-    fn with_context<R, F>(&self, f: F) -> R
+    fn with_context<F>(&self, f: F) -> Result<(), String>
     where
-        F: FnOnce(&mut Context<ServerSource>) -> R,
+        F: FnOnce(&mut Context<ServerSource>) -> Result<(), NodeError>,
     {
         let source = ServerSource::new(self);
-        Context::exec(source, f)
+        Context::exec(source, f).map_err(|e| e.to_string())
+    }
+
+    fn as_context(&self) -> ServerContext {
+        Context::new(ServerSource::new(self))
     }
 }
 

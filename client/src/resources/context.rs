@@ -264,20 +264,15 @@ impl<'w> ContextSource for WorldSource<'w> {
 
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
-    /// Load a node by ID - requires access to World through the source
     fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
     where
-        T: 'static + schema::Node + BevyComponent + Clone;
+        T: 'static + ClientNode;
 
-    /// Load multiple nodes
-    fn load_many<'a, T>(&'a self, ids: &[u64]) -> NodeResult<Vec<&'a T>>
+    fn load_many<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
     where
-        T: 'static + schema::Node + BevyComponent + Clone;
+        T: 'static + ClientNode;
 
-    /// Load linked nodes
-    fn load_linked<'a, T>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>
-    where
-        T: 'static + schema::Node + BevyComponent + Clone;
+    fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
     fn world<'a>(&'a self) -> Option<&'a World>;
     fn world_mut<'a>(&'a mut self) -> Option<&'a mut World>;
 }
@@ -285,7 +280,7 @@ pub trait ClientContextExt {
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
     where
-        T: 'static + schema::Node + BevyComponent + Clone,
+        T: 'static + ClientNode,
     {
         let world = self.source().world();
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
@@ -293,16 +288,18 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
                 if let Some(component) = world.get::<T>(entity) {
                     return Ok(component);
                 } else {
-                    return Err(NodeError::CastError);
+                    return Err(NodeError::LoadError(
+                        "Failed to get component from entity".into(),
+                    ));
                 }
             }
         }
         Err(NodeError::NotFound(id))
     }
 
-    fn load_many<'a, T>(&'a self, ids: &[u64]) -> NodeResult<Vec<&'a T>>
+    fn load_many<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
     where
-        T: 'static + schema::Node + BevyComponent + Clone,
+        T: 'static + ClientNode,
     {
         let mut results = Vec::new();
         for id in ids {
@@ -311,10 +308,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         Ok(results)
     }
 
-    fn load_linked<'a, T>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>
-    where
-        T: 'static + schema::Node + BevyComponent + Clone,
-    {
+    fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>> {
         let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
         self.load_many(&ids)

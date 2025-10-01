@@ -63,16 +63,16 @@ impl BattlePlugin {
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
-            while team.fusions.len() < slots {
+            while team.fusions.get().unwrap().len() < slots {
                 let mut fusion = NFusion::default();
-                fusion.index = team.fusions.len() as i32;
+                fusion.index = team.fusions.get().unwrap().len() as i32;
                 fusion.id = next_id();
                 fusion.owner = team.owner;
                 let mut slot = NFusionSlot::default();
                 slot.id = next_id();
                 slot.owner = team.owner;
-                fusion.slots.push(slot);
-                team.fusions.push(fusion);
+                fusion.slots.get_mut().unwrap().push(slot);
+                team.fusions.get_mut().unwrap().push(fusion);
             }
         }
         world.insert_resource(BattleData::load(Battle { left, right, id }));

@@ -61,7 +61,7 @@ fn generate_server_nodes(
         let server_node_impl = generate_server_node_impl(node, node_map);
 
         // Generate link loading methods
-        let link_methods = generate_link_methods(node, format_ident!("ServerContext"), None);
+        let link_methods = generate_server_link_methods(node);
 
         // All nodes get SpacetimeDB derives for server
         let derives = quote! {

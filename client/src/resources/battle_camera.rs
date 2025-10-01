@@ -196,7 +196,7 @@ impl BattleCamera {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
                         teams_world.with_context_mut(|context| {
-                            action_fn(slot, team_entity, &mut context);
+                            action_fn(slot, team_entity, context);
                         });
                         ui.close_menu();
                     }

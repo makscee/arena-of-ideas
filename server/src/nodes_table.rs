@@ -170,7 +170,7 @@ impl TNodeLink {
 
 #[allow(unused)]
 pub trait NodeIdExt {
-    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
+    fn load_node<T: Node>(self, ctx: &ReducerContext) -> Result<T, NodeError>;
     fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode>;
     fn load_tnode_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
@@ -194,7 +194,7 @@ pub trait NodeIdExt {
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
 }
 impl NodeIdExt for u64 {
-    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String> {
+    fn load_node<T: Node>(self, ctx: &ReducerContext) -> Result<T, NodeError> {
         self.load_tnode(ctx)
             .to_custom_e_s_fn(|| format!("Node#{self} not found"))?
             .to_node()
@@ -518,9 +518,9 @@ impl TNode {
             Self::delete_by_id(ctx, *id);
         }
     }
-    pub fn to_node<T: Node + StringData>(&self) -> Result<T, String> {
+    pub fn to_node<T: Node>(&self) -> Result<T, NodeError> {
         let mut d = T::default();
-        d.inject_data(&self.data).to_str_err()?;
+        d.inject_data(&self.data)?;
         d.set_id(self.id);
         d.set_owner(self.owner);
         Ok(d)
@@ -545,28 +545,6 @@ impl TNode {
             .nodes_world()
             .kind_owner()
             .filter((kind.as_ref(), owner))
-            .collect()
-    }
-}
-
-pub trait TNodeVecExt {
-    fn to_nodes<T: NodeExt>(self) -> Vec<T>;
-}
-
-impl TNodeVecExt for Vec<TNode> {
-    fn to_nodes<T: NodeExt>(self) -> Vec<T> {
-        self.into_iter()
-            .filter_map(|n| n.to_node::<T>().ok())
-            .collect()
-    }
-}
-pub trait IdVecExt {
-    fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T>;
-}
-impl IdVecExt for Vec<u64> {
-    fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T> {
-        self.into_iter()
-            .filter_map(|n| n.load_node::<T>(ctx).ok())
             .collect()
     }
 }
