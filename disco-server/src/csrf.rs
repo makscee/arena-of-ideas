@@ -25,6 +25,7 @@ impl CsrfCache {
         }
     }
     pub(crate) fn insert(&mut self, id: String, state: String) {
+        println!("inserting state: {}", state);
         let instant = Instant::now();
         self.by_identity
             .insert(id.clone(), (state.clone(), instant));
@@ -36,8 +37,10 @@ impl CsrfCache {
     }
 
     pub(crate) fn take_by_state(&mut self, state: &str) -> Option<String> {
+        println!("taking state: {}", state);
         self.by_state.remove(state).map(|id| {
             self.by_identity.remove(&id);
+            println!("removed identity: {}", id);
             id
         })
     }
