@@ -609,7 +609,7 @@ impl FPaste for NUnit {}
 
 impl FPlaceholder for NUnit {
     fn placeholder(owner: u64) -> Self {
-        NUnit::new(owner, "New Unit".to_string()).with_components(
+        NUnit::new(owner, "New Unit".to_string()).add_components(
             NUnitDescription::placeholder(owner),
             NUnitStats::placeholder(owner),
             NUnitState::placeholder(owner),
@@ -687,7 +687,7 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder(owner: u64) -> Self {
-        NHouse::new(owner, "New House".to_string()).with_components(
+        NHouse::new(owner, "New House".to_string()).add_components(
             NHouseColor::placeholder(owner),
             NAbilityMagic::placeholder(owner),
             NStatusMagic::placeholder(owner),
@@ -756,7 +756,7 @@ impl FPaste for NAbilityMagic {}
 impl FPlaceholder for NAbilityMagic {
     fn placeholder(owner: u64) -> Self {
         NAbilityMagic::new(owner, "New Ability".to_string())
-            .with_components(NAbilityDescription::placeholder(owner))
+            .add_components(NAbilityDescription::placeholder(owner))
     }
 }
 
@@ -825,7 +825,7 @@ impl FPaste for NStatusMagic {}
 
 impl FPlaceholder for NStatusMagic {
     fn placeholder(owner: u64) -> Self {
-        NStatusMagic::new(owner, "New Status".to_string()).with_components(
+        NStatusMagic::new(owner, "New Status".to_string()).add_components(
             NStatusDescription::placeholder(owner),
             NStatusRepresentation::placeholder(owner),
         )
@@ -1016,7 +1016,7 @@ impl FPaste for NPlayer {}
 
 impl FPlaceholder for NPlayer {
     fn placeholder(owner: u64) -> Self {
-        NPlayer::new(owner, "New Player".to_string()).with_components(
+        NPlayer::new(owner, "New Player".to_string()).add_components(
             NPlayerData::placeholder(owner),
             NPlayerIdentity::placeholder(owner),
             NMatch::placeholder(owner),
@@ -1188,7 +1188,7 @@ impl FTitle for NAbilityDescription {
 impl FPlaceholder for NAbilityDescription {
     fn placeholder(owner: u64) -> Self {
         NAbilityDescription::new(owner, "Default description".to_string())
-            .with_components(NAbilityEffect::placeholder(owner))
+            .add_components(NAbilityEffect::placeholder(owner))
     }
 }
 
@@ -1245,7 +1245,7 @@ impl FTitle for NStatusDescription {
 impl FPlaceholder for NStatusDescription {
     fn placeholder(owner: u64) -> Self {
         NStatusDescription::new(owner, "Default status description".to_string())
-            .with_components(NStatusBehavior::placeholder(owner))
+            .add_components(NStatusBehavior::placeholder(owner))
     }
 }
 
@@ -1560,7 +1560,7 @@ impl FEdit for NMatch {
 impl FPlaceholder for NMatch {
     fn placeholder(owner: u64) -> Self {
         NMatch::new(owner, 0, 1, 3, false, vec![])
-            .with_components(NTeam::placeholder(owner), default())
+            .add_components(NTeam::placeholder(owner), default())
     }
 }
 
@@ -1605,7 +1605,7 @@ impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
     fn placeholder(owner: u64) -> Self {
-        NFusion::new(owner, 1, 0, 0, 1, 1, 1).with_components(
+        NFusion::new(owner, 1, 0, 0, 1, 1, 1).add_components(
             (0..5)
                 .map(|_| NFusionSlot::placeholder(owner))
                 .collect_vec(),
@@ -2071,7 +2071,7 @@ impl FEdit for NFloorBoss {
 
 impl FPlaceholder for NFloorBoss {
     fn placeholder(owner: u64) -> Self {
-        NFloorBoss::new(owner, 1).with_components(NTeam::placeholder(owner))
+        NFloorBoss::new(owner, 1).add_components(NTeam::placeholder(owner))
     }
 }
 
@@ -2346,7 +2346,7 @@ impl FEdit for NFusion {
 
 impl FPlaceholder for NFusionSlot {
     fn placeholder(owner: u64) -> Self {
-        NFusionSlot::new(owner, 0, default()).with_components(NUnit::placeholder(owner))
+        NFusionSlot::new(owner, 0, default()).add_components(NUnit::placeholder(owner))
     }
 }
 
@@ -2425,7 +2425,7 @@ impl FPlaceholder for NUnitDescription {
             MagicType::Ability,
             Trigger::BattleStart,
         )
-        .with_components(
+        .add_components(
             NUnitRepresentation::placeholder(owner),
             NUnitBehavior::placeholder(owner),
         )

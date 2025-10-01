@@ -4,9 +4,9 @@ use super::*;
 
 #[reducer]
 fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
-    let ctx = &ctx.as_context();
     let m = player.active_match_load(ctx)?;
     let offer = m
         .shop_offers
@@ -24,10 +24,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let node_id = slot.node_id;
     match slot.card_kind {
         CardKind::Unit => {
-            let unit = NUnit::load(ctx, node_id)
-                .to_custom_e_s_fn(|| format!("Failed to find Unit#{node_id}"))?
-                .with_parts(ctx)
-                .take();
+            let unit = NUnit::load(ctx, node_id)?.with_parts(ctx).take();
             let house_id = unit
                 .id
                 .find_kind_parent(ctx, NodeKind::NHouse)

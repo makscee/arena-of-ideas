@@ -48,7 +48,7 @@ impl ExpressionImpl for Expression {
             Expression::color(s) => s
                 .try_c32()
                 .map_err(|e| {
-                    NodeErrorVariants::OperationNotSupported {
+                    NodeError::OperationNotSupported {
                         values: default(),
                         op: "Hex color parse",
                         msg: Some(format!("{e:?}")),

@@ -2,7 +2,7 @@ use super::*;
 
 #[reducer]
 fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
-    let _ = ctx.player()?;
+    let _ = ctx.as_context().player()?;
     let mut pack = ron::from_str::<PackedNodes>(&pack).map_err(|e| e.to_string())?;
     let mut next_id = ctx.next_id();
     pack.reassign_ids(&mut next_id);
@@ -36,7 +36,7 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
 
 #[reducer]
 fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), String> {
-    let _ = ctx.player()?;
+    let _ = ctx.as_context().player()?;
     let mut node = id.load_tnode_err(ctx)?;
     let vote = if vote { 1 } else { -1 };
     node.rating += vote;
@@ -46,7 +46,7 @@ fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), St
 
 #[reducer]
 fn content_select_link(ctx: &ReducerContext, parent_id: u64, child_id: u64) -> Result<(), String> {
-    TPlayerLinkSelection::select_link(ctx, ctx.player()?.id, parent_id, child_id)
+    TPlayerLinkSelection::select_link(ctx, ctx.as_context().player()?.id, parent_id, child_id)
 }
 
 #[reducer]
@@ -55,5 +55,5 @@ fn content_deselect_link(
     parent_id: u64,
     child_id: u64,
 ) -> Result<(), String> {
-    TPlayerLinkSelection::deselect_link(ctx, ctx.player()?.id, parent_id, child_id)
+    TPlayerLinkSelection::deselect_link(ctx, ctx.as_context().player()?.id, parent_id, child_id)
 }

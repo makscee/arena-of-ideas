@@ -1,5 +1,4 @@
 use node_build_utils::*;
-use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -51,8 +50,8 @@ fn generate_server_nodes(
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
-        // Generate with_components() method
-        let with_components_method = generate_with_components(node);
+        // Generate add_components() method
+        let add_components_method = generate_add_components(node);
 
         // Generate default implementation
         let default_impl = generate_default_impl(node);
@@ -62,6 +61,9 @@ fn generate_server_nodes(
 
         // Generate link loading methods
         let link_methods = generate_server_link_methods(node);
+
+        // Generate load_components method
+        let load_components_method = generate_load_components(node, "ServerContext");
 
         // All nodes get SpacetimeDB derives for server
         let derives = quote! {
@@ -79,7 +81,7 @@ fn generate_server_nodes(
             impl #struct_name {
                 #new_method
 
-                #with_components_method
+                #add_components_method
 
                 pub fn with_id(mut self, id: u64) -> Self {
                     self.id = id;
@@ -87,6 +89,8 @@ fn generate_server_nodes(
                 }
 
                 #link_methods
+
+                #load_components_method
             }
 
             #server_node_impl
@@ -118,117 +122,53 @@ fn generate_server_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(component) = item.as_ref() {
-                                    if let Some(loaded) = component.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(component) = &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
+                Some(if field.is_vec {
+                    quote! {
+                        for component in &self.#field_name {
+                            component.save(ctx);
+                        }
                     }
                 } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for component in &self.#field_name {
-                                component.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                loaded.save(ctx);
-                            }
-                        })
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(ctx);
+                        }
                     }
-                }
+                })
             }
             LinkType::Owned => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(owned) = item.as_ref() {
-                                    if let Some(loaded) = owned.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(owned) = &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
+                Some(if field.is_vec {
+                    quote! {
+                        for owned in &self.#field_name {
+                            owned.save(ctx);
+                        }
                     }
                 } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for owned in &self.#field_name {
-                                owned.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                loaded.save(ctx);
-                            }
-                        })
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(ctx);
+                        }
                     }
-                }
+                })
             }
             LinkType::Ref => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(ref_link) = item.as_ref() {
-                                    if let Some(loaded) = ref_link.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(ref_link) = &self.#field_name {
-                                if let Some(loaded) = ref_link.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
-                    }
-                } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for ref_link in &self.#field_name {
-                                ref_link.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
+                Some(if field.is_vec {
+                    quote! {
+                        for ref_link in &self.#field_name {
+                            if let Some(loaded) = ref_link.get() {
                                 loaded.save(ctx);
                             }
-                        })
+                        }
                     }
-                }
+                } else {
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(ctx);
+                        }
+                    }
+                })
             }
             LinkType::None => None,
         });

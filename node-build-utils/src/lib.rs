@@ -16,7 +16,6 @@ pub struct FieldInfo {
     pub name: Ident,
     pub link_type: LinkType,
     pub target_type: String,
-    pub is_optional: bool,
     pub is_vec: bool,
     pub raw_type: String,
 }
@@ -88,7 +87,7 @@ pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
 
 pub fn parse_field(field: &Field) -> FieldInfo {
     let name = field.ident.clone().unwrap();
-    let (link_type, target_type, is_optional, is_vec) = parse_field_type(&field.ty);
+    let (link_type, target_type, is_vec) = parse_field_type(&field.ty);
 
     let raw_type = match &field.ty {
         Type::Path(type_path) => quote! { #type_path }.to_string(),
@@ -99,76 +98,67 @@ pub fn parse_field(field: &Field) -> FieldInfo {
         name,
         link_type,
         target_type,
-        is_optional,
         is_vec,
         raw_type,
     }
 }
 
-pub fn parse_field_type(ty: &Type) -> (LinkType, String, bool, bool) {
+pub fn parse_field_type(ty: &Type) -> (LinkType, String, bool) {
     if let Type::Path(type_path) = ty {
         let path = &type_path.path;
 
         if let Some(segment) = path.segments.last() {
             match segment.ident.to_string().as_str() {
                 "Component" => {
-                    let (target, is_optional, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Component, target, is_optional, is_vec);
+                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Component, target, is_vec);
                 }
                 "Owned" => {
-                    let (target, is_optional, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Owned, target, is_optional, is_vec);
+                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Owned, target, is_vec);
                 }
                 "Ref" => {
-                    let (target, is_optional, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Ref, target, is_optional, is_vec);
+                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Ref, target, is_vec);
                 }
                 _ => {}
             }
         }
     }
 
-    (LinkType::None, String::new(), false, false)
+    (LinkType::None, String::new(), false)
 }
 
-pub fn parse_generic_arg(args: &PathArguments) -> (String, bool, bool) {
-    if let PathArguments::AngleBracketed(generic_args) = args {
-        if let Some(GenericArgument::Type(inner_ty)) = generic_args.args.first() {
-            return parse_inner_type(inner_ty);
+pub fn parse_generic_arg(arguments: &PathArguments) -> (String, bool) {
+    if let PathArguments::AngleBracketed(args) = arguments {
+        if let Some(GenericArgument::Type(ty)) = args.args.first() {
+            return parse_inner_type(ty);
         }
     }
-    (String::new(), false, false)
+    (String::new(), false)
 }
 
-pub fn parse_inner_type(ty: &Type) -> (String, bool, bool) {
+pub fn parse_inner_type(ty: &Type) -> (String, bool) {
     if let Type::Path(type_path) = ty {
         let path = &type_path.path;
 
         if let Some(segment) = path.segments.last() {
             match segment.ident.to_string().as_str() {
-                "Option" => {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(GenericArgument::Type(inner)) = args.args.first() {
-                            let (target, _, is_vec) = parse_inner_type(inner);
-                            return (target, true, is_vec);
-                        }
-                    }
-                }
                 "Vec" => {
                     if let PathArguments::AngleBracketed(args) = &segment.arguments {
                         if let Some(GenericArgument::Type(inner)) = args.args.first() {
-                            let (target, is_optional, _) = parse_inner_type(inner);
-                            return (target, is_optional, true);
+                            let (target, _) = parse_inner_type(inner);
+                            return (target, true);
                         }
                     }
                 }
                 name => {
-                    return (name.to_string(), false, false);
+                    return (name.to_string(), false);
                 }
             }
         }
     }
-    (String::new(), false, false)
+    (String::new(), false)
 }
 
 pub fn validate_parent_relationships(
@@ -381,8 +371,8 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
                 quote! { #target_ident }
             };
 
-            if field.is_optional {
-                quote! { Component<Option<#target>> }
+            if field.is_vec {
+                quote! { Component<Vec<#target>> }
             } else {
                 quote! { Component<#target> }
             }
@@ -397,8 +387,6 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
 
             if field.is_vec {
                 quote! { Owned<Vec<#target>> }
-            } else if field.is_optional {
-                quote! { Owned<Option<#target>> }
             } else {
                 quote! { Owned<#target> }
             }
@@ -411,8 +399,8 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
                 quote! { #target_ident }
             };
 
-            if field.is_optional {
-                quote! { Ref<Option<#target>> }
+            if field.is_vec {
+                quote! { Ref<Vec<#target>> }
             } else {
                 quote! { Ref<#target> }
             }
@@ -501,7 +489,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
     }
 }
 
-pub fn generate_with_components(node: &NodeInfo) -> TokenStream {
+pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
     let component_fields: Vec<_> = node
         .fields
         .iter()
@@ -526,9 +514,7 @@ pub fn generate_with_components(node: &NodeInfo) -> TokenStream {
             quote! { #target_ident }
         };
 
-        let param_type = if field.is_optional {
-            quote! { Option<#target> }
-        } else if field.is_vec {
+        let param_type = if field.is_vec {
             quote! { Vec<#target> }
         } else {
             quote! { #target }
@@ -555,7 +541,7 @@ pub fn generate_with_components(node: &NodeInfo) -> TokenStream {
     });
 
     quote! {
-        pub fn with_components(mut self, #(#params),*) -> Self {
+        pub fn add_components(mut self, #(#params),*) -> Self {
             #(#field_assignments)*
             self
         }
@@ -825,5 +811,51 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
 
     quote! {
         #(#link_methods)*
+    }
+}
+
+pub fn generate_load_components(node: &NodeInfo, context_type: &str) -> TokenStream {
+    let component_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::Component)
+        .collect();
+
+    let context_ident = format_ident!("{}", context_type);
+
+    if component_fields.is_empty() {
+        return quote! {
+            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<(), NodeError> {
+                Ok(())
+            }
+        };
+    }
+
+    let field_loads = component_fields.iter().map(|field| {
+        let field_name = &field.name;
+        let load_method = format_ident!("{}_load", field_name);
+
+        if field.is_vec {
+            quote! {
+                if let Ok(loaded_items) = self.#load_method(ctx) {
+                    for item in loaded_items.iter_mut() {
+                        item.load_components(ctx)?;
+                    }
+                }
+            }
+        } else {
+            quote! {
+                if let Ok(loaded_item) = self.#load_method(ctx) {
+                    loaded_item.load_components(ctx)?;
+                }
+            }
+        }
+    });
+
+    quote! {
+        pub fn load_components(&mut self, ctx: &#context_ident) -> Result<(), NodeError> {
+            #(#field_loads)*
+            Ok(())
+        }
     }
 }

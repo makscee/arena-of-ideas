@@ -1,6 +1,4 @@
 use node_build_utils::*;
-use quote::ToTokens;
-use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -52,8 +50,8 @@ fn generate_client_nodes(
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
-        // Generate with_components() method
-        let with_components_method = generate_with_components(node);
+        // Generate add_components() method
+        let add_components_method = generate_add_components(node);
 
         // Generate default implementation
         let default_impl = generate_default_impl(node);
@@ -63,6 +61,9 @@ fn generate_client_nodes(
 
         // Generate link loading methods
         let link_methods = generate_client_link_methods(node);
+
+        // Generate load_components method
+        let load_components_method = generate_load_components(node, "ClientContext");
 
         // All nodes are Components in client
         let derives = quote! {
@@ -80,7 +81,7 @@ fn generate_client_nodes(
             impl #struct_name {
                 #new_method
 
-                #with_components_method
+                #add_components_method
 
                 pub fn with_id(mut self, id: u64) -> Self {
                     self.id = id;
@@ -88,6 +89,8 @@ fn generate_client_nodes(
                 }
 
                 #link_methods
+
+                #load_components_method
             }
 
             #client_node_impl
@@ -160,38 +163,16 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(component) = item.as_ref() {
-                                    if let Some(loaded) = component.get() {
-                                        world.entity_mut(entity).insert(loaded.clone());
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(component) = &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    world.entity_mut(entity).insert(loaded.clone());
-                                }
-                            }
+                Some(if field.is_vec {
+                    quote! {
+                        for component in &self.#field_name {
+                            world.entity_mut(entity).insert(component.clone());
                         }
                     }
                 } else {
-                    if field.is_vec {
-                        quote! {
-                            for component in &self.#field_name {
-                                world.entity_mut(entity).insert(component.clone());
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                world.entity_mut(entity).insert(loaded.clone());
-                            }
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            world.entity_mut(entity).insert(loaded.clone());
                         }
                     }
                 })
@@ -205,46 +186,21 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Owned => {
                 let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(owned) = item.as_ref() {
-                                    if let Some(loaded) = owned.get() {
-                                        let child_entity = world.spawn_empty().id();
-                                        loaded.clone().spawn(world);
-                                        world.entity_mut(child_entity).set_parent(entity);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(owned) = &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    let child_entity = world.spawn_empty().id();
-                                    loaded.clone().spawn(world);
-                                    world.entity_mut(child_entity).set_parent(entity);
-                                }
-                            }
+                Some(if field.is_vec {
+                    quote! {
+                        for item in &self.#field_name {
+                            let child_entity = world.spawn_empty().id();
+                            item.clone().spawn(world);
+                            world.entity_mut(child_entity).set_parent(entity);
+
                         }
                     }
                 } else {
-                    if field.is_vec {
-                        quote! {
-                            for owned in &self.#field_name {
-                                let child_entity = world.spawn_empty().id();
-                                owned.clone().spawn(world);
-                                world.entity_mut(child_entity).set_parent(entity);
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                let child_entity = world.spawn_empty().id();
-                                loaded.clone().spawn(world);
-                                world.entity_mut(child_entity).set_parent(entity);
-                            }
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            let child_entity = world.spawn_empty().id();
+                            loaded.clone().spawn(world);
+                            world.entity_mut(child_entity).set_parent(entity);
                         }
                     }
                 })
@@ -258,74 +214,34 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Ref => {
                 let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(ref_link) = item.as_ref() {
-                                    if let Some(id) = ref_link.id() {
-                                        // Check if entity with this id already exists
-                                        let mut found_entity = None;
-                                        if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                            found_entity = node_entity_map.get_entity(id);
-                                        }
-                                        if found_entity.is_none() {
-                                            if let Some(loaded) = ref_link.get() {
-                                                loaded.clone().spawn(world);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(ref_link) = &self.#field_name {
-                                if let Some(id) = ref_link.id() {
-                                    // Check if entity with this id already exists
-                                    let mut found_entity = None;
-                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                        found_entity = node_entity_map.get_entity(id);
-                                    }
-                                    if found_entity.is_none() {
-                                        if let Some(loaded) = ref_link.get() {
-                                            loaded.clone().spawn(world);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if field.is_vec {
-                        quote! {
-                            for ref_link in &self.#field_name {
-                                if let Some(id) = ref_link.id() {
-                                    // Check if entity with this id already exists
-                                    let mut found_entity = None;
-                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                        found_entity = node_entity_map.get_entity(id);
-                                    }
-                                    if found_entity.is_none() {
-                                        if let Some(loaded) = ref_link.get() {
-                                            loaded.clone().spawn(world);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(id) = self.#field_name.id() {
+                Some(if field.is_vec {
+                    quote! {
+                        for ref_link in &self.#field_name {
+                            if let Some(id) = ref_link.id() {
                                 // Check if entity with this id already exists
                                 let mut found_entity = None;
                                 if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
                                     found_entity = node_entity_map.get_entity(id);
                                 }
                                 if found_entity.is_none() {
-                                    if let Some(loaded) = self.#field_name.get() {
+                                    if let Some(loaded) = ref_link.get() {
                                         loaded.clone().spawn(world);
                                     }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    quote! {
+                        if let Some(id) = self.#field_name.id() {
+                            // Check if entity with this id already exists
+                            let mut found_entity = None;
+                            if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
+                                found_entity = node_entity_map.get_entity(id);
+                            }
+                            if found_entity.is_none() {
+                                if let Some(loaded) = self.#field_name.get() {
+                                    loaded.clone().spawn(world);
                                 }
                             }
                         }
