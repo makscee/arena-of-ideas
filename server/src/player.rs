@@ -1,6 +1,5 @@
 use bcrypt_no_getrandom::{hash_with_salt, verify};
 use rand::RngCore;
-use schema::OptionExpressionCustomError;
 
 use super::*;
 
@@ -109,10 +108,11 @@ impl NPlayer {
             Err(e) => Err(e.to_string()),
         }
     }
-    pub fn find_identity(ctx: &ReducerContext, identity: &Identity) -> Option<NPlayerIdentity> {
+    pub fn find_identity(ctx: &ServerContext, identity: &Identity) -> Option<NPlayerIdentity> {
         NPlayerIdentity::find_by_data(ctx, Some(identity.to_string()))
     }
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
+        let ctx = ctx.as_context();
         let data = self.player_data_load(ctx)?;
         debug!("{data:?}");
         data.last_login = ctx.timestamp.to_micros_since_unix_epoch() as u64;
@@ -120,6 +120,7 @@ impl NPlayer {
         Ok(self)
     }
     fn logout(mut self, ctx: &ReducerContext) -> Result<Self, String> {
+        let ctx = ctx.as_context();
         self.player_data_load(ctx)?.online = false;
         Ok(self)
     }
@@ -132,17 +133,17 @@ impl NPlayer {
 }
 
 pub trait GetPlayer {
-    fn player(&self) -> Result<NPlayer, String>;
+    fn player(&self) -> NodeResult<NPlayer>;
 }
 
-impl GetPlayer for ReducerContext {
-    fn player(&self) -> Result<NPlayer, String> {
-        let identity = NPlayer::find_identity(self, &self.sender)
+impl GetPlayer for ServerContext<'_> {
+    fn player(&self) -> NodeResult<NPlayer> {
+        let identity = NPlayer::find_identity(self, &self.source().reducer_context().sender)
             .to_custom_e_s("NPlayerIdentity not found")?;
         let id = identity
             .id
             .find_kind_child(self, NodeKind::NPlayer)
             .to_custom_e_s("Failed to find Player by Identity")?;
-        NPlayer::load(self, id).to_custom_e_s("Identity exists but Player does not")
+        NPlayer::load(self, id)
     }
 }

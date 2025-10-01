@@ -1,4 +1,5 @@
 use super::*;
+
 use spacetimedb_sats::serde::SerdeWrapper;
 use std::fmt::Debug;
 
@@ -11,10 +12,7 @@ pub trait ClientNode:
 }
 
 pub trait NodeExt: Sized + ClientNode + StringData {
-    fn get<'a>(
-        entity: Entity,
-        context: &'a ClientContext<'a>,
-    ) -> Result<&'a Self, ExpressionError> {
+    fn get<'a>(entity: Entity, context: &'a ClientContext<'a>) -> Result<&'a Self, NodeError> {
         todo!()
     }
     fn get_by_id<'a>(id: u64, context: &'a ClientContext<'a>) -> NodeResult<&'a Self> {
@@ -32,7 +30,7 @@ impl TNode {
     pub fn kind(&self) -> NodeKind {
         self.kind.to_kind()
     }
-    pub fn to_node<T: ClientNode + StringData>(&self) -> Result<T, ExpressionError> {
+    pub fn to_node<T: ClientNode + StringData>(&self) -> NodeResult<T> {
         let mut d = T::default();
         d.inject_data(&self.data)?;
         d.set_id(self.id);
@@ -40,7 +38,7 @@ impl TNode {
         Ok(d)
     }
     pub fn unpack(&self, context: &mut ClientContext, entity: Entity) {
-        self.kind().unpack(context, entity, self);
+        self.on_unpack(context, entity)?;
     }
     pub fn to_ron(self) -> String {
         ron::to_string(&SerdeWrapper::new(self)).unwrap()
@@ -48,13 +46,16 @@ impl TNode {
 }
 
 pub trait NodeKindOnUnpack {
-    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> Result<(), ExpressionError>;
+    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()>;
 }
 
 impl NodeKindOnUnpack for NodeKind {
-    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> Result<(), ExpressionError> {
-        let vars = self.get_vars(context, entity);
-        let mut emut = context.world_mut()?.entity_mut(entity);
+    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()> {
+        let vars = Vec::new(); // TODO: implement get_vars
+        let world = context
+            .world_mut()
+            .to_not_found_msg("World not available")?;
+        let mut emut = world.entity_mut(entity);
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
             ns
         } else {
@@ -78,9 +79,12 @@ impl NodeKindOnUnpack for NodeKind {
                     .first_child::<NUnitRepresentation>(context.id(entity)?)
                     .is_err()
                 {
-                    let rep_entity = context.world_mut()?.spawn_empty().id();
+                    let world = context
+                        .world_mut()
+                        .to_not_found_msg("World not available")?;
+                    let rep_entity = world.spawn_empty().id();
                     unit_rep().clone().unpack_entity(context, rep_entity)?;
-                    context.link_parent_child_entity(entity, rep_entity)?;
+                    context.link_parent_child(context.id(entity)?, context.id(rep_entity)?)?;
                 }
                 context.component_mut::<NodeState>(entity)?.init_vars(
                     [

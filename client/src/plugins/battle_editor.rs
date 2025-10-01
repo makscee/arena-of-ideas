@@ -51,7 +51,7 @@ impl BattleEditorPlugin {
         id: u64,
         owner: u64,
         is_child_part: bool, // true if T is a child of part_owner_entity
-    ) -> Result<(u64, bool), ExpressionError> {
+    ) -> NodeResult<(u64, bool)> {
         let mut changed = false;
         let mut part_id = 0;
         let entity = context.entity(id)?;
@@ -106,9 +106,9 @@ impl BattleEditorPlugin {
         parent_entity: Entity,
         owner: u64,
         collection_name: &str,
-        get_children_fn: impl Fn() -> Result<Vec<T>, ExpressionError>,
+        get_children_fn: impl Fn() -> NodeResult<Vec<T>>,
         on_edit: impl Fn(T) -> Option<BattleEditorAction>,
-    ) -> Result<(bool, Option<BattleEditorAction>), ExpressionError> {
+    ) -> NodeResult<(bool, Option<BattleEditorAction>)> {
         let mut changed = false;
         let mut navigation_action = None;
 
@@ -165,7 +165,7 @@ impl BattleEditorPlugin {
         Ok((changed, navigation_action))
     }
 
-    pub fn pane(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let mut navigation_action: Option<BattleEditorAction> = None;
         let mut changed = false;
 
@@ -287,7 +287,7 @@ impl BattleEditorPlugin {
     fn render_team_selector(
         ui: &mut Ui,
         world: &mut World,
-    ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
+    ) -> NodeResult<(Option<BattleEditorAction>, bool)> {
         let mut action = None;
         let is_left = world.resource::<BattleEditorState>().is_left_team;
 
@@ -325,7 +325,7 @@ impl BattleEditorPlugin {
         id: u64,
         ui: &mut Ui,
         world: &mut World,
-    ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
+    ) -> NodeResult<(Option<BattleEditorAction>, bool)> {
         let mut action = None;
         let mut changed = false;
 
@@ -436,7 +436,7 @@ impl BattleEditorPlugin {
         id: u64,
         ui: &mut Ui,
         world: &mut World,
-    ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
+    ) -> NodeResult<(Option<BattleEditorAction>, bool)> {
         let mut action = None;
         let mut changed = false;
 
@@ -460,7 +460,7 @@ impl BattleEditorPlugin {
                 }
             });
             changed |= Self::manage_part::<NHouseColor>(ui, context, id, owner, false)?.1;
-            ui.collapsing("Ability", |ui| -> Result<(), ExpressionError> {
+            ui.collapsing("Ability", |ui| -> NodeResult<()> {
                 let (id, part_changed) =
                     Self::manage_part::<NAbilityMagic>(ui, context, id, owner, false)?;
                 changed |= part_changed;
@@ -513,7 +513,7 @@ impl BattleEditorPlugin {
         id: u64,
         ui: &mut Ui,
         world: &mut World,
-    ) -> Result<(Option<BattleEditorAction>, bool), ExpressionError> {
+    ) -> NodeResult<(Option<BattleEditorAction>, bool)> {
         let action = None;
         let mut changed = false;
 
@@ -554,7 +554,7 @@ impl BattleEditorPlugin {
         unit_id: u64,
         target_id: u64,
         context: &mut ClientContext,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
             context.unlink_parent_child(unit_id, slot.id)?;
         }
@@ -562,13 +562,11 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_bench_unit(unit_id: u64, context: &mut ClientContext) -> Result<(), ExpressionError> {
+    fn handle_bench_unit(unit_id: u64, context: &mut ClientContext) -> NodeResult<()> {
         if let Ok(slot) = context.first_child::<NFusionSlot>(unit_id) {
             context.unlink_parent_child(unit_id, slot.id)?;
         } else {
-            return Err(
-                ExpressionErrorVariants::Custom("Unit is not in a slot".to_string()).into(),
-            );
+            return Err(NodeError::Custom("Unit is not in a slot".to_string()));
         };
         Ok(())
     }
@@ -577,7 +575,7 @@ impl BattleEditorPlugin {
         team_entity: Entity,
         slot_id: u64,
         context: &mut ClientContext,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let slot_entity = context.entity(slot_id)?;
         let team = context.component::<NTeam>(team_entity)?;
         let team_owner = team.owner;
@@ -611,7 +609,7 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_add_slot(fusion_id: u64, context: &mut ClientContext) -> Result<(), ExpressionError> {
+    fn handle_add_slot(fusion_id: u64, context: &mut ClientContext) -> NodeResult<()> {
         let fusion_entity = context.entity(fusion_id)?;
         let fusion = context.component::<NFusion>(fusion_entity)?;
 
@@ -628,10 +626,7 @@ impl BattleEditorPlugin {
         Ok(())
     }
 
-    fn handle_delete_unit(
-        unit_id: u64,
-        context: &mut ClientContext,
-    ) -> Result<(), ExpressionError> {
+    fn handle_delete_unit(unit_id: u64, context: &mut ClientContext) -> NodeResult<()> {
         let unit_entity = context.entity(unit_id)?;
         context.despawn(unit_entity).log();
         Ok(())
@@ -642,7 +637,7 @@ impl BattleEditorPlugin {
         start: u8,
         length: u8,
         context: &mut ClientContext,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let mut slot = context.component_mut::<NFusionSlot>(context.entity(slot_id)?)?;
         slot.actions.start = start;
         slot.actions.length = length;
@@ -653,7 +648,7 @@ impl BattleEditorPlugin {
         fusion_id: u64,
         trigger: u64,
         context: &mut ClientContext,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let mut fusion = context.component_mut::<NFusion>(context.entity(fusion_id)?)?;
         fusion.trigger_unit = trigger;
         Ok(())

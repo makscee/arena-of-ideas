@@ -178,11 +178,11 @@ impl TileTree {
 }
 
 pub trait TreeExt {
-    fn add_tab(&mut self, tab: TileId, new: TileId) -> Result<(), ExpressionError>;
+    fn add_tab(&mut self, tab: TileId, new: TileId) -> NodeResult<()>;
 }
 
 impl TreeExt for Tree<Pane> {
-    fn add_tab(&mut self, cur: TileId, new: TileId) -> Result<(), ExpressionError> {
+    fn add_tab(&mut self, cur: TileId, new: TileId) -> NodeResult<()> {
         let cur_tile = self
             .tiles
             .get_mut(cur)

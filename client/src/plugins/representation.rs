@@ -12,7 +12,7 @@ impl RepresentationPlugin {
         context: &ClientContext,
         m: &Material,
         ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let mut p = Painter::new(rect, ui.ctx());
         if let Ok(color) = context.get_color(VarName::color) {
             p.color = color;
@@ -26,22 +26,12 @@ impl RepresentationPlugin {
 }
 
 pub trait MaterialPaint {
-    fn paint(
-        &self,
-        rect: Rect,
-        context: &ClientContext,
-        ui: &mut Ui,
-    ) -> Result<(), ExpressionError>;
+    fn paint(&self, rect: Rect, context: &ClientContext, ui: &mut Ui) -> NodeResult<()>;
     fn paint_viewer(&self, context: &ClientContext, ui: &mut Ui) -> Response;
 }
 
 impl MaterialPaint for Material {
-    fn paint(
-        &self,
-        rect: Rect,
-        context: &ClientContext,
-        ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
+    fn paint(&self, rect: Rect, context: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
         RepresentationPlugin::paint_rect(rect, context, self, ui)
     }
     fn paint_viewer(&self, context: &ClientContext, ui: &mut Ui) -> Response {

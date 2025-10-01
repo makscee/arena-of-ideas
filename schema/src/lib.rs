@@ -1,6 +1,5 @@
 mod action;
 mod context;
-mod error;
 mod event;
 mod expression;
 mod fusion;
@@ -9,6 +8,7 @@ mod links;
 mod macro_fn;
 mod r#match;
 mod node_assets;
+mod node_error;
 mod node_part;
 mod packed_nodes;
 mod painter_action;
@@ -29,7 +29,6 @@ use std::{fmt::Display, str::FromStr};
 pub use action::*;
 pub use context::*;
 use ecolor::Color32;
-pub use error::*;
 pub use event::*;
 pub use expression::*;
 pub use fusion::*;
@@ -38,6 +37,8 @@ pub use links::*;
 pub use macro_fn::*;
 pub use r#match::*;
 pub use node_assets::*;
+#[allow(unused_imports)]
+pub use node_error::*;
 
 pub use node_part::*;
 pub use packed_nodes::*;

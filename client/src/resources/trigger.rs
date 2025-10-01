@@ -1,11 +1,11 @@
 use super::*;
 
 pub trait TriggerImpl {
-    fn fire(&self, event: &Event, context: &ClientContext) -> Result<bool, ExpressionError>;
+    fn fire(&self, event: &Event, context: &ClientContext) -> Result<bool, NodeError>;
 }
 
 impl TriggerImpl for Trigger {
-    fn fire(&self, event: &Event, context: &ClientContext) -> Result<bool, ExpressionError> {
+    fn fire(&self, event: &Event, context: &ClientContext) -> Result<bool, NodeError> {
         match event {
             Event::BattleStart => {
                 if matches!(self, Trigger::BattleStart) {

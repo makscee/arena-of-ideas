@@ -22,7 +22,7 @@ impl NUnitDescription {
     pub fn get_processed_description(
         &self,
         context: &ClientContext,
-    ) -> Result<String, ExpressionError> {
+    ) -> Result<String, NodeError> {
         replace_description_macros(&self.description, self.magic_type, self.trigger, context)
     }
 }
@@ -74,7 +74,7 @@ pub fn replace_description_macros(
     magic_type: MagicType,
     trigger: Trigger,
     context: &ClientContext,
-) -> Result<String, ExpressionError> {
+) -> Result<String, NodeError> {
     let mut result = description.to_string();
 
     // Replace %trigger macro with trigger name

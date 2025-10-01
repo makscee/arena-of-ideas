@@ -142,6 +142,7 @@ pub struct NodeEntity {
 pub enum WorldSource<'w> {
     Immutable(&'w World),
     Mutable(&'w mut World),
+    None,
 }
 
 impl<'w> WorldSource<'w> {
@@ -153,16 +154,21 @@ impl<'w> WorldSource<'w> {
         Self::Mutable(world)
     }
 
+    pub const fn new_empty() -> Self {
+        Self::None
+    }
+
     fn world(&self) -> &World {
         match self {
             Self::Immutable(world) => world,
             Self::Mutable(world) => world,
+            Self::None => panic!(),
         }
     }
 
     fn world_mut(&mut self) -> Option<&mut World> {
         match self {
-            Self::Immutable(_) => None,
+            Self::Immutable(_) | Self::None => None,
             Self::Mutable(world) => Some(world),
         }
     }
@@ -356,3 +362,5 @@ impl WorldContextExt for World {
 
 /// Type alias for convenience
 pub type ClientContext<'w> = Context<WorldSource<'w>>;
+
+pub const EMPTY_CONTEXT: ClientContext = Context::new(WorldSource::new_empty());

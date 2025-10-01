@@ -97,10 +97,7 @@ pub fn text_dots_text(text1: Cstr, text2: Cstr, ui: &mut Ui) {
     });
 }
 
-pub fn cursor_window(
-    ctx: &egui::Context,
-    content: impl FnOnce(&mut Ui) -> Result<(), ExpressionError>,
-) {
+pub fn cursor_window(ctx: &egui::Context, content: impl FnOnce(&mut Ui) -> NodeResult<()>) {
     const WIDTH: f32 = 350.0;
     cursor_window_frame(ctx, Frame::popup(&ctx.style()), WIDTH, content)
 }
@@ -108,7 +105,7 @@ pub fn cursor_window_frame(
     ctx: &egui::Context,
     frame: Frame,
     width: f32,
-    content: impl FnOnce(&mut Ui) -> Result<(), ExpressionError>,
+    content: impl FnOnce(&mut Ui) -> NodeResult<()>,
 ) {
     let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
     let pivot = if pos.x > ctx.screen_rect().right() - width {

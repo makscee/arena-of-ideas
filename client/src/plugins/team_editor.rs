@@ -53,11 +53,7 @@ impl TeamEditor {
         self
     }
 
-    pub fn ui(
-        self,
-        ui: &mut Ui,
-        context: &ClientContext,
-    ) -> Result<Vec<TeamAction>, ExpressionError> {
+    pub fn ui(self, ui: &mut Ui, context: &ClientContext) -> NodeResult<Vec<TeamAction>> {
         let team = context.component::<NTeam>(self.team_entity)?;
         let mut actions = Vec::new();
 
@@ -176,7 +172,7 @@ impl TeamEditor {
         &self,
         context: &'a ClientContext,
         _fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
-    ) -> Result<Vec<&'a NUnit>, ExpressionError> {
+    ) -> NodeResult<Vec<&'a NUnit>> {
         let all_units = context
             .collect_children_components_recursive::<NUnit>(context.id(self.team_entity)?)?;
 
@@ -190,7 +186,7 @@ impl TeamEditor {
         &self,
         context: &ClientContext,
         slots: &[&NFusionSlot],
-    ) -> Result<(Vec<Trigger>, HashMap<Trigger, u64>), ExpressionError> {
+    ) -> NodeResult<(Vec<Trigger>, HashMap<Trigger, u64>)> {
         let mut trigger_map = HashMap::new();
 
         for slot in slots {
@@ -216,7 +212,7 @@ impl TeamEditor {
         unit_id: u64,
         target_id: u64,
         context: &ClientContext,
-    ) -> Result<Vec<TeamAction>, ExpressionError> {
+    ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
         let old_fusion_id = if let Ok(old_slot) = context.first_child::<NFusionSlot>(unit_id) {
@@ -313,7 +309,7 @@ impl TeamEditor {
         &self,
         unit_id: u64,
         context: &ClientContext,
-    ) -> Result<Vec<TeamAction>, ExpressionError> {
+    ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
         // Handle moving to bench

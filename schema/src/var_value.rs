@@ -1,5 +1,5 @@
 use ecolor::Color32;
-use error::ExpressionError;
+
 use glam::{Vec2, vec2};
 use itertools::Itertools;
 use std::cmp::Ordering;
@@ -21,7 +21,7 @@ pub enum VarValue {
 }
 
 impl VarValue {
-    pub fn get_string(&self) -> Result<String, ExpressionError> {
+    pub fn get_string(&self) -> Result<String, NodeError> {
         self.as_ref();
         match self {
             VarValue::i32(v) => Ok(v.to_string()),
@@ -38,68 +38,59 @@ impl VarValue {
                 .join(", ")),
         }
     }
-    pub fn get_i32(&self) -> Result<i32, ExpressionError> {
+    pub fn get_i32(&self) -> Result<i32, NodeError> {
         match self {
             VarValue::i32(v) => Ok(*v),
             VarValue::f32(v) => Ok(*v as i32),
             VarValue::bool(v) => Ok(*v as i32),
-            _ => Err(ExpressionError::not_supported_single(
-                "Cast to i32",
-                self.clone(),
-            )),
+            _ => Err(NodeError::not_supported_single("Cast to i32", self.clone())),
         }
     }
-    pub fn get_f32(&self) -> Result<f32, ExpressionError> {
+    pub fn get_f32(&self) -> Result<f32, NodeError> {
         match self {
             VarValue::f32(v) => Ok(*v),
             VarValue::i32(v) => Ok(*v as f32),
             VarValue::u64(v) => Ok(*v as f32),
             VarValue::bool(v) => Ok(*v as i32 as f32),
-            _ => Err(ExpressionError::not_supported_single(
-                "Cast to f32",
-                self.clone(),
-            )),
+            _ => Err(NodeError::not_supported_single("Cast to f32", self.clone())),
         }
     }
-    pub fn get_bool(&self) -> Result<bool, ExpressionError> {
+    pub fn get_bool(&self) -> Result<bool, NodeError> {
         match self {
             VarValue::bool(v) => Ok(*v),
             VarValue::i32(v) => Ok(*v > 0),
             VarValue::f32(v) => Ok(*v > 0.0),
             VarValue::String(v) => Ok(!v.is_empty()),
-            _ => Err(ExpressionError::not_supported_single(
+            _ => Err(NodeError::not_supported_single(
                 "Cast to bool",
                 self.clone(),
             )),
         }
     }
-    pub fn get_u64(&self) -> Result<u64, ExpressionError> {
+    pub fn get_u64(&self) -> Result<u64, NodeError> {
         match self {
             VarValue::u64(v) => Ok(*v),
-            _ => Err(ExpressionError::not_supported_single(
-                "Cast to u64",
-                self.clone(),
-            )),
+            _ => Err(NodeError::not_supported_single("Cast to u64", self.clone())),
         }
     }
-    pub fn get_vec2(&self) -> Result<Vec2, ExpressionError> {
+    pub fn get_vec2(&self) -> Result<Vec2, NodeError> {
         match self {
             VarValue::Vec2(v) => Ok(*v),
             VarValue::f32(v) => Ok(vec2(*v, *v)),
             VarValue::i32(v) => Ok(vec2(*v as f32, *v as f32)),
-            _ => Err(ExpressionError::not_supported_single(
+            _ => Err(NodeError::not_supported_single(
                 "Cast to Vec2",
                 self.clone(),
             )),
         }
     }
-    pub fn get_color(&self) -> Result<Color32, ExpressionError> {
+    pub fn get_color(&self) -> Result<Color32, NodeError> {
         match self {
             VarValue::Color32(v) => Ok(*v),
             VarValue::String(v) => Ok(Color32::from_hex(v)
                 .unwrap_or(Color32::from_rgb(255, 0, 255))
                 .into()),
-            _ => Err(ExpressionError::not_supported_single(
+            _ => Err(NodeError::not_supported_single(
                 "Cast to Color32",
                 self.clone(),
             )),
@@ -112,13 +103,13 @@ impl VarValue {
             (VarValue::u64(a), VarValue::u64(b)) => Ok(a.cmp(b)),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(a.cmp(b)),
             (VarValue::String(a), VarValue::String(b)) => Ok(a.cmp(b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "Compare",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn add(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn add(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         match (a, b) {
             (VarValue::String(a), ..) => {
@@ -131,13 +122,13 @@ impl VarValue {
             (.., VarValue::i32(b)) => Ok(VarValue::i32(a.get_i32()? + *b)),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(VarValue::bool(*a || *b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a + *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "Add",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn sub(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn sub(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(VarValue::f32(a - b)),
@@ -145,13 +136,13 @@ impl VarValue {
             (VarValue::f32(a), VarValue::i32(b)) => Ok(VarValue::f32(a - *b as f32)),
             (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32(*a as f32 - b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a - *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "sub",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn mul(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn mul(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(VarValue::f32(a * b)),
@@ -161,16 +152,16 @@ impl VarValue {
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::Vec2(a), VarValue::f32(b)) => Ok(VarValue::Vec2(*a * *b)),
             (VarValue::f32(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a * *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "mul",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn div(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn div(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         if VarValue::i32(0).eq(b) {
-            return Err(ExpressionError::not_supported_multiple(
+            return Err(NodeError::not_supported_multiple(
                 "Div by zero",
                 vec![a.clone(), b.clone()],
             ));
@@ -182,13 +173,13 @@ impl VarValue {
             (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32(*a as f32 / b)),
             (VarValue::Vec2(a), VarValue::Vec2(b)) => Ok(VarValue::Vec2(*a / *b)),
             (VarValue::Vec2(a), VarValue::f32(b)) => Ok(VarValue::Vec2(*a / *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "Div",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn min(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn min(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(VarValue::f32(a.min(*b))),
@@ -196,13 +187,13 @@ impl VarValue {
             (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32((*a as f32).min(*b))),
             (VarValue::f32(a), VarValue::i32(b)) => Ok(VarValue::f32(a.min(*b as f32))),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(VarValue::bool(*a && *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "min",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn max(&self, b: &VarValue) -> Result<Self, ExpressionError> {
+    pub fn max(&self, b: &VarValue) -> Result<Self, NodeError> {
         let a = self;
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(VarValue::f32(a.max(*b))),
@@ -210,26 +201,26 @@ impl VarValue {
             (VarValue::i32(a), VarValue::f32(b)) => Ok(VarValue::f32((*a as f32).max(*b))),
             (VarValue::f32(a), VarValue::i32(b)) => Ok(VarValue::f32(a.max(*b as f32))),
             (VarValue::bool(a), VarValue::bool(b)) => Ok(VarValue::bool(*a || *b)),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "Max",
                 vec![a.clone(), b.clone()],
             )),
         }
     }
-    pub fn abs(self) -> Result<Self, ExpressionError> {
+    pub fn abs(self) -> Result<Self, NodeError> {
         match self {
             VarValue::f32(x) => Ok(VarValue::f32(x.abs())),
             VarValue::i32(x) => Ok(VarValue::i32(x.abs())),
             VarValue::Vec2(x) => Ok(VarValue::Vec2(x.abs())),
-            _ => Err(ExpressionError::not_supported_single("Abs", self.clone())),
+            _ => Err(NodeError::not_supported_single("Abs", self.clone())),
         }
     }
-    pub fn neg(self) -> Result<Self, ExpressionError> {
+    pub fn neg(self) -> Result<Self, NodeError> {
         match self {
             VarValue::f32(x) => Ok(VarValue::f32(-x)),
             VarValue::i32(x) => Ok(VarValue::i32(-x)),
             VarValue::Vec2(x) => Ok(VarValue::Vec2(-x)),
-            _ => Err(ExpressionError::not_supported_single("Neg", self.clone())),
+            _ => Err(NodeError::not_supported_single("Neg", self.clone())),
         }
     }
 }

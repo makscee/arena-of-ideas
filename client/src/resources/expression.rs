@@ -6,19 +6,19 @@ use rand::seq::SliceRandom;
 use super::*;
 
 pub trait ExpressionImpl {
-    fn get_value(&self, context: &mut ClientContext) -> Result<VarValue, ExpressionError>;
-    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, ExpressionError>;
-    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, ExpressionError>;
-    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, ExpressionError>;
-    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, ExpressionError>;
-    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, ExpressionError>;
-    fn get_string(&self, context: &mut ClientContext) -> Result<String, ExpressionError>;
-    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, ExpressionError>;
-    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, ExpressionError>;
+    fn get_value(&self, context: &mut ClientContext) -> Result<VarValue, NodeError>;
+    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, NodeError>;
+    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, NodeError>;
+    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, NodeError>;
+    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, NodeError>;
+    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, NodeError>;
+    fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError>;
+    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, NodeError>;
+    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, NodeError>;
 }
 
 impl ExpressionImpl for Expression {
-    fn get_value(&self, ctx: &mut ClientContext) -> Result<VarValue, ExpressionError> {
+    fn get_value(&self, ctx: &mut ClientContext) -> Result<VarValue, NodeError> {
         match self {
             Expression::one => Ok(1.into()),
             Expression::zero => Ok(0.into()),
@@ -48,7 +48,7 @@ impl ExpressionImpl for Expression {
             Expression::color(s) => s
                 .try_c32()
                 .map_err(|e| {
-                    ExpressionErrorVariants::OperationNotSupported {
+                    NodeErrorVariants::OperationNotSupported {
                         values: default(),
                         op: "Hex color parse",
                         msg: Some(format!("{e:?}")),
@@ -190,28 +190,28 @@ impl ExpressionImpl for Expression {
             }
         }
     }
-    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, ExpressionError> {
+    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, NodeError> {
         self.get_value(context)?.get_f32()
     }
-    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, ExpressionError> {
+    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, NodeError> {
         self.get_value(context)?.get_i32()
     }
-    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, ExpressionError> {
+    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, NodeError> {
         self.get_value(context)?.get_vec2()
     }
-    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, ExpressionError> {
+    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, NodeError> {
         self.get_value(context)?.get_bool()
     }
-    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, ExpressionError> {
+    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, NodeError> {
         self.get_value(context)?.get_color()
     }
-    fn get_string(&self, context: &mut ClientContext) -> Result<String, ExpressionError> {
+    fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError> {
         self.get_value(context)?.get_string()
     }
-    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, ExpressionError> {
+    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, NodeError> {
         self.get_value(context)?.get_entity()
     }
-    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, ExpressionError> {
+    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, NodeError> {
         self.get_value(context)?.get_entity_list()
     }
 }

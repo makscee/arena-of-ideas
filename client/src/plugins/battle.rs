@@ -134,7 +134,7 @@ impl BattlePlugin {
                             state.value.cstr().label(ui);
                         });
                     }
-                    ui.columns_const(|[ui1, ui2]| -> Result<(), ExpressionError> {
+                    ui.columns_const(|[ui1, ui2]| -> NodeResult<()> {
                         "parents".cstr().label(ui1);
                         "children".cstr().label(ui2);
                         for parent in context.parents_entity(entity)? {
@@ -169,7 +169,7 @@ impl BattlePlugin {
         })
         .push(world);
     }
-    pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_view(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let mut data = world
             .remove_resource::<BattleData>()
             .to_custom_e("No battle loaded")?;
@@ -199,7 +199,7 @@ impl BattlePlugin {
         ui: &mut Ui,
         data: &mut BattleData,
         main_rect: Rect,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         // Create overlay for controls at the bottom
         let overlay_height = 80.0;
         let slider_height = 20.0;
@@ -387,11 +387,7 @@ impl BattlePlugin {
         });
     }
 
-    fn render_end_screen(
-        ui: &mut Ui,
-        data: &mut BattleData,
-        main_rect: Rect,
-    ) -> Result<(), ExpressionError> {
+    fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
         if data.t >= data.simulation.duration && data.simulation.ended() {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
                 let result = data.simulation.fusions_right.is_empty();

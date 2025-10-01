@@ -168,7 +168,7 @@ impl<'a> MatRect<'a> {
         config: &RenderConfig,
         context: &ClientContext,
         ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let scaled_rect = if config.scale != 1.0 {
             let size = rect.size() * config.scale;
             Rect::from_center_size(rect.center(), size)

@@ -54,7 +54,7 @@ impl NodeState {
         state.insert(0.0, 0.0, var, value);
         state
     }
-    pub fn load<'a>(entity: Entity, ctx: &'a ClientContext) -> Result<&'a Self, ExpressionError> {
+    pub fn load<'a>(entity: Entity, ctx: &'a ClientContext) -> Result<&'a Self, NodeError> {
         ctx.world()
             .to_e_not_found()?
             .get::<Self>(entity)
@@ -144,7 +144,7 @@ impl NodeState {
         context: &ClientContext,
         var: VarName,
         entity: Entity,
-    ) -> Result<VarValue, ExpressionError> {
+    ) -> Result<VarValue, NodeError> {
         let mut result = Self::get_var(context, var, entity).unwrap_or_default();
         let ids = context.parents_recursive(context.id(entity)?);
         for entity in context.ids_to_entities(ids)? {
@@ -157,12 +157,12 @@ impl NodeState {
 }
 
 impl VarHistory {
-    fn get_value_at(&self, t: f32) -> Result<VarValue, ExpressionError> {
+    fn get_value_at(&self, t: f32) -> Result<VarValue, NodeError> {
         if t < 0.0 {
-            return Err(ExpressionErrorVariants::Custom("Not born yet".into()).into());
+            return Err(NodeErrorVariants::Custom("Not born yet".into()).into());
         }
         if self.changes.is_empty() {
-            return Err(ExpressionErrorVariants::Custom("History is empty".into()).into());
+            return Err(NodeErrorVariants::Custom("History is empty".into()).into());
         }
         let mut i = match self.changes.binary_search_by(|h| h.t.total_cmp(&t)) {
             Ok(v) | Err(v) => v.at_least(1) - 1,

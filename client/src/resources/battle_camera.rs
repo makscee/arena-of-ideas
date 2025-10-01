@@ -41,7 +41,7 @@ impl BattleCamera {
         self.zoom = 22.0;
         self.pos = default();
     }
-    fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, ExpressionError> {
+    fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, NodeError> {
         let pos = context.get_vec2(VarName::position)?.to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))

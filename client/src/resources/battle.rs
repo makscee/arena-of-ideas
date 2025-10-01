@@ -411,7 +411,7 @@ impl BattleSimulation {
     fn send_event(
         context: &mut ClientContext,
         event: Event,
-    ) -> Result<VecDeque<BattleAction>, ExpressionError> {
+    ) -> Result<VecDeque<BattleAction>, NodeError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
         for entity in context.battle_simulation()?.all_fusions() {
@@ -450,7 +450,7 @@ impl BattleSimulation {
         status: NStatusMagic,
         charges: i32,
         color: Color32,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let t = context.t()?;
         for child in context.children(context.id(target)?) {
             let child = context.entity(child)?;
@@ -509,10 +509,7 @@ impl BattleSimulation {
         actions
     }
     #[must_use]
-    fn die(
-        context: &mut ClientContext,
-        entity: Entity,
-    ) -> Result<Vec<BattleAction>, ExpressionError> {
+    fn die(context: &mut ClientContext, entity: Entity) -> Result<Vec<BattleAction>, NodeError> {
         context.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
         let bs = context.battle_simulation_mut()?;
@@ -578,7 +575,7 @@ impl BattleSimulation {
         units.append(&mut self.fusions_right.clone());
         units
     }
-    pub fn all_allies(&self, entity: Entity) -> Result<&Vec<Entity>, ExpressionError> {
+    pub fn all_allies(&self, entity: Entity) -> Result<&Vec<Entity>, NodeError> {
         let left = self.left_units();
         if left.contains(&entity) {
             return Ok(left);
@@ -588,12 +585,12 @@ impl BattleSimulation {
                 return Ok(right);
             }
         }
-        Err(ExpressionErrorVariants::NotFound(format!(
+        Err(NodeErrorVariants::NotFound(format!(
             "Failed to find allies: {entity} is not in any team"
         ))
         .into())
     }
-    pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, ExpressionError> {
+    pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, NodeError> {
         let left = self.left_units();
         let right = self.right_units();
         if left.contains(&entity) {
@@ -601,7 +598,7 @@ impl BattleSimulation {
         } else if right.contains(&entity) {
             return Ok(left);
         }
-        Err(ExpressionErrorVariants::NotFound(format!(
+        Err(NodeErrorVariants::NotFound(format!(
             "Failed to find enemies: {entity} is not in any team"
         ))
         .into())

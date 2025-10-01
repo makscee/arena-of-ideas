@@ -6,7 +6,7 @@ include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
 
 #[allow(unused)]
 pub trait ServerNode: Sized + schema::Node {
-    fn load(ctx: &ServerContext, id: u64) -> Result<Self, NodeError> {
+    fn load(ctx: &ServerContext, id: u64) -> NodeResult<Self> {
         let kind = Self::kind_s().to_string();
         let node: TNode = ctx
             .source()

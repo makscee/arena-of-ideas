@@ -186,7 +186,7 @@ impl FEdit for UnitActionRange {
 
 // MagicType
 impl FEdit for MagicType {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
         response
     }
@@ -216,7 +216,7 @@ impl FDisplay for VarName {
 }
 
 impl FEdit for VarName {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
         response
     }
@@ -301,7 +301,7 @@ impl FDisplay for Expression {
 }
 
 impl FEdit for Expression {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         if let Some(mut old_value) = old_value {
             self.move_inner_fields_from(&mut old_value);
@@ -311,13 +311,13 @@ impl FEdit for Expression {
 }
 
 impl FTitle for Trigger {
-    fn title(&self, _context: &ClientContext) -> Cstr {
+    fn title(&self, _ctx: &ClientContext) -> Cstr {
         self.as_ref().to_owned()
     }
 }
 
 impl FEdit for Trigger {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         Selector::ui_enum(self, ui).1
     }
 }
@@ -456,7 +456,7 @@ impl FTitle for Reaction {
 }
 
 impl FDisplay for Trigger {
-    fn display(&self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         self.cstr().label(ui)
     }
 }
@@ -522,10 +522,10 @@ impl FStats for NUnit {
     fn stats(&self, ctx: &ClientContext) -> Vec<(VarName, VarValue)> {
         let mut stats = vec![];
 
-        if let Some(pwr) = ctx.get_var(VarName::pwr) {
+        if let Ok(pwr) = ctx.get_var(VarName::pwr) {
             stats.push((VarName::pwr, pwr));
         }
-        if let Some(hp) = ctx.get_var(VarName::hp) {
+        if let Ok(hp) = ctx.get_var(VarName::hp) {
             stats.push((VarName::hp, hp));
         }
         let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
@@ -618,7 +618,7 @@ impl FPlaceholder for NUnit {
 }
 
 impl FEdit for NUnit {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Unit Name:]".cstr().label(ui);
             ui.text_edit_singleline(&mut self.unit_name)
@@ -669,27 +669,16 @@ impl FTag for NHouse {
 
 impl FInfo for NHouse {
     fn info(&self, ctx: &ClientContext) -> Cstr {
-        let mut info_parts = Vec::new();
-
-        let mut units_count = 0;
-        if let Ok(ability) = self.ability_load(ctx) {
-            units_count += ability.units_load(ctx).len();
+        let mut info_parts = vec![self.house_name.clone()];
+        if let Ok(ability) = self.ability_ref(ctx) {
+            info_parts.push(ability.info(ctx));
         }
-        if let Ok(status) = self.status_load(ctx) {
-            units_count += status.units_load(ctx).len();
-        }
-        if units_count > 0 {
-            info_parts.push(format!("units: {}", units_count));
+        if let Ok(status) = self.status_ref(ctx) {
+            info_parts.push(status.info(ctx));
         }
         let color = self.color_for_text(ctx);
-        if let Ok(ability) = self.ability_load(ctx) {
-            info_parts.push(ability.ability_name.cstr_c(color));
-        }
-        if let Ok(status) = self.status_load(ctx) {
-            info_parts.push(status.status_name.cstr_c(color));
-        }
 
-        info_parts.join(" | ")
+        info_parts.into_iter().map(|s| s.cstr_c(color)).join(" | ")
     }
 }
 
@@ -708,7 +697,7 @@ impl FPlaceholder for NHouse {
 }
 
 impl FEdit for NHouse {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw House Name:]".cstr().label(ui);
             ui.text_edit_singleline(&mut self.house_name)
@@ -772,13 +761,13 @@ impl FPlaceholder for NAbilityMagic {
 }
 
 impl FInfo for NAbilityMagic {
-    fn info(&self, _context: &ClientContext) -> Cstr {
+    fn info(&self, _ctx: &ClientContext) -> Cstr {
         format!("Ability: {}", self.ability_name).cstr()
     }
 }
 
 impl FEdit for NAbilityMagic {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Ability Name:]".cstr().label(ui);
             ui.text_edit_singleline(&mut self.ability_name)
@@ -797,7 +786,7 @@ impl FTitle for NStatusMagic {
 
 impl FDescription for NStatusMagic {
     fn description(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(description) = self.description_load(ctx) {
+        if let Ok(description) = self.description_ref(ctx) {
             description.description.clone()
         } else {
             String::new()
@@ -844,13 +833,13 @@ impl FPlaceholder for NStatusMagic {
 }
 
 impl FInfo for NStatusMagic {
-    fn info(&self, _context: &ClientContext) -> Cstr {
+    fn info(&self, _ctx: &ClientContext) -> Cstr {
         format!("Status: {}", self.status_name).cstr()
     }
 }
 
 impl FEdit for NStatusMagic {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Status Name:]".cstr().label(ui);
             ui.text_edit_singleline(&mut self.status_name)
@@ -867,7 +856,7 @@ impl FTitle for NArena {
 }
 
 impl FDescription for NArena {
-    fn description(&self, _context: &ClientContext) -> Cstr {
+    fn description(&self, _ctx: &ClientContext) -> Cstr {
         "Arena Description".into()
     }
 }
@@ -982,7 +971,7 @@ impl FTitle for NPlayer {
 
 impl FDescription for NPlayer {
     fn description(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(data) = self.player_data_load(ctx) {
+        if let Ok(data) = self.player_data_ref(ctx) {
             if data.online {
                 "Online".cstr_c(Color32::from_rgb(0, 255, 0))
             } else {
@@ -1006,7 +995,7 @@ impl FTag for NPlayer {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        if let Ok(data) = self.player_data_load(ctx) {
+        if let Ok(data) = self.player_data_ref(ctx) {
             Some(if data.online {
                 "●".cstr_c(Color32::from_rgb(0, 255, 0))
             } else {
@@ -1042,7 +1031,7 @@ impl FDisplay for NPlayer {
                 .player_name
                 .cstr_c(Color32::from_rgb(0, 0, 255))
                 .label(ui);
-            if let Ok(data) = self.player_data_load(ctx) {
+            if let Ok(data) = self.player_data_ref(ctx) {
                 if data.online {
                     "●".cstr_c(Color32::from_rgb(0, 255, 0)).label(ui);
                 } else {
@@ -1056,7 +1045,7 @@ impl FDisplay for NPlayer {
 }
 
 impl FEdit for NPlayer {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Player Name:]".cstr().label(ui);
             ui.text_edit_singleline(&mut self.player_name)
@@ -1523,7 +1512,7 @@ impl FTag for NMatch {
 }
 
 impl FDisplay for NMatch {
-    fn display(&self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             format!("Floor {}", self.floor)
                 .cstr_c(Color32::from_rgb(255, 165, 0))
@@ -1554,7 +1543,7 @@ impl FDisplay for NMatch {
 }
 
 impl FEdit for NMatch {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Gold:]".cstr().label(ui);
             let mut response = ui.add(egui::DragValue::new(&mut self.g));
@@ -1758,7 +1747,7 @@ impl FTag for NUnitDescription {
 }
 
 impl FDisplay for NUnitDescription {
-    fn display(&self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             let mut response = self.description.cstr().label_w(ui);
             ui.horizontal(|ui| {
@@ -1837,7 +1826,7 @@ impl FTag for NUnitStats {
 }
 
 impl FDisplay for NUnitStats {
-    fn display(&self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             let mut response = format!("PWR: {}", self.pwr)
                 .cstr_c(VarName::pwr.color())
@@ -1853,7 +1842,7 @@ impl FDisplay for NUnitStats {
 }
 
 impl FEdit for NUnitStats {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Power:]".cstr().label(ui);
             let pwr_response = ui.add(egui::DragValue::new(&mut self.pwr));
@@ -1899,7 +1888,7 @@ impl FTag for NUnitState {
 }
 
 impl FDisplay for NUnitState {
-    fn display(&self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             ui.label("Stacks:");
             format!("{}", self.stacks)
@@ -1911,7 +1900,7 @@ impl FDisplay for NUnitState {
 }
 
 impl FEdit for NUnitState {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Stacks:]".cstr().label(ui);
             ui.add(egui::DragValue::new(&mut self.stacks))
@@ -1953,7 +1942,7 @@ impl FTag for NUnitBehavior {
 }
 
 impl FInfo for NUnitBehavior {
-    fn info(&self, _context: &ClientContext) -> Cstr {
+    fn info(&self, _ctx: &ClientContext) -> Cstr {
         format!("{} {}", self.magic_type.cstr(), self.reaction.cstr())
     }
 }
@@ -2043,7 +2032,7 @@ impl FEdit for NUnitRepresentation {
 // ============================================================================
 
 impl FEdit for NArena {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.label("Arena")
     }
 }
@@ -2055,7 +2044,7 @@ impl FPlaceholder for NArena {
 }
 
 impl FEdit for NFloorPool {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Floor:]".cstr().label(ui);
             ui.add(DragValue::new(&mut self.floor))
@@ -2071,7 +2060,7 @@ impl FPlaceholder for NFloorPool {
 }
 
 impl FEdit for NFloorBoss {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Floor:]".cstr().label(ui);
             ui.add(DragValue::new(&mut self.floor))
@@ -2087,7 +2076,7 @@ impl FPlaceholder for NFloorBoss {
 }
 
 impl FEdit for NPlayerData {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = ui.label("");
 
         response = response.union(
@@ -2143,7 +2132,7 @@ impl FPlaceholder for NAbilityEffect {
 }
 
 impl FEdit for NPlayerIdentity {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Identity Data:]".cstr().label(ui);
             if let Some(ref mut data) = self.data {
@@ -2178,7 +2167,7 @@ impl FPlaceholder for NStatusBehavior {
 }
 
 impl FEdit for NAbilityDescription {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Description:]".cstr().label(ui);
             ui.text_edit_multiline(&mut self.description)
@@ -2198,7 +2187,7 @@ impl FEdit for NAbilityEffect {
 }
 
 impl FEdit for NStatusDescription {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             "[tw Description:]".cstr().label(ui);
             ui.text_edit_multiline(&mut self.description)
@@ -2208,7 +2197,7 @@ impl FEdit for NStatusDescription {
 }
 
 impl FEdit for NStatusBehavior {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.group(|ui| {
             ui.label("Reactions:");
             ui.label(format!("{} reactions configured", self.reactions.len()));
@@ -2225,13 +2214,13 @@ impl FEdit for NStatusRepresentation {
 }
 
 impl FEdit for NTeam {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.label("Team")
     }
 }
 
 impl FEdit for NBattle {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.group(|ui| {
             let mut response = ui
                 .horizontal(|ui| {
@@ -2300,7 +2289,7 @@ impl FPlaceholder for NBattle {
 }
 
 impl FEdit for NFusion {
-    fn edit(&mut self, _context: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = ui
             .horizontal(|ui| {
                 "[tw Trigger Unit:]".cstr().label(ui);
@@ -2627,7 +2616,7 @@ impl FCompactView for NUnitRepresentation {
 }
 
 impl FCompactView for NUnitDescription {
-    fn render_compact(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.set_max_width(200.0);
             self.description.cstr().label_w(ui);
@@ -2636,7 +2625,7 @@ impl FCompactView for NUnitDescription {
         });
     }
 
-    fn render_hover(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Description");
             ui.separator();
@@ -2651,7 +2640,7 @@ impl FCompactView for NUnitDescription {
 }
 
 impl FCompactView for NUnitBehavior {
-    fn render_compact(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
         let actions_count = self.reaction.actions.len();
         let tier = self.reaction.tier();
 
@@ -2666,7 +2655,7 @@ impl FCompactView for NUnitBehavior {
         });
     }
 
-    fn render_hover(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Behavior");
             ui.separator();
@@ -2700,7 +2689,7 @@ impl FCompactView for NUnitBehavior {
 }
 
 impl FCompactView for NUnitStats {
-    fn render_compact(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
         format!(
             "{}[tw /]{}",
             self.pwr.cstr_c(VarName::pwr.color()),
@@ -2709,7 +2698,7 @@ impl FCompactView for NUnitStats {
         .label(ui);
     }
 
-    fn render_hover(&self, _context: &ClientContext, ui: &mut Ui) {
+    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Stats");
             ui.separator();

@@ -21,7 +21,7 @@ impl Plugin for MatchPlugin {
 }
 
 impl MatchPlugin {
-    pub fn check_battles(world: &mut World) -> Result<(), ExpressionError> {
+    pub fn check_battles(world: &mut World) -> NodeResult<()> {
         Context::from_world_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             if let Some(last) = m.battles_load(context).last() {
@@ -34,7 +34,7 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn check_active(world: &mut World) -> Result<(), ExpressionError> {
+    pub fn check_active(world: &mut World) -> NodeResult<()> {
         Context::from_world_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             if !m.active {
@@ -72,7 +72,7 @@ impl MatchPlugin {
             }
         }
     }
-    pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
 
@@ -122,7 +122,7 @@ impl MatchPlugin {
                                     context.with_layer_ref(
                                         ContextLayer::Owner(context.entity(slot.node_id).unwrap()),
                                         |context| {
-                                            ui.push_id(i, |ui| -> Result<(), ExpressionError> {
+                                            ui.push_id(i, |ui| -> NodeResult<()> {
                                                 let resp = match slot.card_kind {
                                                     CardKind::Unit => {
                                                         let unit = context
@@ -177,7 +177,7 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_info(ui: &mut Ui, world: &World) -> NodeResult<()> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             Grid::new("shop info").show(ui, |ui| {
@@ -194,27 +194,25 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_roster(ui: &mut Ui, world: &World) -> NodeResult<()> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
-            let (_, card) = ui.dnd_drop_zone::<(usize, CardKind), Result<(), ExpressionError>>(
-                Frame::new(),
-                |ui| {
+            let (_, card) =
+                ui.dnd_drop_zone::<(usize, CardKind), NodeResult<()>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
                     for house in team.houses_load(context) {
                         house.as_card().compose(context, ui);
                     }
                     Ok(())
-                },
-            );
+                });
             if let Some(card) = card {
                 cn().reducers.match_shop_buy(card.0 as u8).notify_op();
             }
             Ok(())
         })
     }
-    pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_team(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         Context::from_world_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
@@ -263,7 +261,7 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         Context::from_world_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             ui.vertical_centered_justified(|ui| {
@@ -286,7 +284,7 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         Context::from_world_r(world, |context| {
             let world = context.world_mut()?;
 
@@ -334,7 +332,7 @@ impl MatchPlugin {
         })
     }
 
-    pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
+    pub fn pane_fusion(ui: &mut Ui, world: &World) -> NodeResult<()> {
         Context::from_world_ref_r(world, |context| {
             let m = player(context)?.active_match_load(context)?;
             let team = m.team_load(context)?;
@@ -357,7 +355,7 @@ impl MatchPlugin {
         ui: &mut Ui,
         context: &ClientContext,
         fusions: &[&NFusion],
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         ui.columns(fusions.len(), |columns| {
             for (fusion_idx, fusion) in fusions.iter().enumerate() {
                 let ui = &mut columns[fusion_idx];
@@ -405,7 +403,7 @@ impl MatchPlugin {
         ui: &mut Ui,
         context: &ClientContext,
         fusions: &[&NFusion],
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         ui.columns(fusions.len(), |columns| {
             for (fusion_idx, fusion) in fusions.iter().enumerate() {
                 let ui = &mut columns[fusion_idx];
@@ -423,8 +421,8 @@ impl MatchPlugin {
         context: &ClientContext,
         fusion: &NFusion,
         fusion_idx: usize,
-    ) -> Result<(), ExpressionError> {
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
+        ui.vertical(|ui| -> NodeResult<()> {
             let units = fusion.units(context).unwrap_or_default();
             let max_slots = fusion.slots_load(context).len();
 

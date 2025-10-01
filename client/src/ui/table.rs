@@ -25,14 +25,10 @@ pub struct TableState {
 
 pub struct TableColumn<'a, T> {
     name: String,
-    show: Box<
-        dyn FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-            + 'a
-            + Send
-            + Sync,
-    >,
+    show:
+        Box<dyn FnMut(&ClientContext, &mut Ui, &T, VarValue) -> NodeResult<()> + 'a + Send + Sync>,
     value: Option<
-        Box<dyn FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync>,
+        Box<dyn FnMut(&ClientContext, &T) -> Result<VarValue, NodeError> + 'a + Send + Sync>,
     >,
     initial_width: Option<f32>,
     remainder: bool,
@@ -185,7 +181,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_cstr(
         self,
         name: impl Into<String>,
-        f: impl Fn(&ClientContext, &T) -> Result<String, ExpressionError> + 'a + Send + Sync + Clone,
+        f: impl Fn(&ClientContext, &T) -> Result<String, NodeError> + 'a + Send + Sync + Clone,
     ) -> Self {
         let f_clone = f.clone();
         self.column(
@@ -197,7 +193,7 @@ impl<'a, T> Table<'a, T> {
                 }
                 _ => {
                     ui.label("Invalid");
-                    Err(ExpressionErrorVariants::Custom("Type mismatch".to_string()).into())
+                    Err(NodeErrorVariants::Custom("Type mismatch".to_string()).into())
                 }
             },
             move |context, data| f_clone(context, data).map(VarValue::String),
@@ -207,11 +203,8 @@ impl<'a, T> Table<'a, T> {
     pub fn column(
         mut self,
         name: impl Into<String>,
-        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-        + 'a
-        + Send
-        + Sync,
-        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> NodeResult<()> + 'a + Send + Sync,
+        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, NodeError> + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -227,10 +220,7 @@ impl<'a, T> Table<'a, T> {
     pub fn column_no_sort(
         mut self,
         name: impl Into<String>,
-        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-        + 'a
-        + Send
-        + Sync,
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> NodeResult<()> + 'a + Send + Sync,
     ) -> Self {
         self.columns.push(TableColumn {
             name: name.into(),
@@ -300,11 +290,8 @@ impl<'a, T> Table<'a, T> {
         self,
         name: impl Into<String>,
         hover_text: impl Into<String> + 'a,
-        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> Result<(), ExpressionError>
-        + 'a
-        + Send
-        + Sync,
-        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, ExpressionError> + 'a + Send + Sync,
+        show_fn: impl FnMut(&ClientContext, &mut Ui, &T, VarValue) -> NodeResult<()> + 'a + Send + Sync,
+        value_fn: impl FnMut(&ClientContext, &T) -> Result<VarValue, NodeError> + 'a + Send + Sync,
     ) -> Self {
         let hover_text = hover_text.into();
         self.column(name, show_fn, value_fn)

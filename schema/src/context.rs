@@ -1,40 +1,5 @@
 use super::*;
-
-// Common error type
-#[derive(Debug, Error)]
-pub enum NodeError {
-    #[error("Node not found: {0}")]
-    NotFound(u64),
-
-    #[error("Invalid node kind: expected {expected}, got {actual}")]
-    InvalidKind {
-        expected: NodeKind,
-        actual: NodeKind,
-    },
-
-    #[error("Failed to load node: {0}")]
-    LoadError(String),
-
-    #[error("Failed to cast node")]
-    CastError,
-
-    #[error("Context error: {0}")]
-    ContextError(#[from] anyhow::Error),
-}
-
-impl From<NodeError> for String {
-    fn from(value: NodeError) -> Self {
-        value.to_string()
-    }
-}
-
-impl From<ExpressionError> for NodeError {
-    fn from(value: ExpressionError) -> Self {
-        NodeError::ContextError(value.into())
-    }
-}
-
-pub type NodeResult<T> = Result<T, NodeError>;
+use crate::node_error::NodeResult;
 
 // Common traits that both client and server will implement
 pub trait Node: Send + Sync + Default + StringData {
@@ -108,7 +73,7 @@ where
     S: ContextSource,
 {
     /// Create a new context from a source
-    pub fn new(source: S) -> Self {
+    pub const fn new(source: S) -> Self {
         Self {
             source,
             layers: Vec::new(),
@@ -266,31 +231,31 @@ where
     }
 
     /// Get variable value from context layers
-    pub fn get_var(&self, var: VarName) -> Option<VarValue> {
+    pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
         for layer in self.layers.iter().rev() {
             if let ContextLayer::Var(var_name, value) = layer {
                 if *var_name == var {
-                    return Some(value.clone());
+                    return Ok(value.clone());
                 }
             }
         }
-        None
+        Err(NodeError::VarNotFound(var))
     }
 
-    pub fn get_color(&self, var: VarName) -> Option<Color32> {
-        self.get_var(var).and_then(|v| v.get_color().ok())
+    pub fn get_color(&self, var: VarName) -> NodeResult<Color32> {
+        self.get_var(var)?.get_color()
     }
 
-    pub fn get_i32(&self, var: VarName) -> Option<i32> {
-        self.get_var(var).and_then(|v| v.get_i32().ok())
+    pub fn get_i32(&self, var: VarName) -> NodeResult<i32> {
+        self.get_var(var)?.get_i32()
     }
 
-    pub fn get_f32(&self, var: VarName) -> Option<f32> {
-        self.get_var(var).and_then(|v| v.get_f32().ok())
+    pub fn get_f32(&self, var: VarName) -> NodeResult<f32> {
+        self.get_var(var)?.get_f32()
     }
 
-    pub fn get_string(&self, var: VarName) -> Option<String> {
-        self.get_var(var).and_then(|v| v.get_string().ok())
+    pub fn get_string(&self, var: VarName) -> NodeResult<String> {
+        self.get_var(var)?.get_string()
     }
 
     /// Set a variable in the context
