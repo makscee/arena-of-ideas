@@ -163,17 +163,9 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        for component in &self.#field_name {
-                            world.entity_mut(entity).insert(component.clone());
-                        }
-                    }
-                } else {
-                    quote! {
-                        if let Some(loaded) = self.#field_name.get() {
-                            world.entity_mut(entity).insert(loaded.clone());
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        world.entity_mut(entity).insert(loaded.clone());
                     }
                 })
             }
@@ -253,9 +245,7 @@ fn generate_client_node_impl(
 
     quote! {
         impl ClientNode for #struct_name {
-            fn spawn(self, world: &mut World) {
-                let entity = world.spawn(self.clone()).id();
-
+            fn spawn(self, world: &mut World, entity: Entity) {
                 // Register id-entity mapping in NodeEntityMap
                 if let Some(mut node_entity_map) = world.get_resource_mut::<NodeEntityMap>() {
                     node_entity_map.insert(self.id, entity);

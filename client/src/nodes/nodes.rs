@@ -8,7 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
-    fn spawn(self, world: &mut World);
+    fn spawn(self, world: &mut World, entity: Entity);
 }
 
 pub trait NodeExt: Sized + ClientNode + StringData {
@@ -79,21 +79,23 @@ impl NodeKindOnUnpack for NodeKind {
                     .first_child::<NUnitRepresentation>(context.id(entity)?)
                     .is_err()
                 {
-                    let world = context
-                        .world_mut()
-                        .to_not_found_msg("World not available")?;
+                    let world = context.world_mut()?;
                     let rep_entity = world.spawn_empty().id();
                     unit_rep().clone().unpack_entity(context, rep_entity)?;
                     context.link_parent_child(context.id(entity)?, context.id(rep_entity)?)?;
                 }
-                context.component_mut::<NodeState>(entity)?.init_vars(
-                    [
-                        (VarName::pwr, 0.into()),
-                        (VarName::hp, 0.into()),
-                        (VarName::dmg, 0.into()),
-                    ]
-                    .into(),
-                );
+                context
+                    .world_mut()?
+                    .get_mut::<NodeState>(entity)
+                    .to_not_found()?
+                    .init_vars(
+                        [
+                            (VarName::pwr, 0.into()),
+                            (VarName::hp, 0.into()),
+                            (VarName::dmg, 0.into()),
+                        ]
+                        .into(),
+                    );
             }
             _ => {}
         }

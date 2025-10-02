@@ -7,44 +7,60 @@ use std::collections::HashMap;
 #[derive(Resource, Default)]
 pub struct NodeEntityMap {
     id_to_entity: HashMap<u64, Entity>,
-    entity_to_id: HashMap<Entity, u64>,
+    entity_to_ids: HashMap<Entity, Vec<u64>>,
 }
 
 impl NodeEntityMap {
     pub fn insert(&mut self, id: u64, entity: Entity) {
         self.id_to_entity.insert(id, entity);
-        self.entity_to_id.insert(entity, id);
+        self.entity_to_ids
+            .entry(entity)
+            .or_insert_with(Vec::new)
+            .push(id);
     }
 
     pub fn get_entity(&self, id: u64) -> Option<Entity> {
         self.id_to_entity.get(&id).copied()
     }
 
+    pub fn get_ids(&self, entity: Entity) -> Vec<u64> {
+        self.entity_to_ids.get(&entity).cloned().unwrap_or_default()
+    }
+
     pub fn get_id(&self, entity: Entity) -> Option<u64> {
-        self.entity_to_id.get(&entity).copied()
+        self.entity_to_ids
+            .get(&entity)
+            .and_then(|ids| ids.first().copied())
     }
 
     pub fn remove_by_id(&mut self, id: u64) -> Option<Entity> {
         if let Some(entity) = self.id_to_entity.remove(&id) {
-            self.entity_to_id.remove(&entity);
+            if let Some(ids) = self.entity_to_ids.get_mut(&entity) {
+                ids.retain(|&existing_id| existing_id != id);
+                if ids.is_empty() {
+                    self.entity_to_ids.remove(&entity);
+                }
+            }
             Some(entity)
         } else {
             None
         }
     }
 
-    pub fn remove_by_entity(&mut self, entity: Entity) -> Option<u64> {
-        if let Some(id) = self.entity_to_id.remove(&entity) {
-            self.id_to_entity.remove(&id);
-            Some(id)
+    pub fn remove_by_entity(&mut self, entity: Entity) -> Vec<u64> {
+        if let Some(ids) = self.entity_to_ids.remove(&entity) {
+            for id in &ids {
+                self.id_to_entity.remove(id);
+            }
+            ids
         } else {
-            None
+            Vec::new()
         }
     }
 
     pub fn clear(&mut self) {
         self.id_to_entity.clear();
-        self.entity_to_id.clear();
+        self.entity_to_ids.clear();
     }
 }
 
@@ -158,25 +174,26 @@ impl<'w> WorldSource<'w> {
         Self::None
     }
 
-    fn world(&self) -> &World {
+    fn world(&self) -> NodeResult<&World> {
         match self {
-            Self::Immutable(world) => world,
-            Self::Mutable(world) => world,
-            Self::None => panic!(),
+            Self::Immutable(world) => Ok(world),
+            Self::Mutable(world) => Ok(world),
+            Self::None => Err(NodeError::Custom("Source World not set")),
         }
     }
 
-    fn world_mut(&mut self) -> Option<&mut World> {
+    fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Self::Immutable(_) | Self::None => None,
-            Self::Mutable(world) => Some(world),
+            Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable")),
+            Self::None => Err(NodeError::Custom("Source World not set")),
+            Self::Mutable(world) => Ok(world),
         }
     }
 }
 
 impl<'w> ContextSource for WorldSource<'w> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             if let Some(entity) = map.get_entity(id) {
                 if let Some(node) = world.get::<NodeEntity>(entity) {
@@ -188,7 +205,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(links) = world.get_resource::<NodeLinks>() {
             Ok(links.get_children(from_id))
         } else {
@@ -197,7 +214,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(links) = world.get_resource::<NodeLinks>() {
             Ok(links.get_children_of_kind(from_id, kind))
         } else {
@@ -206,7 +223,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(links) = world.get_resource::<NodeLinks>() {
             Ok(links.get_parents(id))
         } else {
@@ -215,7 +232,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(links) = world.get_resource::<NodeLinks>() {
             Ok(links.get_parents_of_kind(id, kind))
         } else {
@@ -259,7 +276,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
-        let world = self.world();
+        let world = self.world()?;
         if let Some(links) = world.get_resource::<NodeLinks>() {
             Ok(links.has_link(from_id, to_id))
         } else {
@@ -270,42 +287,36 @@ impl<'w> ContextSource for WorldSource<'w> {
 
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
-    fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
-    where
-        T: 'static + ClientNode;
+    fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
 
-    fn load_many<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
-    where
-        T: 'static + ClientNode;
+    fn load_many<'a, T: BevyComponent>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>;
 
     fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
-    fn world<'a>(&'a self) -> Option<&'a World>;
-    fn world_mut<'a>(&'a mut self) -> Option<&'a mut World>;
+    fn world<'a>(&'a self) -> NodeResult<&'a World>;
+    fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World>;
+
+    fn id(&self, entity: Entity) -> NodeResult<u64>;
+    fn entity(&self, id: u64) -> NodeResult<Entity>;
+    fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()>;
+    fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity>;
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
-    fn load<'a, T>(&'a self, id: u64) -> NodeResult<&'a T>
-    where
-        T: 'static + ClientNode,
-    {
-        let world = self.source().world();
-        if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            if let Some(entity) = map.get_entity(id) {
-                if let Some(component) = world.get::<T>(entity) {
-                    return Ok(component);
-                } else {
-                    return Err(NodeError::LoadError(
-                        "Failed to get component from entity".into(),
-                    ));
-                }
-            }
+    fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let world = self.source().world()?;
+        let entity = self.entity(id)?;
+        if let Some(component) = world.get::<T>(entity) {
+            return Ok(component);
+        } else {
+            return Err(NodeError::LoadError(
+                "Failed to get component from entity".into(),
+            ));
         }
-        Err(NodeError::NotFound(id))
     }
 
     fn load_many<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
     where
-        T: 'static + ClientNode,
+        T: 'static + BevyComponent,
     {
         let mut results = Vec::new();
         for id in ids {
@@ -320,12 +331,58 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         self.load_many(&ids)
     }
 
-    fn world<'a>(&'a self) -> Option<&'a World> {
-        Some(self.source().world())
+    fn world<'a>(&'a self) -> NodeResult<&'a World> {
+        self.source().world()
     }
 
-    fn world_mut<'a>(&'a mut self) -> Option<&'a mut World> {
+    fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World> {
         self.source_mut().world_mut()
+    }
+
+    fn id(&self, entity: Entity) -> NodeResult<u64> {
+        let world = self.source().world()?;
+        if let Some(map) = world.get_resource::<NodeEntityMap>() {
+            map.get_id(entity)
+                .ok_or(NodeError::IdNotFound(entity.index(), entity.generation()))
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "NodeEntityMap resource not found"
+            )))
+        }
+    }
+
+    fn entity(&self, id: u64) -> NodeResult<Entity> {
+        let world = self.source().world()?;
+        if let Some(map) = world.get_resource::<NodeEntityMap>() {
+            map.get_entity(id).ok_or(NodeError::EntityNotFound(id))
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "NodeEntityMap resource not found"
+            )))
+        }
+    }
+
+    fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()> {
+        let world = self.source_mut().world_mut()?;
+        if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
+            map.insert(id, entity);
+            Ok(())
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "NodeEntityMap resource not found"
+            )))
+        }
+    }
+
+    fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity> {
+        let world = self.source_mut().world_mut()?;
+        if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
+            map.remove_by_id(id).ok_or(NodeError::EntityNotFound(id))
+        } else {
+            Err(NodeError::ContextError(anyhow::anyhow!(
+                "NodeEntityMap resource not found"
+            )))
+        }
     }
 }
 
@@ -340,6 +397,12 @@ pub trait WorldContextExt {
     fn with_context_mut<R, F>(&mut self, f: F) -> R
     where
         F: FnOnce(&mut Context<WorldSource<'_>>) -> R;
+
+    /// Execute with a context using this world as the source (immutable)
+    fn as_context(&self) -> Context<WorldSource<'_>>;
+
+    /// Execute with a context using this world as the source (mutable)
+    fn as_context_mut(&mut self) -> Context<WorldSource<'_>>;
 }
 
 impl WorldContextExt for World {
@@ -357,6 +420,14 @@ impl WorldContextExt for World {
     {
         let source = WorldSource::new_mutable(self);
         Context::exec(source, f)
+    }
+
+    fn as_context(&self) -> Context<WorldSource<'_>> {
+        Context::new(WorldSource::new_immutable(self))
+    }
+
+    fn as_context_mut(&mut self) -> Context<WorldSource<'_>> {
+        Context::new(WorldSource::new_mutable(self))
     }
 }
 

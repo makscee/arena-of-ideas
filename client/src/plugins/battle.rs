@@ -38,11 +38,8 @@ impl BattleData {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        Context::from_world_r(&mut teams_world, |context| {
-            battle.left.clone().unpack_entity(context, team_left)?;
-            battle.right.clone().unpack_entity(context, team_right)
-        })
-        .unwrap();
+        battle.left.clone().spawn(&mut teams_world, team_left);
+        battle.right.clone().spawn(&mut teams_world, team_right);
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -120,52 +117,57 @@ impl BattlePlugin {
                 return;
             };
             let world = &mut bd.simulation.world;
-            Context::from_world_r(world, |context| {
-                if let Some(entity) = selected {
-                    ui.horizontal(|ui| {
-                        format!("selected {entity}").label(ui);
-                        if "clear".cstr().button(ui).clicked() {
-                            selected = None;
-                        }
-                    });
-                    for (var, state) in &context.component::<NodeState>(entity)?.vars {
+            let ctx = world.as_context_mut();
+            world
+                .with_context_mut(|ctx| {
+                    if let Some(entity) = selected {
+                        let id = ctx.id(entity)?;
                         ui.horizontal(|ui| {
-                            var.cstr().label(ui);
-                            state.value.cstr().label(ui);
+                            format!("selected {entity}").label(ui);
+                            if "clear".cstr().button(ui).clicked() {
+                                selected = None;
+                            }
                         });
-                    }
-                    ui.columns_const(|[ui1, ui2]| -> NodeResult<()> {
-                        "parents".cstr().label(ui1);
-                        "children".cstr().label(ui2);
-                        for parent in context.parents_entity(entity)? {
-                            let kind = context.component::<NodeState>(parent)?.kind;
-                            if format!("{kind} {parent}").button(ui1).clicked() {
-                                selected = Some(parent);
+                        for (var, state) in
+                            &ctx.world()?.get::<NodeState>(entity).to_not_found()?.vars
+                        {
+                            ui.horizontal(|ui| {
+                                var.cstr().label(ui);
+                                state.value.cstr().label(ui);
+                            });
+                        }
+                        ui.columns_const(|[ui1, ui2]| -> NodeResult<()> {
+                            "parents".cstr().label(ui1);
+                            "children".cstr().label(ui2);
+                            for parent in ctx.parents_entity(entity)? {
+                                let kind = ctx.component::<NodeState>(parent)?.kind;
+                                if format!("{kind} {parent}").button(ui1).clicked() {
+                                    selected = Some(parent);
+                                }
+                            }
+                            for child in ctx.children_entity(entity)? {
+                                let kind = ctx.component::<NodeState>(child)?.kind;
+                                if format!("{kind} {child}").button(ui2).clicked() {
+                                    selected = Some(child);
+                                }
+                            }
+                            Ok(())
+                        })
+                        .ui(ui);
+                    } else {
+                        for (entity, ns) in ctx
+                            .world_mut()?
+                            .query::<(Entity, &NodeState)>()
+                            .iter(ctx.world()?)
+                        {
+                            if format!("{} {}", ns.kind, entity).button(ui).clicked() {
+                                selected = Some(entity);
                             }
                         }
-                        for child in context.children_entity(entity)? {
-                            let kind = context.component::<NodeState>(child)?.kind;
-                            if format!("{kind} {child}").button(ui2).clicked() {
-                                selected = Some(child);
-                            }
-                        }
-                        Ok(())
-                    })
-                    .ui(ui);
-                } else {
-                    for (entity, ns) in context
-                        .world_mut()?
-                        .query::<(Entity, &NodeState)>()
-                        .iter(context.world()?)
-                    {
-                        if format!("{} {}", ns.kind, entity).button(ui).clicked() {
-                            selected = Some(entity);
-                        }
                     }
-                }
-                Ok(())
-            })
-            .ui(ui);
+                    Ok(())
+                })
+                .ui(ui);
         })
         .push(world);
     }
