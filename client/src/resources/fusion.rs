@@ -41,7 +41,7 @@ impl NFusion {
         &self,
         context: &'a ClientContext,
     ) -> Result<Vec<&'a NFusionSlot>, NodeError> {
-        let mut slots = context.collect_parents_components::<NFusionSlot>(self.id)?;
+        let mut slots = context.collect_children::<NFusionSlot>(self.id)?;
         slots.sort_by_key(|s| s.index);
         Ok(slots)
     }
@@ -93,7 +93,6 @@ impl NFusion {
         context: &ClientContext,
     ) -> Result<Vec<BattleAction>, NodeError> {
         let mut battle_actions: Vec<BattleAction> = default();
-
         context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
             if Self::get_trigger(context, self.trigger_unit)?
                 .fire(event, context)
@@ -130,7 +129,7 @@ impl NFusion {
             })
             .ui(ui);
         }
-        for rep in ctx.collect_children_components::<NUnitRepresentation>(self.id)? {
+        for rep in ctx.collect_children::<NUnitRepresentation>(self.id)? {
             ctx.with_owner_ref(entity, |context| {
                 RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
             })

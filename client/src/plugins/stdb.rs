@@ -199,8 +199,9 @@ fn on_insert(node: &TNode) {
     let node = node.clone();
     op(move |world| {
         let entity = world.spawn_empty().id();
-        Context::from_world(world, |context| {
+        world.with_context(|context| {
             node.unpack(context, entity);
+            Ok(())
         });
         world.send_event(StdbEvent {
             entity,
@@ -213,17 +214,18 @@ fn on_insert(node: &TNode) {
 fn on_delete(node: &TNode) {
     let node = node.clone();
     op(move |world| {
-        Context::from_world_r(world, |context| {
-            let entity = context.entity(node.id)?;
-            info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
-            context.world_mut()?.send_event(StdbEvent {
-                entity,
-                node: node.clone(),
-                change: StdbChange::Delete,
-            });
-            context.despawn(entity)
-        })
-        .log();
+        world
+            .with_context(|ctx| {
+                let entity = ctx.entity(node.id)?;
+                info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
+                ctx.world_mut()?.send_event(StdbEvent {
+                    entity,
+                    node: node.clone(),
+                    change: StdbChange::Delete,
+                });
+                ctx.despawn(entity)
+            })
+            .log();
     });
 }
 

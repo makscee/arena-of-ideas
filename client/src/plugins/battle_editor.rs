@@ -55,26 +55,22 @@ impl BattleEditorPlugin {
         let mut changed = false;
         let mut part_id = 0;
         let entity = ctx.entity(id)?;
-        let part_result = if is_child_part {
-            ctx.first_child::<T>(id)
-        } else {
-            ctx.first_parent::<T>(id)
-        };
+        let part_result = ctx.load::<T>(id);
 
         match part_result {
             Ok(part) => {
                 part_id = part.id();
-                let part_entity = part.entity();
+                let part_entity = part.entity(ctx)?;
                 let mut part = part.clone();
 
                 ui.group(|ui| {
                     ui.label(format!("{}:", part.kind()));
                     if part.edit(ctx, ui).changed() {
-                        part.clone().unpack_entity(ctx, part_entity).log();
+                        part.clone().spawn(ctx, part_entity).log();
                         changed = true;
                     }
                     if "[red Delete]".cstr().button(ui).clicked() {
-                        ctx.despawn(part_entity).log();
+                        ctx.despawn(part.id()).log();
                         changed = true;
                     }
                 });
@@ -298,14 +294,14 @@ impl BattleEditorPlugin {
         ui.separator();
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
+        let result = battle_data.teams_world.with_context(|context| {
             let team_entity = if is_left {
                 battle_data.team_left
             } else {
                 battle_data.team_right
             };
 
-            if let Ok(team) = context.component::<NTeam>(team_entity) {
+            if let Ok(team) = context.load_entity::<NTeam>(team_entity) {
                 // Use render system for team display
                 team.title(context).label(ui);
                 ui.add_space(8.0);
@@ -333,7 +329,7 @@ impl BattleEditorPlugin {
         let mut changed = false;
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = Context::from_world_r(&mut battle_data.teams_world, |context| {
+        let result = battle_data.teams_world.with_context_mut(|context| {
             const ACTION_DEFAULT_UNIT: &str = "Add Default Unit";
             const ACTION_UNIT_EDITOR: &str = "Open Unit Editor";
             const ACTION_DELETE_UNIT: &str = "Delete Unit";
@@ -402,10 +398,10 @@ impl BattleEditorPlugin {
             "[h2 Houses]".cstr().label(ui);
 
             // Use generic collection management for houses
-            let team = context.component::<NTeam>(team_entity)?;
+            let team = context.load_entity::<NTeam>(team_entity)?;
             let team_owner = team.owner;
             let houses: Vec<NHouse> = context
-                .collect_children_components::<NHouse>(id)?
+                .collect_children::<NHouse>(id)?
                 .into_iter()
                 .cloned()
                 .collect();
@@ -570,61 +566,59 @@ impl BattleEditorPlugin {
     fn handle_add_default_unit_to_slot(
         team_entity: Entity,
         slot_id: u64,
-        context: &mut ClientContext,
+        ctx: &mut ClientContext,
     ) -> NodeResult<()> {
-        let slot_entity = context.entity(slot_id)?;
-        let team = context.load_entity::<NTeam>(team_entity)?;
+        let slot_entity = ctx.entity(slot_id)?;
+        let team = ctx.load_entity::<NTeam>(team_entity)?;
         let team_owner = team.owner;
 
         let house_entity = {
-            let existing_houses =
-                context.collect_children_components::<NHouse>(context.id(team_entity)?)?;
+            let existing_houses = ctx.collect_children::<NHouse>(ctx.id(team_entity)?)?;
             let default_house = existing_houses
                 .iter()
                 .find(|h| h.house_name == "Default House");
 
             if let Some(existing_house) = default_house {
-                existing_house.entity()
+                existing_house.entity(ctx)?
             } else {
                 let house = NHouse::placeholder(team_owner);
-                let house_entity = context.world_mut()?.spawn_empty().id();
-                house.clone().unpack_entity(context, house_entity)?;
-                context.link_parent_child_entity(team_entity, house_entity)?;
+                let house_entity = ctx.world_mut()?.spawn_empty().id();
+                house.clone().spawn(ctx, house_entity)?;
+                ctx.add_link_entities(team_entity, house_entity)?;
                 house_entity
             }
         };
 
         let unit = NUnit::placeholder(team_owner);
-        let unit_entity = context.world_mut()?.spawn_empty().id();
+        let unit_entity = ctx.world_mut()?.spawn_empty().id();
         let unit_id = unit.id();
-        unit.unpack_entity(context, unit_entity)?;
-        context.link_parent_child_entity(house_entity, unit_entity)?;
-        let unit_entity = context.entity(unit_id)?;
-        context.link_parent_child_entity(unit_entity, slot_entity)?;
+        unit.spawn(ctx, unit_entity)?;
+        ctx.add_link_entities(house_entity, unit_entity)?;
+        let unit_entity = ctx.entity(unit_id)?;
+        ctx.add_link_entities(unit_entity, slot_entity)?;
 
         Ok(())
     }
 
     fn handle_add_slot(fusion_id: u64, context: &mut ClientContext) -> NodeResult<()> {
         let fusion_entity = context.entity(fusion_id)?;
-        let fusion = context.component::<NFusion>(fusion_entity)?;
+        let fusion = context.load_entity::<NFusion>(fusion_entity)?;
 
         // Find the next slot index
-        let existing_slots = context.collect_parents_components::<NFusionSlot>(fusion_id)?;
+        let existing_slots = context.collect_children::<NFusionSlot>(fusion_id)?;
         let next_index = existing_slots.len() as i32;
 
         // Create new fusion slot
         let new_slot = NFusionSlot::new(fusion.owner, next_index, default());
         let slot_entity = context.world_mut()?.spawn_empty().id();
-        new_slot.unpack_entity(context, slot_entity)?;
-        context.link_parent_child_entity(slot_entity, fusion_entity)?;
+        new_slot.spawn(context, slot_entity)?;
+        context.add_link_entities(slot_entity, fusion_entity)?;
 
         Ok(())
     }
 
-    fn handle_delete_unit(unit_id: u64, context: &mut ClientContext) -> NodeResult<()> {
-        let unit_entity = context.entity(unit_id)?;
-        context.despawn(unit_entity).log();
+    fn handle_delete_unit(unit_id: u64, ctx: &mut ClientContext) -> NodeResult<()> {
+        ctx.despawn(unit_id).log();
         Ok(())
     }
 
@@ -632,9 +626,9 @@ impl BattleEditorPlugin {
         slot_id: u64,
         start: u8,
         length: u8,
-        context: &mut ClientContext,
+        ctx: &mut ClientContext,
     ) -> NodeResult<()> {
-        let mut slot = context.component_mut::<NFusionSlot>(context.entity(slot_id)?)?;
+        let mut slot = ctx.load_mut::<NFusionSlot>(slot_id)?;
         slot.actions.start = start;
         slot.actions.length = length;
         Ok(())
@@ -643,9 +637,9 @@ impl BattleEditorPlugin {
     fn handle_change_trigger(
         fusion_id: u64,
         trigger: u64,
-        context: &mut ClientContext,
+        ctx: &mut ClientContext,
     ) -> NodeResult<()> {
-        let mut fusion = context.component_mut::<NFusion>(context.entity(fusion_id)?)?;
+        let mut fusion = ctx.load_mut::<NFusion>(fusion_id)?;
         fusion.trigger_unit = trigger;
         Ok(())
     }

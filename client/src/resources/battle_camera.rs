@@ -108,7 +108,7 @@ impl BattleCamera {
                 let world = context.world_mut()?;
                 for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                     context
-                        .with_owner(fusion.entity(), |context| {
+                        .with_owner(fusion.id, |context| {
                             if !context.get_bool(VarName::visible)? {
                                 return Ok(());
                             }
@@ -125,34 +125,32 @@ impl BattleCamera {
                         .ui(ui);
                 }
                 let world = context.world_mut()?;
-                for entity in world
-                    .query_filtered::<Entity, With<NUnitRepresentation>>()
+                for rep in world
+                    .query::<&NUnitRepresentation>()
                     .iter(world)
                     .collect_vec()
                 {
                     context
-                        .with_owner(entity, |context| {
+                        .with_owner(rep.id, |context| {
                             if !context.get_bool(VarName::visible)? {
                                 return Ok(());
                             }
-                            let rep = context.component::<NUnitRepresentation>(entity)?;
                             let rect = cam.rect_from_context(context)?;
                             rep.material.paint(rect, context, ui)
                         })
                         .ui(ui);
                 }
                 let world = context.world_mut()?;
-                for entity in world
-                    .query_filtered::<Entity, With<NStatusRepresentation>>()
+                for rep in world
+                    .query::<&NStatusRepresentation>()
                     .iter(world)
                     .collect_vec()
                 {
                     context
-                        .with_owner(entity, |context| {
+                        .with_owner(rep.id, |context| {
                             if !context.get_bool(VarName::visible)? {
                                 return Ok(());
                             }
-                            let rep = context.component::<NStatusRepresentation>(entity)?;
                             let rect = cam.rect_from_context(context)?;
                             rep.material.paint(rect, context, ui)
                         })
@@ -197,6 +195,7 @@ impl BattleCamera {
                     if ui.button(action_name).clicked() {
                         teams_world.with_context_mut(|context| {
                             action_fn(slot, team_entity, context);
+                            Ok(())
                         });
                         ui.close_menu();
                     }

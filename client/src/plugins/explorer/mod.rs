@@ -105,22 +105,22 @@ impl ExplorerPlugin {
         let inspected_id = state.inspected.get(&kind).copied();
 
         if let Some(items) = items {
-            Context::from_world(world, |context| {
+            world.with_context(|context| {
                 items
-                    .as_list(|item, context, ui| {
+                    .as_list(|item, ctx, ui| {
                         let item_id = item.0;
                         let is_inspected = inspected_id == Some(item_id);
 
                         ui.set_width(ui.available_width());
 
                         if is_inspected {
-                            ui.visuals_mut().override_text_color = Some(context.color(ui));
+                            ui.visuals_mut().override_text_color = Some(ctx.color(ui));
                         }
 
                         ui.horizontal(|ui| {
                             ui.label(format!("[{}]", item.2));
-                            if let Ok(node) = context.component_by_id::<T>(item_id) {
-                                node.as_title().compose(context, ui);
+                            if let Ok(node) = ctx.load::<T>(item_id) {
+                                node.as_title().compose(ctx, ui);
                             }
                         })
                         .response
@@ -135,6 +135,7 @@ impl ExplorerPlugin {
                         }
                     })
                     .compose(context, ui);
+                Ok(())
             });
         } else {
             ui.centered_and_justified(|ui| {
@@ -165,13 +166,14 @@ impl ExplorerPlugin {
         let state = world.resource::<ExplorerState>();
 
         if let Some(&node_id) = state.inspected.get(&kind) {
-            Context::from_world(world, |context| {
-                if let Ok(entity) = context.entity(node_id) {
-                    if let Ok(node) = context.component::<T>(entity) {
+            world.with_context(|ctx| {
+                if let Ok(entity) = ctx.entity(node_id) {
+                    if let Ok(node) = ctx.load_entity::<T>(entity) {
                         let size = ui.available_size();
                         node.render_card(ui, size);
                     }
                 }
+                Ok(())
             });
         } else {
             ui.centered_and_justified(|ui| {
@@ -245,11 +247,12 @@ impl ExplorerPlugin {
             });
 
             if let Some(node_id) = node_id {
-                Context::from_world_r(world, |context| {
-                    context.component_by_id::<T>(node_id)?.display(context, ui);
-                    Ok(())
-                })
-                .ui(ui);
+                world
+                    .with_context(|context| {
+                        context.load::<T>(node_id)?.display(context, ui);
+                        Ok(())
+                    })
+                    .ui(ui);
             } else if has_inspected_parent {
                 ui.centered_and_justified(|ui| {
                     ui.label("No content available - click 'Add New' to create");
@@ -352,11 +355,11 @@ impl ExplorerPlugin {
         Confirmation::new("Select Content")
             .content(move |ui, world| {
                 let mut selected = None;
-                Context::from_world(world, |context| {
+                world.with_context(|ctx| {
                     for node in &nodes {
                         let node_id = node.id();
                         ui.horizontal(|ui| {
-                            node.as_title().compose(context, ui);
+                            node.as_title().compose(ctx, ui);
 
                             if Some(node_id) == current_selected {
                                 ui.label("●");
@@ -370,6 +373,7 @@ impl ExplorerPlugin {
                             }
                         });
                     }
+                    Ok(())
                 });
 
                 if let Some(id) = selected {
@@ -405,10 +409,11 @@ impl ExplorerPlugin {
                     ui.label("Edit new node:");
                     ui.separator();
 
-                    Context::from_world(world, |context| {
+                    world.with_context(|ctx| {
                         if let Ok(mut node) = new_node.lock() {
-                            node.edit(context, ui);
+                            node.edit(ctx, ui);
                         }
+                        Ok(())
                     });
                 });
                 false

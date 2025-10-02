@@ -104,9 +104,9 @@ impl NodeState {
         }
         true
     }
-    pub fn get_var(context: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = context.component::<NodeState>(entity) {
-            if let Some(t) = context.t {
+    pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
+        if let Ok(ns) = ctx.load::<NodeState>(entity) {
+            if let Some(t) = ctx.t {
                 ns.get_at(t, var)
             } else {
                 ns.get(var)

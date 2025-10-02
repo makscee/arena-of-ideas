@@ -101,8 +101,11 @@ pub fn player_name() -> &'static str {
 pub fn player_identity() -> Identity {
     *PLAYER_IDENTITY.lock()
 }
-pub fn player<'a>(context: &'a ClientContext) -> Result<&'a NPlayer, NodeError> {
-    context.load::<NPlayer>(player_id())
+pub fn player<'a>(ctx: &'a ClientContext) -> NodeResult<&'a NPlayer> {
+    ctx.load::<NPlayer>(player_id())
+}
+pub fn player_mut<'a>(ctx: &'a mut ClientContext) -> NodeResult<Mut<'a, NPlayer>> {
+    ctx.load_mut::<NPlayer>(player_id())
 }
 pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;

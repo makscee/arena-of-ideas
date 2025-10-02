@@ -306,6 +306,10 @@ where
         self.get_var(var)?.get_bool()
     }
 
+    pub fn get_vec2(&self, var: VarName) -> NodeResult<Vec2> {
+        self.get_var(var)?.get_vec2()
+    }
+
     /// Set a variable in the context
     pub fn set_var(&mut self, name: VarName, value: VarValue) {
         self.layers.push(ContextLayer::Var(name, value));

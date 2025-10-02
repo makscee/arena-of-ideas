@@ -78,7 +78,7 @@ impl LoginPlugin {
                 .node_links()
                 .iter()
                 .find(|link| link.parent == identity_node.id)
-                .and_then(|link| NPlayer::load(link.child))
+                .and_then(|link| NPlayer::db_load(link.child).ok())
             {
                 pd_mut(|pd| {
                     pd.client_state.last_logged_in = Some((player.player_name.clone(), identity));

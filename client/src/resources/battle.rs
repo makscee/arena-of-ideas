@@ -301,27 +301,29 @@ impl BattleSimulation {
         let mut world = World::new();
         let team_left = world.spawn_empty().id();
         let team_right = world.spawn_empty().id();
-        Context::from_world_r(&mut world, |context| {
-            battle.left.unpack_entity(context, team_left)?;
-            battle.right.unpack_entity(context, team_right)
-        })
-        .log();
-        fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
-            Context::from_world_ref_r(world, |context| {
-                Ok(context
-                    .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
-                    .into_iter()
-                    .sorted_by_key(|s| s.index)
-                    .filter_map(|n| {
-                        if context.first_parent_recursive::<NUnit>(n.id).is_ok() {
-                            Some(n.entity())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect_vec())
+        world
+            .with_context_mut(|ctx| {
+                battle.left.spawn(ctx, team_left)?;
+                battle.right.spawn(ctx, team_right)
             })
-            .unwrap()
+            .log();
+        fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
+            world
+                .with_context(|context| {
+                    Ok(context
+                        .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
+                        .into_iter()
+                        .sorted_by_key(|s| s.index)
+                        .filter_map(|n| {
+                            if context.first_parent_recursive::<NUnit>(n.id).is_ok() {
+                                Some(n.entity())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect_vec())
+                })
+                .unwrap()
         }
         let fusions_left = entities_by_slot(team_left, &world);
         let fusions_right = entities_by_slot(team_right, &world);
@@ -417,7 +419,7 @@ impl BattleSimulation {
         for entity in context.battle_simulation()?.all_fusions() {
             context
                 .with_owner(entity, |context| {
-                    match context.component::<NFusion>(entity)?.react(&event, context) {
+                    match context.load::<NFusion>(entity)?.react(&event, context) {
                         Ok(a) => battle_actions.extend(a),
                         Err(e) => error!("NFusion event {event} failed: {e}"),
                     };
@@ -452,11 +454,10 @@ impl BattleSimulation {
         color: Color32,
     ) -> NodeResult<()> {
         let t = context.t()?;
-        for child in context.children(context.id(target)?) {
-            let child = context.entity(child)?;
-            if let Ok(child_status) = context.component::<NStatusMagic>(child) {
+        for child in context.get_children_of_kind(context.id(target)?, NodeKind::NStatusMagic)? {
+            if let Ok(child_status) = context.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = context.component_mut::<NodeState>(child)?;
+                    let mut state = context.load_mut::<NodeState>(child)?;
                     let charges = state
                         .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
@@ -468,13 +469,13 @@ impl BattleSimulation {
             }
         }
         let entity = context.world_mut()?.spawn_empty().id();
-        status.unpack_entity(context, entity)?;
+        status.spawn(context, entity)?;
         let rep_entity = context.world_mut()?.spawn_empty().id();
-        status_rep().clone().unpack_entity(context, rep_entity)?;
-        context.link_parent_child_entity(entity, rep_entity)?;
-        context.link_parent_child_entity(target, entity)?;
+        status_rep().clone().spawn(context, rep_entity)?;
+        context.add_link_entities(entity, rep_entity)?;
+        context.add_link_entities(target, entity)?;
 
-        let mut state = context.component_mut::<NodeState>(entity)?;
+        let mut state = context.load_entity_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::charges, charges.into());

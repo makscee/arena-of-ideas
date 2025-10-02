@@ -78,9 +78,6 @@ pub trait ServerNode: Sized + schema::Node {
     fn delete_recursive(&self, ctx: &ServerContext) {
         todo!()
     }
-    fn take(&mut self) -> Self {
-        std::mem::take(self)
-    }
     fn find_by_data(ctx: &ServerContext, data: &String) -> Option<Self> {
         let kind = Self::kind_s().to_string();
         ctx.rctx()

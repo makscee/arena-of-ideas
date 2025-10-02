@@ -2579,28 +2579,11 @@ impl FCompactView for NHouse {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("House: {}", self.house_name));
-            if let Ok(ability) = self.ability_load(ctx) {
+            if let Ok(ability) = self.ability_ref(ctx) {
                 ui.label(format!("Ability: {}", ability.ability_name));
             }
-            if let Ok(status) = self.status_load(ctx) {
+            if let Ok(status) = self.status_ref(ctx) {
                 ui.label(format!("Status: {}", status.status_name));
-            }
-            let mut units_count = 0;
-            if let Ok(ability) = self.ability_load(ctx) {
-                units_count += ctx
-                    .collect_children_components::<NUnit>(ability.id)
-                    .map(|u| u.len())
-                    .unwrap_or_default();
-            }
-            if let Ok(status) = self.status_load(ctx) {
-                units_count += ctx
-                    .collect_children_components::<NUnit>(status.id)
-                    .map(|u| u.len())
-                    .unwrap_or_default();
-            }
-            if units_count > 0 {
-                ui.separator();
-                ui.label(format!("Units: {}", units_count));
             }
         });
     }

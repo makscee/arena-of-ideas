@@ -1,5 +1,5 @@
-use crate::prelude::*;
-use bevy::prelude::*;
+use super::*;
+use bevy::ecs::component::Mutable;
 use schema::{Context, ContextSource, NodeError, NodeResult};
 use std::collections::HashMap;
 
@@ -148,7 +148,7 @@ impl NodeLinks {
 }
 
 /// Marker component for entities with nodes
-#[derive(Component)]
+#[derive(BevyComponent)]
 pub struct NodeEntity {
     pub id: u64,
     pub kind: NodeKind,
@@ -178,7 +178,7 @@ impl<'w> WorldSource<'w> {
         match self {
             Self::Immutable(world) => Ok(world),
             Self::Mutable(world) => Ok(world),
-            Self::None => Err(NodeError::Custom("Source World not set")),
+            Self::None => Err(NodeError::Custom("Source World not set".into())),
         }
     }
 
@@ -289,6 +289,14 @@ impl<'w> ContextSource for WorldSource<'w> {
 pub trait ClientContextExt {
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
+    fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
+        &'a mut self,
+        id: u64,
+    ) -> NodeResult<Mut<'a, T>>;
+    fn load_entity_mut<'a, T: BevyComponent<Mutability = Mutable>>(
+        &'a mut self,
+        entity: Entity,
+    ) -> NodeResult<Mut<'a, T>>;
     fn load_many<'a, T: BevyComponent>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>;
     fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
     fn world<'a>(&'a self) -> NodeResult<&'a World>;
@@ -299,6 +307,8 @@ pub trait ClientContextExt {
     fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity>;
     fn add_link_entities(&mut self, parent: Entity, child: Entity) -> NodeResult<()>;
     fn despawn(&mut self, id: u64) -> NodeResult<()>;
+    fn collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
+    fn owner_entity(&self) -> NodeResult<Entity>;
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
@@ -308,6 +318,25 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T> {
         let world = self.source().world()?;
         if let Some(component) = world.get::<T>(entity) {
+            return Ok(component);
+        } else {
+            return Err(NodeError::LoadError(
+                "Failed to get component from entity".into(),
+            ));
+        }
+    }
+    fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
+        &'a mut self,
+        id: u64,
+    ) -> NodeResult<Mut<'a, T>> {
+        self.load_entity_mut(self.entity(id)?)
+    }
+    fn load_entity_mut<'a, T: BevyComponent<Mutability = Mutable>>(
+        &'a mut self,
+        entity: Entity,
+    ) -> NodeResult<Mut<'a, T>> {
+        let world = self.source_mut().world_mut()?;
+        if let Some(component) = world.get_mut::<T>(entity) {
             return Ok(component);
         } else {
             return Err(NodeError::LoadError(
@@ -393,6 +422,18 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
 
     fn despawn(&mut self, id: u64) -> NodeResult<()> {
         todo!()
+    }
+
+    fn collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+        Ok(self
+            .get_children_of_kind(id, T::kind_s())?
+            .into_iter()
+            .filter_map(|id| self.load(id).ok())
+            .collect_vec())
+    }
+
+    fn owner_entity(&self) -> NodeResult<Entity> {
+        self.entity(self.owner().to_not_found()?)
     }
 }
 

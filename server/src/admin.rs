@@ -30,7 +30,6 @@ impl AdminCheck for &ReducerContext {
 #[reducer]
 fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let ctx = &ctx.as_context();
     info!("content rotation start");
     for mut n in ctx.db.nodes_world().owner().filter(ID_CORE) {
         n.owner = 0;
@@ -49,7 +48,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         }
         n.update(ctx);
     }
-
+    let ctx = &ctx.as_context();
     let mut units = NUnit::collect_owner(ctx, 0);
     info!("initial units {}", units.len());
     units.retain_mut(|unit| {

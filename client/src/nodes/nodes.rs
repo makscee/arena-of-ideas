@@ -9,16 +9,18 @@ pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
     fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()>;
-    fn entity(&self, ctx: &mut ClientContext) -> NodeResult<Entity> {
+    fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
         ctx.entity(self.id())
     }
 }
 
-pub trait NodeExt: Sized + ClientNode + StringData {
+pub trait NodeExt: ClientNode {
     fn db_load(id: u64) -> NodeResult<Self> {
         TNode::find(id).to_not_found()?.to_node()
     }
 }
+
+impl<T: ClientNode> NodeExt for T {}
 
 impl TNode {
     pub fn find(id: u64) -> Option<Self> {
