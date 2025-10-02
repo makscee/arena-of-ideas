@@ -63,7 +63,7 @@ fn generate_client_nodes(
         let link_methods = generate_client_link_methods(node);
 
         // Generate load_components method
-        let load_components_method = generate_load_components(node, "ClientContext");
+        let load_components_method = generate_load_functions(node, "ClientContext");
 
         // All nodes are Components in client
         let derives = quote! {
@@ -135,9 +135,6 @@ fn generate_client_nodes(
     });
 
     quote! {
-        use schema::{Context, ContextSource, NodeError, NodeKind, LinkState, Link};
-        use crate::resources::context::ClientContextExt;
-
         #(#node_structs)*
 
         #conversions
@@ -165,7 +162,8 @@ fn generate_client_node_impl(
                 let field_name = &field.name;
                 Some(quote! {
                     if let Some(loaded) = self.#field_name.get() {
-                        world.entity_mut(entity).insert(loaded.clone());
+                        loaded.spawn(ctx, entity)?;
+                        ctx.add_link(self.id, loaded.id);
                     }
                 })
             }
@@ -181,18 +179,17 @@ fn generate_client_node_impl(
                 Some(if field.is_vec {
                     quote! {
                         for item in &self.#field_name {
-                            let child_entity = world.spawn_empty().id();
-                            item.clone().spawn(world);
-                            world.entity_mut(child_entity).set_parent(entity);
-
+                            let child_entity = ctx.world_mut()?.spawn_empty().id();
+                            item.spawn(ctx, child_entity)?;
+                            ctx.add_link(self.id, item.id);
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
-                            let child_entity = world.spawn_empty().id();
-                            loaded.clone().spawn(world);
-                            world.entity_mut(child_entity).set_parent(entity);
+                            let child_entity = ctx.world_mut()?.spawn_empty().id();
+                            loaded.clone().spawn(ctx, child_entity);
+                            ctx.add_link(self.id, loaded.id);
                         }
                     }
                 })
@@ -200,65 +197,111 @@ fn generate_client_node_impl(
             _ => None,
         });
 
-    let spawn_refs = node
-        .fields
-        .iter()
-        .filter_map(|field| match field.link_type {
-            LinkType::Ref => {
-                let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        for ref_link in &self.#field_name {
-                            if let Some(id) = ref_link.id() {
-                                // Check if entity with this id already exists
-                                let mut found_entity = None;
-                                if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                    found_entity = node_entity_map.get_entity(id);
-                                }
-                                if found_entity.is_none() {
-                                    if let Some(loaded) = ref_link.get() {
-                                        loaded.clone().spawn(world);
-                                    }
-                                }
+    // Generate unpack_links implementation
+    let unpack_links = node.fields.iter().filter_map(|field| {
+        if matches!(
+            field.link_type,
+            LinkType::Owned | LinkType::Component | LinkType::Ref
+        ) {
+            let field_name = &field.name;
+            let target_type = syn::parse_str::<syn::Ident>(&field.target_type).unwrap();
+
+            if field.is_vec {
+                match field.link_type {
+                    LinkType::Owned => Some(quote! {
+                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                        let mut children = Vec::new();
+                        for child_id in child_ids {
+                            if let Some(child_data) = packed.get(child_id) {
+                                let mut child = #target_type::default();
+                                child.inject_data(&child_data.data).unwrap();
+                                child.set_id(child_id);
+                                child.unpack_links(packed);
+                                children.push(child);
                             }
                         }
-                    }
-                } else {
-                    quote! {
-                        if let Some(id) = self.#field_name.id() {
-                            // Check if entity with this id already exists
-                            let mut found_entity = None;
-                            if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                found_entity = node_entity_map.get_entity(id);
-                            }
-                            if found_entity.is_none() {
-                                if let Some(loaded) = self.#field_name.get() {
-                                    loaded.clone().spawn(world);
-                                }
+                        if !children.is_empty() {
+                            self.#field_name = Owned::new_loaded(children);
+                        }
+                    }),
+                    LinkType::Ref => Some(quote! {
+                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                        let mut children = Vec::new();
+                        for child_id in child_ids {
+                            if let Some(child_data) = packed.get(child_id) {
+                                let mut child = #target_type::default();
+                                child.inject_data(&child_data.data).unwrap();
+                                child.set_id(child_id);
+                                child.unpack_links(packed);
+                                children.push(child);
                             }
                         }
-                    }
-                })
+                        if !children.is_empty() {
+                            self.#field_name = Ref::new_loaded(children);
+                        }
+                    }),
+                    _ => None,
+                }
+            } else {
+                match field.link_type {
+                    LinkType::Component => Some(quote! {
+                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                        if let Some(&child_id) = child_ids.first() {
+                            if let Some(child_data) = packed.get(child_id) {
+                                let mut child = #target_type::default();
+                                child.inject_data(&child_data.data).unwrap();
+                                child.set_id(child_id);
+                                child.unpack_links(packed);
+                                self.#field_name = Component::new_loaded(child);
+                            }
+                        }
+                    }),
+                    LinkType::Owned => Some(quote! {
+                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                        if let Some(&child_id) = child_ids.first() {
+                            if let Some(child_data) = packed.get(child_id) {
+                                let mut child = #target_type::default();
+                                child.inject_data(&child_data.data).unwrap();
+                                child.set_id(child_id);
+                                child.unpack_links(packed);
+                                self.#field_name = Owned::new_loaded(child);
+                            }
+                        }
+                    }),
+                    LinkType::Ref => Some(quote! {
+                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                        if let Some(&child_id) = child_ids.first() {
+                            if let Some(child_data) = packed.get(child_id) {
+                                let mut child = #target_type::default();
+                                child.inject_data(&child_data.data).unwrap();
+                                child.set_id(child_id);
+                                child.unpack_links(packed);
+                                self.#field_name = Ref::new_loaded(child);
+                            }
+                        }
+                    }),
+                    _ => None,
+                }
             }
-            _ => None,
-        });
+        } else {
+            None
+        }
+    });
 
     quote! {
         impl ClientNode for #struct_name {
-            fn spawn(self, world: &mut World, entity: Entity) {
-                // Register id-entity mapping in NodeEntityMap
-                if let Some(mut node_entity_map) = world.get_resource_mut::<NodeEntityMap>() {
-                    node_entity_map.insert(self.id, entity);
+            fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
+                if self.id == 0 {
+                    panic!("Tried to spawn node without id");
                 }
-
-                // Add component links to same entity
+                ctx.add_id_entity_link(self.id, entity);
                 #(#spawn_components)*
-
-                // Create child entities for owned links
                 #(#spawn_owned)*
+                ctx.world_mut()?.entity_mut(entity).insert(self);
+            }
 
-                // Handle ref links with id-entity checking
-                #(#spawn_refs)*
+            fn unpack_links(&mut self, packed: &PackedNodes) {
+                #(#unpack_links)*
             }
         }
     }

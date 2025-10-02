@@ -184,8 +184,8 @@ impl<'w> WorldSource<'w> {
 
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable")),
-            Self::None => Err(NodeError::Custom("Source World not set")),
+            Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable".into())),
+            Self::None => Err(NodeError::Custom("Source World not set".into())),
             Self::Mutable(world) => Ok(world),
         }
     }
@@ -242,7 +242,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         let to_kind = self.get_node_kind(to_id)?;
-        if let Some(world) = self.world_mut() {
+        if let Ok(world) = self.world_mut() {
             if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
                 links.add_link(from_id, to_id, to_kind);
                 Ok(())
@@ -259,7 +259,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        if let Some(world) = self.world_mut() {
+        if let Ok(world) = self.world_mut() {
             if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
                 links.remove_link(from_id, to_id);
                 Ok(())
@@ -389,14 +389,14 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
 /// Extension for using Context with Bevy World
 pub trait WorldContextExt {
     /// Execute with a context using this world as the source (immutable)
-    fn with_context<R, F>(&self, f: F) -> R
+    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> R;
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>;
 
     /// Execute with a context using this world as the source (mutable)
-    fn with_context_mut<R, F>(&mut self, f: F) -> R
+    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> R;
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>;
 
     /// Execute with a context using this world as the source (immutable)
     fn as_context(&self) -> Context<WorldSource<'_>>;
@@ -406,17 +406,17 @@ pub trait WorldContextExt {
 }
 
 impl WorldContextExt for World {
-    fn with_context<R, F>(&self, f: F) -> R
+    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> R,
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
     {
         let source = WorldSource::new_immutable(self);
         Context::exec(source, f)
     }
 
-    fn with_context_mut<R, F>(&mut self, f: F) -> R
+    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> R,
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
     {
         let source = WorldSource::new_mutable(self);
         Context::exec(source, f)

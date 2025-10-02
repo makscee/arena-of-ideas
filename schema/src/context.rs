@@ -12,6 +12,35 @@ pub trait Node: Send + Sync + Default + StringData {
     fn kind_s() -> NodeKind
     where
         Self: Sized;
+
+    fn pack(&self) -> PackedNodes {
+        let mut packed = PackedNodes::default();
+        let mut visited = std::collections::HashSet::new();
+        self.pack_recursive(&mut packed, &mut visited);
+        packed.root = self.id();
+        packed
+    }
+
+    fn pack_recursive(
+        &self,
+        packed: &mut PackedNodes,
+        visited: &mut std::collections::HashSet<u64>,
+    ) {
+        let id = self.id();
+        if visited.contains(&id) {
+            return;
+        }
+        visited.insert(id);
+
+        // Add this node's data
+        packed.add_node(self.kind().to_string(), self.get_data(), id);
+
+        // This will be implemented by the generated code for each node type
+        // to handle their specific linked fields
+        self.pack_links(packed, visited);
+    }
+
+    fn pack_links(&self, packed: &mut PackedNodes, visited: &mut std::collections::HashSet<u64>);
 }
 
 // Helper trait for converting between node types

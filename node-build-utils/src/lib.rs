@@ -814,24 +814,22 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
     }
 }
 
-pub fn generate_load_components(node: &NodeInfo, context_type: &str) -> TokenStream {
+pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStream {
+    let context_ident = Ident::new(context_ident, proc_macro2::Span::call_site());
     let component_fields: Vec<_> = node
         .fields
         .iter()
         .filter(|field| field.link_type == LinkType::Component)
         .collect();
 
-    let context_ident = format_ident!("{}", context_type);
+    let owned_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::Owned)
+        .collect();
 
-    if component_fields.is_empty() {
-        return quote! {
-            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
-                Ok(self)
-            }
-        };
-    }
-
-    let field_loads = component_fields.iter().map(|field| {
+    // Generate load_components method (only Component links, recursive)
+    let component_field_loads = component_fields.iter().map(|field| {
         let field_name = &field.name;
         let load_method = format_ident!("{}_load", field_name);
 
@@ -852,10 +850,65 @@ pub fn generate_load_components(node: &NodeInfo, context_type: &str) -> TokenStr
         }
     });
 
-    quote! {
-        pub fn load_components(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
-            #(#field_loads)*
-            Ok(self)
+    let load_components_method = if component_fields.is_empty() {
+        quote! {
+            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                Ok(self)
+            }
         }
+    } else {
+        quote! {
+            pub fn load_components(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                #(#component_field_loads)*
+                Ok(self)
+            }
+        }
+    };
+
+    // Generate load_all method (Component + Owned links, recursive)
+    let all_field_loads = node.fields.iter().filter_map(|field| {
+        if matches!(field.link_type, LinkType::Component | LinkType::Owned) {
+            let field_name = &field.name;
+            let load_method = format_ident!("{}_load", field_name);
+
+            Some(if field.is_vec {
+                quote! {
+                    if let Ok(loaded_items) = self.#load_method(ctx) {
+                        for item in loaded_items.iter_mut() {
+                            item.load_all(ctx)?;
+                        }
+                    }
+                }
+            } else {
+                quote! {
+                    if let Ok(loaded_item) = self.#load_method(ctx) {
+                        loaded_item.load_all(ctx)?;
+                    }
+                }
+            })
+        } else {
+            None
+        }
+    });
+
+    let load_all_method = if component_fields.is_empty() && owned_fields.is_empty() {
+        quote! {
+            pub fn load_all(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                Ok(self)
+            }
+        }
+    } else {
+        quote! {
+            pub fn load_all(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                #(#all_field_loads)*
+                Ok(self)
+            }
+        }
+    };
+
+    quote! {
+        #load_components_method
+
+        #load_all_method
     }
 }

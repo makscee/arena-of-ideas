@@ -8,18 +8,27 @@ include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
-    fn spawn(self, world: &mut World, entity: Entity);
+    fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()>;
+
+    fn unpack(packed: &PackedNodes) -> NodeResult<Self> {
+        let root_data = packed
+            .get(packed.root)
+            .ok_or_else(|| NodeError::Custom("Root node not found in packed data".into()))?;
+
+        let mut node = Self::default();
+        node.inject_data(&root_data.data)?;
+        node.set_id(packed.root);
+
+        node.unpack_links(packed);
+        Ok(node)
+    }
+
+    fn unpack_links(&mut self, packed: &PackedNodes);
 }
 
 pub trait NodeExt: Sized + ClientNode + StringData {
-    fn get<'a>(entity: Entity, context: &'a ClientContext<'a>) -> Result<&'a Self, NodeError> {
-        todo!()
-    }
-    fn get_by_id<'a>(id: u64, context: &'a ClientContext<'a>) -> NodeResult<&'a Self> {
-        context.load::<Self>(id)
-    }
-    fn load(id: u64) -> Option<Self> {
-        cn().db.nodes_world().id().find(&id)?.to_node().ok()
+    fn db_load(id: u64) -> NodeResult<Self> {
+        TNode::find(id).to_not_found()?.to_node()
     }
 }
 
@@ -53,7 +62,7 @@ impl NodeKindOnUnpack for NodeKind {
     fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()> {
         let vars = Vec::new(); // TODO: implement get_vars
         let world = context
-            .world_mut()
+            .world_mut()?
             .to_not_found_msg("World not available")?;
         let mut emut = world.entity_mut(entity);
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {

@@ -38,8 +38,13 @@ impl BattleData {
         let mut teams_world = World::new();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        battle.left.clone().spawn(&mut teams_world, team_left);
-        battle.right.clone().spawn(&mut teams_world, team_right);
+        teams_world
+            .with_context_mut(|ctx| {
+                battle.left.clone().spawn(ctx, team_left);
+                battle.right.clone().spawn(ctx, team_right);
+                Ok(())
+            })
+            .unwrap();
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -90,14 +95,27 @@ impl BattlePlugin {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
-            // *data = BattleData::load(data.battle.clone());
             let (left, right) = (data.team_left, data.team_right);
-            let (left, right) = Context::from_world_r(&mut data.teams_world, |context| {
-                let left = NTeam::pack_entity(context, left)?;
-                let right = NTeam::pack_entity(context, right)?;
-                Ok((left, right))
-            })
-            .unwrap();
+            let (left, right) = data
+                .teams_world
+                .with_context_mut(|ctx| {
+                    let left = ctx
+                        .world()?
+                        .get::<NTeam>(left)
+                        .to_not_found()?
+                        .clone()
+                        .load_all(ctx)?
+                        .clone();
+                    let right = ctx
+                        .world()?
+                        .get::<NTeam>(right)
+                        .to_not_found()?
+                        .clone()
+                        .load_all(ctx)?
+                        .clone();
+                    Ok((left, right))
+                })
+                .unwrap();
             data.battle.left = left;
             data.battle.right = right;
             data.playing = false;
