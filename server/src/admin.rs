@@ -30,6 +30,7 @@ impl AdminCheck for &ReducerContext {
 #[reducer]
 fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
+    let ctx = &ctx.as_context();
     info!("content rotation start");
     for mut n in ctx.db.nodes_world().owner().filter(ID_CORE) {
         n.owner = 0;
@@ -222,7 +223,7 @@ fn admin_upload_world(
             ron::from_str::<LinkAsset>(&link).map_err(|e| e.to_string())?;
         let solid = solid != 0;
         TNodeLink {
-            id: ctx.next_id(),
+            id: ctx.as_context().next_id(),
             parent,
             child,
             parent_kind,
@@ -238,13 +239,11 @@ fn admin_upload_world(
 #[reducer]
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let ctx = ctx.as_context();
+    let ctx = &ctx.as_context();
     let mut player = ctx.player()?;
-
     let m = player.active_match_load(ctx)?;
     m.g += 10;
-    player.save(ctx.source().reducer_context());
-
+    player.save(ctx);
     Ok(())
 }
 

@@ -1,5 +1,5 @@
 use node_build_utils::*;
-use quote::quote;
+use quote::{format_ident, quote};
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -98,7 +98,7 @@ fn generate_server_nodes(
     });
 
     // Generate conversion traits
-    let conversions = generate_conversions(nodes);
+    let conversions = generate_node_impl(nodes);
 
     quote! {
         #(#node_structs)*

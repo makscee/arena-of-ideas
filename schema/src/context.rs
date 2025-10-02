@@ -40,7 +40,22 @@ pub trait Node: Send + Sync + Default + StringData {
         self.pack_links(packed, visited);
     }
 
+    fn unpack(packed: &PackedNodes) -> NodeResult<Self> {
+        let root_data = packed
+            .get(packed.root)
+            .ok_or_else(|| NodeError::Custom("Root node not found in packed data".into()))?;
+
+        let mut node = Self::default();
+        node.inject_data(&root_data.data)?;
+        node.set_id(packed.root);
+
+        node.unpack_links(packed);
+        Ok(node)
+    }
+
     fn pack_links(&self, packed: &mut PackedNodes, visited: &mut std::collections::HashSet<u64>);
+
+    fn unpack_links(&mut self, packed: &PackedNodes);
 }
 
 // Helper trait for converting between node types

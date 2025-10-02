@@ -583,10 +583,12 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
     }
 }
 
-pub fn generate_conversions(nodes: &[NodeInfo]) -> TokenStream {
+pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
     let node_trait_impls = nodes.iter().map(|node| {
         let struct_name = &node.name;
         let node_kind_variant = &node.name;
+        let pack_links_impl = generate_pack_links_impl(node);
+        let unpack_links_impl = generate_unpack_links_impl(node);
 
         quote! {
             impl Node for #struct_name {
@@ -620,6 +622,8 @@ pub fn generate_conversions(nodes: &[NodeInfo]) -> TokenStream {
                 fn kind_s() -> NodeKind {
                     NodeKind::#node_kind_variant
                 }
+                #pack_links_impl
+                #unpack_links_impl
             }
         }
     });
@@ -910,5 +914,189 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         #load_components_method
 
         #load_all_method
+    }
+}
+
+pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+
+    let pack_link_calls = node.fields.iter().filter_map(|field| {
+        if matches!(field.link_type, LinkType::None) {
+            return None;
+        }
+
+        let field_name = &field.name;
+        let target_type = format_ident!("{}", field.target_type);
+
+        Some(if field.is_vec {
+            match field.link_type {
+                LinkType::Owned | LinkType::Component => quote! {
+                    for item in &self.#field_name {
+                        item.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            item.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    }
+                },
+                LinkType::Ref => quote! {
+                    for item in &self.#field_name {
+                        item.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            item.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    }
+                },
+                _ => quote! {},
+            }
+        } else {
+            match field.link_type {
+                LinkType::Component | LinkType::Owned => quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            loaded.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    }
+                },
+                LinkType::Ref => quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            loaded.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    }
+                },
+                _ => quote! {},
+            }
+        })
+    });
+
+    quote! {
+        fn pack_links(&self, packed: &mut PackedNodes, visited: &mut std::collections::HashSet<u64>) {
+            #(#pack_link_calls)*
+        }
+    }
+}
+
+pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let unpack_link_calls = node.fields.iter().filter_map(|field| {
+        if matches!(field.link_type, LinkType::None) {
+            return None;
+        }
+
+        let field_name = &field.name;
+        let target_type = format_ident!("{}", field.target_type);
+
+        Some(if field.is_vec {
+            match field.link_type {
+                LinkType::Owned => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    let mut children = Vec::new();
+                    for child_id in child_ids {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            children.push(child);
+                        }
+                    }
+                    if !children.is_empty() {
+                        self.#field_name = Owned::new_loaded(children);
+                    }
+                },
+                LinkType::Component => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    let mut children = Vec::new();
+                    for child_id in child_ids {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            children.push(child);
+                        }
+                    }
+                    if !children.is_empty() {
+                        self.#field_name = Component::new_loaded(children);
+                    }
+                },
+                LinkType::Ref => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    let mut children = Vec::new();
+                    for child_id in child_ids {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            children.push(child);
+                        }
+                    }
+                    if !children.is_empty() {
+                        self.#field_name = Ref::new_loaded(children);
+                    }
+                },
+                _ => quote! {},
+            }
+        } else {
+            match field.link_type {
+                LinkType::Component => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    if let Some(&child_id) = child_ids.first() {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            self.#field_name = Component::new_loaded(child);
+                        }
+                    }
+                },
+                LinkType::Owned => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    if let Some(&child_id) = child_ids.first() {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            self.#field_name = Owned::new_loaded(child);
+                        }
+                    }
+                },
+                LinkType::Ref => quote! {
+                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                    if let Some(&child_id) = child_ids.first() {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            self.#field_name = Ref::new_loaded(child);
+                        }
+                    }
+                },
+                _ => quote! {},
+            }
+        })
+    });
+
+    quote! {
+        fn unpack_links(&mut self, packed: &PackedNodes) {
+            #(#unpack_link_calls)*
+        }
     }
 }

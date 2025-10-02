@@ -57,7 +57,7 @@ fn generate_client_nodes(
         let default_impl = generate_default_impl(node);
 
         // Generate ClientNode implementation
-        let client_node_impl = generate_client_node_impl(node, node_map);
+        let client_node_impl = generate_client_node_impl(node);
 
         // Generate link loading methods
         let link_methods = generate_client_link_methods(node);
@@ -100,7 +100,7 @@ fn generate_client_nodes(
     });
 
     // Generate conversion traits
-    let conversions = generate_conversions(nodes);
+    let conversions = generate_node_impl(nodes);
 
     // Generate ToCstr and FDisplay implementations
     let tocstr_impls = nodes.iter().map(|node| {
@@ -147,10 +147,7 @@ fn generate_client_nodes(
     }
 }
 
-fn generate_client_node_impl(
-    node: &NodeInfo,
-    _node_map: &HashMap<String, NodeInfo>,
-) -> proc_macro2::TokenStream {
+fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
 
     // Generate spawn implementation that handles entity creation and linking
@@ -162,7 +159,7 @@ fn generate_client_node_impl(
                 let field_name = &field.name;
                 Some(quote! {
                     if let Some(loaded) = self.#field_name.get() {
-                        loaded.spawn(ctx, entity)?;
+                        loaded.clone().spawn(ctx, entity)?;
                         ctx.add_link(self.id, loaded.id);
                     }
                 })
@@ -180,7 +177,7 @@ fn generate_client_node_impl(
                     quote! {
                         for item in &self.#field_name {
                             let child_entity = ctx.world_mut()?.spawn_empty().id();
-                            item.spawn(ctx, child_entity)?;
+                            item.clone().spawn(ctx, child_entity)?;
                             ctx.add_link(self.id, item.id);
                         }
                     }
@@ -197,97 +194,6 @@ fn generate_client_node_impl(
             _ => None,
         });
 
-    // Generate unpack_links implementation
-    let unpack_links = node.fields.iter().filter_map(|field| {
-        if matches!(
-            field.link_type,
-            LinkType::Owned | LinkType::Component | LinkType::Ref
-        ) {
-            let field_name = &field.name;
-            let target_type = syn::parse_str::<syn::Ident>(&field.target_type).unwrap();
-
-            if field.is_vec {
-                match field.link_type {
-                    LinkType::Owned => Some(quote! {
-                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                        let mut children = Vec::new();
-                        for child_id in child_ids {
-                            if let Some(child_data) = packed.get(child_id) {
-                                let mut child = #target_type::default();
-                                child.inject_data(&child_data.data).unwrap();
-                                child.set_id(child_id);
-                                child.unpack_links(packed);
-                                children.push(child);
-                            }
-                        }
-                        if !children.is_empty() {
-                            self.#field_name = Owned::new_loaded(children);
-                        }
-                    }),
-                    LinkType::Ref => Some(quote! {
-                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                        let mut children = Vec::new();
-                        for child_id in child_ids {
-                            if let Some(child_data) = packed.get(child_id) {
-                                let mut child = #target_type::default();
-                                child.inject_data(&child_data.data).unwrap();
-                                child.set_id(child_id);
-                                child.unpack_links(packed);
-                                children.push(child);
-                            }
-                        }
-                        if !children.is_empty() {
-                            self.#field_name = Ref::new_loaded(children);
-                        }
-                    }),
-                    _ => None,
-                }
-            } else {
-                match field.link_type {
-                    LinkType::Component => Some(quote! {
-                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                        if let Some(&child_id) = child_ids.first() {
-                            if let Some(child_data) = packed.get(child_id) {
-                                let mut child = #target_type::default();
-                                child.inject_data(&child_data.data).unwrap();
-                                child.set_id(child_id);
-                                child.unpack_links(packed);
-                                self.#field_name = Component::new_loaded(child);
-                            }
-                        }
-                    }),
-                    LinkType::Owned => Some(quote! {
-                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                        if let Some(&child_id) = child_ids.first() {
-                            if let Some(child_data) = packed.get(child_id) {
-                                let mut child = #target_type::default();
-                                child.inject_data(&child_data.data).unwrap();
-                                child.set_id(child_id);
-                                child.unpack_links(packed);
-                                self.#field_name = Owned::new_loaded(child);
-                            }
-                        }
-                    }),
-                    LinkType::Ref => Some(quote! {
-                        let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                        if let Some(&child_id) = child_ids.first() {
-                            if let Some(child_data) = packed.get(child_id) {
-                                let mut child = #target_type::default();
-                                child.inject_data(&child_data.data).unwrap();
-                                child.set_id(child_id);
-                                child.unpack_links(packed);
-                                self.#field_name = Ref::new_loaded(child);
-                            }
-                        }
-                    }),
-                    _ => None,
-                }
-            }
-        } else {
-            None
-        }
-    });
-
     quote! {
         impl ClientNode for #struct_name {
             fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
@@ -298,10 +204,7 @@ fn generate_client_node_impl(
                 #(#spawn_components)*
                 #(#spawn_owned)*
                 ctx.world_mut()?.entity_mut(entity).insert(self);
-            }
-
-            fn unpack_links(&mut self, packed: &PackedNodes) {
-                #(#unpack_links)*
+                Ok(())
             }
         }
     }

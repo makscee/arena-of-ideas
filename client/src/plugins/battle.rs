@@ -128,26 +128,27 @@ impl BattlePlugin {
         }
     }
     pub fn open_world_inspector_window(world: &mut World) {
-        let mut selected: Option<Entity> = None;
+        let mut selected: Option<u64> = None;
         Window::new("battle world inspector", move |ui, world| {
             let Some(mut bd) = world.get_resource_mut::<BattleData>() else {
                 "BattleData not found".cstr().label(ui);
                 return;
             };
             let world = &mut bd.simulation.world;
-            let ctx = world.as_context_mut();
             world
                 .with_context_mut(|ctx| {
-                    if let Some(entity) = selected {
-                        let id = ctx.id(entity)?;
+                    if let Some(id) = selected {
                         ui.horizontal(|ui| {
-                            format!("selected {entity}").label(ui);
+                            format!("selected {id}").label(ui);
                             if "clear".cstr().button(ui).clicked() {
                                 selected = None;
                             }
                         });
-                        for (var, state) in
-                            &ctx.world()?.get::<NodeState>(entity).to_not_found()?.vars
+                        for (var, state) in &ctx
+                            .world()?
+                            .get::<NodeState>(ctx.entity(id)?)
+                            .to_not_found()?
+                            .vars
                         {
                             ui.horizontal(|ui| {
                                 var.cstr().label(ui);
@@ -157,14 +158,14 @@ impl BattlePlugin {
                         ui.columns_const(|[ui1, ui2]| -> NodeResult<()> {
                             "parents".cstr().label(ui1);
                             "children".cstr().label(ui2);
-                            for parent in ctx.parents_entity(entity)? {
-                                let kind = ctx.component::<NodeState>(parent)?.kind;
+                            for parent in ctx.get_children(id)? {
+                                let kind = ctx.get_kind(parent)?;
                                 if format!("{kind} {parent}").button(ui1).clicked() {
                                     selected = Some(parent);
                                 }
                             }
-                            for child in ctx.children_entity(entity)? {
-                                let kind = ctx.component::<NodeState>(child)?.kind;
+                            for child in ctx.get_children(id)? {
+                                let kind = ctx.get_kind(child)?;
                                 if format!("{kind} {child}").button(ui2).clicked() {
                                     selected = Some(child);
                                 }
@@ -179,7 +180,7 @@ impl BattlePlugin {
                             .iter(ctx.world()?)
                         {
                             if format!("{} {}", ns.kind, entity).button(ui).clicked() {
-                                selected = Some(entity);
+                                selected = Some(ctx.id(entity)?);
                             }
                         }
                     }

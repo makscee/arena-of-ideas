@@ -288,23 +288,25 @@ impl<'w> ContextSource for WorldSource<'w> {
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
-
+    fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
     fn load_many<'a, T: BevyComponent>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>;
-
     fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
     fn world<'a>(&'a self) -> NodeResult<&'a World>;
     fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World>;
-
     fn id(&self, entity: Entity) -> NodeResult<u64>;
     fn entity(&self, id: u64) -> NodeResult<Entity>;
     fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()>;
     fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity>;
+    fn add_link_entities(&mut self, parent: Entity, child: Entity) -> NodeResult<()>;
+    fn despawn(&mut self, id: u64) -> NodeResult<()>;
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {
+        self.load_entity(self.entity(id)?)
+    }
+    fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T> {
         let world = self.source().world()?;
-        let entity = self.entity(id)?;
         if let Some(component) = world.get::<T>(entity) {
             return Ok(component);
         } else {
@@ -383,6 +385,14 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
                 "NodeEntityMap resource not found"
             )))
         }
+    }
+
+    fn add_link_entities(&mut self, parent: Entity, child: Entity) -> NodeResult<()> {
+        self.add_link(self.id(parent)?, self.id(child)?)
+    }
+
+    fn despawn(&mut self, id: u64) -> NodeResult<()> {
+        todo!()
     }
 }
 

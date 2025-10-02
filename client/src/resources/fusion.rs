@@ -117,26 +117,24 @@ impl NFusion {
         Ok(battle_actions)
     }
 
-    pub fn paint(&self, rect: Rect, context: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
-        let entity = self.entity();
-        let units = self.units(context)?;
+    pub fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
+        let entity = self.entity(ctx)?;
+        let units = self.units(ctx)?;
         for unit in units {
-            let unit_entity = unit.entity();
-            let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) else {
+            let unit_entity = unit.entity(ctx)?;
+            let Ok(rep) = ctx.first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };
-            context
-                .with_owner_ref(unit_entity, |context| {
-                    RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
-                })
-                .ui(ui);
+            ctx.with_owner_ref(unit_entity, |context| {
+                RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
+            })
+            .ui(ui);
         }
-        for rep in context.collect_children_components::<NUnitRepresentation>(self.id)? {
-            context
-                .with_owner_ref(entity, |context| {
-                    RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
-                })
-                .ui(ui);
+        for rep in ctx.collect_children_components::<NUnitRepresentation>(self.id)? {
+            ctx.with_owner_ref(entity, |context| {
+                RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
+            })
+            .ui(ui);
         }
         Ok(())
     }

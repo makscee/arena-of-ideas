@@ -93,7 +93,7 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_named_list<T: Node + NamedNode + FTitle + bevy::ecs::component::Component>(
+    fn render_named_list<T: ClientNode + NamedNode + FTitle + bevy::ecs::component::Component>(
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -160,7 +160,7 @@ impl ExplorerPlugin {
         world.insert_resource(state);
     }
 
-    fn render_named_card<T: Node + NamedNode + FCard>(ui: &mut Ui, world: &mut World) {
+    fn render_named_card<T: ClientNode + NamedNode + FCard>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
         let state = world.resource::<ExplorerState>();
 
@@ -195,7 +195,7 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Serialize>(
+    fn render_content_pane<T: ClientNode + FDisplay + FEdit + FTitle + Serialize>(
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -323,7 +323,7 @@ impl ExplorerPlugin {
         });
     }
 
-    fn open_content_selector<T: Node + FTitle>(world: &mut World, state: &ExplorerState) {
+    fn open_content_selector<T: ClientNode + FTitle>(world: &mut World, state: &ExplorerState) {
         let kind = T::kind_s();
 
         let parent_kind = get_named_parent(kind);
@@ -389,7 +389,7 @@ impl ExplorerPlugin {
             .push(world);
     }
 
-    fn open_content_creator<T: Node + Default + FEdit + Clone + Serialize + 'static>(
+    fn open_content_creator<T: ClientNode + Default + FEdit + Clone + Serialize + 'static>(
         world: &mut World,
     ) {
         let kind = T::kind_s();

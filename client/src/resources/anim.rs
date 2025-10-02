@@ -50,52 +50,50 @@ impl Anim {
 pub struct Vfx;
 
 impl AnimAction {
-    fn apply(&self, a: &mut Animator, context: &mut ClientContext) -> NodeResult<()> {
+    fn apply(&self, a: &mut Animator, ctx: &mut ClientContext) -> NodeResult<()> {
         match self {
             AnimAction::translate(x) => {
-                let pos = x.get_vec2(context)?;
-                let mut t = context.t()?;
+                let pos = x.get_vec2(ctx)?;
+                let mut t = ctx.t()?;
                 for target in a.targets.iter().copied() {
-                    context.component_mut::<NodeState>(target)?.insert(
-                        t,
-                        a.duration,
-                        VarName::position,
-                        pos.into(),
-                    );
+                    ctx.world_mut()?
+                        .get_mut::<NodeState>(target)
+                        .to_not_found()?
+                        .insert(t, a.duration, VarName::position, pos.into());
                     t += a.timeframe;
                 }
-                *context.t_mut()? = t;
+                *ctx.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = [x.get_entity(context)?].into();
+                a.targets = [x.get_entity(ctx)?].into();
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_entity(context)?);
+                a.targets.push(x.get_entity(ctx)?);
             }
             AnimAction::duration(x) => {
-                a.duration = x.get_f32(context)?;
+                a.duration = x.get_f32(ctx)?;
             }
             AnimAction::timeframe(x) => {
-                a.timeframe = x.get_f32(context)?;
+                a.timeframe = x.get_f32(ctx)?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
             AnimAction::list(vec) => {
                 for aa in vec {
-                    aa.apply(a, context)?;
+                    aa.apply(a, ctx)?;
                 }
             }
             AnimAction::spawn(material) => {
-                let entity = context.world_mut()?.spawn_empty().id();
+                let entity = ctx.world_mut()?.spawn_empty().id();
                 NUnitRepresentation {
                     material: *material.clone(),
                     ..default()
                 }
-                .unpack_entity(context, entity)?;
-                context.world_mut()?.entity_mut(entity).insert(Vfx);
+                .spawn(ctx, entity)?;
+                ctx.world_mut()?.entity_mut(entity).insert(Vfx);
 
-                let mut t = context.t()?;
-                let vars_layers = context.get_vars_layers();
-                let mut state = context.component_mut::<NodeState>(entity)?;
+                let mut t = ctx.t()?;
+                let vars_layers = ctx.get_vars_layers();
+                let mut state = ctx.component_mut::<NodeState>(entity)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());
@@ -106,10 +104,10 @@ impl AnimAction {
                 }
                 a.targets = vec![entity];
                 t += a.timeframe;
-                *context.t_mut()? = t;
+                *ctx.t_mut()? = t;
             }
             AnimAction::wait(expression) => {
-                *context.t_mut()? += expression.get_f32(context)?;
+                *ctx.t_mut()? += expression.get_f32(ctx)?;
             }
         };
         Ok(())
