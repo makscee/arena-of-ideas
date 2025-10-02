@@ -2,19 +2,27 @@ use super::*;
 
 #[reducer]
 fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
-    let _ = ctx.as_context().player()?;
+    let ctx = ctx.as_context();
+    let _ = ctx.player()?;
     let mut pack = ron::from_str::<PackedNodes>(&pack).map_err(|e| e.to_string())?;
     let mut next_id = ctx.next_id();
     pack.reassign_ids(&mut next_id);
-    GlobalData::set_next_id(ctx, next_id);
+    GlobalData::set_next_id(ctx.rctx(), next_id);
     let mut remap: HashMap<u64, u64> = default();
     for (id, NodeData { kind, data }) in &pack.nodes {
-        if let Some(n) = ctx.db.nodes_world().kind_data().filter((kind, data)).next() {
+        if let Some(n) = ctx
+            .rctx()
+            .db
+            .nodes_world()
+            .kind_data()
+            .filter((kind, data))
+            .next()
+        {
             remap.insert(*id, n.id);
             continue;
         }
         let tnode = TNode::new(*id, 0, kind.to_kind(), data.clone());
-        tnode.insert(ctx);
+        tnode.insert(ctx.rctx());
     }
     for NodeLink {
         mut parent,
@@ -29,7 +37,7 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
         if let Some(id) = remap.get(&child) {
             child = *id;
         }
-        let _ = TNodeLink::add_by_id(ctx, parent, child, parent_kind, child_kind, false);
+        let _ = TNodeLink::add_by_id(ctx.rctx(), parent, child, parent_kind, child_kind, false);
     }
     Ok(())
 }

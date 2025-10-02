@@ -175,7 +175,7 @@ fn generate_server_node_impl(
 
     quote! {
         impl ServerNode for #struct_name {
-            fn save(&self, ctx: &ReducerContext) {
+            fn save(&self, ctx: &ServerContext) {
                 // Save linked fields first
                 #(#save_fields)*
 
@@ -185,6 +185,7 @@ fn generate_server_node_impl(
                 }
 
                 let node = self.to_tnode();
+                let ctx = ctx.rctx();
                 match ctx.db.nodes_world().id().find(self.id) {
                     Some(_) => {
                         // Update existing node
@@ -200,11 +201,11 @@ fn generate_server_node_impl(
                 }
             }
 
-            fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self {
+            fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self {
                 todo!()
             }
 
-            fn clone(&self, ctx: &ReducerContext, owner: u64) -> Self {
+            fn clone(&self, ctx: &ServerContext, owner: u64) -> Self {
                 self.clone_self(ctx, owner)
             }
         }

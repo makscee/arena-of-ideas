@@ -42,7 +42,7 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
         id: ID_ARENA,
         ..Default::default()
     }
-    .insert(ctx);
+    .insert(&ctx.as_context());
     Ok(())
 }
 
@@ -51,11 +51,11 @@ trait CtxExt {
     fn next_id(&self) -> u64;
 }
 
-impl CtxExt for ReducerContext {
+impl CtxExt for ServerContext<'_> {
     fn global_settings(&self) -> GlobalSettings {
-        GlobalSettings::get(self)
+        GlobalSettings::get(self.rctx())
     }
     fn next_id(&self) -> u64 {
-        GlobalData::next_id(self)
+        GlobalData::next_id(self.rctx())
     }
 }

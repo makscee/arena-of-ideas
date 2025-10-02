@@ -16,7 +16,7 @@ pub struct NFloorPool {
 #[node]
 pub struct NFloorBoss {
     pub floor: i32,
-    pub team: Component<NTeam>,
+    pub team: Owned<NTeam>,
 }
 
 #[node]
@@ -115,7 +115,7 @@ pub struct NMatch {
     pub lives: i32,
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
-    pub team: Component<NTeam>,
+    pub team: Owned<NTeam>,
     pub battles: Owned<Vec<NBattle>>,
 }
 

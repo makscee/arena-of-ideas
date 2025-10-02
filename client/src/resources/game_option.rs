@@ -102,7 +102,7 @@ pub fn player_identity() -> Identity {
     *PLAYER_IDENTITY.lock()
 }
 pub fn player<'a>(context: &'a ClientContext) -> Result<&'a NPlayer, NodeError> {
-    NPlayer::get_by_id(player_id(), context)
+    context.load::<NPlayer>(player_id())
 }
 pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;

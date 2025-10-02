@@ -193,7 +193,7 @@ impl<'a, T> Table<'a, T> {
                 }
                 _ => {
                     ui.label("Invalid");
-                    Err(NodeErrorVariants::Custom("Type mismatch".to_string()).into())
+                    Err(NodeError::Custom("Type mismatch".to_string()).into())
                 }
             },
             move |context, data| f_clone(context, data).map(VarValue::String),

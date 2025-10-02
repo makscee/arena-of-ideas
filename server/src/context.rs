@@ -2,7 +2,7 @@ use crate::nodes_table::*;
 use itertools::Itertools;
 use schema::{Context, ContextLayer, ContextSource, NodeError, NodeKind, NodeResult, ToNodeKind};
 use serde::de::DeserializeOwned;
-use spacetimedb::{Identity, ReducerContext};
+use spacetimedb::{Identity, ReducerContext, StdbRng};
 
 /// ContextSource implementation for SpacetimeDB
 pub struct ServerSource<'a> {
@@ -71,38 +71,40 @@ pub trait ServerContextExt<S: ContextSource> {
     /// Load a node by ID with type checking
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
 
     /// Load multiple nodes
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
 
     /// Load linked nodes
     fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
 
     /// Load top child node
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
 
     /// Load parent nodes
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
 
     /// Load top parent node
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned;
+        T: schema::Node + DeserializeOwned;
+    fn rctx(&self) -> &ReducerContext;
+    fn rng(&self) -> &StdbRng;
 }
 
 impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         let node = id
             .load_tnode_err(&self.source().ctx)
@@ -121,14 +123,14 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         ids.iter().map(|id| self.load::<T>(*id)).collect()
     }
 
     fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
@@ -137,7 +139,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         if let Some(id) = from_id.top_child(&self.source().ctx, kind) {
@@ -149,7 +151,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         let ids = self.get_parents_of_kind(id, kind)?;
@@ -158,7 +160,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: 'static + schema::Node + DeserializeOwned,
+        T: schema::Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         if let Some(id) = id.top_parent(&self.source().ctx, kind) {
@@ -166,6 +168,14 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
         } else {
             Ok(None)
         }
+    }
+
+    fn rctx(&self) -> &ReducerContext {
+        self.source().reducer_context()
+    }
+
+    fn rng(&self) -> &StdbRng {
+        self.rctx().rng()
     }
 }
 

@@ -585,10 +585,9 @@ impl BattleSimulation {
                 return Ok(right);
             }
         }
-        Err(NodeErrorVariants::NotFound(format!(
+        Err(NodeError::Custom(format!(
             "Failed to find allies: {entity} is not in any team"
-        ))
-        .into())
+        )))
     }
     pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, NodeError> {
         let left = self.left_units();
@@ -598,10 +597,9 @@ impl BattleSimulation {
         } else if right.contains(&entity) {
             return Ok(left);
         }
-        Err(NodeErrorVariants::NotFound(format!(
+        Err(NodeError::Custom(format!(
             "Failed to find enemies: {entity} is not in any team"
-        ))
-        .into())
+        )))
     }
     pub fn offset_unit(&self, entity: Entity, offset: i32) -> Option<Entity> {
         let allies = self.all_allies(entity).ok()?;

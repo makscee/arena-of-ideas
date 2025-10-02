@@ -825,8 +825,8 @@ pub fn generate_load_components(node: &NodeInfo, context_type: &str) -> TokenStr
 
     if component_fields.is_empty() {
         return quote! {
-            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<(), NodeError> {
-                Ok(())
+            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                Ok(self)
             }
         };
     }
@@ -853,9 +853,9 @@ pub fn generate_load_components(node: &NodeInfo, context_type: &str) -> TokenStr
     });
 
     quote! {
-        pub fn load_components(&mut self, ctx: &#context_ident) -> Result<(), NodeError> {
+        pub fn load_components(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
             #(#field_loads)*
-            Ok(())
+            Ok(self)
         }
     }
 }

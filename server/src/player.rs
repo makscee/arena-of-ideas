@@ -12,9 +12,9 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     NPlayer::clear_identity(ctx, &ctx.sender);
     let mut player = NPlayer::new(0, name).insert(ctx);
     let player_data = NPlayerData::new(player.id, pass_hash, false, 0).insert(ctx);
-    player.player_data_set(ctx, player_data)?;
+    player.player_data.state_mut().set(player_data);
     let identity = NPlayerIdentity::new(player.id, Some(ctx.sender.to_string())).insert(ctx);
-    player.identity_set(ctx, identity)?;
+    player.identity.state_mut().set(identity);
     Ok(())
 }
 
@@ -38,12 +38,13 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
 
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.player()?.login(ctx)?.save(ctx);
+    ctx.as_context().player()?.login(ctx)?.save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     let mut player = ctx.player()?.logout(ctx)?;
     player.identity_load(ctx)?.delete(ctx);
     player.save(ctx);
@@ -109,22 +110,24 @@ impl NPlayer {
         }
     }
     pub fn find_identity(ctx: &ServerContext, identity: &Identity) -> Option<NPlayerIdentity> {
-        NPlayerIdentity::find_by_data(ctx, Some(identity.to_string()))
+        NPlayerIdentity::find_by_data(ctx, &ron::to_string(&Some(identity.to_string())).unwrap())
+            .into_iter()
+            .next()
     }
     fn login(mut self, ctx: &ReducerContext) -> Result<Self, String> {
-        let ctx = ctx.as_context();
+        let ts = ctx.timestamp.to_micros_since_unix_epoch() as u64;
+        let ctx = &ctx.as_context();
         let data = self.player_data_load(ctx)?;
         debug!("{data:?}");
-        data.last_login = ctx.timestamp.to_micros_since_unix_epoch() as u64;
+        data.last_login = ts;
         data.online = true;
         Ok(self)
     }
-    fn logout(mut self, ctx: &ReducerContext) -> Result<Self, String> {
-        let ctx = ctx.as_context();
+    fn logout(mut self, ctx: &ServerContext) -> Result<Self, String> {
         self.player_data_load(ctx)?.online = false;
         Ok(self)
     }
-    fn clear_identity(ctx: &ReducerContext, identity: &Identity) {
+    fn clear_identity(ctx: &ServerContext, identity: &Identity) {
         if let Some(node) = Self::find_identity(ctx, identity) {
             info!("identity cleared for {node:?}");
             node.delete(ctx);

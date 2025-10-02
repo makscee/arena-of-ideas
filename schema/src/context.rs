@@ -258,6 +258,10 @@ where
         self.get_var(var)?.get_string()
     }
 
+    pub fn get_bool(&self, var: VarName) -> NodeResult<bool> {
+        self.get_var(var)?.get_bool()
+    }
+
     /// Set a variable in the context
     pub fn set_var(&mut self, name: VarName, value: VarValue) {
         self.layers.push(ContextLayer::Var(name, value));

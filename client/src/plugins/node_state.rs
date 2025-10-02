@@ -159,10 +159,10 @@ impl NodeState {
 impl VarHistory {
     fn get_value_at(&self, t: f32) -> Result<VarValue, NodeError> {
         if t < 0.0 {
-            return Err(NodeErrorVariants::Custom("Not born yet".into()).into());
+            return Err(NodeError::Custom("Not born yet".into()).into());
         }
         if self.changes.is_empty() {
-            return Err(NodeErrorVariants::Custom("History is empty".into()).into());
+            return Err(NodeError::Custom("History is empty".into()).into());
         }
         let mut i = match self.changes.binary_search_by(|h| h.t.total_cmp(&t)) {
             Ok(v) | Err(v) => v.at_least(1) - 1,

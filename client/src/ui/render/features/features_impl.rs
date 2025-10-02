@@ -510,10 +510,10 @@ impl FTitle for NUnit {
 
 impl FDescription for NUnit {
     fn description(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(description) = self.description_load(ctx) {
+        if let Ok(description) = self.description_ref(ctx) {
             description.description.clone()
         } else {
-            String::new()
+            "[tw -]".cstr()
         }
     }
 }
@@ -551,7 +551,8 @@ impl FTag for NUnit {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        let tier = if let Ok(behavior) = ctx.first_parent_recursive::<NUnitBehavior>(self.id) {
+        let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
+        {
             behavior.reaction.tier()
         } else {
             0
@@ -895,7 +896,7 @@ impl FTitle for NFloorPool {
 
 impl FDescription for NFloorPool {
     fn description(&self, _: &ClientContext) -> Cstr {
-        format!("{} teams", self.teams.len()).cstr()
+        "Floor Pool".cstr()
     }
 }
 
@@ -917,7 +918,7 @@ impl FTag for NFloorPool {
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{} teams", self.teams.get().map(|t| t.len()).unwrap_or("?")).cstr())
+        None
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
@@ -1336,7 +1337,7 @@ impl FPlaceholder for NStatusRepresentation {
 
 impl FTitle for NTeam {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!("Team ({}h {}f)", self.houses.len(), self.fusions.len()).cstr()
+        "Team".cstr()
     }
 }
 
@@ -1368,7 +1369,7 @@ impl FTag for NTeam {
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{}h {}f", self.houses.len(), self.fusions.len()).cstr())
+        None
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {

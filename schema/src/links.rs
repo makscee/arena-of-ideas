@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LinkState<T> {
@@ -26,11 +26,8 @@ pub trait Link<T> {
         }
     }
 
-    fn get_mut<'a>(&'a mut self) -> Option<&'a mut T> {
-        match self.state_mut() {
-            LinkState::Loaded(val) => Some(val),
-            _ => None,
-        }
+    fn get_mut<'a>(&'a mut self) -> NodeResult<&'a mut T> {
+        self.state_mut().data_mut()
     }
 
     fn id(&self) -> Option<u64> {
@@ -61,6 +58,12 @@ pub trait Link<T> {
 impl<T> LinkState<T> {
     pub fn set(&mut self, data: T) {
         *self = LinkState::Loaded(data);
+    }
+    pub fn data_mut(&mut self) -> NodeResult<&mut T> {
+        match self {
+            LinkState::Loaded(d) => Ok(d),
+            _ => Err(NodeError::Custom("Link not loaded".into())),
+        }
     }
 }
 
