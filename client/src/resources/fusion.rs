@@ -93,7 +93,7 @@ impl NFusion {
         context: &ClientContext,
     ) -> Result<Vec<BattleAction>, NodeError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        context.with_layer_ref_r(ContextLayer::Owner(self.entity()), |context| {
+        context.with_owner(self.id, |context| {
             if Self::get_trigger(context, self.trigger_unit)?
                 .fire(event, context)
                 .unwrap_or_default()

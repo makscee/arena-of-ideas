@@ -54,7 +54,7 @@ impl TeamEditor {
     }
 
     pub fn ui(self, ui: &mut Ui, context: &ClientContext) -> NodeResult<Vec<TeamAction>> {
-        let team = context.component::<NTeam>(self.team_entity)?;
+        let team = context.load::<NTeam>(context.id(self.team_entity)?)?;
         let mut actions = Vec::new();
 
         let state_id = egui::Id::new(self.team_entity.index()).with("team_editor_selected_fusion");

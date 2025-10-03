@@ -77,6 +77,7 @@ impl ReducerEventContext {
 }
 
 pub trait NodeIdExt {
+    fn entity(self, ctx: &ClientContext) -> NodeResult<Entity>;
     fn get_node(self) -> Option<TNode>;
     fn kind(self) -> Result<NodeKind, NodeError>;
     fn label(self, ui: &mut Ui) -> Response;
@@ -84,6 +85,9 @@ pub trait NodeIdExt {
 }
 
 impl NodeIdExt for u64 {
+    fn entity(self, ctx: &ClientContext) -> NodeResult<Entity> {
+        ctx.entity(self)
+    }
     fn get_node(self) -> Option<TNode> {
         cn().db.nodes_world().id().find(&self)
     }

@@ -9,7 +9,6 @@ mod macro_fn;
 mod r#match;
 mod node_assets;
 mod node_error;
-mod node_part;
 mod packed_nodes;
 mod painter_action;
 mod reaction;
@@ -40,7 +39,6 @@ pub use node_assets::*;
 #[allow(unused_imports)]
 pub use node_error::*;
 
-pub use node_part::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;

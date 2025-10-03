@@ -75,7 +75,7 @@ impl MatchPlugin {
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
         world.with_context(|ctx| {
-            let m = player(ctx)?.active_match_load(ctx)?;
+            let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
             // Check for unresolved battles
             if let Some(last_battle) = m.battles_load(ctx)?.last() {
                 if last_battle.result.is_none() {
@@ -119,35 +119,25 @@ impl MatchPlugin {
                                 .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
                             |ui| {
                                 if !slot.sold {
-                                    ctx.with_layer_ref(
-                                        ContextLayer::Owner(ctx.entity(slot.node_id).unwrap()),
-                                        |context| {
-                                            ui.push_id(i, |ui| -> NodeResult<()> {
-                                                let resp = match slot.card_kind {
-                                                    CardKind::Unit => {
-                                                        let unit = context
-                                                            .component_by_id::<NUnit>(
-                                                                slot.node_id,
-                                                            )?;
-                                                        unit.as_card().compose(context, ui);
-                                                        ui.response()
-                                                    }
-                                                    CardKind::House => {
-                                                        let house = context
-                                                            .component_by_id::<NHouse>(
-                                                                slot.node_id,
-                                                            )?;
-                                                        house.as_card().compose(context, ui);
-                                                        ui.response()
-                                                    }
-                                                };
-                                                resp.dnd_set_drag_payload((i, slot.clone()));
-                                                Ok(())
-                                            })
-                                            .inner
-                                            .ui(ui);
-                                        },
-                                    );
+                                    ctx.with_owner(slot.node_id, |ctx| {
+                                        ui.push_id(i, |ui| -> NodeResult<()> {
+                                            let resp = match slot.card_kind {
+                                                CardKind::Unit => {
+                                                    let unit = ctx.load::<NUnit>(slot.node_id)?;
+                                                    unit.as_card().compose(ctx, ui);
+                                                    ui.response()
+                                                }
+                                                CardKind::House => {
+                                                    let house = ctx.load::<NHouse>(slot.node_id)?;
+                                                    house.as_card().compose(ctx, ui);
+                                                    ui.response()
+                                                }
+                                            };
+                                            resp.dnd_set_drag_payload((i, slot.clone()));
+                                            Ok(())
+                                        })
+                                        .inner
+                                    });
                                 }
                             },
                         );

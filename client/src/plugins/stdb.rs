@@ -223,7 +223,7 @@ fn on_delete(node: &TNode) {
                     node: node.clone(),
                     change: StdbChange::Delete,
                 });
-                ctx.despawn(entity)
+                ctx.despawn(node.id)
             })
             .log();
     });
@@ -233,17 +233,18 @@ fn on_update(node: &TNode) {
     info!("Node updated {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        Context::from_world_r(world, |context| {
-            let entity = context.entity(node.id)?;
-            node.unpack(context, entity);
-            context.world_mut()?.send_event(StdbEvent {
-                entity,
-                node: node.clone(),
-                change: StdbChange::Update,
-            });
-            Ok(())
-        })
-        .log();
+        world
+            .with_context(|context| {
+                let entity = context.entity(node.id)?;
+                node.unpack(context, entity);
+                context.world_mut()?.send_event(StdbEvent {
+                    entity,
+                    node: node.clone(),
+                    change: StdbChange::Update,
+                });
+                Ok(())
+            })
+            .log();
     });
 }
 
