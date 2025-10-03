@@ -1,18 +1,12 @@
 use super::*;
 
 pub trait EventImpl {
-    fn update_value(&self, context: &mut ClientContext, value: VarValue, owner: Entity)
-    -> VarValue;
+    fn update_value(&self, context: &mut ClientContext, value: VarValue, owner: u64) -> VarValue;
 }
 
 impl EventImpl for Event {
-    fn update_value(
-        &self,
-        context: &mut ClientContext,
-        value: VarValue,
-        owner: Entity,
-    ) -> VarValue {
-        match context.with_layers_r(
+    fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue {
+        match ctx.with_temp_layers(
             [
                 ContextLayer::Owner(owner),
                 ContextLayer::Var(VarName::value, value.clone()),
@@ -23,17 +17,17 @@ impl EventImpl for Event {
                 //     fusion.react(event, context).log();
                 // }
                 for status in context
-                    .collect_children_components_recursive::<NStatusMagic>(context.id(owner)?)?
+                    .load_collect_children_recursive::<NStatusMagic>(owner)?
                     .into_iter()
                     .cloned()
                     .collect_vec()
                 {
                     let mut value = context.get_value()?;
                     if let Ok(behavior) =
-                        context.first_parent_recursive::<NStatusBehavior>(status.id)
+                        context.load_first_child_recursive::<NStatusBehavior>(status.id)
                     {
                         context
-                            .with_layer_ref_r(ContextLayer::Owner(status.entity()), |context| {
+                            .with_temp_owner(status.id, |context| {
                                 if let Some(actions) = behavior.reactions.react(self, context) {
                                     match actions.process(context) {
                                         Ok(_) => {}

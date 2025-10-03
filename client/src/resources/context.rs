@@ -387,7 +387,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn id(&self, entity: Entity) -> NodeResult<u64> {
-        let world = self.source().world()?;
+        let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             map.get_id(entity)
                 .ok_or(NodeError::IdNotFound(entity.index(), entity.generation()))
@@ -399,7 +399,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn entity(&self, id: u64) -> NodeResult<Entity> {
-        let world = self.source().world()?;
+        let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             map.get_entity(id).ok_or(NodeError::EntityNotFound(id))
         } else {
@@ -410,7 +410,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()> {
-        let world = self.source_mut().world_mut()?;
+        let world = self.world_mut()?;
         if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
             map.insert(id, entity);
             Ok(())
@@ -422,7 +422,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity> {
-        let world = self.source_mut().world_mut()?;
+        let world = self.world_mut()?;
         if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
             map.remove_by_id(id).ok_or(NodeError::EntityNotFound(id))
         } else {
@@ -548,3 +548,83 @@ impl WorldContextExt for World {
 pub type ClientContext<'w> = Context<WorldSource<'w>>;
 
 pub const EMPTY_CONTEXT: ClientContext = Context::new(WorldSource::new_empty());
+
+/// Extension trait for ClientContext to handle temporary layers
+pub trait ClientContextTempLayers {
+    /// Execute a closure with temporary layers added to a new ClientContext
+    fn with_temp_layers<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    /// Execute a closure with a temporary layer added to a new ClientContext
+    fn with_temp_layer<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    /// Execute a closure with temporary owner layer
+    fn with_temp_owner<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    /// Execute a closure with temporary target layer
+    fn with_temp_target<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    /// Execute a closure with temporary caster layer
+    fn with_temp_caster<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    /// Execute a closure with temporary variable layer
+    fn with_temp_var<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+}
+
+/// Implementation of temporary layers for ClientContext
+impl<'w> ClientContextTempLayers for ClientContext<'w> {
+    fn with_temp_layers<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        let world = self.source().world()?;
+        let mut temp_context = Context::with_layers(WorldSource::new_immutable(world), layers);
+        f(&mut temp_context)
+    }
+
+    fn with_temp_layer<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_temp_layers(vec![layer], f)
+    }
+
+    fn with_temp_owner<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_temp_layer(ContextLayer::Owner(owner_id), f)
+    }
+
+    fn with_temp_target<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_temp_layer(ContextLayer::Target(target_id), f)
+    }
+
+    fn with_temp_caster<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_temp_layer(ContextLayer::Caster(caster_id), f)
+    }
+
+    fn with_temp_var<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_temp_layer(ContextLayer::Var(name, value), f)
+    }
+}

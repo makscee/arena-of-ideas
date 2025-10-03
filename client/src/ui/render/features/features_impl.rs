@@ -502,7 +502,7 @@ impl FEdit for Reaction {
 impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         let color = ctx
-            .with_owner(self.id, |ctx| ctx.get_color(VarName::color))
+            .with_temp_owner(self.id, |ctx| ctx.get_color(VarName::color))
             .unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color)
     }
@@ -2553,10 +2553,10 @@ impl FCompactView for NUnit {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Unit: {}", self.unit_name));
-            if let Ok(stats) = self.stats_load(ctx) {
+            if let Ok(stats) = self.stats_ref(ctx) {
                 ui.label(format!("Power: {}, HP: {}", stats.pwr, stats.hp));
             }
-            if let Ok(desc) = self.description_load(ctx) {
+            if let Ok(desc) = self.description_ref(ctx) {
                 if !desc.description.is_empty() {
                     ui.separator();
                     desc.description.cstr().label_w(ui);

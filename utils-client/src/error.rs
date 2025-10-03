@@ -52,17 +52,6 @@ impl<T> ToENotFound<T> for Option<T> {
     }
 }
 
-// Additional conversion traits for cleaner code
-pub trait EntityToValue {
-    fn to_value(self) -> VarValue;
-}
-
-impl EntityToValue for Entity {
-    fn to_value(self) -> VarValue {
-        VarValue::Entity(self.to_bits())
-    }
-}
-
 pub trait ResultExt<T> {
     fn to_node_result(self) -> NodeResult<T>;
 }

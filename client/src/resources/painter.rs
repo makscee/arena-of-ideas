@@ -48,13 +48,13 @@ pub trait Paint {
 }
 
 impl Paint for PainterAction {
-    fn paint(&self, context: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
+    fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
         let r = p.rect;
         let up = r.width().min(r.height()) * 0.5;
-        context.with_layers_ref_r(default(), |context| {
+        ctx.with_temp_layers(default(), |ctx| {
             match self {
                 PainterAction::circle(x) => {
-                    let radius = x.get_f32(context)? * up;
+                    let radius = x.get_f32(ctx)? * up;
                     let shape = if let Some(width) = p.hollow {
                         CircleShape::stroke(default(), radius, Stroke::new(width, p.color))
                     } else {
@@ -63,7 +63,7 @@ impl Paint for PainterAction {
                     p.tesselator.tessellate_circle(shape, &mut p.mesh)
                 }
                 PainterAction::rectangle(x) => {
-                    let size = x.get_vec2(context)? * 2.0;
+                    let size = x.get_vec2(ctx)? * 2.0;
                     let rect = Rect::from_center_size(default(), size.to_evec2() * up);
                     let shape = if let Some(width) = p.hollow {
                         RectShape::new(
@@ -88,15 +88,11 @@ impl Paint for PainterAction {
                     thickness,
                     curvature,
                 } => {
-                    let start = context.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
-                    let end = context
-                        .get_var(VarName::extra_position)?
-                        .get_vec2()?
-                        .to_pos2()
-                        * up
-                        - start;
-                    let thickness = thickness.get_f32(context)? * up;
-                    let curvature = curvature.get_f32(context)? * up;
+                    let start = ctx.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
+                    let end =
+                        ctx.get_var(VarName::extra_position)?.get_vec2()?.to_pos2() * up - start;
+                    let thickness = thickness.get_f32(ctx)? * up;
+                    let curvature = curvature.get_f32(ctx)? * up;
                     let stroke = Stroke::new(thickness, p.color);
                     let curve = CubicBezierShape::from_points_stroke(
                         [
@@ -113,7 +109,7 @@ impl Paint for PainterAction {
                 }
                 PainterAction::text(x) => {
                     let text = x
-                        .get_string(context)?
+                        .get_string(ctx)?
                         .cstr_c(p.color)
                         .galley(p.color.a() as f32 / 255.0, ui);
                     let mut mesh = egui::Mesh::default();
@@ -125,7 +121,7 @@ impl Paint for PainterAction {
                     p.mesh.append(mesh);
                 }
                 PainterAction::hollow(x) => {
-                    let x = x.get_f32(context)?;
+                    let x = x.get_f32(ctx)?;
                     if x > 0.0 {
                         p.hollow = Some(x);
                     } else {
@@ -133,44 +129,41 @@ impl Paint for PainterAction {
                     }
                 }
                 PainterAction::translate(x) => {
-                    p.mesh.translate(x.get_vec2(context)?.to_evec2() * up);
+                    p.mesh.translate(x.get_vec2(ctx)?.to_evec2() * up);
                 }
                 PainterAction::rotate(x) => {
-                    p.mesh
-                        .rotate(Rot2::from_angle(x.get_f32(context)?), default());
+                    p.mesh.rotate(Rot2::from_angle(x.get_f32(ctx)?), default());
                 }
                 PainterAction::scale_mesh(x) => {
-                    p.mesh
-                        .transform(TSTransform::from_scaling(x.get_f32(context)?));
+                    p.mesh.transform(TSTransform::from_scaling(x.get_f32(ctx)?));
                 }
                 PainterAction::scale_rect(x) => {
-                    let size = p.rect.size() * x.get_f32(context)? - p.rect.size();
+                    let size = p.rect.size() * x.get_f32(ctx)? - p.rect.size();
                     p.rect = p.rect.expand2(size * 0.5);
                 }
                 PainterAction::color(x) => {
-                    p.color = x.get_color(context)?;
+                    p.color = x.get_color(ctx)?;
                 }
                 PainterAction::alpha(x) => {
-                    p.color = p.color.gamma_multiply(x.get_f32(context)?.clamp(0.0, 1.0));
+                    p.color = p.color.gamma_multiply(x.get_f32(ctx)?.clamp(0.0, 1.0));
                 }
                 PainterAction::feathering(x) => {
-                    Self::paint.paint(context, p, ui)?;
-                    let x = x.get_f32(context)?;
+                    Self::paint.paint(ctx, p, ui)?;
+                    let x = x.get_f32(ctx)?;
                     p.tesselator = new_tesselator(x, ui.ctx());
                 }
                 PainterAction::repeat(x, action) => {
-                    let max_index = x.get_i32(context)?;
+                    let max_index = x.get_i32(ctx)?;
                     for i in 0..max_index {
-                        context
-                            .with_layers_ref_r(
-                                [
-                                    ContextLayer::Var(VarName::index, i.into()),
-                                    ContextLayer::Var(VarName::max_index, max_index.into()),
-                                ]
-                                .into(),
-                                |context| action.paint(context, p, ui),
-                            )
-                            .ui(ui);
+                        ctx.with_layers_temp(
+                            [
+                                ContextLayer::Var(VarName::index, i.into()),
+                                ContextLayer::Var(VarName::max_index, max_index.into()),
+                            ]
+                            .into(),
+                            |context| action.paint(context, p, ui),
+                        )
+                        .ui(ui);
                     }
                 }
                 PainterAction::paint => {
@@ -182,7 +175,7 @@ impl Paint for PainterAction {
                 }
                 PainterAction::list(l) => {
                     for a in l {
-                        a.paint(context, p, ui)?;
+                        a.paint(ctx, p, ui)?;
                     }
                 }
             };

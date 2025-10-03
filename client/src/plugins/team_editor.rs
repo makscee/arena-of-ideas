@@ -473,7 +473,7 @@ impl TeamEditor {
                     ui.vertical(|ui| {
                         for (unit_id, action) in fusion_actions {
                             if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                                ctx.with_owner(unit.id, |ctx| {
+                                ctx.with_temp_owner(unit.id, |ctx| {
                                     action.title(ctx).label(ui);
                                     Ok(())
                                 })

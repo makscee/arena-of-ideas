@@ -6,14 +6,14 @@ pub struct Battle {
     pub left: NTeam,
     pub right: NTeam,
 }
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct BattleSimulation {
     pub duration: f32,
     pub world: World,
-    pub fusions_left: Vec<Entity>,
-    pub fusions_right: Vec<Entity>,
-    pub team_left: Entity,
-    pub team_right: Entity,
+    pub fusions_left: Vec<u64>,
+    pub fusions_right: Vec<u64>,
+    pub team_left: u64,
+    pub team_right: u64,
     pub log: BattleLog,
     pub seed: u64,
 }
@@ -27,13 +27,13 @@ pub struct Corpse;
 #[derive(Clone, Debug)]
 #[allow(non_camel_case_types)]
 pub enum BattleAction {
-    var_set(Entity, VarName, VarValue),
-    strike(Entity, Entity),
-    damage(Entity, Entity, i32),
-    heal(Entity, Entity, i32),
-    death(Entity),
-    spawn(Entity),
-    apply_status(Entity, NStatusMagic, i32, Color32),
+    var_set(u64, VarName, VarValue),
+    strike(u64, u64),
+    damage(u64, u64, i32),
+    heal(u64, u64, i32),
+    death(u64),
+    spawn(u64),
+    apply_status(u64, NStatusMagic, i32, Color32),
     send_event(Event),
     vfx(HashMap<VarName, VarValue>, String),
     wait(f32),
@@ -41,8 +41,8 @@ pub enum BattleAction {
 impl Hash for BattleAction {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            BattleAction::var_set(entity, var, value) => {
-                entity.hash(state);
+            BattleAction::var_set(id, var, value) => {
+                id.hash(state);
                 var.hash(state);
                 value.hash(state);
             }
@@ -58,7 +58,7 @@ impl Hash for BattleAction {
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
             BattleAction::apply_status(a, status, c, _) => {
                 a.hash(state);
-                status.hash(state);
+                status.id.hash(state);
                 c.hash(state);
             }
             BattleAction::send_event(event) => event.hash(state),
@@ -155,7 +155,7 @@ impl BattleAction {
                         .into(),
                         |context| curve.apply(context),
                     )?;
-                    let x = Event::OutgoingDamage(a.to_bits(), b.to_bits())
+                    let x = Event::OutgoingDamage(*a, *b)
                         .update_value(context, (*x).into(), *a)
                         .get_i32()?
                         .at_least(0);
@@ -299,15 +299,17 @@ impl BattleAction {
 impl BattleSimulation {
     pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
-        let team_left = world.spawn_empty().id();
-        let team_right = world.spawn_empty().id();
+        let team_left = battle.left.id;
+        let team_right = battle.right.id;
+        let left_entity = world.spawn_empty().id();
+        let right_entitiy = world.spawn_empty().id();
         world
             .with_context_mut(|ctx| {
-                battle.left.spawn(ctx, team_left)?;
-                battle.right.spawn(ctx, team_right)
+                battle.left.spawn(ctx, left_entity)?;
+                battle.right.spawn(ctx, right_entitiy)
             })
             .log();
-        fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
+        fn ids_by_slot(parent: Entity, world: &World) -> Vec<u64> {
             world
                 .with_context(|ctx| {
                     Ok(ctx
@@ -315,8 +317,8 @@ impl BattleSimulation {
                         .into_iter()
                         .sorted_by_key(|s| s.index)
                         .filter_map(|n| {
-                            if ctx.load_first_parent_recursive::<NUnit>(n.id).is_ok() {
-                                n.id.entity(ctx).ok()
+                            if ctx.first_child_recursive(n.id, NodeKind::NUnit).is_ok() {
+                                Some(n.id)
                             } else {
                                 None
                             }
@@ -325,8 +327,8 @@ impl BattleSimulation {
                 })
                 .unwrap()
         }
-        let fusions_left = entities_by_slot(team_left, &world);
-        let fusions_right = entities_by_slot(team_right, &world);
+        let fusions_left = ids_by_slot(left_entity, &world);
+        let fusions_right = ids_by_slot(right_entitiy, &world);
         Self {
             world,
             fusions_left,
@@ -377,17 +379,16 @@ impl BattleSimulation {
             .chain(self.fusions_right.iter())
             .copied()
             .collect_vec();
-        Context::from_battle_simulation_r(self, |context| {
+        Context::from_battle_simulation_r(self, |ctx| {
             for entity in entities {
-                let vars = context
+                let vars = ctx
                     .component::<NodeState>(entity)?
                     .kind
-                    .get_vars(context, entity);
+                    .get_vars(ctx, entity);
                 for (var, value) in vars {
-                    let value = Event::UpdateStat(var).update_value(context, value, entity);
-                    let t = context.t()?;
-                    context
-                        .component_mut::<NodeState>(entity)?
+                    let value = Event::UpdateStat(var).update_value(ctx, value, entity.id(ctx));
+                    let t = ctx.t()?;
+                    ctx.load_mut::<NodeState>(entity)?
                         .insert(t, 0.0, var, value);
                 }
             }
@@ -446,17 +447,17 @@ impl BattleSimulation {
         Ok(battle_actions)
     }
     fn apply_status(
-        context: &mut ClientContext,
-        target: Entity,
+        ctx: &mut ClientContext,
+        target: u64,
         status: NStatusMagic,
         charges: i32,
         color: Color32,
     ) -> NodeResult<()> {
-        let t = context.t()?;
-        for child in context.get_children_of_kind(context.id(target)?, NodeKind::NStatusMagic)? {
-            if let Ok(child_status) = context.load::<NStatusMagic>(child) {
+        let t = ctx.t()?;
+        for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
+            if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = context.load_mut::<NodeState>(child)?;
+                    let mut state = ctx.load_mut::<NodeState>(child)?;
                     let charges = state
                         .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
@@ -467,14 +468,14 @@ impl BattleSimulation {
                 }
             }
         }
-        let entity = context.world_mut()?.spawn_empty().id();
-        status.spawn(context, entity)?;
-        let rep_entity = context.world_mut()?.spawn_empty().id();
-        status_rep().clone().spawn(context, rep_entity)?;
-        context.add_link_entities(entity, rep_entity)?;
-        context.add_link_entities(target, entity)?;
+        let entity = ctx.world_mut()?.spawn_empty().id();
+        status.spawn(ctx, entity)?;
+        let rep_entity = ctx.world_mut()?.spawn_empty().id();
+        status_rep().clone().spawn(ctx, rep_entity)?;
+        ctx.add_link_entities(entity, rep_entity)?;
+        ctx.add_link_entities(target.entity(ctx)?, entity)?;
 
-        let mut state = context.load_entity_mut::<NodeState>(entity)?;
+        let mut state = ctx.load_entity_mut::<NodeState>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::charges, charges.into());
@@ -509,15 +510,16 @@ impl BattleSimulation {
         actions
     }
     #[must_use]
-    fn die(context: &mut ClientContext, entity: Entity) -> Result<Vec<BattleAction>, NodeError> {
-        context.world_mut()?.entity_mut(entity).insert(Corpse);
+    fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
+        let entity = id.entity(ctx)?;
+        ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
-        let bs = context.battle_simulation_mut()?;
-        if let Some(p) = bs.fusions_left.iter().position(|u| *u == entity) {
+        let bs = ctx.battle_simulation_mut()?;
+        if let Some(p) = bs.fusions_left.iter().position(|u| *u == id) {
             bs.fusions_left.remove(p);
             died = true;
         }
-        if let Some(p) = bs.fusions_right.iter().position(|u| *u == entity) {
+        if let Some(p) = bs.fusions_right.iter().position(|u| *u == id) {
             bs.fusions_right.remove(p);
             died = true;
         }
@@ -526,13 +528,8 @@ impl BattleSimulation {
                 bs.duration += 3.0;
             }
 
-            let mut actions = [BattleAction::var_set(
-                entity,
-                VarName::visible,
-                false.into(),
-            )]
-            .to_vec();
-            for child in context.children_entity(entity)? {
+            let mut actions = [BattleAction::var_set(id, VarName::visible, false.into())].to_vec();
+            for child in ctx.children_recursive(id)? {
                 actions.push(BattleAction::var_set(child, VarName::visible, false.into()));
             }
             actions.push(BattleAction::wait(ANIMATION));
@@ -564,67 +561,52 @@ impl BattleSimulation {
         actions
     }
 
-    pub fn left_units(&self) -> &Vec<Entity> {
+    pub fn left_units(&self) -> &Vec<u64> {
         &self.fusions_left
     }
-    pub fn right_units(&self) -> &Vec<Entity> {
+    pub fn right_units(&self) -> &Vec<u64> {
         &self.fusions_right
     }
-    pub fn all_fusions(&self) -> Vec<Entity> {
+    pub fn all_fusions(&self) -> Vec<u64> {
         let mut units = self.fusions_left.clone();
         units.append(&mut self.fusions_right.clone());
         units
     }
-    pub fn all_allies(&self, entity: Entity) -> Result<&Vec<Entity>, NodeError> {
+    pub fn all_allies(&self, id: u64) -> NodeResult<&Vec<u64>> {
         let left = self.left_units();
-        if left.contains(&entity) {
+        if left.contains(&id) {
             return Ok(left);
         } else {
             let right = self.right_units();
-            if right.contains(&entity) {
+            if right.contains(&id) {
                 return Ok(right);
             }
         }
         Err(NodeError::Custom(format!(
-            "Failed to find allies: {entity} is not in any team"
+            "Failed to find allies: {id} is not in any team"
         )))
     }
-    pub fn all_enemies(&self, entity: Entity) -> Result<&Vec<Entity>, NodeError> {
+    pub fn all_enemies(&self, id: u64) -> Result<&Vec<u64>, NodeError> {
         let left = self.left_units();
         let right = self.right_units();
-        if left.contains(&entity) {
+        if left.contains(&id) {
             return Ok(right);
-        } else if right.contains(&entity) {
+        } else if right.contains(&id) {
             return Ok(left);
         }
         Err(NodeError::Custom(format!(
-            "Failed to find enemies: {entity} is not in any team"
+            "Failed to find enemies: {id} is not in any team"
         )))
     }
-    pub fn offset_unit(&self, entity: Entity, offset: i32) -> Option<Entity> {
-        let allies = self.all_allies(entity).ok()?;
-        let pos = allies.iter().position(|e| *e == entity)?;
-        allies.into_iter().enumerate().find_map(|(i, e)| {
+    pub fn offset_unit(&self, unit_id: u64, offset: i32) -> Option<u64> {
+        let allies = self.all_allies(unit_id).ok()?;
+        let pos = allies.iter().position(|id| *id == unit_id)?;
+        allies.into_iter().enumerate().find_map(|(i, id)| {
             if i as i32 - pos as i32 == offset {
-                Some(*e)
+                Some(*id)
             } else {
                 None
             }
         })
-    }
-}
-
-impl Default for BattleSimulation {
-    fn default() -> Self {
-        Self {
-            duration: default(),
-            world: default(),
-            fusions_left: default(),
-            fusions_right: default(),
-            team_left: Entity::PLACEHOLDER,
-            team_right: Entity::PLACEHOLDER,
-            log: default(),
-            seed: 0,
-        }
     }
 }

@@ -93,7 +93,7 @@ impl AnimAction {
 
                 let mut t = ctx.t()?;
                 let vars_layers = ctx.get_vars_layers();
-                let mut state = ctx.component_mut::<NodeState>(entity)?;
+                let mut state = ctx.load_mut::<NodeState>(entity)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());

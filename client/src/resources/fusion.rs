@@ -125,13 +125,13 @@ impl NFusion {
             let Ok(rep) = ctx.load_first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };
-            ctx.with_owner_ref(unit_entity, |context| {
+            ctx.with_temp_owner(unit.id, |context| {
                 RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
             })
             .ui(ui);
         }
         for rep in ctx.collect_children::<NUnitRepresentation>(self.id)? {
-            ctx.with_owner_ref(entity, |context| {
+            ctx.with_temp_owner(self.id, |context| {
                 RepresentationPlugin::paint_rect(rect, context, &rep.material, ui)
             })
             .ui(ui);
