@@ -105,7 +105,7 @@ impl NodeState {
         true
     }
     pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = ctx.load::<NodeState>(entity) {
+        if let Ok(ns) = ctx.load_entity::<NodeState>(entity) {
             if let Some(t) = ctx.t {
                 ns.get_at(t, var)
             } else {
@@ -126,10 +126,13 @@ impl NodeState {
             let Some(id) = context.id(entity).ok_log() else {
                 continue;
             };
-            let Some(parents) = context.ids_to_entities(context.parents(id)).ok_log() else {
+            let Some(parent_ids) = context.get_parents(id).ok_log() else {
                 continue;
             };
-            for parent in parents {
+            for parent_id in parent_ids {
+                let Ok(parent) = context.entity(parent_id) else {
+                    continue;
+                };
                 if checked.insert(parent) {
                     q.push_back(parent);
                 }
@@ -137,15 +140,11 @@ impl NodeState {
         }
         None
     }
-    pub fn sum_var(
-        context: &ClientContext,
-        var: VarName,
-        entity: Entity,
-    ) -> Result<VarValue, NodeError> {
-        let mut result = Self::get_var(context, var, entity).unwrap_or_default();
-        let ids = context.parents_recursive(context.id(entity)?);
-        for entity in context.ids_to_entities(ids)? {
-            if let Some(v) = Self::get_var(context, var, entity) {
+    pub fn sum_var(ctx: &ClientContext, var: VarName, entity: Entity) -> NodeResult<VarValue> {
+        let mut result = Self::get_var(ctx, var, entity).unwrap_or_default();
+        let ids = ctx.parents_recursive(ctx.id(entity)?)?;
+        for id in ids {
+            if let Some(v) = Self::get_var(ctx, var, id.entity(ctx)?) {
                 result = result.add(&v)?;
             }
         }

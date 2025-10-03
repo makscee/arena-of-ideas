@@ -309,6 +309,22 @@ pub trait ClientContextExt {
     fn despawn(&mut self, id: u64) -> NodeResult<()>;
     fn collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
     fn owner_entity(&self) -> NodeResult<Entity>;
+
+    // Load versions of new helper functions
+    fn load_first_parent<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_parent_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_child<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_child_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
+    fn load_collect_children_recursive<'a, T: ClientNode>(
+        &'a self,
+        id: u64,
+    ) -> NodeResult<Vec<&'a T>>;
+    fn load_collect_parents<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
+    fn load_collect_parents_recursive<'a, T: ClientNode>(
+        &'a self,
+        id: u64,
+    ) -> NodeResult<Vec<&'a T>>;
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
@@ -434,6 +450,52 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
 
     fn owner_entity(&self) -> NodeResult<Entity> {
         self.entity(self.owner().to_not_found()?)
+    }
+
+    fn load_first_parent<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let parent_id = self.first_parent(id, T::kind_s())?;
+        self.load(parent_id)
+    }
+
+    fn load_first_parent_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let parent_id = self.first_parent_recursive(id, T::kind_s())?;
+        self.load(parent_id)
+    }
+
+    fn load_first_child<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let child_id = self.first_child(id, T::kind_s())?;
+        self.load(child_id)
+    }
+
+    fn load_first_child_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let child_id = self.first_child_recursive(id, T::kind_s())?;
+        self.load(child_id)
+    }
+
+    fn load_collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+        let child_ids = self.collect_kind_children(id, T::kind_s())?;
+        self.load_many(&child_ids)
+    }
+
+    fn load_collect_children_recursive<'a, T: ClientNode>(
+        &'a self,
+        id: u64,
+    ) -> NodeResult<Vec<&'a T>> {
+        let child_ids = self.collect_kind_children_recursive(id, T::kind_s())?;
+        self.load_many(&child_ids)
+    }
+
+    fn load_collect_parents<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+        let parent_ids = self.collect_kind_parents(id, T::kind_s())?;
+        self.load_many(&parent_ids)
+    }
+
+    fn load_collect_parents_recursive<'a, T: ClientNode>(
+        &'a self,
+        id: u64,
+    ) -> NodeResult<Vec<&'a T>> {
+        let parent_ids = self.collect_kind_parents_recursive(id, T::kind_s())?;
+        self.load_many(&parent_ids)
     }
 }
 

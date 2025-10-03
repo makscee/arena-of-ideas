@@ -19,7 +19,7 @@ impl NFusion {
     }
 
     pub fn get_unit_tier(context: &ClientContext, unit_id: u64) -> Result<u8, NodeError> {
-        if let Ok(behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
+        if let Ok(behavior) = context.load_first_parent_recursive::<NUnitBehavior>(unit_id) {
             Ok(behavior.reaction.tier())
         } else {
             Ok(0)
@@ -30,7 +30,7 @@ impl NFusion {
         let slots = self.get_slots(context)?;
         let mut units = Vec::new();
         for slot in slots {
-            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
                 units.push(unit);
             }
         }
@@ -54,8 +54,9 @@ impl NFusion {
         let mut all_actions = Vec::new();
 
         for slot in slots {
-            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
-                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
+            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
+                if let Ok(unit_behavior) =
+                    context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
                 {
                     let reaction = &unit_behavior.reaction;
                     let start = slot.actions.start as usize;
@@ -77,7 +78,7 @@ impl NFusion {
         context: &'a ClientContext,
         unit: u64,
     ) -> Result<&'a NUnitBehavior, NodeError> {
-        context.first_parent_recursive::<NUnitBehavior>(unit)
+        context.load_first_parent_recursive::<NUnitBehavior>(unit)
     }
 
     pub fn get_trigger<'a>(
@@ -116,12 +117,12 @@ impl NFusion {
         Ok(battle_actions)
     }
 
-    pub fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
+    pub fn paint(&self, rect: Rect, ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
         let entity = self.entity(ctx)?;
         let units = self.units(ctx)?;
         for unit in units {
             let unit_entity = unit.entity(ctx)?;
-            let Ok(rep) = ctx.first_parent_recursive::<NUnitRepresentation>(unit.id) else {
+            let Ok(rep) = ctx.load_first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };
             ctx.with_owner_ref(unit_entity, |context| {

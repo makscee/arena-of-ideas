@@ -113,7 +113,7 @@ impl BattleCamera {
                                 return Ok(());
                             }
                             let rect = cam.rect_from_context(context)?;
-                            fusion.paint(rect, &context, ui)?;
+                            fusion.paint(rect, context, ui)?;
                             if ui.rect_contains_pointer(rect) {
                                 cursor_window(ui.ctx(), |ui| {
                                     fusion.as_card().compose(context, ui);

@@ -426,17 +426,17 @@ impl MatchPlugin {
     }
 
     fn render_unit_icon(ui: &mut Ui, context: &ClientContext, unit: &NUnit) {
-        let _resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id)
-        {
-            MatRect::new(egui::Vec2::new(60.0, 60.0))
-                .add_mat(&rep.material, unit.id)
-                .unit_rep_with_default(unit.id)
-                .ui(ui, context)
-        } else {
-            MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
-        };
+        let _resp =
+            if let Ok(rep) = context.load_first_parent_recursive::<NUnitRepresentation>(unit.id) {
+                MatRect::new(egui::Vec2::new(60.0, 60.0))
+                    .add_mat(&rep.material, unit.id)
+                    .unit_rep_with_default(unit.id)
+                    .ui(ui, context)
+            } else {
+                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+            };
 
-        if let Ok(state) = unit.state_load(context) {
+        if let Ok(state) = unit.state_ref(context) {
             ui.label(format!("Stacks {}", state.stacks));
         }
     }

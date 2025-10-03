@@ -101,8 +101,6 @@ pub enum ContextLayer {
     Owner(u64),
     Target(u64),
     Caster(u64),
-    Parent(u64),
-    Child(u64),
     Var(VarName, VarValue),
 }
 
@@ -208,22 +206,6 @@ where
         self.with_layer(ContextLayer::Caster(caster_id), f)
     }
 
-    /// Execute with parent context
-    pub fn with_parent<R, F>(&mut self, parent_id: u64, f: F) -> R
-    where
-        F: FnOnce(&mut Self) -> R,
-    {
-        self.with_layer(ContextLayer::Parent(parent_id), f)
-    }
-
-    /// Execute with child context
-    pub fn with_child<R, F>(&mut self, child_id: u64, f: F) -> R
-    where
-        F: FnOnce(&mut Self) -> R,
-    {
-        self.with_layer(ContextLayer::Child(child_id), f)
-    }
-
     /// Get current owner ID from context layers
     pub fn owner(&self) -> Option<u64> {
         for layer in self.layers.iter().rev() {
@@ -248,26 +230,6 @@ where
     pub fn caster(&self) -> Option<u64> {
         for layer in self.layers.iter().rev() {
             if let ContextLayer::Caster(id) = layer {
-                return Some(*id);
-            }
-        }
-        None
-    }
-
-    /// Get current parent ID from context layers
-    pub fn parent(&self) -> Option<u64> {
-        for layer in self.layers.iter().rev() {
-            if let ContextLayer::Parent(id) = layer {
-                return Some(*id);
-            }
-        }
-        None
-    }
-
-    /// Get current child ID from context layers
-    pub fn child(&self) -> Option<u64> {
-        for layer in self.layers.iter().rev() {
-            if let ContextLayer::Child(id) = layer {
                 return Some(*id);
             }
         }
@@ -363,5 +325,217 @@ where
     /// Get the current layer stack depth
     pub fn layer_depth(&self) -> usize {
         self.layers.len()
+    }
+
+    /// Find first parent of specified kind
+    pub fn first_parent(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let parents = self.get_parents(id)?;
+        for parent_id in parents {
+            if self.get_kind(parent_id)? == kind {
+                return Ok(parent_id);
+            }
+        }
+        Err(NodeError::Custom(format!(
+            "No parent of kind {:?} found for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first parent of specified kind recursively (BFS)
+    pub fn first_parent_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if !visited.insert(parent_id) {
+                    continue;
+                }
+
+                if self.get_kind(parent_id)? == kind {
+                    return Ok(parent_id);
+                }
+
+                queue.push_back(parent_id);
+            }
+        }
+
+        Err(NodeError::Custom(format!(
+            "No parent of kind {:?} found recursively for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first child of specified kind
+    pub fn first_child(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let children = self.get_children(id)?;
+        for child_id in children {
+            if self.get_kind(child_id)? == kind {
+                return Ok(child_id);
+            }
+        }
+        Err(NodeError::Custom(format!(
+            "No child of kind {:?} found for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first child of specified kind recursively (BFS)
+    pub fn first_child_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if !visited.insert(child_id) {
+                    continue;
+                }
+
+                if self.get_kind(child_id)? == kind {
+                    return Ok(child_id);
+                }
+
+                queue.push_back(child_id);
+            }
+        }
+
+        Err(NodeError::Custom(format!(
+            "No child of kind {:?} found recursively for node {}",
+            kind, id
+        )))
+    }
+
+    /// Get all parents recursively
+    pub fn parents_recursive(&self, id: u64) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if visited.insert(parent_id) {
+                    result.push(parent_id);
+                    queue.push_back(parent_id);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Get all children recursively
+    pub fn children_recursive(&self, id: u64) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if visited.insert(child_id) {
+                    result.push(child_id);
+                    queue.push_back(child_id);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect children of specific kind
+    pub fn collect_kind_children(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let children = self.get_children(id)?;
+        let mut result = Vec::new();
+
+        for child_id in children {
+            if self.get_kind(child_id)? == kind {
+                result.push(child_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect children of specific kind recursively
+    pub fn collect_kind_children_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if !visited.insert(child_id) {
+                    continue;
+                }
+
+                if self.get_kind(child_id)? == kind {
+                    result.push(child_id);
+                }
+
+                queue.push_back(child_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect parents of specific kind
+    pub fn collect_kind_parents(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let parents = self.get_parents(id)?;
+        let mut result = Vec::new();
+
+        for parent_id in parents {
+            if self.get_kind(parent_id)? == kind {
+                result.push(parent_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect parents of specific kind recursively
+    pub fn collect_kind_parents_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if !visited.insert(parent_id) {
+                    continue;
+                }
+
+                if self.get_kind(parent_id)? == kind {
+                    result.push(parent_id);
+                }
+
+                queue.push_back(parent_id);
+            }
+        }
+
+        Ok(result)
     }
 }

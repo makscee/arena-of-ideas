@@ -79,8 +79,8 @@ impl ActionImpl for Action {
                 }
             }
             Action::use_ability => {
-                let caster = context.caster_entity()?.id(context)?;
-                let house = context.first_parent_recursive::<NHouse>(caster)?;
+                let caster = context.caster().to_not_found()?;
+                let house = context.load_first_parent_recursive::<NHouse>(caster)?;
                 let color = house.color_load(context)?.color.c32();
                 let value = context.get_i32(VarName::value).unwrap_or(1);
                 if let Ok(ability) = house.ability_load(context) {
@@ -111,11 +111,11 @@ impl ActionImpl for Action {
                 }
             }
             Action::apply_status => {
-                let caster = context.caster_entity()?.id(context)?;
-                let house = context.first_parent_recursive::<NHouse>(caster)?;
-                let color = house.color_load(context)?.color.c32();
+                let caster = context.caster().to_not_found()?;
+                let house = context.load_first_parent_recursive::<NHouse>(caster)?;
+                let color = house.color_ref(context)?.color.c32();
                 let value = context.get_i32(VarName::value).unwrap_or(1);
-                if let Ok(status) = house.status_load(context) {
+                if let Ok(status) = house.status_ref(context) {
                     let name = status.status_name.clone();
                     let mut status = status.clone();
                     let mut description = status.description_load(context)?.clone();
@@ -132,10 +132,10 @@ impl ActionImpl for Action {
                     status.id = 0;
                     description.id = 0;
                     behavior.id = 0;
-                    description.behavior.set_data(behavior.clone());
-                    status.description.set_data(description.clone());
+                    description.behavior.state_mut().set(behavior.clone());
+                    status.description.state_mut().set(description.clone());
                     if let Some(repr) = representation {
-                        status.representation.set_data(repr);
+                        status.representation.state_mut().set(repr);
                     }
                     let targets = context.collect_targets();
                     for target in targets {

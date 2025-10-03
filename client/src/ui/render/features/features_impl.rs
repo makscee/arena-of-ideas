@@ -502,7 +502,7 @@ impl FEdit for Reaction {
 impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         let color = ctx
-            .with_owner_ref(self.entity(), |ctx| ctx.get_color(VarName::color))
+            .with_owner(self.id, |ctx| ctx.get_color(VarName::color))
             .unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color)
     }
@@ -583,7 +583,7 @@ impl FTag for NUnit {
 impl FInfo for NUnit {
     fn info(&self, ctx: &ClientContext) -> Cstr {
         let mut info_parts = Vec::new();
-        if let Ok(stats) = self.stats_load(ctx) {
+        if let Ok(stats) = self.stats_ref(ctx) {
             info_parts.push(format!(
                 "[{} {}]/[{} {}]",
                 VarName::pwr.color().to_hex(),
@@ -592,11 +592,11 @@ impl FInfo for NUnit {
                 stats.hp
             ));
         }
-        if let Ok(house) = ctx.first_parent::<NHouse>(self.id()) {
+        if let Ok(house) = ctx.load_first_parent::<NHouse>(self.id()) {
             let color = house.color_for_text(ctx);
             info_parts.push(house.house_name.cstr_c(color));
         }
-        if let Ok(desc) = self.description_load(ctx) {
+        if let Ok(desc) = self.description_ref(ctx) {
             if !desc.description.is_empty() {
                 info_parts.push(desc.description.clone());
             }
@@ -2562,7 +2562,7 @@ impl FCompactView for NUnit {
                     desc.description.cstr().label_w(ui);
                 }
             }
-            if let Ok(house) = ctx.first_parent::<NHouse>(self.id()) {
+            if let Ok(house) = ctx.load_first_parent::<NHouse>(self.id()) {
                 ui.separator();
                 ui.label(format!("House: {}", house.house_name));
             }

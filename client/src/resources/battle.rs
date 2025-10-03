@@ -309,14 +309,14 @@ impl BattleSimulation {
             .log();
         fn entities_by_slot(parent: Entity, world: &World) -> Vec<Entity> {
             world
-                .with_context(|context| {
-                    Ok(context
-                        .collect_children_components_recursive::<NFusion>(context.id(parent)?)?
+                .with_context(|ctx| {
+                    Ok(ctx
+                        .load_collect_children_recursive::<NFusion>(ctx.id(parent)?)?
                         .into_iter()
                         .sorted_by_key(|s| s.index)
                         .filter_map(|n| {
-                            if context.first_parent_recursive::<NUnit>(n.id).is_ok() {
-                                Some(n.entity())
+                            if ctx.load_first_parent_recursive::<NUnit>(n.id).is_ok() {
+                                n.id.entity(ctx).ok()
                             } else {
                                 None
                             }
@@ -411,30 +411,29 @@ impl BattleSimulation {
     }
     #[must_use]
     fn send_event(
-        context: &mut ClientContext,
+        ctx: &mut ClientContext,
         event: Event,
     ) -> Result<VecDeque<BattleAction>, NodeError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
-        for entity in context.battle_simulation()?.all_fusions() {
-            context
-                .with_owner(entity, |context| {
-                    match context.load::<NFusion>(entity)?.react(&event, context) {
-                        Ok(a) => battle_actions.extend(a),
-                        Err(e) => error!("NFusion event {event} failed: {e}"),
-                    };
-                    Ok(())
-                })
-                .log();
+        for entity in ctx.battle_simulation()?.all_fusions() {
+            ctx.with_owner(entity, |context| {
+                match context.load::<NFusion>(entity)?.react(&event, context) {
+                    Ok(a) => battle_actions.extend(a),
+                    Err(e) => error!("NFusion event {event} failed: {e}"),
+                };
+                Ok(())
+            })
+            .log();
         }
-        for (r, s) in context
+        for (r, s) in ctx
             .world_mut()?
             .query::<(&NStatusBehavior, &NStatusMagic)>()
-            .iter(context.world()?)
+            .iter(ctx.world()?)
         {
-            context.with_layer_ref_r(ContextLayer::Owner(s.entity()), |context| {
-                if let Some(actions) = r.reactions.react(&event, &context) {
-                    match actions.process(context) {
+            ctx.with_owner(s.id, |ctx| {
+                if let Some(actions) = r.reactions.react(&event, &ctx) {
+                    match actions.process(ctx) {
                         Ok(a) => battle_actions.extend(a),
                         Err(e) => {
                             error!("StatusMagic {} event {event} failed: {e}", s.status_name)

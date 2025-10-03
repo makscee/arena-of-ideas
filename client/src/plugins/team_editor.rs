@@ -53,7 +53,7 @@ impl TeamEditor {
         self
     }
 
-    pub fn ui(self, ui: &mut Ui, context: &ClientContext) -> NodeResult<Vec<TeamAction>> {
+    pub fn ui(self, ui: &mut Ui, context: &mut ClientContext) -> NodeResult<Vec<TeamAction>> {
         let team = context.load::<NTeam>(context.id(self.team_entity)?)?;
         let mut actions = Vec::new();
 
@@ -62,7 +62,7 @@ impl TeamEditor {
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
         let fusions = team
-            .fusions_load(context)
+            .fusions_ref(context)?
             .into_iter()
             .sorted_by_key(|f| f.index)
             .collect_vec();
@@ -70,7 +70,7 @@ impl TeamEditor {
         let mut fusion_slots: HashMap<u64, Vec<&NFusionSlot>> = HashMap::new();
         for fusion in &fusions {
             let slots = context
-                .collect_parents_components::<NFusionSlot>(fusion.id)?
+                .load_collect_parents::<NFusionSlot>(fusion.id)?
                 .into_iter()
                 .sorted_by_key(|s| s.index)
                 .collect_vec();
@@ -173,12 +173,12 @@ impl TeamEditor {
         context: &'a ClientContext,
         _fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
     ) -> NodeResult<Vec<&'a NUnit>> {
-        let all_units = context
-            .collect_children_components_recursive::<NUnit>(context.id(self.team_entity)?)?;
+        let all_units =
+            context.load_collect_children_recursive::<NUnit>(context.id(self.team_entity)?)?;
 
         Ok(all_units
             .into_iter()
-            .filter(|unit| context.first_child::<NFusionSlot>(unit.id).is_err())
+            .filter(|unit| context.first_child(unit.id, NodeKind::NFusionSlot).is_err())
             .collect())
     }
 
@@ -191,7 +191,8 @@ impl TeamEditor {
 
         for slot in slots {
             if let Some(unit) = Self::get_slot_unit(slot.id, context) {
-                if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                if let Ok(unit_behavior) =
+                    context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
                 {
                     let trigger = unit_behavior.reaction.trigger.clone();
                     if !trigger_map.contains_key(&trigger) {
@@ -215,20 +216,23 @@ impl TeamEditor {
     ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
-        let old_fusion_id = if let Ok(old_slot) = context.first_child::<NFusionSlot>(unit_id) {
-            let old_fusion = context.first_child::<NFusion>(old_slot.id)?;
-            Some((old_fusion.id, old_slot.id))
-        } else {
-            None
-        };
-
-        let new_fusion_id =
-            if let Ok(new_slot) = context.component::<NFusionSlot>(context.entity(target_id)?) {
-                let new_fusion = context.first_child::<NFusion>(new_slot.id)?;
-                Some(new_fusion.id)
+        let old_fusion_id =
+            if let Ok(old_slot_id) = context.first_child(unit_id, NodeKind::NFusionSlot) {
+                if let Ok(old_fusion_id) = context.first_child(old_slot_id, NodeKind::NFusion) {
+                    Some((old_fusion_id, old_slot_id))
+                } else {
+                    None
+                }
             } else {
                 None
             };
+
+        let new_fusion_id = if let Ok(new_slot) = context.load::<NFusionSlot>(target_id) {
+            let new_fusion = context.load_first_child::<NFusion>(new_slot.id)?;
+            Some(new_fusion.id)
+        } else {
+            None
+        };
 
         let is_same_fusion = match (old_fusion_id, new_fusion_id) {
             (Some((old_id, _)), Some(new_id)) => old_id == new_id,
@@ -246,17 +250,17 @@ impl TeamEditor {
 
             // Update trigger only if moving to different fusion (not same fusion)
             if !is_same_fusion {
-                let old_fusion = context.component::<NFusion>(context.entity(old_fusion_id)?)?;
+                let old_fusion = context.load::<NFusion>(old_fusion_id)?;
                 if old_fusion.trigger_unit == unit_id {
                     let remaining_slots =
-                        context.collect_parents_components::<NFusionSlot>(old_fusion_id)?;
+                        context.load_collect_parents::<NFusionSlot>(old_fusion_id)?;
                     let mut new_trigger_ref = 0u64;
 
                     for slot in remaining_slots {
                         if slot.id != old_slot_id {
-                            if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
                                 if context
-                                    .first_parent_recursive::<NUnitBehavior>(unit.id)
+                                    .load_first_parent_recursive::<NUnitBehavior>(unit.id)
                                     .is_ok()
                                 {
                                     new_trigger_ref = unit.id;
@@ -276,12 +280,12 @@ impl TeamEditor {
 
         // Handle moving into new slot
         if let Some(new_fusion_id) = new_fusion_id {
-            let new_fusion = context.component::<NFusion>(context.entity(new_fusion_id)?)?;
+            let new_fusion = context.load::<NFusion>(new_fusion_id)?;
 
             // If fusion has no trigger set (unit id is 0), set it to this unit
             if new_fusion.trigger_unit == 0 {
                 if context
-                    .first_parent_recursive::<NUnitBehavior>(unit_id)
+                    .load_first_parent_recursive::<NUnitBehavior>(unit_id)
                     .is_ok()
                 {
                     additional_actions.push(TeamAction::ChangeTrigger {
@@ -292,7 +296,8 @@ impl TeamEditor {
             }
 
             // Set action range to select all actions for the moved unit
-            if let Ok(unit_behavior) = context.first_parent_recursive::<NUnitBehavior>(unit_id) {
+            if let Ok(unit_behavior) = context.load_first_parent_recursive::<NUnitBehavior>(unit_id)
+            {
                 let reaction = &unit_behavior.reaction;
                 additional_actions.push(TeamAction::ChangeActionRange {
                     slot_id: target_id,
@@ -313,8 +318,8 @@ impl TeamEditor {
         let mut additional_actions = Vec::new();
 
         // Handle moving to bench
-        if let Ok(old_slot) = context.first_child::<NFusionSlot>(unit_id) {
-            let old_fusion = context.first_child::<NFusion>(old_slot.id)?;
+        if let Ok(old_slot) = context.load_first_child::<NFusionSlot>(unit_id) {
+            let old_fusion = context.load_first_child::<NFusion>(old_slot.id)?;
 
             // Reset action range for the slot being vacated
             additional_actions.push(TeamAction::ChangeActionRange {
@@ -325,15 +330,14 @@ impl TeamEditor {
 
             // If this unit was the trigger unit, update trigger to another unit or default
             if old_fusion.trigger_unit == unit_id {
-                let remaining_slots =
-                    context.collect_parents_components::<NFusionSlot>(old_fusion.id)?;
+                let remaining_slots = context.load_collect_parents::<NFusionSlot>(old_fusion.id)?;
                 let mut new_trigger_ref = 0u64;
 
                 for slot in remaining_slots {
                     if slot.id != old_slot.id {
-                        if let Ok(unit) = context.first_parent::<NUnit>(slot.id) {
+                        if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
                             if context
-                                .first_parent_recursive::<NUnitBehavior>(unit.id)
+                                .load_first_parent_recursive::<NUnitBehavior>(unit.id)
                                 .is_ok()
                             {
                                 new_trigger_ref = unit.id;
@@ -453,33 +457,27 @@ impl TeamEditor {
         clicked
     }
 
-    fn render_fusion_action_sequence(
-        &self,
-        fusion: &NFusion,
-        context: &ClientContext,
-        ui: &mut Ui,
-    ) {
-        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
+    fn render_fusion_action_sequence(&self, fusion: &NFusion, ctx: &ClientContext, ui: &mut Ui) {
+        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
                 trigger.cstr().label(ui);
             });
             ui.separator();
         }
-        match fusion.gather_fusion_actions(context) {
+        match fusion.gather_fusion_actions(ctx) {
             Ok(fusion_actions) => {
                 if fusion_actions.is_empty() {
                     ui.label("No actions selected");
                 } else {
                     ui.vertical(|ui| {
                         for (unit_id, action) in fusion_actions {
-                            if let Ok(unit) = context.component_by_id::<NUnit>(unit_id) {
-                                context
-                                    .with_owner_ref(unit.entity(), |context| {
-                                        action.title(context).label(ui);
-                                        Ok(())
-                                    })
-                                    .ui(ui);
+                            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                                ctx.with_owner(unit.id, |ctx| {
+                                    action.title(ctx).label(ui);
+                                    Ok(())
+                                })
+                                .ui(ui);
                             } else {
                                 action.cstr().label_w(ui);
                             }
@@ -527,7 +525,7 @@ impl TeamEditor {
     }
 
     fn get_slot_unit<'b>(slot_id: u64, context: &'b ClientContext) -> Option<&'b NUnit> {
-        context.first_parent::<NUnit>(slot_id).ok()
+        context.load_first_parent::<NUnit>(slot_id).ok()
     }
 
     fn render_unit_in_slot(
@@ -554,7 +552,7 @@ impl TeamEditor {
     ) -> Response {
         let mut mat_rect = MatRect::new(size);
 
-        if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id) {
+        if let Ok(rep) = context.load_first_parent_recursive::<NUnitRepresentation>(unit.id) {
             mat_rect = mat_rect.add_mat(&rep.material, unit.id);
         }
 
@@ -668,7 +666,7 @@ impl TeamEditor {
                 if let Some(unit) = Self::get_slot_unit(slot.id, context) {
                     ui.group(|ui| {
                         if let Ok(unit_behavior) =
-                            context.first_parent_recursive::<NUnitBehavior>(unit.id)
+                            context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
                         {
                             let max_actions = unit_behavior.reaction.actions.len() as u8;
                             if max_actions > 0 {

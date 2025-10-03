@@ -24,7 +24,7 @@ impl UiPlugin {
             .single_mut(world)
             .unwrap();
         let ctx = ctx.get().clone();
-        ctx.begin_pass(egui_input.take());
+        ctx.begin_pass(egui_input.take().0);
         TopBottomPanel::top("top_bar").show(&ctx, |ui| {
             ui.scope_builder(
                 UiBuilder::new().layer_id(LayerId::new(Order::Foreground, Id::new("settings"))),
