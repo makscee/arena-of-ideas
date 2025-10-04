@@ -24,8 +24,8 @@ impl ExpressionImpl for Expression {
             Expression::zero => Ok(0.into()),
             Expression::pi => Ok(PI.into()),
             Expression::pi2 => Ok((PI * 2.0).into()),
-            Expression::owner => Ok(ctx.owner_entity()?.to_value()),
-            Expression::target => Ok(ctx.target_entity()?.to_value()),
+            Expression::owner => Ok(ctx.owner().to_not_found()?.into()),
+            Expression::target => Ok(ctx.target().to_not_found()?.into()),
             Expression::var(var) => {
                 let v = ctx.get_var(*var);
                 if v.is_err() && *var == VarName::index {
@@ -58,44 +58,44 @@ impl ExpressionImpl for Expression {
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),
             Expression::unit_size => Ok(UNIT_SIZE.into()),
-            Expression::all_units => Ok(ctx.battle_simulation()?.all_fusions().vec_to_value()),
+            Expression::all_units => Ok(ctx.battle_mut()?.all_fusions().into()),
             Expression::all_ally_units => Ok(ctx
-                .battle_simulation()?
-                .all_allies(ctx.owner_entity()?)?
+                .battle_mut()?
+                .all_allies(ctx.owner().to_not_found()?)?
                 .clone()
-                .vec_to_value()),
+                .into()),
             Expression::all_other_ally_units => Ok(ctx
-                .battle_simulation()?
-                .all_allies(ctx.owner_entity()?)?
+                .battle_mut()?
+                .all_allies(ctx.owner().to_not_found()?)?
                 .into_iter()
-                .filter(|v| **v != ctx.owner_entity().unwrap())
+                .filter(|v| **v != ctx.owner().unwrap())
                 .copied()
                 .collect_vec()
-                .vec_to_value()),
+                .into()),
             Expression::all_enemy_units => Ok(ctx
-                .battle_simulation()?
-                .all_enemies(ctx.owner_entity()?)?
+                .battle_mut()?
+                .all_enemies(ctx.owner().to_not_found()?)?
                 .clone()
-                .vec_to_value()),
+                .into()),
             Expression::adjacent_ally_units => {
-                let owner = ctx.owner_entity()?;
-                let bs = ctx.battle_simulation()?;
+                let owner = ctx.owner().to_not_found()?;
+                let bs = ctx.battle_mut()?;
                 Ok(bs
                     .offset_unit(owner, -1)
                     .into_iter()
                     .chain(bs.offset_unit(owner, 1))
                     .collect_vec()
-                    .vec_to_value())
+                    .into())
             }
             Expression::adjacent_front => ctx
-                .battle_simulation()?
-                .offset_unit(ctx.owner_entity()?, -1)
-                .map(|e| e.to_value())
+                .battle_mut()?
+                .offset_unit(ctx.owner().to_not_found()?, -1)
+                .map(|e| e.into())
                 .to_custom_e("No front unit found"),
             Expression::adjacent_back => ctx
-                .battle_simulation()?
-                .offset_unit(ctx.owner_entity()?, 1)
-                .map(|e| e.to_value())
+                .battle_mut()?
+                .offset_unit(ctx.owner().to_not_found()?, 1)
+                .map(|e| e.into())
                 .to_custom_e("No back unit found"),
             Expression::sin(x) => Ok(x.get_f32(ctx)?.sin().into()),
             Expression::cos(x) => Ok(x.get_f32(ctx)?.cos().into()),
@@ -123,8 +123,8 @@ impl ExpressionImpl for Expression {
             }
             Expression::random_unit(x) => x
                 .get_entity_list(ctx)?
-                .choose(ctx.rng())
-                .map(|e| e.to_value())
+                .choose(ctx.rng()?)
+                .map(|e| e.into())
                 .to_custom_e("No units found"),
             Expression::neg(x) => x.get_value(ctx)?.neg(),
             Expression::str_macro(s, v) => {

@@ -15,7 +15,7 @@ pub struct BattleSimulation {
     pub team_left: u64,
     pub team_right: u64,
     pub log: BattleLog,
-    pub seed: u64,
+    pub rng: ChaCha8Rng,
 }
 #[derive(Default, Debug)]
 pub struct BattleLog {
@@ -337,7 +337,7 @@ impl BattleSimulation {
             team_right,
             duration: 0.0,
             log: BattleLog::default(),
-            seed: battle.id,
+            rng: rng_seeded(battle.id),
         }
     }
     pub fn start(mut self) -> Self {
@@ -514,7 +514,7 @@ impl BattleSimulation {
         let entity = id.entity(ctx)?;
         ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
-        let bs = ctx.battle_simulation_mut()?;
+        let bs = ctx.battle_mut()?;
         if let Some(p) = bs.fusions_left.iter().position(|u| *u == id) {
             bs.fusions_left.remove(p);
             died = true;

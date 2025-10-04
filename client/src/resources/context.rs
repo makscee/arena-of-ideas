@@ -158,6 +158,7 @@ pub struct NodeEntity {
 pub enum WorldSource<'w> {
     Immutable(&'w World),
     Mutable(&'w mut World),
+    Battle(&'w mut BattleSimulation),
     None,
 }
 
@@ -174,10 +175,36 @@ impl<'w> WorldSource<'w> {
         Self::None
     }
 
+    pub fn new_battle(battle: &'w mut BattleSimulation) -> Self {
+        Self::Battle(battle)
+    }
+
+    pub fn battle(&self) -> NodeResult<&BattleSimulation> {
+        match self {
+            Self::Battle(battle) => Ok(battle),
+            _ => Err(NodeError::Custom("Source is not a BattleSimulation".into())),
+        }
+    }
+
+    pub fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
+        match self {
+            Self::Battle(battle) => Ok(battle),
+            _ => Err(NodeError::Custom("Source is not a BattleSimulation".into())),
+        }
+    }
+
+    fn get_rng(&mut self) -> Option<&mut ChaCha8Rng> {
+        match self {
+            Self::Battle(battle) => Some(&mut battle.rng),
+            _ => None,
+        }
+    }
+
     fn world(&self) -> NodeResult<&World> {
         match self {
             Self::Immutable(world) => Ok(world),
             Self::Mutable(world) => Ok(world),
+            Self::Battle(battle) => Ok(&battle.world),
             Self::None => Err(NodeError::Custom("Source World not set".into())),
         }
     }
@@ -187,6 +214,7 @@ impl<'w> WorldSource<'w> {
             Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable".into())),
             Self::None => Err(NodeError::Custom("Source World not set".into())),
             Self::Mutable(world) => Ok(world),
+            Self::Battle(battle) => Ok(&mut battle.world),
         }
     }
 }
@@ -287,6 +315,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
+    fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
     fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
@@ -301,6 +330,8 @@ pub trait ClientContextExt {
     fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
     fn world<'a>(&'a self) -> NodeResult<&'a World>;
     fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World>;
+    fn battle<'a>(&'a self) -> NodeResult<&'a BattleSimulation>;
+    fn battle_mut<'a>(&'a mut self) -> NodeResult<&'a mut BattleSimulation>;
     fn id(&self, entity: Entity) -> NodeResult<u64>;
     fn entity(&self, id: u64) -> NodeResult<Entity>;
     fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()>;
@@ -328,6 +359,11 @@ pub trait ClientContextExt {
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
+    fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
+        self.source_mut().get_rng().ok_or_else(|| {
+            NodeError::Custom("RNG only available for BattleSimulation contexts".into())
+        })
+    }
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {
         self.load_entity(self.entity(id)?)
     }
@@ -384,6 +420,14 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
 
     fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World> {
         self.source_mut().world_mut()
+    }
+
+    fn battle<'a>(&'a self) -> NodeResult<&'a BattleSimulation> {
+        self.source().battle()
+    }
+
+    fn battle_mut<'a>(&'a mut self) -> NodeResult<&'a mut BattleSimulation> {
+        self.source_mut().battle_mut()
     }
 
     fn id(&self, entity: Entity) -> NodeResult<u64> {
