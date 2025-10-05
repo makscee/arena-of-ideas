@@ -588,6 +588,31 @@ impl WorldContextExt for World {
     }
 }
 
+impl WorldContextExt for BattleSimulation {
+    fn as_context(&self) -> Context<WorldSource<'_>> {
+        panic!()
+    }
+
+    fn as_context_mut(&mut self) -> Context<WorldSource<'_>> {
+        Context::new(WorldSource::new_battle(self))
+    }
+
+    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+    {
+        panic!()
+    }
+
+    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+    {
+        let source = WorldSource::new_battle(self);
+        Context::exec(source, f)
+    }
+}
+
 /// Type alias for convenience
 pub type ClientContext<'w> = Context<WorldSource<'w>>;
 

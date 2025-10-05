@@ -183,9 +183,9 @@ where
     }
 
     /// Execute with owner context
-    pub fn with_owner<R, F>(&mut self, owner_id: u64, f: F) -> R
+    pub fn with_owner<R, F>(&mut self, owner_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Owner(owner_id), f)
     }

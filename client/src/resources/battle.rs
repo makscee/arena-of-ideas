@@ -6,7 +6,7 @@ pub struct Battle {
     pub left: NTeam,
     pub right: NTeam,
 }
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BattleSimulation {
     pub duration: f32,
     pub world: World,
@@ -99,11 +99,11 @@ impl std::fmt::Display for BattleAction {
 impl BattleAction {
     pub fn apply(&self, sim: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        let result = Context::from_battle_simulation_r(sim, |context| {
+        let result = sim.with_context_mut(|context| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
                     let strike_anim = animations().get("strike").unwrap();
-                    context.with_layers_r(
+                    context.with_layers_temp(
                         [
                             ContextLayer::Owner(*a),
                             ContextLayer::Target(*b),
@@ -113,9 +113,7 @@ impl BattleAction {
                         |context| strike_anim.apply(context),
                     )?;
                     let pwr = context
-                        .with_layer_r(ContextLayer::Owner(*a), |context| {
-                            context.sum_var(VarName::pwr)
-                        })?
+                        .with_owner(*a, |context| context.sum_var(VarName::pwr))?
                         .get_i32()?;
                     let action_a = Self::damage(*a, *b, pwr);
                     let pwr = context
@@ -182,14 +180,16 @@ impl BattleAction {
                     true
                 }
                 BattleAction::heal(a, b, x) => {
-                    let owner_pos = context.with_layer_r(ContextLayer::Owner(*a), |context| {
-                        context.get_var(VarName::position)
-                    })?;
-                    let target_pos = context.with_layer_r(ContextLayer::Owner(*b), |context| {
-                        context.get_var(VarName::position)
-                    })?;
+                    let owner_pos = context
+                        .with_temp_layer(ContextLayer::Owner(*a), |context| {
+                            context.get_var(VarName::position)
+                        })?;
+                    let target_pos = context
+                        .with_temp_layer(ContextLayer::Owner(*b), |context| {
+                            context.get_var(VarName::position)
+                        })?;
                     let curve = animations().get("range_effect_vfx").unwrap();
-                    context.with_layers_r(
+                    context.with_temp_layers(
                         [
                             ContextLayer::Var(VarName::position, owner_pos),
                             ContextLayer::Var(VarName::extra_position, target_pos.clone()),
@@ -199,14 +199,14 @@ impl BattleAction {
                     )?;
                     if *x > 0 {
                         let pleasure = animations().get("pleasure_vfx").unwrap();
-                        context.with_layer_r(
+                        context.with_temp_layer(
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pleasure.apply(context),
                         )?;
-                        let dmg = (context.component::<NFusion>(*b)?.dmg - x).at_least(0);
+                        let dmg = (context.load::<NFusion>(*b)?.dmg - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         let text = animations().get("text").unwrap();
-                        context.with_layers_r(
+                        context.with_temp_layers(
                             [
                                 ContextLayer::Var(VarName::text, format!("+{x}").into()),
                                 ContextLayer::Var(VarName::color, GREEN.into()),
@@ -221,7 +221,7 @@ impl BattleAction {
                 }
                 BattleAction::var_set(entity, var, value) => {
                     let t = context.t()?;
-                    let mut ns = context.component_mut::<NodeState>(*entity)?;
+                    let mut ns = context.load_mut::<NodeState>(*entity)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
                         ns.kind.set_var(context, *entity, *var, value.clone());
                         true
@@ -256,7 +256,7 @@ impl BattleAction {
                 }
                 BattleAction::vfx(vars, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        context.with_layers_r(
+                        context.with_layers_temp(
                             vars.iter()
                                 .map(|(var, value)| ContextLayer::Var(*var, value.clone()))
                                 .collect(),
@@ -271,7 +271,7 @@ impl BattleAction {
                 }
             };
             let t = context.t()?;
-            context.battle_simulation_mut()?.duration = t;
+            context.battle_mut()?.duration = t;
             Ok(applied)
         });
         match result {
@@ -357,9 +357,7 @@ impl BattleSimulation {
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
 
-        match Context::from_battle_simulation_r(&mut self, |context| {
-            Self::send_event(context, Event::BattleStart)
-        }) {
+        match self.with_context_mut(|context| Self::send_event(context, Event::BattleStart)) {
             Ok(a) => {
                 self.process_actions(a);
                 let a = self.death_check();
@@ -373,23 +371,19 @@ impl BattleSimulation {
         if self.ended() {
             return;
         }
-        let entities = self
+        let ids = self
             .fusions_left
             .iter()
             .chain(self.fusions_right.iter())
             .copied()
             .collect_vec();
-        Context::from_battle_simulation_r(self, |ctx| {
-            for entity in entities {
-                let vars = ctx
-                    .component::<NodeState>(entity)?
-                    .kind
-                    .get_vars(ctx, entity);
+        self.with_context_mut(|ctx| {
+            for ids in ids {
+                let vars = ctx.load::<NodeState>(ids)?.kind.get_vars(ctx, ids);
                 for (var, value) in vars {
-                    let value = Event::UpdateStat(var).update_value(ctx, value, entity.id(ctx));
+                    let value = Event::UpdateStat(var).update_value(ctx, value, ids);
                     let t = ctx.t()?;
-                    ctx.load_mut::<NodeState>(entity)?
-                        .insert(t, 0.0, var, value);
+                    ctx.load_mut::<NodeState>(ids)?.insert(t, 0.0, var, value);
                 }
             }
             Ok(())
@@ -400,9 +394,7 @@ impl BattleSimulation {
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
-        match Context::from_battle_simulation_r(self, |context| {
-            Self::send_event(context, Event::TurnEnd)
-        }) {
+        match self.with_context_mut(|context| Self::send_event(context, Event::TurnEnd)) {
             Ok(a) => self.process_actions(a),
             Err(e) => error!("TurnEnd event error: {e}"),
         };
@@ -417,9 +409,9 @@ impl BattleSimulation {
     ) -> Result<VecDeque<BattleAction>, NodeError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
-        for entity in ctx.battle_simulation()?.all_fusions() {
-            ctx.with_owner(entity, |context| {
-                match context.load::<NFusion>(entity)?.react(&event, context) {
+        for id in ctx.battle()?.all_fusions() {
+            ctx.with_owner(id, |context| {
+                match context.load::<NFusion>(id)?.react(&event, context) {
                     Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };
@@ -432,7 +424,7 @@ impl BattleSimulation {
             .query::<(&NStatusBehavior, &NStatusMagic)>()
             .iter(ctx.world()?)
         {
-            ctx.with_owner(s.id, |ctx| {
+            ctx.with_temp_owner(s.id, |ctx| {
                 if let Some(actions) = r.reactions.react(&event, &ctx) {
                     match actions.process(ctx) {
                         Ok(a) => battle_actions.extend(a),
@@ -493,13 +485,13 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
-        Context::from_battle_simulation_r(self, |context| {
-            for entity in context.battle_simulation()?.all_fusions() {
-                let dmg = context.component::<NFusion>(entity)?.dmg;
-                context.with_owner(entity, |context| {
+        self.with_context_mut(|context| {
+            for id in context.battle()?.all_fusions() {
+                let dmg = context.load::<NFusion>(id)?.dmg;
+                context.with_owner(id, |context| {
                     if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
-                        actions.push_back(BattleAction::send_event(Event::Death(entity.to_bits())));
-                        actions.push_back(BattleAction::death(entity));
+                        actions.push_back(BattleAction::send_event(Event::Death(id)));
+                        actions.push_back(BattleAction::death(id));
                     }
                     Ok(())
                 })?;
