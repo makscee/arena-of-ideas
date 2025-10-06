@@ -13,8 +13,8 @@ pub trait ExpressionImpl {
     fn get_bool(&self, context: &mut ClientContext) -> Result<bool, NodeError>;
     fn get_color(&self, context: &mut ClientContext) -> Result<Color32, NodeError>;
     fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError>;
-    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, NodeError>;
-    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, NodeError>;
+    fn get_id(&self, context: &mut ClientContext) -> Result<u64, NodeError>;
+    fn get_ids_list(&self, context: &mut ClientContext) -> Result<Vec<u64>, NodeError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -36,8 +36,8 @@ impl ExpressionImpl for Expression {
             }
             Expression::var_sum(var) => ctx.sum_var(*var),
             Expression::state_var(x, var) => {
-                let entity = x.get_entity(ctx)?;
-                NodeState::load(entity, ctx)?.get(*var).to_e(*var)
+                let id = x.get_id(ctx)?;
+                NodeState::load(id.entity(ctx)?, ctx)?.get(*var).to_e(*var)
             }
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),
@@ -60,12 +60,12 @@ impl ExpressionImpl for Expression {
             Expression::unit_size => Ok(UNIT_SIZE.into()),
             Expression::all_units => Ok(ctx.battle_mut()?.all_fusions().into()),
             Expression::all_ally_units => Ok(ctx
-                .battle_mut()?
+                .battle()?
                 .all_allies(ctx.owner().to_not_found()?)?
                 .clone()
                 .into()),
             Expression::all_other_ally_units => Ok(ctx
-                .battle_mut()?
+                .battle()?
                 .all_allies(ctx.owner().to_not_found()?)?
                 .into_iter()
                 .filter(|v| **v != ctx.owner().unwrap())
@@ -73,13 +73,13 @@ impl ExpressionImpl for Expression {
                 .collect_vec()
                 .into()),
             Expression::all_enemy_units => Ok(ctx
-                .battle_mut()?
+                .battle()?
                 .all_enemies(ctx.owner().to_not_found()?)?
                 .clone()
                 .into()),
             Expression::adjacent_ally_units => {
                 let owner = ctx.owner().to_not_found()?;
-                let bs = ctx.battle_mut()?;
+                let bs = ctx.battle()?;
                 Ok(bs
                     .offset_unit(owner, -1)
                     .into_iter()
@@ -88,12 +88,12 @@ impl ExpressionImpl for Expression {
                     .into())
             }
             Expression::adjacent_front => ctx
-                .battle_mut()?
+                .battle()?
                 .offset_unit(ctx.owner().to_not_found()?, -1)
                 .map(|e| e.into())
                 .to_custom_e("No front unit found"),
             Expression::adjacent_back => ctx
-                .battle_mut()?
+                .battle()?
                 .offset_unit(ctx.owner().to_not_found()?, 1)
                 .map(|e| e.into())
                 .to_custom_e("No back unit found"),
@@ -122,9 +122,9 @@ impl ExpressionImpl for Expression {
                 Ok(rng.gen_range(0.0..1.0).into())
             }
             Expression::random_unit(x) => x
-                .get_entity_list(ctx)?
+                .get_ids_list(ctx)?
                 .choose(ctx.rng()?)
-                .map(|e| e.into())
+                .map(|id| VarValue::Id(*id))
                 .to_custom_e("No units found"),
             Expression::neg(x) => x.get_value(ctx)?.neg(),
             Expression::str_macro(s, v) => {
@@ -208,10 +208,10 @@ impl ExpressionImpl for Expression {
     fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError> {
         self.get_value(context)?.get_string()
     }
-    fn get_entity(&self, context: &mut ClientContext) -> Result<Entity, NodeError> {
-        self.get_value(context)?.get_entity()
+    fn get_id(&self, context: &mut ClientContext) -> Result<u64, NodeError> {
+        self.get_value(context)?.get_id()
     }
-    fn get_entity_list(&self, context: &mut ClientContext) -> Result<Vec<Entity>, NodeError> {
-        self.get_value(context)?.get_entity_list()
+    fn get_ids_list(&self, context: &mut ClientContext) -> Result<Vec<u64>, NodeError> {
+        self.get_value(context)?.get_ids_list()
     }
 }

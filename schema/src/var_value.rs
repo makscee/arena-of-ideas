@@ -16,7 +16,7 @@ pub enum VarValue {
     String(String),
     Vec2(Vec2),
     Color32(Color32),
-    Entity(u64),
+    Id(u64),
     list(Vec<Box<VarValue>>),
 }
 
@@ -31,7 +31,7 @@ impl VarValue {
             VarValue::String(v) => Ok(v.to_string()),
             VarValue::Vec2(v) => Ok(v.to_string()),
             VarValue::Color32(v) => Ok(v.to_hex()),
-            VarValue::Entity(v) => Ok(v.to_string()),
+            VarValue::Id(v) => Ok(v.to_string()),
             VarValue::list(v) => Ok(v
                 .iter()
                 .map(|v| v.get_string().unwrap_or("_".to_owned()))
@@ -92,6 +92,22 @@ impl VarValue {
                 .into()),
             _ => Err(NodeError::not_supported_single(
                 "Cast to Color32",
+                self.clone(),
+            )),
+        }
+    }
+    pub fn get_id(&self) -> Result<u64, NodeError> {
+        match self {
+            VarValue::Id(v) => Ok(*v),
+            _ => Err(NodeError::not_supported_single("Cast to Id", self.clone())),
+        }
+    }
+    pub fn get_ids_list(&self) -> Result<Vec<u64>, NodeError> {
+        match self {
+            VarValue::list(v) => Ok(v.into_iter().filter_map(|v| v.get_id().ok()).collect()),
+            VarValue::Id(v) => Ok(vec![*v]),
+            _ => Err(NodeError::not_supported_single(
+                "Cast to list of Ids",
                 self.clone(),
             )),
         }
@@ -244,7 +260,7 @@ impl std::hash::Hash for VarValue {
                 v.y.to_bits().hash(state);
             }
             VarValue::Color32(v) => v.hash(state),
-            VarValue::Entity(v) => v.hash(state),
+            VarValue::Id(v) => v.hash(state),
             VarValue::list(v) => v.iter().for_each(|v| v.hash(state)),
         };
     }
@@ -273,7 +289,7 @@ impl std::fmt::Display for VarValue {
             VarValue::String(v) => write!(f, "{v}"),
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::Color32(v) => write!(f, "{}", v.to_hex()),
-            VarValue::Entity(v) => write!(f, "{v}"),
+            VarValue::Id(v) => write!(f, "{v}"),
             VarValue::list(v) => write!(f, "({})", v.iter().join(", ")),
         }
     }

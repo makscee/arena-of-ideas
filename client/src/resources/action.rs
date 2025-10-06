@@ -48,10 +48,10 @@ impl ActionImpl for Action {
                 let value = x.get_value(ctx)?;
                 ctx.set_var(VarName::value, ctx.get_var(VarName::value)?.sub(&value)?);
             }
-            Action::add_target(x) => match x.get_entity_list(ctx) {
-                Ok(entities) => {
-                    for entity in entities {
-                        ctx.add_target(ctx.id(entity)?);
+            Action::add_target(x) => match x.get_ids_list(ctx) {
+                Ok(ids) => {
+                    for id in ids {
+                        ctx.add_target(id);
                     }
                 }
                 Err(e) => error!("add_target error: {e}"),

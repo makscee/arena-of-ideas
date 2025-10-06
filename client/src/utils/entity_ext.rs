@@ -121,7 +121,7 @@ impl EntityExt for Entity {
             .collect()
     }
     fn to_value(self) -> VarValue {
-        VarValue::Entity(self.to_bits())
+        VarValue::Id(self.to_bits())
     }
 }
 

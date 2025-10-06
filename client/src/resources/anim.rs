@@ -65,10 +65,10 @@ impl AnimAction {
                 *ctx.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = [x.get_entity(ctx)?].into();
+                a.targets = [ctx.entity(x.get_id(ctx)?)?].into();
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_entity(ctx)?);
+                a.targets.push(ctx.entity(x.get_id(ctx)?)?);
             }
             AnimAction::duration(x) => {
                 a.duration = x.get_f32(ctx)?;
