@@ -311,6 +311,29 @@ impl<'w> ContextSource for WorldSource<'w> {
             Ok(false)
         }
     }
+
+    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue> {
+        let world = self.world()?;
+        if let Some(map) = world.get_resource::<NodeEntityMap>() {
+            if let Some(entity) = map.get_entity(owner) {
+                if let Some(node_state) = world.get::<NodeState>(entity) {
+                    if let Some(value) = node_state.get(var) {
+                        return Ok(value);
+                    } else {
+                        Err(NodeError::VarNotFound(var))
+                    }
+                } else {
+                    Err(NodeError::custom(format!(
+                        "NodeState not found for {owner}"
+                    )))
+                }
+            } else {
+                Err(NodeError::custom(format!("Entity not found for {owner}")))
+            }
+        } else {
+            Err(NodeError::custom("Failed to get NodeEntityMap"))
+        }
+    }
 }
 
 /// Extension trait for Context to load nodes in client

@@ -1,8 +1,7 @@
-use crate::nodes_table::*;
-use itertools::Itertools;
-use schema::{Context, ContextLayer, ContextSource, NodeError, NodeKind, NodeResult, ToNodeKind};
 use serde::de::DeserializeOwned;
-use spacetimedb::{Identity, ReducerContext, StdbRng};
+use spacetimedb::StdbRng;
+
+use super::*;
 
 /// ContextSource implementation for SpacetimeDB
 pub struct ServerSource<'a> {
@@ -64,6 +63,11 @@ impl<'a> ContextSource for ServerSource<'a> {
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
         Ok(from_id.has_child(&self.ctx, to_id))
     }
+
+    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue> {
+        let node = self.ctx.db.nodes_world().id().find(owner).to_not_found()?;
+        todo!()
+    }
 }
 
 /// Extension trait for Context to load nodes in server
@@ -71,32 +75,32 @@ pub trait ServerContextExt<S: ContextSource> {
     /// Load a node by ID with type checking
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
 
     /// Load multiple nodes
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
 
     /// Load linked nodes
     fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
 
     /// Load top child node
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
 
     /// Load parent nodes
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
 
     /// Load top parent node
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: schema::Node + DeserializeOwned;
+        T: Node + DeserializeOwned;
     fn rctx(&self) -> &ReducerContext;
     fn rng(&self) -> &StdbRng;
 }
@@ -104,7 +108,7 @@ pub trait ServerContextExt<S: ContextSource> {
 impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
     fn load<T>(&self, id: u64) -> NodeResult<T>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         let node = id
             .load_tnode_err(&self.source().ctx)
@@ -123,14 +127,14 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         ids.iter().map(|id| self.load::<T>(*id)).collect()
     }
 
     fn load_linked<T>(&self, from_id: u64) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
@@ -139,7 +143,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         if let Some(id) = from_id.top_child(&self.source().ctx, kind) {
@@ -151,7 +155,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_parents<T>(&self, id: u64) -> NodeResult<Vec<T>>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         let ids = self.get_parents_of_kind(id, kind)?;
@@ -160,7 +164,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
 
     fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
     where
-        T: schema::Node + DeserializeOwned,
+        T: Node + DeserializeOwned,
     {
         let kind = T::kind_s();
         if let Some(id) = id.top_parent(&self.source().ctx, kind) {

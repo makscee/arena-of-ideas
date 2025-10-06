@@ -93,6 +93,9 @@ pub trait ContextSource {
 
     /// Check if two nodes are linked
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
+
+    /// Get variable value from a specific node
+    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue>;
 }
 
 /// Context layer for scoping operations
@@ -238,6 +241,7 @@ where
 
     /// Get variable value from context layers
     pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        // First check context layers
         for layer in self.layers.iter().rev() {
             if let ContextLayer::Var(var_name, value) = layer {
                 if *var_name == var {
@@ -245,6 +249,14 @@ where
                 }
             }
         }
+
+        // If not found in layers, try to get from current owner
+        if let Some(owner_id) = self.owner() {
+            if let Ok(value) = self.source.get_var(owner_id, var) {
+                return Ok(value);
+            }
+        }
+
         Err(NodeError::VarNotFound(var))
     }
 
@@ -562,6 +574,25 @@ where
                 }
 
                 queue.push_back(parent_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Sum a variable recursively from all children of the current owner
+    pub fn sum_var(&self, var_name: VarName) -> NodeResult<VarValue> {
+        let owner_id = self
+            .owner()
+            .ok_or(NodeError::Custom("No owner in context".into()))?;
+
+        let mut result = VarValue::default();
+        let mut ids = self.children_recursive(owner_id)?;
+        ids.push(owner_id);
+
+        for id in ids {
+            if let Ok(value) = self.source.get_var(id, var_name) {
+                result = result.add(&value)?;
             }
         }
 
