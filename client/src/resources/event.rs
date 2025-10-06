@@ -22,7 +22,7 @@ impl EventImpl for Event {
                     .cloned()
                     .collect_vec()
                 {
-                    let mut value = context.get_value()?;
+                    let mut value = context.get_var(VarName::value)?;
                     if let Ok(behavior) =
                         context.load_first_child_recursive::<NStatusBehavior>(status.id)
                     {
@@ -36,14 +36,14 @@ impl EventImpl for Event {
                                         }
                                     }
                                 }
-                                value = context.get_value()?;
+                                value = context.get_var(VarName::value)?;
                                 Ok(())
                             })
                             .log();
-                        context.set_value_var(value);
+                        context.set_var(VarName::value, value);
                     }
                 }
-                context.get_value()
+                context.get_var(VarName::value)
             },
         ) {
             Ok(value) => value,

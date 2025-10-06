@@ -33,27 +33,34 @@ impl ActionImpl for Action {
             }
             Action::set_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_value_var(value);
+                ctx.set_var(VarName::value, value);
             }
             Action::add_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_value_var(ctx.get_value().unwrap_or(1.into()).add(&value)?);
+                ctx.set_var(
+                    VarName::value,
+                    ctx.get_var(VarName::value)
+                        .unwrap_or(1.into())
+                        .add(&value)?,
+                );
             }
             Action::subtract_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_value_var(ctx.get_value()?.sub(&value)?);
+                ctx.set_var(VarName::value, ctx.get_var(VarName::value)?.sub(&value)?);
             }
             Action::add_target(x) => match x.get_entity_list(ctx) {
                 Ok(entities) => {
                     for entity in entities {
-                        ctx.add_target(entity);
+                        ctx.add_target(ctx.id(entity)?);
                     }
                 }
                 Err(e) => error!("add_target error: {e}"),
             },
             Action::deal_damage => {
-                let owner = ctx.owner()?;
-                let value = ctx.get_value()?.get_i32()?;
+                let owner = ctx
+                    .owner()
+                    .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
+                let value = ctx.get_i32(VarName::value)?;
                 if value > 0 {
                     let targets = ctx.collect_targets();
                     if targets.is_empty() {
@@ -70,8 +77,10 @@ impl ActionImpl for Action {
                 }
             }
             Action::heal_damage => {
-                let owner = ctx.owner()?;
-                let value = ctx.get_value()?.get_i32()?;
+                let owner = ctx
+                    .owner()
+                    .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
+                let value = ctx.get_i32(VarName::value)?;
                 if value > 0 {
                     for target in ctx.collect_targets() {
                         actions.push(BattleAction::heal(owner, target, value));
@@ -81,13 +90,13 @@ impl ActionImpl for Action {
             Action::use_ability => {
                 let caster = ctx.caster().to_not_found()?;
                 let house = ctx.load_first_parent_recursive::<NHouse>(caster)?;
-                let color = house.color_load(ctx)?.color.c32();
+                let color = house.color_ref(ctx)?.color.c32();
                 let value = ctx.get_i32(VarName::value).unwrap_or(1);
-                if let Ok(ability) = house.ability_load(ctx) {
+                if let Ok(ability) = house.ability_ref(ctx) {
                     let name = ability.ability_name.clone();
                     let effect = ability
-                        .description_load(ctx)?
-                        .effect_load(ctx)?
+                        .description_ref(ctx)?
+                        .effect_ref(ctx)?
                         .actions
                         .clone();
                     ctx.with_layer(ContextLayer::Var(VarName::value, value.into()), |ctx| {

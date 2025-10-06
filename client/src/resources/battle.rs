@@ -9,6 +9,7 @@ pub struct Battle {
 #[derive(Debug)]
 pub struct BattleSimulation {
     pub duration: f32,
+    pub t: f32,
     pub world: World,
     pub fusions_left: Vec<u64>,
     pub fusions_right: Vec<u64>,
@@ -117,19 +118,16 @@ impl BattleAction {
                         .get_i32()?;
                     let action_a = Self::damage(*a, *b, pwr);
                     let pwr = context
-                        .with_layer_r(ContextLayer::Owner(*b), |context| {
-                            context.sum_var(VarName::pwr)
-                        })?
+                        .with_owner(*b, |context| context.sum_var(VarName::pwr))?
                         .get_i32()?;
                     let action_b = Self::damage(*b, *a, pwr);
                     add_actions.extend_from_slice(&[action_a, action_b]);
-                    add_actions.extend(context.battle_simulation()?.slots_sync());
+                    add_actions.extend(context.battle()?.slots_sync());
                     true
                 }
                 BattleAction::death(a) => {
-                    let position = context.with_layer_r(ContextLayer::Owner(*a), |context| {
-                        context.get_var(VarName::position)
-                    })?;
+                    let position =
+                        context.with_owner(*a, |context| context.get_var(VarName::position))?;
                     add_actions.extend(BattleSimulation::die(context, *a)?);
                     add_actions.push(BattleAction::vfx(
                         HashMap::from_iter([(VarName::position, position)]),
@@ -138,14 +136,16 @@ impl BattleAction {
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = context.with_layer_r(ContextLayer::Owner(*a), |context| {
-                        context.get_var(VarName::position)
-                    })?;
-                    let target_pos = context.with_layer_r(ContextLayer::Owner(*b), |context| {
-                        context.get_var(VarName::position)
-                    })?;
+                    let owner_pos = context
+                        .with_temp_layer(ContextLayer::Owner(*a), |context| {
+                            context.get_var(VarName::position)
+                        })?;
+                    let target_pos = context
+                        .with_temp_layer(ContextLayer::Owner(*b), |context| {
+                            context.get_var(VarName::position)
+                        })?;
                     let curve = animations().get("range_effect_vfx").unwrap();
-                    context.with_layers_r(
+                    context.with_temp_layers(
                         [
                             ContextLayer::Var(VarName::position, owner_pos),
                             ContextLayer::Var(VarName::extra_position, target_pos.clone()),
@@ -159,15 +159,15 @@ impl BattleAction {
                         .at_least(0);
                     if x > 0 {
                         let pain = animations().get("pain_vfx").unwrap();
-                        context.with_layer_r(
+                        context.with_temp_layer(
                             ContextLayer::Var(VarName::position, target_pos.clone()),
                             |context| pain.apply(context),
                         )?;
-                        let dmg = context.component::<NFusion>(*b)?.dmg + x;
+                        let dmg = context.load::<NFusion>(*b)?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     let text = animations().get("text").unwrap();
-                    context.with_layers_r(
+                    context.with_temp_layers(
                         [
                             ContextLayer::Var(VarName::text, (-x).to_string().into()),
                             ContextLayer::Var(VarName::color, RED.into()),
@@ -336,6 +336,7 @@ impl BattleSimulation {
             team_left,
             team_right,
             duration: 0.0,
+            t: 0.0,
             log: BattleLog::default(),
             rng: rng_seeded(battle.id),
         }

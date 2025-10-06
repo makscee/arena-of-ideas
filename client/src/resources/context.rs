@@ -316,6 +316,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
+    fn color(&self, ui: &mut Ui) -> Color32;
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
     fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
@@ -332,6 +333,8 @@ pub trait ClientContextExt {
     fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World>;
     fn battle<'a>(&'a self) -> NodeResult<&'a BattleSimulation>;
     fn battle_mut<'a>(&'a mut self) -> NodeResult<&'a mut BattleSimulation>;
+    fn t(&self) -> NodeResult<f32>;
+    fn t_mut(&mut self) -> NodeResult<&mut f32>;
     fn id(&self, entity: Entity) -> NodeResult<u64>;
     fn entity(&self, id: u64) -> NodeResult<Entity>;
     fn add_id_entity_link(&mut self, id: u64, entity: Entity) -> NodeResult<()>;
@@ -363,6 +366,10 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         self.source_mut().get_rng().ok_or_else(|| {
             NodeError::Custom("RNG only available for BattleSimulation contexts".into())
         })
+    }
+    fn color(&self, ui: &mut Ui) -> Color32 {
+        self.get_color(VarName::color)
+            .unwrap_or_else(|_| ui.visuals().weak_text_color())
     }
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {
         self.load_entity(self.entity(id)?)
@@ -428,6 +435,14 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
 
     fn battle_mut<'a>(&'a mut self) -> NodeResult<&'a mut BattleSimulation> {
         self.source_mut().battle_mut()
+    }
+
+    fn t(&self) -> NodeResult<f32> {
+        Ok(self.source().battle()?.t)
+    }
+
+    fn t_mut(&mut self) -> NodeResult<&mut f32> {
+        Ok(&mut self.source_mut().battle_mut()?.t)
     }
 
     fn id(&self, entity: Entity) -> NodeResult<u64> {

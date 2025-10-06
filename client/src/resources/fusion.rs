@@ -94,7 +94,7 @@ impl NFusion {
         context: &ClientContext,
     ) -> Result<Vec<BattleAction>, NodeError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        context.with_owner(self.id, |context| {
+        context.with_temp_owner(self.id, |context| {
             if Self::get_trigger(context, self.trigger_unit)?
                 .fire(event, context)
                 .unwrap_or_default()
@@ -106,8 +106,7 @@ impl NFusion {
                     .collect();
 
                 for (unit_id, action) in cloned_actions {
-                    let unit_entity = context.entity(unit_id)?;
-                    context.add_caster(unit_entity);
+                    context.set_caster(unit_id);
                     battle_actions.extend(action.process(context)?);
                 }
             }

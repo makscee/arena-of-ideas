@@ -156,9 +156,9 @@ where
     }
 
     /// Execute a closure with a new context layer
-    pub fn with_layer<R, F>(&mut self, layer: ContextLayer, f: F) -> R
+    pub fn with_layer<R, F>(&mut self, layer: ContextLayer, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.layers.push(layer);
         let result = f(self);
@@ -167,9 +167,9 @@ where
     }
 
     /// Execute with multiple context layers
-    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> R
+    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         let len = layers.len();
         for layer in layers {
@@ -191,17 +191,17 @@ where
     }
 
     /// Execute with target context
-    pub fn with_target<R, F>(&mut self, target_id: u64, f: F) -> R
+    pub fn with_target<R, F>(&mut self, target_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Target(target_id), f)
     }
 
     /// Execute with caster context
-    pub fn with_caster<R, F>(&mut self, caster_id: u64, f: F) -> R
+    pub fn with_caster<R, F>(&mut self, caster_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Caster(caster_id), f)
     }
@@ -246,6 +246,35 @@ where
             }
         }
         Err(NodeError::VarNotFound(var))
+    }
+
+    /// Add a target to the targets list
+    pub fn add_target(&mut self, target_id: u64) {
+        self.layers.push(ContextLayer::Target(target_id));
+    }
+
+    /// Collect all targets
+    pub fn collect_targets(&self) -> Vec<u64> {
+        self.layers
+            .iter()
+            .filter_map(|l| {
+                if let ContextLayer::Target(target) = l {
+                    Some(*target)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Set owner by adding owner layer
+    pub fn set_owner(&mut self, owner_id: u64) {
+        self.layers.push(ContextLayer::Owner(owner_id));
+    }
+
+    /// Set caster by adding caster layer
+    pub fn set_caster(&mut self, caster_id: u64) {
+        self.layers.push(ContextLayer::Caster(caster_id));
     }
 
     pub fn get_color(&self, var: VarName) -> NodeResult<Color32> {

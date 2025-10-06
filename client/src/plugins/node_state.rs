@@ -106,7 +106,7 @@ impl NodeState {
     }
     pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
         if let Ok(ns) = ctx.load_entity::<NodeState>(entity) {
-            if let Some(t) = ctx.t {
+            if let Ok(t) = ctx.t() {
                 ns.get_at(t, var)
             } else {
                 ns.get(var)

@@ -84,16 +84,13 @@ impl AnimAction {
             }
             AnimAction::spawn(material) => {
                 let entity = ctx.world_mut()?.spawn_empty().id();
-                NUnitRepresentation {
-                    material: *material.clone(),
-                    ..default()
-                }
-                .spawn(ctx, entity)?;
+                let id = next_id();
+                NUnitRepresentation::new(id, *material.clone()).spawn(ctx, entity)?;
                 ctx.world_mut()?.entity_mut(entity).insert(Vfx);
 
                 let mut t = ctx.t()?;
                 let vars_layers = ctx.get_vars_layers();
-                let mut state = ctx.load_mut::<NodeState>(entity)?;
+                let mut state = ctx.load_mut::<NodeState>(id)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());
