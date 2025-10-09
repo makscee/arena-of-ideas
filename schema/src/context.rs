@@ -611,4 +611,19 @@ where
 
         Ok(result)
     }
+
+    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
+        let mut result = HashMap::new();
+
+        for l in &self.layers {
+            match l {
+                ContextLayer::Var(var_name, var_value) => {
+                    result.insert(*var_name, var_value.clone());
+                }
+                _ => {}
+            }
+        }
+
+        result
+    }
 }

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use super::*;
 
 pub struct Animator {
-    targets: Vec<Entity>,
+    targets: Vec<u64>,
     duration: f32,
     timeframe: f32,
 }
@@ -56,8 +56,9 @@ impl AnimAction {
                 let pos = x.get_vec2(ctx)?;
                 let mut t = ctx.t()?;
                 for target in a.targets.iter().copied() {
+                    let entity = target.entity(ctx)?;
                     ctx.world_mut()?
-                        .get_mut::<NodeState>(target)
+                        .get_mut::<NodeState>(entity)
                         .to_not_found()?
                         .insert(t, a.duration, VarName::position, pos.into());
                     t += a.timeframe;
@@ -65,10 +66,10 @@ impl AnimAction {
                 *ctx.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = [ctx.entity(x.get_id(ctx)?)?].into();
+                a.targets = x.get_ids_list(ctx)?;
             }
             AnimAction::add_target(x) => {
-                a.targets.push(ctx.entity(x.get_id(ctx)?)?);
+                a.targets.push(x.get_id(ctx)?);
             }
             AnimAction::duration(x) => {
                 a.duration = x.get_f32(ctx)?;
@@ -99,7 +100,7 @@ impl AnimAction {
                 for (var, value) in vars_layers {
                     state.insert(0.0, 0.0, var, value);
                 }
-                a.targets = vec![entity];
+                a.targets = vec![id];
                 t += a.timeframe;
                 *ctx.t_mut()? = t;
             }

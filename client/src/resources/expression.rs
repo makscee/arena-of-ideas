@@ -6,15 +6,15 @@ use rand::seq::SliceRandom;
 use super::*;
 
 pub trait ExpressionImpl {
-    fn get_value(&self, context: &mut ClientContext) -> Result<VarValue, NodeError>;
-    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, NodeError>;
-    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, NodeError>;
-    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, NodeError>;
-    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, NodeError>;
-    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, NodeError>;
-    fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError>;
-    fn get_id(&self, context: &mut ClientContext) -> Result<u64, NodeError>;
-    fn get_ids_list(&self, context: &mut ClientContext) -> Result<Vec<u64>, NodeError>;
+    fn get_value(&self, ctx: &mut ClientContext) -> Result<VarValue, NodeError>;
+    fn get_f32(&self, ctx: &mut ClientContext) -> Result<f32, NodeError>;
+    fn get_i32(&self, ctx: &mut ClientContext) -> Result<i32, NodeError>;
+    fn get_vec2(&self, ctx: &mut ClientContext) -> Result<Vec2, NodeError>;
+    fn get_bool(&self, ctx: &mut ClientContext) -> Result<bool, NodeError>;
+    fn get_color(&self, ctx: &mut ClientContext) -> Result<Color32, NodeError>;
+    fn get_string(&self, ctx: &mut ClientContext) -> Result<String, NodeError>;
+    fn get_id(&self, ctx: &mut ClientContext) -> Result<u64, NodeError>;
+    fn get_ids_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -190,28 +190,28 @@ impl ExpressionImpl for Expression {
             }
         }
     }
-    fn get_f32(&self, context: &mut ClientContext) -> Result<f32, NodeError> {
-        self.get_value(context)?.get_f32()
+    fn get_f32(&self, ctx: &mut ClientContext) -> Result<f32, NodeError> {
+        self.get_value(ctx)?.get_f32()
     }
-    fn get_i32(&self, context: &mut ClientContext) -> Result<i32, NodeError> {
-        self.get_value(context)?.get_i32()
+    fn get_i32(&self, ctx: &mut ClientContext) -> Result<i32, NodeError> {
+        self.get_value(ctx)?.get_i32()
     }
-    fn get_vec2(&self, context: &mut ClientContext) -> Result<Vec2, NodeError> {
-        self.get_value(context)?.get_vec2()
+    fn get_vec2(&self, ctx: &mut ClientContext) -> Result<Vec2, NodeError> {
+        self.get_value(ctx)?.get_vec2()
     }
-    fn get_bool(&self, context: &mut ClientContext) -> Result<bool, NodeError> {
-        self.get_value(context)?.get_bool()
+    fn get_bool(&self, ctx: &mut ClientContext) -> Result<bool, NodeError> {
+        self.get_value(ctx)?.get_bool()
     }
-    fn get_color(&self, context: &mut ClientContext) -> Result<Color32, NodeError> {
-        self.get_value(context)?.get_color()
+    fn get_color(&self, ctx: &mut ClientContext) -> Result<Color32, NodeError> {
+        self.get_value(ctx)?.get_color()
     }
-    fn get_string(&self, context: &mut ClientContext) -> Result<String, NodeError> {
-        self.get_value(context)?.get_string()
+    fn get_string(&self, ctx: &mut ClientContext) -> Result<String, NodeError> {
+        self.get_value(ctx)?.get_string()
     }
-    fn get_id(&self, context: &mut ClientContext) -> Result<u64, NodeError> {
-        self.get_value(context)?.get_id()
+    fn get_id(&self, ctx: &mut ClientContext) -> Result<u64, NodeError> {
+        self.get_value(ctx)?.get_id()
     }
-    fn get_ids_list(&self, context: &mut ClientContext) -> Result<Vec<u64>, NodeError> {
-        self.get_value(context)?.get_ids_list()
+    fn get_ids_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError> {
+        self.get_value(ctx)?.get_ids_list()
     }
 }

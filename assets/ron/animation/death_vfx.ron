@@ -15,13 +15,7 @@
                                 mul(
                                     unit_vec(mul(rand(var(index)), pi2)),
                                     min(
-                                        mul(
-                                            var(t),
-                                            sum(
-                                                rand(sub(var(index), f32(10.0))),
-                                                one,
-                                            ),
-                                        ),
+                                        mul(var(t), sum(rand(sub(var(index), f32(10.0))), one)),
                                         f32(0.9),
                                     ),
                                 ),

@@ -12,6 +12,13 @@ pub trait ClientNode:
     fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
         ctx.entity(self.id())
     }
+    fn from_file(path: &str) -> NodeResult<Self> {
+        let data = std::fs::read_to_string(path)
+            .map_err(|e| ExpressionError::from(format!("Failed to read file {}: {}", path, e)))?;
+        let mut node = Self::default();
+        node.inject_data(&data)?;
+        Ok(node)
+    }
 }
 
 pub trait NodeExt: ClientNode {

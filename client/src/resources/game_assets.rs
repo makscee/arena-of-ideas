@@ -69,10 +69,10 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     UNIT_REP
-        .set(NUnitRepresentation::from_dir("unit_rep".to_owned(), assets()).unwrap())
+        .set(NUnitRepresentation::from_file("./assets/ron/unit_rep.ron").unwrap())
         .unwrap();
     STATUS_REP
-        .set(NStatusRepresentation::from_dir("status_rep".to_owned(), assets()).unwrap())
+        .set(NStatusRepresentation::from_file("./assets/ron/status_rep.ron").unwrap())
         .unwrap();
     let mut animations = HashMap::default();
     for f in assets().get_dir("animation").unwrap().files() {
