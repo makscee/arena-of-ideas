@@ -40,8 +40,8 @@ impl BattleData {
         let team_right = teams_world.spawn_empty().id();
         teams_world
             .with_context_mut(|ctx| {
-                battle.left.clone().spawn(ctx, team_left);
-                battle.right.clone().spawn(ctx, team_right);
+                battle.left.clone().spawn(ctx, team_left)?;
+                battle.right.clone().spawn(ctx, team_right)?;
                 Ok(())
             })
             .unwrap();

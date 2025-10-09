@@ -155,7 +155,8 @@ impl BattleEditorPlugin {
             let item = T::placeholder(owner);
             let item_entity = ctx.world_mut()?.spawn_empty().id();
             item.spawn(ctx, item_entity)?;
-            ctx.add_link_entities(parent_entity, item_entity);
+            ctx.add_link_entities(parent_entity, item_entity)
+                .notify_error(ctx.world_mut()?);
             changed = true;
         }
 

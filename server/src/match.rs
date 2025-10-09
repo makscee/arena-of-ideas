@@ -73,7 +73,7 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
-    let mut unit = ctx.load::<NUnit>(unit_id)?;
+    let unit = ctx.load::<NUnit>(unit_id)?;
     if unit.owner != pid {
         return Err("Unit not owned by player".into());
     }

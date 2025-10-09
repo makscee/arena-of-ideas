@@ -27,20 +27,22 @@ impl AdminPlugin {
             .clone()
         });
 
-        world.with_context_mut(|context| {
-            let mut changed = false;
-            e.as_recursive_mut(|context, ui, value| {
-                let response = call_on_recursive_value_mut!(value, edit, context, ui);
-                changed |= response.changed();
-                response
+        world
+            .with_context_mut(|context| {
+                let mut changed = false;
+                e.as_recursive_mut(|context, ui, value| {
+                    let response = call_on_recursive_value_mut!(value, edit, context, ui);
+                    changed |= response.changed();
+                    response
+                })
+                .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+                .compose(context, ui);
+                if changed {
+                    ui.ctx().data_mut(|w| w.insert_persisted(id, e));
+                }
+                Ok(())
             })
-            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(context, ui);
-            if changed {
-                ui.ctx().data_mut(|w| w.insert_persisted(id, e));
-            }
-            Ok(())
-        });
+            .ui(ui);
 
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {

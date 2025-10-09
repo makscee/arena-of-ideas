@@ -27,7 +27,7 @@ pub struct TPlayerLinkSelection {
     #[index(btree)]
     pub player_id: u64,
     #[index(btree)]
-    pub source_id: u64,
+    pub parent_id: u64,
     #[index(btree)]
     pub kind: String,
     #[index(btree)]
@@ -384,40 +384,12 @@ impl TPlayerLinkSelection {
             .count() as i32
     }
 
-    fn determine_source_and_kind(
-        ctx: &ReducerContext,
-        parent_id: u64,
-        child_id: u64,
-    ) -> Result<(u64, String), String> {
-        let parent = parent_id.load_tnode_err(ctx)?;
-        let child = child_id.load_tnode_err(ctx)?;
-
-        let parent_kind = parent.kind();
-        let child_kind = child.kind();
-
-        // Check if parent can be source of child
-        if parent_kind.source_of().contains(&child_kind) {
-            Ok((parent_id, child_kind.to_string()))
-        }
-        // Check if child can be source of parent
-        else if child_kind.source_of().contains(&parent_kind) {
-            Ok((child_id, parent_kind.to_string()))
-        } else {
-            Err(format!(
-                "No valid source relationship between {} and {}",
-                parent_kind, child_kind
-            ))
-        }
-    }
-
     pub fn select_link(
         ctx: &ReducerContext,
         player_id: u64,
         parent_id: u64,
         child_id: u64,
     ) -> Result<(), String> {
-        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
-
         // Find the link between parent and child
         let link = ctx
             .db
@@ -428,9 +400,10 @@ impl TPlayerLinkSelection {
             .ok_or_else(|| {
                 format!("Link between parent#{parent_id} and child#{child_id} not found")
             })?;
+        let kind = link.child_kind;
 
         // Remove any existing selection for this player, source, and kind
-        if let Some(existing) = Self::find_selection(ctx, player_id, source_id, &kind) {
+        if let Some(existing) = Self::find_selection(ctx, player_id, parent_id, &kind) {
             // Decrease rating of previously selected link
             if let Some(mut prev_link) = ctx.db.node_links().id().find(existing.selected_link_id) {
                 prev_link.rating -= 1;
@@ -445,8 +418,8 @@ impl TPlayerLinkSelection {
             .insert(TPlayerLinkSelection {
                 id: 0,
                 player_id,
-                source_id,
-                kind: kind.to_string(),
+                parent_id,
+                kind: kind,
                 selected_link_id: link.id,
             });
 
@@ -470,9 +443,9 @@ impl TPlayerLinkSelection {
         player_id: u64,
         parent_id: u64,
         child_id: u64,
-    ) -> Result<(), String> {
-        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
-        if let Some(selection) = Self::find_selection(ctx, player_id, source_id, &kind) {
+    ) -> NodeResult<()> {
+        let kind = child_id.load_tnode(ctx).to_not_found()?.kind;
+        if let Some(selection) = Self::find_selection(ctx, player_id, parent_id, &kind) {
             // Decrease rating of the link
             if let Some(mut link) = ctx.db.node_links().id().find(selection.selected_link_id) {
                 link.rating -= 1;
@@ -481,21 +454,21 @@ impl TPlayerLinkSelection {
             ctx.db.player_link_selections().id().delete(selection.id);
             Ok(())
         } else {
-            Err("No selection found to remove".to_string())
+            Err("No selection found to remove".into())
         }
     }
 
     fn find_selection(
         ctx: &ReducerContext,
         player_id: u64,
-        source_id: u64,
+        parent_id: u64,
         kind: &str,
     ) -> Option<Self> {
         ctx.db
             .player_link_selections()
             .player_id()
             .filter(&player_id)
-            .filter(|s| s.source_id == source_id && s.kind == kind)
+            .filter(|s| s.parent_id == parent_id && s.kind == kind)
             .next()
     }
 }

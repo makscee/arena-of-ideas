@@ -64,4 +64,5 @@ fn content_deselect_link(
     child_id: u64,
 ) -> Result<(), String> {
     TPlayerLinkSelection::deselect_link(ctx, ctx.as_context().player()?.id, parent_id, child_id)
+        .to_str_err()
 }

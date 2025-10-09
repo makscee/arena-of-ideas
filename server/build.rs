@@ -1,5 +1,5 @@
 use node_build_utils::*;
-use quote::{format_ident, quote};
+use quote::quote;
 use std::collections::HashMap;
 use std::env;
 use std::fs;
@@ -64,6 +64,10 @@ fn generate_server_nodes(
 
         let load_methods = generate_load_functions(node, "ServerContext");
 
+        // Generate collect methods
+        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
+        let collect_owned_links_method = generate_collect_owned_links_impl(node);
+
         // All nodes get SpacetimeDB derives for server
         let derives = quote! {
             #[derive(Debug, Serialize, Deserialize)]
@@ -89,6 +93,8 @@ fn generate_server_nodes(
 
                 #link_methods
                 #load_methods
+                #collect_owned_ids_method
+                #collect_owned_links_method
             }
 
             #server_node_impl

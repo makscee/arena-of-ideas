@@ -1589,7 +1589,7 @@ impl FTitle for NFusion {
 }
 
 impl FDescription for NFusion {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description(&self, _ctx: &ClientContext) -> Cstr {
         "Fusion Slots".cstr()
     }
 }

@@ -68,7 +68,7 @@ fn generate_node_kind(
     );
 
     quote! {
-        use std::collections::{HashSet, HashMap};
+        use std::collections::HashSet;
 
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
         pub enum NodeKind {

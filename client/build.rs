@@ -23,17 +23,14 @@ fn main() {
     }
 
     // Generate client-specific node implementations
-    let generated = generate_client_nodes(&nodes, &node_map);
+    let generated = generate_client_nodes(&nodes);
 
     // Format and write
     let formatted_code = format_code(&generated);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
-fn generate_client_nodes(
-    nodes: &[NodeInfo],
-    node_map: &HashMap<String, NodeInfo>,
-) -> proc_macro2::TokenStream {
+fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     let node_structs = nodes.iter().map(|node| {
         let struct_name = &node.name;
 
@@ -62,8 +59,11 @@ fn generate_client_nodes(
         // Generate link loading methods
         let link_methods = generate_client_link_methods(node);
 
-        // Generate load_components method
         let load_components_method = generate_load_functions(node, "ClientContext");
+
+        // Generate collect methods
+        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
+        let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         // All nodes are Components in client
         let derives = quote! {
@@ -91,6 +91,8 @@ fn generate_client_nodes(
                 #link_methods
 
                 #load_components_method
+                #collect_owned_ids_method
+                #collect_owned_links_method
             }
 
             #client_node_impl
@@ -205,7 +207,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 if self.id == 0 {
                     panic!("Tried to spawn node without id");
                 }
-                ctx.add_id_entity_link(self.id, entity);
+                ctx.add_id_entity_link(self.id, entity)?;
                 #(#spawn_components)*
                 #(#spawn_owned)*
                 ctx.world_mut()?.entity_mut(entity).insert(self);

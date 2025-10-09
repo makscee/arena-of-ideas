@@ -1258,3 +1258,75 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
         }
     }
 }
+
+pub fn generate_collect_owned_ids_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let collect_calls = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Owned | LinkType::Component => {
+                let field_name = &field.name;
+                Some(if field.is_vec {
+                    quote! {
+                        if let Some(many_data) = self.#field_name.get() {
+                            for n in many_data {
+                                v.extend(n.collect_owned_ids());
+                            }
+                        }
+                    }
+                } else {
+                    quote! {
+                        if let Some(n) = self.#field_name.get() {
+                            v.extend(n.collect_owned_ids());
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    quote! {
+        pub fn collect_owned_ids(&self) -> Vec<u64> {
+            let mut v = vec![self.id];
+            #(#collect_calls)*
+            v
+        }
+    }
+}
+
+pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let link_calls = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Owned | LinkType::Component => {
+                let field_name = &field.name;
+                Some(if field.is_vec {
+                    quote! {
+                        if let Some(children_data) = self.#field_name.get() {
+                            for n in children_data {
+                                v.push((self.id, n.id));
+                                v.extend(n.collect_owned_links());
+                            }
+                        }
+                    }
+                } else {
+                    quote! {
+                        if let Some(n) = self.#field_name.get() {
+                            v.push((self.id, n.id));
+                            v.extend(n.collect_owned_links());
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    quote! {
+        pub fn collect_owned_links(&self) -> Vec<(u64, u64)> {
+            let mut v = Vec::new();
+            #(#link_calls)*
+            v
+        }
+    }
+}
