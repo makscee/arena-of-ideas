@@ -3,15 +3,12 @@ use super::*;
 pub struct NodeStatePlugin;
 
 impl Plugin for NodeStatePlugin {
-    fn build(&self, _app: &mut App) {
-        // app.add_systems(PreUpdate, Self::inject_vars);
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(BevyComponent, Debug, Default)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarState>,
-    pub kind: NodeKind,
 }
 
 #[derive(Debug)]
@@ -57,6 +54,9 @@ impl NodeState {
     pub fn load<'a>(entity: Entity, ctx: &'a ClientContext) -> NodeResult<&'a Self> {
         ctx.world()?.get::<Self>(entity).to_e_not_found()
     }
+    pub fn load_mut<'a>(entity: Entity, ctx: &'a mut ClientContext) -> NodeResult<Mut<'a, Self>> {
+        ctx.world_mut()?.get_mut::<Self>(entity).to_e_not_found()
+    }
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
@@ -76,10 +76,15 @@ impl NodeState {
     pub fn init(&mut self, var: VarName, value: VarValue) {
         self.insert(0.0, 0.0, var, value);
     }
-    pub fn init_vars(&mut self, vars: Vec<(VarName, VarValue)>) {
+    pub fn init_vars(&mut self, vars: impl Iterator<Item = (VarName, VarValue)>) {
         for (var, value) in vars {
             self.init(var, value);
         }
+    }
+    pub fn init_kind(&mut self, ctx: &ClientContext, kind: NodeKind, id: u64) -> NodeResult<()> {
+        let vars = kind.get_vars(ctx, id);
+        self.init_vars(vars.into_iter());
+        Ok(())
     }
     pub fn insert(&mut self, t: f32, duration: f32, var: VarName, value: VarValue) -> bool {
         if let Some(state) = self.vars.get_mut(&var) {

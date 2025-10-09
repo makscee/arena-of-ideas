@@ -57,7 +57,8 @@ pub trait NodeKindOnUnpack {
 
 impl NodeKindOnUnpack for NodeKind {
     fn on_unpack(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
-        let vars = Vec::new(); // TODO: implement get_vars
+        let id = ctx.id(entity)?;
+        let vars = self.get_vars(ctx, id);
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);
         let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
@@ -67,8 +68,7 @@ impl NodeKindOnUnpack for NodeKind {
                 .get_mut::<NodeState>()
                 .unwrap()
         };
-        ns.kind = self;
-        ns.init_vars(vars);
+        ns.init_vars(vars.into_iter());
         match self {
             NodeKind::NUnit => {
                 ns.init(VarName::dmg, 0.into());
@@ -80,7 +80,7 @@ impl NodeKindOnUnpack for NodeKind {
         match self {
             NodeKind::NFusion => {
                 if ctx
-                    .get_children_of_kind(ctx.id(entity)?, NodeKind::NUnitRepresentation)?
+                    .get_children_of_kind(id, NodeKind::NUnitRepresentation)?
                     .is_empty()
                 {
                     let world = ctx.world_mut()?;
@@ -97,7 +97,7 @@ impl NodeKindOnUnpack for NodeKind {
                             (VarName::hp, 0.into()),
                             (VarName::dmg, 0.into()),
                         ]
-                        .into(),
+                        .into_iter(),
                     );
             }
             _ => {}

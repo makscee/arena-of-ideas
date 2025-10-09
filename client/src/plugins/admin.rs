@@ -59,19 +59,6 @@ impl AdminPlugin {
                     });
                 }
             });
-
-            for n in cn()
-                .db
-                .nodes_world()
-                .iter()
-                .filter(|n| n.id.is_child_of(world, id))
-                .sorted_by_key(|n| n.id)
-            {
-                let title = n.kind;
-                CollapsingHeader::new(title).id_salt(n.id).show(ui, |ui| {
-                    show_node_with_children(n.id, ui, world);
-                });
-            }
         }
         if "Inspect Nodes".cstr().button(ui).clicked() {
             Window::new("Nodes Inspector", |ui, world| {

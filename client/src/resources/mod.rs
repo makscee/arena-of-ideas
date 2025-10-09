@@ -17,7 +17,6 @@ mod rarity;
 mod reaction;
 mod trigger;
 mod tween;
-mod world_links;
 
 use super::*;
 
@@ -39,4 +38,3 @@ pub use rarity::*;
 pub use reaction::*;
 pub use trigger::*;
 pub use tween::*;
-pub use world_links::*;

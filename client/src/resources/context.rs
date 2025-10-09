@@ -150,8 +150,50 @@ impl NodeLinks {
 /// Marker component for entities with nodes
 #[derive(BevyComponent)]
 pub struct NodeEntity {
-    pub id: u64,
-    pub kind: NodeKind,
+    pub nodes: Vec<(u64, NodeKind)>,
+}
+
+impl NodeEntity {
+    pub fn new(id: u64, kind: NodeKind) -> Self {
+        Self {
+            nodes: vec![(id, kind)],
+        }
+    }
+
+    pub fn with_nodes(nodes: Vec<(u64, NodeKind)>) -> Self {
+        Self { nodes }
+    }
+
+    pub fn add_node(&mut self, id: u64, kind: NodeKind) {
+        self.nodes.push((id, kind));
+    }
+
+    pub fn get_node_kinds(&self) -> Vec<NodeKind> {
+        self.nodes.iter().map(|(_, kind)| *kind).collect()
+    }
+
+    pub fn get_node_ids(&self) -> Vec<u64> {
+        self.nodes.iter().map(|(id, _)| *id).collect()
+    }
+
+    pub fn get_nodes_by_kind(&self, kind: NodeKind) -> Vec<u64> {
+        self.nodes
+            .iter()
+            .filter_map(|(id, k)| if *k == kind { Some(*id) } else { None })
+            .collect()
+    }
+
+    pub fn has_kind(&self, kind: NodeKind) -> bool {
+        self.nodes.iter().any(|(_, k)| *k == kind)
+    }
+
+    pub fn get_primary_id(&self) -> Option<u64> {
+        self.nodes.first().map(|(id, _)| *id)
+    }
+
+    pub fn get_primary_kind(&self) -> Option<NodeKind> {
+        self.nodes.first().map(|(_, kind)| *kind)
+    }
 }
 
 /// Unified WorldSource enum for both immutable and mutable World access
@@ -225,7 +267,11 @@ impl<'w> ContextSource for WorldSource<'w> {
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             if let Some(entity) = map.get_entity(id) {
                 if let Some(node) = world.get::<NodeEntity>(entity) {
-                    return Ok(node.kind);
+                    for (node_id, kind) in &node.nodes {
+                        if *node_id == id {
+                            return Ok(*kind);
+                        }
+                    }
                 }
             }
         }

@@ -179,7 +179,7 @@ impl BattlePlugin {
                             .query::<(Entity, &NodeState)>()
                             .iter(ctx.world()?)
                         {
-                            if format!("{} {}", ns.kind, entity).button(ui).clicked() {
+                            if format!("{}", entity).button(ui).clicked() {
                                 selected = Some(ctx.id(entity)?);
                             }
                         }
