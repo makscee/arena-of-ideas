@@ -81,11 +81,6 @@ impl NodeState {
             self.init(var, value);
         }
     }
-    pub fn init_kind(&mut self, ctx: &ClientContext, kind: NodeKind, id: u64) -> NodeResult<()> {
-        let vars = kind.get_vars(ctx, id);
-        self.init_vars(vars.into_iter());
-        Ok(())
-    }
     pub fn insert(&mut self, t: f32, duration: f32, var: VarName, value: VarValue) -> bool {
         if let Some(state) = self.vars.get_mut(&var) {
             if state.value == value {

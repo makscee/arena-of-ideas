@@ -60,7 +60,7 @@ impl ActionImpl for Action {
                 let owner = ctx
                     .owner()
                     .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
-                let value = ctx.get_i32(VarName::value)?;
+                let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     let targets = ctx.collect_targets();
                     if targets.is_empty() {
@@ -80,7 +80,7 @@ impl ActionImpl for Action {
                 let owner = ctx
                     .owner()
                     .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
-                let value = ctx.get_i32(VarName::value)?;
+                let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     for target in ctx.collect_targets() {
                         actions.push(BattleAction::heal(owner, target, value));
@@ -91,7 +91,7 @@ impl ActionImpl for Action {
                 let caster = ctx.caster().to_not_found()?;
                 let house = ctx.load_first_parent_recursive::<NHouse>(caster)?;
                 let color = house.color_ref(ctx)?.color.c32();
-                let value = ctx.get_i32(VarName::value).unwrap_or(1);
+                let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(ability) = house.ability_ref(ctx) {
                     let name = ability.ability_name.clone();
                     let effect = ability
@@ -120,7 +120,7 @@ impl ActionImpl for Action {
                 let caster = ctx.caster().to_not_found()?;
                 let house = ctx.load_first_parent_recursive::<NHouse>(caster)?;
                 let color = house.color_ref(ctx)?.color.c32();
-                let value = ctx.get_i32(VarName::value).unwrap_or(1);
+                let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {
                     let name = status.status_name.clone();
                     let mut status = status.clone();

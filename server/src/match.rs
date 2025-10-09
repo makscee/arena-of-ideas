@@ -24,7 +24,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let node_id = slot.node_id;
     match slot.card_kind {
         CardKind::Unit => {
-            let unit = NUnit::load(ctx, node_id)?.load_components(ctx)?.take();
+            let unit = NUnit::load(ctx.source(), node_id)?
+                .load_components(ctx)?
+                .take();
             let house_id = *ctx
                 .get_parents_of_kind(unit.id, NodeKind::NHouse)?
                 .first()
@@ -62,7 +64,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
     }
     m.buy(ctx, price)?;
-    m.save(ctx);
+    m.save(ctx.source());
     Ok(())
 }
 
@@ -122,7 +124,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
     unit.delete_recursive(ctx);
-    m.save(ctx);
+    m.save(ctx.source());
     Ok(())
 }
 
@@ -137,7 +139,7 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     }
     let m = player.active_match_load(ctx)?;
     m.unlink_unit(ctx, unit_id);
-    m.save(ctx);
+    m.save(ctx.source());
     Ok(())
 }
 
@@ -192,7 +194,7 @@ fn match_submit_battle_result(
     }
     m.g += ctx.global_settings().match_g.initial;
     m.fill_shop_case(ctx, false)?;
-    player.save(ctx);
+    player.save(ctx.source());
     Ok(())
 }
 
@@ -242,7 +244,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .insert(ctx);
         ctx.add_link(m_id, battle.id)?;
     }
-    m.save(ctx);
+    m.save(ctx.source());
     Ok(())
 }
 
@@ -279,7 +281,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     m.team.state_mut().set(team);
     m.fill_shop_case(ctx, false)?;
     player.active_match.state_mut().set(m);
-    player.save(ctx);
+    player.save(ctx.source());
     Ok(())
 }
 
@@ -292,7 +294,7 @@ impl NMatch {
             ));
         }
         self.g -= price;
-        self.save(ctx);
+        self.save(ctx.source());
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ServerContext, unit_id: u64) -> Option<u64> {

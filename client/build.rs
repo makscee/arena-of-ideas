@@ -114,6 +114,9 @@ fn generate_client_nodes(
         }
     });
 
+    // Generate NodeLoader implementation for ClientContext
+    let node_loader_impl = generate_node_loader_impl(nodes);
+
     // Generate NamedNode trait and implementations
     let named_node_trait = quote! {
         pub trait NamedNode {
@@ -140,6 +143,8 @@ fn generate_client_nodes(
         #conversions
 
         #(#tocstr_impls)*
+
+        #node_loader_impl
 
         #named_node_trait
 
@@ -205,6 +210,72 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 #(#spawn_owned)*
                 ctx.world_mut()?.entity_mut(entity).insert(self);
                 Ok(())
+            }
+        }
+    }
+}
+
+fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let load_and_get_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let world = self.world()?;
+                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
+                    if let Some(entity) = entity_map.get_entity(node_id) {
+                        if let Some(node) = world.get::<#node_name>(entity) {
+                            return node.get_var(var);
+                        }
+                    }
+                }
+                Err(NodeError::NotFound(node_id))
+            }
+        }
+    });
+
+    let load_and_set_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let world = self.world_mut()?;
+                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
+                    if let Some(entity) = entity_map.get_entity(node_id) {
+                        if let Some(mut node) = world.get_mut::<#node_name>(entity) {
+                            node.set_var(var, value)?;
+                            return Ok(());
+                        }
+                    }
+                }
+                Err(NodeError::NotFound(node_id))
+            }
+        }
+    });
+
+    quote! {
+        impl<'w> NodeLoader for WorldSource<'w> {
+            fn load_and_get_var(
+                &self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+            ) -> NodeResult<VarValue> {
+                match node_kind {
+                    #(#load_and_get_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot get var from None node".into())),
+                }
+            }
+
+            fn load_and_set_var(
+                &mut self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+                value: VarValue,
+            ) -> NodeResult<()> {
+                match node_kind {
+                    #(#load_and_set_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot set var on None node".into())),
+                }
             }
         }
     }

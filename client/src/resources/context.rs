@@ -227,7 +227,7 @@ impl<'w> WorldSource<'w> {
         }
     }
 
-    fn world(&self) -> NodeResult<&World> {
+    pub fn world(&self) -> NodeResult<&World> {
         match self {
             Self::Immutable(world) => Ok(world),
             Self::Mutable(world) => Ok(world),
@@ -236,7 +236,7 @@ impl<'w> WorldSource<'w> {
         }
     }
 
-    fn world_mut(&mut self) -> NodeResult<&mut World> {
+    pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
             Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable".into())),
             Self::None => Err(NodeError::Custom("Source World not set".into())),
@@ -343,27 +343,29 @@ impl<'w> ContextSource for WorldSource<'w> {
         }
     }
 
-    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue> {
-        let world = self.world()?;
+    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        self.load_and_set_var(self.get_node_kind(node_id)?, node_id, var, value.clone())?;
+        let world = self.world_mut()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            if let Some(entity) = map.get_entity(owner) {
-                if let Some(node_state) = world.get::<NodeState>(entity) {
-                    if let Some(value) = node_state.get(var) {
-                        return Ok(value);
-                    } else {
-                        Err(NodeError::VarNotFound(var))
-                    }
+            if let Some(entity) = map.get_entity(node_id) {
+                if let Some(mut node_state) = world.get_mut::<NodeState>(entity) {
+                    node_state.init(var, value);
+                    Ok(())
                 } else {
                     Err(NodeError::custom(format!(
-                        "NodeState not found for {owner}"
+                        "NodeState not found for {node_id}"
                     )))
                 }
             } else {
-                Err(NodeError::custom(format!("Entity not found for {owner}")))
+                Err(NodeError::custom(format!("Entity not found for {node_id}")))
             }
         } else {
             Err(NodeError::custom("Failed to get NodeEntityMap"))
         }
+    }
+
+    fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        self.load_and_get_var(self.get_node_kind(node_id)?, node_id, var)
     }
 }
 
@@ -422,7 +424,8 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         })
     }
     fn color(&self, ui: &mut Ui) -> Color32 {
-        self.get_color(VarName::color)
+        self.get_var(VarName::color)
+            .get_color()
             .unwrap_or_else(|_| ui.visuals().weak_text_color())
     }
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {

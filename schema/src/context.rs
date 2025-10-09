@@ -1,6 +1,6 @@
 use super::*;
 use crate::node_error::NodeResult;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 
 // Common traits that both client and server will implement
 pub trait Node: Send + Sync + Default + StringData {
@@ -77,38 +77,73 @@ pub trait NodeKindConvert {
 // Context system
 
 /// Source for Context to retrieve node data and manage links
-pub trait ContextSource {
-    /// Get node kind by ID
+/// Trait for loading specific node types and calling their methods
+pub trait NodeLoader {
+    /// Load a node by ID and call get_var on it using the appropriate node type
+    fn load_and_get_var(
+        &self,
+        node_kind: NodeKind,
+        node_id: u64,
+        var: VarName,
+    ) -> NodeResult<VarValue>;
+    /// Load a node by ID and call set_var on it using the appropriate node type
+    fn load_and_set_var(
+        &mut self,
+        node_kind: NodeKind,
+        node_id: u64,
+        var: VarName,
+        value: VarValue,
+    ) -> NodeResult<()>;
+}
+
+pub trait ContextSource: NodeLoader {
+    /// Get the node kind for a given ID
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind>;
 
-    /// Get all linked child IDs
+    /// Get all children of a node
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get children of specific kind
+    /// Get children of a specific kind
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Get all parent IDs
+    /// Get all parents of a node
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get parents of specific kind
+    /// Get parents of a specific kind
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Add a link between two nodes
+    /// Add a link between nodes
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Remove a link between two nodes
+    /// Remove a link between nodes
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
     /// Check if two nodes are linked
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
 
-    /// Get variable value from a specific node
-    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue>;
-
-    /// Set variable value on a specific node
-    fn set_var<T: Node>(&mut self, node: &mut T, var: VarName, value: VarValue) -> NodeResult<()> {
-        node.set_var(var, value)
+    /// Get a variable value from a node, recursively checking parents if not found
+    fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        self.get_var_direct(node_id, var)
+            .or_else(|_| self.get_var_recursive(node_id, var))
     }
+
+    /// Get a variable value directly from a node (no recursion)
+    fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue>;
+
+    /// Get a variable value by checking the node and its parents recursively
+    fn get_var_recursive(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        let mut parents = VecDeque::from(self.get_parents(node_id)?);
+        while let Some(parent) = parents.pop_front() {
+            if let Ok(value) = self.get_var(parent, var) {
+                return Ok(value);
+            }
+            parents.extend(self.get_parents(parent)?);
+        }
+        Err(NodeError::VarNotFound(var))
+    }
+
+    /// Set a variable value on a node
+    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()>;
 }
 
 /// Context layer for scoping operations
@@ -252,21 +287,74 @@ where
         None
     }
 
-    /// Get variable value from context layers
+    /// Get variable from owner node
+    pub fn owner_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(owner_id) = self.owner() {
+            self.source.get_var(owner_id, var)
+        } else {
+            Err(NodeError::Custom("No owner in context".into()))
+        }
+    }
+
+    /// Get variable from target node
+    pub fn target_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(target_id) = self.target() {
+            self.source.get_var(target_id, var)
+        } else {
+            Err(NodeError::Custom("No target in context".into()))
+        }
+    }
+
+    /// Get variable from caster node
+    pub fn caster_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(caster_id) = self.caster() {
+            self.source.get_var(caster_id, var)
+        } else {
+            Err(NodeError::Custom("No caster in context".into()))
+        }
+    }
+
+    /// Get variable from specific node by ID
+    pub fn node_get_var(&self, id: u64, var_name: VarName) -> NodeResult<VarValue> {
+        let kind = self.source.get_node_kind(id)?;
+        kind.get_var(self, id, var_name)
+    }
+
+    pub fn node_set_var(
+        &mut self,
+        id: u64,
+        var_name: VarName,
+        var_value: VarValue,
+    ) -> NodeResult<()> {
+        let kind = self.source.get_node_kind(id)?;
+        kind.set_var(self, id, var_name, var_value)
+    }
+
+    /// Get variable value from context layers, checking layers first then owner/target/caster
     pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
         // First check context layers
         for layer in self.layers.iter().rev() {
-            if let ContextLayer::Var(var_name, value) = layer {
-                if *var_name == var {
-                    return Ok(value.clone());
+            match layer {
+                ContextLayer::Var(var_name, value) => {
+                    if *var_name == var {
+                        return Ok(value.clone());
+                    }
                 }
-            }
-        }
-
-        // If not found in layers, try to get from current owner
-        if let Some(owner_id) = self.owner() {
-            if let Ok(value) = self.source.get_var(owner_id, var) {
-                return Ok(value);
+                ContextLayer::Owner(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
+                ContextLayer::Target(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
+                ContextLayer::Caster(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
             }
         }
 
@@ -300,30 +388,6 @@ where
     /// Set caster by adding caster layer
     pub fn set_caster(&mut self, caster_id: u64) {
         self.layers.push(ContextLayer::Caster(caster_id));
-    }
-
-    pub fn get_color(&self, var: VarName) -> NodeResult<Color32> {
-        self.get_var(var)?.get_color()
-    }
-
-    pub fn get_i32(&self, var: VarName) -> NodeResult<i32> {
-        self.get_var(var)?.get_i32()
-    }
-
-    pub fn get_f32(&self, var: VarName) -> NodeResult<f32> {
-        self.get_var(var)?.get_f32()
-    }
-
-    pub fn get_string(&self, var: VarName) -> NodeResult<String> {
-        self.get_var(var)?.get_string()
-    }
-
-    pub fn get_bool(&self, var: VarName) -> NodeResult<bool> {
-        self.get_var(var)?.get_bool()
-    }
-
-    pub fn get_vec2(&self, var: VarName) -> NodeResult<Vec2> {
-        self.get_var(var)?.get_vec2()
     }
 
     /// Set a variable in the context

@@ -1229,45 +1229,6 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
         }
     });
 
-    let get_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                if NodeKind::#node_name.var_names().contains(&var) {
-                    ctx.source().get_var(node_id, var)
-                } else {
-                    Err(NodeError::Custom("Variable not found".into()))
-                }
-            }
-        }
-    });
-
-    let set_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                // Get the node from context source and set the variable
-                // This requires the context source to provide access to the mutable node
-                Err(NodeError::Custom("NodeKind::set_var not yet implemented - use direct node access".into()))
-            }
-        }
-    });
-
-    let get_vars_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                let mut vars = std::collections::HashMap::new();
-                for var_name in NodeKind::#node_name.var_names() {
-                    if let Ok(value) = ctx.source().get_var(node_id, var_name) {
-                        vars.insert(var_name, value);
-                    }
-                }
-                vars
-            }
-        }
-    });
-
     quote! {
         impl NodeKind {
             pub fn var_names(self) -> std::collections::HashSet<VarName> {
@@ -1278,24 +1239,21 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
             }
 
             pub fn get_var<S: ContextSource>(self, ctx: &Context<S>, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-                match self {
-                    #(#get_var_arms,)*
-                    NodeKind::None => Err(NodeError::Custom("Cannot get var from None node".into())),
-                }
+                ctx.source().load_and_get_var(self, node_id, var)
             }
 
             pub fn set_var<S: ContextSource>(self, ctx: &mut Context<S>, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-                match self {
-                    #(#set_var_arms,)*
-                    NodeKind::None => Err(NodeError::Custom("Cannot set var on None node".into())),
-                }
+                ctx.source_mut().load_and_set_var(self, node_id, var, value)
             }
 
             pub fn get_vars<S: ContextSource>(self, ctx: &Context<S>, node_id: u64) -> std::collections::HashMap<VarName, VarValue> {
-                match self {
-                    #(#get_vars_arms,)*
-                    NodeKind::None => std::collections::HashMap::new(),
+                let mut vars = std::collections::HashMap::new();
+                for var_name in self.var_names() {
+                    if let Ok(value) = self.get_var(ctx, node_id, var_name) {
+                        vars.insert(var_name, value);
+                    }
                 }
+                vars
             }
         }
     }

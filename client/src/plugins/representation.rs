@@ -14,7 +14,7 @@ impl RepresentationPlugin {
         ui: &mut Ui,
     ) -> NodeResult<()> {
         let mut p = Painter::new(rect, ui.ctx());
-        if let Ok(color) = context.get_color(VarName::color) {
+        if let Ok(color) = context.get_var(VarName::color).get_color() {
             p.color = color;
         }
         for a in &m.0 {

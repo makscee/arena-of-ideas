@@ -6,11 +6,10 @@ include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
 
 #[allow(unused)]
 pub trait ServerNode: Sized + schema::Node {
-    fn load(ctx: &ServerContext, id: u64) -> NodeResult<Self> {
+    fn load(source: &ServerSource, id: u64) -> NodeResult<Self> {
         let kind = Self::kind_s().to_string();
-        let node: TNode = ctx
-            .source()
-            .reducer_context()
+        let node: TNode = source
+            .rctx()
             .db
             .nodes_world()
             .id()
@@ -25,7 +24,7 @@ pub trait ServerNode: Sized + schema::Node {
             })
         }
     }
-    fn save(&self, ctx: &ServerContext);
+    fn save(&self, source: &ServerSource);
     fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ServerContext, owner: u64) -> Self;
     fn insert(mut self, ctx: &ServerContext) -> Self {

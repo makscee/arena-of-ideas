@@ -100,10 +100,15 @@ fn generate_server_nodes(
     // Generate conversion traits
     let conversions = generate_node_impl(nodes);
 
+    // Generate NodeLoader implementation for ServerContext
+    let node_loader_impl = generate_node_loader_impl(nodes);
+
     quote! {
         #(#node_structs)*
 
         #conversions
+
+        #node_loader_impl
     }
 }
 
@@ -123,13 +128,13 @@ fn generate_server_node_impl(
                 Some(if field.is_vec {
                     quote! {
                         for component in &self.#field_name {
-                            component.save(ctx);
+                            component.save(source);
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
-                            loaded.save(ctx);
+                            loaded.save(source);
                         }
                     }
                 })
@@ -139,13 +144,13 @@ fn generate_server_node_impl(
                 Some(if field.is_vec {
                     quote! {
                         for owned in &self.#field_name {
-                            owned.save(ctx);
+                            owned.save(source);
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
-                            loaded.save(ctx);
+                            loaded.save(source);
                         }
                     }
                 })
@@ -156,14 +161,14 @@ fn generate_server_node_impl(
                     quote! {
                         for ref_link in &self.#field_name {
                             if let Some(loaded) = ref_link.get() {
-                                loaded.save(ctx);
+                                loaded.save(source);
                             }
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
-                            loaded.save(ctx);
+                            loaded.save(source);
                         }
                     }
                 })
@@ -173,7 +178,7 @@ fn generate_server_node_impl(
 
     quote! {
         impl ServerNode for #struct_name {
-            fn save(&self, ctx: &ServerContext) {
+            fn save(&self, source: &ServerSource) {
                 // Save linked fields first
                 #(#save_fields)*
 
@@ -183,7 +188,7 @@ fn generate_server_node_impl(
                 }
 
                 let node = self.to_tnode();
-                let ctx = ctx.rctx();
+                let ctx = source.rctx();
                 match ctx.db.nodes_world().id().find(self.id) {
                     Some(_) => {
                         // Update existing node
@@ -205,6 +210,59 @@ fn generate_server_node_impl(
 
             fn clone(&self, ctx: &ServerContext, owner: u64) -> Self {
                 self.clone_self(ctx, owner)
+            }
+        }
+    }
+}
+
+fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let load_and_get_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let node: #node_name = node_id.load_node(self.rctx())?;
+                node.get_var(var)
+            }
+        }
+    });
+
+    let load_and_set_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let mut node: #node_name = node_id.load_node(self.rctx())?;
+                node.set_var(var, value)?;
+                node.save(self);
+                Ok(())
+            }
+        }
+    });
+
+    quote! {
+        impl<'a> NodeLoader for ServerSource<'a> {
+            fn load_and_get_var(
+                &self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+            ) -> NodeResult<VarValue> {
+                match node_kind {
+                    #(#load_and_get_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot get var from None node".into())),
+                }
+            }
+
+            fn load_and_set_var(
+                &mut self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+                value: VarValue,
+            ) -> NodeResult<()> {
+                match node_kind {
+                    #(#load_and_set_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot set var on None node".into())),
+                }
             }
         }
     }

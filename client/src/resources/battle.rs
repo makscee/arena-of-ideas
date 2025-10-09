@@ -227,9 +227,10 @@ impl BattleAction {
                     }
                 }
                 BattleAction::spawn(id) => {
-                    let mut ns = NodeState::load_mut(id.entity(ctx)?, ctx)?;
                     let kind = ctx.get_kind(*id)?;
-                    ns.init_kind(ctx, kind, *id).log();
+                    let vars = kind.get_vars(ctx, *id);
+                    let mut ns = NodeState::load_mut(id.entity(ctx)?, ctx)?;
+                    ns.init_vars(vars.into_iter());
                     add_actions.extend_from_slice(&[BattleAction::var_set(
                         *id,
                         VarName::visible,
@@ -277,12 +278,7 @@ impl BattleAction {
                 }
             }
             Err(e) => {
-                error!("BattleAction apply error: {}", e.source);
-                if let Some(mut bt) = e.bt {
-                    bt.resolve();
-                    error!("{bt:?}");
-                } else {
-                }
+                error!("BattleAction apply error: {}", e);
             }
         }
         add_actions

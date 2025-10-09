@@ -13,7 +13,7 @@ impl<'a> ServerSource<'a> {
         Self { ctx }
     }
 
-    pub fn reducer_context(&self) -> &ReducerContext {
+    pub fn rctx(&self) -> &ReducerContext {
         self.ctx
     }
 }
@@ -64,9 +64,14 @@ impl<'a> ContextSource for ServerSource<'a> {
         Ok(from_id.has_child(&self.ctx, to_id))
     }
 
-    fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue> {
-        let node = self.ctx.db.nodes_world().id().find(owner).to_not_found()?;
-        todo!()
+    fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        let kind = self.get_node_kind(node_id)?;
+        self.load_and_get_var(kind, node_id, var)
+    }
+
+    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        let kind = self.get_node_kind(node_id)?;
+        self.load_and_set_var(kind, node_id, var, value)
     }
 }
 
@@ -175,7 +180,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
     }
 
     fn rctx(&self) -> &ReducerContext {
-        self.source().reducer_context()
+        self.source().rctx()
     }
 
     fn rng(&self) -> &StdbRng {

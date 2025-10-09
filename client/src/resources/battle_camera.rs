@@ -42,7 +42,7 @@ impl BattleCamera {
         self.pos = default();
     }
     fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, NodeError> {
-        let pos = context.get_vec2(VarName::position)?.to_pos2();
+        let pos = context.get_var(VarName::position).get_vec2()?.to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
@@ -109,7 +109,7 @@ impl BattleCamera {
                 for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                     context
                         .with_owner(fusion.id, |context| {
-                            if !context.get_bool(VarName::visible)? {
+                            if !context.get_var(VarName::visible).get_bool()? {
                                 return Ok(());
                             }
                             let rect = cam.rect_from_context(context)?;
@@ -132,7 +132,7 @@ impl BattleCamera {
                 {
                     context
                         .with_owner(rep.id, |context| {
-                            if !context.get_bool(VarName::visible)? {
+                            if !context.get_var(VarName::visible).get_bool()? {
                                 return Ok(());
                             }
                             let rect = cam.rect_from_context(context)?;
@@ -148,7 +148,7 @@ impl BattleCamera {
                 {
                     context
                         .with_owner(rep.id, |context| {
-                            if !context.get_bool(VarName::visible)? {
+                            if !context.get_var(VarName::visible).get_bool()? {
                                 return Ok(());
                             }
                             let rect = cam.rect_from_context(context)?;

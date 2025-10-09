@@ -35,7 +35,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         let identity =
             NPlayerIdentity::new(player.id, Some(ctx.rctx().sender.to_string())).insert(ctx);
         player.identity.state_mut().set(identity);
-        player.login(ctx)?.save(ctx);
+        player.login(ctx)?.save(ctx.source());
         Ok(())
     }
 }
@@ -43,7 +43,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &ctx.as_context();
-    ctx.player()?.login(ctx)?.save(ctx);
+    ctx.player()?.login(ctx)?.save(ctx.source());
     Ok(())
 }
 
@@ -52,7 +52,7 @@ fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &ctx.as_context();
     let mut player = ctx.player()?.logout(ctx)?;
     player.identity_load(ctx)?.delete(ctx);
-    player.save(ctx);
+    player.save(ctx.source());
     Ok(())
 }
 
@@ -66,7 +66,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if let Ok(player_data) = player.player_data.get_mut() {
         player_data.pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
     }
-    player.save(ctx);
+    player.save(ctx.source());
     Ok(())
 }
 
@@ -74,7 +74,7 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
 fn identity_disconnected(ctx: &ReducerContext) {
     let ctx = &ctx.as_context();
     if let Ok(player) = ctx.player() {
-        player.logout(ctx).unwrap().save(ctx);
+        player.logout(ctx).unwrap().save(ctx.source());
     }
 }
 
@@ -147,13 +147,13 @@ pub trait GetPlayer {
 
 impl GetPlayer for ServerContext<'_> {
     fn player(&self) -> NodeResult<NPlayer> {
-        let identity = NPlayer::find_identity(self, &self.source().reducer_context().sender)
+        let identity = NPlayer::find_identity(self, &self.source().rctx().sender)
             .to_custom_e_s("NPlayerIdentity not found")?;
         let id = self
             .get_parents_of_kind(identity.id, NodeKind::NPlayer)?
             .into_iter()
             .next()
             .to_not_found()?;
-        NPlayer::load(self, id)
+        NPlayer::load(self.source(), id)
     }
 }

@@ -6,6 +6,57 @@ use std::cmp::Ordering;
 
 use super::*;
 
+/// Trait to enable chaining VarValue methods on NodeResult<VarValue>
+pub trait VarValueResult {
+    fn get_i32(self) -> NodeResult<i32>;
+    fn get_f32(self) -> NodeResult<f32>;
+    fn get_bool(self) -> NodeResult<bool>;
+    fn get_u64(self) -> NodeResult<u64>;
+    fn get_vec2(self) -> NodeResult<Vec2>;
+    fn get_color(self) -> NodeResult<Color32>;
+    fn get_string(self) -> NodeResult<String>;
+    fn get_id(self) -> NodeResult<u64>;
+    fn get_ids_list(self) -> NodeResult<Vec<u64>>;
+}
+
+impl VarValueResult for Result<VarValue, NodeError> {
+    fn get_i32(self) -> Result<i32, NodeError> {
+        self?.get_i32()
+    }
+
+    fn get_f32(self) -> Result<f32, NodeError> {
+        self?.get_f32()
+    }
+
+    fn get_bool(self) -> Result<bool, NodeError> {
+        self?.get_bool()
+    }
+
+    fn get_u64(self) -> Result<u64, NodeError> {
+        self?.get_u64()
+    }
+
+    fn get_vec2(self) -> Result<Vec2, NodeError> {
+        self?.get_vec2()
+    }
+
+    fn get_color(self) -> Result<Color32, NodeError> {
+        self?.get_color()
+    }
+
+    fn get_string(self) -> Result<String, NodeError> {
+        self?.get_string()
+    }
+
+    fn get_id(self) -> Result<u64, NodeError> {
+        self?.get_id()
+    }
+
+    fn get_ids_list(self) -> Result<Vec<u64>, NodeError> {
+        self?.get_ids_list()
+    }
+}
+
 #[allow(non_camel_case_types)]
 #[derive(Clone, Serialize, Deserialize, Debug, AsRefStr, EnumIter, strum_macros::VariantNames)]
 pub enum VarValue {

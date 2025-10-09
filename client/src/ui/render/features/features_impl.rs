@@ -328,11 +328,11 @@ impl FTitle for Action {
         match self {
             Action::use_ability => {
                 let mut r = self.cstr();
-                if let Ok(ability) = ctx.get_string(VarName::ability_name) {
-                    if let Ok(color) = ctx.get_color(VarName::color) {
+                if let Ok(ability) = ctx.get_var(VarName::ability_name).get_string() {
+                    if let Ok(color) = ctx.get_var(VarName::color).get_color() {
                         r += " ";
                         r += &ability.cstr_cs(color, CstrStyle::Bold);
-                        if let Ok(lvl) = ctx.get_i32(VarName::lvl) {
+                        if let Ok(lvl) = ctx.get_var(VarName::lvl).get_i32() {
                             r += &format!(
                                 " [tw [s lvl]][{} [b {lvl}]]",
                                 VarName::lvl.color().to_hex()
@@ -344,11 +344,11 @@ impl FTitle for Action {
             }
             Action::apply_status => {
                 let mut r = self.cstr();
-                if let Ok(status) = ctx.get_string(VarName::status_name) {
-                    if let Ok(color) = ctx.get_color(VarName::color) {
+                if let Ok(status) = ctx.get_var(VarName::status_name).get_string() {
+                    if let Ok(color) = ctx.get_var(VarName::color).get_color() {
                         r += " ";
                         r += &status.cstr_cs(color, CstrStyle::Bold);
-                        if let Ok(lvl) = ctx.get_i32(VarName::lvl) {
+                        if let Ok(lvl) = ctx.get_var(VarName::lvl).get_i32() {
                             r += &format!(
                                 " [tw [s lvl]][{} [b {lvl}]]",
                                 VarName::lvl.color().to_hex()
@@ -394,7 +394,8 @@ impl FTitle for PainterAction {
 
 impl FColoredTitle for PainterAction {
     fn title_color(&self, ctx: &ClientContext) -> Color32 {
-        ctx.get_color(VarName::color)
+        ctx.get_var(VarName::color)
+            .get_color()
             .unwrap_or(Color32::from_rgb(0, 255, 255))
     }
 }
@@ -502,7 +503,7 @@ impl FEdit for Reaction {
 impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         let color = ctx
-            .with_temp_owner(self.id, |ctx| ctx.get_color(VarName::color))
+            .with_temp_owner(self.id, |ctx| ctx.get_var(VarName::color).get_color())
             .unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color)
     }
@@ -547,7 +548,9 @@ impl FDisplay for NUnit {
 
 impl FTag for NUnit {
     fn tag_name(&self, ctx: &ClientContext) -> Cstr {
-        ctx.get_string(VarName::unit_name).unwrap_or_default()
+        ctx.get_var(VarName::unit_name)
+            .get_string()
+            .unwrap_or_default()
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
@@ -557,18 +560,20 @@ impl FTag for NUnit {
         } else {
             0
         };
-        let lvl = ctx.get_i32(VarName::lvl).unwrap_or_default();
-        let xp = match ctx.get_i32(VarName::xp) {
+        let lvl = ctx.get_var(VarName::lvl).get_i32().unwrap_or_default();
+        let xp = match ctx.get_var(VarName::xp).get_i32() {
             Ok(v) => format!(" [tw {v}]/[{} [b {lvl}]]", VarName::lvl.color().to_hex()),
             Err(_) => default(),
         };
 
         Some(format!(
             "[b {} {} [tw T]{}]{xp}",
-            ctx.get_i32(VarName::pwr)
+            ctx.get_var(VarName::pwr)
+                .get_i32()
                 .unwrap_or_default()
                 .cstr_c(VarName::pwr.color()),
-            ctx.get_i32(VarName::hp)
+            ctx.get_var(VarName::hp)
+                .get_i32()
                 .unwrap_or_default()
                 .cstr_c(VarName::hp.color()),
             (tier as i32).cstr_c(VarName::tier.color())
@@ -576,7 +581,9 @@ impl FTag for NUnit {
     }
 
     fn tag_color(&self, ctx: &ClientContext) -> Color32 {
-        ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR)
+        ctx.get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR)
     }
 }
 
@@ -710,7 +717,10 @@ impl FEdit for NHouse {
 // NAbilityMagic
 impl FTitle for NAbilityMagic {
     fn title(&self, ctx: &ClientContext) -> Cstr {
-        let color = ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        let color = ctx
+            .get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR);
         self.ability_name.cstr_c(color)
     }
 }
@@ -747,7 +757,9 @@ impl FTag for NAbilityMagic {
     }
 
     fn tag_color(&self, ctx: &ClientContext) -> Color32 {
-        ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR)
+        ctx.get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR)
     }
 }
 
@@ -780,7 +792,10 @@ impl FEdit for NAbilityMagic {
 // NStatusMagic
 impl FTitle for NStatusMagic {
     fn title(&self, ctx: &ClientContext) -> Cstr {
-        let color = ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        let color = ctx
+            .get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR);
         self.status_name.cstr_c(color)
     }
 }
@@ -817,7 +832,9 @@ impl FTag for NStatusMagic {
     }
 
     fn tag_color(&self, ctx: &ClientContext) -> Color32 {
-        ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR)
+        ctx.get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR)
     }
 }
 
@@ -2546,7 +2563,10 @@ impl FCompactView for Material {
 
 impl FCompactView for NUnit {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        let color = ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        let color = ctx
+            .get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color).label(ui);
     }
 
@@ -2702,7 +2722,10 @@ impl FCompactView for NUnitStats {
 
 impl FCompactView for NAbilityMagic {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        let color = ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        let color = ctx
+            .get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR);
         self.ability_name.cstr_c(color).label(ui);
     }
 
@@ -2719,7 +2742,10 @@ impl FCompactView for NAbilityMagic {
 
 impl FCompactView for NStatusMagic {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        let color = ctx.get_color(VarName::color).unwrap_or(MISSING_COLOR);
+        let color = ctx
+            .get_var(VarName::color)
+            .get_color()
+            .unwrap_or(MISSING_COLOR);
         self.status_name.cstr_c(color).label(ui);
     }
 
