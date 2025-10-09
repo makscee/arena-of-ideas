@@ -1127,19 +1127,14 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         })
         .collect();
 
-    let var_names_impl = if var_names.is_empty() {
-        quote! {
-            fn var_names(&self) -> std::collections::HashSet<VarName> {
-                std::collections::HashSet::new()
-            }
-        }
-    } else {
-        quote! {
-            fn var_names(&self) -> std::collections::HashSet<VarName> {
-                let mut set = std::collections::HashSet::new();
-                #(set.insert(#var_names);)*
-                set
-            }
+    let var_names_impl = quote! {
+        fn var_names() -> std::collections::HashSet<VarName>
+        where
+            Self: Sized,
+        {
+            let mut set = std::collections::HashSet::new();
+            #(set.insert(#var_names);)*
+            set
         }
     };
 
@@ -1154,19 +1149,11 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         })
         .collect();
 
-    let get_var_impl = if get_var_arms.is_empty() {
-        quote! {
-            fn get_var(&self, _var: VarName) -> NodeResult<VarValue> {
-                Err(NodeError::Custom(format!("Variable {:?} not found", _var)))
-            }
-        }
-    } else {
-        quote! {
-            fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
-                match var {
-                    #(#get_var_arms,)*
-                    _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
-                }
+    let get_var_impl = quote! {
+        fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
+            match var {
+                #(#get_var_arms,)*
+                _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
             }
         }
     };
@@ -1182,18 +1169,33 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         })
         .collect();
 
-    let get_vars_impl = if get_vars_inserts.is_empty() {
-        quote! {
-            fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
-                std::collections::HashMap::new()
-            }
+    let get_vars_impl = quote! {
+        fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
+            let mut map = std::collections::HashMap::new();
+            #(#get_vars_inserts)*
+            map
         }
-    } else {
-        quote! {
-            fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
-                let mut map = std::collections::HashMap::new();
-                #(#get_vars_inserts)*
-                map
+    };
+
+    // Generate set_var method
+    let set_var_arms: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            quote! {
+                VarName::#field_name => {
+                    self.#field_name = value.try_into().map_err(|_| NodeError::Custom("Value conversion failed".into()))?;
+                    Ok(())
+                }
+            }
+        })
+        .collect();
+
+    let set_var_impl = quote! {
+        fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()> {
+            match var {
+                #(#set_var_arms,)*
+                _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
             }
         }
     };
@@ -1201,34 +1203,67 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         #var_names_impl
         #get_var_impl
+        #set_var_impl
         #get_vars_impl
     }
 }
 
 pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
-    let arms = nodes.iter().map(|node| {
+    let var_names_arms = nodes.iter().map(|node| {
         let node_name = &node.name;
         let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
+        let var_names: Vec<_> = var_fields
+            .iter()
+            .map(|f| {
+                let field_name = &f.name;
+                quote! { VarName::#field_name }
+            })
+            .collect();
 
-        if var_fields.is_empty() {
-            quote! {
-                NodeKind::#node_name => std::collections::HashSet::new()
+        quote! {
+            NodeKind::#node_name => {
+                let mut set = std::collections::HashSet::new();
+                #(set.insert(#var_names);)*
+                set
             }
-        } else {
-            let var_names: Vec<_> = var_fields
-                .iter()
-                .map(|f| {
-                    let field_name = &f.name;
-                    quote! { VarName::#field_name }
-                })
-                .collect();
+        }
+    });
 
-            quote! {
-                NodeKind::#node_name => {
-                    let mut set = std::collections::HashSet::new();
-                    #(set.insert(#var_names);)*
-                    set
+    let get_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                if NodeKind::#node_name.var_names().contains(&var) {
+                    ctx.source().get_var(node_id, var)
+                } else {
+                    Err(NodeError::Custom("Variable not found".into()))
                 }
+            }
+        }
+    });
+
+    let set_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                // Get the node from context source and set the variable
+                // This requires the context source to provide access to the mutable node
+                Err(NodeError::Custom("NodeKind::set_var not yet implemented - use direct node access".into()))
+            }
+        }
+    });
+
+    let get_vars_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let mut vars = std::collections::HashMap::new();
+                for var_name in NodeKind::#node_name.var_names() {
+                    if let Ok(value) = ctx.source().get_var(node_id, var_name) {
+                        vars.insert(var_name, value);
+                    }
+                }
+                vars
             }
         }
     });
@@ -1237,8 +1272,29 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
         impl NodeKind {
             pub fn var_names(self) -> std::collections::HashSet<VarName> {
                 match self {
-                    #(#arms,)*
+                    #(#var_names_arms,)*
                     NodeKind::None => std::collections::HashSet::new(),
+                }
+            }
+
+            pub fn get_var<S: ContextSource>(self, ctx: &Context<S>, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+                match self {
+                    #(#get_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot get var from None node".into())),
+                }
+            }
+
+            pub fn set_var<S: ContextSource>(self, ctx: &mut Context<S>, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+                match self {
+                    #(#set_var_arms,)*
+                    NodeKind::None => Err(NodeError::Custom("Cannot set var on None node".into())),
+                }
+            }
+
+            pub fn get_vars<S: ContextSource>(self, ctx: &Context<S>, node_id: u64) -> std::collections::HashMap<VarName, VarValue> {
+                match self {
+                    #(#get_vars_arms,)*
+                    NodeKind::None => std::collections::HashMap::new(),
                 }
             }
         }

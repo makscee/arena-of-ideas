@@ -68,7 +68,7 @@ fn generate_node_kind(
     );
 
     quote! {
-        use std::collections::HashSet;
+        use std::collections::{HashSet, HashMap};
 
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
         pub enum NodeKind {
@@ -184,43 +184,6 @@ fn generate_node_kind(
         impl ToNodeKind for ContentNodeKind {
             fn to_kind(&self) -> NodeKind {
                 NodeKind::from(*self)
-            }
-        }
-
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::AsRefStr, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString)]
-        pub enum NodeKindCategory {
-            Unit,
-            House,
-            Ability,
-            Status,
-            Other,
-        }
-
-        impl NodeKind {
-            pub fn category(self) -> NodeKindCategory {
-                match self {
-                    NodeKind::NUnit
-                    | NodeKind::NUnitStats
-                    | NodeKind::NUnitDescription
-                    | NodeKind::NUnitRepresentation
-                    | NodeKind::NUnitBehavior => NodeKindCategory::Unit,
-                    NodeKind::NHouse | NodeKind::NHouseColor => NodeKindCategory::House,
-                    NodeKind::NAbilityMagic | NodeKind::NAbilityDescription | NodeKind::NAbilityEffect => {
-                        NodeKindCategory::Ability
-                    }
-                    NodeKind::NStatusMagic
-                    | NodeKind::NStatusDescription
-                    | NodeKind::NStatusBehavior
-                    | NodeKind::NStatusRepresentation => NodeKindCategory::Status,
-                    _ => NodeKindCategory::Other,
-                }
-            }
-        }
-
-        impl NodeKindCategory {
-            pub fn kinds(self) -> Vec<NodeKind> {
-                use strum::IntoEnumIterator;
-                NodeKind::iter().filter(|k| k.category() == self).collect()
             }
         }
     }

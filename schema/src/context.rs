@@ -14,7 +14,10 @@ pub trait Node: Send + Sync + Default + StringData {
     where
         Self: Sized;
 
-    fn var_names(&self) -> HashSet<VarName>;
+    fn var_names() -> HashSet<VarName>
+    where
+        Self: Sized;
+    fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()>;
     fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
     fn get_vars(&self) -> HashMap<VarName, VarValue>;
 
@@ -101,6 +104,11 @@ pub trait ContextSource {
 
     /// Get variable value from a specific node
     fn get_var(&self, owner: u64, var: VarName) -> NodeResult<VarValue>;
+
+    /// Set variable value on a specific node
+    fn set_var<T: Node>(&mut self, node: &mut T, var: VarName, value: VarValue) -> NodeResult<()> {
+        node.set_var(var, value)
+    }
 }
 
 /// Context layer for scoping operations
