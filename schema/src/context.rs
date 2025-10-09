@@ -1,5 +1,6 @@
 use super::*;
 use crate::node_error::NodeResult;
+use std::collections::{HashMap, HashSet};
 
 // Common traits that both client and server will implement
 pub trait Node: Send + Sync + Default + StringData {
@@ -12,6 +13,10 @@ pub trait Node: Send + Sync + Default + StringData {
     fn kind_s() -> NodeKind
     where
         Self: Sized;
+
+    fn var_names(&self) -> HashSet<VarName>;
+    fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
+    fn get_vars(&self) -> HashMap<VarName, VarValue>;
 
     fn pack(&self) -> PackedNodes {
         let mut packed = PackedNodes::default();

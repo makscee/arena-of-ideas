@@ -18,6 +18,7 @@ pub struct FieldInfo {
     pub target_type: String,
     pub is_vec: bool,
     pub raw_type: String,
+    pub is_var: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -44,10 +45,18 @@ pub fn parse_nodes_file(input: &str) -> syn::Result<Vec<NodeInfo>> {
 }
 
 pub fn has_node_attribute(item_struct: &ItemStruct) -> bool {
-    item_struct
-        .attrs
-        .iter()
-        .any(|attr| attr.path().is_ident("node"))
+    item_struct.attrs.iter().any(|attr| {
+        if attr.path().is_ident("derive") {
+            if let Ok(syn::Meta::List(meta_list)) = attr.meta.clone().try_into() {
+                for token in meta_list.tokens.clone() {
+                    if token.to_string().contains("Node") {
+                        return true;
+                    }
+                }
+            }
+        }
+        false
+    })
 }
 
 pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
@@ -55,21 +64,15 @@ pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
     let mut is_content = false;
     let mut is_named = false;
 
-    for attr in &item_struct.attrs {
-        if attr.path().is_ident("node") {
-            if let Ok(Meta::List(meta_list)) = attr.meta.clone().try_into() {
-                for token in meta_list.tokens.clone() {
-                    let token_str = token.to_string();
-                    if token_str.contains("content") {
-                        is_content = true;
-                    }
-                    if token_str.contains("name") {
-                        is_named = true;
-                    }
-                }
-            }
-        }
-    }
+    // For now, determine content and named status based on struct name patterns
+    // This can be enhanced later with additional attributes if needed
+    let name_str = name.to_string();
+    is_content = name_str.starts_with("N")
+        && (name_str.contains("House")
+            || name_str.contains("Unit")
+            || name_str.contains("Ability")
+            || name_str.contains("Status"));
+    is_named = name_str.ends_with("Magic") || name_str == "NHouse" || name_str == "NUnit";
 
     let fields = item_struct
         .fields
@@ -94,12 +97,15 @@ pub fn parse_field(field: &Field) -> FieldInfo {
         _ => String::new(),
     };
 
+    let is_var = field.attrs.iter().any(|attr| attr.path().is_ident("var"));
+
     FieldInfo {
         name,
         link_type,
         target_type,
         is_vec,
         raw_type,
+        is_var,
     }
 }
 
@@ -589,6 +595,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let node_kind_variant = &node.name;
         let pack_links_impl = generate_pack_links_impl(node);
         let unpack_links_impl = generate_unpack_links_impl(node);
+        let var_methods = generate_var_methods(node);
 
         quote! {
             impl Node for #struct_name {
@@ -622,6 +629,9 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                 fn kind_s() -> NodeKind {
                     NodeKind::#node_kind_variant
                 }
+
+                #var_methods
+
                 #pack_links_impl
                 #unpack_links_impl
             }
@@ -1097,6 +1107,136 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         fn unpack_links(&mut self, packed: &PackedNodes) {
             #(#unpack_link_calls)*
+        }
+    }
+}
+
+pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
+
+    // Generate var_names method
+    let var_names: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            quote! { VarName::#field_name }
+        })
+        .collect();
+
+    let var_names_impl = if var_names.is_empty() {
+        quote! {
+            fn var_names(&self) -> std::collections::HashSet<VarName> {
+                std::collections::HashSet::new()
+            }
+        }
+    } else {
+        quote! {
+            fn var_names(&self) -> std::collections::HashSet<VarName> {
+                let mut set = std::collections::HashSet::new();
+                #(set.insert(#var_names);)*
+                set
+            }
+        }
+    };
+
+    // Generate get_var method
+    let get_var_arms: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            quote! {
+                VarName::#field_name => Ok(self.#field_name.clone().into())
+            }
+        })
+        .collect();
+
+    let get_var_impl = if get_var_arms.is_empty() {
+        quote! {
+            fn get_var(&self, _var: VarName) -> NodeResult<VarValue> {
+                Err(NodeError::Custom(format!("Variable {:?} not found", _var)))
+            }
+        }
+    } else {
+        quote! {
+            fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
+                match var {
+                    #(#get_var_arms,)*
+                    _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
+                }
+            }
+        }
+    };
+
+    // Generate get_vars method
+    let get_vars_inserts: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            quote! {
+                map.insert(VarName::#field_name, self.#field_name.clone().into());
+            }
+        })
+        .collect();
+
+    let get_vars_impl = if get_vars_inserts.is_empty() {
+        quote! {
+            fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
+                std::collections::HashMap::new()
+            }
+        }
+    } else {
+        quote! {
+            fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
+                let mut map = std::collections::HashMap::new();
+                #(#get_vars_inserts)*
+                map
+            }
+        }
+    };
+
+    quote! {
+        #var_names_impl
+        #get_var_impl
+        #get_vars_impl
+    }
+}
+
+pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
+
+        if var_fields.is_empty() {
+            quote! {
+                NodeKind::#node_name => std::collections::HashSet::new()
+            }
+        } else {
+            let var_names: Vec<_> = var_fields
+                .iter()
+                .map(|f| {
+                    let field_name = &f.name;
+                    quote! { VarName::#field_name }
+                })
+                .collect();
+
+            quote! {
+                NodeKind::#node_name => {
+                    let mut set = std::collections::HashSet::new();
+                    #(set.insert(#var_names);)*
+                    set
+                }
+            }
+        }
+    });
+
+    quote! {
+        impl NodeKind {
+            pub fn var_names(self) -> std::collections::HashSet<VarName> {
+                match self {
+                    #(#arms,)*
+                    NodeKind::None => std::collections::HashSet::new(),
+                }
+            }
         }
     }
 }

@@ -27,9 +27,14 @@ fn main() {
 
     // Generate code
     let generated = generate_node_kind(&nodes, &node_map);
+    let var_names_impl = generate_var_names_for_node_kind(&nodes);
 
     // Format and write
-    let formatted_code = format_code(&generated);
+    let combined = quote! {
+        #generated
+        #var_names_impl
+    };
+    let formatted_code = format_code(&combined);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 

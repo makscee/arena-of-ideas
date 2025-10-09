@@ -1,30 +1,12 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, ItemStruct, Meta};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
 
-#[proc_macro_attribute]
-pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
-    let args_str = args.to_string();
+#[proc_macro_derive(Node, attributes(var))]
+pub fn derive_node(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
 
-    // Handle empty args (just #[node]) or specific combinations
-    match args_str.trim() {
-        "" => {} // Empty args are allowed
-        "content" => {}
-        "content, name" => {}
-        "name" => {}
-        _ => {
-            // For debugging: don't panic, just pass through with warning
-            // eprintln!("Warning: Unknown node attribute: '{}'", args_str.trim());
-        }
-    };
-
-    let mut item_struct = parse_macro_input!(input as ItemStruct);
-    item_struct.attrs.clear();
-    for field in item_struct.fields.iter_mut() {
-        field.attrs.clear();
-    }
-
-    quote! { #item_struct }.into()
+    quote! {}.into()
 }
 
 #[proc_macro_derive(Settings, attributes(setting))]

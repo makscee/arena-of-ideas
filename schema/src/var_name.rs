@@ -56,6 +56,9 @@ pub enum VarName {
     round,
     action_limit,
     stacks,
+    online,
+    active,
+    actions_limit,
 }
 
 impl VarName {

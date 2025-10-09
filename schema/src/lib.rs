@@ -21,7 +21,7 @@ mod var_value;
 mod raw_nodes;
 
 // Re-export node macro and types from raw_nodes
-pub use proc_macros::node;
+pub use proc_macros::Node;
 
 use std::{fmt::Display, str::FromStr};
 
