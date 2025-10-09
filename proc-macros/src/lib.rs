@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
 
-#[proc_macro_derive(Node, attributes(var))]
+#[proc_macro_derive(Node, attributes(var, content, named))]
 pub fn derive_node(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

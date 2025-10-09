@@ -59,20 +59,24 @@ pub fn has_node_attribute(item_struct: &ItemStruct) -> bool {
     })
 }
 
+pub fn has_content_attribute(item_struct: &ItemStruct) -> bool {
+    item_struct
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("content"))
+}
+
+pub fn has_named_attribute(item_struct: &ItemStruct) -> bool {
+    item_struct
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("named"))
+}
+
 pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
     let name = item_struct.ident.clone();
-    let mut is_content = false;
-    let mut is_named = false;
-
-    // For now, determine content and named status based on struct name patterns
-    // This can be enhanced later with additional attributes if needed
-    let name_str = name.to_string();
-    is_content = name_str.starts_with("N")
-        && (name_str.contains("House")
-            || name_str.contains("Unit")
-            || name_str.contains("Ability")
-            || name_str.contains("Status"));
-    is_named = name_str.ends_with("Magic") || name_str == "NHouse" || name_str == "NUnit";
+    let is_content = has_content_attribute(item_struct);
+    let is_named = has_named_attribute(item_struct);
 
     let fields = item_struct
         .fields

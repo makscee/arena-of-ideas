@@ -44,6 +44,8 @@ pub struct NPlayerIdentity {
 }
 
 #[derive(Node)]
+#[content]
+#[named]
 pub struct NHouse {
     #[var]
     pub house_name: String,
@@ -60,6 +62,8 @@ pub struct NHouseColor {
 }
 
 #[derive(Node)]
+#[content]
+#[named]
 pub struct NAbilityMagic {
     #[var]
     pub ability_name: String,
@@ -67,6 +71,7 @@ pub struct NAbilityMagic {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NAbilityDescription {
     #[var]
     pub description: String,
@@ -74,11 +79,14 @@ pub struct NAbilityDescription {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NAbilityEffect {
     pub actions: Vec<Action>,
 }
 
 #[derive(Node)]
+#[content]
+#[named]
 pub struct NStatusMagic {
     #[var]
     pub status_name: String,
@@ -87,6 +95,7 @@ pub struct NStatusMagic {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NStatusDescription {
     #[var]
     pub description: String,
@@ -94,11 +103,13 @@ pub struct NStatusDescription {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NStatusBehavior {
     pub reactions: Vec<Reaction>,
 }
 
 #[derive(Node)]
+#[content]
 pub struct NStatusRepresentation {
     pub material: Material,
 }
@@ -158,6 +169,8 @@ pub struct NFusionSlot {
 }
 
 #[derive(Node)]
+#[content]
+#[named]
 pub struct NUnit {
     #[var]
     pub unit_name: String,
@@ -167,6 +180,7 @@ pub struct NUnit {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NUnitDescription {
     #[var]
     pub description: String,
@@ -177,6 +191,7 @@ pub struct NUnitDescription {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NUnitStats {
     #[var]
     pub pwr: i32,
@@ -191,12 +206,14 @@ pub struct NUnitState {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NUnitBehavior {
     pub reaction: Reaction,
     pub magic_type: MagicType,
 }
 
 #[derive(Node)]
+#[content]
 pub struct NUnitRepresentation {
     pub material: Material,
 }
