@@ -129,9 +129,9 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.link_parent_child(parent, child);
+                world.as_context_mut().add_link(parent, child);
             }
-            world.set_link_rating(parent, child, rating, solid);
+            // world.set_link_rating(parent, child, rating, solid);
             world.send_event(StdbLinkEvent {
                 parent,
                 child,
@@ -153,11 +153,11 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.link_parent_child(parent, child);
+                world.as_context_mut().add_link(parent, child);
             } else {
-                world.unlink_parent_child(parent, child);
+                world.as_context_mut().remove_link(parent, child);
             }
-            world.set_link_rating(parent, child, rating, solid);
+            // world.set_link_rating(parent, child, rating, solid);
             world.send_event(StdbLinkEvent {
                 parent,
                 child,
@@ -179,7 +179,7 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.unlink_parent_child(parent, child);
+                world.as_context().remove_link(parent, child);
             }
             world.send_event(StdbLinkEvent {
                 parent,

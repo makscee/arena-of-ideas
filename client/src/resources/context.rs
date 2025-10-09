@@ -176,23 +176,8 @@ impl NodeEntity {
         self.nodes.iter().map(|(id, _)| *id).collect()
     }
 
-    pub fn get_nodes_by_kind(&self, kind: NodeKind) -> Vec<u64> {
-        self.nodes
-            .iter()
-            .filter_map(|(id, k)| if *k == kind { Some(*id) } else { None })
-            .collect()
-    }
-
     pub fn has_kind(&self, kind: NodeKind) -> bool {
         self.nodes.iter().any(|(_, k)| *k == kind)
-    }
-
-    pub fn get_primary_id(&self) -> Option<u64> {
-        self.nodes.first().map(|(id, _)| *id)
-    }
-
-    pub fn get_primary_kind(&self) -> Option<NodeKind> {
-        self.nodes.first().map(|(_, kind)| *kind)
     }
 }
 
