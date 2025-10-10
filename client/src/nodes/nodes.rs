@@ -88,10 +88,7 @@ impl NodeKindOnUnpack for NodeKind {
                 {
                     let world = ctx.world_mut()?;
                     let rep_entity = world.spawn_empty().id();
-                    unit_rep()
-                        .clone()
-                        .with_id(next_id())
-                        .spawn(ctx, Some(rep_entity))?;
+                    unit_rep().clone().spawn(ctx, Some(rep_entity))?;
                     ctx.add_link_entities(entity, rep_entity)?;
                 }
                 ctx.world_mut()?

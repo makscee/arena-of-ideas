@@ -483,7 +483,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         .filter(|field| field.link_type == LinkType::None)
         .collect();
 
-    let params = std::iter::once(quote! { owner_id: u64 }).chain(data_fields.iter().map(|field| {
+    let params = std::iter::once(quote! { node_id: u64 }).chain(data_fields.iter().map(|field| {
         let field_name = &field.name;
         let field_type = generate_field_type(field);
         quote! { #field_name: #field_type }
@@ -506,8 +506,8 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
     quote! {
         pub fn new(#(#params),*) -> Self {
             Self {
-                id: 0,
-                owner: owner_id,
+                id: node_id,
+                owner: 0,
                 #(#field_assignments)*
                 #(#component_defaults)*
             }

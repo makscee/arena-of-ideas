@@ -455,7 +455,10 @@ impl BattleSimulation {
         let entity = ctx.world_mut()?.spawn_empty().id();
         status.spawn(ctx, Some(entity))?;
         let rep_entity = ctx.world_mut()?.spawn_empty().id();
-        status_rep().clone().spawn(ctx, Some(rep_entity))?;
+        status_rep()
+            .clone()
+            .with_id(next_id())
+            .spawn(ctx, Some(rep_entity))?;
         ctx.add_link_entities(entity, rep_entity)?;
         ctx.add_link_entities(target.entity(ctx)?, entity)?;
 

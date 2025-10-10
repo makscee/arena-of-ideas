@@ -100,11 +100,6 @@ fn generate_server_nodes(
 
                 #add_components_method
 
-                pub fn with_id(mut self, id: u64) -> Self {
-                    self.id = id;
-                    self
-                }
-
                 #link_methods
                 #load_methods
                 #collect_owned_ids_method

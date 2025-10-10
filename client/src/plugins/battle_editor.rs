@@ -77,7 +77,7 @@ impl BattleEditorPlugin {
             }
             Err(_) => {
                 if ui.button(format!("➕ Add {}", T::kind_s())).clicked() {
-                    let part = T::placeholder(owner);
+                    let part = T::placeholder(next_id());
                     part_id = part.id();
                     let part_entity = ctx.world_mut()?.spawn_empty().id();
                     part.spawn(ctx, Some(part_entity))?;
@@ -152,7 +152,7 @@ impl BattleEditorPlugin {
         }
 
         if ui.button(format!("➕ Add {}", collection_name)).clicked() {
-            let item = T::placeholder(owner);
+            let item = T::placeholder(next_id());
             let item_entity = ctx.world_mut()?.spawn_empty().id();
             item.spawn(ctx, Some(item_entity))?;
             ctx.add_link_entities(parent_entity, item_entity)
@@ -581,9 +581,9 @@ impl BattleEditorPlugin {
             if let Some(existing_house) = default_house {
                 existing_house.entity(ctx)?
             } else {
-                let house = NHouse::placeholder(team_owner);
+                let house = NHouse::placeholder(next_id());
                 let house_entity = ctx.world_mut()?.spawn_empty().id();
-                house.clone().spawn(ctx, Some(house_entity))?;
+                house.spawn(ctx, Some(house_entity))?;
                 ctx.add_link_entities(team_entity, house_entity)?;
                 house_entity
             }
@@ -609,7 +609,7 @@ impl BattleEditorPlugin {
         let next_index = existing_slots.len() as i32;
 
         // Create new fusion slot
-        let new_slot = NFusionSlot::new(fusion.owner, next_index, default());
+        let new_slot = NFusionSlot::new(fusion.owner, next_index, default()).with_id(next_id());
         let slot_entity = context.world_mut()?.spawn_empty().id();
         new_slot.spawn(context, Some(slot_entity))?;
         context.add_link_entities(slot_entity, fusion_entity)?;

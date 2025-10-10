@@ -98,11 +98,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
                 #add_components_method
 
-                pub fn with_id(mut self, id: u64) -> Self {
-                    self.id = id;
-                    self
-                }
-
                 #link_methods
 
                 #load_components_method

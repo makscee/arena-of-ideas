@@ -4,6 +4,14 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 // Common traits that both client and server will implement
 pub trait Node: Send + Sync + Default + StringData {
+    fn with_owner(mut self, owner: u64) -> Self {
+        self.set_owner(owner);
+        self
+    }
+    fn with_id(mut self, id: u64) -> Self {
+        self.set_id(id);
+        self
+    }
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;

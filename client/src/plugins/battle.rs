@@ -83,9 +83,9 @@ impl BattlePlugin {
         if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
             Self::load_teams(0, left, right, world);
         } else {
-            let mut left = NTeam::new(0).with_id(next_id());
+            let mut left = NTeam::new(next_id());
             left.fusions.state_mut().set(default());
-            let mut right = NTeam::new(0).with_id(next_id());
+            let mut right = NTeam::new(next_id());
             right.fusions.state_mut().set(default());
             Self::load_teams(0, left, right, world);
         };

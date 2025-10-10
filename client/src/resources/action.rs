@@ -123,27 +123,12 @@ impl ActionImpl for Action {
                 let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {
                     let name = status.status_name.clone();
-                    let mut status = status.clone();
-                    let mut description = status.description_load(ctx)?.clone();
-                    let mut behavior = description.behavior_load(ctx)?.clone();
-                    let representation =
-                        status.representation_load(ctx).ok().cloned().map(|mut r| {
-                            r.id = 0;
-                            r
-                        });
-                    status.id = 0;
-                    description.id = 0;
-                    behavior.id = 0;
-                    description.behavior.state_mut().set(behavior.clone());
-                    status.description.state_mut().set(description.clone());
-                    if let Some(repr) = representation {
-                        status.representation.state_mut().set(repr);
-                    }
+                    let mut status = status.clone().load_components(ctx)?.take();
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(
                             target,
-                            status.clone(),
+                            status.clone().with_id(next_id()),
                             value,
                             color,
                         ));
