@@ -564,7 +564,7 @@ impl BattleSimulation {
                 return Ok(right);
             }
         }
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "Failed to find allies: {id} is not in any team"
         )))
     }
@@ -576,7 +576,7 @@ impl BattleSimulation {
         } else if right.contains(&id) {
             return Ok(left);
         }
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "Failed to find enemies: {id} is not in any team"
         )))
     }

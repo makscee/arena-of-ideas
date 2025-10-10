@@ -51,7 +51,7 @@ pub trait Node: Send + Sync + Default + StringData {
     fn unpack(packed: &PackedNodes) -> NodeResult<Self> {
         let root_data = packed
             .get(packed.root)
-            .ok_or_else(|| NodeError::Custom("Root node not found in packed data".into()))?;
+            .ok_or_else(|| NodeError::custom("Root node not found in packed data"))?;
 
         let mut node = Self::default();
         node.inject_data(&root_data.data)?;
@@ -139,7 +139,7 @@ pub trait ContextSource: NodeLoader {
             }
             parents.extend(self.get_parents(parent)?);
         }
-        Err(NodeError::VarNotFound(var))
+        Err(NodeError::var_not_found(var))
     }
 
     /// Set a variable value on a node
@@ -292,7 +292,7 @@ where
         if let Some(owner_id) = self.owner() {
             self.source.get_var(owner_id, var)
         } else {
-            Err(NodeError::Custom("No owner in context".into()))
+            Err(NodeError::custom("No owner in context"))
         }
     }
 
@@ -301,7 +301,7 @@ where
         if let Some(target_id) = self.target() {
             self.source.get_var(target_id, var)
         } else {
-            Err(NodeError::Custom("No target in context".into()))
+            Err(NodeError::custom("No target in context"))
         }
     }
 
@@ -310,7 +310,7 @@ where
         if let Some(caster_id) = self.caster() {
             self.source.get_var(caster_id, var)
         } else {
-            Err(NodeError::Custom("No caster in context".into()))
+            Err(NodeError::custom("No caster in context"))
         }
     }
 
@@ -358,7 +358,7 @@ where
             }
         }
 
-        Err(NodeError::VarNotFound(var))
+        Err(NodeError::var_not_found(var))
     }
 
     /// Add a target to the targets list
@@ -453,7 +453,7 @@ where
                 return Ok(parent_id);
             }
         }
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "No parent of kind {:?} found for node {}",
             kind, id
         )))
@@ -482,7 +482,7 @@ where
             }
         }
 
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "No parent of kind {:?} found recursively for node {}",
             kind, id
         )))
@@ -496,7 +496,7 @@ where
                 return Ok(child_id);
             }
         }
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "No child of kind {:?} found for node {}",
             kind, id
         )))
@@ -525,7 +525,7 @@ where
             }
         }
 
-        Err(NodeError::Custom(format!(
+        Err(NodeError::custom(format!(
             "No child of kind {:?} found recursively for node {}",
             kind, id
         )))
@@ -661,7 +661,7 @@ where
     pub fn sum_var(&self, var_name: VarName) -> NodeResult<VarValue> {
         let owner_id = self
             .owner()
-            .ok_or(NodeError::Custom("No owner in context".into()))?;
+            .ok_or(NodeError::custom("No owner in context"))?;
 
         let mut result = VarValue::default();
         let mut ids = self.children_recursive(owner_id)?;

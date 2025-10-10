@@ -14,7 +14,7 @@ pub trait ClientNode:
     }
     fn from_file(path: &str) -> NodeResult<Self> {
         let data = std::fs::read_to_string(path)
-            .map_err(|e| ExpressionError::from(format!("Failed to read file {}: {}", path, e)))?;
+            .map_err(|e| NodeError::from(format!("Failed to read file {}: {}", path, e)))?;
         let mut node = Self::default();
         node.inject_data(&data)?;
         Ok(node)

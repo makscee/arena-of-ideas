@@ -62,7 +62,7 @@ impl<T> LinkState<T> {
     pub fn data_mut(&mut self) -> NodeResult<&mut T> {
         match self {
             LinkState::Loaded(d) => Ok(d),
-            _ => Err(NodeError::Custom("Link not loaded".into())),
+            _ => Err(NodeError::custom("Link not loaded")),
         }
     }
 }

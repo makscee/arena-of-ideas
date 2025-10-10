@@ -74,14 +74,14 @@ impl ToNodeKind for String {
 }
 
 pub trait StringData: Sized {
-    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
+    fn inject_data(&mut self, data: &str) -> NodeResult<()>;
     fn get_data(&self) -> String;
 }
 impl<T> StringData for T
 where
     T: Serialize + DeserializeOwned,
 {
-    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
+    fn inject_data(&mut self, data: &str) -> NodeResult<()> {
         match ron::from_str(data) {
             Ok(v) => {
                 *self = v;

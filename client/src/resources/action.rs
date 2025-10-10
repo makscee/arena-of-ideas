@@ -59,7 +59,7 @@ impl ActionImpl for Action {
             Action::deal_damage => {
                 let owner = ctx
                     .owner()
-                    .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
+                    .ok_or_else(|| NodeError::custom("No owner in context"))?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     let targets = ctx.collect_targets();
@@ -79,7 +79,7 @@ impl ActionImpl for Action {
             Action::heal_damage => {
                 let owner = ctx
                     .owner()
-                    .ok_or_else(|| NodeError::Custom("No owner in context".into()))?;
+                    .ok_or_else(|| NodeError::custom("No owner in context"))?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     for target in ctx.collect_targets() {

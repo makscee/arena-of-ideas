@@ -18,10 +18,7 @@ pub trait ServerNode: Sized + schema::Node {
         if node.kind == kind {
             node.to_node()
         } else {
-            Err(NodeError::InvalidKind {
-                expected: kind.to_kind(),
-                actual: node.kind(),
-            })
+            Err(NodeError::invalid_kind(kind.to_kind(), node.kind()))
         }
     }
     fn save(&self, source: &ServerSource);

@@ -54,7 +54,8 @@ fn content_vote_node(ctx: &ReducerContext, id: u64, vote: bool) -> Result<(), St
 
 #[reducer]
 fn content_select_link(ctx: &ReducerContext, parent_id: u64, child_id: u64) -> Result<(), String> {
-    TPlayerLinkSelection::select_link(ctx, ctx.as_context().player()?.id, parent_id, child_id)
+    TPlayerLinkSelection::select_link(ctx, ctx.as_context().player()?.id, parent_id, child_id)?;
+    Ok(())
 }
 
 #[reducer]

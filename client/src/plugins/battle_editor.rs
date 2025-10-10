@@ -558,7 +558,7 @@ impl BattleEditorPlugin {
                 ctx.remove_link(unit_id, slot)?;
             }
         } else {
-            return Err(NodeError::Custom("Unit is not in a slot".to_string()));
+            return Err(NodeError::custom("Unit is not in a slot"));
         };
         Ok(())
     }

@@ -48,12 +48,11 @@ impl ExpressionImpl for Expression {
             Expression::color(s) => s
                 .try_c32()
                 .map_err(|e| {
-                    NodeError::OperationNotSupported {
-                        values: default(),
-                        op: "Hex color parse",
-                        msg: Some(format!("{e:?}")),
-                    }
-                    .into()
+                    NodeError::not_supported_with_msg(
+                        "Hex color parse",
+                        default(),
+                        format!("{e:?}"),
+                    )
                 })
                 .map(|v| v.into()),
             Expression::gt => Ok(gt().play_head().into()),

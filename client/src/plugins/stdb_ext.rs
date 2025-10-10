@@ -49,7 +49,7 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
         match &self.status {
             spacetimedb_sdk::Status::Committed => sfn(),
             spacetimedb_sdk::Status::Failed(e) => {
-                e.notify_error_op();
+                format!("STDB error: {e}").notify_error_op();
                 efn()
             }
             _ => panic!(),

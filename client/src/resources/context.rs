@@ -209,14 +209,14 @@ impl<'w> WorldSource<'w> {
     pub fn battle(&self) -> NodeResult<&BattleSimulation> {
         match self {
             Self::Battle(battle) => Ok(battle),
-            _ => Err(NodeError::Custom("Source is not a BattleSimulation".into())),
+            _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
     pub fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
         match self {
             Self::Battle(battle) => Ok(battle),
-            _ => Err(NodeError::Custom("Source is not a BattleSimulation".into())),
+            _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
@@ -232,14 +232,14 @@ impl<'w> WorldSource<'w> {
             Self::Immutable(world) => Ok(world),
             Self::Mutable(world) => Ok(world),
             Self::Battle(battle) => Ok(&battle.world),
-            Self::None => Err(NodeError::Custom("Source World not set".into())),
+            Self::None => Err(NodeError::custom("Source World not set")),
         }
     }
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Self::Immutable(_) => Err(NodeError::Custom("Source World is immutable".into())),
-            Self::None => Err(NodeError::Custom("Source World not set".into())),
+            Self::Immutable(_) => Err(NodeError::custom("Source World is immutable")),
+            Self::None => Err(NodeError::custom("Source World not set")),
             Self::Mutable(world) => Ok(world),
             Self::Battle(battle) => Ok(&mut battle.world),
         }
@@ -260,7 +260,7 @@ impl<'w> ContextSource for WorldSource<'w> {
                 }
             }
         }
-        Err(NodeError::NotFound(id))
+        Err(NodeError::not_found(id))
     }
 
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
@@ -306,12 +306,12 @@ impl<'w> ContextSource for WorldSource<'w> {
                 links.add_link(from_id, to_id, to_kind);
                 Ok(())
             } else {
-                Err(NodeError::ContextError(anyhow::anyhow!(
+                Err(NodeError::context_error(anyhow::anyhow!(
                     "NodeLinks resource not found"
                 )))
             }
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "Cannot modify links with immutable WorldSource"
             )))
         }
@@ -323,12 +323,12 @@ impl<'w> ContextSource for WorldSource<'w> {
                 links.remove_link(from_id, to_id);
                 Ok(())
             } else {
-                Err(NodeError::ContextError(anyhow::anyhow!(
+                Err(NodeError::context_error(anyhow::anyhow!(
                     "NodeLinks resource not found"
                 )))
             }
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "Cannot modify links with immutable WorldSource"
             )))
         }
@@ -419,9 +419,9 @@ pub trait ClientContextExt {
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
-        self.source_mut().get_rng().ok_or_else(|| {
-            NodeError::Custom("RNG only available for BattleSimulation contexts".into())
-        })
+        self.source_mut()
+            .get_rng()
+            .ok_or_else(|| NodeError::custom("RNG only available for BattleSimulation contexts"))
     }
     fn color(&self, ui: &mut Ui) -> Color32 {
         self.get_var(VarName::color)
@@ -436,9 +436,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         if let Some(component) = world.get::<T>(entity) {
             return Ok(component);
         } else {
-            return Err(NodeError::LoadError(
-                "Failed to get component from entity".into(),
-            ));
+            return Err(NodeError::load_error("Failed to get component from entity"));
         }
     }
     fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
@@ -455,9 +453,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         if let Some(component) = world.get_mut::<T>(entity) {
             return Ok(component);
         } else {
-            return Err(NodeError::LoadError(
-                "Failed to get component from entity".into(),
-            ));
+            return Err(NodeError::load_error("Failed to get component from entity"));
         }
     }
 
@@ -506,9 +502,9 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             map.get_id(entity)
-                .ok_or(NodeError::IdNotFound(entity.index(), entity.generation()))
+                .ok_or(NodeError::id_not_found(entity.index(), entity.generation()))
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "NodeEntityMap resource not found"
             )))
         }
@@ -517,9 +513,9 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn entity(&self, id: u64) -> NodeResult<Entity> {
         let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            map.get_entity(id).ok_or(NodeError::EntityNotFound(id))
+            map.get_entity(id).ok_or(NodeError::entity_not_found(id))
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "NodeEntityMap resource not found"
             )))
         }
@@ -531,7 +527,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
             map.insert(id, entity);
             Ok(())
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "NodeEntityMap resource not found"
             )))
         }
@@ -540,9 +536,9 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn remove_id_entity_link(&mut self, id: u64) -> NodeResult<Entity> {
         let world = self.world_mut()?;
         if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
-            map.remove_by_id(id).ok_or(NodeError::EntityNotFound(id))
+            map.remove_by_id(id).ok_or(NodeError::entity_not_found(id))
         } else {
-            Err(NodeError::ContextError(anyhow::anyhow!(
+            Err(NodeError::context_error(anyhow::anyhow!(
                 "NodeEntityMap resource not found"
             )))
         }

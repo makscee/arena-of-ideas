@@ -720,7 +720,7 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(first_id)
                     } else {
                         *self.#field_name.state_mut() = LinkState::None;
-                        Err(NodeError::NotFound(self.id()))
+                        Err(NodeError::not_found(self.id()))
                     }
                 }
 
@@ -810,7 +810,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(first_id)
                     } else {
                         *self.#field_name.state_mut() = LinkState::None;
-                        Err(NodeError::NotFound(self.id()))
+                        Err(NodeError::not_found(self.id()))
                     }
                 }
 
@@ -837,7 +837,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         .next() {
                         id
                     } else {
-                        return Err(NodeError::NotFound(self.id()));
+                        return Err(NodeError::not_found(self.id()));
                     };
                     ctx.load::<#target_type>(id)
                 }
@@ -1173,7 +1173,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
             match var {
                 #(#get_var_arms,)*
-                _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
+                _ => Err(NodeError::custom(format!("Variable {:?} not found", var))),
             }
         }
     };
@@ -1204,7 +1204,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
             let field_name = &f.name;
             quote! {
                 VarName::#field_name => {
-                    self.#field_name = value.try_into().map_err(|_| NodeError::Custom("Value conversion failed".into()))?;
+                    self.#field_name = value.try_into().map_err(|_| NodeError::custom("Value conversion failed"))?;
                     Ok(())
                 }
             }
@@ -1215,7 +1215,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()> {
             match var {
                 #(#set_var_arms,)*
-                _ => Err(NodeError::Custom(format!("Variable {:?} not found", var))),
+                _ => Err(NodeError::custom(format!("Variable {:?} not found", var))),
             }
         }
     };

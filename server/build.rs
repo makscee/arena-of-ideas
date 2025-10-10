@@ -272,7 +272,7 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             ) -> NodeResult<VarValue> {
                 match node_kind {
                     #(#load_and_get_var_arms,)*
-                    NodeKind::None => Err(NodeError::Custom("Cannot get var from None node".into())),
+                    NodeKind::None => Err(NodeError::custom("Cannot get var from None node")),
                 }
             }
 
@@ -285,7 +285,7 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             ) -> NodeResult<()> {
                 match node_kind {
                     #(#load_and_set_var_arms,)*
-                    NodeKind::None => Err(NodeError::Custom("Cannot set var on None node".into())),
+                    NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
                 }
             }
         }

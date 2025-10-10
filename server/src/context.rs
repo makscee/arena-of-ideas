@@ -20,7 +20,7 @@ impl<'a> ServerSource<'a> {
 
 impl<'a> ContextSource for ServerSource<'a> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
-        id.kind(&self.ctx).ok_or(NodeError::NotFound(id))
+        id.kind(&self.ctx).ok_or(NodeError::not_found(id))
     }
 
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
@@ -51,13 +51,13 @@ impl<'a> ContextSource for ServerSource<'a> {
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         from_id
             .add_child(&self.ctx, to_id)
-            .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to add link: {}", e)))
+            .map_err(|e| NodeError::context_error(anyhow::anyhow!("Failed to add link: {}", e)))
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         from_id
             .remove_child(&self.ctx, to_id)
-            .map_err(|e| NodeError::ContextError(anyhow::anyhow!("Failed to remove link: {}", e)))
+            .map_err(|e| NodeError::context_error(anyhow::anyhow!("Failed to remove link: {}", e)))
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
@@ -117,17 +117,14 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
     {
         let node = id
             .load_tnode_err(&self.source().ctx)
-            .map_err(|e| NodeError::LoadError(format!("Failed to load TNode: {}", e)))?;
+            .map_err(|e| NodeError::load_error(format!("Failed to load TNode: {}", e)))?;
 
         let expected_kind = T::kind_s();
         if node.kind.to_kind() != expected_kind {
-            return Err(NodeError::InvalidKind {
-                expected: expected_kind,
-                actual: node.kind.to_kind(),
-            });
+            return Err(NodeError::invalid_kind(expected_kind, node.kind.to_kind()));
         }
         ron::from_str::<T>(&node.data)
-            .map_err(|e| NodeError::LoadError(format!("Failed to deserialize: {}", e)))
+            .map_err(|e| NodeError::load_error(format!("Failed to deserialize: {}", e)))
     }
 
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>
@@ -198,16 +195,42 @@ pub trait ReducerContextExt {
 }
 
 impl ReducerContextExt for ReducerContext {
+    #[track_caller]
     fn with_context<F>(&self, f: F) -> Result<(), String>
     where
         F: FnOnce(&mut Context<ServerSource>) -> Result<(), NodeError>,
     {
         let source = ServerSource::new(self);
-        Context::exec(source, f).map_err(|e| e.to_string())
+        let location = std::panic::Location::caller();
+        Context::exec(source, f)
+            .map_err(|e| format!("{} (at {}:{})", e, location.file(), location.line()))
     }
 
     fn as_context(&self) -> ServerContext {
         Context::new(ServerSource::new(self))
+    }
+}
+
+/// Macro for converting NodeError to String (location already included in NodeError)
+#[macro_export]
+macro_rules! node_err_to_string {
+    ($result:expr) => {
+        $result.map_err(|e: schema::NodeError| e.to_string())
+    };
+}
+
+/// Extension trait for Result<T, NodeError> to easily convert to Result<T, String> with location
+pub trait ServerNodeResultExt<T> {
+    fn to_server_result(self) -> Result<T, String>;
+}
+
+impl<T> ServerNodeResultExt<T> for NodeResult<T> {
+    #[track_caller]
+    fn to_server_result(self) -> Result<T, String> {
+        self.map_err(|e| {
+            let location = std::panic::Location::caller();
+            format!("{} (at {}:{})", e, location.file(), location.line())
+        })
     }
 }
 

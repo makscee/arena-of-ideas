@@ -163,7 +163,7 @@ impl VarValue {
             )),
         }
     }
-    pub fn compare(a: &VarValue, b: &VarValue) -> Result<Ordering, ExpressionError> {
+    pub fn compare(a: &VarValue, b: &VarValue) -> NodeResult<Ordering> {
         match (a, b) {
             (VarValue::f32(a), VarValue::f32(b)) => Ok(a.total_cmp(b)),
             (VarValue::i32(a), VarValue::i32(b)) => Ok(a.cmp(b)),
