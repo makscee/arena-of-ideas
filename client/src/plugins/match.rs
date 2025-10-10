@@ -57,7 +57,7 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update(mut events: EventReader<StdbEvent>) {
+    fn on_match_update(mut events: EventReader<StdbNodeEvent>) {
         for event in events.read() {
             if event.node.kind == "NMatch" && event.node.owner == player_id() {
                 op(|world| {

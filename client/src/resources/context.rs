@@ -352,7 +352,7 @@ impl<'w> ContextSource for WorldSource<'w> {
             var,
             value.clone(),
         )?;
-        let world = self.world_mut()?;
+        let world = self.world_mut().track()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             if let Some(entity) = map.get_entity(node_id) {
                 if let Some(mut node_state) = world.get_mut::<NodeState>(entity) {
@@ -456,7 +456,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
         &'a mut self,
         entity: Entity,
     ) -> NodeResult<Mut<'a, T>> {
-        let world = self.source_mut().world_mut()?;
+        let world = self.source_mut().world_mut().track()?;
         if let Some(component) = world.get_mut::<T>(entity) {
             return Ok(component);
         } else {
