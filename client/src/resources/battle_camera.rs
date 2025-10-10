@@ -102,59 +102,61 @@ impl BattleCamera {
             );
         }
         bs.world
-            .with_context_mut(|context| {
-                todo!();
-                // context.t = Some(t);
-                let world = context.world_mut()?;
+            .with_context_mut(|ctx| {
+                *ctx.t_mut()? = t;
+                let world = ctx.world_mut()?;
                 for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
-                    context
-                        .with_owner(fusion.id, |context| {
-                            if !context.get_var(VarName::visible).get_bool()? {
-                                return Ok(());
-                            }
-                            let rect = cam.rect_from_context(context)?;
-                            fusion.paint(rect, context, ui)?;
-                            if ui.rect_contains_pointer(rect) {
-                                cursor_window(ui.ctx(), |ui| {
-                                    fusion.as_card().compose(context, ui);
-                                    Ok(())
-                                });
-                            }
-                            Ok(())
-                        })
-                        .ui(ui);
+                    ctx.with_owner(fusion.id, |context| {
+                        if !context.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(context)?;
+                        fusion.paint(rect, context, ui)?;
+                        if ui.rect_contains_pointer(rect) {
+                            cursor_window(ui.ctx(), |ui| {
+                                fusion.as_card().compose(context, ui);
+                                Ok(())
+                            });
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
                 }
-                let world = context.world_mut()?;
-                for rep in world
-                    .query::<&NUnitRepresentation>()
+                let world = ctx.world_mut()?;
+                for entity in world
+                    .query_filtered::<Entity, With<NUnitRepresentation>>()
                     .iter(world)
                     .collect_vec()
                 {
-                    context
-                        .with_owner(rep.id, |context| {
-                            if !context.get_var(VarName::visible).get_bool()? {
-                                return Ok(());
-                            }
-                            let rect = cam.rect_from_context(context)?;
-                            rep.material.paint(rect, context, ui)
-                        })
-                        .ui(ui);
+                    let id = ctx.id(entity)?;
+                    ctx.with_owner(id, |ctx| {
+                        if !ctx.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(ctx)?;
+                        ctx.load::<NUnitRepresentation>(id)?
+                            .material
+                            .paint(rect, ctx, ui)
+                    })
+                    .ui(ui);
                 }
-                let world = context.world_mut()?;
-                for rep in world
-                    .query::<&NStatusRepresentation>()
+                let world = ctx.world_mut()?;
+                for entity in world
+                    .query_filtered::<Entity, With<NStatusRepresentation>>()
                     .iter(world)
                     .collect_vec()
                 {
-                    context
-                        .with_owner(rep.id, |context| {
-                            if !context.get_var(VarName::visible).get_bool()? {
-                                return Ok(());
-                            }
-                            let rect = cam.rect_from_context(context)?;
-                            rep.material.paint(rect, context, ui)
-                        })
-                        .ui(ui);
+                    let id = ctx.id(entity)?;
+                    ctx.with_owner(id, |ctx| {
+                        if !ctx.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(ctx)?;
+                        ctx.load::<NStatusRepresentation>(id)?
+                            .material
+                            .paint(rect, ctx, ui)
+                    })
+                    .ui(ui);
                 }
                 Ok(())
             })

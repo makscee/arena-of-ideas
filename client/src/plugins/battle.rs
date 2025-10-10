@@ -36,6 +36,8 @@ pub struct ReloadData {
 impl BattleData {
     fn load(battle: Battle) -> Self {
         let mut teams_world = World::new();
+        teams_world.init_resource::<NodeEntityMap>();
+        teams_world.init_resource::<NodeLinks>();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
         teams_world
@@ -66,14 +68,12 @@ impl BattlePlugin {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
             while team.fusions.get().unwrap().len() < slots {
-                let mut fusion = NFusion::default();
+                let mut fusion = NFusion::default().with_id(next_id());
                 fusion.index = team.fusions.get().unwrap().len() as i32;
-                fusion.id = next_id();
                 fusion.owner = team.owner;
-                let mut slot = NFusionSlot::default();
-                slot.id = next_id();
+                let mut slot = NFusionSlot::default().with_id(next_id());
                 slot.owner = team.owner;
-                fusion.slots.get_mut().unwrap().push(slot);
+                fusion.slots.state_mut().set([slot].into());
                 team.fusions.get_mut().unwrap().push(fusion);
             }
         }
@@ -83,7 +83,11 @@ impl BattlePlugin {
         if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
             Self::load_teams(0, left, right, world);
         } else {
-            Self::load_teams(0, default(), default(), world);
+            let mut left = NTeam::new(0).with_id(next_id());
+            left.fusions.state_mut().set(default());
+            let mut right = NTeam::new(0).with_id(next_id());
+            right.fusions.state_mut().set(default());
+            Self::load_teams(0, left, right, world);
         };
     }
     pub fn on_done_callback(f: fn(u64, bool, u64), world: &mut World) {

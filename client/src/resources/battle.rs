@@ -288,6 +288,8 @@ impl BattleAction {
 impl BattleSimulation {
     pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
+        world.init_resource::<NodeEntityMap>();
+        world.init_resource::<NodeLinks>();
         let team_left = battle.left.id;
         let team_right = battle.right.id;
         let left_entity = world.spawn_empty().id();
