@@ -25,7 +25,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
     let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, name).get_data())
         .to_custom_e_s("Player not found")?;
     debug!("{player:?}");
-    if player.player_data_load(ctx)?.pass_hash.is_none() {
+    if player.player_data_load(ctx).track()?.pass_hash.is_none() {
         return Err("No password set for player".to_owned());
     }
     if !player.check_pass(pass) {

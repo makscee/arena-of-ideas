@@ -6,78 +6,90 @@ use var_value::VarValue;
 use super::*;
 
 #[derive(Debug, Clone)]
-pub struct SourceLocation {
-    pub file: &'static str,
-    pub line: u32,
-    pub column: u32,
+pub struct SourceTrace {
+    locations: Vec<&'static Location<'static>>,
 }
 
-impl SourceLocation {
+impl SourceTrace {
     pub fn new(location: &'static Location<'static>) -> Self {
         Self {
-            file: location.file(),
-            line: location.line(),
-            column: location.column(),
+            locations: vec![location],
         }
+    }
+
+    pub fn with_locations(locations: Vec<&'static Location<'static>>) -> Self {
+        Self { locations }
+    }
+
+    pub fn add_location(mut self, location: &'static Location<'static>) -> Self {
+        self.locations.push(location);
+        self
     }
 }
 
-impl From<&'static Location<'static>> for SourceLocation {
+impl From<&'static Location<'static>> for SourceTrace {
     fn from(value: &'static Location<'static>) -> Self {
         Self::new(value)
     }
 }
 
-impl std::fmt::Display for SourceLocation {
+impl std::fmt::Display for SourceTrace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let file = self.file.split('/').last().unwrap_or(self.file);
-        write!(f, "{}:{}:{}", file, self.line, self.column)
+        let location_strs: Vec<String> = self
+            .locations
+            .iter()
+            .map(|loc| {
+                let file = loc.file().split('/').last().unwrap_or(loc.file());
+                format!("{}:{}:{}", file, loc.line(), loc.column())
+            })
+            .collect();
+        write!(f, "{}", location_strs.join(" <- "))
     }
 }
 
 #[derive(Error, Debug)]
 pub enum NodeError {
     #[error("Node not found: {0} {1}")]
-    NotFound(u64, SourceLocation),
+    NotFound(u64, SourceTrace),
 
     #[error("Invalid node kind: expected {expected}, got {actual} {location}")]
     InvalidKind {
         expected: NodeKind,
         actual: NodeKind,
-        location: SourceLocation,
+        location: SourceTrace,
     },
 
     #[error("Failed to load node: {0} {1}")]
-    LoadError(String, SourceLocation),
+    LoadError(String, SourceTrace),
 
     #[error("Failed to cast node {0}")]
-    CastError(SourceLocation),
+    CastError(SourceTrace),
 
     #[error("Operation {op} for {} not supported {} {location}", join(values, ", "), msg.clone().unwrap_or_default())]
     OperationNotSupported {
         values: Vec<VarValue>,
         op: &'static str,
         msg: Option<String>,
-        location: SourceLocation,
+        location: SourceTrace,
     },
 
     #[error("Value not found for {0} {1}")]
-    VarNotFound(VarName, SourceLocation),
+    VarNotFound(VarName, SourceTrace),
 
     #[error("{0} {1}")]
-    Custom(String, SourceLocation),
+    Custom(String, SourceTrace),
 
     #[error("Entity#{0}_{1} not linked to id {2}")]
-    IdNotFound(u32, u32, SourceLocation),
+    IdNotFound(u32, u32, SourceTrace),
 
     #[error("Id#{0} not linked to Entity {1}")]
-    EntityNotFound(u64, SourceLocation),
+    EntityNotFound(u64, SourceTrace),
 
     #[error("Not found: {0} {1}")]
-    NotFoundGeneric(String, SourceLocation),
+    NotFoundGeneric(String, SourceTrace),
 
     #[error("Context error: {0} {1}")]
-    ContextError(anyhow::Error, SourceLocation),
+    ContextError(anyhow::Error, SourceTrace),
 }
 
 pub type NodeResult<T> = Result<T, NodeError>;
@@ -203,6 +215,8 @@ pub trait NodeErrorResultExt<T> {
     fn log(self);
     fn ok_log(self) -> Option<T>;
     fn to_str_err(self) -> Result<T, String>;
+    #[track_caller]
+    fn track(self) -> Self;
 }
 
 impl<T> NodeErrorResultExt<T> for NodeResult<T> {
@@ -224,6 +238,49 @@ impl<T> NodeErrorResultExt<T> for NodeResult<T> {
 
     fn to_str_err(self) -> Result<T, String> {
         self.map_err(|e| e.to_string())
+    }
+
+    #[track_caller]
+    fn track(self) -> Self {
+        let current_location = Location::caller();
+        self.map_err(|mut e| {
+            match &mut e {
+                NodeError::NotFound(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::InvalidKind { location, .. } => {
+                    *location = location.clone().add_location(current_location);
+                }
+                NodeError::LoadError(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::CastError(trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::OperationNotSupported { location, .. } => {
+                    *location = location.clone().add_location(current_location);
+                }
+                NodeError::VarNotFound(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::Custom(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::IdNotFound(_, _, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::EntityNotFound(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::NotFoundGeneric(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::ContextError(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+            }
+            e
+        })
     }
 }
 
