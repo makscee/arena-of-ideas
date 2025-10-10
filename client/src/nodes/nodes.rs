@@ -19,6 +19,12 @@ pub trait ClientNode:
         node.inject_data(&data)?;
         Ok(node)
     }
+    fn remap_ids(mut self) -> Self {
+        let mut next_id = next_id();
+        self.reassign_ids(&mut next_id);
+        set_next_id(next_id);
+        self
+    }
 }
 
 pub trait NodeExt: ClientNode {
@@ -88,7 +94,10 @@ impl NodeKindOnUnpack for NodeKind {
                 {
                     let world = ctx.world_mut()?;
                     let rep_entity = world.spawn_empty().id();
-                    unit_rep().clone().spawn(ctx, Some(rep_entity))?;
+                    unit_rep()
+                        .clone()
+                        .with_id(next_id())
+                        .spawn(ctx, Some(rep_entity))?;
                     ctx.add_link_entities(entity, rep_entity)?;
                 }
                 ctx.world_mut()?

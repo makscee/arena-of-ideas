@@ -123,12 +123,12 @@ impl ActionImpl for Action {
                 let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {
                     let name = status.status_name.clone();
-                    let mut status = status.clone().load_components(ctx)?.take();
+                    let status = status.clone().load_components(ctx)?.take();
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(
                             target,
-                            status.clone().with_id(next_id()),
+                            status.clone().remap_ids(),
                             value,
                             color,
                         ));
