@@ -3,6 +3,22 @@ use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
 use syn::*;
 
+// Function to generate comprehensive allow attributes for all generated code
+pub fn generated_code_allow_attrs() -> proc_macro2::TokenStream {
+    quote! {
+        #[allow(
+            dead_code,
+            unused_variables,
+            unused_mut,
+            unreachable_code,
+            unused_assignments,
+            unused_imports,
+            non_snake_case,
+            non_camel_case_types
+        )]
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
     pub name: Ident,
@@ -600,8 +616,10 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let pack_links_impl = generate_pack_links_impl(node);
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
+        let allow_attrs = generated_code_allow_attrs();
 
         quote! {
+            #allow_attrs
             impl Node for #struct_name {
                 fn id(&self) -> u64 {
                     self.id
@@ -1127,6 +1145,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         })
         .collect();
 
+    let allow_attrs = generated_code_allow_attrs();
     let var_names_impl = quote! {
         fn var_names() -> std::collections::HashSet<VarName>
         where
@@ -1150,6 +1169,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         .collect();
 
     let get_var_impl = quote! {
+        #allow_attrs
         fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
             match var {
                 #(#get_var_arms,)*
@@ -1209,6 +1229,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
 }
 
 pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let allow_attrs = generated_code_allow_attrs();
     let var_names_arms = nodes.iter().map(|node| {
         let node_name = &node.name;
         let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
@@ -1222,6 +1243,7 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
 
         quote! {
             NodeKind::#node_name => {
+                #allow_attrs
                 let mut set = std::collections::HashSet::new();
                 #(set.insert(#var_names);)*
                 set
@@ -1230,6 +1252,7 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
     });
 
     quote! {
+        #allow_attrs
         impl NodeKind {
             pub fn var_names(self) -> std::collections::HashSet<VarName> {
                 match self {

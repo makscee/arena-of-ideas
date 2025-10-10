@@ -29,8 +29,10 @@ fn main() {
     let generated = generate_node_kind(&nodes, &node_map);
     let var_names_impl = generate_var_names_for_node_kind(&nodes);
 
-    // Format and write
+    // Add comprehensive allow attributes at the top
+    let allow_attrs = generated_code_allow_attrs();
     let combined = quote! {
+        #allow_attrs
         #generated
         #var_names_impl
     };
@@ -67,31 +69,37 @@ fn generate_node_kind(
         &relationships.component_children,
     );
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
         use std::collections::HashSet;
 
+        #allow_attrs
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
         pub enum NodeKind {
             None,
             #(#node_names,)*
         }
 
+        #allow_attrs
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
         pub enum ContentNodeKind {
             #(#content_nodes,)*
         }
 
+        #allow_attrs
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
         pub enum NamedNodeKind {
             #(#named_nodes,)*
         }
 
+        #allow_attrs
         impl Default for NodeKind {
             fn default() -> Self {
                 NodeKind::None
             }
         }
 
+        #allow_attrs
         impl NodeKind {
             pub fn is_content(self) -> bool {
                 matches!(self, #(NodeKind::#content_nodes)|*)
@@ -137,6 +145,7 @@ fn generate_node_kind(
             }
         }
 
+        #allow_attrs
         impl TryFrom<NodeKind> for ContentNodeKind {
             type Error = ();
 
@@ -148,6 +157,7 @@ fn generate_node_kind(
             }
         }
 
+        #allow_attrs
         impl From<ContentNodeKind> for NodeKind {
             fn from(content: ContentNodeKind) -> Self {
                 match content {
@@ -156,6 +166,7 @@ fn generate_node_kind(
             }
         }
 
+        #allow_attrs
         impl TryFrom<NodeKind> for NamedNodeKind {
             type Error = ();
 
@@ -167,6 +178,7 @@ fn generate_node_kind(
             }
         }
 
+        #allow_attrs
         impl From<NamedNodeKind> for NodeKind {
             fn from(named: NamedNodeKind) -> Self {
                 match named {
@@ -175,12 +187,14 @@ fn generate_node_kind(
             }
         }
 
+        #allow_attrs
         impl ToNodeKind for NamedNodeKind {
             fn to_kind(&self) -> NodeKind {
                 NodeKind::from(*self)
             }
         }
 
+        #allow_attrs
         impl ToNodeKind for ContentNodeKind {
             fn to_kind(&self) -> NodeKind {
                 NodeKind::from(*self)

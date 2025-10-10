@@ -174,7 +174,7 @@ impl BattlePlugin {
                         })
                         .ui(ui);
                     } else {
-                        for (entity, ns) in ctx
+                        for (entity, _ns) in ctx
                             .world_mut()?
                             .query::<(Entity, &NodeState)>()
                             .iter(ctx.world()?)

@@ -553,7 +553,18 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn despawn(&mut self, id: u64) -> NodeResult<()> {
-        todo!()
+        let mut ids = self.children_recursive(id)?;
+        ids.push(id);
+        let entities = ids
+            .into_iter()
+            .filter_map(|id| self.entity(id).ok())
+            .unique()
+            .collect_vec();
+        let world = self.world_mut()?;
+        for entity in entities {
+            world.despawn(entity);
+        }
+        Ok(())
     }
 
     fn collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
@@ -669,7 +680,7 @@ impl WorldContextExt for BattleSimulation {
         Context::new(WorldSource::new_battle(self))
     }
 
-    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
+    fn with_context<R, F>(&self, _f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
     {

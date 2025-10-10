@@ -193,10 +193,12 @@ impl BattleCamera {
             response.bar_menu(|ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
-                        teams_world.with_context_mut(|context| {
-                            action_fn(slot, team_entity, context);
-                            Ok(())
-                        });
+                        teams_world
+                            .with_context_mut(|context| {
+                                action_fn(slot, team_entity, context);
+                                Ok(())
+                            })
+                            .notify_error_op();
                         ui.close_menu();
                     }
                 }

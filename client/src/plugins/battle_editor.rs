@@ -294,7 +294,7 @@ impl BattleEditorPlugin {
         ui.heading(if is_left { "Left Team" } else { "Right Team" });
         ui.separator();
 
-        let mut battle_data = world.remove_resource::<BattleData>().unwrap();
+        let battle_data = world.resource::<BattleData>();
         let result = battle_data.teams_world.with_context(|context| {
             let team_entity = if is_left {
                 battle_data.team_left
@@ -316,7 +316,6 @@ impl BattleEditorPlugin {
             Ok(())
         });
 
-        world.insert_resource(battle_data);
         result?;
         Ok((action, false))
     }
@@ -445,7 +444,7 @@ impl BattleEditorPlugin {
             let entity = ctx.entity(id)?;
             let mut house = ctx.load_entity::<NHouse>(entity).cloned()?;
             let owner = house.owner;
-            let mut units = house.units_load(ctx)?.clone();
+            let units = house.units_load(ctx)?.clone();
             ui.group(|ui| {
                 house.title(ctx).label(ui);
                 if house.edit(ctx, ui).changed() {

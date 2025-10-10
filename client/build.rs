@@ -25,8 +25,15 @@ fn main() {
     // Generate client-specific node implementations
     let generated = generate_client_nodes(&nodes);
 
+    // Add comprehensive allow attributes at the top
+    let allow_attrs = generated_code_allow_attrs();
+    let final_code = quote! {
+        #allow_attrs
+        #generated
+    };
+
     // Format and write
-    let formatted_code = format_code(&generated);
+    let formatted_code = format_code(&final_code);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
@@ -66,7 +73,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         // All nodes are Components in client
+        let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
+            #allow_attrs
             #[derive(Debug, Clone, BevyComponent, Serialize, Deserialize)]
         };
 
@@ -78,6 +87,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 #(#fields,)*
             }
 
+            #allow_attrs
             impl #struct_name {
                 #new_method
 
@@ -102,6 +112,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     });
 
     // Generate conversion traits
+    let allow_attrs = generated_code_allow_attrs();
     let conversions = generate_node_impl(nodes);
 
     // Generate ToCstr and FDisplay implementations
@@ -144,6 +155,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         #conversions
 
+        #allow_attrs
         #(#tocstr_impls)*
 
         #node_loader_impl
@@ -167,7 +179,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 Some(quote! {
                     if let Some(loaded) = self.#field_name.get() {
                         loaded.clone().spawn(ctx, entity)?;
-                        ctx.add_link(self.id, loaded.id);
+                        ctx.add_link(self.id, loaded.id)?;
                     }
                 })
             }
@@ -185,15 +197,15 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         for item in &self.#field_name {
                             let child_entity = ctx.world_mut()?.spawn_empty().id();
                             item.clone().spawn(ctx, child_entity)?;
-                            ctx.add_link(self.id, item.id);
+                            ctx.add_link(self.id, item.id)?;
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
                             let child_entity = ctx.world_mut()?.spawn_empty().id();
-                            loaded.clone().spawn(ctx, child_entity);
-                            ctx.add_link(self.id, loaded.id);
+                            loaded.clone().spawn(ctx, child_entity)?;
+                            ctx.add_link(self.id, loaded.id)?;
                         }
                     }
                 })
@@ -201,7 +213,9 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             _ => None,
         });
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl ClientNode for #struct_name {
             fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
                 if self.id == 0 {
@@ -253,7 +267,9 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         }
     });
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl<'w> NodeLoader for WorldSource<'w> {
             fn load_and_get_var(
                 &self,

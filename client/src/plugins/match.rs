@@ -137,7 +137,8 @@ impl MatchPlugin {
                                             Ok(())
                                         })
                                         .inner
-                                    });
+                                    })
+                                    .ui(ui);
                                 }
                             },
                         );

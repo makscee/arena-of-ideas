@@ -129,7 +129,10 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.as_context_mut().add_link(parent, child);
+                world
+                    .as_context_mut()
+                    .add_link(parent, child)
+                    .notify_error_op();
             }
             // world.set_link_rating(parent, child, rating, solid);
             world.send_event(StdbLinkEvent {
@@ -153,9 +156,15 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.as_context_mut().add_link(parent, child);
+                world
+                    .as_context_mut()
+                    .add_link(parent, child)
+                    .notify_error_op();
             } else {
-                world.as_context_mut().remove_link(parent, child);
+                world
+                    .as_context_mut()
+                    .remove_link(parent, child)
+                    .notify_error_op();
             }
             // world.set_link_rating(parent, child, rating, solid);
             world.send_event(StdbLinkEvent {
@@ -179,7 +188,10 @@ fn subscribe_table_updates() {
         let child_kind = link.child_kind.clone();
         op(move |world| {
             if solid {
-                world.as_context().remove_link(parent, child);
+                world
+                    .as_context()
+                    .remove_link(parent, child)
+                    .notify_error_op();
             }
             world.send_event(StdbLinkEvent {
                 parent,
@@ -199,10 +211,12 @@ fn on_insert(node: &TNode) {
     let node = node.clone();
     op(move |world| {
         let entity = world.spawn_empty().id();
-        world.with_context(|context| {
-            node.unpack(context, entity);
-            Ok(())
-        });
+        world
+            .with_context(|context| {
+                node.unpack(context, entity);
+                Ok(())
+            })
+            .notify_error_op();
         world.send_event(StdbEvent {
             entity,
             node,

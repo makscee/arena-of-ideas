@@ -25,8 +25,15 @@ fn main() {
     // Generate server-specific node implementations
     let generated = generate_server_nodes(&nodes, &node_map);
 
+    // Add comprehensive allow attributes at the top
+    let allow_attrs = generated_code_allow_attrs();
+    let final_code = quote! {
+        #allow_attrs
+        #generated
+    };
+
     // Format and write
-    let formatted_code = format_code(&generated);
+    let formatted_code = format_code(&final_code);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
@@ -69,6 +76,7 @@ fn generate_server_nodes(
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         // All nodes get SpacetimeDB derives for server
+        let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
             #[derive(Debug, Serialize, Deserialize)]
         };
@@ -81,6 +89,7 @@ fn generate_server_nodes(
                 #(#fields,)*
             }
 
+            #allow_attrs
             impl #struct_name {
                 #new_method
 
@@ -182,7 +191,9 @@ fn generate_server_node_impl(
             LinkType::None => None,
         });
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl ServerNode for #struct_name {
             fn save(&self, source: &ServerSource) {
                 // Save linked fields first
@@ -244,7 +255,9 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         }
     });
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl<'a> NodeLoader for ServerSource<'a> {
             fn load_and_get_var(
                 &self,

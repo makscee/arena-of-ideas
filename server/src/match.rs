@@ -153,7 +153,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let slots = fusion.slots_load(ctx)?;
     let price = ctx.global_settings().match_g.fusion_slot_mul * slots.len() as i32;
     let fs = NFusionSlot::new(pid, slots.len() as i32, default()).insert(ctx);
-    ctx.add_link(fusion.id, fs.id);
+    ctx.add_link(fusion.id, fs.id)?;
     m.buy(ctx, price)
 }
 
@@ -226,7 +226,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         ctx.load::<NTeam>(*team_id)?
     } else {
         let floor_boss = NFloorBoss::new(ID_ARENA, floor).insert(ctx);
-        ctx.add_link(floor_boss.id, player_team.id);
+        ctx.add_link(floor_boss.id, player_team.id)?;
         arena.floor_bosses_load(ctx)?.push(floor_boss);
         panic!()
     };

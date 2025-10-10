@@ -105,38 +105,40 @@ impl ExplorerPlugin {
         let inspected_id = state.inspected.get(&kind).copied();
 
         if let Some(items) = items {
-            world.with_context(|context| {
-                items
-                    .as_list(|item, ctx, ui| {
-                        let item_id = item.0;
-                        let is_inspected = inspected_id == Some(item_id);
+            world
+                .with_context(|context| {
+                    items
+                        .as_list(|item, ctx, ui| {
+                            let item_id = item.0;
+                            let is_inspected = inspected_id == Some(item_id);
 
-                        ui.set_width(ui.available_width());
+                            ui.set_width(ui.available_width());
 
-                        if is_inspected {
-                            ui.visuals_mut().override_text_color = Some(ctx.color(ui));
-                        }
+                            if is_inspected {
+                                ui.visuals_mut().override_text_color = Some(ctx.color(ui));
+                            }
 
-                        ui.horizontal(|ui| {
-                            ui.label(format!("[{}]", item.2));
-                            if let Ok(node) = ctx.load::<T>(item_id) {
-                                node.as_title().compose(ctx, ui);
+                            ui.horizontal(|ui| {
+                                ui.label(format!("[{}]", item.2));
+                                if let Ok(node) = ctx.load::<T>(item_id) {
+                                    node.as_title().compose(ctx, ui);
+                                }
+                            })
+                            .response
+                        })
+                        .with_hover(|item, _, ui| {
+                            let id = item.0;
+                            if ui.button("Inspect").clicked() {
+                                op(move |world| {
+                                    let mut state = world.resource_mut::<ExplorerState>();
+                                    state.set_inspected(kind, id);
+                                });
                             }
                         })
-                        .response
-                    })
-                    .with_hover(|item, _, ui| {
-                        let id = item.0;
-                        if ui.button("Inspect").clicked() {
-                            op(move |world| {
-                                let mut state = world.resource_mut::<ExplorerState>();
-                                state.set_inspected(kind, id);
-                            });
-                        }
-                    })
-                    .compose(context, ui);
-                Ok(())
-            });
+                        .compose(context, ui);
+                    Ok(())
+                })
+                .ui(ui);
         } else {
             ui.centered_and_justified(|ui| {
                 ui.vertical(|ui| {
@@ -166,15 +168,17 @@ impl ExplorerPlugin {
         let state = world.resource::<ExplorerState>();
 
         if let Some(&node_id) = state.inspected.get(&kind) {
-            world.with_context(|ctx| {
-                if let Ok(entity) = ctx.entity(node_id) {
-                    if let Ok(node) = ctx.load_entity::<T>(entity) {
-                        let size = ui.available_size();
-                        node.render_card(ui, size);
+            world
+                .with_context(|ctx| {
+                    if let Ok(entity) = ctx.entity(node_id) {
+                        if let Ok(node) = ctx.load_entity::<T>(entity) {
+                            let size = ui.available_size();
+                            node.render_card(ui, size);
+                        }
                     }
-                }
-                Ok(())
-            });
+                    Ok(())
+                })
+                .ui(ui);
         } else {
             ui.centered_and_justified(|ui| {
                 ui.vertical(|ui| {
@@ -355,26 +359,28 @@ impl ExplorerPlugin {
         Confirmation::new("Select Content")
             .content(move |ui, world| {
                 let mut selected = None;
-                world.with_context(|ctx| {
-                    for node in &nodes {
-                        let node_id = node.id();
-                        ui.horizontal(|ui| {
-                            node.as_title().compose(ctx, ui);
+                world
+                    .with_context(|ctx| {
+                        for node in &nodes {
+                            let node_id = node.id();
+                            ui.horizontal(|ui| {
+                                node.as_title().compose(ctx, ui);
 
-                            if Some(node_id) == current_selected {
-                                ui.label("●");
-                            }
-                            if Some(node_id) == user_selected {
-                                ui.label("★");
-                            }
+                                if Some(node_id) == current_selected {
+                                    ui.label("●");
+                                }
+                                if Some(node_id) == user_selected {
+                                    ui.label("★");
+                                }
 
-                            if ui.button("Select").clicked() {
-                                selected = Some(node_id);
-                            }
-                        });
-                    }
-                    Ok(())
-                });
+                                if ui.button("Select").clicked() {
+                                    selected = Some(node_id);
+                                }
+                            });
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
 
                 if let Some(id) = selected {
                     cn().reducers
@@ -409,12 +415,14 @@ impl ExplorerPlugin {
                     ui.label("Edit new node:");
                     ui.separator();
 
-                    world.with_context(|ctx| {
-                        if let Ok(mut node) = new_node.lock() {
-                            node.edit(ctx, ui);
-                        }
-                        Ok(())
-                    });
+                    world
+                        .with_context(|ctx| {
+                            if let Ok(mut node) = new_node.lock() {
+                                node.edit(ctx, ui);
+                            }
+                            Ok(())
+                        })
+                        .ui(ui);
                 });
                 false
             })

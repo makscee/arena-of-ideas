@@ -117,10 +117,8 @@ impl NFusion {
     }
 
     pub fn paint(&self, rect: Rect, ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
-        let entity = self.entity(ctx)?;
         let units = self.units(ctx)?;
         for unit in units {
-            let unit_entity = unit.entity(ctx)?;
             let Ok(rep) = ctx.load_first_parent_recursive::<NUnitRepresentation>(unit.id) else {
                 continue;
             };

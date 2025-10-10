@@ -220,7 +220,7 @@ impl BattleAction {
                     let kind = ctx.get_kind(*id)?;
                     let mut ns = ctx.load_mut::<NodeState>(*id)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
-                        kind.set_var(ctx, *id, *var, value.clone());
+                        kind.set_var(ctx, *id, *var, value.clone()).log();
                         true
                     } else {
                         false
