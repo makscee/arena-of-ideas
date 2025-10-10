@@ -78,8 +78,11 @@ fn generate_server_nodes(
         // All nodes get SpacetimeDB derives for server
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
-            #[derive(Debug, Serialize, Deserialize)]
+            #[derive(Debug)]
         };
+
+        // Generate manual Serialize/Deserialize implementation
+        let serialize_impl = generate_manual_serialize_impl(node);
 
         quote! {
             #derives
@@ -88,6 +91,8 @@ fn generate_server_nodes(
                 pub owner: u64,
                 #(#fields,)*
             }
+
+            #serialize_impl
 
             #allow_attrs
             impl #struct_name {

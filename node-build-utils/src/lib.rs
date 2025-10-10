@@ -1353,3 +1353,142 @@ pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenS
         }
     }
 }
+
+pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+
+    // Get only data fields (non-link fields or fields marked with #[var])
+    let data_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::None || field.is_var)
+        .collect();
+
+    if data_fields.is_empty() {
+        // No data fields to serialize - serialize as unit
+        return quote! {
+            impl serde::Serialize for #struct_name {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    serializer.serialize_unit()
+                }
+            }
+
+            impl<'de> serde::Deserialize<'de> for #struct_name {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    use serde::de::{self, Visitor};
+
+                    struct UnitVisitor;
+                    impl<'de> Visitor<'de> for UnitVisitor {
+                        type Value = ();
+
+                        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                            formatter.write_str("unit")
+                        }
+
+                        fn visit_unit<E>(self) -> Result<Self::Value, E>
+                        where
+                            E: de::Error,
+                        {
+                            Ok(())
+                        }
+                    }
+
+                    deserializer.deserialize_unit(UnitVisitor)?;
+                    Ok(Self::default())
+                }
+            }
+        };
+    }
+
+    let serialize_values = data_fields.iter().map(|field| {
+        let field_name = &field.name;
+        quote! { &self.#field_name }
+    });
+
+    // Generate all other fields with default values for deserialization
+    let other_fields = node.fields.iter().filter_map(|field| {
+        if data_fields.iter().any(|df| df.name == field.name) {
+            None // Skip data fields
+        } else {
+            let field_name = &field.name;
+            Some(quote! { #field_name: Default::default() })
+        }
+    });
+
+    let deserialize_fields = data_fields.iter().enumerate().map(|(i, field)| {
+        let field_name = &field.name;
+        let index = syn::Index::from(i);
+        quote! { #field_name: tuple.#index }
+    });
+
+    if data_fields.len() == 1 {
+        // Single value - serialize as single value, not tuple
+        let field_name = &data_fields[0].name;
+        quote! {
+            impl serde::Serialize for #struct_name {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    self.#field_name.serialize(serializer)
+                }
+            }
+
+            impl<'de> serde::Deserialize<'de> for #struct_name {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let value = serde::Deserialize::deserialize(deserializer)?;
+                    Ok(Self {
+                        id: 0,
+                        owner: 0,
+                        #field_name: value,
+                        #(#other_fields),*
+                    })
+                }
+            }
+        }
+    } else {
+        // Multiple values - serialize as tuple
+        let tuple_types = data_fields.iter().map(|field| {
+            let raw_type = &field.raw_type;
+            let ty: syn::Type = syn::parse_str(raw_type).unwrap_or_else(|_| {
+                syn::parse_quote! { String }
+            });
+            quote! { #ty }
+        });
+
+        quote! {
+            impl serde::Serialize for #struct_name {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: serde::Serializer,
+                {
+                    (#(#serialize_values),*).serialize(serializer)
+                }
+            }
+
+            impl<'de> serde::Deserialize<'de> for #struct_name {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: serde::Deserializer<'de>,
+                {
+                    let tuple: (#(#tuple_types),*) = serde::Deserialize::deserialize(deserializer)?;
+                    Ok(Self {
+                        id: 0,
+                        owner: 0,
+                        #(#deserialize_fields),*,
+                        #(#other_fields),*
+                    })
+                }
+            }
+        }
+    }
+}

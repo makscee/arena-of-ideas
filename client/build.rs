@@ -76,8 +76,11 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
             #allow_attrs
-            #[derive(Debug, Clone, BevyComponent, Serialize, Deserialize)]
+            #[derive(Debug, Clone, BevyComponent)]
         };
+
+        // Generate manual Serialize/Deserialize implementation
+        let serialize_impl = generate_manual_serialize_impl(node);
 
         quote! {
             #derives
@@ -86,6 +89,8 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 pub owner: u64,
                 #(#fields,)*
             }
+
+            #serialize_impl
 
             #allow_attrs
             impl #struct_name {
