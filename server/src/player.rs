@@ -16,6 +16,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     player.player_data.state_mut().set(player_data);
     let identity = NPlayerIdentity::new(player.id, Some(ctx.rctx().sender.to_string())).insert(ctx);
     player.identity.state_mut().set(identity);
+    player.save(ctx.source());
     Ok(())
 }
 

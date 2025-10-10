@@ -135,6 +135,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     // Generate NodeLoader implementation for ClientContext
     let node_loader_impl = generate_node_loader_impl(nodes);
 
+    // Generate NodeKind spawn extension
+    let node_kind_spawn_impl = generate_node_kind_spawn_impl(nodes);
+
     // Generate NamedNode trait and implementations
     let named_node_trait = quote! {
         pub trait NamedNode {
@@ -165,6 +168,8 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         #node_loader_impl
 
+        #node_kind_spawn_impl
+
         #named_node_trait
 
         #(#named_node_impls)*
@@ -183,8 +188,8 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 let field_name = &field.name;
                 Some(quote! {
                     if let Some(loaded) = self.#field_name.get() {
-                        loaded.clone().spawn(ctx, entity)?;
-                        ctx.add_link(self.id, loaded.id)?;
+                        loaded.clone().spawn(ctx, Some(entity)).track()?;
+                        ctx.add_link(self.id, loaded.id).track()?;
                     }
                 })
             }
@@ -200,17 +205,15 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 Some(if field.is_vec {
                     quote! {
                         for item in &self.#field_name {
-                            let child_entity = ctx.world_mut()?.spawn_empty().id();
-                            item.clone().spawn(ctx, child_entity)?;
-                            ctx.add_link(self.id, item.id)?;
+                            item.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, item.id).track()?;
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
-                            let child_entity = ctx.world_mut()?.spawn_empty().id();
-                            loaded.clone().spawn(ctx, child_entity)?;
-                            ctx.add_link(self.id, loaded.id)?;
+                            loaded.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, loaded.id).track()?;
                         }
                     }
                 })
@@ -222,15 +225,20 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         #allow_attrs
         impl ClientNode for #struct_name {
-            fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
+            fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()> {
                 if self.id == 0 {
                     panic!("Tried to spawn node without id");
                 }
-                ctx.add_id_entity_link(self.id, entity)?;
+                let entity = match entity {
+                    Some(e) => e,
+                    None => ctx.world_mut()?.spawn_empty().id(),
+                };
+                ctx.add_id_entity_link(self.id, entity).track()?;
                 #(#spawn_components)*
                 #(#spawn_owned)*
-                ctx.world_mut()?.entity_mut(entity).insert(self);
-                Ok(())
+                let kind = self.kind();
+                ctx.world_mut().track()?.entity_mut(entity).insert(self);
+                kind.on_spawn(ctx, entity)
             }
         }
     }
@@ -298,6 +306,32 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 match node_kind {
                     #(#load_and_set_var_arms,)*
                     NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
+                }
+            }
+        }
+    }
+}
+
+fn generate_node_kind_spawn_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let spawn_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => node.to_node::<#node_name>()?.spawn(ctx, None)
+        }
+    });
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        pub trait NodeKindSpawnExt {
+            fn spawn(self, ctx: &mut ClientContext, node: &TNode) -> NodeResult<()>;
+        }
+
+        #allow_attrs
+        impl NodeKindSpawnExt for NodeKind {
+            fn spawn(self, ctx: &mut ClientContext, node: &TNode) -> NodeResult<()> {
+                match self {
+                    #(#spawn_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot spawn None node")),
                 }
             }
         }

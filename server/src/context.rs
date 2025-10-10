@@ -49,15 +49,11 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        from_id
-            .add_child(&self.ctx, to_id)
-            .map_err(|e| NodeError::context_error(anyhow::anyhow!("Failed to add link: {}", e)))
+        from_id.add_child(&self.ctx, to_id)
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        from_id
-            .remove_child(&self.ctx, to_id)
-            .map_err(|e| NodeError::context_error(anyhow::anyhow!("Failed to remove link: {}", e)))
+        from_id.remove_child(&self.ctx, to_id)
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
@@ -123,8 +119,7 @@ impl<'a> ServerContextExt<ServerSource<'a>> for Context<ServerSource<'a>> {
         if node.kind.to_kind() != expected_kind {
             return Err(NodeError::invalid_kind(expected_kind, node.kind.to_kind()));
         }
-        ron::from_str::<T>(&node.data)
-            .map_err(|e| NodeError::load_error(format!("Failed to deserialize: {}", e)))
+        node.to_node::<T>()
     }
 
     fn load_many<T>(&self, ids: &[u64]) -> NodeResult<Vec<T>>

@@ -294,8 +294,8 @@ impl BattleSimulation {
         let right_entitiy = world.spawn_empty().id();
         world
             .with_context_mut(|ctx| {
-                battle.left.spawn(ctx, left_entity)?;
-                battle.right.spawn(ctx, right_entitiy)
+                battle.left.spawn(ctx, Some(left_entity))?;
+                battle.right.spawn(ctx, Some(right_entitiy))
             })
             .log();
         fn ids_by_slot(parent: Entity, world: &World) -> Vec<u64> {
@@ -451,9 +451,9 @@ impl BattleSimulation {
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
-        status.spawn(ctx, entity)?;
+        status.spawn(ctx, Some(entity))?;
         let rep_entity = ctx.world_mut()?.spawn_empty().id();
-        status_rep().clone().spawn(ctx, rep_entity)?;
+        status_rep().clone().spawn(ctx, Some(rep_entity))?;
         ctx.add_link_entities(entity, rep_entity)?;
         ctx.add_link_entities(target.entity(ctx)?, entity)?;
 

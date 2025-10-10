@@ -8,7 +8,7 @@ include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
-    fn spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()>;
+    fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()>;
     fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
         ctx.entity(self.id())
     }
@@ -43,20 +43,17 @@ impl TNode {
         d.set_owner(self.owner);
         Ok(d)
     }
-    pub fn unpack(&self, ctx: &mut ClientContext, entity: Entity) {
-        self.kind().on_unpack(ctx, entity).unwrap();
-    }
     pub fn to_ron(self) -> String {
         ron::to_string(&SerdeWrapper::new(self)).unwrap()
     }
 }
 
 pub trait NodeKindOnUnpack {
-    fn on_unpack(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()>;
+    fn on_spawn(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()>;
 }
 
 impl NodeKindOnUnpack for NodeKind {
-    fn on_unpack(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
+    fn on_spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
         let id = ctx.id(entity)?;
         let vars = self.get_vars(ctx, id);
         let world = ctx.world_mut()?;
@@ -75,6 +72,12 @@ impl NodeKindOnUnpack for NodeKind {
             }
             _ => {}
         };
+        if let Some(mut ne) = emut.get_mut::<NodeEntity>() {
+            ne.add_node(id, self);
+        } else {
+            emut.insert(NodeEntity::new(id, self));
+        };
+
         emut.insert((Transform::default(), Visibility::default()));
 
         match self {
@@ -85,7 +88,7 @@ impl NodeKindOnUnpack for NodeKind {
                 {
                     let world = ctx.world_mut()?;
                     let rep_entity = world.spawn_empty().id();
-                    unit_rep().clone().spawn(ctx, rep_entity)?;
+                    unit_rep().clone().spawn(ctx, Some(rep_entity))?;
                     ctx.add_link_entities(entity, rep_entity)?;
                 }
                 ctx.world_mut()?

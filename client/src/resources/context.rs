@@ -150,34 +150,36 @@ impl NodeLinks {
 /// Marker component for entities with nodes
 #[derive(BevyComponent)]
 pub struct NodeEntity {
-    pub nodes: Vec<(u64, NodeKind)>,
+    pub nodes: HashMap<NodeKind, u64>,
 }
 
 impl NodeEntity {
     pub fn new(id: u64, kind: NodeKind) -> Self {
         Self {
-            nodes: vec![(id, kind)],
+            nodes: HashMap::from_iter(Some((kind, id))),
         }
     }
 
-    pub fn with_nodes(nodes: Vec<(u64, NodeKind)>) -> Self {
-        Self { nodes }
+    pub fn with_nodes(nodes: impl IntoIterator<Item = (NodeKind, u64)>) -> Self {
+        Self {
+            nodes: HashMap::from_iter(nodes),
+        }
     }
 
     pub fn add_node(&mut self, id: u64, kind: NodeKind) {
-        self.nodes.push((id, kind));
+        self.nodes.insert(kind, id);
     }
 
     pub fn get_node_kinds(&self) -> Vec<NodeKind> {
-        self.nodes.iter().map(|(_, kind)| *kind).collect()
+        self.nodes.keys().copied().collect()
     }
 
     pub fn get_node_ids(&self) -> Vec<u64> {
-        self.nodes.iter().map(|(id, _)| *id).collect()
+        self.nodes.values().copied().collect_vec()
     }
 
     pub fn has_kind(&self, kind: NodeKind) -> bool {
-        self.nodes.iter().any(|(_, k)| *k == kind)
+        self.nodes.contains_key(&kind)
     }
 }
 
@@ -252,7 +254,7 @@ impl<'w> ContextSource for WorldSource<'w> {
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             if let Some(entity) = map.get_entity(id) {
                 if let Some(node) = world.get::<NodeEntity>(entity) {
-                    for (node_id, kind) in &node.nodes {
+                    for (kind, node_id) in &node.nodes {
                         if *node_id == id {
                             return Ok(*kind);
                         }
@@ -300,7 +302,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        let to_kind = self.get_node_kind(to_id)?;
+        let to_kind = self.get_node_kind(to_id).track()?;
         if let Ok(world) = self.world_mut() {
             if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
                 links.add_link(from_id, to_id, to_kind);
@@ -344,7 +346,12 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        self.load_and_set_var(self.get_node_kind(node_id)?, node_id, var, value.clone())?;
+        self.load_and_set_var(
+            self.get_node_kind(node_id).track()?,
+            node_id,
+            var,
+            value.clone(),
+        )?;
         let world = self.world_mut()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
             if let Some(entity) = map.get_entity(node_id) {
@@ -365,7 +372,7 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        self.load_and_get_var(self.get_node_kind(node_id)?, node_id, var)
+        self.load_and_get_var(self.get_node_kind(node_id).track()?, node_id, var)
     }
 }
 
@@ -545,7 +552,7 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn add_link_entities(&mut self, parent: Entity, child: Entity) -> NodeResult<()> {
-        self.add_link(self.id(parent)?, self.id(child)?)
+        self.add_link(self.id(parent)?, self.id(child)?).track()
     }
 
     fn despawn(&mut self, id: u64) -> NodeResult<()> {

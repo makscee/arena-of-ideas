@@ -132,6 +132,7 @@ fn subscribe_table_updates() {
                 world
                     .as_context_mut()
                     .add_link(parent, child)
+                    .track()
                     .notify_error_op();
             }
             // world.set_link_rating(parent, child, rating, solid);
@@ -159,6 +160,7 @@ fn subscribe_table_updates() {
                 world
                     .as_context_mut()
                     .add_link(parent, child)
+                    .track()
                     .notify_error_op();
             } else {
                 world
@@ -212,10 +214,7 @@ fn on_insert(node: &TNode) {
     op(move |world| {
         let entity = world.spawn_empty().id();
         world
-            .with_context(|context| {
-                node.unpack(context, entity);
-                Ok(())
-            })
+            .with_context(|ctx| node.kind().spawn(ctx, &node))
             .notify_error_op();
         world.send_event(StdbEvent {
             entity,
@@ -248,12 +247,12 @@ fn on_update(node: &TNode) {
     let node = node.clone();
     op(move |world| {
         world
-            .with_context(|context| {
-                let entity = context.entity(node.id)?;
-                node.unpack(context, entity);
-                context.world_mut()?.send_event(StdbEvent {
+            .with_context(|ctx| {
+                let entity = ctx.entity(node.id)?;
+                node.kind().spawn(ctx, &node)?;
+                ctx.world_mut()?.send_event(StdbEvent {
                     entity,
-                    node: node.clone(),
+                    node,
                     change: StdbChange::Update,
                 });
                 Ok(())

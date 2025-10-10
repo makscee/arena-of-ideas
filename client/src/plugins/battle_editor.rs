@@ -66,7 +66,7 @@ impl BattleEditorPlugin {
                 ui.group(|ui| {
                     ui.label(format!("{}:", part.kind()));
                     if part.edit(ctx, ui).changed() {
-                        part.clone().spawn(ctx, part_entity).log();
+                        part.clone().spawn(ctx, Some(part_entity)).log();
                         changed = true;
                     }
                     if "[red Delete]".cstr().button(ui).clicked() {
@@ -80,7 +80,7 @@ impl BattleEditorPlugin {
                     let part = T::placeholder(owner);
                     part_id = part.id();
                     let part_entity = ctx.world_mut()?.spawn_empty().id();
-                    part.spawn(ctx, part_entity)?;
+                    part.spawn(ctx, Some(part_entity))?;
 
                     if is_child_part {
                         ctx.add_link_entities(entity, part_entity)?;
@@ -139,7 +139,7 @@ impl BattleEditorPlugin {
         }
 
         for (entity, replacement) in children_to_replace {
-            if let Err(e) = replacement.spawn(ctx, entity) {
+            if let Err(e) = replacement.spawn(ctx, Some(entity)) {
                 error!("Failed to replace {}: {}", collection_name, e);
             } else {
                 changed = true;
@@ -154,7 +154,7 @@ impl BattleEditorPlugin {
         if ui.button(format!("➕ Add {}", collection_name)).clicked() {
             let item = T::placeholder(owner);
             let item_entity = ctx.world_mut()?.spawn_empty().id();
-            item.spawn(ctx, item_entity)?;
+            item.spawn(ctx, Some(item_entity))?;
             ctx.add_link_entities(parent_entity, item_entity)
                 .notify_error(ctx.world_mut()?);
             changed = true;
@@ -448,7 +448,7 @@ impl BattleEditorPlugin {
             ui.group(|ui| {
                 house.title(ctx).label(ui);
                 if house.edit(ctx, ui).changed() {
-                    house.spawn(ctx, entity).log();
+                    house.spawn(ctx, Some(entity)).log();
                     changed = true;
                 }
             });
@@ -518,7 +518,7 @@ impl BattleEditorPlugin {
             ui.group(|ui| {
                 unit.title(ctx).label(ui);
                 if unit.edit(ctx, ui).changed() {
-                    unit.clone().spawn(ctx, entity).log();
+                    unit.clone().spawn(ctx, Some(entity)).log();
                     changed = true;
                 }
             });
@@ -548,7 +548,7 @@ impl BattleEditorPlugin {
                 ctx.remove_link(unit_id, slot)?;
             }
         }
-        ctx.add_link(unit_id, target_id)?;
+        ctx.add_link(unit_id, target_id).track()?;
         Ok(())
     }
 
@@ -583,7 +583,7 @@ impl BattleEditorPlugin {
             } else {
                 let house = NHouse::placeholder(team_owner);
                 let house_entity = ctx.world_mut()?.spawn_empty().id();
-                house.clone().spawn(ctx, house_entity)?;
+                house.clone().spawn(ctx, Some(house_entity))?;
                 ctx.add_link_entities(team_entity, house_entity)?;
                 house_entity
             }
@@ -592,7 +592,7 @@ impl BattleEditorPlugin {
         let unit = NUnit::placeholder(team_owner);
         let unit_entity = ctx.world_mut()?.spawn_empty().id();
         let unit_id = unit.id();
-        unit.spawn(ctx, unit_entity)?;
+        unit.spawn(ctx, Some(unit_entity))?;
         ctx.add_link_entities(house_entity, unit_entity)?;
         let unit_entity = ctx.entity(unit_id)?;
         ctx.add_link_entities(unit_entity, slot_entity)?;
@@ -611,7 +611,7 @@ impl BattleEditorPlugin {
         // Create new fusion slot
         let new_slot = NFusionSlot::new(fusion.owner, next_index, default());
         let slot_entity = context.world_mut()?.spawn_empty().id();
-        new_slot.spawn(context, slot_entity)?;
+        new_slot.spawn(context, Some(slot_entity))?;
         context.add_link_entities(slot_entity, fusion_entity)?;
 
         Ok(())

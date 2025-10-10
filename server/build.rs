@@ -149,12 +149,14 @@ fn generate_server_node_impl(
                     quote! {
                         for component in &self.#field_name {
                             component.save(source);
+                            self.id.add_child(source.rctx(), component.id);
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
                             loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
                         }
                     }
                 })
@@ -165,12 +167,14 @@ fn generate_server_node_impl(
                     quote! {
                         for owned in &self.#field_name {
                             owned.save(source);
+                            self.id.add_child(source.rctx(), owned.id);
                         }
                     }
                 } else {
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
                             loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
                         }
                     }
                 })
@@ -182,6 +186,7 @@ fn generate_server_node_impl(
                         for ref_link in &self.#field_name {
                             if let Some(loaded) = ref_link.get() {
                                 loaded.save(source);
+                                self.id.add_child(source.rctx(), loaded.id);
                             }
                         }
                     }
@@ -189,6 +194,7 @@ fn generate_server_node_impl(
                     quote! {
                         if let Some(loaded) = self.#field_name.get() {
                             loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
                         }
                     }
                 })
