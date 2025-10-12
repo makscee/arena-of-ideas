@@ -272,7 +272,7 @@ impl Into<Vec<Pane>> for Pane {
 }
 
 impl Pane {
-    pub fn ui(self, ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn ui(self, ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         match self {
             Pane::MainMenu => {
                 ui.vertical_centered_justified(|ui| {

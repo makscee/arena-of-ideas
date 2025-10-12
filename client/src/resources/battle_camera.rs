@@ -41,8 +41,8 @@ impl BattleCamera {
         self.zoom = 22.0;
         self.pos = default();
     }
-    fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, ExpressionError> {
-        let pos = context.get_vec2(VarName::position)?.to_pos2();
+    fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, NodeError> {
+        let pos = context.get_var(VarName::position).get_vec2()?.to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
@@ -102,61 +102,61 @@ impl BattleCamera {
             );
         }
         bs.world
-            .with_context_mut(|context| {
-                todo!();
-                // context.t = Some(t);
-                let world = context.world_mut()?;
+            .with_context_mut(|ctx| {
+                *ctx.t_mut()? = t;
+                let world = ctx.world_mut()?;
                 for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
-                    context
-                        .with_owner(fusion.entity(), |context| {
-                            if !context.get_bool(VarName::visible)? {
-                                return Ok(());
-                            }
-                            let rect = cam.rect_from_context(context)?;
-                            fusion.paint(rect, &context, ui)?;
-                            if ui.rect_contains_pointer(rect) {
-                                cursor_window(ui.ctx(), |ui| {
-                                    fusion.as_card().compose(context, ui);
-                                    Ok(())
-                                });
-                            }
-                            Ok(())
-                        })
-                        .ui(ui);
+                    ctx.with_owner(fusion.id, |context| {
+                        if !context.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(context)?;
+                        fusion.paint(rect, context, ui)?;
+                        if ui.rect_contains_pointer(rect) {
+                            cursor_window(ui.ctx(), |ui| {
+                                fusion.as_card().compose(context, ui);
+                                Ok(())
+                            });
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
                 }
-                let world = context.world_mut()?;
+                let world = ctx.world_mut()?;
                 for entity in world
                     .query_filtered::<Entity, With<NUnitRepresentation>>()
                     .iter(world)
                     .collect_vec()
                 {
-                    context
-                        .with_owner(entity, |context| {
-                            if !context.get_bool(VarName::visible)? {
-                                return Ok(());
-                            }
-                            let rep = context.component::<NUnitRepresentation>(entity)?;
-                            let rect = cam.rect_from_context(context)?;
-                            rep.material.paint(rect, context, ui)
-                        })
-                        .ui(ui);
+                    let id = ctx.id(entity)?;
+                    ctx.with_owner(id, |ctx| {
+                        if !ctx.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(ctx)?;
+                        ctx.load::<NUnitRepresentation>(id)?
+                            .material
+                            .paint(rect, ctx, ui)
+                    })
+                    .ui(ui);
                 }
-                let world = context.world_mut()?;
+                let world = ctx.world_mut()?;
                 for entity in world
                     .query_filtered::<Entity, With<NStatusRepresentation>>()
                     .iter(world)
                     .collect_vec()
                 {
-                    context
-                        .with_owner(entity, |context| {
-                            if !context.get_bool(VarName::visible)? {
-                                return Ok(());
-                            }
-                            let rep = context.component::<NStatusRepresentation>(entity)?;
-                            let rect = cam.rect_from_context(context)?;
-                            rep.material.paint(rect, context, ui)
-                        })
-                        .ui(ui);
+                    let id = ctx.id(entity)?;
+                    ctx.with_owner(id, |ctx| {
+                        if !ctx.get_var(VarName::visible).get_bool()? {
+                            return Ok(());
+                        }
+                        let rect = cam.rect_from_context(ctx)?;
+                        ctx.load::<NStatusRepresentation>(id)?
+                            .material
+                            .paint(rect, ctx, ui)
+                    })
+                    .ui(ui);
                 }
                 Ok(())
             })
@@ -195,9 +195,12 @@ impl BattleCamera {
             response.bar_menu(|ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
-                        teams_world.with_context_mut(|context| {
-                            action_fn(slot, team_entity, &mut context);
-                        });
+                        teams_world
+                            .with_context_mut(|context| {
+                                action_fn(slot, team_entity, context);
+                                Ok(())
+                            })
+                            .notify_error_op();
                         ui.close_menu();
                     }
                 }

@@ -1,6 +1,5 @@
 use bevy::{ecs::event::EventReader, input::common_conditions::input_just_pressed};
 use bevy_egui::egui::Grid;
-use spacetimedb_sdk::DbContext;
 
 use super::*;
 
@@ -21,24 +20,25 @@ impl Plugin for MatchPlugin {
 }
 
 impl MatchPlugin {
-    pub fn check_battles(world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
-            if let Some(last) = m.battles_load(context).last() {
+    pub fn check_battles(world: &mut World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
+            if let Some(last) = m.battles_ref(ctx)?.last() {
                 if last.result.is_none() {
-                    GameState::Battle.set_next(context.world_mut()?);
-                    MatchPlugin::load_battle(context)?;
+                    GameState::Battle.set_next(ctx.world_mut()?);
+                    // MatchPlugin::load_battle(ctx)?;
+                    todo!();
                     return Ok(());
                 }
             }
             Ok(())
         })
     }
-    pub fn check_active(world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
+    pub fn check_active(world: &mut World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
             if !m.active {
-                GameState::MatchOver.set_next(context.world_mut()?);
+                GameState::MatchOver.set_next(ctx.world_mut()?);
             }
             Ok(())
         })
@@ -57,27 +57,27 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update(mut events: EventReader<StdbEvent>) {
+    fn on_match_update(mut events: EventReader<StdbNodeEvent>) {
         for event in events.read() {
             if event.node.kind == "NMatch" && event.node.owner == player_id() {
                 op(|world| {
-                    Context::from_world_r(world, |context| {
-                        let world = context.world_mut()?;
-                        Self::check_active(world).notify(world);
-                        Self::check_battles(world).notify(world);
-                        Ok(())
-                    })
-                    .log();
+                    world
+                        .with_context(|ctx| {
+                            let world = ctx.world_mut()?;
+                            Self::check_active(world).notify(world);
+                            Self::check_battles(world).notify(world);
+                            Ok(())
+                        })
+                        .log();
                 });
             }
         }
     }
-    pub fn pane_shop(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
-
+    pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
             // Check for unresolved battles
-            if let Some(last_battle) = m.battles_load(context).last() {
+            if let Some(last_battle) = m.battles_load(ctx)?.last() {
                 if last_battle.result.is_none() {
                     ui.vertical_centered_justified(|ui| {
                         "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
@@ -119,35 +119,26 @@ impl MatchPlugin {
                                 .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
                             |ui| {
                                 if !slot.sold {
-                                    context.with_layer_ref(
-                                        ContextLayer::Owner(context.entity(slot.node_id).unwrap()),
-                                        |context| {
-                                            ui.push_id(i, |ui| -> Result<(), ExpressionError> {
-                                                let resp = match slot.card_kind {
-                                                    CardKind::Unit => {
-                                                        let unit = context
-                                                            .component_by_id::<NUnit>(
-                                                                slot.node_id,
-                                                            )?;
-                                                        unit.as_card().compose(context, ui);
-                                                        ui.response()
-                                                    }
-                                                    CardKind::House => {
-                                                        let house = context
-                                                            .component_by_id::<NHouse>(
-                                                                slot.node_id,
-                                                            )?;
-                                                        house.as_card().compose(context, ui);
-                                                        ui.response()
-                                                    }
-                                                };
-                                                resp.dnd_set_drag_payload((i, slot.clone()));
-                                                Ok(())
-                                            })
-                                            .inner
-                                            .ui(ui);
-                                        },
-                                    );
+                                    ctx.with_owner(slot.node_id, |ctx| {
+                                        ui.push_id(i, |ui| -> NodeResult<()> {
+                                            let resp = match slot.card_kind {
+                                                CardKind::Unit => {
+                                                    let unit = ctx.load::<NUnit>(slot.node_id)?;
+                                                    unit.as_card().compose(ctx, ui);
+                                                    ui.response()
+                                                }
+                                                CardKind::House => {
+                                                    let house = ctx.load::<NHouse>(slot.node_id)?;
+                                                    house.as_card().compose(ctx, ui);
+                                                    ui.response()
+                                                }
+                                            };
+                                            resp.dnd_set_drag_payload((i, slot.clone()));
+                                            Ok(())
+                                        })
+                                        .inner
+                                    })
+                                    .ui(ui);
                                 }
                             },
                         );
@@ -158,7 +149,7 @@ impl MatchPlugin {
             // Handle fusion unit selling with DndArea
             if let Some(payload) = DndArea::<(u64, usize, u64)>::new(available_rect)
                 .text_fn(ui, |(_, _, unit_id)| {
-                    if let Ok(unit) = context.component_by_id::<NUnit>(*unit_id) {
+                    if let Ok(unit) = ctx.load::<NUnit>(*unit_id) {
                         format!(
                             "sell {} [green +{}g]",
                             unit.unit_name,
@@ -177,9 +168,9 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_info(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
+    pub fn pane_info(ui: &mut Ui, world: &World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
             Grid::new("shop info").show(ui, |ui| {
                 "g".cstr().label(ui);
                 m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
@@ -194,36 +185,34 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_roster(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
-            let team = m.team_load(context)?;
-            let (_, card) = ui.dnd_drop_zone::<(usize, CardKind), Result<(), ExpressionError>>(
-                Frame::new(),
-                |ui| {
+    pub fn pane_roster(ui: &mut Ui, world: &World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
+            let team = m.team_ref(ctx)?;
+            let (_, card) =
+                ui.dnd_drop_zone::<(usize, CardKind), NodeResult<()>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
-                    for house in team.houses_load(context) {
-                        house.as_card().compose(context, ui);
+                    for house in team.houses_ref(ctx)? {
+                        house.as_card().compose(ctx, ui);
                     }
                     Ok(())
-                },
-            );
+                });
             if let Some(card) = card {
                 cn().reducers.match_shop_buy(card.0 as u8).notify_op();
             }
             Ok(())
         })
     }
-    pub fn pane_team(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
-            let team = m.team_load(context)?;
+    pub fn pane_team(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
+            let team = m.team_ref(ctx)?;
             let rect = ui.available_rect_before_wrap();
 
-            let mut team_editor = TeamEditor::new(team.entity());
+            let mut team_editor = TeamEditor::new(team.entity(ctx)?);
             team_editor = team_editor.filled_slot_action("Sell Unit");
 
-            if let Ok(actions) = team_editor.ui(ui, context) {
+            if let Ok(actions) = team_editor.ui(ui, ctx) {
                 for action in actions {
                     match action {
                         TeamAction::MoveUnit { unit_id, target } => {
@@ -263,9 +252,9 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
+    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
                 if m.lives > 0 {
@@ -276,7 +265,7 @@ impl MatchPlugin {
                     format!("Reached [b {}] floor", m.floor).cstr().label(ui);
                 }
             });
-            let world = context.world_mut()?;
+            let world = ctx.world_mut()?;
             ui.vertical_centered(|ui| {
                 if "Done".cstr().button(ui).clicked() {
                     cn().reducers.match_complete().notify(world);
@@ -286,9 +275,9 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
-        Context::from_world_r(world, |context| {
-            let world = context.world_mut()?;
+    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        world.with_context(|ctx| {
+            let world = ctx.world_mut()?;
 
             let floors = world
                 .query::<&NFloorBoss>()
@@ -315,30 +304,26 @@ impl MatchPlugin {
                 )
                 .column(
                     "player",
-                    |context, ui, _, value| {
+                    |ctx, ui, _, value| {
                         let id = value.get_u64()?;
-                        context
-                            .component_by_id::<NPlayer>(id)?
-                            .player_name
-                            .cstr()
-                            .label(ui);
+                        ctx.load::<NPlayer>(id)?.player_name.cstr().label(ui);
                         Ok(())
                     },
                     |context, t| {
-                        let team = t.team_load(context)?;
+                        let team = t.team_ref(context)?;
                         Ok(team.owner.into())
                     },
                 )
-                .ui(context, ui);
+                .ui(ctx, ui);
             Ok(())
         })
     }
 
-    pub fn pane_fusion(ui: &mut Ui, world: &World) -> Result<(), ExpressionError> {
-        Context::from_world_ref_r(world, |context| {
-            let m = player(context)?.active_match_load(context)?;
-            let team = m.team_load(context)?;
-            let fusions = team.fusions_load(context);
+    pub fn pane_fusion(ui: &mut Ui, world: &World) -> NodeResult<()> {
+        world.with_context(|context| {
+            let m = player(context)?.active_match_ref(context)?;
+            let team = m.team_ref(context)?;
+            let fusions = team.fusions_ref(context)?;
 
             if fusions.is_empty() {
                 ui.label("No fusion units available");
@@ -356,8 +341,8 @@ impl MatchPlugin {
     fn render_fusion_headers(
         ui: &mut Ui,
         context: &ClientContext,
-        fusions: &[&NFusion],
-    ) -> Result<(), ExpressionError> {
+        fusions: &Vec<&NFusion>,
+    ) -> NodeResult<()> {
         ui.columns(fusions.len(), |columns| {
             for (fusion_idx, fusion) in fusions.iter().enumerate() {
                 let ui = &mut columns[fusion_idx];
@@ -370,11 +355,11 @@ impl MatchPlugin {
     fn render_fusion_header(ui: &mut Ui, context: &ClientContext, fusion: &NFusion) {
         let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
 
-        if let Ok(units) = context.collect_parents_components::<NUnit>(fusion.id) {
+        if let Ok(units) = context.collect_children::<NUnit>(fusion.id) {
             for unit in units {
                 if let Ok(rep) = unit
-                    .description_load(context)
-                    .and_then(|d| d.representation_load(context))
+                    .description_ref(context)
+                    .and_then(|d| d.representation_ref(context))
                 {
                     mat_rect = mat_rect.add_mat(&rep.material, unit.id);
                 }
@@ -404,8 +389,8 @@ impl MatchPlugin {
     fn render_fusion_units(
         ui: &mut Ui,
         context: &ClientContext,
-        fusions: &[&NFusion],
-    ) -> Result<(), ExpressionError> {
+        fusions: &Vec<&NFusion>,
+    ) -> NodeResult<()> {
         ui.columns(fusions.len(), |columns| {
             for (fusion_idx, fusion) in fusions.iter().enumerate() {
                 let ui = &mut columns[fusion_idx];
@@ -423,10 +408,10 @@ impl MatchPlugin {
         context: &ClientContext,
         fusion: &NFusion,
         fusion_idx: usize,
-    ) -> Result<(), ExpressionError> {
-        ui.vertical(|ui| -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
+        ui.vertical(|ui| -> NodeResult<()> {
             let units = fusion.units(context).unwrap_or_default();
-            let max_slots = fusion.slots_load(context).len();
+            let max_slots = fusion.slots_ref(context)?.len();
 
             for slot_idx in 0..max_slots {
                 if let Some(unit) = units.get(slot_idx) {
@@ -442,17 +427,17 @@ impl MatchPlugin {
     }
 
     fn render_unit_icon(ui: &mut Ui, context: &ClientContext, unit: &NUnit) {
-        let _resp = if let Ok(rep) = context.first_parent_recursive::<NUnitRepresentation>(unit.id)
-        {
-            MatRect::new(egui::Vec2::new(60.0, 60.0))
-                .add_mat(&rep.material, unit.id)
-                .unit_rep_with_default(unit.id)
-                .ui(ui, context)
-        } else {
-            MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
-        };
+        let _resp =
+            if let Ok(rep) = context.load_first_parent_recursive::<NUnitRepresentation>(unit.id) {
+                MatRect::new(egui::Vec2::new(60.0, 60.0))
+                    .add_mat(&rep.material, unit.id)
+                    .unit_rep_with_default(unit.id)
+                    .ui(ui, context)
+            } else {
+                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+            };
 
-        if let Ok(state) = unit.state_load(context) {
+        if let Ok(state) = unit.state_ref(context) {
             ui.label(format!("Stacks {}", state.stacks));
         }
     }

@@ -168,7 +168,7 @@ impl<'a> MatRect<'a> {
         config: &RenderConfig,
         context: &ClientContext,
         ui: &mut Ui,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         let scaled_rect = if config.scale != 1.0 {
             let size = rect.size() * config.scale;
             Rect::from_center_size(rect.center(), size)
@@ -188,11 +188,9 @@ impl<'a> MatRect<'a> {
 
         // Try to get entity from owner_id - could be any node type
 
-        if let Ok(entity) = context.entity(owner_id) {
-            context.with_owner_ref(entity, |ctx| {
-                RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
-            })?;
-        }
+        context.with_temp_owner(owner_id, |ctx| {
+            RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
+        })?;
         Ok(())
     }
 
@@ -230,13 +228,11 @@ impl<'a> MatRect<'a> {
                     painter.rect_filled(clipped_rect, 0.0, color);
                 }
 
-                if let Ok(entity) = context.entity(*owner_id) {
-                    let _ = context.with_owner_ref(entity, |ctx| {
+                context
+                    .with_temp_owner(*owner_id, |ctx| {
                         unit_rep().material.paint(clipped_rect, ctx, ui)
-                    });
-                } else {
-                    let _ = unit_rep().material.paint(clipped_rect, context, ui);
-                }
+                    })
+                    .ui(ui);
             }
         })
     }

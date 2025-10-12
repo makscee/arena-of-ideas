@@ -21,8 +21,8 @@ impl ClientState {
         if left.root == 0 || right.root == 0 {
             return None;
         }
-        let left = NTeam::unpack_id(left.root, left)?;
-        let right = NTeam::unpack_id(right.root, right)?;
+        let left = NTeam::unpack(left).unwrap();
+        let right = NTeam::unpack(right).unwrap();
         Some((left, right))
     }
     pub fn set_battle_test_teams(&mut self, left: &NTeam, right: &NTeam) {

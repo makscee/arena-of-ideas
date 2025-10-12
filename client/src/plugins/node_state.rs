@@ -3,15 +3,12 @@ use super::*;
 pub struct NodeStatePlugin;
 
 impl Plugin for NodeStatePlugin {
-    fn build(&self, _app: &mut App) {
-        // app.add_systems(PreUpdate, Self::inject_vars);
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(BevyComponent, Debug, Default)]
 pub struct NodeState {
     pub vars: HashMap<VarName, VarState>,
-    pub kind: NodeKind,
 }
 
 #[derive(Debug)]
@@ -54,6 +51,12 @@ impl NodeState {
         state.insert(0.0, 0.0, var, value);
         state
     }
+    pub fn load<'a>(entity: Entity, ctx: &'a ClientContext) -> NodeResult<&'a Self> {
+        ctx.world()?.get::<Self>(entity).to_e_not_found()
+    }
+    pub fn load_mut<'a>(entity: Entity, ctx: &'a mut ClientContext) -> NodeResult<Mut<'a, Self>> {
+        ctx.world_mut()?.get_mut::<Self>(entity).to_e_not_found()
+    }
     pub fn contains(&self, var: VarName) -> bool {
         self.vars.contains_key(&var)
     }
@@ -73,7 +76,7 @@ impl NodeState {
     pub fn init(&mut self, var: VarName, value: VarValue) {
         self.insert(0.0, 0.0, var, value);
     }
-    pub fn init_vars(&mut self, vars: Vec<(VarName, VarValue)>) {
+    pub fn init_vars(&mut self, vars: impl Iterator<Item = (VarName, VarValue)>) {
         for (var, value) in vars {
             self.init(var, value);
         }
@@ -101,9 +104,9 @@ impl NodeState {
         }
         true
     }
-    pub fn get_var(context: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = context.component::<NodeState>(entity) {
-            if let Some(t) = context.t {
+    pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
+        if let Ok(ns) = ctx.load_entity::<NodeState>(entity) {
+            if let Ok(t) = ctx.t() {
                 ns.get_at(t, var)
             } else {
                 ns.get(var)
@@ -123,10 +126,13 @@ impl NodeState {
             let Some(id) = context.id(entity).ok_log() else {
                 continue;
             };
-            let Some(parents) = context.ids_to_entities(context.parents(id)).ok_log() else {
+            let Some(parent_ids) = context.get_parents(id).ok_log() else {
                 continue;
             };
-            for parent in parents {
+            for parent_id in parent_ids {
+                let Ok(parent) = context.entity(parent_id) else {
+                    continue;
+                };
                 if checked.insert(parent) {
                     q.push_back(parent);
                 }
@@ -134,15 +140,11 @@ impl NodeState {
         }
         None
     }
-    pub fn sum_var(
-        context: &ClientContext,
-        var: VarName,
-        entity: Entity,
-    ) -> Result<VarValue, ExpressionError> {
-        let mut result = Self::get_var(context, var, entity).unwrap_or_default();
-        let ids = context.parents_recursive(context.id(entity)?);
-        for entity in context.ids_to_entities(ids)? {
-            if let Some(v) = Self::get_var(context, var, entity) {
+    pub fn sum_var(ctx: &ClientContext, var: VarName, entity: Entity) -> NodeResult<VarValue> {
+        let mut result = Self::get_var(ctx, var, entity).unwrap_or_default();
+        let ids = ctx.parents_recursive(ctx.id(entity)?)?;
+        for id in ids {
+            if let Some(v) = Self::get_var(ctx, var, id.entity(ctx)?) {
                 result = result.add(&v)?;
             }
         }
@@ -151,12 +153,12 @@ impl NodeState {
 }
 
 impl VarHistory {
-    fn get_value_at(&self, t: f32) -> Result<VarValue, ExpressionError> {
+    fn get_value_at(&self, t: f32) -> Result<VarValue, NodeError> {
         if t < 0.0 {
-            return Err(ExpressionErrorVariants::Custom("Not born yet".into()).into());
+            return Err(NodeError::custom("Not born yet").into());
         }
         if self.changes.is_empty() {
-            return Err(ExpressionErrorVariants::Custom("History is empty".into()).into());
+            return Err(NodeError::custom("History is empty").into());
         }
         let mut i = match self.changes.binary_search_by(|h| h.t.total_cmp(&t)) {
             Ok(v) | Err(v) => v.at_least(1) - 1,

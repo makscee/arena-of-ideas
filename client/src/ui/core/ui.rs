@@ -1,4 +1,3 @@
-use bevy_egui::egui::ScrollArea;
 use ecolor::linear_u8_from_linear_f32;
 use egui::{CornerRadius, Margin, Shadow};
 
@@ -78,7 +77,7 @@ pub trait ErrorExt {
     fn ui(self, ui: &mut Ui);
 }
 
-impl<T> ErrorExt for Result<T, ExpressionError> {
+impl<T> ErrorExt for Result<T, NodeError> {
     #[track_caller]
     fn ui(self, ui: &mut Ui) {
         if let Err(e) = self {
@@ -87,17 +86,18 @@ impl<T> ErrorExt for Result<T, ExpressionError> {
     }
 }
 
-impl ErrorExt for ExpressionError {
+impl ErrorExt for NodeError {
     fn ui(self, ui: &mut Ui) {
         let error_text = format!("{}\n[s {}]", self.cstr(), std::panic::Location::caller());
-        error_text.clone().button(ui).bar_menu(|ui| {
-            ScrollArea::vertical().show(ui, |ui| {
-                if let Some(mut b) = self.bt {
-                    b.resolve();
-                    error_text.cstr().label(ui);
-                    format!("[s {b:?}]").label(ui);
-                }
-            });
-        });
+        error_text.label_w(ui);
+        // error_text.clone().button(ui).bar_menu(|ui| {
+        //     ScrollArea::vertical().show(ui, |ui| {
+        //         if let Some(mut b) = self.bt {
+        //             b.resolve();
+        //             error_text.cstr().label(ui);
+        //             format!("[s {b:?}]").label(ui);
+        //         }
+        //     });
+        // });
     }
 }

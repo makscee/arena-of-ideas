@@ -113,6 +113,7 @@ pub fn run() {
             AdminPlugin,
             StdbPlugin,
             NotificationsPlugin,
+            NodeSystemPlugin,
         ))
         .init_state::<GameState>();
     app.run();
@@ -123,7 +124,6 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn setup(world: &mut World) {
     let ctx = world.query::<&EguiContext>().single(world).unwrap().get();
     egui_extras::install_image_loaders(&ctx);
-    world.init_links();
 }
 
 fn on_error_state(world: &mut World) {

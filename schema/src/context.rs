@@ -1,31 +1,17 @@
 use super::*;
-
-// Common error type
-#[derive(Debug, Error)]
-pub enum NodeError {
-    #[error("Node not found: {0}")]
-    NotFound(u64),
-
-    #[error("Invalid node kind: expected {expected}, got {actual}")]
-    InvalidKind {
-        expected: NodeKind,
-        actual: NodeKind,
-    },
-
-    #[error("Failed to load node: {0}")]
-    LoadError(String),
-
-    #[error("Failed to cast node")]
-    CastError,
-
-    #[error("Context error: {0}")]
-    ContextError(#[from] anyhow::Error),
-}
-
-pub type NodeResult<T> = Result<T, NodeError>;
+use crate::node_error::NodeResult;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 // Common traits that both client and server will implement
-pub trait Node: Send + Sync {
+pub trait Node: Send + Sync + Default + StringData {
+    fn with_owner(mut self, owner: u64) -> Self {
+        self.set_owner(owner);
+        self
+    }
+    fn with_id(mut self, id: u64) -> Self {
+        self.set_id(id);
+        self
+    }
     fn id(&self) -> u64;
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;
@@ -35,6 +21,57 @@ pub trait Node: Send + Sync {
     fn kind_s() -> NodeKind
     where
         Self: Sized;
+
+    fn var_names() -> HashSet<VarName>
+    where
+        Self: Sized;
+    fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()>;
+    fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
+    fn get_vars(&self) -> HashMap<VarName, VarValue>;
+
+    fn pack(&self) -> PackedNodes {
+        let mut packed = PackedNodes::default();
+        let mut visited = std::collections::HashSet::new();
+        self.pack_recursive(&mut packed, &mut visited);
+        packed.root = self.id();
+        packed
+    }
+
+    fn pack_recursive(
+        &self,
+        packed: &mut PackedNodes,
+        visited: &mut std::collections::HashSet<u64>,
+    ) {
+        let id = self.id();
+        if visited.contains(&id) {
+            return;
+        }
+        visited.insert(id);
+
+        // Add this node's data
+        packed.add_node(self.kind().to_string(), self.get_data(), id);
+
+        // This will be implemented by the generated code for each node type
+        // to handle their specific linked fields
+        self.pack_links(packed, visited);
+    }
+
+    fn unpack(packed: &PackedNodes) -> NodeResult<Self> {
+        let root_data = packed
+            .get(packed.root)
+            .ok_or_else(|| NodeError::custom("Root node not found in packed data"))?;
+
+        let mut node = Self::default();
+        node.inject_data(&root_data.data)?;
+        node.set_id(packed.root);
+
+        node.unpack_links(packed);
+        Ok(node)
+    }
+
+    fn pack_links(&self, packed: &mut PackedNodes, visited: &mut std::collections::HashSet<u64>);
+
+    fn unpack_links(&mut self, packed: &PackedNodes);
 }
 
 // Helper trait for converting between node types
@@ -48,30 +85,73 @@ pub trait NodeKindConvert {
 // Context system
 
 /// Source for Context to retrieve node data and manage links
-pub trait ContextSource {
-    /// Get node kind by ID
+/// Trait for loading specific node types and calling their methods
+pub trait NodeLoader {
+    /// Load a node by ID and call get_var on it using the appropriate node type
+    fn load_and_get_var(
+        &self,
+        node_kind: NodeKind,
+        node_id: u64,
+        var: VarName,
+    ) -> NodeResult<VarValue>;
+    /// Load a node by ID and call set_var on it using the appropriate node type
+    fn load_and_set_var(
+        &mut self,
+        node_kind: NodeKind,
+        node_id: u64,
+        var: VarName,
+        value: VarValue,
+    ) -> NodeResult<()>;
+}
+
+pub trait ContextSource: NodeLoader {
+    /// Get the node kind for a given ID
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind>;
 
-    /// Get all linked child IDs
+    /// Get all children of a node
     fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get children of specific kind
+    /// Get children of a specific kind
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Get all parent IDs
+    /// Get all parents of a node
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get parents of specific kind
+    /// Get parents of a specific kind
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Add a link between two nodes
+    /// Add a link between nodes
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Remove a link between two nodes
+    /// Remove a link between nodes
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
     /// Check if two nodes are linked
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
+
+    /// Get a variable value from a node, recursively checking parents if not found
+    fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        self.get_var_direct(node_id, var)
+            .or_else(|_| self.get_var_recursive(node_id, var))
+    }
+
+    /// Get a variable value directly from a node (no recursion)
+    fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue>;
+
+    /// Get a variable value by checking the node and its parents recursively
+    fn get_var_recursive(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        let mut parents = VecDeque::from(self.get_parents(node_id)?);
+        while let Some(parent) = parents.pop_front() {
+            if let Ok(value) = self.get_var(parent, var) {
+                return Ok(value);
+            }
+            parents.extend(self.get_parents(parent)?);
+        }
+        Err(NodeError::var_not_found(var))
+    }
+
+    /// Set a variable value on a node
+    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()>;
 }
 
 /// Context layer for scoping operations
@@ -80,8 +160,6 @@ pub enum ContextLayer {
     Owner(u64),
     Target(u64),
     Caster(u64),
-    Parent(u64),
-    Child(u64),
     Var(VarName, VarValue),
 }
 
@@ -96,7 +174,7 @@ where
     S: ContextSource,
 {
     /// Create a new context from a source
-    pub fn new(source: S) -> Self {
+    pub const fn new(source: S) -> Self {
         Self {
             source,
             layers: Vec::new(),
@@ -137,9 +215,9 @@ where
     }
 
     /// Execute a closure with a new context layer
-    pub fn with_layer<R, F>(&mut self, layer: ContextLayer, f: F) -> R
+    pub fn with_layer<R, F>(&mut self, layer: ContextLayer, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.layers.push(layer);
         let result = f(self);
@@ -148,9 +226,9 @@ where
     }
 
     /// Execute with multiple context layers
-    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> R
+    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         let len = layers.len();
         for layer in layers {
@@ -164,43 +242,27 @@ where
     }
 
     /// Execute with owner context
-    pub fn with_owner<R, F>(&mut self, owner_id: u64, f: F) -> R
+    pub fn with_owner<R, F>(&mut self, owner_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Owner(owner_id), f)
     }
 
     /// Execute with target context
-    pub fn with_target<R, F>(&mut self, target_id: u64, f: F) -> R
+    pub fn with_target<R, F>(&mut self, target_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Target(target_id), f)
     }
 
     /// Execute with caster context
-    pub fn with_caster<R, F>(&mut self, caster_id: u64, f: F) -> R
+    pub fn with_caster<R, F>(&mut self, caster_id: u64, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Self) -> R,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         self.with_layer(ContextLayer::Caster(caster_id), f)
-    }
-
-    /// Execute with parent context
-    pub fn with_parent<R, F>(&mut self, parent_id: u64, f: F) -> R
-    where
-        F: FnOnce(&mut Self) -> R,
-    {
-        self.with_layer(ContextLayer::Parent(parent_id), f)
-    }
-
-    /// Execute with child context
-    pub fn with_child<R, F>(&mut self, child_id: u64, f: F) -> R
-    where
-        F: FnOnce(&mut Self) -> R,
-    {
-        self.with_layer(ContextLayer::Child(child_id), f)
     }
 
     /// Get current owner ID from context layers
@@ -233,52 +295,107 @@ where
         None
     }
 
-    /// Get current parent ID from context layers
-    pub fn parent(&self) -> Option<u64> {
-        for layer in self.layers.iter().rev() {
-            if let ContextLayer::Parent(id) = layer {
-                return Some(*id);
-            }
+    /// Get variable from owner node
+    pub fn owner_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(owner_id) = self.owner() {
+            self.source.get_var(owner_id, var)
+        } else {
+            Err(NodeError::custom("No owner in context"))
         }
-        None
     }
 
-    /// Get current child ID from context layers
-    pub fn child(&self) -> Option<u64> {
-        for layer in self.layers.iter().rev() {
-            if let ContextLayer::Child(id) = layer {
-                return Some(*id);
-            }
+    /// Get variable from target node
+    pub fn target_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(target_id) = self.target() {
+            self.source.get_var(target_id, var)
+        } else {
+            Err(NodeError::custom("No target in context"))
         }
-        None
     }
 
-    /// Get variable value from context layers
-    pub fn get_var(&self, var: VarName) -> Option<VarValue> {
+    /// Get variable from caster node
+    pub fn caster_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(caster_id) = self.caster() {
+            self.source.get_var(caster_id, var)
+        } else {
+            Err(NodeError::custom("No caster in context"))
+        }
+    }
+
+    /// Get variable from specific node by ID
+    pub fn node_get_var(&self, id: u64, var_name: VarName) -> NodeResult<VarValue> {
+        let kind = self.source.get_node_kind(id)?;
+        kind.get_var(self, id, var_name)
+    }
+
+    pub fn node_set_var(
+        &mut self,
+        id: u64,
+        var_name: VarName,
+        var_value: VarValue,
+    ) -> NodeResult<()> {
+        let kind = self.source.get_node_kind(id)?;
+        kind.set_var(self, id, var_name, var_value)
+    }
+
+    /// Get variable value from context layers, checking layers first then owner/target/caster
+    pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        // First check context layers
         for layer in self.layers.iter().rev() {
-            if let ContextLayer::Var(var_name, value) = layer {
-                if *var_name == var {
-                    return Some(value.clone());
+            match layer {
+                ContextLayer::Var(var_name, value) => {
+                    if *var_name == var {
+                        return Ok(value.clone());
+                    }
+                }
+                ContextLayer::Owner(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
+                ContextLayer::Target(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
+                ContextLayer::Caster(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
                 }
             }
         }
-        None
+
+        Err(NodeError::var_not_found(var))
     }
 
-    pub fn get_color(&self, var: VarName) -> Option<Color32> {
-        self.get_var(var).and_then(|v| v.get_color().ok())
+    /// Add a target to the targets list
+    pub fn add_target(&mut self, target_id: u64) {
+        self.layers.push(ContextLayer::Target(target_id));
     }
 
-    pub fn get_i32(&self, var: VarName) -> Option<i32> {
-        self.get_var(var).and_then(|v| v.get_i32().ok())
+    /// Collect all targets
+    pub fn collect_targets(&self) -> Vec<u64> {
+        self.layers
+            .iter()
+            .filter_map(|l| {
+                if let ContextLayer::Target(target) = l {
+                    Some(*target)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
-    pub fn get_f32(&self, var: VarName) -> Option<f32> {
-        self.get_var(var).and_then(|v| v.get_f32().ok())
+    /// Set owner by adding owner layer
+    pub fn set_owner(&mut self, owner_id: u64) {
+        self.layers.push(ContextLayer::Owner(owner_id));
     }
 
-    pub fn get_string(&self, var: VarName) -> Option<String> {
-        self.get_var(var).and_then(|v| v.get_string().ok())
+    /// Set caster by adding caster layer
+    pub fn set_caster(&mut self, caster_id: u64) {
+        self.layers.push(ContextLayer::Caster(caster_id));
     }
 
     /// Set a variable in the context
@@ -334,5 +451,251 @@ where
     /// Get the current layer stack depth
     pub fn layer_depth(&self) -> usize {
         self.layers.len()
+    }
+
+    /// Find first parent of specified kind
+    pub fn first_parent(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let parents = self.get_parents(id)?;
+        for parent_id in parents {
+            if self.get_kind(parent_id)? == kind {
+                return Ok(parent_id);
+            }
+        }
+        Err(NodeError::custom(format!(
+            "No parent of kind {:?} found for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first parent of specified kind recursively (BFS)
+    pub fn first_parent_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if !visited.insert(parent_id) {
+                    continue;
+                }
+
+                if self.get_kind(parent_id)? == kind {
+                    return Ok(parent_id);
+                }
+
+                queue.push_back(parent_id);
+            }
+        }
+
+        Err(NodeError::custom(format!(
+            "No parent of kind {:?} found recursively for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first child of specified kind
+    pub fn first_child(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let children = self.get_children(id)?;
+        for child_id in children {
+            if self.get_kind(child_id)? == kind {
+                return Ok(child_id);
+            }
+        }
+        Err(NodeError::custom(format!(
+            "No child of kind {:?} found for node {}",
+            kind, id
+        )))
+    }
+
+    /// Find first child of specified kind recursively (BFS)
+    pub fn first_child_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if !visited.insert(child_id) {
+                    continue;
+                }
+
+                if self.get_kind(child_id)? == kind {
+                    return Ok(child_id);
+                }
+
+                queue.push_back(child_id);
+            }
+        }
+
+        Err(NodeError::custom(format!(
+            "No child of kind {:?} found recursively for node {}",
+            kind, id
+        )))
+    }
+
+    /// Get all parents recursively
+    pub fn parents_recursive(&self, id: u64) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if visited.insert(parent_id) {
+                    result.push(parent_id);
+                    queue.push_back(parent_id);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Get all children recursively
+    pub fn children_recursive(&self, id: u64) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if visited.insert(child_id) {
+                    result.push(child_id);
+                    queue.push_back(child_id);
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect children of specific kind
+    pub fn collect_kind_children(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let children = self.get_children(id)?;
+        let mut result = Vec::new();
+
+        for child_id in children {
+            if self.get_kind(child_id)? == kind {
+                result.push(child_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect children of specific kind recursively
+    pub fn collect_kind_children_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let children = self.get_children(current_id)?;
+            for child_id in children {
+                if !visited.insert(child_id) {
+                    continue;
+                }
+
+                if self.get_kind(child_id)? == kind {
+                    result.push(child_id);
+                }
+
+                queue.push_back(child_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect parents of specific kind
+    pub fn collect_kind_parents(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let parents = self.get_parents(id)?;
+        let mut result = Vec::new();
+
+        for parent_id in parents {
+            if self.get_kind(parent_id)? == kind {
+                result.push(parent_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Collect parents of specific kind recursively
+    pub fn collect_kind_parents_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        let mut result = Vec::new();
+        let mut queue = std::collections::VecDeque::new();
+        let mut visited = std::collections::HashSet::new();
+
+        queue.push_back(id);
+        visited.insert(id);
+
+        while let Some(current_id) = queue.pop_front() {
+            let parents = self.get_parents(current_id)?;
+            for parent_id in parents {
+                if !visited.insert(parent_id) {
+                    continue;
+                }
+
+                if self.get_kind(parent_id)? == kind {
+                    result.push(parent_id);
+                }
+
+                queue.push_back(parent_id);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Sum a variable recursively from all children of the current owner
+    pub fn sum_var(&self, var_name: VarName) -> NodeResult<VarValue> {
+        let owner_id = self
+            .owner()
+            .ok_or(NodeError::custom("No owner in context"))?;
+
+        let mut result = VarValue::default();
+        let mut ids = self.children_recursive(owner_id)?;
+        ids.push(owner_id);
+
+        for id in ids {
+            if let Ok(value) = self.source.get_var(id, var_name) {
+                result = result.add(&value)?;
+            }
+        }
+
+        Ok(result)
+    }
+
+    pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
+        let mut result = HashMap::new();
+
+        for l in &self.layers {
+            match l {
+                ContextLayer::Var(var_name, var_value) => {
+                    result.insert(*var_name, var_value.clone());
+                }
+                _ => {}
+            }
+        }
+
+        result
     }
 }

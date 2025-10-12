@@ -1,19 +1,21 @@
-use serde::{Deserialize, Serialize};
+use super::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LinkState<T> {
-    Loaded(Box<T>),
+    Loaded(T),
     Id(u64),
+    Ids(Vec<u64>),
     None,
     Unknown,
 }
 
 pub trait Link<T> {
-    fn state(&self) -> &LinkState<T>;
+    fn state<'a>(&'a self) -> &'a LinkState<T>;
     fn state_mut(&mut self) -> &mut LinkState<T>;
 
     fn new_loaded(value: T) -> Self;
     fn new_id(id: u64) -> Self;
+    fn new_ids(ids: Vec<u64>) -> Self;
     fn none() -> Self;
     fn unknown() -> Self;
 
@@ -24,16 +26,22 @@ pub trait Link<T> {
         }
     }
 
-    fn get_mut<'a>(&'a mut self) -> Option<&'a mut T> {
-        match self.state_mut() {
-            LinkState::Loaded(val) => Some(val),
-            _ => None,
-        }
+    fn get_mut<'a>(&'a mut self) -> NodeResult<&'a mut T> {
+        self.state_mut().data_mut()
     }
 
     fn id(&self) -> Option<u64> {
         match self.state() {
             LinkState::Id(id) => Some(*id),
+            LinkState::Ids(ids) => ids.first().copied(),
+            _ => None,
+        }
+    }
+
+    fn ids(&self) -> Option<Vec<u64>> {
+        match self.state() {
+            LinkState::Ids(ids) => Some(ids.clone()),
+            LinkState::Id(id) => Some(vec![*id]),
             _ => None,
         }
     }
@@ -44,6 +52,18 @@ pub trait Link<T> {
 
     fn is_none(&self) -> bool {
         matches!(self.state(), LinkState::None)
+    }
+}
+
+impl<T> LinkState<T> {
+    pub fn set(&mut self, data: T) {
+        *self = LinkState::Loaded(data);
+    }
+    pub fn data_mut(&mut self) -> NodeResult<&mut T> {
+        match self {
+            LinkState::Loaded(d) => Ok(d),
+            _ => Err(NodeError::custom("Link not loaded")),
+        }
     }
 }
 
@@ -73,13 +93,19 @@ impl<T> Link<T> for Component<T> {
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(Box::new(value)),
+            state: LinkState::Loaded(value),
         }
     }
 
     fn new_id(id: u64) -> Self {
         Self {
             state: LinkState::Id(id),
+        }
+    }
+
+    fn new_ids(ids: Vec<u64>) -> Self {
+        Self {
+            state: LinkState::Ids(ids),
         }
     }
 
@@ -107,13 +133,19 @@ impl<T> Link<T> for Owned<T> {
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(Box::new(value)),
+            state: LinkState::Loaded(value),
         }
     }
 
     fn new_id(id: u64) -> Self {
         Self {
             state: LinkState::Id(id),
+        }
+    }
+
+    fn new_ids(ids: Vec<u64>) -> Self {
+        Self {
+            state: LinkState::Ids(ids),
         }
     }
 
@@ -141,7 +173,7 @@ impl<T> Link<T> for Ref<T> {
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(Box::new(value)),
+            state: LinkState::Loaded(value),
         }
     }
 
@@ -160,6 +192,12 @@ impl<T> Link<T> for Ref<T> {
     fn unknown() -> Self {
         Self {
             state: LinkState::Unknown,
+        }
+    }
+
+    fn new_ids(ids: Vec<u64>) -> Self {
+        Self {
+            state: LinkState::Ids(ids),
         }
     }
 }

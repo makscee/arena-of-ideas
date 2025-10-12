@@ -1,46 +1,53 @@
 use crate::*;
-pub use proc_macros::node;
+pub use proc_macros::Node;
 
-#[node]
+#[derive(Node)]
 pub struct NArena {
     pub floor_pools: Owned<Vec<NFloorPool>>,
     pub floor_bosses: Owned<Vec<NFloorBoss>>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NFloorPool {
+    #[var]
     pub floor: i32,
     pub teams: Owned<Vec<NTeam>>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NFloorBoss {
+    #[var]
     pub floor: i32,
-    pub team: Component<NTeam>,
+    pub team: Owned<NTeam>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NPlayer {
+    #[var]
     pub player_name: String,
     pub player_data: Component<NPlayerData>,
     pub identity: Component<NPlayerIdentity>,
     pub active_match: Component<NMatch>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NPlayerData {
     pub pass_hash: Option<String>,
+    #[var]
     pub online: bool,
     pub last_login: u64,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NPlayerIdentity {
     pub data: Option<String>,
 }
 
-#[node(content, name)]
+#[derive(Node)]
+#[content]
+#[named]
 pub struct NHouse {
+    #[var]
     pub house_name: String,
     pub color: Component<NHouseColor>,
     pub ability: Component<NAbilityMagic>,
@@ -48,58 +55,72 @@ pub struct NHouse {
     pub units: Owned<Vec<NUnit>>,
 }
 
-#[node(content)]
+#[derive(Node)]
 pub struct NHouseColor {
+    #[var]
     pub color: HexColor,
 }
 
-#[node(content, name)]
+#[derive(Node)]
+#[content]
+#[named]
 pub struct NAbilityMagic {
+    #[var]
     pub ability_name: String,
     pub description: Component<NAbilityDescription>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NAbilityDescription {
+    #[var]
     pub description: String,
     pub effect: Component<NAbilityEffect>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NAbilityEffect {
     pub actions: Vec<Action>,
 }
 
-#[node(content, name)]
+#[derive(Node)]
+#[content]
+#[named]
 pub struct NStatusMagic {
+    #[var]
     pub status_name: String,
     pub description: Component<NStatusDescription>,
     pub representation: Component<NStatusRepresentation>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NStatusDescription {
+    #[var]
     pub description: String,
     pub behavior: Component<NStatusBehavior>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NStatusBehavior {
     pub reactions: Vec<Reaction>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NStatusRepresentation {
     pub material: Material,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NTeam {
     pub houses: Owned<Vec<NHouse>>,
     pub fusions: Owned<Vec<NFusion>>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NBattle {
     pub team_left: u64,
     pub team_right: u64,
@@ -108,45 +129,60 @@ pub struct NBattle {
     pub result: Option<bool>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NMatch {
+    #[var]
     pub g: i32,
+    #[var]
     pub floor: i32,
+    #[var]
     pub lives: i32,
+    #[var]
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
-    pub team: Component<NTeam>,
+    pub team: Owned<NTeam>,
     pub battles: Owned<Vec<NBattle>>,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NFusion {
     pub slots: Owned<Vec<NFusionSlot>>,
     pub trigger_unit: u64,
+    #[var]
     pub index: i32,
+    #[var]
     pub pwr: i32,
+    #[var]
     pub hp: i32,
+    #[var]
     pub dmg: i32,
+    #[var]
     pub actions_limit: i32,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NFusionSlot {
+    #[var]
     pub index: i32,
     pub actions: UnitActionRange,
     pub unit: Ref<NUnit>,
 }
 
-#[node(content, name)]
+#[derive(Node)]
+#[content]
+#[named]
 pub struct NUnit {
+    #[var]
     pub unit_name: String,
     pub description: Component<NUnitDescription>,
     pub stats: Component<NUnitStats>,
     pub state: Component<NUnitState>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NUnitDescription {
+    #[var]
     pub description: String,
     pub magic_type: MagicType,
     pub trigger: Trigger,
@@ -154,24 +190,30 @@ pub struct NUnitDescription {
     pub behavior: Component<NUnitBehavior>,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NUnitStats {
+    #[var]
     pub pwr: i32,
+    #[var]
     pub hp: i32,
 }
 
-#[node]
+#[derive(Node)]
 pub struct NUnitState {
+    #[var]
     pub stacks: i32,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NUnitBehavior {
     pub reaction: Reaction,
     pub magic_type: MagicType,
 }
 
-#[node(content)]
+#[derive(Node)]
+#[content]
 pub struct NUnitRepresentation {
     pub material: Material,
 }

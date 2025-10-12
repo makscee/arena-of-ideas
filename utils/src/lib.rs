@@ -43,3 +43,11 @@ pub fn type_name_short<T>() -> &'static str {
 pub fn type_name_of_val_short<T>(val: &T) -> &'static str {
     type_last(type_name_of_val(val))
 }
+
+pub trait Take: Sized + Default {
+    fn take(&mut self) -> Self {
+        std::mem::take(self)
+    }
+}
+
+impl<T: Sized + Default> Take for T {}

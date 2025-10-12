@@ -27,19 +27,22 @@ impl AdminPlugin {
             .clone()
         });
 
-        Context::from_world(world, |context| {
-            let mut changed = false;
-            e.as_recursive_mut(|context, ui, value| {
-                let response = call_on_recursive_value_mut!(value, edit, context, ui);
-                changed |= response.changed();
-                response
+        world
+            .with_context_mut(|context| {
+                let mut changed = false;
+                e.as_recursive_mut(|context, ui, value| {
+                    let response = call_on_recursive_value_mut!(value, edit, context, ui);
+                    changed |= response.changed();
+                    response
+                })
+                .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+                .compose(context, ui);
+                if changed {
+                    ui.ctx().data_mut(|w| w.insert_persisted(id, e));
+                }
+                Ok(())
             })
-            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(context, ui);
-            if changed {
-                ui.ctx().data_mut(|w| w.insert_persisted(id, e))
-            }
-        });
+            .ui(ui);
 
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {
@@ -58,19 +61,6 @@ impl AdminPlugin {
                     });
                 }
             });
-
-            for n in cn()
-                .db
-                .nodes_world()
-                .iter()
-                .filter(|n| n.id.is_child_of(world, id))
-                .sorted_by_key(|n| n.id)
-            {
-                let title = n.kind;
-                CollapsingHeader::new(title).id_salt(n.id).show(ui, |ui| {
-                    show_node_with_children(n.id, ui, world);
-                });
-            }
         }
         if "Inspect Nodes".cstr().button(ui).clicked() {
             Window::new("Nodes Inspector", |ui, world| {

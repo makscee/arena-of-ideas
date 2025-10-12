@@ -27,7 +27,7 @@ pub struct TPlayerLinkSelection {
     #[index(btree)]
     pub player_id: u64,
     #[index(btree)]
-    pub source_id: u64,
+    pub parent_id: u64,
     #[index(btree)]
     pub kind: String,
     #[index(btree)]
@@ -74,7 +74,7 @@ impl TNodeLink {
         parent_kind: String,
         child_kind: String,
         solid: bool,
-    ) -> Result<Self, String> {
+    ) -> NodeResult<Self> {
         if ctx
             .db
             .node_links()
@@ -100,7 +100,7 @@ impl TNodeLink {
         child: &TNode,
         parent: &TNode,
         solid: bool,
-    ) -> Result<Self, String> {
+    ) -> NodeResult<Self> {
         Self::add_by_id(
             ctx,
             parent.id,
@@ -110,7 +110,7 @@ impl TNodeLink {
             solid,
         )
     }
-    pub fn solidify(ctx: &ReducerContext, parent: u64, child: u64) -> Result<(), String> {
+    pub fn solidify(ctx: &ReducerContext, parent: u64, child: u64) -> NodeResult<()> {
         let mut link = ctx
             .db
             .node_links()
@@ -170,14 +170,14 @@ impl TNodeLink {
 
 #[allow(unused)]
 pub trait NodeIdExt {
-    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String>;
+    fn load_node<T: Node>(self, ctx: &ReducerContext) -> NodeResult<T>;
     fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode>;
-    fn load_tnode_err(self, ctx: &ReducerContext) -> Result<TNode, String>;
+    fn load_tnode_err(self, ctx: &ReducerContext) -> NodeResult<TNode>;
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
-    fn add_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
-    fn add_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
-    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
-    fn remove_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String>;
+    fn add_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
+    fn add_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
+    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
+    fn remove_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn get_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn find_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
@@ -194,7 +194,7 @@ pub trait NodeIdExt {
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
 }
 impl NodeIdExt for u64 {
-    fn load_node<T: NodeExt>(self, ctx: &ReducerContext) -> Result<T, String> {
+    fn load_node<T: Node>(self, ctx: &ReducerContext) -> NodeResult<T> {
         self.load_tnode(ctx)
             .to_custom_e_s_fn(|| format!("Node#{self} not found"))?
             .to_node()
@@ -202,14 +202,13 @@ impl NodeIdExt for u64 {
     fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode> {
         ctx.db.nodes_world().id().find(self)
     }
-    fn load_tnode_err(self, ctx: &ReducerContext) -> Result<TNode, String> {
-        self.load_tnode(ctx)
-            .to_custom_e_s_fn(|| format!("Failed to find TNode#{self}"))
+    fn load_tnode_err(self, ctx: &ReducerContext) -> NodeResult<TNode> {
+        self.load_tnode(ctx).to_not_found()
     }
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind> {
         ctx.db.nodes_world().id().find(self).map(|v| v.kind())
     }
-    fn add_parent(self, ctx: &ReducerContext, parent: u64) -> Result<(), String> {
+    fn add_parent(self, ctx: &ReducerContext, parent: u64) -> NodeResult<()> {
         let child =
             TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link child#{self} not found"))?;
         let parent = TNode::load(ctx, parent)
@@ -217,7 +216,7 @@ impl NodeIdExt for u64 {
         TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
-    fn add_child(self, ctx: &ReducerContext, child: u64) -> Result<(), String> {
+    fn add_child(self, ctx: &ReducerContext, child: u64) -> NodeResult<()> {
         let parent =
             TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link parent#{self} not found"))?;
         let child =
@@ -225,7 +224,7 @@ impl NodeIdExt for u64 {
         TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }
-    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
         let l = ctx
             .db
             .node_links()
@@ -238,7 +237,7 @@ impl NodeIdExt for u64 {
         ctx.db.node_links().id().delete(l.id);
         Ok(())
     }
-    fn remove_child(self, ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    fn remove_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
         let l = ctx
             .db
             .node_links()
@@ -384,40 +383,12 @@ impl TPlayerLinkSelection {
             .count() as i32
     }
 
-    fn determine_source_and_kind(
-        ctx: &ReducerContext,
-        parent_id: u64,
-        child_id: u64,
-    ) -> Result<(u64, String), String> {
-        let parent = parent_id.load_tnode_err(ctx)?;
-        let child = child_id.load_tnode_err(ctx)?;
-
-        let parent_kind = parent.kind();
-        let child_kind = child.kind();
-
-        // Check if parent can be source of child
-        if parent_kind.source_of().contains(&child_kind) {
-            Ok((parent_id, child_kind.to_string()))
-        }
-        // Check if child can be source of parent
-        else if child_kind.source_of().contains(&parent_kind) {
-            Ok((child_id, parent_kind.to_string()))
-        } else {
-            Err(format!(
-                "No valid source relationship between {} and {}",
-                parent_kind, child_kind
-            ))
-        }
-    }
-
     pub fn select_link(
         ctx: &ReducerContext,
         player_id: u64,
         parent_id: u64,
         child_id: u64,
-    ) -> Result<(), String> {
-        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
-
+    ) -> NodeResult<()> {
         // Find the link between parent and child
         let link = ctx
             .db
@@ -428,9 +399,10 @@ impl TPlayerLinkSelection {
             .ok_or_else(|| {
                 format!("Link between parent#{parent_id} and child#{child_id} not found")
             })?;
+        let kind = link.child_kind;
 
         // Remove any existing selection for this player, source, and kind
-        if let Some(existing) = Self::find_selection(ctx, player_id, source_id, &kind) {
+        if let Some(existing) = Self::find_selection(ctx, player_id, parent_id, &kind) {
             // Decrease rating of previously selected link
             if let Some(mut prev_link) = ctx.db.node_links().id().find(existing.selected_link_id) {
                 prev_link.rating -= 1;
@@ -445,8 +417,8 @@ impl TPlayerLinkSelection {
             .insert(TPlayerLinkSelection {
                 id: 0,
                 player_id,
-                source_id,
-                kind: kind.to_string(),
+                parent_id,
+                kind: kind,
                 selected_link_id: link.id,
             });
 
@@ -470,9 +442,9 @@ impl TPlayerLinkSelection {
         player_id: u64,
         parent_id: u64,
         child_id: u64,
-    ) -> Result<(), String> {
-        let (source_id, kind) = Self::determine_source_and_kind(ctx, parent_id, child_id)?;
-        if let Some(selection) = Self::find_selection(ctx, player_id, source_id, &kind) {
+    ) -> NodeResult<()> {
+        let kind = child_id.load_tnode(ctx).to_not_found()?.kind;
+        if let Some(selection) = Self::find_selection(ctx, player_id, parent_id, &kind) {
             // Decrease rating of the link
             if let Some(mut link) = ctx.db.node_links().id().find(selection.selected_link_id) {
                 link.rating -= 1;
@@ -481,21 +453,21 @@ impl TPlayerLinkSelection {
             ctx.db.player_link_selections().id().delete(selection.id);
             Ok(())
         } else {
-            Err("No selection found to remove".to_string())
+            Err("No selection found to remove".into())
         }
     }
 
     fn find_selection(
         ctx: &ReducerContext,
         player_id: u64,
-        source_id: u64,
+        parent_id: u64,
         kind: &str,
     ) -> Option<Self> {
         ctx.db
             .player_link_selections()
             .player_id()
             .filter(&player_id)
-            .filter(|s| s.source_id == source_id && s.kind == kind)
+            .filter(|s| s.parent_id == parent_id && s.kind == kind)
             .next()
     }
 }
@@ -518,9 +490,9 @@ impl TNode {
             Self::delete_by_id(ctx, *id);
         }
     }
-    pub fn to_node<T: Node + StringData>(&self) -> Result<T, String> {
+    pub fn to_node<T: Node>(&self) -> NodeResult<T> {
         let mut d = T::default();
-        d.inject_data(&self.data).to_str_err()?;
+        d.inject_data(&self.data)?;
         d.set_id(self.id);
         d.set_owner(self.owner);
         Ok(d)
@@ -545,28 +517,6 @@ impl TNode {
             .nodes_world()
             .kind_owner()
             .filter((kind.as_ref(), owner))
-            .collect()
-    }
-}
-
-pub trait TNodeVecExt {
-    fn to_nodes<T: NodeExt>(self) -> Vec<T>;
-}
-
-impl TNodeVecExt for Vec<TNode> {
-    fn to_nodes<T: NodeExt>(self) -> Vec<T> {
-        self.into_iter()
-            .filter_map(|n| n.to_node::<T>().ok())
-            .collect()
-    }
-}
-pub trait IdVecExt {
-    fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T>;
-}
-impl IdVecExt for Vec<u64> {
-    fn to_nodes<T: NodeExt>(self, ctx: &ReducerContext) -> Vec<T> {
-        self.into_iter()
-            .filter_map(|n| n.load_node::<T>(ctx).ok())
             .collect()
     }
 }

@@ -1,6 +1,5 @@
 mod action;
 mod context;
-mod error;
 mod event;
 mod expression;
 mod fusion;
@@ -9,7 +8,7 @@ mod links;
 mod macro_fn;
 mod r#match;
 mod node_assets;
-mod node_part;
+mod node_error;
 mod packed_nodes;
 mod painter_action;
 mod reaction;
@@ -22,14 +21,13 @@ mod var_value;
 mod raw_nodes;
 
 // Re-export node macro and types from raw_nodes
-pub use proc_macros::node;
+pub use proc_macros::Node;
 
 use std::{fmt::Display, str::FromStr};
 
 pub use action::*;
 pub use context::*;
 use ecolor::Color32;
-pub use error::*;
 pub use event::*;
 pub use expression::*;
 pub use fusion::*;
@@ -38,8 +36,9 @@ pub use links::*;
 pub use macro_fn::*;
 pub use r#match::*;
 pub use node_assets::*;
+#[allow(unused_imports)]
+pub use node_error::*;
 
-pub use node_part::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;
@@ -75,14 +74,14 @@ impl ToNodeKind for String {
 }
 
 pub trait StringData: Sized {
-    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError>;
+    fn inject_data(&mut self, data: &str) -> NodeResult<()>;
     fn get_data(&self) -> String;
 }
 impl<T> StringData for T
 where
     T: Serialize + DeserializeOwned,
 {
-    fn inject_data(&mut self, data: &str) -> Result<(), ExpressionError> {
+    fn inject_data(&mut self, data: &str) -> NodeResult<()> {
         match ron::from_str(data) {
             Ok(v) => {
                 *self = v;

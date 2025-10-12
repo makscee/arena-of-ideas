@@ -13,7 +13,7 @@ use bevy_egui::egui::{
 };
 use parking_lot::{Mutex, MutexGuard};
 use ron::ser::{PrettyConfig, to_string_pretty};
-use schema::{ExpressionError, VarName, VarValue};
+use schema::{NodeError, VarName, VarValue};
 use serde::Serialize;
 
 static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);
@@ -234,26 +234,23 @@ impl CtxExt for egui::Context {
 }
 
 pub trait VarValueExt {
-    fn get_entity(&self) -> Result<Entity, ExpressionError>;
-    fn get_entity_list(&self) -> Result<Vec<Entity>, ExpressionError>;
+    fn get_id(&self) -> Result<u64, NodeError>;
+    fn get_ids_list(&self) -> Result<Vec<u64>, NodeError>;
 }
 
 impl VarValueExt for VarValue {
-    fn get_entity(&self) -> Result<Entity, ExpressionError> {
+    fn get_id(&self) -> Result<u64, NodeError> {
         match self {
-            VarValue::Entity(v) => Ok(Entity::from_bits(*v)),
-            _ => Err(ExpressionError::not_supported_single(
-                "Cast to Entity",
-                self.clone(),
-            )),
+            VarValue::Id(v) => Ok(*v),
+            _ => Err(NodeError::not_supported_single("Cast to Id", self.clone())),
         }
     }
-    fn get_entity_list(&self) -> Result<Vec<Entity>, ExpressionError> {
+    fn get_ids_list(&self) -> Result<Vec<u64>, NodeError> {
         match self {
-            VarValue::list(v) => Ok(v.into_iter().filter_map(|v| v.get_entity().ok()).collect()),
-            VarValue::Entity(v) => Ok([Entity::from_bits(*v)].to_vec().into()),
-            _ => Err(ExpressionError::not_supported_single(
-                "Cast to list of Entities",
+            VarValue::list(v) => Ok(v.into_iter().filter_map(|v| v.get_id().ok()).collect()),
+            VarValue::Id(v) => Ok(vec![*v]),
+            _ => Err(NodeError::not_supported_single(
+                "Cast to list of Ids",
                 self.clone(),
             )),
         }

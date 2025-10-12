@@ -1,6 +1,4 @@
 use node_build_utils::*;
-use quote::ToTokens;
-use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -25,17 +23,21 @@ fn main() {
     }
 
     // Generate client-specific node implementations
-    let generated = generate_client_nodes(&nodes, &node_map);
+    let generated = generate_client_nodes(&nodes);
+
+    // Add comprehensive allow attributes at the top
+    let allow_attrs = generated_code_allow_attrs();
+    let final_code = quote! {
+        #allow_attrs
+        #generated
+    };
 
     // Format and write
-    let formatted_code = format_code(&generated);
+    let formatted_code = format_code(&final_code);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
-fn generate_client_nodes(
-    nodes: &[NodeInfo],
-    node_map: &HashMap<String, NodeInfo>,
-) -> proc_macro2::TokenStream {
+fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     let node_structs = nodes.iter().map(|node| {
         let struct_name = &node.name;
 
@@ -52,26 +54,33 @@ fn generate_client_nodes(
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
-        // Generate with_components() method
-        let with_components_method = generate_with_components(node);
+        // Generate add_components() method
+        let add_components_method = generate_add_components(node);
 
         // Generate default implementation
         let default_impl = generate_default_impl(node);
 
         // Generate ClientNode implementation
-        let client_node_impl = generate_client_node_impl(node, node_map);
+        let client_node_impl = generate_client_node_impl(node);
 
         // Generate link loading methods
-        let link_methods = generate_link_methods(
-            node,
-            format_ident!("ClientContext"),
-            Some(quote! {.cloned()}.to_token_stream()),
-        );
+        let link_methods = generate_client_link_methods(node);
+
+        let load_components_method = generate_load_functions(node, "ClientContext");
+
+        // Generate collect methods
+        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
+        let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         // All nodes are Components in client
+        let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
-            #[derive(Debug, Clone, BevyComponent, Serialize, Deserialize)]
+            #allow_attrs
+            #[derive(Debug, Clone, BevyComponent)]
         };
+
+        // Generate manual Serialize/Deserialize implementation
+        let serialize_impl = generate_manual_serialize_impl(node);
 
         quote! {
             #derives
@@ -81,17 +90,19 @@ fn generate_client_nodes(
                 #(#fields,)*
             }
 
+            #serialize_impl
+
+            #allow_attrs
             impl #struct_name {
                 #new_method
 
-                #with_components_method
-
-                pub fn with_id(mut self, id: u64) -> Self {
-                    self.id = id;
-                    self
-                }
+                #add_components_method
 
                 #link_methods
+
+                #load_components_method
+                #collect_owned_ids_method
+                #collect_owned_links_method
             }
 
             #client_node_impl
@@ -101,7 +112,8 @@ fn generate_client_nodes(
     });
 
     // Generate conversion traits
-    let conversions = generate_conversions(nodes);
+    let allow_attrs = generated_code_allow_attrs();
+    let conversions = generate_node_impl(nodes);
 
     // Generate ToCstr and FDisplay implementations
     let tocstr_impls = nodes.iter().map(|node| {
@@ -114,6 +126,12 @@ fn generate_client_nodes(
             }
         }
     });
+
+    // Generate NodeLoader implementation for ClientContext
+    let node_loader_impl = generate_node_loader_impl(nodes);
+
+    // Generate NodeKind spawn extension
+    let node_kind_spawn_impl = generate_node_kind_spawn_impl(nodes);
 
     // Generate NamedNode trait and implementations
     let named_node_trait = quote! {
@@ -136,14 +154,16 @@ fn generate_client_nodes(
     });
 
     quote! {
-        use schema::{Context, ContextSource, NodeError, NodeKind, LinkState, Link};
-        use crate::resources::context::ClientContextExt;
-
         #(#node_structs)*
 
         #conversions
 
+        #allow_attrs
         #(#tocstr_impls)*
+
+        #node_loader_impl
+
+        #node_kind_spawn_impl
 
         #named_node_trait
 
@@ -151,10 +171,7 @@ fn generate_client_nodes(
     }
 }
 
-fn generate_client_node_impl(
-    node: &NodeInfo,
-    _node_map: &HashMap<String, NodeInfo>,
-) -> proc_macro2::TokenStream {
+fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
 
     // Generate spawn implementation that handles entity creation and linking
@@ -164,39 +181,10 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(component) = item.as_ref() {
-                                    if let Some(loaded) = component.get() {
-                                        world.entity_mut(entity).insert(loaded.clone());
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(component) = &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    world.entity_mut(entity).insert(loaded.clone());
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if field.is_vec {
-                        quote! {
-                            for component in &self.#field_name {
-                                world.entity_mut(entity).insert(component.clone());
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                world.entity_mut(entity).insert(loaded.clone());
-                            }
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.clone().spawn(ctx, Some(entity)).track()?;
+                        ctx.add_link(self.id, loaded.id).track()?;
                     }
                 })
             }
@@ -209,46 +197,18 @@ fn generate_client_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Owned => {
                 let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(owned) = item.as_ref() {
-                                    if let Some(loaded) = owned.get() {
-                                        let child_entity = world.spawn_empty().id();
-                                        loaded.clone().spawn(world);
-                                        world.entity_mut(child_entity).set_parent(entity);
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(owned) = &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    let child_entity = world.spawn_empty().id();
-                                    loaded.clone().spawn(world);
-                                    world.entity_mut(child_entity).set_parent(entity);
-                                }
-                            }
+                Some(if field.is_vec {
+                    quote! {
+                        for item in &self.#field_name {
+                            item.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, item.id).track()?;
                         }
                     }
                 } else {
-                    if field.is_vec {
-                        quote! {
-                            for owned in &self.#field_name {
-                                let child_entity = world.spawn_empty().id();
-                                owned.clone().spawn(world);
-                                world.entity_mut(child_entity).set_parent(entity);
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                let child_entity = world.spawn_empty().id();
-                                loaded.clone().spawn(world);
-                                world.entity_mut(child_entity).set_parent(entity);
-                            }
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, loaded.id).track()?;
                         }
                     }
                 })
@@ -256,107 +216,118 @@ fn generate_client_node_impl(
             _ => None,
         });
 
-    let spawn_refs = node
-        .fields
-        .iter()
-        .filter_map(|field| match field.link_type {
-            LinkType::Ref => {
-                let field_name = &field.name;
-                Some(if field.is_optional {
-                    if field.is_vec {
-                        quote! {
-                            for item in &self.#field_name {
-                                if let Some(ref_link) = item.as_ref() {
-                                    if let Some(id) = ref_link.id() {
-                                        // Check if entity with this id already exists
-                                        let mut found_entity = None;
-                                        if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                            found_entity = node_entity_map.get_entity(id);
-                                        }
-                                        if found_entity.is_none() {
-                                            if let Some(loaded) = ref_link.get() {
-                                                loaded.clone().spawn(world);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(ref_link) = &self.#field_name {
-                                if let Some(id) = ref_link.id() {
-                                    // Check if entity with this id already exists
-                                    let mut found_entity = None;
-                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                        found_entity = node_entity_map.get_entity(id);
-                                    }
-                                    if found_entity.is_none() {
-                                        if let Some(loaded) = ref_link.get() {
-                                            loaded.clone().spawn(world);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    if field.is_vec {
-                        quote! {
-                            for ref_link in &self.#field_name {
-                                if let Some(id) = ref_link.id() {
-                                    // Check if entity with this id already exists
-                                    let mut found_entity = None;
-                                    if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                        found_entity = node_entity_map.get_entity(id);
-                                    }
-                                    if found_entity.is_none() {
-                                        if let Some(loaded) = ref_link.get() {
-                                            loaded.clone().spawn(world);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        quote! {
-                            if let Some(id) = self.#field_name.id() {
-                                // Check if entity with this id already exists
-                                let mut found_entity = None;
-                                if let Some(node_entity_map) = world.get_resource::<NodeEntityMap>() {
-                                    found_entity = node_entity_map.get_entity(id);
-                                }
-                                if found_entity.is_none() {
-                                    if let Some(loaded) = self.#field_name.get() {
-                                        loaded.clone().spawn(world);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                })
-            }
-            _ => None,
-        });
-
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl ClientNode for #struct_name {
-            fn spawn(self, world: &mut World) {
-                let entity = world.spawn(self.clone()).id();
-
-                // Register id-entity mapping in NodeEntityMap
-                if let Some(mut node_entity_map) = world.get_resource_mut::<NodeEntityMap>() {
-                    node_entity_map.insert(self.id, entity);
+            fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()> {
+                if self.id == 0 {
+                    panic!("Tried to spawn node without id");
                 }
-
-                // Add component links to same entity
+                let entity = match entity {
+                    Some(e) => e,
+                    None => ctx.world_mut()?.spawn_empty().id(),
+                };
+                ctx.add_id_entity_link(self.id, entity).track()?;
                 #(#spawn_components)*
-
-                // Create child entities for owned links
                 #(#spawn_owned)*
+                let kind = self.kind();
+                ctx.world_mut().track()?.entity_mut(entity).insert(self);
+                kind.on_spawn(ctx, entity)
+            }
+        }
+    }
+}
 
-                // Handle ref links with id-entity checking
-                #(#spawn_refs)*
+fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let load_and_get_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let world = self.world()?;
+                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
+                    if let Some(entity) = entity_map.get_entity(node_id) {
+                        if let Some(node) = world.get::<#node_name>(entity) {
+                            return node.get_var(var);
+                        }
+                    }
+                }
+                Err(NodeError::not_found(node_id))
+            }
+        }
+    });
+
+    let load_and_set_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let world = self.world_mut()?;
+                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
+                    if let Some(entity) = entity_map.get_entity(node_id) {
+                        if let Some(mut node) = world.get_mut::<#node_name>(entity) {
+                            node.set_var(var, value)?;
+                            return Ok(());
+                        }
+                    }
+                }
+                Err(NodeError::not_found(node_id))
+            }
+        }
+    });
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        #allow_attrs
+        impl<'w> NodeLoader for WorldSource<'w> {
+            fn load_and_get_var(
+                &self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+            ) -> NodeResult<VarValue> {
+                match node_kind {
+                    #(#load_and_get_var_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot get var from None node")),
+                }
+            }
+
+            fn load_and_set_var(
+                &mut self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+                value: VarValue,
+            ) -> NodeResult<()> {
+                match node_kind {
+                    #(#load_and_set_var_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
+                }
+            }
+        }
+    }
+}
+
+fn generate_node_kind_spawn_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let spawn_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => node.to_node::<#node_name>()?.spawn(ctx, None)
+        }
+    });
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        pub trait NodeKindSpawnExt {
+            fn spawn(self, ctx: &mut ClientContext, node: &TNode) -> NodeResult<()>;
+        }
+
+        #allow_attrs
+        impl NodeKindSpawnExt for NodeKind {
+            fn spawn(self, ctx: &mut ClientContext, node: &TNode) -> NodeResult<()> {
+                match self {
+                    #(#spawn_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot spawn None node")),
+                }
             }
         }
     }

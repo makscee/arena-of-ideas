@@ -48,26 +48,42 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         }
         n.update(ctx);
     }
-
+    let ctx = &ctx.as_context();
     let mut units = NUnit::collect_owner(ctx, 0);
     info!("initial units {}", units.len());
     units.retain_mut(|unit| {
-        let Some(mut description) = unit.top_parent::<NUnitDescription>(ctx) else {
+        let Some(mut description) = unit
+            .id
+            .top_parent(ctx.rctx(), NodeKind::NUnitDescription)
+            .and_then(|id| ctx.load::<NUnitDescription>(id).ok())
+        else {
             return false;
         };
-        if let Some(behavior) = description.mutual_top_parent::<NUnitBehavior>(ctx) {
-            description.behavior.set_data(behavior);
+        if let Some(behavior) = description
+            .id
+            .mutual_top_parent(ctx.rctx(), NodeKind::NUnitBehavior)
+            .and_then(|id| ctx.load::<NUnitBehavior>(id).ok())
+        {
+            description.behavior.state_mut().set(behavior);
         } else {
             return false;
         }
-        if let Some(representation) = description.mutual_top_parent::<NUnitRepresentation>(ctx) {
-            description.representation.set_data(representation);
+        if let Some(representation) = description
+            .id
+            .mutual_top_parent(ctx.rctx(), NodeKind::NUnitRepresentation)
+            .and_then(|id| ctx.load::<NUnitRepresentation>(id).ok())
+        {
+            description.representation.state_mut().set(representation);
         } else {
             return false;
         }
-        unit.description.set_data(description);
-        if let Some(stats) = unit.top_parent::<NUnitStats>(ctx) {
-            unit.stats.set_data(stats);
+        unit.description.state_mut().set(description);
+        if let Some(stats) = unit
+            .id
+            .top_parent(ctx.rctx(), NodeKind::NUnitStats)
+            .and_then(|id| ctx.load::<NUnitStats>(id).ok())
+        {
+            unit.stats.state_mut().set(stats);
         } else {
             return false;
         }
@@ -79,18 +95,21 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     let mut status_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
 
     for unit in units {
-        if let Some(description) = unit.description.get_data() {
+        if let Some(description) = unit.description.get() {
             match description.magic_type {
                 MagicType::Ability => {
                     // Find the ability magic this unit should belong to
-                    if let Some(ability) = unit.top_parent::<NAbilityMagic>(ctx) {
-                        ability_units.entry(ability.id).or_default().push(unit);
+                    if let Some(ability_id) =
+                        unit.id.top_parent(ctx.rctx(), NodeKind::NAbilityMagic)
+                    {
+                        ability_units.entry(ability_id).or_default().push(unit);
                     }
                 }
                 MagicType::Status => {
                     // Find the status magic this unit should belong to
-                    if let Some(status) = unit.top_parent::<NStatusMagic>(ctx) {
-                        status_units.entry(status.id).or_default().push(unit);
+                    if let Some(status_id) = unit.id.top_parent(ctx.rctx(), NodeKind::NStatusMagic)
+                    {
+                        status_units.entry(status_id).or_default().push(unit);
                     }
                 }
             }
@@ -105,49 +124,84 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     let mut houses: VecDeque<NHouse> = VecDeque::from_iter(NHouse::collect_owner(ctx, 0));
     while let Some(mut house) = houses.pop_front() {
         info!("start house {}", house.house_name);
-        if let Some(color) = house.mutual_top_parent::<NHouseColor>(ctx) {
+        if let Some(color) = house
+            .id
+            .mutual_top_parent(ctx.rctx(), NodeKind::NHouseColor)
+            .and_then(|id| ctx.load::<NHouseColor>(id).ok())
+        {
             info!("color: {}", color.color.0);
-            house.color.set_data(color);
+            house.color.state_mut().set(color);
         } else {
             error!("color failed");
             continue;
         }
-        if let Some(mut ability) = house.mutual_top_child::<NAbilityMagic>(ctx) {
-            if let Some(mut description) = ability.mutual_top_parent::<NAbilityDescription>(ctx) {
-                if let Some(effect) = description.mutual_top_parent::<NAbilityEffect>(ctx) {
-                    description.effect.set_data(effect);
-                    ability.description.set_data(description);
-
-                    if let Some(units) = ability_units.remove(&ability.id) {
-                        ability.units.set_data(units);
+        if let Some(mut ability) = house
+            .id
+            .mutual_top_child(ctx.rctx(), NodeKind::NAbilityMagic)
+            .and_then(|id| ctx.load::<NAbilityMagic>(id).ok())
+        {
+            if let Some(mut description) = ability
+                .id
+                .mutual_top_parent(ctx.rctx(), NodeKind::NAbilityDescription)
+                .and_then(|id| ctx.load::<NAbilityDescription>(id).ok())
+            {
+                if let Some(effect) = description
+                    .id
+                    .mutual_top_parent(ctx.rctx(), NodeKind::NAbilityEffect)
+                    .and_then(|id| ctx.load::<NAbilityEffect>(id).ok())
+                {
+                    description.effect.state_mut().set(effect);
+                    ability.description.state_mut().set(description);
+                    let ability_id = ability.id;
+                    house.ability.state_mut().set(ability);
+                    if let Some(units) = ability_units.remove(&ability_id) {
+                        // TODO: Handle units assignment
                     }
-
-                    house.ability.set_data(ability);
                 } else {
                     error!("ability effect failed");
+                    continue;
                 }
             } else {
                 error!("ability description failed");
+                continue;
             }
-        };
-        if let Some(mut status) = house.mutual_top_child::<NStatusMagic>(ctx) {
-            if let Some(mut description) = status.mutual_top_parent::<NStatusDescription>(ctx) {
-                if let Some(behavior) = description.mutual_top_parent::<NStatusBehavior>(ctx) {
-                    description.behavior.set_data(behavior);
-                    status.description.set_data(description);
-                    if let Some(units) = status_units.remove(&status.id) {
-                        status.units.set_data(units);
+        } else {
+            error!("ability child failed");
+            continue;
+        }
+        if let Some(mut status) = house
+            .id
+            .mutual_top_child(ctx.rctx(), NodeKind::NStatusMagic)
+            .and_then(|id| ctx.load::<NStatusMagic>(id).ok())
+        {
+            if let Some(mut description) = status
+                .id
+                .mutual_top_parent(ctx.rctx(), NodeKind::NStatusDescription)
+                .and_then(|id| ctx.load::<NStatusDescription>(id).ok())
+            {
+                if let Some(behavior) = description
+                    .id
+                    .mutual_top_parent(ctx.rctx(), NodeKind::NStatusBehavior)
+                    .and_then(|id| ctx.load::<NStatusBehavior>(id).ok())
+                {
+                    description.behavior.state_mut().set(behavior);
+                    status.description.state_mut().set(description);
+                    let status_id = status.id;
+                    house.status.state_mut().set(status);
+                    if let Some(units) = status_units.remove(&status_id) {
+                        // TODO: Handle units assignment
                     }
-
-                    house.status.set_data(status);
                 } else {
                     error!("status behavior failed");
+                    continue;
                 }
             } else {
                 error!("status description failed");
+                continue;
             }
         } else {
             error!("status magic failed");
+            continue;
         }
         if house.status.is_none() {
             error!("failed to get status for house");
@@ -159,22 +213,17 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         }
 
         info!("solidifying house {}", house.house_name);
-        for id in house.collect_ids() {
-            let mut node = id.load_tnode(ctx).unwrap();
+        for id in house.collect_owned_ids() {
+            let mut node = id.load_tnode(ctx.rctx()).unwrap();
             node.owner = ID_CORE;
-            node.update(ctx);
+            node.update(ctx.rctx());
         }
-        house.solidify_links(ctx)?;
+        for (parent_id, child_id) in house.collect_owned_links() {
+            TNodeLink::solidify(ctx.rctx(), parent_id, child_id)?;
+        }
     }
 
     Ok(())
-}
-
-#[reducer]
-fn admin_delete_node(ctx: &ReducerContext, id: u64) -> Result<(), String> {
-    ctx.is_admin()?;
-    let kind = id.kind(ctx).to_custom_e_s("Failed to get kind")?;
-    kind.delete_with_parts(ctx, id)
 }
 
 #[reducer]
@@ -223,7 +272,7 @@ fn admin_upload_world(
             ron::from_str::<LinkAsset>(&link).map_err(|e| e.to_string())?;
         let solid = solid != 0;
         TNodeLink {
-            id: ctx.next_id(),
+            id: ctx.as_context().next_id(),
             parent,
             child,
             parent_kind,
@@ -239,10 +288,11 @@ fn admin_upload_world(
 #[reducer]
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
+    let ctx = &ctx.as_context();
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     m.g += 10;
-    player.save(ctx);
+    player.save(ctx.source());
     Ok(())
 }
 

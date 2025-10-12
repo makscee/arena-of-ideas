@@ -11,7 +11,6 @@ utils = { path = "../utils" }
 schema = { path = "../schema" }
 utils-client = { path = "../utils-client" }
 proc-macros = { path = "../proc-macros" }
-node-loaders = { path = "../node-loaders", features = ["client"] }
 
 spacetimedb-sdk = { workspace = true }
 spacetimedb-sats = { workspace = true }

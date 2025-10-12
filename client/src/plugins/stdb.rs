@@ -1,36 +1,54 @@
 use bevy::ecs::event::{Event, EventReader, Events};
 use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
+use std::collections::VecDeque;
 
 use super::*;
 use crate::plugins::explorer::ExplorerState;
+
+#[derive(Resource, Default)]
+pub struct EventQueue {
+    pending_events: VecDeque<QueuedEvent>,
+}
+
+#[derive(Clone)]
+enum QueuedEvent {
+    Node(StdbNodeEvent),
+    Link(StdbLinkEvent),
+}
 
 pub struct StdbPlugin;
 
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Events<StdbEvent>>();
+        app.init_resource::<Events<StdbNodeEvent>>();
         app.init_resource::<Events<StdbLinkEvent>>();
+        app.init_resource::<EventQueue>();
         app.add_systems(
             Update,
-            (Self::handle_stdb_events, Self::handle_stdb_link_events),
+            (
+                Self::handle_stdb_events,
+                Self::handle_stdb_link_events,
+                Self::process_event_queue,
+            )
+                .chain(),
         );
     }
 }
 
+#[derive(Clone)]
 pub enum StdbChange {
     Update,
     Insert,
     Delete,
 }
 
-#[derive(Event)]
-pub struct StdbEvent {
-    pub entity: Entity,
+#[derive(Event, Clone)]
+pub struct StdbNodeEvent {
     pub node: TNode,
     pub change: StdbChange,
 }
 
-#[derive(Event)]
+#[derive(Event, Clone)]
 pub struct StdbLinkEvent {
     pub parent: u64,
     pub child: u64,
@@ -42,7 +60,7 @@ pub struct StdbLinkEvent {
 }
 
 impl StdbPlugin {
-    fn handle_stdb_events(mut events: EventReader<StdbEvent>, state: Res<State<GameState>>) {
+    fn handle_stdb_events(mut events: EventReader<StdbNodeEvent>, state: Res<State<GameState>>) {
         for event in events.read() {
             Self::process_stdb_event(event, state.get());
         }
@@ -57,7 +75,128 @@ impl StdbPlugin {
         }
     }
 
-    fn process_stdb_event(event: &StdbEvent, current_state: &GameState) {
+    fn process_event_queue(mut queue: ResMut<EventQueue>) {
+        let mut processed = 0;
+        let initial_len = queue.pending_events.len();
+
+        while processed < initial_len {
+            if let Some(event) = queue.pending_events.pop_front() {
+                match event {
+                    QueuedEvent::Node(node_event) => {
+                        Self::process_queued_node_event(&node_event);
+                    }
+                    QueuedEvent::Link(link_event) => {
+                        Self::try_process_queued_link_event(&link_event);
+                    }
+                }
+            }
+            processed += 1;
+        }
+    }
+
+    fn try_process_queued_link_event(link_event: &StdbLinkEvent) {
+        let event_clone = link_event.clone();
+        op(move |world| {
+            let can_process = world
+                .with_context_mut(|ctx| {
+                    ctx.entity(event_clone.parent)?;
+                    ctx.entity(event_clone.child)?;
+                    Ok(())
+                })
+                .is_ok();
+
+            if can_process {
+                Self::process_queued_link_event_inner(world, &event_clone);
+            } else {
+                // Re-queue the event if nodes aren't ready yet
+                if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
+                    queue
+                        .pending_events
+                        .push_back(QueuedEvent::Link(event_clone));
+                }
+            }
+        });
+    }
+
+    fn process_queued_node_event(node_event: &StdbNodeEvent) {
+        let node_event = node_event.clone();
+        match node_event.change {
+            StdbChange::Insert => {
+                op(move |world| {
+                    world
+                        .with_context_mut(|ctx| {
+                            node_event.node.kind().spawn(ctx, &node_event.node)?;
+                            ctx.world_mut()?.send_event(node_event);
+                            Ok(())
+                        })
+                        .log();
+                });
+            }
+            StdbChange::Update => {
+                op(move |world| {
+                    world
+                        .with_context_mut(|ctx| {
+                            node_event.node.kind().spawn(ctx, &node_event.node)?;
+                            ctx.world_mut()?.send_event(node_event);
+                            Ok(())
+                        })
+                        .log();
+                });
+            }
+            StdbChange::Delete => {
+                op(move |world| {
+                    world
+                        .with_context_mut(|ctx| {
+                            ctx.despawn(node_event.node.id)?;
+                            ctx.world_mut()?.send_event(node_event);
+                            Ok(())
+                        })
+                        .log();
+                });
+            }
+        }
+    }
+
+    fn process_queued_link_event_inner(world: &mut World, link_event: &StdbLinkEvent) {
+        match link_event.change {
+            StdbChange::Insert => {
+                if link_event.solid {
+                    world
+                        .as_context_mut()
+                        .add_link(link_event.parent, link_event.child)
+                        .track()
+                        .notify_error_op();
+                }
+                world.send_event(link_event.clone());
+            }
+            StdbChange::Update => {
+                if link_event.solid {
+                    world
+                        .as_context_mut()
+                        .add_link(link_event.parent, link_event.child)
+                        .track()
+                        .notify_error_op();
+                } else {
+                    world
+                        .as_context_mut()
+                        .remove_link(link_event.parent, link_event.child)
+                        .notify_error_op();
+                }
+                world.send_event(link_event.clone());
+            }
+            StdbChange::Delete => {
+                if link_event.solid {
+                    world
+                        .as_context_mut()
+                        .remove_link(link_event.parent, link_event.child)
+                        .notify_error_op();
+                }
+                world.send_event(link_event.clone());
+            }
+        }
+    }
+
+    fn process_stdb_event(event: &StdbNodeEvent, current_state: &GameState) {
         // Handle Explorer cache refresh for node changes
         if *current_state == GameState::Explorer
             && (event.node.owner == 0 || event.node.owner == ID_CORE)
@@ -128,11 +267,7 @@ fn subscribe_table_updates() {
         let parent_kind = link.parent_kind.clone();
         let child_kind = link.child_kind.clone();
         op(move |world| {
-            if solid {
-                world.link_parent_child(parent, child);
-            }
-            world.set_link_rating(parent, child, rating, solid);
-            world.send_event(StdbLinkEvent {
+            let link_event = StdbLinkEvent {
                 parent,
                 child,
                 parent_kind,
@@ -140,7 +275,12 @@ fn subscribe_table_updates() {
                 rating,
                 solid,
                 change: StdbChange::Insert,
-            });
+            };
+            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
+                queue
+                    .pending_events
+                    .push_back(QueuedEvent::Link(link_event));
+            }
         });
     });
     db.node_links().on_update(|_, _, link| {
@@ -152,13 +292,7 @@ fn subscribe_table_updates() {
         let parent_kind = link.parent_kind.clone();
         let child_kind = link.child_kind.clone();
         op(move |world| {
-            if solid {
-                world.link_parent_child(parent, child);
-            } else {
-                world.unlink_parent_child(parent, child);
-            }
-            world.set_link_rating(parent, child, rating, solid);
-            world.send_event(StdbLinkEvent {
+            let link_event = StdbLinkEvent {
                 parent,
                 child,
                 parent_kind,
@@ -166,7 +300,12 @@ fn subscribe_table_updates() {
                 rating,
                 solid,
                 change: StdbChange::Update,
-            });
+            };
+            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
+                queue
+                    .pending_events
+                    .push_back(QueuedEvent::Link(link_event));
+            }
         });
     });
     db.node_links().on_delete(|_, link| {
@@ -178,10 +317,7 @@ fn subscribe_table_updates() {
         let parent_kind = link.parent_kind.clone();
         let child_kind = link.child_kind.clone();
         op(move |world| {
-            if solid {
-                world.unlink_parent_child(parent, child);
-            }
-            world.send_event(StdbLinkEvent {
+            let link_event = StdbLinkEvent {
                 parent,
                 child,
                 parent_kind,
@@ -189,7 +325,12 @@ fn subscribe_table_updates() {
                 rating,
                 solid,
                 change: StdbChange::Delete,
-            });
+            };
+            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
+                queue
+                    .pending_events
+                    .push_back(QueuedEvent::Link(link_event));
+            }
         });
     });
 }
@@ -198,32 +339,37 @@ fn on_insert(node: &TNode) {
     info!("Node inserted {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        let entity = world.spawn_empty().id();
-        Context::from_world(world, |context| {
-            node.unpack(context, entity);
-        });
-        world.send_event(StdbEvent {
-            entity,
+        let node_event = StdbNodeEvent {
             node,
             change: StdbChange::Insert,
-        });
+        };
+        if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
+            queue
+                .pending_events
+                .push_back(QueuedEvent::Node(node_event));
+        }
     });
 }
 
 fn on_delete(node: &TNode) {
     let node = node.clone();
     op(move |world| {
-        Context::from_world_r(world, |context| {
-            let entity = context.entity(node.id)?;
-            info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
-            context.world_mut()?.send_event(StdbEvent {
-                entity,
-                node: node.clone(),
-                change: StdbChange::Delete,
-            });
-            context.despawn(entity)
-        })
-        .log();
+        world
+            .with_context_mut(|ctx| {
+                let entity = ctx.entity(node.id)?;
+                info!("Node deleted {}#{} e:{entity}", node.kind, node.id);
+                let node_event = StdbNodeEvent {
+                    node: node.clone(),
+                    change: StdbChange::Delete,
+                };
+                if let Some(mut queue) = ctx.world_mut()?.get_resource_mut::<EventQueue>() {
+                    queue
+                        .pending_events
+                        .push_back(QueuedEvent::Node(node_event));
+                }
+                Ok(())
+            })
+            .log();
     });
 }
 
@@ -231,17 +377,20 @@ fn on_update(node: &TNode) {
     info!("Node updated {}#{}", node.kind, node.id);
     let node = node.clone();
     op(move |world| {
-        Context::from_world_r(world, |context| {
-            let entity = context.entity(node.id)?;
-            node.unpack(context, entity);
-            context.world_mut()?.send_event(StdbEvent {
-                entity,
-                node: node.clone(),
-                change: StdbChange::Update,
-            });
-            Ok(())
-        })
-        .log();
+        world
+            .with_context_mut(|ctx| {
+                let node_event = StdbNodeEvent {
+                    node,
+                    change: StdbChange::Update,
+                };
+                if let Some(mut queue) = ctx.world_mut()?.get_resource_mut::<EventQueue>() {
+                    queue
+                        .pending_events
+                        .push_back(QueuedEvent::Node(node_event));
+                }
+                Ok(())
+            })
+            .log();
     });
 }
 

@@ -23,7 +23,7 @@ impl Tween {
         b: &VarValue,
         t: f32,
         over: f32,
-    ) -> Result<VarValue, ExpressionError> {
+    ) -> Result<VarValue, NodeError> {
         if over == 0.0 {
             return Ok(b.clone());
         }
@@ -63,7 +63,7 @@ impl Tween {
                 true => *a,
                 false => *b,
             })),
-            _ => Err(ExpressionError::not_supported_multiple(
+            _ => Err(NodeError::not_supported_multiple(
                 "Tween",
                 vec![a.clone(), b.clone()],
             )),

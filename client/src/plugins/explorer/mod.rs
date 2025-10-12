@@ -93,7 +93,7 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_named_list<T: Node + NamedNode + FTitle + bevy::ecs::component::Component>(
+    fn render_named_list<T: ClientNode + NamedNode + FTitle + bevy::ecs::component::Component>(
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -105,37 +105,40 @@ impl ExplorerPlugin {
         let inspected_id = state.inspected.get(&kind).copied();
 
         if let Some(items) = items {
-            Context::from_world(world, |context| {
-                items
-                    .as_list(|item, context, ui| {
-                        let item_id = item.0;
-                        let is_inspected = inspected_id == Some(item_id);
+            world
+                .with_context(|context| {
+                    items
+                        .as_list(|item, ctx, ui| {
+                            let item_id = item.0;
+                            let is_inspected = inspected_id == Some(item_id);
 
-                        ui.set_width(ui.available_width());
+                            ui.set_width(ui.available_width());
 
-                        if is_inspected {
-                            ui.visuals_mut().override_text_color = Some(context.color(ui));
-                        }
+                            if is_inspected {
+                                ui.visuals_mut().override_text_color = Some(ctx.color(ui));
+                            }
 
-                        ui.horizontal(|ui| {
-                            ui.label(format!("[{}]", item.2));
-                            if let Ok(node) = context.component_by_id::<T>(item_id) {
-                                node.as_title().compose(context, ui);
+                            ui.horizontal(|ui| {
+                                ui.label(format!("[{}]", item.2));
+                                if let Ok(node) = ctx.load::<T>(item_id) {
+                                    node.as_title().compose(ctx, ui);
+                                }
+                            })
+                            .response
+                        })
+                        .with_hover(|item, _, ui| {
+                            let id = item.0;
+                            if ui.button("Inspect").clicked() {
+                                op(move |world| {
+                                    let mut state = world.resource_mut::<ExplorerState>();
+                                    state.set_inspected(kind, id);
+                                });
                             }
                         })
-                        .response
-                    })
-                    .with_hover(|item, _, ui| {
-                        let id = item.0;
-                        if ui.button("Inspect").clicked() {
-                            op(move |world| {
-                                let mut state = world.resource_mut::<ExplorerState>();
-                                state.set_inspected(kind, id);
-                            });
-                        }
-                    })
-                    .compose(context, ui);
-            });
+                        .compose(context, ui);
+                    Ok(())
+                })
+                .ui(ui);
         } else {
             ui.centered_and_justified(|ui| {
                 ui.vertical(|ui| {
@@ -160,19 +163,22 @@ impl ExplorerPlugin {
         world.insert_resource(state);
     }
 
-    fn render_named_card<T: Node + NamedNode + FCard>(ui: &mut Ui, world: &mut World) {
+    fn render_named_card<T: ClientNode + NamedNode + FCard>(ui: &mut Ui, world: &mut World) {
         let kind: NamedNodeKind = T::kind_s().try_into().unwrap();
         let state = world.resource::<ExplorerState>();
 
         if let Some(&node_id) = state.inspected.get(&kind) {
-            Context::from_world(world, |context| {
-                if let Ok(entity) = context.entity(node_id) {
-                    if let Ok(node) = context.component::<T>(entity) {
-                        let size = ui.available_size();
-                        node.render_card(ui, size);
+            world
+                .with_context(|ctx| {
+                    if let Ok(entity) = ctx.entity(node_id) {
+                        if let Ok(node) = ctx.load_entity::<T>(entity) {
+                            let size = ui.available_size();
+                            node.render_card(ui, size);
+                        }
                     }
-                }
-            });
+                    Ok(())
+                })
+                .ui(ui);
         } else {
             ui.centered_and_justified(|ui| {
                 ui.vertical(|ui| {
@@ -195,7 +201,7 @@ impl ExplorerPlugin {
         }
     }
 
-    fn render_content_pane<T: Node + FDisplay + FEdit + FTitle + Serialize>(
+    fn render_content_pane<T: ClientNode + FDisplay + FEdit + FTitle + Serialize>(
         ui: &mut Ui,
         world: &mut World,
     ) {
@@ -245,11 +251,12 @@ impl ExplorerPlugin {
             });
 
             if let Some(node_id) = node_id {
-                Context::from_world_r(world, |context| {
-                    context.component_by_id::<T>(node_id)?.display(context, ui);
-                    Ok(())
-                })
-                .ui(ui);
+                world
+                    .with_context(|context| {
+                        context.load::<T>(node_id)?.display(context, ui);
+                        Ok(())
+                    })
+                    .ui(ui);
             } else if has_inspected_parent {
                 ui.centered_and_justified(|ui| {
                     ui.label("No content available - click 'Add New' to create");
@@ -323,7 +330,7 @@ impl ExplorerPlugin {
         });
     }
 
-    fn open_content_selector<T: Node + FTitle>(world: &mut World, state: &ExplorerState) {
+    fn open_content_selector<T: ClientNode + FTitle>(world: &mut World, state: &ExplorerState) {
         let kind = T::kind_s();
 
         let parent_kind = get_named_parent(kind);
@@ -352,25 +359,28 @@ impl ExplorerPlugin {
         Confirmation::new("Select Content")
             .content(move |ui, world| {
                 let mut selected = None;
-                Context::from_world(world, |context| {
-                    for node in &nodes {
-                        let node_id = node.id();
-                        ui.horizontal(|ui| {
-                            node.as_title().compose(context, ui);
+                world
+                    .with_context(|ctx| {
+                        for node in &nodes {
+                            let node_id = node.id();
+                            ui.horizontal(|ui| {
+                                node.as_title().compose(ctx, ui);
 
-                            if Some(node_id) == current_selected {
-                                ui.label("●");
-                            }
-                            if Some(node_id) == user_selected {
-                                ui.label("★");
-                            }
+                                if Some(node_id) == current_selected {
+                                    ui.label("●");
+                                }
+                                if Some(node_id) == user_selected {
+                                    ui.label("★");
+                                }
 
-                            if ui.button("Select").clicked() {
-                                selected = Some(node_id);
-                            }
-                        });
-                    }
-                });
+                                if ui.button("Select").clicked() {
+                                    selected = Some(node_id);
+                                }
+                            });
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
 
                 if let Some(id) = selected {
                     cn().reducers
@@ -389,7 +399,7 @@ impl ExplorerPlugin {
             .push(world);
     }
 
-    fn open_content_creator<T: Node + Default + FEdit + Clone + Serialize + 'static>(
+    fn open_content_creator<T: ClientNode + Default + FEdit + Clone + Serialize + 'static>(
         world: &mut World,
     ) {
         let kind = T::kind_s();
@@ -405,11 +415,14 @@ impl ExplorerPlugin {
                     ui.label("Edit new node:");
                     ui.separator();
 
-                    Context::from_world(world, |context| {
-                        if let Ok(mut node) = new_node.lock() {
-                            node.edit(context, ui);
-                        }
-                    });
+                    world
+                        .with_context(|ctx| {
+                            if let Ok(mut node) = new_node.lock() {
+                                node.edit(ctx, ui);
+                            }
+                            Ok(())
+                        })
+                        .ui(ui);
                 });
                 false
             })

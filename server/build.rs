@@ -1,5 +1,4 @@
 use node_build_utils::*;
-use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -26,8 +25,15 @@ fn main() {
     // Generate server-specific node implementations
     let generated = generate_server_nodes(&nodes, &node_map);
 
+    // Add comprehensive allow attributes at the top
+    let allow_attrs = generated_code_allow_attrs();
+    let final_code = quote! {
+        #allow_attrs
+        #generated
+    };
+
     // Format and write
-    let formatted_code = format_code(&generated);
+    let formatted_code = format_code(&final_code);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
@@ -51,8 +57,8 @@ fn generate_server_nodes(
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
-        // Generate with_components() method
-        let with_components_method = generate_with_components(node);
+        // Generate add_components() method
+        let add_components_method = generate_add_components(node);
 
         // Generate default implementation
         let default_impl = generate_default_impl(node);
@@ -61,12 +67,22 @@ fn generate_server_nodes(
         let server_node_impl = generate_server_node_impl(node, node_map);
 
         // Generate link loading methods
-        let link_methods = generate_link_methods(node, format_ident!("ServerContext"), None);
+        let link_methods = generate_server_link_methods(node);
+
+        let load_methods = generate_load_functions(node, "ServerContext");
+
+        // Generate collect methods
+        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
+        let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         // All nodes get SpacetimeDB derives for server
+        let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
-            #[derive(Debug, Serialize, Deserialize)]
+            #[derive(Debug)]
         };
+
+        // Generate manual Serialize/Deserialize implementation
+        let serialize_impl = generate_manual_serialize_impl(node);
 
         quote! {
             #derives
@@ -76,17 +92,18 @@ fn generate_server_nodes(
                 #(#fields,)*
             }
 
+            #serialize_impl
+
+            #allow_attrs
             impl #struct_name {
                 #new_method
 
-                #with_components_method
-
-                pub fn with_id(mut self, id: u64) -> Self {
-                    self.id = id;
-                    self
-                }
+                #add_components_method
 
                 #link_methods
+                #load_methods
+                #collect_owned_ids_method
+                #collect_owned_links_method
             }
 
             #server_node_impl
@@ -96,12 +113,17 @@ fn generate_server_nodes(
     });
 
     // Generate conversion traits
-    let conversions = generate_conversions(nodes);
+    let conversions = generate_node_impl(nodes);
+
+    // Generate NodeLoader implementation for ServerContext
+    let node_loader_impl = generate_node_loader_impl(nodes);
 
     quote! {
         #(#node_structs)*
 
         #conversions
+
+        #node_loader_impl
     }
 }
 
@@ -118,124 +140,68 @@ fn generate_server_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(component) = item.as_ref() {
-                                    if let Some(loaded) = component.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(component) = &self.#field_name {
-                                if let Some(loaded) = component.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
+                Some(if field.is_vec {
+                    quote! {
+                        for component in &self.#field_name {
+                            component.save(source);
+                            self.id.add_child(source.rctx(), component.id);
+                        }
                     }
                 } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for component in &self.#field_name {
-                                component.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                loaded.save(ctx);
-                            }
-                        })
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
+                        }
                     }
-                }
+                })
             }
             LinkType::Owned => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(owned) = item.as_ref() {
-                                    if let Some(loaded) = owned.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(owned) = &self.#field_name {
-                                if let Some(loaded) = owned.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
+                Some(if field.is_vec {
+                    quote! {
+                        for owned in &self.#field_name {
+                            owned.save(source);
+                            self.id.add_child(source.rctx(), owned.id);
+                        }
                     }
                 } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for owned in &self.#field_name {
-                                owned.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                loaded.save(ctx);
-                            }
-                        })
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
+                        }
                     }
-                }
+                })
             }
             LinkType::Ref => {
                 let field_name = &field.name;
-                if field.is_optional {
-                    if field.is_vec {
-                        Some(quote! {
-                            for item in &self.#field_name {
-                                if let Some(ref_link) = item.as_ref() {
-                                    if let Some(loaded) = ref_link.get() {
-                                        loaded.save(ctx);
-                                    }
-                                }
+                Some(if field.is_vec {
+                    quote! {
+                        for ref_link in &self.#field_name {
+                            if let Some(loaded) = ref_link.get() {
+                                loaded.save(source);
+                                self.id.add_child(source.rctx(), loaded.id);
                             }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(ref_link) = &self.#field_name {
-                                if let Some(loaded) = ref_link.get() {
-                                    loaded.save(ctx);
-                                }
-                            }
-                        })
+                        }
                     }
                 } else {
-                    if field.is_vec {
-                        Some(quote! {
-                            for ref_link in &self.#field_name {
-                                ref_link.save(ctx);
-                            }
-                        })
-                    } else {
-                        Some(quote! {
-                            if let Some(loaded) = self.#field_name.get() {
-                                loaded.save(ctx);
-                            }
-                        })
+                    quote! {
+                        if let Some(loaded) = self.#field_name.get() {
+                            loaded.save(source);
+                            self.id.add_child(source.rctx(), loaded.id);
+                        }
                     }
-                }
+                })
             }
             LinkType::None => None,
         });
 
+    let allow_attrs = generated_code_allow_attrs();
     quote! {
+        #allow_attrs
         impl ServerNode for #struct_name {
-            fn save(&self, ctx: &ReducerContext) {
+            fn save(&self, source: &ServerSource) {
                 // Save linked fields first
                 #(#save_fields)*
 
@@ -245,6 +211,7 @@ fn generate_server_node_impl(
                 }
 
                 let node = self.to_tnode();
+                let ctx = source.rctx();
                 match ctx.db.nodes_world().id().find(self.id) {
                     Some(_) => {
                         // Update existing node
@@ -260,12 +227,67 @@ fn generate_server_node_impl(
                 }
             }
 
-            fn clone_self(&self, ctx: &ReducerContext, owner: u64) -> Self {
+            fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self {
                 todo!()
             }
 
-            fn clone(&self, ctx: &ReducerContext, owner: u64) -> Self {
+            fn clone(&self, ctx: &ServerContext, owner: u64) -> Self {
                 self.clone_self(ctx, owner)
+            }
+        }
+    }
+}
+
+fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let load_and_get_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let node: #node_name = node_id.load_node(self.rctx())?;
+                node.get_var(var)
+            }
+        }
+    });
+
+    let load_and_set_var_arms = nodes.iter().map(|node| {
+        let node_name = &node.name;
+        quote! {
+            NodeKind::#node_name => {
+                let mut node: #node_name = node_id.load_node(self.rctx())?;
+                node.set_var(var, value)?;
+                node.save(self);
+                Ok(())
+            }
+        }
+    });
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        #allow_attrs
+        impl<'a> NodeLoader for ServerSource<'a> {
+            fn load_and_get_var(
+                &self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+            ) -> NodeResult<VarValue> {
+                match node_kind {
+                    #(#load_and_get_var_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot get var from None node")),
+                }
+            }
+
+            fn load_and_set_var(
+                &mut self,
+                node_kind: NodeKind,
+                node_id: u64,
+                var: VarName,
+                value: VarValue,
+            ) -> NodeResult<()> {
+                match node_kind {
+                    #(#load_and_set_var_arms,)*
+                    NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
+                }
             }
         }
     }

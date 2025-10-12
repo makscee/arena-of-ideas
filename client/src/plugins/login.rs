@@ -63,11 +63,18 @@ impl LoginPlugin {
         subscribe_game(Self::on_subscribed);
         subscribe_reducers();
     }
+    fn find_identity_node(identity: Identity) -> Option<NPlayerIdentity> {
+        let data = NPlayerIdentity::new(0, Some(identity.to_string())).get_data();
+        cn().db
+            .nodes_world()
+            .iter()
+            .find(|n| n.data == data)
+            .map(|n| n.to_node().unwrap())
+    }
     fn on_subscribed() {
         OperationsPlugin::add(|world| {
             let identity = ConnectOption::get(world).identity;
-            let Some(identity_node) = NPlayerIdentity::find_by_data(Some(identity.to_string()))
-            else {
+            let Some(identity_node) = Self::find_identity_node(identity) else {
                 "Failed to find Player after login".notify_error(world);
                 return;
             };
@@ -77,8 +84,8 @@ impl LoginPlugin {
                 .db
                 .node_links()
                 .iter()
-                .find(|link| link.parent == identity_node.id)
-                .and_then(|link| NPlayer::load(link.child))
+                .find(|link| link.child == identity_node.id)
+                .and_then(|link| NPlayer::db_load(link.parent).ok())
             {
                 pd_mut(|pd| {
                     pd.client_state.last_logged_in = Some((player.player_name.clone(), identity));

@@ -36,13 +36,17 @@ pub struct ReloadData {
 impl BattleData {
     fn load(battle: Battle) -> Self {
         let mut teams_world = World::new();
+        teams_world.init_resource::<NodeEntityMap>();
+        teams_world.init_resource::<NodeLinks>();
         let team_left = teams_world.spawn_empty().id();
         let team_right = teams_world.spawn_empty().id();
-        Context::from_world_r(&mut teams_world, |context| {
-            battle.left.clone().unpack_entity(context, team_left)?;
-            battle.right.clone().unpack_entity(context, team_right)
-        })
-        .unwrap();
+        teams_world
+            .with_context_mut(|ctx| {
+                battle.left.clone().spawn(ctx, Some(team_left))?;
+                battle.right.clone().spawn(ctx, Some(team_right))?;
+                Ok(())
+            })
+            .unwrap();
         let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             teams_world,
@@ -63,16 +67,14 @@ impl BattlePlugin {
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
-            while team.fusions.len() < slots {
-                let mut fusion = NFusion::default();
-                fusion.index = team.fusions.len() as i32;
-                fusion.id = next_id();
+            while team.fusions.get().unwrap().len() < slots {
+                let mut fusion = NFusion::default().with_id(next_id());
+                fusion.index = team.fusions.get().unwrap().len() as i32;
                 fusion.owner = team.owner;
-                let mut slot = NFusionSlot::default();
-                slot.id = next_id();
+                let mut slot = NFusionSlot::default().with_id(next_id());
                 slot.owner = team.owner;
-                fusion.slots.push(slot);
-                team.fusions.push(fusion);
+                fusion.slots.state_mut().set([slot].into());
+                team.fusions.get_mut().unwrap().push(fusion);
             }
         }
         world.insert_resource(BattleData::load(Battle { left, right, id }));
@@ -81,7 +83,11 @@ impl BattlePlugin {
         if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
             Self::load_teams(0, left, right, world);
         } else {
-            Self::load_teams(0, default(), default(), world);
+            let mut left = NTeam::new(next_id());
+            left.fusions.state_mut().set(default());
+            let mut right = NTeam::new(next_id());
+            right.fusions.state_mut().set(default());
+            Self::load_teams(0, left, right, world);
         };
     }
     pub fn on_done_callback(f: fn(u64, bool, u64), world: &mut World) {
@@ -93,14 +99,27 @@ impl BattlePlugin {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
-            // *data = BattleData::load(data.battle.clone());
             let (left, right) = (data.team_left, data.team_right);
-            let (left, right) = Context::from_world_r(&mut data.teams_world, |context| {
-                let left = NTeam::pack_entity(context, left)?;
-                let right = NTeam::pack_entity(context, right)?;
-                Ok((left, right))
-            })
-            .unwrap();
+            let (left, right) = data
+                .teams_world
+                .with_context_mut(|ctx| {
+                    let left = ctx
+                        .world()?
+                        .get::<NTeam>(left)
+                        .to_not_found()?
+                        .clone()
+                        .load_all(ctx)?
+                        .clone();
+                    let right = ctx
+                        .world()?
+                        .get::<NTeam>(right)
+                        .to_not_found()?
+                        .clone()
+                        .load_all(ctx)?
+                        .clone();
+                    Ok((left, right))
+                })
+                .unwrap();
             data.battle.left = left;
             data.battle.right = right;
             data.playing = false;
@@ -113,63 +132,69 @@ impl BattlePlugin {
         }
     }
     pub fn open_world_inspector_window(world: &mut World) {
-        let mut selected: Option<Entity> = None;
+        let mut selected: Option<u64> = None;
         Window::new("battle world inspector", move |ui, world| {
             let Some(mut bd) = world.get_resource_mut::<BattleData>() else {
                 "BattleData not found".cstr().label(ui);
                 return;
             };
             let world = &mut bd.simulation.world;
-            Context::from_world_r(world, |context| {
-                if let Some(entity) = selected {
-                    ui.horizontal(|ui| {
-                        format!("selected {entity}").label(ui);
-                        if "clear".cstr().button(ui).clicked() {
-                            selected = None;
-                        }
-                    });
-                    for (var, state) in &context.component::<NodeState>(entity)?.vars {
+            world
+                .with_context_mut(|ctx| {
+                    if let Some(id) = selected {
                         ui.horizontal(|ui| {
-                            var.cstr().label(ui);
-                            state.value.cstr().label(ui);
+                            format!("selected {id}").label(ui);
+                            if "clear".cstr().button(ui).clicked() {
+                                selected = None;
+                            }
                         });
-                    }
-                    ui.columns_const(|[ui1, ui2]| -> Result<(), ExpressionError> {
-                        "parents".cstr().label(ui1);
-                        "children".cstr().label(ui2);
-                        for parent in context.parents_entity(entity)? {
-                            let kind = context.component::<NodeState>(parent)?.kind;
-                            if format!("{kind} {parent}").button(ui1).clicked() {
-                                selected = Some(parent);
+                        for (var, state) in &ctx
+                            .world()?
+                            .get::<NodeState>(ctx.entity(id)?)
+                            .to_not_found()?
+                            .vars
+                        {
+                            ui.horizontal(|ui| {
+                                var.cstr().label(ui);
+                                state.value.cstr().label(ui);
+                            });
+                        }
+                        ui.columns_const(|[ui1, ui2]| -> NodeResult<()> {
+                            "parents".cstr().label(ui1);
+                            "children".cstr().label(ui2);
+                            for parent in ctx.get_children(id)? {
+                                let kind = ctx.get_kind(parent)?;
+                                if format!("{kind} {parent}").button(ui1).clicked() {
+                                    selected = Some(parent);
+                                }
+                            }
+                            for child in ctx.get_children(id)? {
+                                let kind = ctx.get_kind(child)?;
+                                if format!("{kind} {child}").button(ui2).clicked() {
+                                    selected = Some(child);
+                                }
+                            }
+                            Ok(())
+                        })
+                        .ui(ui);
+                    } else {
+                        for (entity, _ns) in ctx
+                            .world_mut()?
+                            .query::<(Entity, &NodeState)>()
+                            .iter(ctx.world()?)
+                        {
+                            if format!("{}", entity).button(ui).clicked() {
+                                selected = Some(ctx.id(entity)?);
                             }
                         }
-                        for child in context.children_entity(entity)? {
-                            let kind = context.component::<NodeState>(child)?.kind;
-                            if format!("{kind} {child}").button(ui2).clicked() {
-                                selected = Some(child);
-                            }
-                        }
-                        Ok(())
-                    })
-                    .ui(ui);
-                } else {
-                    for (entity, ns) in context
-                        .world_mut()?
-                        .query::<(Entity, &NodeState)>()
-                        .iter(context.world()?)
-                    {
-                        if format!("{} {}", ns.kind, entity).button(ui).clicked() {
-                            selected = Some(entity);
-                        }
                     }
-                }
-                Ok(())
-            })
-            .ui(ui);
+                    Ok(())
+                })
+                .ui(ui);
         })
         .push(world);
     }
-    pub fn pane_view(ui: &mut Ui, world: &mut World) -> Result<(), ExpressionError> {
+    pub fn pane_view(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let mut data = world
             .remove_resource::<BattleData>()
             .to_custom_e("No battle loaded")?;
@@ -199,7 +224,7 @@ impl BattlePlugin {
         ui: &mut Ui,
         data: &mut BattleData,
         main_rect: Rect,
-    ) -> Result<(), ExpressionError> {
+    ) -> NodeResult<()> {
         // Create overlay for controls at the bottom
         let overlay_height = 80.0;
         let slider_height = 20.0;
@@ -387,11 +412,7 @@ impl BattlePlugin {
         });
     }
 
-    fn render_end_screen(
-        ui: &mut Ui,
-        data: &mut BattleData,
-        main_rect: Rect,
-    ) -> Result<(), ExpressionError> {
+    fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
         if data.t >= data.simulation.duration && data.simulation.ended() {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
                 let result = data.simulation.fusions_right.is_empty();

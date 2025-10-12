@@ -1,4 +1,4 @@
-(
+
     (
         [
             color(color(HexColor("#ffffff"))),
@@ -36,5 +36,4 @@
             translate(vec2(-0.68, 0.85)),
             paint,
         ],
-    ),
-)
+    )

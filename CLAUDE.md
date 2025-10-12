@@ -64,8 +64,7 @@ Arena of Ideas is a **Rust-based PvP auto-battler** built with:
 
 **Core Systems:**
 - `raw-nodes/` - Raw node definitions for the dynamic content system
-- `node-loaders/` - Code generation for efficient node loading
-- `utils/` - Shared server utilities  
+- `utils/` - Shared server utilities
 - `utils-client/` - Client-specific utilities
 - `settings-derive/` - Procedural macros for settings management
 
@@ -106,7 +105,7 @@ The project uses a **sophisticated node system** for dynamic game content:
 
 The server runs as a **SpacetimeDB module** (`server/src/lib.rs`):
 - Handles multiplayer state synchronization
-- Manages game logic and battle resolution  
+- Manages game logic and battle resolution
 - Provides reducers for client actions
 - Stores persistent game data
 

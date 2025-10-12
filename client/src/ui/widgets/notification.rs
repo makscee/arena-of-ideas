@@ -104,11 +104,14 @@ impl NotificationPusher for str {
         Some(Notification::new_string(self.into()))
     }
 }
-impl<T> NotificationPusher for Result<T, ExpressionError> {
+impl<T> NotificationPusher for Result<T, NodeError> {
     fn to_notification(&self) -> Option<Notification> {
         match self {
             Ok(_) => None,
-            Err(e) => e.cstr().to_notification(),
+            Err(e) => {
+                e.log();
+                e.cstr().to_notification()
+            }
         }
     }
 }

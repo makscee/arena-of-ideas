@@ -74,7 +74,7 @@ impl RangeSelector {
         render_item: F,
     ) -> (Response, Option<(u8, u8)>)
     where
-        F: Fn(&mut Ui, &ClientContext, usize, bool) -> Result<(), ExpressionError>,
+        F: Fn(&mut Ui, &ClientContext, usize, bool) -> NodeResult<()>,
     {
         let mut range_changed = None;
 

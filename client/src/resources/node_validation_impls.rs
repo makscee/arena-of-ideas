@@ -19,10 +19,7 @@ impl NodeValidation for NUnitBehavior {
 
 impl NUnitDescription {
     /// Gets the processed description with macros replaced
-    pub fn get_processed_description(
-        &self,
-        context: &ClientContext,
-    ) -> Result<String, ExpressionError> {
+    pub fn get_processed_description(&self, context: &ClientContext) -> Result<String, NodeError> {
         replace_description_macros(&self.description, self.magic_type, self.trigger, context)
     }
 }
@@ -74,7 +71,7 @@ pub fn replace_description_macros(
     magic_type: MagicType,
     trigger: Trigger,
     context: &ClientContext,
-) -> Result<String, ExpressionError> {
+) -> Result<String, NodeError> {
     let mut result = description.to_string();
 
     // Replace %trigger macro with trigger name
@@ -88,10 +85,9 @@ pub fn replace_description_macros(
         MagicType::Ability => {
             if result.contains("%ability") {
                 // Try to get the ability name from the context
-                if let Ok(owner_entity) = context.owner_entity() {
-                    let owner_id = owner_entity.id(context)?;
-                    if let Ok(house) = context.first_parent_recursive::<NHouse>(owner_id) {
-                        if let Ok(ability) = house.ability_load(context) {
+                if let Some(owner_id) = context.owner() {
+                    if let Ok(house) = context.load_first_parent_recursive::<NHouse>(owner_id) {
+                        if let Ok(ability) = house.ability_ref(context) {
                             result = result.replace("%ability", &ability.ability_name);
                         } else {
                             result = result.replace("%ability", "[Unknown Ability]");
@@ -107,10 +103,9 @@ pub fn replace_description_macros(
         MagicType::Status => {
             if result.contains("%status") {
                 // Try to get the status name from the context
-                if let Ok(owner_entity) = context.owner_entity() {
-                    let owner_id = owner_entity.id(context)?;
-                    if let Ok(house) = context.first_parent_recursive::<NHouse>(owner_id) {
-                        if let Ok(status) = house.status_load(context) {
+                if let Some(owner_id) = context.owner() {
+                    if let Ok(house) = context.load_first_parent_recursive::<NHouse>(owner_id) {
+                        if let Ok(status) = house.status_ref(context) {
                             result = result.replace("%status", &status.status_name);
                         } else {
                             result = result.replace("%status", "[Unknown Status]");

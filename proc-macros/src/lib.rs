@@ -1,30 +1,10 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, ItemStruct, Meta};
+use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
 
-#[proc_macro_attribute]
-pub fn node(args: TokenStream, input: TokenStream) -> TokenStream {
-    let args_str = args.to_string();
-
-    // Handle empty args (just #[node]) or specific combinations
-    match args_str.trim() {
-        "" => {} // Empty args are allowed
-        "content" => {}
-        "content, name" => {}
-        "name" => {}
-        _ => {
-            // For debugging: don't panic, just pass through with warning
-            // eprintln!("Warning: Unknown node attribute: '{}'", args_str.trim());
-        }
-    };
-
-    let mut item_struct = parse_macro_input!(input as ItemStruct);
-    item_struct.attrs.clear();
-    for field in item_struct.fields.iter_mut() {
-        field.attrs.clear();
-    }
-
-    quote! { #item_struct }.into()
+#[proc_macro_derive(Node, attributes(var, content, named))]
+pub fn derive_node(_input: TokenStream) -> TokenStream {
+    quote! {}.into()
 }
 
 #[proc_macro_derive(Settings, attributes(setting))]
@@ -102,7 +82,7 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
                                 ui.collapsing("edit", |ui| {
-                                    if settings.#field_name.edit(&crate::prelude::Context::default(), ui).changed() {
+                                    if settings.#field_name.edit(&EMPTY_CONTEXT, ui).changed() {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                     }
                                 });
