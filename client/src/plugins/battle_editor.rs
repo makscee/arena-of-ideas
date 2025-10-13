@@ -34,7 +34,7 @@ pub enum BattleEditorNode {
 }
 
 impl BattleEditorPlugin {
-    fn init(world: &mut World) {
+    pub fn init(world: &mut World) {
         let mut state = world.resource_mut::<BattleEditorState>();
         if state.current_node.is_none() {
             let id = pd().client_state.battle_test.0.root;

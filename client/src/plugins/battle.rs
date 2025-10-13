@@ -128,6 +128,7 @@ impl BattlePlugin {
             pd_mut(|pd| {
                 pd.client_state
                     .set_battle_test_teams(&data.battle.left, &data.battle.right);
+                dbg!(&data.battle.left);
             });
         }
     }
