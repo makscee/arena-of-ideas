@@ -689,6 +689,8 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
         let load_method = format_ident!("{}_load", field_name);
         let load_id_method = format_ident!("{}_load_id", field_name);
 
+        let get_method = format_ident!("{}", field_name);
+
         if field.is_vec {
             Some(quote! {
                 pub fn #load_id_method(&mut self, ctx: &ServerContext) -> Result<Vec<u64>, NodeError> {
@@ -708,9 +710,6 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
 
                 pub fn #load_method(&mut self, ctx: &ServerContext) -> Result<&mut Vec<#target_type>, NodeError>
                 {
-                    if self.#field_name.is_loaded() {
-                        return Ok(self.#field_name.get_mut().unwrap());
-                    }
                     let ids = self.#load_id_method(ctx)?;
                     let loaded_nodes = ids
                         .iter()
@@ -718,6 +717,16 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                         .collect_vec();
                     *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
                     Ok(self.#field_name.get_mut().unwrap())
+                }
+
+                pub fn #get_method(&self) -> Result<&Vec<#target_type>, NodeError>
+                {
+                    match self.#field_name.state() {
+                        LinkStateMultiple::Loaded(_) => Ok(self.#field_name.get().unwrap()),
+                        LinkStateMultiple::Ids(_) => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                        LinkStateMultiple::None => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                        LinkStateMultiple::Unknown => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                    }
                 }
             })
         } else {
@@ -738,13 +747,20 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
 
                 pub fn #load_method(&mut self, ctx: &ServerContext) -> Result<&mut #target_type, NodeError>
                 {
-                    if self.#field_name.is_loaded() {
-                        return Ok(self.#field_name.get_mut().unwrap());
-                    }
                     let id = self.#load_id_method(ctx)?;
                     let loaded_node = ctx.load::<#target_type>(id)?;
                     *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
                     Ok(self.#field_name.get_mut().unwrap())
+                }
+
+                pub fn #get_method(&self) -> Result<&#target_type, NodeError>
+                {
+                    match self.#field_name.state() {
+                        LinkStateSingle::Loaded(_) => Ok(self.#field_name.get().unwrap()),
+                        LinkStateSingle::Id(_) => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                        LinkStateSingle::None => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                        LinkStateSingle::Unknown => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                    }
                 }
             })
         }
@@ -766,14 +782,11 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
         let load_method = format_ident!("{}_load", field_name);
         let load_id_method = format_ident!("{}_load_id", field_name);
         let ref_method = format_ident!("{}_ref", field_name);
+        let get_method = format_ident!("{}", field_name);
 
         if field.is_vec {
             Some(quote! {
                 pub fn #load_id_method(&mut self, ctx: &ClientContext) -> Result<Vec<u64>, NodeError> {
-                    if let Some(ids) = self.#field_name.ids() {
-                        return Ok(ids.clone());
-                    }
-
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
                         *self.#field_name.state_mut() = LinkStateMultiple::Ids(children.clone());
@@ -786,9 +799,6 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
 
                 pub fn #load_method(&mut self, ctx: &ClientContext) -> Result<&mut Vec<#target_type>, NodeError>
                 {
-                    if self.#field_name.is_loaded() {
-                        return Ok(self.#field_name.get_mut().unwrap());
-                    }
                     let ids = self.#load_id_method(ctx)?;
                     let loaded_nodes = ids
                         .iter()
@@ -798,11 +808,19 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                     Ok(self.#field_name.get_mut().unwrap())
                 }
 
+                pub fn #get_method(&self) -> Result<&Vec<#target_type>, NodeError>
+                {
+                    match self.#field_name.state() {
+                        LinkStateMultiple::Loaded(_) => Ok(self.#field_name.get().unwrap()),
+                        LinkStateMultiple::Ids(_) => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                        LinkStateMultiple::None => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                        LinkStateMultiple::Unknown => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
+                    }
+                }
+
                 pub fn #ref_method<'a>(&'a self, ctx: &'a ClientContext) -> Result<Vec<&'a #target_type>, NodeError>
                 {
-                    let ids = if let Some(ids) = self.#field_name.ids() {
-                        ids.clone()
-                    } else if let Ok(ids) = ctx.get_children_of_kind(self.id, NodeKind::#target_type) {
+                    let ids = if let Ok(ids) = ctx.get_children_of_kind(self.id, NodeKind::#target_type) {
                         ids
                     } else {
                         return Ok(Vec::new());
@@ -828,13 +846,20 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
 
                 pub fn #load_method<'a>(&'a mut self, ctx: &'a ClientContext) -> Result<&'a mut #target_type, NodeError>
                 {
-                    if self.#field_name.is_loaded() {
-                        return Ok(self.#field_name.get_mut().unwrap());
-                    }
                     let id = self.#load_id_method(ctx)?;
                     let loaded_node = ctx.load::<#target_type>(id).cloned()?;
                     *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
                     Ok(self.#field_name.get_mut().unwrap())
+                }
+
+                pub fn #get_method(&self) -> Result<&#target_type, NodeError>
+                {
+                    match self.#field_name.state() {
+                        LinkStateSingle::Loaded(_) => Ok(self.#field_name.get().unwrap()),
+                        LinkStateSingle::Id(_) => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                        LinkStateSingle::None => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                        LinkStateSingle::Unknown => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
+                    }
                 }
 
                 pub fn #ref_method<'a>(&'a self, ctx: &'a ClientContext) -> Result<&'a #target_type, NodeError>
