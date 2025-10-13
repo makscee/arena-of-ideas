@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct TeamEditor {
-    team_entity: Entity,
+    team_id: u64,
     empty_slot_actions: Vec<String>,
     filled_slot_actions: Vec<String>,
 }
@@ -35,9 +35,9 @@ pub enum TeamAction {
 }
 
 impl TeamEditor {
-    pub fn new(team_entity: Entity) -> Self {
+    pub fn new(team_id: u64) -> Self {
         Self {
-            team_entity,
+            team_id,
             empty_slot_actions: Vec::new(),
             filled_slot_actions: Vec::new(),
         }
@@ -54,10 +54,10 @@ impl TeamEditor {
     }
 
     pub fn ui(self, ui: &mut Ui, context: &mut ClientContext) -> NodeResult<Vec<TeamAction>> {
-        let team = context.load::<NTeam>(context.id(self.team_entity)?)?;
+        let team = context.load::<NTeam>(self.team_id)?;
         let mut actions = Vec::new();
 
-        let state_id = egui::Id::new(self.team_entity.index()).with("team_editor_selected_fusion");
+        let state_id = egui::Id::new(self.team_id).with("team_editor_selected_fusion");
         let mut selected_fusion_id =
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
@@ -173,8 +173,7 @@ impl TeamEditor {
         context: &'a ClientContext,
         fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
     ) -> NodeResult<Vec<&'a NUnit>> {
-        let all_units =
-            context.load_collect_children_recursive::<NUnit>(context.id(self.team_entity)?)?;
+        let all_units = context.load_collect_children_recursive::<NUnit>(self.team_id)?;
 
         // Check if any slot references this unit
         let linked_unit_ids: HashSet<u64> = fusion_slots

@@ -209,7 +209,7 @@ impl MatchPlugin {
             let team = m.team_ref(ctx)?;
             let rect = ui.available_rect_before_wrap();
 
-            let mut team_editor = TeamEditor::new(team.entity(ctx)?);
+            let mut team_editor = TeamEditor::new(team.id);
             team_editor = team_editor.filled_slot_action("Sell Unit");
 
             if let Ok(actions) = team_editor.ui(ui, ctx) {
