@@ -1034,14 +1034,29 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     }
                 },
                 LinkType::Ref => quote! {
-                    for item in &self.#field_name {
-                        item.pack_recursive(packed, visited);
-                        packed.link_parent_child(
-                            self.id,
-                            item.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
+                    match self.#field_name.state() {
+                        LinkStateMultiple::Loaded(items) => {
+                            for item in items {
+                                item.pack_recursive(packed, visited);
+                                packed.link_parent_child(
+                                    self.id,
+                                    item.id(),
+                                    stringify!(#struct_name).to_string(),
+                                    stringify!(#target_type).to_string()
+                                );
+                            }
+                        },
+                        LinkStateMultiple::Ids(ids) => {
+                            for &id in ids {
+                                packed.link_parent_child(
+                                    self.id,
+                                    id,
+                                    stringify!(#struct_name).to_string(),
+                                    stringify!(#target_type).to_string()
+                                );
+                            }
+                        },
+                        _ => {}
                     }
                 },
                 _ => quote! {},
@@ -1060,14 +1075,25 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     }
                 },
                 LinkType::Ref => quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.pack_recursive(packed, visited);
-                        packed.link_parent_child(
-                            self.id,
-                            loaded.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
+                    match self.#field_name.state() {
+                        LinkStateSingle::Loaded(item) => {
+                            item.pack_recursive(packed, visited);
+                            packed.link_parent_child(
+                                self.id,
+                                item.id(),
+                                stringify!(#struct_name).to_string(),
+                                stringify!(#target_type).to_string()
+                            );
+                        },
+                        LinkStateSingle::Id(id) => {
+                            packed.link_parent_child(
+                                self.id,
+                                *id,
+                                stringify!(#struct_name).to_string(),
+                                stringify!(#target_type).to_string()
+                            );
+                        },
+                        _ => {}
                     }
                 },
                 _ => quote! {},
