@@ -129,62 +129,6 @@ impl Default for AnimAction {
         Self::translate(Box::new(Expression::vec2(0.0, 0.0)))
     }
 }
-impl Inject for AnimAction {
-    fn move_inner(&mut self, source: &mut Self) {
-        <Self as Injector<Self>>::inject_inner(self, source);
-        <Self as Injector<Expression>>::inject_inner(self, source);
-    }
-}
-impl Injector<Self> for AnimAction {
-    fn get_inner_mut(&mut self) -> Vec<&mut Self> {
-        match self {
-            AnimAction::translate(..)
-            | AnimAction::set_target(..)
-            | AnimAction::add_target(..)
-            | AnimAction::duration(..)
-            | AnimAction::timeframe(..)
-            | AnimAction::wait(..)
-            | AnimAction::spawn(..) => default(),
-            AnimAction::list(vec) => vec.into_iter().map(|v| v.as_mut()).collect_vec(),
-        }
-    }
-    fn get_inner(&self) -> Vec<&Self> {
-        match self {
-            AnimAction::translate(..)
-            | AnimAction::set_target(..)
-            | AnimAction::add_target(..)
-            | AnimAction::duration(..)
-            | AnimAction::timeframe(..)
-            | AnimAction::wait(..)
-            | AnimAction::spawn(..) => default(),
-            AnimAction::list(vec) => vec.into_iter().map(|v| v.as_ref()).collect_vec(),
-        }
-    }
-}
-impl Injector<Expression> for AnimAction {
-    fn get_inner_mut(&mut self) -> Vec<&mut Expression> {
-        match self {
-            AnimAction::translate(x)
-            | AnimAction::set_target(x)
-            | AnimAction::add_target(x)
-            | AnimAction::duration(x)
-            | AnimAction::wait(x)
-            | AnimAction::timeframe(x) => [x.as_mut()].into(),
-            AnimAction::list(..) | AnimAction::spawn(..) => default(),
-        }
-    }
-    fn get_inner(&self) -> Vec<&Expression> {
-        match self {
-            AnimAction::translate(x)
-            | AnimAction::set_target(x)
-            | AnimAction::add_target(x)
-            | AnimAction::duration(x)
-            | AnimAction::wait(x)
-            | AnimAction::timeframe(x) => [x.as_ref()].into(),
-            AnimAction::list(..) | AnimAction::spawn(..) => default(),
-        }
-    }
-}
 impl ToCstr for AnimAction {
     fn cstr(&self) -> Cstr {
         self.as_ref().cstr_c(PURPLE)

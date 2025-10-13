@@ -17,12 +17,12 @@
             circle(f32(0.24)),
             color(
                 if(
-                    greater_then(var(dmg), zero),
+                    greater_then(var_or_zero(dmg), zero),
                     color(HexColor("#D50000")),
                     color(HexColor("#ffffff")),
                 ),
             ),
-            text(str_macro(string("[b %s]"), sub(var_sum(hp), var(dmg)))),
+            text(str_macro(string("[b %s]"), sub(var_sum(hp), var_or_zero(dmg)))),
             translate(vec2(0.68, 0.85)),
             paint,
             hollow(zero),

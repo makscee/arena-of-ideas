@@ -230,7 +230,16 @@ impl<'a> MatRect<'a> {
 
                 context
                     .with_temp_owner(*owner_id, |ctx| {
-                        unit_rep().material.paint(clipped_rect, ctx, ui)
+                        let r = unit_rep().material.paint(clipped_rect, ctx, ui);
+                        match &r {
+                            Ok(_) => {}
+                            Err(e) => {
+                                dbg!(e);
+                                ctx.debug_layers();
+                                panic!();
+                            }
+                        }
+                        r
                     })
                     .ui(ui);
             }

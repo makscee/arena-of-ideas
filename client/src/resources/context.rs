@@ -747,12 +747,15 @@ pub trait ClientContextTempLayers {
 
 /// Implementation of temporary layers for ClientContext
 impl<'w> ClientContextTempLayers for ClientContext<'w> {
-    fn with_temp_layers<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    fn with_temp_layers<R, F>(&self, mut layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
         let world = self.source().world()?;
-        let mut temp_context = Context::with_layers(WorldSource::new_immutable(world), layers);
+        let mut merged_layers = self.layers().clone();
+        merged_layers.append(&mut layers);
+        let mut temp_context =
+            Context::with_layers(WorldSource::new_immutable(world), merged_layers);
         f(&mut temp_context)
     }
 

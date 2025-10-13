@@ -130,8 +130,17 @@ impl NFusion {
         for unit in units {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
-                    ctx.with_temp_owner(unit.id, |context| {
-                        RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
+                    ctx.with_temp_owner(unit.id, |ctx| {
+                        let r = RepresentationPlugin::paint_rect(rect, &ctx, &rep.material, ui);
+                        match &r {
+                            Ok(_) => {}
+                            Err(e) => {
+                                dbg!(e);
+                                ctx.debug_layers();
+                                panic!();
+                            }
+                        }
+                        r
                     })
                     .ui(ui);
                 }

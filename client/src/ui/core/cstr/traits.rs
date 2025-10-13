@@ -134,81 +134,6 @@ impl ToCstr for Expression {
         }
         .cstr_c(self.color())
     }
-
-    fn cstr_expanded(&self) -> Cstr {
-        if let Some(description) = Descriptions::get(self) {
-            return description.clone();
-        }
-        let inner = match self {
-            Expression::one
-            | Expression::zero
-            | Expression::pi
-            | Expression::pi2
-            | Expression::gt
-            | Expression::unit_size
-            | Expression::all_units
-            | Expression::all_ally_units
-            | Expression::all_other_ally_units
-            | Expression::adjacent_ally_units
-            | Expression::adjacent_back
-            | Expression::adjacent_front
-            | Expression::all_enemy_units
-            | Expression::owner
-            | Expression::target => String::default(),
-            Expression::var(v) | Expression::var_sum(v) => v.cstr(),
-            Expression::value(v) => v.cstr(),
-            Expression::string(v) => v.to_owned(),
-            Expression::f32(v) | Expression::f32_slider(v) => v.cstr(),
-            Expression::i32(v) => v.cstr(),
-            Expression::bool(v) => v.cstr(),
-            Expression::vec2(x, y) => vec2(*x, *y).cstr(),
-            Expression::color(c) => match c.try_c32() {
-                Ok(color) => c.cstr_c(color),
-                Err(e) => format!("{c} [s {e:?}]",).cstr_c(RED),
-            },
-            Expression::lua_i32(code) | Expression::lua_f32(code) => code.cstr(),
-            Expression::sin(x)
-            | Expression::cos(x)
-            | Expression::even(x)
-            | Expression::abs(x)
-            | Expression::floor(x)
-            | Expression::ceil(x)
-            | Expression::fract(x)
-            | Expression::unit_vec(x)
-            | Expression::rand(x)
-            | Expression::random_unit(x)
-            | Expression::to_f32(x)
-            | Expression::sqr(x)
-            | Expression::neg(x) => x.cstr_expanded(),
-            Expression::str_macro(a, b)
-            | Expression::vec2_ee(a, b)
-            | Expression::sum(a, b)
-            | Expression::sub(a, b)
-            | Expression::mul(a, b)
-            | Expression::div(a, b)
-            | Expression::max(a, b)
-            | Expression::min(a, b)
-            | Expression::r#mod(a, b)
-            | Expression::and(a, b)
-            | Expression::or(a, b)
-            | Expression::equals(a, b)
-            | Expression::greater_then(a, b)
-            | Expression::less_then(a, b)
-            | Expression::fallback(a, b) => format!("{}, {}", a.cstr_expanded(), b.cstr_expanded()),
-            Expression::oklch(a, b, c) | Expression::r#if(a, b, c) => format!(
-                "{}, {}, {}",
-                a.cstr_expanded(),
-                b.cstr_expanded(),
-                c.cstr_expanded()
-            ),
-            Expression::state_var(x, v) => format!("{}({})", x.cstr_expanded(), v.cstr_expanded()),
-        };
-        if inner.is_empty() {
-            self.cstr()
-        } else {
-            format!("{}[tl (]{inner}[tl )]", self.cstr())
-        }
-    }
 }
 
 impl ToCstr for PainterAction {
@@ -271,19 +196,7 @@ impl ToCstr for MagicType {
 
 impl ToCstr for Action {
     fn cstr(&self) -> Cstr {
-        let inner_x = <Self as Injector<Expression>>::get_inner(self);
-        let inner_a = <Self as Injector<Action>>::get_inner(self);
-        let s = self.as_ref().to_owned().cstr_c(self.color());
-        if !inner_x.is_empty() || !inner_a.is_empty() {
-            let inner = inner_x
-                .into_iter()
-                .map(|x| x.cstr_expanded())
-                .chain(inner_a.into_iter().map(|a| a.cstr_expanded()))
-                .join(", ");
-            format!("{s}[tl (]{inner}[tl )]")
-        } else {
-            s
-        }
+        self.as_ref().to_owned().cstr_c(self.color())
     }
 }
 

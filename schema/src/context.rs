@@ -698,4 +698,12 @@ where
 
         result
     }
+
+    pub fn layers(&self) -> &Vec<ContextLayer> {
+        &self.layers
+    }
+
+    pub fn debug_layers(&self) {
+        dbg!(&self.layers);
+    }
 }

@@ -9,19 +9,18 @@ impl Plugin for RepresentationPlugin {
 impl RepresentationPlugin {
     pub fn paint_rect(
         rect: Rect,
-        context: &ClientContext,
+        ctx: &ClientContext,
         m: &Material,
         ui: &mut Ui,
     ) -> NodeResult<()> {
         let mut p = Painter::new(rect, ui.ctx());
-        if let Ok(color) = context.get_var(VarName::color).get_color() {
+        if let Ok(color) = ctx.get_var(VarName::color).get_color() {
             p.color = color;
         }
         for a in &m.0 {
-            a.paint(context, &mut p, ui)?
+            a.paint(ctx, &mut p, ui)?
         }
-        PainterAction::paint.paint(context, &mut p, ui)?;
-        Ok(())
+        PainterAction::paint.paint(ctx, &mut p, ui)
     }
 }
 
@@ -31,8 +30,8 @@ pub trait MaterialPaint {
 }
 
 impl MaterialPaint for Material {
-    fn paint(&self, rect: Rect, context: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
-        RepresentationPlugin::paint_rect(rect, context, self, ui)
+    fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
+        RepresentationPlugin::paint_rect(rect, ctx, self, ui)
     }
     fn paint_viewer(&self, context: &ClientContext, ui: &mut Ui) -> Response {
         let size_id = ui.id().with("view size");

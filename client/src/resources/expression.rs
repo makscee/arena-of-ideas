@@ -34,6 +34,10 @@ impl ExpressionImpl for Expression {
                     v
                 }
             }
+            Expression::var_or_zero(var) => {
+                let v = ctx.get_var(*var);
+                if v.is_err() { Ok(0.into()) } else { v }
+            }
             Expression::var_sum(var) => ctx.sum_var(*var),
             Expression::state_var(x, var) => {
                 let id = x.get_id(ctx)?;
