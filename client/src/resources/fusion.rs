@@ -19,19 +19,24 @@ impl NFusion {
     }
 
     pub fn get_unit_tier(context: &ClientContext, unit_id: u64) -> Result<u8, NodeError> {
-        if let Ok(behavior) = context.load_first_parent_recursive::<NUnitBehavior>(unit_id) {
-            Ok(behavior.reaction.tier())
-        } else {
-            Ok(0)
+        if let Ok(unit) = context.load::<NUnit>(unit_id) {
+            if let Ok(desc) = unit.description_ref(context) {
+                if let Ok(behavior) = desc.behavior_ref(context) {
+                    return Ok(behavior.reaction.tier());
+                }
+            }
         }
+        Ok(0)
     }
 
     pub fn units<'a>(&self, context: &'a ClientContext) -> Result<Vec<&'a NUnit>, NodeError> {
         let slots = self.get_slots(context)?;
         let mut units = Vec::new();
         for slot in slots {
-            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
-                units.push(unit);
+            if let Some(unit_id) = slot.unit.id() {
+                if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                    units.push(unit);
+                }
             }
         }
         Ok(units)
@@ -54,17 +59,19 @@ impl NFusion {
         let mut all_actions = Vec::new();
 
         for slot in slots {
-            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
-                if let Ok(unit_behavior) =
-                    context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
-                {
-                    let reaction = &unit_behavior.reaction;
-                    let start = slot.actions.start as usize;
-                    let end = (slot.actions.start + slot.actions.length) as usize;
+            if let Some(unit_id) = slot.unit.id() {
+                if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                    if let Ok(desc) = unit.description_ref(context) {
+                        if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                            let reaction = &unit_behavior.reaction;
+                            let start = slot.actions.start as usize;
+                            let end = (slot.actions.start + slot.actions.length) as usize;
 
-                    for i in start..end.min(reaction.actions.len()) {
-                        if let Some(action) = reaction.actions.get(i) {
-                            all_actions.push((unit.id, action));
+                            for i in start..end.min(reaction.actions.len()) {
+                                if let Some(action) = reaction.actions.get(i) {
+                                    all_actions.push((unit.id, action));
+                                }
+                            }
                         }
                     }
                 }
@@ -78,7 +85,9 @@ impl NFusion {
         context: &'a ClientContext,
         unit: u64,
     ) -> Result<&'a NUnitBehavior, NodeError> {
-        context.load_first_parent_recursive::<NUnitBehavior>(unit)
+        let unit = context.load::<NUnit>(unit)?;
+        let desc = unit.description_ref(context)?;
+        desc.behavior_ref(context)
     }
 
     pub fn get_trigger<'a>(
@@ -119,13 +128,14 @@ impl NFusion {
     pub fn paint(&self, rect: Rect, ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
         let units = self.units(ctx)?;
         for unit in units {
-            let Ok(rep) = ctx.load_first_parent_recursive::<NUnitRepresentation>(unit.id) else {
-                continue;
-            };
-            ctx.with_temp_owner(unit.id, |context| {
-                RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
-            })
-            .ui(ui);
+            if let Ok(desc) = unit.description_ref(ctx) {
+                if let Ok(rep) = desc.representation_ref(ctx) {
+                    ctx.with_temp_owner(unit.id, |context| {
+                        RepresentationPlugin::paint_rect(rect, &context, &rep.material, ui)
+                    })
+                    .ui(ui);
+                }
+            }
         }
         for rep in ctx.collect_children::<NUnitRepresentation>(self.id)? {
             ctx.with_temp_owner(self.id, |context| {

@@ -70,7 +70,7 @@ impl TeamEditor {
         let mut fusion_slots: HashMap<u64, Vec<&NFusionSlot>> = HashMap::new();
         for fusion in &fusions {
             let slots = context
-                .load_collect_parents::<NFusionSlot>(fusion.id)?
+                .load_collect_children::<NFusionSlot>(fusion.id)?
                 .into_iter()
                 .sorted_by_key(|s| s.index)
                 .collect_vec();
@@ -171,14 +171,21 @@ impl TeamEditor {
     fn get_unlinked_units<'a>(
         &self,
         context: &'a ClientContext,
-        _fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
+        fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
     ) -> NodeResult<Vec<&'a NUnit>> {
         let all_units =
             context.load_collect_children_recursive::<NUnit>(context.id(self.team_entity)?)?;
 
+        // Check if any slot references this unit
+        let linked_unit_ids: HashSet<u64> = fusion_slots
+            .values()
+            .flat_map(|slots| slots.iter())
+            .filter_map(|slot| slot.unit.id())
+            .collect();
+
         Ok(all_units
             .into_iter()
-            .filter(|unit| context.first_child(unit.id, NodeKind::NFusionSlot).is_err())
+            .filter(|unit| !linked_unit_ids.contains(&unit.id))
             .collect())
     }
 
@@ -191,12 +198,13 @@ impl TeamEditor {
 
         for slot in slots {
             if let Some(unit) = Self::get_slot_unit(slot.id, context) {
-                if let Ok(unit_behavior) =
-                    context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
-                {
-                    let trigger = unit_behavior.reaction.trigger.clone();
-                    if !trigger_map.contains_key(&trigger) {
-                        trigger_map.insert(trigger, unit.id);
+                // Access behavior through description component
+                if let Ok(desc) = unit.description_ref(context) {
+                    if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                        let trigger = unit_behavior.reaction.trigger.clone();
+                        if !trigger_map.contains_key(&trigger) {
+                            trigger_map.insert(trigger, unit.id);
+                        }
                     }
                 }
             }
@@ -216,10 +224,12 @@ impl TeamEditor {
     ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
+        // Find the slot that currently references this unit
         let old_fusion_id =
-            if let Ok(old_slot_id) = context.first_child(unit_id, NodeKind::NFusionSlot) {
-                if let Ok(old_fusion_id) = context.first_child(old_slot_id, NodeKind::NFusion) {
-                    Some((old_fusion_id, old_slot_id))
+            if let Ok(slot_id) = context.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
+                // Find the fusion that owns this slot
+                if let Ok(fusion_id) = context.first_parent_recursive(slot_id, NodeKind::NFusion) {
+                    Some((fusion_id, slot_id))
                 } else {
                     None
                 }
@@ -228,8 +238,12 @@ impl TeamEditor {
             };
 
         let new_fusion_id = if let Ok(new_slot) = context.load::<NFusionSlot>(target_id) {
-            let new_fusion = context.load_first_child::<NFusion>(new_slot.id)?;
-            Some(new_fusion.id)
+            // Find the parent fusion of this slot
+            if let Ok(fusion_id) = context.first_parent(new_slot.id, NodeKind::NFusion) {
+                Some(fusion_id)
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -253,18 +267,20 @@ impl TeamEditor {
                 let old_fusion = context.load::<NFusion>(old_fusion_id)?;
                 if old_fusion.trigger_unit == unit_id {
                     let remaining_slots =
-                        context.load_collect_parents::<NFusionSlot>(old_fusion_id)?;
+                        context.load_collect_children::<NFusionSlot>(old_fusion_id)?;
                     let mut new_trigger_ref = 0u64;
 
                     for slot in remaining_slots {
                         if slot.id != old_slot_id {
-                            if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
-                                if context
-                                    .load_first_parent_recursive::<NUnitBehavior>(unit.id)
-                                    .is_ok()
-                                {
-                                    new_trigger_ref = unit.id;
-                                    break;
+                            if let Some(unit_id) = slot.unit.id() {
+                                if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                                    // Check if unit has behavior component
+                                    if let Ok(desc) = unit.description_ref(context) {
+                                        if desc.behavior_ref(context).is_ok() {
+                                            new_trigger_ref = unit_id;
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -284,26 +300,30 @@ impl TeamEditor {
 
             // If fusion has no trigger set (unit id is 0), set it to this unit
             if new_fusion.trigger_unit == 0 {
-                if context
-                    .load_first_parent_recursive::<NUnitBehavior>(unit_id)
-                    .is_ok()
-                {
-                    additional_actions.push(TeamAction::ChangeTrigger {
-                        fusion_id: new_fusion_id,
-                        trigger: unit_id,
-                    });
+                if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                    if let Ok(desc) = unit.description_ref(context) {
+                        if desc.behavior_ref(context).is_ok() {
+                            additional_actions.push(TeamAction::ChangeTrigger {
+                                fusion_id: new_fusion_id,
+                                trigger: unit_id,
+                            });
+                        }
+                    }
                 }
             }
 
             // Set action range to select all actions for the moved unit
-            if let Ok(unit_behavior) = context.load_first_parent_recursive::<NUnitBehavior>(unit_id)
-            {
-                let reaction = &unit_behavior.reaction;
-                additional_actions.push(TeamAction::ChangeActionRange {
-                    slot_id: target_id,
-                    start: 0,
-                    length: reaction.actions.len() as u8,
-                });
+            if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                if let Ok(desc) = unit.description_ref(context) {
+                    if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                        let reaction = &unit_behavior.reaction;
+                        additional_actions.push(TeamAction::ChangeActionRange {
+                            slot_id: target_id,
+                            start: 0,
+                            length: reaction.actions.len() as u8,
+                        });
+                    }
+                }
             }
         }
 
@@ -317,38 +337,54 @@ impl TeamEditor {
     ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
+        // Find the slot that currently references this unit
+        let slot_and_fusion =
+            if let Ok(slot_id) = context.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
+                // Find the fusion that owns this slot
+                if let Ok(fusion_id) = context.first_parent_recursive(slot_id, NodeKind::NFusion) {
+                    Some((slot_id, fusion_id))
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
         // Handle moving to bench
-        if let Ok(old_slot) = context.load_first_child::<NFusionSlot>(unit_id) {
-            let old_fusion = context.load_first_child::<NFusion>(old_slot.id)?;
+        if let Some((old_slot_id, old_fusion_id)) = slot_and_fusion {
+            let old_fusion = context.load::<NFusion>(old_fusion_id)?;
 
             // Reset action range for the slot being vacated
             additional_actions.push(TeamAction::ChangeActionRange {
-                slot_id: old_slot.id,
+                slot_id: old_slot_id,
                 start: 0,
                 length: 0,
             });
 
             // If this unit was the trigger unit, update trigger to another unit or default
             if old_fusion.trigger_unit == unit_id {
-                let remaining_slots = context.load_collect_parents::<NFusionSlot>(old_fusion.id)?;
+                let remaining_slots =
+                    context.load_collect_children::<NFusionSlot>(old_fusion_id)?;
                 let mut new_trigger_ref = 0u64;
 
                 for slot in remaining_slots {
-                    if slot.id != old_slot.id {
-                        if let Ok(unit) = context.load_first_parent::<NUnit>(slot.id) {
-                            if context
-                                .load_first_parent_recursive::<NUnitBehavior>(unit.id)
-                                .is_ok()
-                            {
-                                new_trigger_ref = unit.id;
-                                break;
+                    if slot.id != old_slot_id {
+                        if let Some(unit_id) = slot.unit.id() {
+                            if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                                // Check if unit has behavior component
+                                if let Ok(desc) = unit.description_ref(context) {
+                                    if desc.behavior_ref(context).is_ok() {
+                                        new_trigger_ref = unit_id;
+                                        break;
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
                 additional_actions.push(TeamAction::ChangeTrigger {
-                    fusion_id: old_fusion.id,
+                    fusion_id: old_fusion_id,
                     trigger: new_trigger_ref,
                 });
             }
@@ -372,8 +408,8 @@ impl TeamEditor {
                 let resp = self.render_unit_with_representation(
                     ui,
                     unit,
-                    egui::Vec2::new(60.0, 60.0),
                     context,
+                    egui::Vec2::new(60.0, 60.0),
                 );
                 self.handle_bench_unit_interactions(resp, unit.id, actions);
             }
@@ -525,7 +561,12 @@ impl TeamEditor {
     }
 
     fn get_slot_unit<'b>(slot_id: u64, context: &'b ClientContext) -> Option<&'b NUnit> {
-        context.load_first_parent::<NUnit>(slot_id).ok()
+        let slot = context.load::<NFusionSlot>(slot_id).ok()?;
+        if let Some(unit_id) = slot.unit.id() {
+            context.load::<NUnit>(unit_id).ok()
+        } else {
+            None
+        }
     }
 
     fn render_unit_in_slot(
@@ -537,7 +578,7 @@ impl TeamEditor {
         let size = egui::Vec2::new(60.0, 60.0);
 
         if let Some(unit) = unit {
-            self.render_unit_with_representation(ui, unit, size, context)
+            self.render_unit_with_representation(ui, unit, context, size)
         } else {
             Self::render_empty_slot(ui, size, context)
         }
@@ -547,13 +588,15 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unit: &NUnit,
-        size: egui::Vec2,
         context: &ClientContext,
+        size: egui::Vec2,
     ) -> Response {
         let mut mat_rect = MatRect::new(size);
 
-        if let Ok(rep) = context.load_first_parent_recursive::<NUnitRepresentation>(unit.id) {
-            mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+        if let Ok(desc) = unit.description_ref(context) {
+            if let Ok(rep) = desc.representation_ref(context) {
+                mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+            }
         }
 
         let resp = mat_rect.unit_rep_with_default(unit.id).ui(ui, context);
@@ -665,54 +708,56 @@ impl TeamEditor {
             for slot in slots {
                 if let Some(unit) = Self::get_slot_unit(slot.id, context) {
                     ui.group(|ui| {
-                        if let Ok(unit_behavior) =
-                            context.load_first_parent_recursive::<NUnitBehavior>(unit.id)
-                        {
-                            let max_actions = unit_behavior.reaction.actions.len() as u8;
-                            if max_actions > 0 {
-                                let (current_start, current_len) =
-                                    (slot.actions.start, slot.actions.length);
+                        if let Ok(desc) = unit.description_ref(context) {
+                            if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                                let max_actions = unit_behavior.reaction.actions.len() as u8;
+                                if max_actions > 0 {
+                                    let (current_start, current_len) =
+                                        (slot.actions.start, slot.actions.length);
 
-                                let range_selector = RangeSelector::new(max_actions)
-                                    .range(current_start, current_len)
-                                    .border_thickness(2.0)
-                                    .drag_threshold(8.0)
-                                    .show_drag_hints(true)
-                                    .show_debug_info(false)
-                                    .id(egui::Id::new("team_range_selector").with(slot.id));
+                                    let range_selector = RangeSelector::new(max_actions)
+                                        .range(current_start, current_len)
+                                        .border_thickness(2.0)
+                                        .drag_threshold(8.0)
+                                        .show_drag_hints(true)
+                                        .show_debug_info(false)
+                                        .id(egui::Id::new("team_range_selector").with(slot.id));
 
-                                let (_, range_changed) = range_selector.ui(
-                                    ui,
-                                    context,
-                                    |item_ui, ctx, action_idx, is_in_range| {
-                                        let reaction = &unit_behavior.reaction;
-                                        if let Some(action) = reaction.actions.get(action_idx) {
-                                            if is_in_range {
-                                                Self::render_action_normal(
-                                                    item_ui, ctx, unit, action,
-                                                );
-                                            } else {
-                                                Self::render_action_greyed(
-                                                    item_ui, ctx, unit, action,
-                                                );
+                                    let (_, range_changed) = range_selector.ui(
+                                        ui,
+                                        context,
+                                        |item_ui, ctx, action_idx, is_in_range| {
+                                            let reaction = &unit_behavior.reaction;
+                                            if let Some(action) = reaction.actions.get(action_idx) {
+                                                if is_in_range {
+                                                    Self::render_action_normal(
+                                                        item_ui, ctx, unit, action,
+                                                    );
+                                                } else {
+                                                    Self::render_action_greyed(
+                                                        item_ui, ctx, unit, action,
+                                                    );
+                                                }
                                             }
-                                        }
-                                        Ok(())
-                                    },
-                                );
+                                            Ok(())
+                                        },
+                                    );
 
-                                if let Some((new_start, new_length)) = range_changed {
-                                    actions.push(TeamAction::ChangeActionRange {
-                                        slot_id: slot.id,
-                                        start: new_start,
-                                        length: new_length,
-                                    });
+                                    if let Some((new_start, new_length)) = range_changed {
+                                        actions.push(TeamAction::ChangeActionRange {
+                                            slot_id: slot.id,
+                                            start: new_start,
+                                            length: new_length,
+                                        });
+                                    }
+                                } else {
+                                    ui.label("No unit actions");
                                 }
                             } else {
-                                ui.label("No unit actions");
+                                ui.label("No unit behavior");
                             }
                         } else {
-                            ui.label("No unit behavior");
+                            ui.label("No unit description");
                         }
                     });
                 } else {
