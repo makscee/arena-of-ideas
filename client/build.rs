@@ -199,9 +199,11 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 let field_name = &field.name;
                 Some(if field.is_vec {
                     quote! {
-                        for item in &self.#field_name {
-                            item.clone().spawn(ctx, None).track()?;
-                            ctx.add_link(self.id, item.id).track()?;
+                        if let Some(items) = self.#field_name.get() {
+                            for item in items {
+                                item.clone().spawn(ctx, None).track()?;
+                                ctx.add_link(self.id, item.id).track()?;
+                            }
                         }
                     }
                 } else {

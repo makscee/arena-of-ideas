@@ -547,9 +547,7 @@ impl BattleEditorPlugin {
         let house_id = {
             let existing_houses = ctx.collect_children::<NHouse>(team_id)?;
             info!("Found {} existing houses", existing_houses.len());
-            let default_house = existing_houses
-                .iter()
-                .find(|h| h.house_name == "Default House");
+            let default_house = existing_houses.iter().find(|h| h.house_name == "New House");
 
             if let Some(existing_house) = default_house {
                 info!("Using existing Default House: {}", existing_house.id);
@@ -566,8 +564,8 @@ impl BattleEditorPlugin {
         };
 
         info!("Creating new unit");
-        let unit = NUnit::placeholder(next_id());
-        let unit_id = unit.id();
+        let unit_id = next_id();
+        let unit = NUnit::placeholder(unit_id);
         unit.spawn(ctx, None)?;
         ctx.add_link(house_id, unit_id)?;
         info!("Created unit with id: {}", unit_id);

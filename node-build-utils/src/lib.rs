@@ -398,7 +398,7 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
             };
 
             if field.is_vec {
-                quote! { Component<Vec<#target>> }
+                quote! { ComponentMultiple<#target> }
             } else {
                 quote! { Component<#target> }
             }
@@ -412,7 +412,7 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
             };
 
             if field.is_vec {
-                quote! { Owned<Vec<#target>> }
+                quote! { OwnedMultiple<#target> }
             } else {
                 quote! { Owned<#target> }
             }
@@ -426,7 +426,7 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
             };
 
             if field.is_vec {
-                quote! { Ref<Vec<#target>> }
+                quote! { RefMultiple<#target> }
             } else {
                 quote! { Ref<#target> }
             }
@@ -553,13 +553,25 @@ pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
         let field_name = &field.name;
         let wrapped_value = match field.link_type {
             LinkType::Component => {
-                quote! { Component::new_loaded(#field_name) }
+                if field.is_vec {
+                    quote! { ComponentMultiple::new_loaded(#field_name) }
+                } else {
+                    quote! { Component::new_loaded(#field_name) }
+                }
             }
             LinkType::Owned => {
-                quote! { Owned::new_loaded(#field_name) }
+                if field.is_vec {
+                    quote! { OwnedMultiple::new_loaded(#field_name) }
+                } else {
+                    quote! { Owned::new_loaded(#field_name) }
+                }
             }
             LinkType::Ref => {
-                quote! { Ref::new_loaded(#field_name) }
+                if field.is_vec {
+                    quote! { RefMultiple::new_loaded(#field_name) }
+                } else {
+                    quote! { Ref::new_loaded(#field_name) }
+                }
             }
             _ => quote! { #field_name },
         };
@@ -686,10 +698,10 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
 
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
-                        *self.#field_name.state_mut() = LinkState::Ids(children);
+                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(children);
                         Ok(self.#field_name.ids().unwrap())
                     } else {
-                        *self.#field_name.state_mut() = LinkState::None;
+                        *self.#field_name.state_mut() = LinkStateMultiple::None;
                         Ok(Vec::new())
                     }
                 }
@@ -704,7 +716,7 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                         .iter()
                         .filter_map(|&id| ctx.load::<#target_type>(id).ok())
                         .collect_vec();
-                    *self.#field_name.state_mut() = LinkState::Loaded(loaded_nodes);
+                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
                     Ok(self.#field_name.get_mut().unwrap())
                 }
             })
@@ -716,10 +728,10 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if let Some(&first_id) = children.first() {
-                        *self.#field_name.state_mut() = LinkState::Id(first_id);
+                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
                         Ok(first_id)
                     } else {
-                        *self.#field_name.state_mut() = LinkState::None;
+                        *self.#field_name.state_mut() = LinkStateSingle::None;
                         Err(NodeError::not_found(self.id()))
                     }
                 }
@@ -731,7 +743,7 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                     let id = self.#load_id_method(ctx)?;
                     let loaded_node = ctx.load::<#target_type>(id)?;
-                    *self.#field_name.state_mut() = LinkState::Loaded(loaded_node);
+                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
                     Ok(self.#field_name.get_mut().unwrap())
                 }
             })
@@ -764,10 +776,10 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
 
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
-                        *self.#field_name.state_mut() = LinkState::Ids(children.clone());
+                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(children.clone());
                         Ok(children)
                     } else {
-                        *self.#field_name.state_mut() = LinkState::None;
+                        *self.#field_name.state_mut() = LinkStateMultiple::None;
                         Ok(Vec::new())
                     }
                 }
@@ -782,7 +794,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         .iter()
                         .filter_map(|&id| ctx.load::<#target_type>(id).cloned().ok())
                         .collect_vec();
-                    *self.#field_name.state_mut() = LinkState::Loaded(loaded_nodes);
+                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
                     Ok(self.#field_name.get_mut().unwrap())
                 }
 
@@ -806,10 +818,10 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if let Some(&first_id) = children.first() {
-                        *self.#field_name.state_mut() = LinkState::Id(first_id);
+                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
                         Ok(first_id)
                     } else {
-                        *self.#field_name.state_mut() = LinkState::None;
+                        *self.#field_name.state_mut() = LinkStateSingle::None;
                         Err(NodeError::not_found(self.id()))
                     }
                 }
@@ -821,7 +833,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                     let id = self.#load_id_method(ctx)?;
                     let loaded_node = ctx.load::<#target_type>(id).cloned()?;
-                    *self.#field_name.state_mut() = LinkState::Loaded(loaded_node);
+                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
                     Ok(self.#field_name.get_mut().unwrap())
                 }
 
@@ -1069,7 +1081,7 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         }
                     }
                     if !children.is_empty() {
-                        self.#field_name = Owned::new_loaded(children);
+                        self.#field_name = OwnedMultiple::new_loaded(children);
                     }
                 },
                 LinkType::Component => quote! {
@@ -1085,7 +1097,7 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         }
                     }
                     if !children.is_empty() {
-                        self.#field_name = Component::new_loaded(children);
+                        self.#field_name = ComponentMultiple::new_loaded(children);
                     }
                 },
                 LinkType::Ref => quote! {
@@ -1101,7 +1113,7 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         }
                     }
                     if !children.is_empty() {
-                        self.#field_name = Ref::new_loaded(children);
+                        self.#field_name = RefMultiple::new_loaded(children);
                     }
                 },
                 _ => quote! {},

@@ -1,27 +1,36 @@
 use super::*;
 
+// Single node link state
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LinkState<T> {
+pub enum LinkStateSingle<T> {
     Loaded(T),
     Id(u64),
+    None,
+    Unknown,
+}
+
+// Multiple node link state
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LinkStateMultiple<T> {
+    Loaded(Vec<T>),
     Ids(Vec<u64>),
     None,
     Unknown,
 }
 
-pub trait Link<T> {
-    fn state<'a>(&'a self) -> &'a LinkState<T>;
-    fn state_mut(&mut self) -> &mut LinkState<T>;
+// Single node link trait
+pub trait SingleLink<T> {
+    fn state<'a>(&'a self) -> &'a LinkStateSingle<T>;
+    fn state_mut(&mut self) -> &mut LinkStateSingle<T>;
 
     fn new_loaded(value: T) -> Self;
     fn new_id(id: u64) -> Self;
-    fn new_ids(ids: Vec<u64>) -> Self;
     fn none() -> Self;
     fn unknown() -> Self;
 
     fn get<'a>(&'a self) -> Option<&'a T> {
         match self.state() {
-            LinkState::Loaded(val) => Some(val),
+            LinkStateSingle::Loaded(val) => Some(val),
             _ => None,
         }
     }
@@ -30,178 +39,332 @@ pub trait Link<T> {
         self.state_mut().data_mut()
     }
 
-    fn id(&self) -> Option<u64> {
+    fn id(&self) -> Option<u64>
+    where
+        T: Node,
+    {
         match self.state() {
-            LinkState::Id(id) => Some(*id),
-            LinkState::Ids(ids) => ids.first().copied(),
-            _ => None,
-        }
-    }
-
-    fn ids(&self) -> Option<Vec<u64>> {
-        match self.state() {
-            LinkState::Ids(ids) => Some(ids.clone()),
-            LinkState::Id(id) => Some(vec![*id]),
+            LinkStateSingle::Loaded(val) => Some(val.id()),
+            LinkStateSingle::Id(id) => Some(*id),
             _ => None,
         }
     }
 
     fn is_loaded(&self) -> bool {
-        matches!(self.state(), LinkState::Loaded(_))
+        matches!(self.state(), LinkStateSingle::Loaded(_))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self.state(), LinkState::None)
+        matches!(self.state(), LinkStateSingle::None)
     }
 }
 
-impl<T> LinkState<T> {
-    pub fn set(&mut self, data: T) {
-        *self = LinkState::Loaded(data);
+// Multiple node link trait
+pub trait MultipleLink<T> {
+    fn state<'a>(&'a self) -> &'a LinkStateMultiple<T>;
+    fn state_mut(&mut self) -> &mut LinkStateMultiple<T>;
+
+    fn new_loaded(value: Vec<T>) -> Self;
+    fn new_ids(ids: Vec<u64>) -> Self;
+    fn none() -> Self;
+    fn unknown() -> Self;
+
+    fn get<'a>(&'a self) -> Option<&'a Vec<T>> {
+        match self.state() {
+            LinkStateMultiple::Loaded(val) => Some(val),
+            _ => None,
+        }
     }
+
+    fn get_mut<'a>(&'a mut self) -> NodeResult<&'a mut Vec<T>> {
+        self.state_mut().data_mut()
+    }
+
+    fn ids(&self) -> Option<Vec<u64>>
+    where
+        T: Node,
+    {
+        match self.state() {
+            LinkStateMultiple::Loaded(val) => Some(val.iter().map(|node| node.id()).collect()),
+            LinkStateMultiple::Ids(ids) => Some(ids.clone()),
+            _ => None,
+        }
+    }
+
+    fn is_loaded(&self) -> bool {
+        matches!(self.state(), LinkStateMultiple::Loaded(_))
+    }
+
+    fn is_none(&self) -> bool {
+        matches!(self.state(), LinkStateMultiple::None)
+    }
+}
+
+impl<T> LinkStateSingle<T> {
+    pub fn set(&mut self, data: T) {
+        *self = LinkStateSingle::Loaded(data);
+    }
+
     pub fn data_mut(&mut self) -> NodeResult<&mut T> {
         match self {
-            LinkState::Loaded(d) => Ok(d),
-            _ => Err(NodeError::custom("Link not loaded")),
+            LinkStateSingle::Loaded(d) => Ok(d),
+            _ => Err(NodeError::custom("Single link not loaded")),
         }
     }
 }
 
+impl<T> LinkStateMultiple<T> {
+    pub fn set(&mut self, data: Vec<T>) {
+        *self = LinkStateMultiple::Loaded(data);
+    }
+
+    pub fn data_mut(&mut self) -> NodeResult<&mut Vec<T>> {
+        match self {
+            LinkStateMultiple::Loaded(d) => Ok(d),
+            _ => Err(NodeError::custom("Multiple link not loaded")),
+        }
+    }
+}
+
+// Single node link types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Component<T> {
-    state: LinkState<T>,
+    state: LinkStateSingle<T>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Owned<T> {
-    state: LinkState<T>,
+    state: LinkStateSingle<T>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ref<T> {
-    state: LinkState<T>,
+    state: LinkStateSingle<T>,
 }
 
-impl<T> Link<T> for Component<T> {
-    fn state(&self) -> &LinkState<T> {
+// Multiple node link types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComponentMultiple<T> {
+    state: LinkStateMultiple<T>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OwnedMultiple<T> {
+    state: LinkStateMultiple<T>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RefMultiple<T> {
+    state: LinkStateMultiple<T>,
+}
+
+// Single link implementations
+impl<T> SingleLink<T> for Component<T> {
+    fn state(&self) -> &LinkStateSingle<T> {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut LinkState<T> {
+    fn state_mut(&mut self) -> &mut LinkStateSingle<T> {
         &mut self.state
     }
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(value),
+            state: LinkStateSingle::Loaded(value),
         }
     }
 
     fn new_id(id: u64) -> Self {
         Self {
-            state: LinkState::Id(id),
-        }
-    }
-
-    fn new_ids(ids: Vec<u64>) -> Self {
-        Self {
-            state: LinkState::Ids(ids),
+            state: LinkStateSingle::Id(id),
         }
     }
 
     fn none() -> Self {
         Self {
-            state: LinkState::None,
+            state: LinkStateSingle::None,
         }
     }
 
     fn unknown() -> Self {
         Self {
-            state: LinkState::Unknown,
+            state: LinkStateSingle::Unknown,
         }
     }
 }
 
-impl<T> Link<T> for Owned<T> {
-    fn state(&self) -> &LinkState<T> {
+impl<T> SingleLink<T> for Owned<T> {
+    fn state(&self) -> &LinkStateSingle<T> {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut LinkState<T> {
+    fn state_mut(&mut self) -> &mut LinkStateSingle<T> {
         &mut self.state
     }
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(value),
+            state: LinkStateSingle::Loaded(value),
         }
     }
 
     fn new_id(id: u64) -> Self {
         Self {
-            state: LinkState::Id(id),
-        }
-    }
-
-    fn new_ids(ids: Vec<u64>) -> Self {
-        Self {
-            state: LinkState::Ids(ids),
+            state: LinkStateSingle::Id(id),
         }
     }
 
     fn none() -> Self {
         Self {
-            state: LinkState::None,
+            state: LinkStateSingle::None,
         }
     }
 
     fn unknown() -> Self {
         Self {
-            state: LinkState::Unknown,
+            state: LinkStateSingle::Unknown,
         }
     }
 }
 
-impl<T> Link<T> for Ref<T> {
-    fn state(&self) -> &LinkState<T> {
+impl<T> SingleLink<T> for Ref<T> {
+    fn state(&self) -> &LinkStateSingle<T> {
         &self.state
     }
 
-    fn state_mut(&mut self) -> &mut LinkState<T> {
+    fn state_mut(&mut self) -> &mut LinkStateSingle<T> {
         &mut self.state
     }
 
     fn new_loaded(value: T) -> Self {
         Self {
-            state: LinkState::Loaded(value),
+            state: LinkStateSingle::Loaded(value),
         }
     }
 
     fn new_id(id: u64) -> Self {
         Self {
-            state: LinkState::Id(id),
+            state: LinkStateSingle::Id(id),
         }
     }
 
     fn none() -> Self {
         Self {
-            state: LinkState::None,
+            state: LinkStateSingle::None,
         }
     }
 
     fn unknown() -> Self {
         Self {
-            state: LinkState::Unknown,
+            state: LinkStateSingle::Unknown,
+        }
+    }
+}
+
+// Multiple link implementations
+impl<T> MultipleLink<T> for ComponentMultiple<T> {
+    fn state(&self) -> &LinkStateMultiple<T> {
+        &self.state
+    }
+
+    fn state_mut(&mut self) -> &mut LinkStateMultiple<T> {
+        &mut self.state
+    }
+
+    fn new_loaded(value: Vec<T>) -> Self {
+        Self {
+            state: LinkStateMultiple::Loaded(value),
         }
     }
 
     fn new_ids(ids: Vec<u64>) -> Self {
         Self {
-            state: LinkState::Ids(ids),
+            state: LinkStateMultiple::Ids(ids),
+        }
+    }
+
+    fn none() -> Self {
+        Self {
+            state: LinkStateMultiple::None,
+        }
+    }
+
+    fn unknown() -> Self {
+        Self {
+            state: LinkStateMultiple::Unknown,
         }
     }
 }
 
+impl<T> MultipleLink<T> for OwnedMultiple<T> {
+    fn state(&self) -> &LinkStateMultiple<T> {
+        &self.state
+    }
+
+    fn state_mut(&mut self) -> &mut LinkStateMultiple<T> {
+        &mut self.state
+    }
+
+    fn new_loaded(value: Vec<T>) -> Self {
+        Self {
+            state: LinkStateMultiple::Loaded(value),
+        }
+    }
+
+    fn new_ids(ids: Vec<u64>) -> Self {
+        Self {
+            state: LinkStateMultiple::Ids(ids),
+        }
+    }
+
+    fn none() -> Self {
+        Self {
+            state: LinkStateMultiple::None,
+        }
+    }
+
+    fn unknown() -> Self {
+        Self {
+            state: LinkStateMultiple::Unknown,
+        }
+    }
+}
+
+impl<T> MultipleLink<T> for RefMultiple<T> {
+    fn state(&self) -> &LinkStateMultiple<T> {
+        &self.state
+    }
+
+    fn state_mut(&mut self) -> &mut LinkStateMultiple<T> {
+        &mut self.state
+    }
+
+    fn new_loaded(value: Vec<T>) -> Self {
+        Self {
+            state: LinkStateMultiple::Loaded(value),
+        }
+    }
+
+    fn new_ids(ids: Vec<u64>) -> Self {
+        Self {
+            state: LinkStateMultiple::Ids(ids),
+        }
+    }
+
+    fn none() -> Self {
+        Self {
+            state: LinkStateMultiple::None,
+        }
+    }
+
+    fn unknown() -> Self {
+        Self {
+            state: LinkStateMultiple::Unknown,
+        }
+    }
+}
+
+// Default implementations
 impl<T> Default for Component<T> {
     fn default() -> Self {
         Self::unknown()
@@ -220,8 +383,54 @@ impl<T> Default for Ref<T> {
     }
 }
 
-// IntoIterator implementations for Vec types only
-impl<'a, T> IntoIterator for &'a Owned<Vec<T>> {
+impl<T> Default for ComponentMultiple<T> {
+    fn default() -> Self {
+        Self::unknown()
+    }
+}
+
+impl<T> Default for OwnedMultiple<T> {
+    fn default() -> Self {
+        Self::unknown()
+    }
+}
+
+impl<T> Default for RefMultiple<T> {
+    fn default() -> Self {
+        Self::unknown()
+    }
+}
+
+// IntoIterator implementations for single links
+impl<'a, T> IntoIterator for &'a Owned<T> {
+    type Item = &'a T;
+    type IntoIter = std::option::IntoIter<&'a T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.get().into_iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Component<T> {
+    type Item = &'a T;
+    type IntoIter = std::option::IntoIter<&'a T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.get().into_iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a Ref<T> {
+    type Item = &'a T;
+    type IntoIter = std::option::IntoIter<&'a T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.get().into_iter()
+    }
+}
+
+// IntoIterator implementations for multiple links
+impl<'a, T> IntoIterator for &'a OwnedMultiple<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
 
@@ -230,7 +439,7 @@ impl<'a, T> IntoIterator for &'a Owned<Vec<T>> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Component<Vec<T>> {
+impl<'a, T> IntoIterator for &'a ComponentMultiple<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
 
@@ -239,7 +448,7 @@ impl<'a, T> IntoIterator for &'a Component<Vec<T>> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Ref<Vec<T>> {
+impl<'a, T> IntoIterator for &'a RefMultiple<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
 
@@ -248,66 +457,12 @@ impl<'a, T> IntoIterator for &'a Ref<Vec<T>> {
     }
 }
 
-// IntoIterator implementations for Option types only
-impl<'a, T> IntoIterator for &'a Owned<Option<T>> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().and_then(|opt| opt.as_ref()).into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a Component<Option<T>> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().and_then(|opt| opt.as_ref()).into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a Ref<Option<T>> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().and_then(|opt| opt.as_ref()).into_iter()
-    }
-}
-
-// Extension trait for iteration functionality that avoids trait conflicts
+// Extension trait for iteration functionality
 pub trait LinkIterable<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_>;
 }
 
-impl<T> LinkIterable<T> for Owned<Vec<T>> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        match self.get() {
-            Some(vec) => Box::new(vec.iter()),
-            None => Box::new(std::iter::empty()),
-        }
-    }
-}
-
-impl<T> LinkIterable<T> for Component<Vec<T>> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        match self.get() {
-            Some(vec) => Box::new(vec.iter()),
-            None => Box::new(std::iter::empty()),
-        }
-    }
-}
-
-impl<T> LinkIterable<T> for Ref<Vec<T>> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        match self.get() {
-            Some(vec) => Box::new(vec.iter()),
-            None => Box::new(std::iter::empty()),
-        }
-    }
-}
-
+// Single link iterable implementations
 impl<T> LinkIterable<T> for Owned<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
         Box::new(self.get().into_iter())
@@ -326,21 +481,31 @@ impl<T> LinkIterable<T> for Ref<T> {
     }
 }
 
-impl<T> LinkIterable<T> for Owned<Option<T>> {
+// Multiple link iterable implementations
+impl<T> LinkIterable<T> for OwnedMultiple<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.get().and_then(|opt| opt.as_ref()).into_iter())
+        match self.get() {
+            Some(vec) => Box::new(vec.iter()),
+            None => Box::new(std::iter::empty()),
+        }
     }
 }
 
-impl<T> LinkIterable<T> for Component<Option<T>> {
+impl<T> LinkIterable<T> for ComponentMultiple<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.get().and_then(|opt| opt.as_ref()).into_iter())
+        match self.get() {
+            Some(vec) => Box::new(vec.iter()),
+            None => Box::new(std::iter::empty()),
+        }
     }
 }
 
-impl<T> LinkIterable<T> for Ref<Option<T>> {
+impl<T> LinkIterable<T> for RefMultiple<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.get().and_then(|opt| opt.as_ref()).into_iter())
+        match self.get() {
+            Some(vec) => Box::new(vec.iter()),
+            None => Box::new(std::iter::empty()),
+        }
     }
 }
 
@@ -349,54 +514,109 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_iteration_functionality() {
-        // Test Vec iteration
-        let vec_data = vec![1, 2, 3];
-        let owned_vec: Owned<Vec<i32>> = Owned::new_loaded(vec_data);
+    fn test_single_and_multiple_links() {
+        use std::collections::{HashMap, HashSet};
+        use std::str::FromStr;
 
-        let mut collected = Vec::new();
-        for item in &owned_vec {
-            collected.push(*item);
+        // Create a mock Node struct for testing
+        #[derive(Default, Clone, Serialize, Deserialize)]
+        struct MockNode {
+            id: u64,
         }
-        assert_eq!(collected, vec![1, 2, 3]);
 
-        // Test single item iteration
-        let owned_single: Owned<i32> = Owned::new_loaded(42);
-        let mut collected = Vec::new();
-        for item in owned_single.iter() {
-            collected.push(*item);
+        impl Node for MockNode {
+            fn id(&self) -> u64 {
+                self.id
+            }
+            fn set_id(&mut self, id: u64) {
+                self.id = id;
+            }
+            fn owner(&self) -> u64 {
+                0
+            }
+            fn set_owner(&mut self, _owner: u64) {}
+            fn kind(&self) -> NodeKind {
+                NodeKind::from_str("Unit").unwrap()
+            }
+            fn reassign_ids(&mut self, _next_id: &mut u64) {}
+            fn kind_s() -> NodeKind
+            where
+                Self: Sized,
+            {
+                NodeKind::from_str("Unit").unwrap()
+            }
+            fn var_names() -> HashSet<VarName>
+            where
+                Self: Sized,
+            {
+                HashSet::new()
+            }
+            fn set_var(&mut self, _var: VarName, _value: VarValue) -> NodeResult<()> {
+                Ok(())
+            }
+            fn get_var(&self, _var: VarName) -> NodeResult<VarValue> {
+                Err("No variables".into())
+            }
+            fn get_vars(&self) -> HashMap<VarName, VarValue> {
+                HashMap::new()
+            }
+            fn pack_links(
+                &self,
+                _packed: &mut PackedNodes,
+                _visited: &mut std::collections::HashSet<u64>,
+            ) {
+            }
+            fn unpack_links(&mut self, _packed: &PackedNodes) {}
         }
-        assert_eq!(collected, vec![42]);
 
-        // Test Option iteration with Some
-        let owned_option: Owned<Option<i32>> = Owned::new_loaded(Some(99));
-        let mut collected = Vec::new();
-        for item in &owned_option {
-            collected.push(*item);
+        // Test single Node - loaded state
+        let node = MockNode { id: 42 };
+        let owned_node: Owned<MockNode> = Owned::new_loaded(node);
+        assert_eq!(owned_node.id(), Some(42));
+        assert!(owned_node.is_loaded());
+
+        // Test single Node - id state
+        let owned_id: Owned<MockNode> = Owned::new_id(123);
+        assert_eq!(owned_id.id(), Some(123));
+        assert!(!owned_id.is_loaded());
+
+        // Test multiple Nodes - loaded state
+        let nodes = vec![
+            MockNode { id: 10 },
+            MockNode { id: 20 },
+            MockNode { id: 30 },
+        ];
+        let owned_nodes: OwnedMultiple<MockNode> = OwnedMultiple::new_loaded(nodes);
+        assert_eq!(owned_nodes.ids(), Some(vec![10, 20, 30]));
+        assert!(owned_nodes.is_loaded());
+
+        // Test multiple Nodes - ids state
+        let owned_ids: OwnedMultiple<MockNode> = OwnedMultiple::new_ids(vec![1, 2, 3]);
+        assert_eq!(owned_ids.ids(), Some(vec![1, 2, 3]));
+        assert!(!owned_ids.is_loaded());
+
+        // Test iteration for single links
+        let node = MockNode { id: 99 };
+        let component_node: Component<MockNode> = Component::new_loaded(node);
+        let collected: Vec<&MockNode> = component_node.iter().collect();
+        assert_eq!(collected.len(), 1);
+        assert_eq!(collected[0].id, 99);
+
+        // Test iteration for multiple links
+        let nodes = vec![MockNode { id: 77 }, MockNode { id: 88 }];
+        let ref_nodes: RefMultiple<MockNode> = RefMultiple::new_loaded(nodes);
+        let collected: Vec<&MockNode> = ref_nodes.iter().collect();
+        assert_eq!(collected.len(), 2);
+        assert_eq!(collected[0].id, 77);
+        assert_eq!(collected[1].id, 88);
+
+        // Test for-loop iteration
+        let nodes = vec![MockNode { id: 100 }, MockNode { id: 200 }];
+        let multiple_nodes: ComponentMultiple<MockNode> = ComponentMultiple::new_loaded(nodes);
+        let mut sum = 0;
+        for node in &multiple_nodes {
+            sum += node.id;
         }
-        assert_eq!(collected, vec![99]);
-
-        // Test Option iteration with None
-        let owned_option_none: Owned<Option<i32>> = Owned::new_loaded(None);
-        let mut collected = Vec::new();
-        for item in &owned_option_none {
-            collected.push(*item);
-        }
-        assert_eq!(collected, Vec::<i32>::new());
-
-        // Test empty Vec
-        let owned_empty_vec: Owned<Vec<i32>> = Owned::new_loaded(vec![]);
-        let mut collected = Vec::new();
-        for item in &owned_empty_vec {
-            collected.push(*item);
-        }
-        assert_eq!(collected, Vec::<i32>::new());
-
-        // Test with LinkIterable trait
-        use LinkIterable;
-        let vec_data = vec![10, 20, 30];
-        let owned_vec: Owned<Vec<i32>> = Owned::new_loaded(vec_data);
-        let collected: Vec<&i32> = owned_vec.iter().collect();
-        assert_eq!(collected, vec![&10, &20, &30]);
+        assert_eq!(sum, 300);
     }
 }

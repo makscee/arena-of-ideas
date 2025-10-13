@@ -59,7 +59,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 let house = house.clone(ctx, pid);
                 ctx.add_link(house.id, m.team_load(ctx)?.id)?;
             }
-            *m.team.state_mut() = LinkState::Unknown;
+            *m.team.state_mut() = LinkStateSingle::Unknown;
             m.fill_shop_case(ctx, true)?;
         }
     }

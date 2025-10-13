@@ -9,7 +9,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub struct TPlayerLinkSelection {
     pub id: u64,
     pub player_id: u64,
-    pub source_id: u64,
+    pub parent_id: u64,
     pub kind: String,
     pub selected_link_id: u64,
 }

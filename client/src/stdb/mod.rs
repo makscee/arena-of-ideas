@@ -7,7 +7,6 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 pub mod admin_add_gold_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
-pub mod admin_delete_node_reducer;
 pub mod admin_sync_link_ratings_reducer;
 pub mod admin_upload_world_reducer;
 pub mod content_deselect_link_reducer;
@@ -55,9 +54,6 @@ pub use admin_daily_update_reducer::{
 pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
-};
-pub use admin_delete_node_reducer::{
-    admin_delete_node, set_flags_for_admin_delete_node, AdminDeleteNodeCallbackId,
 };
 pub use admin_sync_link_ratings_reducer::{
     admin_sync_link_ratings, set_flags_for_admin_sync_link_ratings, AdminSyncLinkRatingsCallbackId,
@@ -146,9 +142,6 @@ pub use t_player_link_selection_type::TPlayerLinkSelection;
 pub enum Reducer {
     AdminAddGold,
     AdminDailyUpdate,
-    AdminDeleteNode {
-        id: u64,
-    },
     AdminDeleteNodeRecursive {
         id: u64,
     },
@@ -228,7 +221,6 @@ impl __sdk::Reducer for Reducer {
         match self {
             Reducer::AdminAddGold => "admin_add_gold",
             Reducer::AdminDailyUpdate => "admin_daily_update",
-            Reducer::AdminDeleteNode { .. } => "admin_delete_node",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
             Reducer::AdminSyncLinkRatings => "admin_sync_link_ratings",
             Reducer::AdminUploadWorld { .. } => "admin_upload_world",
@@ -268,10 +260,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "admin_daily_update" => Ok(__sdk::parse_reducer_args::<
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?
-            .into()),
-            "admin_delete_node" => Ok(__sdk::parse_reducer_args::<
-                admin_delete_node_reducer::AdminDeleteNodeArgs,
-            >("admin_delete_node", &value.args)?
             .into()),
             "admin_delete_node_recursive" => {
                 Ok(__sdk::parse_reducer_args::<
