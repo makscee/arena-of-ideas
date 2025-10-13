@@ -901,46 +901,69 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         }
     };
 
-    // Generate load_all method (Component + Owned links, recursive)
-    let all_field_loads = node.fields.iter().filter_map(|field| {
-        if matches!(field.link_type, LinkType::Component | LinkType::Owned) {
-            let field_name = &field.name;
-            let load_method = format_ident!("{}_load", field_name);
+    // Generate load_all method (Component + Owned + Ref links)
+    let all_field_loads = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Component | LinkType::Owned => {
+                let field_name = &field.name;
+                let load_method = format_ident!("{}_load", field_name);
 
-            Some(if field.is_vec {
-                quote! {
-                    if let Ok(loaded_items) = self.#load_method(ctx) {
-                        for item in loaded_items.iter_mut() {
-                            item.load_all(ctx)?;
+                Some(if field.is_vec {
+                    quote! {
+                        if let Ok(loaded_items) = self.#load_method(ctx) {
+                            for item in loaded_items.iter_mut() {
+                                item.load_all(ctx)?;
+                            }
                         }
                     }
-                }
-            } else {
-                quote! {
-                    if let Ok(loaded_item) = self.#load_method(ctx) {
-                        loaded_item.load_all(ctx)?;
+                } else {
+                    quote! {
+                        if let Ok(loaded_item) = self.#load_method(ctx) {
+                            loaded_item.load_all(ctx)?;
+                        }
                     }
-                }
-            })
-        } else {
-            None
-        }
-    });
+                })
+            }
+            LinkType::Ref => {
+                let field_name = &field.name;
+                let load_id_method = format_ident!("{}_load_id", field_name);
 
-    let load_all_method = if component_fields.is_empty() && owned_fields.is_empty() {
-        quote! {
-            pub fn load_all(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
-                Ok(self)
+                Some(if field.is_vec {
+                    quote! {
+                        let _ = self.#load_id_method(ctx);
+                    }
+                } else {
+                    quote! {
+                        let _ = self.#load_id_method(ctx);
+                    }
+                })
             }
-        }
-    } else {
-        quote! {
-            pub fn load_all(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
-                #(#all_field_loads)*
-                Ok(self)
+            LinkType::None => None,
+        });
+
+    let ref_fields: Vec<_> = node
+        .fields
+        .iter()
+        .filter(|field| field.link_type == LinkType::Ref)
+        .collect();
+
+    let load_all_method =
+        if component_fields.is_empty() && owned_fields.is_empty() && ref_fields.is_empty() {
+            quote! {
+                pub fn load_all(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                    Ok(self)
+                }
             }
-        }
-    };
+        } else {
+            quote! {
+                pub fn load_all(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                    #(#all_field_loads)*
+                    Ok(self)
+                }
+            }
+        };
 
     quote! {
         #load_components_method

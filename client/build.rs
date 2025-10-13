@@ -216,6 +216,31 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             _ => None,
         });
 
+    let spawn_refs = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Ref => {
+                let field_name = &field.name;
+                Some(if field.is_vec {
+                    quote! {
+                        if let Some(ids) = self.#field_name.ids() {
+                            for &ref_id in &ids {
+                                ctx.add_link(self.id, ref_id).track()?;
+                            }
+                        }
+                    }
+                } else {
+                    quote! {
+                        if let Some(ref_id) = self.#field_name.id() {
+                            ctx.add_link(self.id, ref_id).track()?;
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
@@ -231,6 +256,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 ctx.add_id_entity_link(self.id, entity).track()?;
                 #(#spawn_components)*
                 #(#spawn_owned)*
+                #(#spawn_refs)*
                 let kind = self.kind();
                 let id = self.id;
                 ctx.world_mut().track()?.entity_mut(entity).insert(self);
