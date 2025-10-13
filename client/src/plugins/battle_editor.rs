@@ -233,6 +233,7 @@ impl BattleEditorPlugin {
             Self::render_team_selector(ui, world)
         };
 
+        result.notify_error_op();
         match result {
             Ok((Some(action), _)) => navigation_action = Some(action),
             Ok((_, true)) => changed = true,
@@ -541,37 +542,58 @@ impl BattleEditorPlugin {
     fn handle_add_default_unit_to_slot(
         team_id: u64,
         slot_id: u64,
-        context: &mut ClientContext,
+        ctx: &mut ClientContext,
     ) -> NodeResult<()> {
-        let slot_entity = context.entity(slot_id)?;
-
         let house_id = {
-            let existing_houses = context.collect_children::<NHouse>(team_id)?;
+            let existing_houses = ctx.collect_children::<NHouse>(team_id)?;
+            info!("Found {} existing houses", existing_houses.len());
             let default_house = existing_houses
                 .iter()
                 .find(|h| h.house_name == "Default House");
 
             if let Some(existing_house) = default_house {
+                info!("Using existing Default House: {}", existing_house.id);
                 existing_house.id
             } else {
-                let house = NHouse::placeholder(next_id());
-                let house_entity = context.world_mut()?.spawn_empty().id();
-                let house_id = house.id();
-                house.spawn(context, Some(house_entity))?;
-                context.add_link(team_id, house_id)?;
+                info!("Creating new Default House");
+                let house_id = next_id();
+                let house = NHouse::placeholder(house_id);
+                house.spawn(ctx, None)?;
+                ctx.add_link(team_id, house_id)?;
+                info!("Created Default House with id: {}", house_id);
                 house_id
             }
         };
 
+        info!("Creating new unit");
         let unit = NUnit::placeholder(next_id());
-        let unit_entity = context.world_mut()?.spawn_empty().id();
         let unit_id = unit.id();
-        unit.spawn(context, Some(unit_entity))?;
-        context.add_link(house_id, unit_id)?;
+        unit.spawn(ctx, None)?;
+        ctx.add_link(house_id, unit_id)?;
+        info!("Created unit with id: {}", unit_id);
 
-        let mut slot = context.load_entity::<NFusionSlot>(slot_entity)?.clone();
+        info!("Updating slot with unit");
+        let mut slot = match ctx.load::<NFusionSlot>(slot_id) {
+            Ok(s) => {
+                info!("Loaded slot successfully");
+                s.clone()
+            }
+            Err(e) => {
+                error!("Failed to load slot: {:?}", e);
+                return Err(e);
+            }
+        };
         slot.unit = Ref::new_id(unit_id);
-        slot.spawn(context, Some(slot_entity))?;
+        info!("Set slot unit reference to: {}", unit_id);
+        let slot_entity = slot.entity(ctx)?;
+        match slot.spawn(ctx, Some(slot_entity)) {
+            Ok(_) => info!("Slot update successful"),
+            Err(e) => {
+                error!("Slot spawn failed: {:?}", e);
+                return Err(e);
+            }
+        }
+        info!("Successfully added unit to slot");
 
         Ok(())
     }
@@ -621,6 +643,7 @@ impl BattleEditorPlugin {
     }
 }
 
+#[derive(Debug)]
 enum BattleEditorAction {
     GoBack,
     Navigate(BattleEditorNode),

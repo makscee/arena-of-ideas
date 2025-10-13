@@ -148,7 +148,7 @@ impl NodeLinks {
 }
 
 /// Marker component for entities with nodes
-#[derive(BevyComponent)]
+#[derive(BevyComponent, Debug)]
 pub struct NodeEntity {
     pub nodes: HashMap<NodeKind, u64>,
 }
@@ -259,8 +259,16 @@ impl<'w> ContextSource for WorldSource<'w> {
                             return Ok(*kind);
                         }
                     }
+                } else {
+                    return Err(NodeError::custom(format!(
+                        "NodeEntity component absent for id {id}"
+                    )));
                 }
+            } else {
+                return Err(NodeError::custom(format!("Entity not found for id {id}")));
             }
+        } else {
+            return Err(NodeError::custom("NodeEntityMap resource not found"));
         }
         Err(NodeError::not_found(id))
     }

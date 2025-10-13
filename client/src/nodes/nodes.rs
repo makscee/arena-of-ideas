@@ -54,13 +54,13 @@ impl TNode {
     }
 }
 
-pub trait NodeKindOnUnpack {
-    fn on_spawn(self, context: &mut ClientContext, entity: Entity) -> NodeResult<()>;
+pub trait NodeKindOnSpawn {
+    fn on_spawn(self, context: &mut ClientContext, id: u64) -> NodeResult<()>;
 }
 
-impl NodeKindOnUnpack for NodeKind {
-    fn on_spawn(self, ctx: &mut ClientContext, entity: Entity) -> NodeResult<()> {
-        let id = ctx.id(entity)?;
+impl NodeKindOnSpawn for NodeKind {
+    fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
+        let entity = ctx.entity(id)?;
         let vars = self.get_vars(ctx, id);
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);

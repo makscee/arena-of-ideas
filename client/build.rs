@@ -232,8 +232,9 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 #(#spawn_components)*
                 #(#spawn_owned)*
                 let kind = self.kind();
+                let id = self.id;
                 ctx.world_mut().track()?.entity_mut(entity).insert(self);
-                kind.on_spawn(ctx, entity)
+                kind.on_spawn(ctx, id)
             }
         }
     }
