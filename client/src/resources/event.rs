@@ -40,7 +40,7 @@ impl EventImpl for Event {
                                 Ok(())
                             })
                             .log();
-                        context.set_var(VarName::value, value);
+                        context.set_var_layer(VarName::value, value);
                     }
                 }
                 context.get_var(VarName::value)

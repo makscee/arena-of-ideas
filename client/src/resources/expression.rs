@@ -41,7 +41,9 @@ impl ExpressionImpl for Expression {
             Expression::var_sum(var) => ctx.sum_var(*var),
             Expression::state_var(x, var) => {
                 let id = x.get_id(ctx)?;
-                NodeState::load(id.entity(ctx)?, ctx)?.get(*var).to_e(*var)
+                NodeStateHistory::load(id.entity(ctx)?, ctx)?
+                    .get(*var)
+                    .to_e(*var)
             }
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),

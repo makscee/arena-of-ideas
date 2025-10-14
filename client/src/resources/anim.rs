@@ -58,7 +58,7 @@ impl AnimAction {
                 for target in a.targets.iter().copied() {
                     let entity = target.entity(ctx)?;
                     ctx.world_mut()?
-                        .get_mut::<NodeState>(entity)
+                        .get_mut::<NodeStateHistory>(entity)
                         .to_not_found()?
                         .insert(t, a.duration, VarName::position, pos.into());
                     t += a.timeframe;
@@ -93,7 +93,7 @@ impl AnimAction {
 
                 let mut t = ctx.t()?;
                 let vars_layers = ctx.get_vars_layers();
-                let mut state = ctx.load_mut::<NodeState>(id)?;
+                let mut state = ctx.load_mut::<NodeStateHistory>(id)?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());

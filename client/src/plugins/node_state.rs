@@ -7,7 +7,7 @@ impl Plugin for NodeStatePlugin {
 }
 
 #[derive(BevyComponent, Debug, Default)]
-pub struct NodeState {
+pub struct NodeStateHistory {
     pub vars: HashMap<VarName, VarState>,
 }
 
@@ -45,7 +45,7 @@ struct VarChange {
 
 impl NodeStatePlugin {}
 
-impl NodeState {
+impl NodeStateHistory {
     pub fn new_with(var: VarName, value: VarValue) -> Self {
         let mut state = Self::default();
         state.insert(0.0, 0.0, var, value);
@@ -105,7 +105,7 @@ impl NodeState {
         true
     }
     pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = ctx.load_entity::<NodeState>(entity) {
+        if let Ok(ns) = ctx.load_entity::<NodeStateHistory>(entity) {
             if let Ok(t) = ctx.t() {
                 ns.get_at(t, var)
             } else {

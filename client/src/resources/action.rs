@@ -33,11 +33,11 @@ impl ActionImpl for Action {
             }
             Action::set_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_var(VarName::value, value);
+                ctx.set_var_layer(VarName::value, value);
             }
             Action::add_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_var(
+                ctx.set_var_layer(
                     VarName::value,
                     ctx.get_var(VarName::value)
                         .unwrap_or(1.into())
@@ -46,7 +46,7 @@ impl ActionImpl for Action {
             }
             Action::subtract_value(x) => {
                 let value = x.get_value(ctx)?;
-                ctx.set_var(VarName::value, ctx.get_var(VarName::value)?.sub(&value)?);
+                ctx.set_var_layer(VarName::value, ctx.get_var(VarName::value)?.sub(&value)?);
             }
             Action::add_target(x) => match x.get_ids_list(ctx) {
                 Ok(ids) => {

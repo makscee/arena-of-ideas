@@ -353,33 +353,51 @@ impl<'w> ContextSource for WorldSource<'w> {
         }
     }
 
-    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        self.load_and_set_var(
-            self.get_node_kind(node_id).track()?,
-            node_id,
-            var,
-            value.clone(),
-        )?;
-        let world = self.world_mut().track()?;
-        if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            if let Some(entity) = map.get_entity(node_id) {
-                if let Some(mut node_state) = world.get_mut::<NodeState>(entity) {
-                    node_state.init(var, value);
-                    Ok(())
+    fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        // For battle simulations, also track in NodeStateHistory
+        if let WorldSource::Battle(battle) = self {
+            let t = battle.t;
+            let world = self.world_mut().track()?;
+            if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                if let Some(entity) = map.get_entity(id) {
+                    if let Some(mut node_state_history) = world.get_mut::<NodeStateHistory>(entity)
+                    {
+                        node_state_history.insert(t, 0.0, var, value.clone());
+                    } else {
+                        let mut node_state_history = NodeStateHistory::default();
+                        node_state_history.insert(t, 0.0, var, value.clone());
+                        world.entity_mut(entity).insert(node_state_history);
+                    }
                 } else {
-                    Err(NodeError::custom(format!(
-                        "NodeState not found for {node_id}"
-                    )))
+                    return Err(NodeError::entity_not_found(id));
                 }
             } else {
-                Err(NodeError::custom(format!("Entity not found for {node_id}")))
+                return Err(NodeError::not_found_generic("NodeEntityMap not found"));
             }
+            let _ = self.load_and_set_var(self.get_node_kind(id).track()?, id, var, value.clone());
+            Ok(())
         } else {
-            Err(NodeError::custom("Failed to get NodeEntityMap"))
+            self.load_and_set_var(self.get_node_kind(id).track()?, id, var, value.clone())
         }
     }
 
     fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        // For battle simulation, check NodeStateHistory first
+        if let WorldSource::Battle(battle) = self {
+            let t = battle.t;
+            let world = self.world()?;
+            if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                if let Some(entity) = map.get_entity(node_id) {
+                    if let Some(node_state_history) = world.get::<NodeStateHistory>(entity) {
+                        if let Some(value) = node_state_history.get_at(t, var) {
+                            return Ok(value);
+                        }
+                    }
+                }
+            }
+        }
+
+        // For global world or if not found in history, get from the node directly
         self.load_and_get_var(self.get_node_kind(node_id).track()?, node_id, var)
     }
 }

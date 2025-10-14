@@ -62,22 +62,29 @@ impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
         let entity = ctx.entity(id)?;
         let vars = self.get_vars(ctx, id);
+
+        // Only create NodeStateHistory for battle simulations
+        if ctx.battle().is_ok() {
+            let world = ctx.world_mut()?;
+            let mut emut = world.entity_mut(entity);
+            let mut ns = if let Some(ns) = emut.get_mut::<NodeStateHistory>() {
+                ns
+            } else {
+                emut.insert(NodeStateHistory::default())
+                    .get_mut::<NodeStateHistory>()
+                    .unwrap()
+            };
+            ns.init_vars(vars.into_iter());
+            match self {
+                NodeKind::NUnit => {
+                    ns.init(VarName::dmg, 0.into());
+                }
+                _ => {}
+            };
+        }
+
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);
-        let mut ns = if let Some(ns) = emut.get_mut::<NodeState>() {
-            ns
-        } else {
-            emut.insert(NodeState::default())
-                .get_mut::<NodeState>()
-                .unwrap()
-        };
-        ns.init_vars(vars.into_iter());
-        match self {
-            NodeKind::NUnit => {
-                ns.init(VarName::dmg, 0.into());
-            }
-            _ => {}
-        };
         if let Some(mut ne) = emut.get_mut::<NodeEntity>() {
             ne.add_node(id, self);
         } else {
@@ -101,7 +108,7 @@ impl NodeKindOnSpawn for NodeKind {
                     ctx.add_link_entities(entity, rep_entity)?;
                 }
                 ctx.world_mut()?
-                    .get_mut::<NodeState>(entity)
+                    .get_mut::<NodeStateHistory>(entity)
                     .to_not_found()?
                     .init_vars(
                         [

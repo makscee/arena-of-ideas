@@ -462,8 +462,8 @@ impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> 
                 data.description(context).label_w(ui);
 
                 ui.horizontal(|ui| {
-                    for (var_name, var_value) in data.stats(context) {
-                        TagWidget::new_var_value(var_name, var_value).ui(ui);
+                    for (var, var_value) in data.stats(context) {
+                        TagWidget::new_var_value(var, var_value).ui(ui);
                     }
                 });
 

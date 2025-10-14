@@ -151,7 +151,7 @@ impl BattlePlugin {
                         });
                         for (var, state) in &ctx
                             .world()?
-                            .get::<NodeState>(ctx.entity(id)?)
+                            .get::<NodeStateHistory>(ctx.entity(id)?)
                             .to_not_found()?
                             .vars
                         {
@@ -181,7 +181,7 @@ impl BattlePlugin {
                     } else {
                         for (entity, _ns) in ctx
                             .world_mut()?
-                            .query::<(Entity, &NodeState)>()
+                            .query::<(Entity, &NodeStateHistory)>()
                             .iter(ctx.world()?)
                         {
                             if format!("{}", entity).button(ui).clicked() {

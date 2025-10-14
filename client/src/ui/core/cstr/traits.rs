@@ -174,9 +174,9 @@ impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
         let mut s = self.as_ref().to_owned().cstr_c(self.color());
         match self {
-            Trigger::ChangeStat(var_name) => {
+            Trigger::ChangeStat(var) => {
                 s += " ";
-                s += &var_name.cstr();
+                s += &var.cstr();
             }
             Trigger::BattleStart
             | Trigger::TurnEnd

@@ -1275,9 +1275,9 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
 
             pub fn get_vars<S: ContextSource>(self, ctx: &Context<S>, node_id: u64) -> std::collections::HashMap<VarName, VarValue> {
                 let mut vars = std::collections::HashMap::new();
-                for var_name in self.var_names() {
-                    if let Ok(value) = self.get_var(ctx, node_id, var_name) {
-                        vars.insert(var_name, value);
+                for var in self.var_names() {
+                    if let Ok(value) = self.get_var(ctx, node_id, var) {
+                        vars.insert(var, value);
                     }
                 }
                 vars

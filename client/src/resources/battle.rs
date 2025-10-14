@@ -137,12 +137,8 @@ impl BattleAction {
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = ctx.with_temp_layer(ContextLayer::Owner(*a), |context| {
-                        context.get_var(VarName::position)
-                    })?;
-                    let target_pos = ctx.with_temp_layer(ContextLayer::Owner(*b), |context| {
-                        context.get_var(VarName::position)
-                    })?;
+                    let owner_pos = ctx.node_get_var(*a, VarName::position)?;
+                    let target_pos = ctx.node_get_var(*b, VarName::position)?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
                         ctx.with_temp_layers(
                             [
@@ -229,28 +225,17 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
-                    let t = ctx.t()?;
-                    let kind = ctx.get_kind(*id)?;
-                    let mut ns = ctx.load_mut::<NodeState>(*id)?;
-                    if ns.insert(t, 0.1, *var, value.clone()) {
-                        if kind.var_names().contains(var) {
-                            kind.set_var(ctx, *id, *var, value.clone()).log();
-                        } else if let Some(kind) = kind
-                            .other_components()
-                            .into_iter()
-                            .find(|kind| kind.var_names().contains(var))
-                        {
-                            kind.set_var(ctx, *id, *var, value.clone()).log();
-                        }
-                        true
-                    } else {
+                    if ctx.node_get_var(*id, *var).is_ok_and(|v| v.eq(value)) {
                         false
+                    } else {
+                        ctx.node_set_var(*id, *var, value.clone())?;
+                        true
                     }
                 }
                 BattleAction::spawn(id) => {
                     let kind = ctx.get_kind(*id)?;
                     let vars = kind.get_vars(ctx, *id);
-                    let mut ns = NodeState::load_mut(id.entity(ctx)?, ctx)?;
+                    let mut ns = NodeStateHistory::load_mut(id.entity(ctx)?, ctx)?;
                     ns.init_vars(vars.into_iter());
                     add_actions.extend_from_slice(&[BattleAction::var_set(
                         *id,
@@ -316,12 +301,22 @@ impl BattleSimulation {
         let team_right = battle.right.id;
         let left_entity = world.spawn_empty().id();
         let right_entitiy = world.spawn_empty().id();
-        world
-            .with_context_mut(|ctx| {
-                battle.left.spawn(ctx, Some(left_entity))?;
-                battle.right.spawn(ctx, Some(right_entitiy))
-            })
-            .log();
+        let mut bs = Self {
+            world,
+            fusions_left: default(),
+            fusions_right: default(),
+            team_left,
+            team_right,
+            duration: 0.0,
+            t: 0.0,
+            log: BattleLog::default(),
+            rng: rng_seeded(battle.id),
+        };
+        bs.with_context_mut(|ctx| {
+            battle.left.spawn(ctx, Some(left_entity))?;
+            battle.right.spawn(ctx, Some(right_entitiy))
+        })
+        .log();
         fn ids_by_slot(parent: Entity, world: &World) -> Vec<u64> {
             world
                 .with_context(|ctx| {
@@ -340,19 +335,11 @@ impl BattleSimulation {
                 })
                 .unwrap()
         }
-        let fusions_left = ids_by_slot(left_entity, &world);
-        let fusions_right = ids_by_slot(right_entitiy, &world);
-        Self {
-            world,
-            fusions_left,
-            fusions_right,
-            team_left,
-            team_right,
-            duration: 0.0,
-            t: 0.0,
-            log: BattleLog::default(),
-            rng: rng_seeded(battle.id),
-        }
+        let fusions_left = ids_by_slot(left_entity, &bs.world);
+        let fusions_right = ids_by_slot(right_entitiy, &bs.world);
+        bs.fusions_left = fusions_left;
+        bs.fusions_right = fusions_right;
+        bs
     }
     pub fn start(mut self) -> Self {
         let spawn_actions = self
@@ -397,7 +384,8 @@ impl BattleSimulation {
                 for (var, value) in vars {
                     let value = Event::UpdateStat(var).update_value(ctx, value, id);
                     let t = ctx.t()?;
-                    ctx.load_mut::<NodeState>(id)?.insert(t, 0.0, var, value);
+                    ctx.load_mut::<NodeStateHistory>(id)?
+                        .insert(t, 0.0, var, value);
                 }
             }
             Ok(())
@@ -463,7 +451,7 @@ impl BattleSimulation {
         for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = ctx.load_mut::<NodeState>(child)?;
+                    let mut state = ctx.load_mut::<NodeStateHistory>(child)?;
                     let charges = state
                         .get(VarName::charges)
                         .map(|v| v.get_i32().unwrap())
@@ -484,7 +472,7 @@ impl BattleSimulation {
         ctx.add_link_entities(entity, rep_entity)?;
         ctx.add_link_entities(target.entity(ctx)?, entity)?;
 
-        let mut state = ctx.load_entity_mut::<NodeState>(entity)?;
+        let mut state = ctx.load_entity_mut::<NodeStateHistory>(entity)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::charges, charges.into());

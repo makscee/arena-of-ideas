@@ -323,19 +323,12 @@ where
     }
 
     /// Get variable from specific node by ID
-    pub fn node_get_var(&self, id: u64, var_name: VarName) -> NodeResult<VarValue> {
-        let kind = self.source.get_node_kind(id)?;
-        kind.get_var(self, id, var_name)
+    pub fn node_get_var(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
+        self.source().get_var(id, var)
     }
 
-    pub fn node_set_var(
-        &mut self,
-        id: u64,
-        var_name: VarName,
-        var_value: VarValue,
-    ) -> NodeResult<()> {
-        let kind = self.source.get_node_kind(id)?;
-        kind.set_var(self, id, var_name, var_value)
+    pub fn node_set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        self.source_mut().set_var(id, var, value)
     }
 
     /// Get variable value from context layers, checking layers first then owner/target/caster
@@ -399,7 +392,7 @@ where
     }
 
     /// Set a variable in the context
-    pub fn set_var(&mut self, name: VarName, value: VarValue) {
+    pub fn set_var_layer(&mut self, name: VarName, value: VarValue) {
         self.layers.push(ContextLayer::Var(name, value));
     }
 
@@ -666,7 +659,7 @@ where
     }
 
     /// Sum a variable recursively from all children of the current owner
-    pub fn sum_var(&self, var_name: VarName) -> NodeResult<VarValue> {
+    pub fn sum_var(&self, var: VarName) -> NodeResult<VarValue> {
         let owner_id = self
             .owner()
             .ok_or(NodeError::custom("No owner in context"))?;
@@ -676,7 +669,7 @@ where
         ids.push(owner_id);
 
         for id in ids {
-            if let Ok(value) = self.source.get_var(id, var_name) {
+            if let Ok(value) = self.source.get_var(id, var) {
                 result = result.add(&value)?;
             }
         }
@@ -689,8 +682,8 @@ where
 
         for l in &self.layers {
             match l {
-                ContextLayer::Var(var_name, var_value) => {
-                    result.insert(*var_name, var_value.clone());
+                ContextLayer::Var(var, var_value) => {
+                    result.insert(*var, var_value.clone());
                 }
                 _ => {}
             }
