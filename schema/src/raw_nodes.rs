@@ -3,15 +3,15 @@ pub use proc_macros::Node;
 
 #[derive(Node)]
 pub struct NArena {
-    pub floor_pools: Owned<Vec<NFloorPool>>,
-    pub floor_bosses: Owned<Vec<NFloorBoss>>,
+    pub floor_pools: OwnedMultiple<NFloorPool>,
+    pub floor_bosses: OwnedMultiple<NFloorBoss>,
 }
 
 #[derive(Node)]
 pub struct NFloorPool {
     #[var]
     pub floor: i32,
-    pub teams: Owned<Vec<NTeam>>,
+    pub teams: OwnedMultiple<NTeam>,
 }
 
 #[derive(Node)]
@@ -52,7 +52,7 @@ pub struct NHouse {
     pub color: Component<NHouseColor>,
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
-    pub units: Owned<Vec<NUnit>>,
+    pub units: OwnedMultiple<NUnit>,
 }
 
 #[derive(Node)]
@@ -116,8 +116,8 @@ pub struct NStatusRepresentation {
 
 #[derive(Node)]
 pub struct NTeam {
-    pub houses: Owned<Vec<NHouse>>,
-    pub fusions: Owned<Vec<NFusion>>,
+    pub houses: OwnedMultiple<NHouse>,
+    pub fusions: OwnedMultiple<NFusion>,
 }
 
 #[derive(Node)]
@@ -141,12 +141,12 @@ pub struct NMatch {
     pub active: bool,
     pub shop_offers: Vec<ShopOffer>,
     pub team: Owned<NTeam>,
-    pub battles: Owned<Vec<NBattle>>,
+    pub battles: OwnedMultiple<NBattle>,
 }
 
 #[derive(Node)]
 pub struct NFusion {
-    pub slots: Owned<Vec<NFusionSlot>>,
+    pub slots: OwnedMultiple<NFusionSlot>,
     pub trigger_unit: u64,
     #[var]
     pub index: i32,

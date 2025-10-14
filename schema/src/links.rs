@@ -383,6 +383,7 @@ impl<'a, T> IntoIterator for &'a Ref<T> {
 }
 
 // IntoIterator implementations for multiple links
+
 impl<'a, T> IntoIterator for &'a OwnedMultiple<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
@@ -426,6 +427,7 @@ impl<T> LinkIterable<T> for Ref<T> {
 }
 
 // Multiple link iterable implementations
+
 impl<T> LinkIterable<T> for OwnedMultiple<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
         match self.get() {

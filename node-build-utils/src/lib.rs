@@ -32,7 +32,6 @@ pub struct FieldInfo {
     pub name: Ident,
     pub link_type: LinkType,
     pub target_type: String,
-    pub is_vec: bool,
     pub raw_type: String,
     pub is_var: bool,
 }
@@ -41,7 +40,9 @@ pub struct FieldInfo {
 pub enum LinkType {
     Component,
     Owned,
+    OwnedMultiple,
     Ref,
+    RefMultiple,
     None,
 }
 
@@ -110,7 +111,7 @@ pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
 
 pub fn parse_field(field: &Field) -> FieldInfo {
     let name = field.ident.clone().unwrap();
-    let (link_type, target_type, is_vec) = parse_field_type(&field.ty);
+    let (link_type, target_type) = parse_field_type(&field.ty);
 
     let raw_type = match &field.ty {
         Type::Path(type_path) => quote! { #type_path }.to_string(),
@@ -123,85 +124,73 @@ pub fn parse_field(field: &Field) -> FieldInfo {
         name,
         link_type,
         target_type,
-        is_vec,
         raw_type,
         is_var,
     }
 }
 
-pub fn parse_field_type(ty: &Type) -> (LinkType, String, bool) {
+pub fn parse_field_type(ty: &Type) -> (LinkType, String) {
     if let Type::Path(type_path) = ty {
         let path = &type_path.path;
 
         if let Some(segment) = path.segments.last() {
             match segment.ident.to_string().as_str() {
                 "Component" => {
-                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Component, target, is_vec);
+                    let target = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Component, target);
                 }
                 "Owned" => {
-                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Owned, target, is_vec);
+                    let target = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Owned, target);
+                }
+                "OwnedMultiple" => {
+                    let target = parse_generic_arg(&segment.arguments);
+                    return (LinkType::OwnedMultiple, target);
                 }
                 "Ref" => {
-                    let (target, is_vec) = parse_generic_arg(&segment.arguments);
-                    return (LinkType::Ref, target, is_vec);
+                    let target = parse_generic_arg(&segment.arguments);
+                    return (LinkType::Ref, target);
+                }
+                "RefMultiple" => {
+                    let target = parse_generic_arg(&segment.arguments);
+                    return (LinkType::RefMultiple, target);
                 }
                 _ => {}
             }
         }
     }
 
-    (LinkType::None, String::new(), false)
+    (LinkType::None, String::new())
 }
 
-pub fn parse_generic_arg(arguments: &PathArguments) -> (String, bool) {
+pub fn parse_generic_arg(arguments: &PathArguments) -> String {
     if let PathArguments::AngleBracketed(args) = arguments {
         if let Some(GenericArgument::Type(ty)) = args.args.first() {
-            return parse_inner_type(ty);
-        }
-    }
-    (String::new(), false)
-}
-
-pub fn parse_inner_type(ty: &Type) -> (String, bool) {
-    if let Type::Path(type_path) = ty {
-        let path = &type_path.path;
-
-        if let Some(segment) = path.segments.last() {
-            match segment.ident.to_string().as_str() {
-                "Vec" => {
-                    if let PathArguments::AngleBracketed(args) = &segment.arguments {
-                        if let Some(GenericArgument::Type(inner)) = args.args.first() {
-                            let (target, _) = parse_inner_type(inner);
-                            return (target, true);
-                        }
+            if let Type::Path(type_path) = ty {
+                if let Some(segment) = type_path.path.segments.last() {
+                    let type_name = segment.ident.to_string();
+                    // Check if it's a Vec, which is not allowed
+                    if type_name == "Vec" {
+                        panic!("Vec<...> is not supported in link types. Use Multiple variants instead.");
                     }
-                }
-                name => {
-                    return (name.to_string(), false);
+                    // Validate that it's a node type (starts with 'N')
+                    if !type_name.starts_with('N') {
+                        panic!(
+                            "Link type target must be a Node type (starting with 'N'), found: {}",
+                            type_name
+                        );
+                    }
+                    return type_name;
                 }
             }
         }
     }
-    (String::new(), false)
+    panic!()
 }
 
 pub fn validate_parent_relationships(
     node_map: &HashMap<String, NodeInfo>,
 ) -> std::result::Result<(), String> {
-    // Check for Vec<Component> which is not allowed
-    for (node_name, node_info) in node_map {
-        for field in &node_info.fields {
-            if field.is_vec && field.link_type == LinkType::Component {
-                return Err(format!(
-                    "Node {} has Vec<Component<{}>> which is not allowed. Components can't be Vec.",
-                    node_name, field.target_type
-                ));
-            }
-        }
-    }
-
     // Only validate content nodes for single content parent restriction
     let mut content_parent_map: HashMap<String, Vec<String>> = HashMap::new();
 
@@ -211,7 +200,10 @@ pub fn validate_parent_relationships(
         }
 
         for field in &node_info.fields {
-            if field.link_type == LinkType::Component || field.link_type == LinkType::Owned {
+            if matches!(
+                field.link_type,
+                LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple
+            ) {
                 // Check if the target is also a content node
                 if let Some(target_info) = node_map.get(&field.target_type) {
                     if target_info.is_content {
@@ -261,7 +253,7 @@ pub fn build_relationship_maps(node_map: &HashMap<String, NodeInfo>) -> Relation
                         .or_insert_with(HashSet::new)
                         .insert(field.target_type.clone());
                 }
-                LinkType::Owned => {
+                LinkType::Owned | LinkType::OwnedMultiple => {
                     owned_parents.insert(field.target_type.clone(), node_name.clone());
                     owned_children
                         .entry(node_name.clone())
@@ -396,13 +388,9 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
                 let target_ident = format_ident!("{}", field.target_type);
                 quote! { #target_ident }
             };
-
-            if field.is_vec {
-                quote! { ComponentMultiple<#target> }
-            } else {
-                quote! { Component<#target> }
-            }
+            quote! { Component<#target> }
         }
+
         LinkType::Owned => {
             let target = if field.target_type.is_empty() {
                 quote! { String }
@@ -410,12 +398,16 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
                 let target_ident = format_ident!("{}", field.target_type);
                 quote! { #target_ident }
             };
-
-            if field.is_vec {
-                quote! { OwnedMultiple<#target> }
+            quote! { Owned<#target> }
+        }
+        LinkType::OwnedMultiple => {
+            let target = if field.target_type.is_empty() {
+                quote! { String }
             } else {
-                quote! { Owned<#target> }
-            }
+                let target_ident = format_ident!("{}", field.target_type);
+                quote! { #target_ident }
+            };
+            quote! { OwnedMultiple<#target> }
         }
         LinkType::Ref => {
             let target = if field.target_type.is_empty() {
@@ -424,12 +416,16 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
                 let target_ident = format_ident!("{}", field.target_type);
                 quote! { #target_ident }
             };
-
-            if field.is_vec {
-                quote! { RefMultiple<#target> }
+            quote! { Ref<#target> }
+        }
+        LinkType::RefMultiple => {
+            let target = if field.target_type.is_empty() {
+                quote! { String }
             } else {
-                quote! { Ref<#target> }
-            }
+                let target_ident = format_ident!("{}", field.target_type);
+                quote! { #target_ident }
+            };
+            quote! { RefMultiple<#target> }
         }
         LinkType::None => {
             // For primitive types, use the raw type directly
@@ -449,29 +445,7 @@ pub fn generate_default_accessors(node: &NodeInfo) -> Vec<TokenStream> {
         .iter()
         .map(|field| {
             let field_name = &field.name;
-            match field.link_type {
-                LinkType::Component | LinkType::Owned | LinkType::Ref => {
-                    quote! { #field_name: Default::default(), }
-                }
-                LinkType::None => {
-                    // Generate default values for primitive types
-                    if field.raw_type.contains("Option") {
-                        quote! { #field_name: None, }
-                    } else if field.raw_type.contains("String") {
-                        quote! { #field_name: String::new(), }
-                    } else if field.raw_type.contains("i32") {
-                        quote! { #field_name: 0, }
-                    } else if field.raw_type.contains("u64") {
-                        quote! { #field_name: 0, }
-                    } else if field.raw_type.contains("bool") {
-                        quote! { #field_name: false, }
-                    } else if field.raw_type.contains("Vec") {
-                        quote! { #field_name: Vec::new(), }
-                    } else {
-                        quote! { #field_name: Default::default(), }
-                    }
-                }
-            }
+            quote! { #field_name: Default::default(), }
         })
         .collect()
 }
@@ -519,12 +493,7 @@ pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
     let component_fields: Vec<_> = node
         .fields
         .iter()
-        .filter(|field| {
-            matches!(
-                field.link_type,
-                LinkType::Component | LinkType::Owned | LinkType::Ref
-            )
-        })
+        .filter(|field| !matches!(field.link_type, LinkType::None))
         .collect();
 
     if component_fields.is_empty() {
@@ -540,10 +509,9 @@ pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
             quote! { #target_ident }
         };
 
-        let param_type = if field.is_vec {
-            quote! { Vec<#target> }
-        } else {
-            quote! { #target }
+        let param_type = match field.link_type {
+            LinkType::OwnedMultiple | LinkType::RefMultiple => quote! { Vec<#target> },
+            _ => quote! { #target },
         };
 
         quote! { #field_name: #param_type }
@@ -553,25 +521,20 @@ pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
         let field_name = &field.name;
         let wrapped_value = match field.link_type {
             LinkType::Component => {
-                if field.is_vec {
-                    quote! { ComponentMultiple::new_loaded(#field_name) }
-                } else {
-                    quote! { Component::new_loaded(#field_name) }
-                }
+                quote! { Component::new_loaded(#field_name) }
             }
+
             LinkType::Owned => {
-                if field.is_vec {
-                    quote! { OwnedMultiple::new_loaded(#field_name) }
-                } else {
-                    quote! { Owned::new_loaded(#field_name) }
-                }
+                quote! { Owned::new_loaded(#field_name) }
+            }
+            LinkType::OwnedMultiple => {
+                quote! { OwnedMultiple::new_loaded(#field_name) }
             }
             LinkType::Ref => {
-                if field.is_vec {
-                    quote! { RefMultiple::new_loaded(#field_name) }
-                } else {
-                    quote! { Ref::new_loaded(#field_name) }
-                }
+                quote! { Ref::new_loaded(#field_name) }
+            }
+            LinkType::RefMultiple => {
+                quote! { RefMultiple::new_loaded(#field_name) }
             }
             _ => quote! { #field_name },
         };
@@ -691,7 +654,7 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
 
         let get_method = format_ident!("{}", field_name);
 
-        if field.is_vec {
+        if matches!(field.link_type, LinkType::OwnedMultiple | LinkType::RefMultiple) {
             Some(quote! {
                 pub fn #load_id_method(&mut self, ctx: &ServerContext) -> Result<Vec<u64>, NodeError> {
                     if let Some(ids) = self.#field_name.ids() {
@@ -784,7 +747,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
         let ref_method = format_ident!("{}_ref", field_name);
         let get_method = format_ident!("{}", field_name);
 
-        if field.is_vec {
+        if matches!(field.link_type, LinkType::OwnedMultiple | LinkType::RefMultiple) {
             Some(quote! {
                 pub fn #load_id_method(&mut self, ctx: &ClientContext) -> Result<Vec<u64>, NodeError> {
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
@@ -892,13 +855,13 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
     let component_fields: Vec<_> = node
         .fields
         .iter()
-        .filter(|field| field.link_type == LinkType::Component)
+        .filter(|field| matches!(field.link_type, LinkType::Component))
         .collect();
 
     let owned_fields: Vec<_> = node
         .fields
         .iter()
-        .filter(|field| field.link_type == LinkType::Owned)
+        .filter(|field| matches!(field.link_type, LinkType::Owned | LinkType::OwnedMultiple))
         .collect();
 
     // Generate load_components method (only Component links, recursive)
@@ -906,19 +869,9 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         let field_name = &field.name;
         let load_method = format_ident!("{}_load", field_name);
 
-        if field.is_vec {
-            quote! {
-                if let Ok(loaded_items) = self.#load_method(ctx) {
-                    for item in loaded_items.iter_mut() {
-                        item.load_components(ctx)?;
-                    }
-                }
-            }
-        } else {
-            quote! {
-                if let Ok(loaded_item) = self.#load_method(ctx) {
-                    loaded_item.load_components(ctx)?;
-                }
+        quote! {
+            if let Ok(loaded_item) = self.#load_method(ctx) {
+                loaded_item.load_components(ctx)?;
             }
         }
     });
@@ -943,38 +896,31 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         .fields
         .iter()
         .filter_map(|field| match field.link_type {
-            LinkType::Component | LinkType::Owned => {
+            LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple => {
                 let field_name = &field.name;
                 let load_method = format_ident!("{}_load", field_name);
 
-                Some(if field.is_vec {
-                    quote! {
+                Some(match field.link_type {
+                    LinkType::OwnedMultiple => quote! {
                         if let Ok(loaded_items) = self.#load_method(ctx) {
                             for item in loaded_items.iter_mut() {
                                 item.load_all(ctx)?;
                             }
                         }
-                    }
-                } else {
-                    quote! {
+                    },
+                    _ => quote! {
                         if let Ok(loaded_item) = self.#load_method(ctx) {
                             loaded_item.load_all(ctx)?;
                         }
-                    }
+                    },
                 })
             }
-            LinkType::Ref => {
+            LinkType::Ref | LinkType::RefMultiple => {
                 let field_name = &field.name;
                 let load_id_method = format_ident!("{}_load_id", field_name);
 
-                Some(if field.is_vec {
-                    quote! {
-                        let _ = self.#load_id_method(ctx);
-                    }
-                } else {
-                    quote! {
-                        let _ = self.#load_id_method(ctx);
-                    }
+                Some(quote! {
+                    let _ = self.#load_id_method(ctx);
                 })
             }
             LinkType::None => None,
@@ -983,7 +929,7 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
     let ref_fields: Vec<_> = node
         .fields
         .iter()
-        .filter(|field| field.link_type == LinkType::Ref)
+        .filter(|field| matches!(field.link_type, LinkType::Ref | LinkType::RefMultiple))
         .collect();
 
     let load_all_method =
@@ -1020,63 +966,22 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         let field_name = &field.name;
         let target_type = format_ident!("{}", field.target_type);
 
-        Some(if field.is_vec {
-            match field.link_type {
-                LinkType::Owned | LinkType::Component => quote! {
-                    for item in &self.#field_name {
-                        item.pack_recursive(packed, visited);
-                        packed.link_parent_child(
-                            self.id,
-                            item.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
-                    }
-                },
-                LinkType::Ref => quote! {
-                    match self.#field_name.state() {
-                        LinkStateMultiple::Loaded(items) => {
-                            for item in items {
-                                item.pack_recursive(packed, visited);
-                                packed.link_parent_child(
-                                    self.id,
-                                    item.id(),
-                                    stringify!(#struct_name).to_string(),
-                                    stringify!(#target_type).to_string()
-                                );
-                            }
-                        },
-                        LinkStateMultiple::Ids(ids) => {
-                            for &id in ids {
-                                packed.link_parent_child(
-                                    self.id,
-                                    id,
-                                    stringify!(#struct_name).to_string(),
-                                    stringify!(#target_type).to_string()
-                                );
-                            }
-                        },
-                        _ => {}
-                    }
-                },
-                _ => quote! {},
-            }
-        } else {
-            match field.link_type {
-                LinkType::Component | LinkType::Owned => quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.pack_recursive(packed, visited);
-                        packed.link_parent_child(
-                            self.id,
-                            loaded.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
-                    }
-                },
-                LinkType::Ref => quote! {
-                    match self.#field_name.state() {
-                        LinkStateSingle::Loaded(item) => {
+        Some(match field.link_type {
+            LinkType::OwnedMultiple => quote! {
+                for item in &self.#field_name {
+                    item.pack_recursive(packed, visited);
+                    packed.link_parent_child(
+                        self.id,
+                        item.id(),
+                        stringify!(#struct_name).to_string(),
+                        stringify!(#target_type).to_string()
+                    );
+                }
+            },
+            LinkType::RefMultiple => quote! {
+                match self.#field_name.state() {
+                    LinkStateMultiple::Loaded(items) => {
+                        for item in items {
                             item.pack_recursive(packed, visited);
                             packed.link_parent_child(
                                 self.id,
@@ -1084,20 +989,55 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                                 stringify!(#struct_name).to_string(),
                                 stringify!(#target_type).to_string()
                             );
-                        },
-                        LinkStateSingle::Id(id) => {
+                        }
+                    },
+                    LinkStateMultiple::Ids(ids) => {
+                        for &id in ids {
                             packed.link_parent_child(
                                 self.id,
-                                *id,
+                                id,
                                 stringify!(#struct_name).to_string(),
                                 stringify!(#target_type).to_string()
                             );
-                        },
-                        _ => {}
-                    }
-                },
-                _ => quote! {},
-            }
+                        }
+                    },
+                    _ => {}
+                }
+            },
+            LinkType::Component | LinkType::Owned => quote! {
+                if let Some(loaded) = self.#field_name.get() {
+                    loaded.pack_recursive(packed, visited);
+                    packed.link_parent_child(
+                        self.id,
+                        loaded.id(),
+                        stringify!(#struct_name).to_string(),
+                        stringify!(#target_type).to_string()
+                    );
+                }
+            },
+            LinkType::Ref => quote! {
+                match self.#field_name.state() {
+                    LinkStateSingle::Loaded(item) => {
+                        item.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            item.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    },
+                    LinkStateSingle::Id(id) => {
+                        packed.link_parent_child(
+                            self.id,
+                            *id,
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    },
+                    _ => {}
+                }
+            },
+            _ => quote! {},
         })
     });
 
@@ -1117,98 +1057,76 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         let field_name = &field.name;
         let target_type = format_ident!("{}", field.target_type);
 
-        Some(if field.is_vec {
-            match field.link_type {
-                LinkType::Owned => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    let mut children = Vec::new();
-                    for child_id in child_ids {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            children.push(child);
-                        }
+        Some(match field.link_type {
+            LinkType::OwnedMultiple => quote! {
+                let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                let mut children = Vec::new();
+                for child_id in child_ids {
+                    if let Some(child_data) = packed.get(child_id) {
+                        let mut child = #target_type::default();
+                        child.inject_data(&child_data.data).unwrap();
+                        child.set_id(child_id);
+                        child.unpack_links(packed);
+                        children.push(child);
                     }
-                    if !children.is_empty() {
-                        self.#field_name = OwnedMultiple::new_loaded(children);
+                }
+                if !children.is_empty() {
+                    self.#field_name = OwnedMultiple::new_loaded(children);
+                }
+            },
+            LinkType::RefMultiple => quote! {
+                let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                let mut children = Vec::new();
+                for child_id in child_ids {
+                    if let Some(child_data) = packed.get(child_id) {
+                        let mut child = #target_type::default();
+                        child.inject_data(&child_data.data).unwrap();
+                        child.set_id(child_id);
+                        child.unpack_links(packed);
+                        children.push(child);
                     }
-                },
-                LinkType::Component => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    let mut children = Vec::new();
-                    for child_id in child_ids {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            children.push(child);
-                        }
+                }
+                if !children.is_empty() {
+                    self.#field_name = RefMultiple::new_loaded(children);
+                }
+            },
+            LinkType::Component => quote! {
+                let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                if let Some(&child_id) = child_ids.first() {
+                    if let Some(child_data) = packed.get(child_id) {
+                        let mut child = #target_type::default();
+                        child.inject_data(&child_data.data).unwrap();
+                        child.set_id(child_id);
+                        child.unpack_links(packed);
+                        self.#field_name = Component::new_loaded(child);
                     }
-                    if !children.is_empty() {
-                        self.#field_name = ComponentMultiple::new_loaded(children);
+                }
+            },
+            LinkType::Owned => quote! {
+                let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                if let Some(&child_id) = child_ids.first() {
+                    if let Some(child_data) = packed.get(child_id) {
+                        let mut child = #target_type::default();
+                        child.inject_data(&child_data.data).unwrap();
+                        child.set_id(child_id);
+                        child.unpack_links(packed);
+                        self.#field_name = Owned::new_loaded(child);
                     }
-                },
-                LinkType::Ref => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    let mut children = Vec::new();
-                    for child_id in child_ids {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            children.push(child);
-                        }
+                }
+            },
+            LinkType::Ref => quote! {
+                let child_ids = packed.kind_children(self.id, stringify!(#target_type));
+                if let Some(&child_id) = child_ids.first() {
+                    if let Some(child_data) = packed.get(child_id) {
+                        let mut child = #target_type::default();
+                        child.inject_data(&child_data.data).unwrap();
+                        child.set_id(child_id);
+                        child.unpack_links(packed);
+                        self.#field_name = Ref::new_loaded(child);
                     }
-                    if !children.is_empty() {
-                        self.#field_name = RefMultiple::new_loaded(children);
-                    }
-                },
-                _ => quote! {},
-            }
-        } else {
-            match field.link_type {
-                LinkType::Component => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    if let Some(&child_id) = child_ids.first() {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            self.#field_name = Component::new_loaded(child);
-                        }
-                    }
-                },
-                LinkType::Owned => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    if let Some(&child_id) = child_ids.first() {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            self.#field_name = Owned::new_loaded(child);
-                        }
-                    }
-                },
-                LinkType::Ref => quote! {
-                    let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                    if let Some(&child_id) = child_ids.first() {
-                        if let Some(child_data) = packed.get(child_id) {
-                            let mut child = #target_type::default();
-                            child.inject_data(&child_data.data).unwrap();
-                            child.set_id(child_id);
-                            child.unpack_links(packed);
-                            self.#field_name = Ref::new_loaded(child);
-                        }
-                    }
-                },
-                _ => quote! {},
-            }
+                }
+            },
+            _ => quote! {},
         })
     });
 
@@ -1373,22 +1291,21 @@ pub fn generate_collect_owned_ids_impl(node: &NodeInfo) -> proc_macro2::TokenStr
         .fields
         .iter()
         .filter_map(|field| match field.link_type {
-            LinkType::Owned | LinkType::Component => {
+            LinkType::Owned | LinkType::OwnedMultiple | LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
+                Some(match field.link_type {
+                    LinkType::OwnedMultiple => quote! {
                         if let Some(many_data) = self.#field_name.get() {
                             for n in many_data {
                                 v.extend(n.collect_owned_ids());
                             }
                         }
-                    }
-                } else {
-                    quote! {
+                    },
+                    _ => quote! {
                         if let Some(n) = self.#field_name.get() {
                             v.extend(n.collect_owned_ids());
                         }
-                    }
+                    },
                 })
             }
             _ => None,
@@ -1408,24 +1325,23 @@ pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenS
         .fields
         .iter()
         .filter_map(|field| match field.link_type {
-            LinkType::Owned | LinkType::Component => {
+            LinkType::Owned | LinkType::OwnedMultiple | LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
+                Some(match field.link_type {
+                    LinkType::OwnedMultiple => quote! {
                         if let Some(children_data) = self.#field_name.get() {
                             for n in children_data {
                                 v.push((self.id, n.id));
                                 v.extend(n.collect_owned_links());
                             }
                         }
-                    }
-                } else {
-                    quote! {
+                    },
+                    _ => quote! {
                         if let Some(n) = self.#field_name.get() {
                             v.push((self.id, n.id));
                             v.extend(n.collect_owned_links());
                         }
-                    }
+                    },
                 })
             }
             _ => None,

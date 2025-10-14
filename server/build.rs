@@ -140,54 +140,46 @@ fn generate_server_node_impl(
         .filter_map(|field| match field.link_type {
             LinkType::Component => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        for component in &self.#field_name {
-                            component.save(source);
-                            self.id.add_child(source.rctx(), component.id);
-                        }
-                    }
-                } else {
-                    quote! {
-                        if let Some(loaded) = self.#field_name.get() {
-                            loaded.save(source);
-                            self.id.add_child(source.rctx(), loaded.id);
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.save(source);
+                        self.id.add_child(source.rctx(), loaded.id);
                     }
                 })
             }
+
             LinkType::Owned => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        for owned in &self.#field_name {
-                            owned.save(source);
-                            self.id.add_child(source.rctx(), owned.id);
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.save(source);
+                        self.id.add_child(source.rctx(), loaded.id);
                     }
-                } else {
-                    quote! {
-                        if let Some(loaded) = self.#field_name.get() {
-                            loaded.save(source);
-                            self.id.add_child(source.rctx(), loaded.id);
-                        }
+                })
+            }
+            LinkType::OwnedMultiple => {
+                let field_name = &field.name;
+                Some(quote! {
+                    for owned in &self.#field_name {
+                        owned.save(source);
+                        self.id.add_child(source.rctx(), owned.id);
                     }
                 })
             }
             LinkType::Ref => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        for ref_link in &self.#field_name {
-                            if let Some(loaded) = ref_link.get() {
-                                loaded.save(source);
-                                self.id.add_child(source.rctx(), loaded.id);
-                            }
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.save(source);
+                        self.id.add_child(source.rctx(), loaded.id);
                     }
-                } else {
-                    quote! {
-                        if let Some(loaded) = self.#field_name.get() {
+                })
+            }
+            LinkType::RefMultiple => {
+                let field_name = &field.name;
+                Some(quote! {
+                    for ref_link in &self.#field_name {
+                        if let Some(loaded) = ref_link.get() {
                             loaded.save(source);
                             self.id.add_child(source.rctx(), loaded.id);
                         }

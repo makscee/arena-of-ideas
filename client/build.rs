@@ -197,20 +197,20 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         .filter_map(|field| match field.link_type {
             LinkType::Owned => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        if let Some(items) = self.#field_name.get() {
-                            for item in items {
-                                item.clone().spawn(ctx, None).track()?;
-                                ctx.add_link(self.id, item.id).track()?;
-                            }
-                        }
+                Some(quote! {
+                    if let Some(loaded) = self.#field_name.get() {
+                        loaded.clone().spawn(ctx, None).track()?;
+                        ctx.add_link(self.id, loaded.id).track()?;
                     }
-                } else {
-                    quote! {
-                        if let Some(loaded) = self.#field_name.get() {
-                            loaded.clone().spawn(ctx, None).track()?;
-                            ctx.add_link(self.id, loaded.id).track()?;
+                })
+            }
+            LinkType::OwnedMultiple => {
+                let field_name = &field.name;
+                Some(quote! {
+                    if let Some(items) = self.#field_name.get() {
+                        for item in items {
+                            item.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, item.id).track()?;
                         }
                     }
                 })
@@ -224,17 +224,17 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         .filter_map(|field| match field.link_type {
             LinkType::Ref => {
                 let field_name = &field.name;
-                Some(if field.is_vec {
-                    quote! {
-                        if let Some(ids) = self.#field_name.ids() {
-                            for &ref_id in &ids {
-                                ctx.add_link(self.id, ref_id).track()?;
-                            }
-                        }
+                Some(quote! {
+                    if let Some(ref_id) = self.#field_name.id() {
+                        ctx.add_link(self.id, ref_id).track()?;
                     }
-                } else {
-                    quote! {
-                        if let Some(ref_id) = self.#field_name.id() {
+                })
+            }
+            LinkType::RefMultiple => {
+                let field_name = &field.name;
+                Some(quote! {
+                    if let Some(ids) = self.#field_name.ids() {
+                        for &ref_id in &ids {
                             ctx.add_link(self.id, ref_id).track()?;
                         }
                     }
