@@ -1301,7 +1301,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()> {
             match var {
                 #(#set_var_arms,)*
-                _ => Err(NodeError::custom(format!("Variable {:?} not found", var))),
+                _ => Err(NodeError::custom(format!("Tried to set VarName::{:?} that is absent in {}", var, self.kind()))),
             }
         }
     };

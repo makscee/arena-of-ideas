@@ -233,7 +233,9 @@ impl BattleAction {
                     let kind = ctx.get_kind(*id)?;
                     let mut ns = ctx.load_mut::<NodeState>(*id)?;
                     if ns.insert(t, 0.1, *var, value.clone()) {
-                        kind.set_var(ctx, *id, *var, value.clone()).log();
+                        if kind.var_names().contains(var) {
+                            kind.set_var(ctx, *id, *var, value.clone()).log();
+                        }
                         true
                     } else {
                         false
@@ -303,6 +305,7 @@ impl BattleSimulation {
         let mut world = World::new();
         world.init_resource::<NodeEntityMap>();
         world.init_resource::<NodeLinks>();
+        dbg!(&battle.left);
         let team_left = battle.left.id;
         let team_right = battle.right.id;
         let left_entity = world.spawn_empty().id();
@@ -416,7 +419,7 @@ impl BattleSimulation {
         let mut battle_actions: VecDeque<BattleAction> = default();
         for id in ctx.battle()?.all_fusions() {
             ctx.with_owner(id, |context| {
-                match context.load::<NFusion>(id)?.react(&event, context) {
+                match context.load::<NFusion>(id).track()?.react(&event, context) {
                     Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };

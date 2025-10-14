@@ -85,8 +85,8 @@ impl NFusion {
         context: &'a ClientContext,
         unit: u64,
     ) -> Result<&'a NUnitBehavior, NodeError> {
-        let unit = context.load::<NUnit>(unit)?;
-        let desc = unit.description_ref(context)?;
+        let unit = context.load::<NUnit>(unit).track()?;
+        let desc = unit.description_ref(context).track()?;
         desc.behavior_ref(context)
     }
 
@@ -94,7 +94,10 @@ impl NFusion {
         context: &'a ClientContext,
         unit_id: u64,
     ) -> Result<&'a Trigger, NodeError> {
-        Ok(&Self::get_behavior(context, unit_id)?.reaction.trigger)
+        Ok(&Self::get_behavior(context, unit_id)
+            .track()?
+            .reaction
+            .trigger)
     }
 
     pub fn react(
@@ -104,11 +107,12 @@ impl NFusion {
     ) -> Result<Vec<BattleAction>, NodeError> {
         let mut battle_actions: Vec<BattleAction> = default();
         context.with_temp_owner(self.id, |context| {
-            if Self::get_trigger(context, self.trigger_unit)?
+            if Self::get_trigger(context, self.trigger_unit)
+                .track()?
                 .fire(event, context)
                 .unwrap_or_default()
             {
-                let fusion_actions = self.gather_fusion_actions(context)?;
+                let fusion_actions = self.gather_fusion_actions(context).track()?;
                 let cloned_actions: Vec<(u64, Action)> = fusion_actions
                     .into_iter()
                     .map(|(unit_id, action)| (unit_id, action.clone()))
@@ -116,7 +120,7 @@ impl NFusion {
 
                 for (unit_id, action) in cloned_actions {
                     context.set_caster(unit_id);
-                    battle_actions.extend(action.process(context)?);
+                    battle_actions.extend(action.process(context).track()?);
                 }
             }
             Ok(())
