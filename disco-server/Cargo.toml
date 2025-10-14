@@ -7,9 +7,9 @@ edition = "2024"
 anyhow = "1.0.100"
 axum = { version = "0.8.4", features = ["macros"] }
 base64 = "0.22.1"
+dotenvy = "0.15.7"
 oauth2 = "5.0.0"
 rand = "0.9.2" # workspace version breaks
 reqwest = { version = "0.12.23", features = ["json"] }
 serde = { workspace = true }
-spacetimedb-sdk = { workspace = true }
 tokio = { version = "1.47.1", features = ["full"] }

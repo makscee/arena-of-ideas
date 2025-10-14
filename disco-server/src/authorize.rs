@@ -6,10 +6,8 @@ use oauth2::{
 use reqwest::StatusCode;
 use serde::Deserialize;
 
-use crate::{
-    SharedCache,
-    secret::{APP_SECRET, APPLICATION_ID},
-};
+use crate::SharedCache;
+use std::env;
 
 #[derive(Deserialize)]
 pub struct AuthResponse {
@@ -17,8 +15,15 @@ pub struct AuthResponse {
     state: String,
 }
 
-#[derive(Deserialize)]
-struct DiscordUser {
+#[derive(Deserialize, Debug)]
+struct GuildMember {
+    roles: Vec<String>,
+    user: DiscordUserInfo,
+}
+
+#[derive(Deserialize, Debug)]
+struct DiscordUserInfo {
+    id: String,
     username: String,
 }
 
@@ -27,12 +32,17 @@ pub(crate) async fn disco_auth(
     query: Query<AuthResponse>,
 ) -> Result<String, StatusCode> {
     let mut cache = state.lock().await;
-    if cache.take_by_state(&query.state).is_none() {
-        return Err(StatusCode::UNAUTHORIZED);
+    let id = cache.take_by_state(&query.state);
+    if id.is_none() {
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
     } else {
         // set oauth2 client
-        let client = BasicClient::new(ClientId::new(APPLICATION_ID.into()))
-            .set_client_secret(ClientSecret::new(APP_SECRET.into()))
+        let application_id =
+            env::var("APPLICATION_ID").expect("APPLICATION_ID must be set in .env");
+        let app_secret = env::var("APP_SECRET").expect("APP_SECRET must be set in .env");
+
+        let client = BasicClient::new(ClientId::new(application_id))
+            .set_client_secret(ClientSecret::new(app_secret))
             .set_redirect_uri(
                 RedirectUrl::new("http://localhost:42069/".into())
                     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
@@ -52,8 +62,8 @@ pub(crate) async fn disco_auth(
             .await
             .unwrap();
 
-        let user_response = http_client
-            .get("https://discord.com/api/v10/users/@me")
+        let role_response = http_client
+            .get("https://discord.com/api/v10/users/@me/guilds/1034174161679044660/member")
             .header(
                 "Authorization",
                 format!("Bearer {}", token.access_token().secret()),
@@ -63,19 +73,16 @@ pub(crate) async fn disco_auth(
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-        if !user_response.status().is_success() {
-            return Err(StatusCode::from_u16(user_response.status().as_u16())
+        if !role_response.status().is_success() {
+            return Err(StatusCode::from_u16(role_response.status().as_u16())
                 .unwrap_or(StatusCode::INTERNAL_SERVER_ERROR));
         }
 
-        let user_data: DiscordUser = user_response
+        let role_data: GuildMember = role_response
             .json()
             .await
             .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-        let username = user_data.username;
-        return Ok(format!(
-            "Welcome {}. You can now close this Tab and switch to the Game",
-            username
-        ));
+
+        return Ok(format!("Welcome {:#?}", role_data));
     }
 }
