@@ -18,7 +18,7 @@ pub struct BattleSimulation {
     pub log: BattleLog,
     pub rng: ChaCha8Rng,
 }
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct BattleLog {
     pub actions: Vec<BattleAction>,
 }
@@ -103,16 +103,17 @@ impl BattleAction {
         let result = sim.with_context_mut(|ctx| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
-                    let strike_anim = animations().get("strike").unwrap();
-                    ctx.with_layers_temp(
-                        [
-                            ContextLayer::Owner(*a),
-                            ContextLayer::Target(*b),
-                            ContextLayer::Var(VarName::position, vec2(0.0, 0.0).into()),
-                        ]
-                        .into(),
-                        |context| strike_anim.apply(context),
-                    )?;
+                    if let Some(strike_anim) = animations().get("strike") {
+                        ctx.with_layers_temp(
+                            [
+                                ContextLayer::Owner(*a),
+                                ContextLayer::Target(*b),
+                                ContextLayer::Var(VarName::position, vec2(0.0, 0.0).into()),
+                            ]
+                            .into(),
+                            |context| strike_anim.apply(context),
+                        )?;
+                    }
                     let pwr = ctx
                         .with_owner(*a, |context| context.sum_var(VarName::pwr))?
                         .get_i32()?;
@@ -142,38 +143,44 @@ impl BattleAction {
                     let target_pos = ctx.with_temp_layer(ContextLayer::Owner(*b), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    let curve = animations().get("range_effect_vfx").unwrap();
-                    ctx.with_temp_layers(
-                        [
-                            ContextLayer::Var(VarName::position, owner_pos),
-                            ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                        ]
-                        .into(),
-                        |context| curve.apply(context),
-                    )?;
+                    if let Some(curve) = animations().get("range_effect_vfx") {
+                        ctx.with_temp_layers(
+                            [
+                                ContextLayer::Var(VarName::position, owner_pos),
+                                ContextLayer::Var(VarName::extra_position, target_pos.clone()),
+                            ]
+                            .into(),
+                            |context| curve.apply(context),
+                        )?;
+                    }
                     let x = Event::OutgoingDamage(*a, *b)
                         .update_value(ctx, (*x).into(), *a)
                         .get_i32()?
                         .at_least(0);
                     if x > 0 {
-                        let pain = animations().get("pain_vfx").unwrap();
-                        ctx.with_temp_layer(
-                            ContextLayer::Var(VarName::position, target_pos.clone()),
-                            |context| pain.apply(context),
-                        )?;
+                        if let Some(pain) = animations().get("pain_vfx") {
+                            ctx.with_temp_layer(
+                                ContextLayer::Var(VarName::position, target_pos.clone()),
+                                |context| pain.apply(context),
+                            )?;
+                        }
                         let dmg = ctx.load::<NFusion>(*b)?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
-                    let text = animations().get("text").unwrap();
-                    ctx.with_temp_layers(
-                        [
-                            ContextLayer::Var(VarName::text, (-x).to_string().into()),
-                            ContextLayer::Var(VarName::color, RED.into()),
-                            ContextLayer::Var(VarName::position, target_pos),
-                        ]
-                        .into(),
-                        |context| text.apply(context),
-                    )?;
+                    if let Some(text) = animations().get("text") {
+                        ctx.with_temp_layers(
+                            [
+                                ContextLayer::Var(VarName::text, (-x).to_string().into()),
+                                ContextLayer::Var(
+                                    VarName::color,
+                                    HexColor::from("#FF0000".to_string()).into(),
+                                ),
+                                ContextLayer::Var(VarName::position, target_pos),
+                            ]
+                            .into(),
+                            |context| text.apply(context),
+                        )?;
+                    }
                     *ctx.t_mut()? += ANIMATION;
                     true
                 }
@@ -184,33 +191,39 @@ impl BattleAction {
                     let target_pos = ctx.with_temp_layer(ContextLayer::Owner(*b), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    let curve = animations().get("range_effect_vfx").unwrap();
-                    ctx.with_temp_layers(
-                        [
-                            ContextLayer::Var(VarName::position, owner_pos),
-                            ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                        ]
-                        .into(),
-                        |context| curve.apply(context),
-                    )?;
-                    if *x > 0 {
-                        let pleasure = animations().get("pleasure_vfx").unwrap();
-                        ctx.with_temp_layer(
-                            ContextLayer::Var(VarName::position, target_pos.clone()),
-                            |context| pleasure.apply(context),
-                        )?;
-                        let dmg = (ctx.load::<NFusion>(*b)?.dmg - x).at_least(0);
-                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
-                        let text = animations().get("text").unwrap();
+                    if let Some(curve) = animations().get("range_effect_vfx") {
                         ctx.with_temp_layers(
                             [
-                                ContextLayer::Var(VarName::text, format!("+{x}").into()),
-                                ContextLayer::Var(VarName::color, GREEN.into()),
-                                ContextLayer::Var(VarName::position, target_pos),
+                                ContextLayer::Var(VarName::position, owner_pos),
+                                ContextLayer::Var(VarName::extra_position, target_pos.clone()),
                             ]
                             .into(),
-                            |context| text.apply(context),
+                            |context| curve.apply(context),
                         )?;
+                    }
+                    if *x > 0 {
+                        if let Some(pleasure) = animations().get("pleasure_vfx") {
+                            ctx.with_temp_layer(
+                                ContextLayer::Var(VarName::position, target_pos.clone()),
+                                |context| pleasure.apply(context),
+                            )?;
+                        }
+                        let dmg = (ctx.load::<NFusion>(*b)?.dmg - x).at_least(0);
+                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
+                        if let Some(text) = animations().get("text") {
+                            ctx.with_temp_layers(
+                                [
+                                    ContextLayer::Var(VarName::position, target_pos),
+                                    ContextLayer::Var(VarName::text, format!("+{}", x).into()),
+                                    ContextLayer::Var(
+                                        VarName::color,
+                                        HexColor::from("#00FF00".to_string()).into(),
+                                    ),
+                                ]
+                                .into(),
+                                |context| text.apply(context),
+                            )?;
+                        }
                     }
                     *ctx.t_mut()? += ANIMATION;
                     true

@@ -3,6 +3,7 @@ mod plugins;
 pub mod prelude;
 mod resources;
 mod stdb;
+mod tests;
 mod ui;
 mod utils;
 
