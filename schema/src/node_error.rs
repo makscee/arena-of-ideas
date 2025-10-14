@@ -56,6 +56,13 @@ pub enum NodeError {
     #[error("Node not found: {0} {1}")]
     NotFound(u64, SourceTrace),
 
+    #[error("Linked node not found: node {node_id} has no {kind} link {location}")]
+    LinkedNodeNotFound {
+        node_id: u64,
+        kind: NodeKind,
+        location: SourceTrace,
+    },
+
     #[error("Invalid node kind: expected {expected}, got {actual} {location}")]
     InvalidKind {
         expected: NodeKind,
@@ -102,6 +109,15 @@ impl NodeError {
     #[track_caller]
     pub fn not_found(id: u64) -> Self {
         NodeError::NotFound(id, Location::caller().into())
+    }
+
+    #[track_caller]
+    pub fn linked_node_not_found(node_id: u64, kind: NodeKind) -> Self {
+        NodeError::LinkedNodeNotFound {
+            node_id,
+            kind,
+            location: Location::caller().into(),
+        }
     }
 
     #[track_caller]
@@ -251,6 +267,9 @@ impl<T> NodeErrorResultExt<T> for NodeResult<T> {
             match &mut e {
                 NodeError::NotFound(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::LinkedNodeNotFound { location, .. } => {
+                    *location = location.clone().add_location(current_location);
                 }
                 NodeError::InvalidKind { location, .. } => {
                     *location = location.clone().add_location(current_location);

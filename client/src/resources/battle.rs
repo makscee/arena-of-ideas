@@ -235,6 +235,12 @@ impl BattleAction {
                     if ns.insert(t, 0.1, *var, value.clone()) {
                         if kind.var_names().contains(var) {
                             kind.set_var(ctx, *id, *var, value.clone()).log();
+                        } else if let Some(kind) = kind
+                            .other_components()
+                            .into_iter()
+                            .find(|kind| kind.var_names().contains(var))
+                        {
+                            kind.set_var(ctx, *id, *var, value.clone()).log();
                         }
                         true
                     } else {

@@ -430,7 +430,7 @@ impl FusionBuilder {
         let mut fusion = NFusion::default();
         fusion.set_id(fusion_id);
         fusion.index = 0;
-        fusion.trigger_unit = self.trigger_index as u64;
+        fusion.trigger_unit = house_units[self.trigger_index].id;
         fusion.pwr = total_pwr;
         fusion.hp = total_hp;
         fusion.dmg = 0;

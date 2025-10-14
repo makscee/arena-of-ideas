@@ -704,7 +704,7 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(first_id)
                     } else {
                         *self.#field_name.state_mut() = LinkStateSingle::None;
-                        Err(NodeError::not_found(self.id()))
+                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                     }
                 }
 
@@ -803,7 +803,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(first_id)
                     } else {
                         *self.#field_name.state_mut() = LinkStateSingle::None;
-                        Err(NodeError::not_found(self.id()))
+                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                     }
                 }
 
@@ -837,7 +837,7 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         .next() {
                         id
                     } else {
-                        return Err(NodeError::not_found(self.id()));
+                        return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
                     };
                     ctx.load::<#target_type>(id)
                 }
