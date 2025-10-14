@@ -39,7 +39,11 @@ impl std::fmt::Display for SourceTrace {
             .locations
             .iter()
             .map(|loc| {
-                let file = loc.file().split('/').last().unwrap_or(loc.file());
+                let file = if let Some(pos) = loc.file().find("arena-of-ideas/") {
+                    &loc.file()[pos + "arena-of-ideas/".len()..]
+                } else {
+                    loc.file().split('/').last().unwrap_or(loc.file())
+                };
                 format!("{}:{}:{}", file, loc.line(), loc.column())
             })
             .collect();

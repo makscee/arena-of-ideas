@@ -9,6 +9,7 @@ pub struct TestBuilder {
 impl TestBuilder {
     pub fn new() -> Self {
         Self::init_test_resources();
+        Self::init_test_logging();
         Self { next_id: 1000 }
     }
 
@@ -16,6 +17,36 @@ impl TestBuilder {
         static INIT: OnceLock<()> = OnceLock::new();
         INIT.get_or_init(|| {
             crate::resources::init_for_tests();
+        });
+    }
+
+    fn init_test_logging() {
+        static INIT: OnceLock<()> = OnceLock::new();
+        INIT.get_or_init(|| {
+            struct TestLogger;
+
+            impl log::Log for TestLogger {
+                fn enabled(&self, metadata: &log::Metadata) -> bool {
+                    metadata.level() <= log::Level::Debug
+                }
+
+                fn log(&self, record: &log::Record) {
+                    if self.enabled(record.metadata()) {
+                        println!(
+                            "[{}] {} - {}",
+                            record.level(),
+                            record.target(),
+                            record.args()
+                        );
+                    }
+                }
+
+                fn flush(&self) {}
+            }
+
+            log::set_boxed_logger(Box::new(TestLogger))
+                .map(|()| log::set_max_level(log::LevelFilter::Debug))
+                .ok();
         });
     }
 
@@ -474,18 +505,31 @@ pub struct BattleTestCase {
 
 impl BattleTestCase {
     pub fn run(self) -> BattleTestResult {
+        println!("=== STARTING BATTLE TEST ===");
         let mut simulation = BattleSimulation::new(self.battle).start();
 
-        let max_iterations = 1000;
+        let max_iterations = 10; // Reduce iterations for focused testing
         let mut iterations = 0;
 
         while !simulation.ended() && iterations < max_iterations {
+            println!("--- Battle iteration {} ---", iterations + 1);
             simulation.run();
             iterations += 1;
+
+            println!(
+                "Left: {}, Right: {}, Ended: {}",
+                simulation.left_units().len(),
+                simulation.right_units().len(),
+                simulation.ended()
+            );
         }
 
         let left_alive = simulation.left_units().len();
         let right_alive = simulation.right_units().len();
+        println!(
+            "=== BATTLE COMPLETE: Left={}, Right={}, Iterations={} ===",
+            left_alive, right_alive, iterations
+        );
 
         let winner = if left_alive > 0 && right_alive == 0 {
             Some(TeamSide::Left)

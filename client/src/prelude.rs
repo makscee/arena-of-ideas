@@ -24,7 +24,6 @@ pub use bevy::{
         world::{Mut, World},
     },
     input::{ButtonInput, keyboard::KeyCode},
-    log::*,
     math::{
         Vec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles,
         cubic_splines::{CubicBezier, CubicGenerator},
@@ -83,6 +82,7 @@ pub use include_dir::Dir;
 pub use indexmap::IndexMap;
 pub use itertools::EitherOrBoth;
 pub use itertools::Itertools;
+pub use log::*;
 pub use once_cell::sync::OnceCell;
 pub use parking_lot::{Mutex, MutexGuard, const_mutex};
 pub use rand::{Rng, SeedableRng, seq::IteratorRandom, thread_rng};

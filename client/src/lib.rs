@@ -3,6 +3,7 @@ mod plugins;
 pub mod prelude;
 mod resources;
 mod stdb;
+#[cfg(test)]
 mod tests;
 mod ui;
 mod utils;
@@ -62,11 +63,11 @@ pub fn run() {
     parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins
-        .set(LogPlugin {
-            level: bevy::log::Level::DEBUG,
-            filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-            ..default()
-        })
+        // .set(LogPlugin {
+        //     level: bevy::log::Level::DEBUG,
+        //     filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+        //     ..default()
+        // })
         .set(AssetPlugin {
             file_path: "assets".to_string(),
             ..default()
