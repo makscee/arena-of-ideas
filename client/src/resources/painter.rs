@@ -51,7 +51,7 @@ impl Paint for PainterAction {
     fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
         let r = p.rect;
         let up = r.width().min(r.height()) * 0.5;
-        ctx.with_temp_layers(default(), |ctx| {
+        ctx.with_layers_ref(default(), |ctx| {
             match self {
                 PainterAction::circle(x) => {
                     let radius = x.get_f32(ctx)? * up;
@@ -155,12 +155,11 @@ impl Paint for PainterAction {
                 PainterAction::repeat(x, action) => {
                     let max_index = x.get_i32(ctx)?;
                     for i in 0..max_index {
-                        ctx.with_layers_temp(
+                        ctx.with_layers(
                             [
                                 ContextLayer::Var(VarName::index, i.into()),
                                 ContextLayer::Var(VarName::max_index, max_index.into()),
-                            ]
-                            .into(),
+                            ],
                             |context| action.paint(context, p, ui),
                         )
                         .ui(ui);

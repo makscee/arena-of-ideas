@@ -322,27 +322,33 @@ fn test_battle_with_status_effects() {
         .add_reaction(
             Trigger::TurnEnd,
             vec![
-                Action::set_value(Box::new(Expression::i32(1))),
+                Action::add_target(Box::new(Expression::random_unit(Box::new(
+                    Expression::all_enemy_units,
+                )))),
+                Action::set_value(Box::new(Expression::i32(2))),
                 Action::deal_damage,
             ],
         );
 
+    let unit = builder.create_unit("Unit1", 0, 3).behavior(Reaction {
+        trigger: Trigger::BattleStart,
+        actions: vec![
+            Action::add_target(Expression::owner.into()),
+            Action::apply_status,
+        ],
+    });
     let house = builder
         .create_house("House1", "#00FF00")
         .status(status)
-        .add_unit(builder.create_unit("Unit1", 1, 2));
+        .add_unit(unit);
 
-    let enemy_unit = builder.create_unit("Unit2", 1, 5);
-    let test_unit = builder.create_unit("TestUnit", 1, 1);
-
+    let enemy_unit = builder.create_unit("Unit2", 1, 2);
     let enemy_house = builder.create_simple_house("EnemyHouse", vec![enemy_unit]);
-    let test_house = builder.create_simple_house("TestHouse", vec![test_unit]);
 
     let left_team = builder
         .create_team()
         .add_house(house)
-        .add_house(test_house)
-        .add_fusion(FusionBuilder::single(1)); // Reference test unit
+        .add_fusion(FusionBuilder::single(0));
 
     let right_team = builder
         .create_team()
@@ -352,7 +358,7 @@ fn test_battle_with_status_effects() {
     let battle = builder.create_battle(left_team, right_team);
     let result = battle.run();
 
-    assert!(result.iterations > 1, "Battle should run multiple turns");
+    result.assert_winner(TeamSide::Left);
 }
 
 #[test]
@@ -507,6 +513,7 @@ fn test_zero_power_unit() {
     let result = battle.run();
 
     result.assert_winner(TeamSide::Right);
+    result.assert_iterations(3);
 }
 
 #[test]
@@ -533,4 +540,5 @@ fn test_high_hp_tank() {
     let result = battle.run();
 
     result.assert_winner(TeamSide::Left);
+    result.assert_iterations(1);
 }

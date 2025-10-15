@@ -617,10 +617,8 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                 }
 
                 fn reassign_ids(&mut self, next_id: &mut u64) {
-                    if self.id == 0 {
-                        self.set_id(*next_id);
-                        *next_id += 1;
-                    }
+                    self.set_id(*next_id);
+                    *next_id += 1;
                 }
 
                 fn kind_s() -> NodeKind {

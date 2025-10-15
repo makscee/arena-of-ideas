@@ -242,12 +242,6 @@ impl<'a, T> Table<'a, T> {
 
     /// Makes the last added column take up all remaining available space.
     /// This is useful for columns that should expand to fill the table width.
-    ///
-    /// # Examples
-    /// ```
-    /// table.column("name", show_fn, value_fn)
-    ///      .column_remainder(); // "name" column takes remaining space
-    /// ```
     pub fn column_remainder(mut self) -> Self {
         if let Some(last_column) = self.columns.last_mut() {
             last_column.remainder = true;

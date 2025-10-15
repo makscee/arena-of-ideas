@@ -13,8 +13,8 @@ pub trait ExpressionImpl {
     fn get_bool(&self, ctx: &mut ClientContext) -> Result<bool, NodeError>;
     fn get_color(&self, ctx: &mut ClientContext) -> Result<Color32, NodeError>;
     fn get_string(&self, ctx: &mut ClientContext) -> Result<String, NodeError>;
-    fn get_id(&self, ctx: &mut ClientContext) -> Result<u64, NodeError>;
-    fn get_ids_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError>;
+    fn get_u64(&self, ctx: &mut ClientContext) -> Result<u64, NodeError>;
+    fn get_u64_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError>;
 }
 
 impl ExpressionImpl for Expression {
@@ -40,7 +40,7 @@ impl ExpressionImpl for Expression {
             }
             Expression::var_sum(var) => ctx.sum_var(*var),
             Expression::state_var(x, var) => {
-                let id = x.get_id(ctx)?;
+                let id = x.get_u64(ctx)?;
                 NodeStateHistory::load(id.entity(ctx)?, ctx)?
                     .get(*var)
                     .to_e(*var)
@@ -127,9 +127,9 @@ impl ExpressionImpl for Expression {
                 Ok(rng.gen_range(0.0..1.0).into())
             }
             Expression::random_unit(x) => x
-                .get_ids_list(ctx)?
+                .get_u64_list(ctx)?
                 .choose(ctx.rng()?)
-                .map(|id| VarValue::Id(*id))
+                .map(|id| VarValue::u64(*id))
                 .to_custom_e("No units found"),
             Expression::neg(x) => x.get_value(ctx)?.neg(),
             Expression::str_macro(s, v) => {
@@ -213,10 +213,10 @@ impl ExpressionImpl for Expression {
     fn get_string(&self, ctx: &mut ClientContext) -> Result<String, NodeError> {
         self.get_value(ctx)?.get_string()
     }
-    fn get_id(&self, ctx: &mut ClientContext) -> Result<u64, NodeError> {
-        self.get_value(ctx)?.get_id()
+    fn get_u64(&self, ctx: &mut ClientContext) -> Result<u64, NodeError> {
+        self.get_value(ctx)?.get_u64()
     }
-    fn get_ids_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError> {
-        self.get_value(ctx)?.get_ids_list()
+    fn get_u64_list(&self, ctx: &mut ClientContext) -> Result<Vec<u64>, NodeError> {
+        self.get_value(ctx)?.get_u64_list()
     }
 }

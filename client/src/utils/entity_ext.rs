@@ -21,7 +21,6 @@ pub trait EntityExt {
         ctx: &ClientContext,
         kind: NodeKind,
     ) -> NodeResult<Vec<Entity>>;
-    fn to_value(self) -> VarValue;
 }
 
 impl EntityExt for Entity {
@@ -119,18 +118,5 @@ impl EntityExt for Entity {
             .into_iter()
             .map(|parent_id| ctx.entity(parent_id))
             .collect()
-    }
-    fn to_value(self) -> VarValue {
-        VarValue::Id(self.to_bits())
-    }
-}
-
-pub trait EntityVecVarValue {
-    fn vec_to_value(self) -> VarValue;
-}
-
-impl EntityVecVarValue for Vec<Entity> {
-    fn vec_to_value(self) -> VarValue {
-        self.into_iter().map(|e| e.to_value()).collect_vec().into()
     }
 }

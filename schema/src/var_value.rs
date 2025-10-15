@@ -11,12 +11,11 @@ pub trait VarValueResult {
     fn get_i32(self) -> NodeResult<i32>;
     fn get_f32(self) -> NodeResult<f32>;
     fn get_bool(self) -> NodeResult<bool>;
-    fn get_u64(self) -> NodeResult<u64>;
     fn get_vec2(self) -> NodeResult<Vec2>;
     fn get_color(self) -> NodeResult<Color32>;
     fn get_string(self) -> NodeResult<String>;
-    fn get_id(self) -> NodeResult<u64>;
-    fn get_ids_list(self) -> NodeResult<Vec<u64>>;
+    fn get_u64(self) -> NodeResult<u64>;
+    fn get_u64_list(self) -> NodeResult<Vec<u64>>;
 }
 
 impl VarValueResult for Result<VarValue, NodeError> {
@@ -32,10 +31,6 @@ impl VarValueResult for Result<VarValue, NodeError> {
         self?.get_bool()
     }
 
-    fn get_u64(self) -> Result<u64, NodeError> {
-        self?.get_u64()
-    }
-
     fn get_vec2(self) -> Result<Vec2, NodeError> {
         self?.get_vec2()
     }
@@ -48,12 +43,12 @@ impl VarValueResult for Result<VarValue, NodeError> {
         self?.get_string()
     }
 
-    fn get_id(self) -> Result<u64, NodeError> {
-        self?.get_id()
+    fn get_u64(self) -> Result<u64, NodeError> {
+        self?.get_u64()
     }
 
-    fn get_ids_list(self) -> Result<Vec<u64>, NodeError> {
-        self?.get_ids_list()
+    fn get_u64_list(self) -> Result<Vec<u64>, NodeError> {
+        self?.get_u64_list()
     }
 }
 
@@ -67,7 +62,6 @@ pub enum VarValue {
     String(String),
     Vec2(Vec2),
     Color32(Color32),
-    Id(u64),
     list(Vec<Box<VarValue>>),
 }
 
@@ -82,7 +76,6 @@ impl VarValue {
             VarValue::String(v) => Ok(v.to_string()),
             VarValue::Vec2(v) => Ok(v.to_string()),
             VarValue::Color32(v) => Ok(v.to_hex()),
-            VarValue::Id(v) => Ok(v.to_string()),
             VarValue::list(v) => Ok(v
                 .iter()
                 .map(|v| v.get_string().unwrap_or("_".to_owned()))
@@ -147,18 +140,12 @@ impl VarValue {
             )),
         }
     }
-    pub fn get_id(&self) -> Result<u64, NodeError> {
+    pub fn get_u64_list(&self) -> Result<Vec<u64>, NodeError> {
         match self {
-            VarValue::Id(v) => Ok(*v),
-            _ => Err(NodeError::not_supported_single("Cast to Id", self.clone())),
-        }
-    }
-    pub fn get_ids_list(&self) -> Result<Vec<u64>, NodeError> {
-        match self {
-            VarValue::list(v) => Ok(v.into_iter().filter_map(|v| v.get_id().ok()).collect()),
-            VarValue::Id(v) => Ok(vec![*v]),
+            VarValue::list(v) => Ok(v.into_iter().filter_map(|v| v.get_u64().ok()).collect()),
+            VarValue::u64(v) => Ok(vec![*v]),
             _ => Err(NodeError::not_supported_single(
-                "Cast to list of Ids",
+                "Cast to list of u64",
                 self.clone(),
             )),
         }
@@ -311,7 +298,6 @@ impl std::hash::Hash for VarValue {
                 v.y.to_bits().hash(state);
             }
             VarValue::Color32(v) => v.hash(state),
-            VarValue::Id(v) => v.hash(state),
             VarValue::list(v) => v.iter().for_each(|v| v.hash(state)),
         };
     }
@@ -340,7 +326,6 @@ impl std::fmt::Display for VarValue {
             VarValue::String(v) => write!(f, "{v}"),
             VarValue::Vec2(v) => write!(f, "{:.2}, {:.2}", v.x, v.y),
             VarValue::Color32(v) => write!(f, "{}", v.to_hex()),
-            VarValue::Id(v) => write!(f, "{v}"),
             VarValue::list(v) => write!(f, "({})", v.iter().join(", ")),
         }
     }

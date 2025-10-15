@@ -160,6 +160,7 @@ pub enum ContextLayer {
     Owner(u64),
     Target(u64),
     Caster(u64),
+    Status(u64),
     Var(VarName, VarValue),
 }
 
@@ -182,7 +183,7 @@ where
     }
 
     /// Create a new context with initial layers
-    pub fn with_layers(source: S, layers: Vec<ContextLayer>) -> Self {
+    pub fn new_with_layers(source: S, layers: Vec<ContextLayer>) -> Self {
         Self { source, layers }
     }
 
@@ -210,7 +211,7 @@ where
     where
         F: FnOnce(&mut Self) -> R,
     {
-        let mut ctx = Self::with_layers(source, layers);
+        let mut ctx = Self::new_with_layers(source, layers);
         f(&mut ctx)
     }
 
@@ -226,10 +227,11 @@ where
     }
 
     /// Execute with multiple context layers
-    pub fn with_layers_temp<R, F>(&mut self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    pub fn with_layers<R, F>(&mut self, layers: impl Into<Vec<ContextLayer>>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut Self) -> NodeResult<R>,
     {
+        let layers: Vec<ContextLayer> = layers.into();
         let len = layers.len();
         for layer in layers {
             self.layers.push(layer);
@@ -265,6 +267,14 @@ where
         self.with_layer(ContextLayer::Caster(caster_id), f)
     }
 
+    /// Execute with caster context
+    pub fn with_status<R, F>(&mut self, status_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Self) -> NodeResult<R>,
+    {
+        self.with_layer(ContextLayer::Status(status_id), f)
+    }
+
     /// Get current owner ID from context layers
     pub fn owner(&self) -> Option<u64> {
         for layer in self.layers.iter().rev() {
@@ -289,6 +299,16 @@ where
     pub fn caster(&self) -> Option<u64> {
         for layer in self.layers.iter().rev() {
             if let ContextLayer::Caster(id) = layer {
+                return Some(*id);
+            }
+        }
+        None
+    }
+
+    /// Get current status ID from context layers
+    pub fn status(&self) -> Option<u64> {
+        for layer in self.layers.iter().rev() {
+            if let ContextLayer::Status(id) = layer {
                 return Some(*id);
             }
         }
@@ -352,6 +372,11 @@ where
                     }
                 }
                 ContextLayer::Caster(id) => {
+                    if let Ok(value) = self.source.get_var(*id, var) {
+                        return Ok(value);
+                    }
+                }
+                ContextLayer::Status(id) => {
                     if let Ok(value) = self.source.get_var(*id, var) {
                         return Ok(value);
                     }
@@ -667,9 +692,11 @@ where
         let mut result = VarValue::default();
         let mut ids = self.children_recursive(owner_id)?;
         ids.push(owner_id);
-
         for id in ids {
-            if let Ok(value) = self.source.get_var(id, var) {
+            if !self.get_kind(id)?.var_names().contains(&var) {
+                continue;
+            }
+            if let Ok(value) = self.source.get_var_direct(id, var) {
                 result = result.add(&value)?;
             }
         }

@@ -188,7 +188,7 @@ impl<'a> MatRect<'a> {
 
         // Try to get entity from owner_id - could be any node type
 
-        context.with_temp_owner(owner_id, |ctx| {
+        context.with_owner_ref(owner_id, |ctx| {
             RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
         })?;
         Ok(())
@@ -229,7 +229,7 @@ impl<'a> MatRect<'a> {
                 }
 
                 context
-                    .with_temp_owner(*owner_id, |ctx| {
+                    .with_owner_ref(*owner_id, |ctx| {
                         let r = unit_rep().material.paint(clipped_rect, ctx, ui);
                         match &r {
                             Ok(_) => {}

@@ -1,6 +1,7 @@
 use super::*;
 
 pub trait ActionsImpl {
+    #[must_use]
     fn process(&self, context: &mut ClientContext) -> NodeResult<Vec<BattleAction>>;
 }
 
@@ -48,7 +49,7 @@ impl ActionImpl for Action {
                 let value = x.get_value(ctx)?;
                 ctx.set_var_layer(VarName::value, ctx.get_var(VarName::value)?.sub(&value)?);
             }
-            Action::add_target(x) => match x.get_ids_list(ctx) {
+            Action::add_target(x) => match x.get_u64_list(ctx) {
                 Ok(ids) => {
                     for id in ids {
                         ctx.add_target(id);
@@ -138,7 +139,7 @@ impl ActionImpl for Action {
                         HashMap::from_iter([
                             (VarName::text, text.into()),
                             (VarName::color, high_contrast_text().into()),
-                            (VarName::position, ctx.get_var(VarName::position)?),
+                            (VarName::position, ctx.get_var(VarName::position).track()?),
                         ]),
                         "text".into(),
                     ));

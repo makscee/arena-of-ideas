@@ -66,10 +66,10 @@ impl AnimAction {
                 *ctx.t_mut()? = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = x.get_ids_list(ctx)?;
+                a.targets = x.get_u64_list(ctx)?;
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_id(ctx)?);
+                a.targets.push(x.get_u64(ctx)?);
             }
             AnimAction::duration(x) => {
                 a.duration = x.get_f32(ctx)?;

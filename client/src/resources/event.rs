@@ -6,7 +6,7 @@ pub trait EventImpl {
 
 impl EventImpl for Event {
     fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue {
-        match ctx.with_temp_layers(
+        match ctx.with_layers_ref(
             [
                 ContextLayer::Owner(owner),
                 ContextLayer::Var(VarName::value, value.clone()),
@@ -27,7 +27,7 @@ impl EventImpl for Event {
                         context.load_first_child_recursive::<NStatusBehavior>(status.id)
                     {
                         context
-                            .with_temp_owner(status.id, |context| {
+                            .with_owner_ref(status.id, |context| {
                                 if let Some(actions) = behavior.reactions.react(self, context) {
                                     match actions.process(context) {
                                         Ok(_) => {}

@@ -22,24 +22,20 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
             }
-            Event::Death(entity) => {
-                let entity = entity.to_e();
-                let Some(owner) = ctx.owner().and_then(|id| ctx.entity(id).ok()) else {
+            Event::Death(id) => {
+                let Some(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                if matches!(self, Trigger::BeforeDeath) && owner == entity {
+                if matches!(self, Trigger::BeforeDeath) && owner == *id {
                     return Ok(true);
                 }
             }
             Event::OutgoingDamage(source, _) => {
-                let source = source.to_e();
-                let Ok(owner) = ctx.owner_entity() else {
+                let Some(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx
-                    .load_first_parent::<NFusion>(ctx.id(owner)?)?
-                    .entity(ctx)?;
-                if matches!(self, Trigger::ChangeOutgoingDamage) && owner == source {
+                let owner = ctx.load_first_parent::<NFusion>(owner)?;
+                if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
                     return Ok(true);
                 }
             }

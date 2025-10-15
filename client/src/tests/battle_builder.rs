@@ -17,6 +17,7 @@ impl TestBuilder {
         static INIT: OnceLock<()> = OnceLock::new();
         INIT.get_or_init(|| {
             crate::resources::init_for_tests();
+            colorix().generate_palettes();
         });
     }
 
@@ -402,17 +403,10 @@ impl FusionBuilder {
     pub fn build(self, builder: &mut TestBuilder, house_units: &[NUnit]) -> NFusion {
         let fusion_id = builder.next_id();
 
-        let mut total_pwr = 0;
-        let mut total_hp = 0;
         let mut slots = vec![];
 
         for (slot_index, &unit_index) in self.unit_indices.iter().enumerate() {
             let unit = &house_units[unit_index];
-
-            if let Some(stats) = unit.stats.get() {
-                total_pwr += stats.pwr;
-                total_hp += stats.hp;
-            }
 
             let slot_id = builder.next_id();
             let mut slot = NFusionSlot::default();
@@ -431,9 +425,6 @@ impl FusionBuilder {
         fusion.set_id(fusion_id);
         fusion.index = 0;
         fusion.trigger_unit = house_units[self.trigger_index].id;
-        fusion.pwr = total_pwr;
-        fusion.hp = total_hp;
-        fusion.dmg = 0;
         fusion.actions_limit = 3;
         fusion.slots = OwnedMultiple::new_loaded(slots);
 
@@ -603,6 +594,14 @@ impl BattleTestResult {
             "Expected at least {} actions but got {}",
             min,
             self.log.actions.len()
+        );
+    }
+
+    pub fn assert_iterations(&self, count: usize) {
+        assert_eq!(
+            self.iterations, count,
+            "Expected {} iterations but got {}",
+            count, self.iterations
         );
     }
 }

@@ -185,65 +185,73 @@ impl NodeEntity {
 
 /// Unified WorldSource enum for both immutable and mutable World access
 pub enum WorldSource<'w> {
-    Immutable(&'w World),
-    Mutable(&'w mut World),
-    Battle(&'w mut BattleSimulation),
+    WorldRef(&'w World),
+    WorldMut(&'w mut World),
+    BattleMut(&'w mut BattleSimulation),
+    BattleRef(&'w BattleSimulation),
     None,
 }
 
 impl<'w> WorldSource<'w> {
     pub fn new_immutable(world: &'w World) -> Self {
-        Self::Immutable(world)
+        Self::WorldRef(world)
     }
 
     pub fn new_mutable(world: &'w mut World) -> Self {
-        Self::Mutable(world)
+        Self::WorldMut(world)
     }
 
     pub const fn new_empty() -> Self {
         Self::None
     }
 
-    pub fn new_battle(battle: &'w mut BattleSimulation) -> Self {
-        Self::Battle(battle)
+    pub fn new_battle_mut(battle: &'w mut BattleSimulation) -> Self {
+        Self::BattleMut(battle)
+    }
+
+    pub fn new_battle(battle: &'w BattleSimulation) -> Self {
+        Self::BattleRef(battle)
     }
 
     pub fn battle(&self) -> NodeResult<&BattleSimulation> {
         match self {
-            Self::Battle(battle) => Ok(battle),
+            Self::BattleMut(battle) => Ok(battle),
+            Self::BattleRef(battle) => Ok(battle),
             _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
     pub fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
         match self {
-            Self::Battle(battle) => Ok(battle),
+            Self::BattleMut(battle) => Ok(battle),
             _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
     fn get_rng(&mut self) -> Option<&mut ChaCha8Rng> {
         match self {
-            Self::Battle(battle) => Some(&mut battle.rng),
+            Self::BattleMut(battle) => Some(&mut battle.rng),
             _ => None,
         }
     }
 
     pub fn world(&self) -> NodeResult<&World> {
         match self {
-            Self::Immutable(world) => Ok(world),
-            Self::Mutable(world) => Ok(world),
-            Self::Battle(battle) => Ok(&battle.world),
+            Self::WorldRef(world) => Ok(world),
+            Self::WorldMut(world) => Ok(world),
+            Self::BattleMut(battle) => Ok(&battle.world),
+            Self::BattleRef(battle) => Ok(&battle.world),
             Self::None => Err(NodeError::custom("Source World not set")),
         }
     }
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Self::Immutable(_) => Err(NodeError::custom("Source World is immutable")),
+            Self::WorldMut(world) => Ok(world),
+            Self::BattleMut(battle) => Ok(&mut battle.world),
+            Self::WorldRef(_) => Err(NodeError::custom("Source World is immutable")),
+            Self::BattleRef(_) => Err(NodeError::custom("Source World is immutable")),
             Self::None => Err(NodeError::custom("Source World not set")),
-            Self::Mutable(world) => Ok(world),
-            Self::Battle(battle) => Ok(&mut battle.world),
         }
     }
 }
@@ -355,7 +363,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 
     fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         // For battle simulations, also track in NodeStateHistory
-        if let WorldSource::Battle(battle) = self {
+        if let WorldSource::BattleMut(battle) = self {
             let t = battle.t;
             let world = self.world_mut().track()?;
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
@@ -381,13 +389,12 @@ impl<'w> ContextSource for WorldSource<'w> {
         }
     }
 
-    fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        // For battle simulation, check NodeStateHistory first
-        if let WorldSource::Battle(battle) = self {
+    fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
+        if let Ok(battle) = self.battle() {
             let t = battle.t;
             let world = self.world()?;
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
-                if let Some(entity) = map.get_entity(node_id) {
+                if let Some(entity) = map.get_entity(id) {
                     if let Some(node_state_history) = world.get::<NodeStateHistory>(entity) {
                         if let Some(value) = node_state_history.get_at(t, var) {
                             return Ok(value);
@@ -398,7 +405,7 @@ impl<'w> ContextSource for WorldSource<'w> {
         }
 
         // For global world or if not found in history, get from the node directly
-        self.load_and_get_var(self.get_node_kind(node_id).track()?, node_id, var)
+        self.load_and_get_var(self.get_node_kind(id).track()?, id, var)
     }
 }
 
@@ -706,7 +713,7 @@ impl WorldContextExt for BattleSimulation {
     }
 
     fn as_context_mut(&mut self) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_battle(self))
+        Context::new(WorldSource::new_battle_mut(self))
     }
 
     fn with_context<R, F>(&self, _f: F) -> NodeResult<R>
@@ -720,7 +727,7 @@ impl WorldContextExt for BattleSimulation {
     where
         F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
     {
-        let source = WorldSource::new_battle(self);
+        let source = WorldSource::new_battle_mut(self);
         Context::exec(source, f)
     }
 }
@@ -731,84 +738,98 @@ pub type ClientContext<'w> = Context<WorldSource<'w>>;
 pub const EMPTY_CONTEXT: ClientContext = Context::new(WorldSource::new_empty());
 
 /// Extension trait for ClientContext to handle temporary layers
-pub trait ClientContextTempLayers {
+pub trait ClientContextLayersRef {
     /// Execute a closure with temporary layers added to a new ClientContext
-    fn with_temp_layers<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    fn with_layers_ref<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
     /// Execute a closure with a temporary layer added to a new ClientContext
-    fn with_temp_layer<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
+    fn with_layer_ref<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
     /// Execute a closure with temporary owner layer
-    fn with_temp_owner<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
+    fn with_owner_ref<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
     /// Execute a closure with temporary target layer
-    fn with_temp_target<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
+    fn with_target_ref<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
     /// Execute a closure with temporary caster layer
-    fn with_temp_caster<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
+    fn with_caster_ref<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
     /// Execute a closure with temporary variable layer
-    fn with_temp_var<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
+    fn with_var_ref<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
+    fn scope<R, F>(&self, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 }
 
 /// Implementation of temporary layers for ClientContext
-impl<'w> ClientContextTempLayers for ClientContext<'w> {
-    fn with_temp_layers<R, F>(&self, mut layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+impl<'w> ClientContextLayersRef for ClientContext<'w> {
+    fn with_layers_ref<R, F>(&self, mut layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        let world = self.source().world()?;
         let mut merged_layers = self.layers().clone();
         merged_layers.append(&mut layers);
-        let mut temp_context =
-            Context::with_layers(WorldSource::new_immutable(world), merged_layers);
-        f(&mut temp_context)
+        let mut temp_ctx = if let Ok(battle) = self.source().battle() {
+            Context::new_with_layers(WorldSource::new_battle(battle), merged_layers)
+        } else {
+            let world = self.source().world()?;
+            Context::new_with_layers(WorldSource::new_immutable(world), merged_layers)
+        };
+        f(&mut temp_ctx)
     }
 
-    fn with_temp_layer<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
+    fn with_layer_ref<R, F>(&self, layer: ContextLayer, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_temp_layers(vec![layer], f)
+        self.with_layers_ref(vec![layer], f)
     }
 
-    fn with_temp_owner<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
+    fn with_owner_ref<R, F>(&self, owner_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_temp_layer(ContextLayer::Owner(owner_id), f)
+        self.with_layer_ref(ContextLayer::Owner(owner_id), f)
     }
 
-    fn with_temp_target<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
+    fn with_target_ref<R, F>(&self, target_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_temp_layer(ContextLayer::Target(target_id), f)
+        self.with_layer_ref(ContextLayer::Target(target_id), f)
     }
 
-    fn with_temp_caster<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
+    fn with_caster_ref<R, F>(&self, caster_id: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_temp_layer(ContextLayer::Caster(caster_id), f)
+        self.with_layer_ref(ContextLayer::Caster(caster_id), f)
     }
 
-    fn with_temp_var<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
+    fn with_var_ref<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_temp_layer(ContextLayer::Var(name, value), f)
+        self.with_layer_ref(ContextLayer::Var(name, value), f)
+    }
+
+    fn scope<R, F>(&self, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_layers_ref(default(), f)
     }
 }

@@ -239,7 +239,6 @@ impl FDisplay for VarValue {
             VarValue::bool(v) => v.display(ctx, ui),
             VarValue::Vec2(v) => v.display(ctx, ui),
             VarValue::Color32(v) => v.display(ctx, ui),
-            VarValue::Id(v) => v.to_string().label(ui),
             VarValue::list(v) => {
                 ui.horizontal(|ui| {
                     let resp = "[tw List: ]".cstr().label(ui);
@@ -267,7 +266,6 @@ impl FEdit for VarValue {
                 VarValue::String(v) => v.edit(ctx, ui),
                 VarValue::Vec2(v) => v.edit(ctx, ui),
                 VarValue::Color32(v) => v.edit(ctx, ui),
-                VarValue::Id(_) => ui.label("Id (read-only)"),
                 VarValue::list(v) => {
                     let mut response = ui.label("");
                     for v in v {
@@ -503,7 +501,7 @@ impl FEdit for Reaction {
 impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         let color = ctx
-            .with_temp_owner(self.id, |ctx| ctx.get_var(VarName::color).get_color())
+            .with_owner_ref(self.id, |ctx| ctx.get_var(VarName::color).get_color())
             .unwrap_or(MISSING_COLOR);
         self.unit_name.cstr_c(color)
     }

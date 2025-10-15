@@ -1,4 +1,4 @@
-use itertools::join;
+use itertools::Itertools;
 use std::panic::Location;
 use thiserror::Error;
 use var_value::VarValue;
@@ -76,7 +76,7 @@ pub enum NodeError {
     #[error("Failed to cast node {0}")]
     CastError(SourceTrace),
 
-    #[error("Operation {op} for {} not supported {} {location}", join(values, ", "), msg.clone().unwrap_or_default())]
+    #[error("Operation {op} for {} not supported {} {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
     OperationNotSupported {
         values: Vec<VarValue>,
         op: &'static str,

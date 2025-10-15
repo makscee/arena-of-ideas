@@ -104,13 +104,12 @@ impl BattleAction {
             let applied = match self {
                 BattleAction::strike(a, b) => {
                     if let Some(strike_anim) = animations().get("strike") {
-                        ctx.with_layers_temp(
+                        ctx.with_layers(
                             [
                                 ContextLayer::Owner(*a),
                                 ContextLayer::Target(*b),
                                 ContextLayer::Var(VarName::position, vec2(0.0, 0.0).into()),
-                            ]
-                            .into(),
+                            ],
                             |context| strike_anim.apply(context),
                         )?;
                     }
@@ -140,7 +139,7 @@ impl BattleAction {
                     let owner_pos = ctx.node_get_var(*a, VarName::position)?;
                     let target_pos = ctx.node_get_var(*b, VarName::position)?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_temp_layers(
+                        ctx.with_layers_ref(
                             [
                                 ContextLayer::Var(VarName::position, owner_pos),
                                 ContextLayer::Var(VarName::extra_position, target_pos.clone()),
@@ -155,7 +154,7 @@ impl BattleAction {
                         .at_least(0);
                     if x > 0 {
                         if let Some(pain) = animations().get("pain_vfx") {
-                            ctx.with_temp_layer(
+                            ctx.with_layer_ref(
                                 ContextLayer::Var(VarName::position, target_pos.clone()),
                                 |context| pain.apply(context),
                             )?;
@@ -164,7 +163,7 @@ impl BattleAction {
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     if let Some(text) = animations().get("text") {
-                        ctx.with_temp_layers(
+                        ctx.with_layers_ref(
                             [
                                 ContextLayer::Var(VarName::text, (-x).to_string().into()),
                                 ContextLayer::Var(
@@ -181,14 +180,14 @@ impl BattleAction {
                     true
                 }
                 BattleAction::heal(a, b, x) => {
-                    let owner_pos = ctx.with_temp_layer(ContextLayer::Owner(*a), |context| {
+                    let owner_pos = ctx.with_layer_ref(ContextLayer::Owner(*a), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    let target_pos = ctx.with_temp_layer(ContextLayer::Owner(*b), |context| {
+                    let target_pos = ctx.with_layer_ref(ContextLayer::Owner(*b), |context| {
                         context.get_var(VarName::position)
                     })?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_temp_layers(
+                        ctx.with_layers_ref(
                             [
                                 ContextLayer::Var(VarName::position, owner_pos),
                                 ContextLayer::Var(VarName::extra_position, target_pos.clone()),
@@ -199,7 +198,7 @@ impl BattleAction {
                     }
                     if *x > 0 {
                         if let Some(pleasure) = animations().get("pleasure_vfx") {
-                            ctx.with_temp_layer(
+                            ctx.with_layer_ref(
                                 ContextLayer::Var(VarName::position, target_pos.clone()),
                                 |context| pleasure.apply(context),
                             )?;
@@ -207,7 +206,7 @@ impl BattleAction {
                         let dmg = (ctx.load::<NFusion>(*b)?.dmg - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         if let Some(text) = animations().get("text") {
-                            ctx.with_temp_layers(
+                            ctx.with_layers_ref(
                                 [
                                     ContextLayer::Var(VarName::position, target_pos),
                                     ContextLayer::Var(VarName::text, format!("+{}", x).into()),
@@ -256,10 +255,10 @@ impl BattleAction {
                 }
                 BattleAction::vfx(vars, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        ctx.with_layers_temp(
+                        ctx.with_layers(
                             vars.iter()
                                 .map(|(var, value)| ContextLayer::Var(*var, value.clone()))
-                                .collect(),
+                                .collect_vec(),
                             |context| vfx.apply(context),
                         )?
                     }
@@ -280,7 +279,7 @@ impl BattleAction {
                     info!("{} {self}", "+".green().dimmed());
                     sim.log.actions.push(self.clone());
                 } else {
-                    info!("{} {self}", "-".dimmed());
+                    // info!("{} {self}", "-".dimmed());
                 }
             }
             Err(e) => {
@@ -411,9 +410,14 @@ impl BattleSimulation {
     ) -> Result<VecDeque<BattleAction>, NodeError> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut battle_actions: VecDeque<BattleAction> = default();
+        let mut fusion_statuses: Vec<(u64, u64)> = default();
         for id in ctx.battle()?.all_fusions() {
-            ctx.with_owner(id, |context| {
-                match context.load::<NFusion>(id).track()?.react(&event, context) {
+            let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
+            if !statuses.is_empty() {
+                fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
+            }
+            ctx.with_owner(id, |ctx| {
+                match ctx.load::<NFusion>(id).track()?.react(&event, ctx) {
                     Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };
@@ -421,22 +425,25 @@ impl BattleSimulation {
             })
             .log();
         }
-        for (r, s) in ctx
-            .world_mut()?
-            .query::<(&NStatusBehavior, &NStatusMagic)>()
-            .iter(ctx.world()?)
-        {
-            ctx.with_temp_owner(s.id, |ctx| {
-                if let Some(actions) = r.reactions.react(&event, &ctx) {
-                    match actions.process(ctx) {
-                        Ok(a) => battle_actions.extend(a),
-                        Err(e) => {
-                            error!("StatusMagic {} event {event} failed: {e}", s.status_name)
-                        }
-                    };
-                }
-                Ok(())
-            })?;
+        for (fusion_id, status_id) in fusion_statuses {
+            match ctx.with_layers(
+                [
+                    ContextLayer::Owner(fusion_id),
+                    ContextLayer::Status(status_id),
+                ],
+                |ctx| {
+                    let behavior = ctx.load::<NStatusBehavior>(status_id)?;
+                    let actions = behavior
+                        .reactions
+                        .react(&event, &ctx)
+                        .to_not_found()?
+                        .clone();
+                    actions.process(ctx)
+                },
+            ) {
+                Ok(actions) => battle_actions.extend(actions),
+                Err(e) => e.log(),
+            }
         }
         Ok(battle_actions)
     }
@@ -463,13 +470,13 @@ impl BattleSimulation {
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
-        status.spawn(ctx, Some(entity))?;
-        let rep_entity = ctx.world_mut()?.spawn_empty().id();
-        status_rep()
-            .clone()
-            .with_id(next_id())
-            .spawn(ctx, Some(rep_entity))?;
-        ctx.add_link_entities(entity, rep_entity)?;
+        status.remap_ids().spawn(ctx, Some(entity))?;
+        // let rep_entity = ctx.world_mut()?.spawn_empty().id();
+        // status_rep()
+        //     .clone()
+        //     .with_id(next_id())
+        //     .spawn(ctx, Some(rep_entity))?;
+        // ctx.add_link_entities(entity, rep_entity)?;
         ctx.add_link_entities(target.entity(ctx)?, entity)?;
 
         let mut state = ctx.load_entity_mut::<NodeStateHistory>(entity)?;

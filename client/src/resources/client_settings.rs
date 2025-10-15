@@ -15,24 +15,6 @@ use super::*;
 /// - `#[setting(selector(fn_name), "Label")]` - Creates a dropdown with options from fn_name()
 /// - `#[setting(enum, "Label")]` - Creates an enum selector widget
 /// - `#[setting(show, "Label")]` - Uses the Show trait's show_mut method
-///
-/// Example usage:
-/// ```rust
-/// #[setting(slider(0.5, 0.0, 1.0), "Volume")]
-/// pub volume: f32,
-///
-/// #[setting(checkbox(true), "Enable Feature")]
-/// pub enabled: bool,
-///
-/// #[setting(selector(get_options), "Choice")]
-/// pub selection: String,
-///
-/// #[setting(enum, "Mode")]
-/// pub mode: GameMode,
-///
-/// #[setting(show, "Custom Widget")]
-/// pub custom: CustomType,
-/// ```
 #[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Settings)]
 pub struct ClientSettings {
     pub servers: HashMap<&'static str, (&'static str, &'static str)>,

@@ -94,7 +94,7 @@ impl NFusion {
         ctx: &ClientContext,
     ) -> Result<Vec<BattleAction>, NodeError> {
         let mut battle_actions: Vec<BattleAction> = default();
-        ctx.with_temp_owner(self.id, |ctx| {
+        ctx.scope(|ctx| {
             if Self::get_trigger(ctx, self.trigger_unit)
                 .track()?
                 .fire(event, ctx)
@@ -122,7 +122,7 @@ impl NFusion {
         for unit in units {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
-                    ctx.with_temp_owner(unit.id, |ctx| {
+                    ctx.with_owner_ref(unit.id, |ctx| {
                         let r = RepresentationPlugin::paint_rect(rect, &ctx, &rep.material, ui);
                         match &r {
                             Ok(_) => {}
@@ -139,7 +139,7 @@ impl NFusion {
             }
         }
         for rep in ctx.collect_children::<NUnitRepresentation>(self.id)? {
-            ctx.with_temp_owner(self.id, |ctx| {
+            ctx.with_owner_ref(self.id, |ctx| {
                 RepresentationPlugin::paint_rect(rect, ctx, &rep.material, ui)
             })
             .ui(ui);
