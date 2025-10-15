@@ -13,8 +13,12 @@ impl EventImpl for Event {
             ]
             .into(),
             |ctx| {
-                if let Ok(fusion) = ctx.load::<NFusion>(owner).cloned() {
-                    for (_, action) in fusion.react_actions(self, ctx)? {
+                if let Ok(actions) = ctx
+                    .load::<NFusion>(owner)
+                    .cloned()
+                    .and_then(|f| f.react_actions(self, ctx))
+                {
+                    for (_, action) in actions {
                         match action.process(ctx) {
                             Ok(_) => {}
                             Err(e) => {

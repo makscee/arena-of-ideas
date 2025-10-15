@@ -375,6 +375,50 @@ fn test_change_in_dmg_trigger() {
 }
 
 #[test]
+fn test_change_stats_status() {
+    let mut builder = TestBuilder::new();
+
+    let unit = builder.create_unit_with_behavior(
+        "Unit1",
+        1,
+        1,
+        Reaction {
+            trigger: Trigger::BattleStart,
+            actions: [
+                Action::add_target(Expression::owner.into()),
+                Action::apply_status,
+            ]
+            .into(),
+        },
+    );
+
+    let enemy = builder.create_unit("Unit2", 5, 2);
+
+    let house1 = builder.create_simple_house("House1", vec![unit]).status(
+        builder.create_status("add 10 hp").add_reaction(
+            Trigger::ChangeStat(VarName::hp),
+            [Action::add_value(Expression::i32(10).into())].into(),
+        ),
+    );
+    let house2 = builder.create_simple_house("House2", vec![enemy]);
+
+    let left_team = builder
+        .create_team()
+        .add_house(house1)
+        .add_fusion(FusionBuilder::single(0));
+
+    let right_team = builder
+        .create_team()
+        .add_house(house2)
+        .add_fusion(FusionBuilder::single(0));
+
+    let battle = builder.create_battle(left_team, right_team);
+    let result = battle.run();
+
+    result.assert_winner(TeamSide::Left);
+}
+
+#[test]
 fn test_large_scale_battle() {
     let mut builder = TestBuilder::new();
 
