@@ -291,8 +291,8 @@ impl AbilityBuilder {
         self
     }
 
-    pub fn deal_damage(self) -> Self {
-        self.add_action(Action::set_value(Box::new(Expression::i32(1))))
+    pub fn deal_3_damage(self) -> Self {
+        self.add_action(Action::set_value(Expression::i32(3).into()))
             .add_action(Action::deal_damage)
     }
 
@@ -612,16 +612,6 @@ pub fn reaction_deal_damage(damage: i32) -> Reaction {
         actions: vec![
             Action::set_value(Box::new(Expression::i32(damage))),
             Action::deal_damage,
-        ],
-    }
-}
-
-pub fn reaction_heal(amount: i32) -> Reaction {
-    Reaction {
-        trigger: Trigger::ChangeIncomingDamage,
-        actions: vec![
-            Action::set_value(Box::new(Expression::i32(amount))),
-            Action::heal_damage,
         ],
     }
 }

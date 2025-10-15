@@ -764,12 +764,17 @@ pub trait ClientContextLayersRef {
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
+    /// Execute a closure with temporary caster layer
+    fn with_status_ref<R, F>(&self, status_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
+
     /// Execute a closure with temporary variable layer
     fn with_var_ref<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
-    fn scope<R, F>(&self, f: F) -> NodeResult<R>
+    fn scope_ref<R, F>(&self, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 }
@@ -819,6 +824,13 @@ impl<'w> ClientContextLayersRef for ClientContext<'w> {
         self.with_layer_ref(ContextLayer::Caster(caster_id), f)
     }
 
+    fn with_status_ref<R, F>(&self, status_id: u64, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        self.with_layer_ref(ContextLayer::Status(status_id), f)
+    }
+
     fn with_var_ref<R, F>(&self, name: VarName, value: VarValue, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
@@ -826,7 +838,7 @@ impl<'w> ClientContextLayersRef for ClientContext<'w> {
         self.with_layer_ref(ContextLayer::Var(name, value), f)
     }
 
-    fn scope<R, F>(&self, f: F) -> NodeResult<R>
+    fn scope_ref<R, F>(&self, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {

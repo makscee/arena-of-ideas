@@ -1,7 +1,7 @@
 use super::*;
 
 pub trait EventImpl {
-    fn update_value(&self, context: &mut ClientContext, value: VarValue, owner: u64) -> VarValue;
+    fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue;
 }
 
 impl EventImpl for Event {
@@ -12,38 +12,45 @@ impl EventImpl for Event {
                 ContextLayer::Var(VarName::value, value.clone()),
             ]
             .into(),
-            |context| {
-                // if let Ok(fusion) = context.get::<NFusion>(entity) {
-                //     fusion.react(event, context).log();
-                // }
-                for status in context
+            |ctx| {
+                if let Ok(fusion) = ctx.load::<NFusion>(owner).cloned() {
+                    for (_, action) in fusion.react_actions(self, ctx)? {
+                        match action.process(ctx) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                e.log();
+                            }
+                        }
+                    }
+                }
+                for status in ctx
                     .load_collect_children_recursive::<NStatusMagic>(owner)?
                     .into_iter()
                     .cloned()
                     .collect_vec()
                 {
-                    let mut value = context.get_var(VarName::value)?;
-                    if let Ok(behavior) =
-                        context.load_first_child_recursive::<NStatusBehavior>(status.id)
+                    let mut value = ctx.get_var(VarName::value)?;
+                    if let Ok(behavior) = status
+                        .description_ref(ctx)
+                        .and_then(|d| d.behavior_ref(ctx))
                     {
-                        context
-                            .with_owner_ref(status.id, |context| {
-                                if let Some(actions) = behavior.reactions.react(self, context) {
-                                    match actions.process(context) {
-                                        Ok(_) => {}
-                                        Err(e) => {
-                                            return Err(e);
-                                        }
+                        ctx.with_status_ref(status.id, |ctx| {
+                            if let Some(actions) = behavior.reactions.react(self, ctx) {
+                                match actions.process(ctx) {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        return Err(e);
                                     }
                                 }
-                                value = context.get_var(VarName::value)?;
-                                Ok(())
-                            })
-                            .log();
-                        context.set_var_layer(VarName::value, value);
+                            }
+                            value = ctx.get_var(VarName::value)?;
+                            Ok(())
+                        })
+                        .log();
+                        ctx.set_var_layer(VarName::value, value);
                     }
                 }
-                context.get_var(VarName::value)
+                ctx.get_var(VarName::value)
             },
         ) {
             Ok(value) => value,

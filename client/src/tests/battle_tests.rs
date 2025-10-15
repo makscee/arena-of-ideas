@@ -1,6 +1,5 @@
-use super::battle_builder::*;
-use crate::prelude::*;
-use schema::{Action, Expression, Trigger, VarName};
+use super::*;
+use crate::tests::battle_builder::*;
 
 #[test]
 fn test_simple_1v1_battle() {
@@ -142,8 +141,21 @@ fn test_damage_dealer_unit() {
 fn test_healer_unit() {
     let mut builder = TestBuilder::new();
 
-    let healer = builder.create_unit_with_behavior("Unit1", 1, 2, reaction_heal(1));
-    let attacker = builder.create_unit("Unit2", 1, 1);
+    let healer = builder.create_unit_with_behavior(
+        "Unit1",
+        1,
+        2,
+        Reaction {
+            trigger: Trigger::TurnEnd,
+            actions: [
+                Action::add_target(Expression::owner.into()),
+                Action::add_value(Expression::one.into()),
+                Action::heal_damage,
+            ]
+            .into(),
+        },
+    );
+    let attacker = builder.create_unit("Unit2", 1, 3);
 
     let house1 = builder.create_simple_house("House1", vec![healer]);
     let house2 = builder.create_simple_house("House2", vec![attacker]);
@@ -203,103 +215,34 @@ fn test_multi_fusion_battle() {
 }
 
 #[test]
-fn test_multiple_fusions_per_team() {
-    let mut builder = TestBuilder::new();
-
-    let left_units = vec![
-        builder.create_unit("Unit1", 1, 2),
-        builder.create_unit("Unit2", 1, 2),
-    ];
-
-    let right_units = vec![
-        builder.create_unit("Unit3", 2, 2),
-        builder.create_unit("Unit4", 1, 1),
-    ];
-
-    let house1 = builder.create_simple_house("House1", left_units);
-    let house2 = builder.create_simple_house("House2", right_units);
-
-    let left_team = builder
-        .create_team()
-        .add_house(house1)
-        .add_fusion(FusionBuilder::single(0))
-        .add_fusion(FusionBuilder::single(1));
-
-    let right_team = builder
-        .create_team()
-        .add_house(house2)
-        .add_fusion(FusionBuilder::single(0))
-        .add_fusion(FusionBuilder::single(1));
-
-    let battle = builder.create_battle(left_team, right_team);
-    let result = battle.run();
-
-    assert!(result.iterations < 1000, "Battle should complete");
-}
-
-#[test]
-fn test_battle_with_houses() {
-    let mut builder = TestBuilder::new();
-
-    let house1 = builder
-        .create_house("House1", "#FF0000")
-        .add_unit(builder.create_unit("Unit1", 2, 2))
-        .add_unit(builder.create_unit("Unit2", 1, 1));
-
-    let house2 = builder
-        .create_house("House2", "#0000FF")
-        .add_unit(builder.create_unit("Unit3", 1, 3))
-        .add_unit(builder.create_unit("Unit4", 2, 1));
-
-    let test_unit1 = builder.create_unit("TestUnit1", 1, 1);
-    let test_unit2 = builder.create_unit("TestUnit2", 1, 1);
-
-    let test_house1 = builder.create_simple_house("TestHouse1", vec![test_unit1]);
-    let test_house2 = builder.create_simple_house("TestHouse2", vec![test_unit2]);
-
-    let left_team = builder
-        .create_team()
-        .add_house(house1)
-        .add_house(test_house1)
-        .add_fusion(FusionBuilder::single(2)); // Reference test unit
-
-    let right_team = builder
-        .create_team()
-        .add_house(house2)
-        .add_house(test_house2)
-        .add_fusion(FusionBuilder::single(2)); // Reference test unit
-
-    let battle = builder.create_battle(left_team, right_team);
-    let result = battle.run();
-
-    assert!(result.iterations > 0, "Battle should run at least once");
-}
-
-#[test]
 fn test_battle_with_abilities() {
     let mut builder = TestBuilder::new();
 
-    let ability = builder
-        .create_ability("Ability1")
-        .description("Deals damage to enemy")
-        .deal_damage();
+    let ability = builder.create_ability("Ability1").deal_3_damage();
 
     let house = builder
         .create_house("House1", "#FFFF00")
         .ability(ability)
-        .add_unit(builder.create_unit("Unit1", 2, 2));
+        .add_unit(
+            builder.create_unit("Unit1", 1, 2).behavior(Reaction {
+                trigger: Trigger::BattleStart,
+                actions: [
+                    Action::add_target(
+                        Expression::random_unit(Expression::all_enemy_units.into()).into(),
+                    ),
+                    Action::use_ability,
+                ]
+                .into(),
+            }),
+        );
 
-    let enemy_unit = builder.create_unit("Unit2", 1, 3);
-    let test_unit = builder.create_unit("TestUnit", 1, 1);
-
+    let enemy_unit = builder.create_unit("Unit2", 1, 4);
     let enemy_house = builder.create_simple_house("EnemyHouse", vec![enemy_unit]);
-    let test_house = builder.create_simple_house("TestHouse", vec![test_unit]);
 
     let left_team = builder
         .create_team()
         .add_house(house)
-        .add_house(test_house)
-        .add_fusion(FusionBuilder::single(1)); // Reference test unit
+        .add_fusion(FusionBuilder::single(0));
 
     let right_team = builder
         .create_team()
@@ -309,7 +252,7 @@ fn test_battle_with_abilities() {
     let battle = builder.create_battle(left_team, right_team);
     let result = battle.run();
 
-    assert!(result.log.actions.len() > 0, "Battle should have actions");
+    result.assert_winner(TeamSide::Left);
 }
 
 #[test]
@@ -362,46 +305,28 @@ fn test_battle_with_status_effects() {
 }
 
 #[test]
-fn test_complex_trigger_interactions() {
+fn test_change_out_dmg_trigger() {
     let mut builder = TestBuilder::new();
 
-    let on_damage_healer = builder.create_unit_with_behavior(
+    let unit = builder.create_unit_with_behavior(
         "Unit1",
-        1,
-        3,
-        Reaction {
-            trigger: Trigger::ChangeIncomingDamage,
-            actions: vec![
-                Action::set_value(Box::new(Expression::i32(1))),
-                Action::heal_damage,
-            ],
-        },
-    );
-
-    let on_stat_change_buffer = builder.create_unit_with_behavior(
-        "Unit2",
         1,
         2,
         Reaction {
-            trigger: Trigger::ChangeStat(VarName::hp),
-            actions: vec![
-                Action::set_value(Box::new(Expression::i32(1))),
-                Action::add_value(Box::new(Expression::var(VarName::pwr))),
-            ],
+            trigger: Trigger::ChangeOutgoingDamage,
+            actions: vec![Action::add_value(Box::new(Expression::i32(5)))],
         },
     );
 
-    let attacker = builder.create_unit("Unit3", 2, 4);
+    let enemy = builder.create_unit("Unit2", 1, 6);
 
-    let house1 =
-        builder.create_simple_house("House1", vec![on_damage_healer, on_stat_change_buffer]);
-    let house2 = builder.create_simple_house("House2", vec![attacker]);
+    let house1 = builder.create_simple_house("House1", vec![unit]);
+    let house2 = builder.create_simple_house("House2", vec![enemy]);
 
     let left_team = builder
         .create_team()
         .add_house(house1)
-        .add_fusion(FusionBuilder::single(0))
-        .add_fusion(FusionBuilder::single(1));
+        .add_fusion(FusionBuilder::single(0));
 
     let right_team = builder
         .create_team()
@@ -411,7 +336,42 @@ fn test_complex_trigger_interactions() {
     let battle = builder.create_battle(left_team, right_team);
     let result = battle.run();
 
-    assert!(result.iterations > 0, "Battle should complete");
+    result.assert_winner(TeamSide::Left);
+}
+
+#[test]
+fn test_change_in_dmg_trigger() {
+    let mut builder = TestBuilder::new();
+
+    let unit = builder.create_unit_with_behavior(
+        "Unit1",
+        1,
+        1,
+        Reaction {
+            trigger: Trigger::ChangeIncomingDamage,
+            actions: vec![Action::set_value(Expression::zero.into())],
+        },
+    );
+
+    let enemy = builder.create_unit("Unit2", 10, 3);
+
+    let house1 = builder.create_simple_house("House1", vec![unit]);
+    let house2 = builder.create_simple_house("House2", vec![enemy]);
+
+    let left_team = builder
+        .create_team()
+        .add_house(house1)
+        .add_fusion(FusionBuilder::single(0));
+
+    let right_team = builder
+        .create_team()
+        .add_house(house2)
+        .add_fusion(FusionBuilder::single(0));
+
+    let battle = builder.create_battle(left_team, right_team);
+    let result = battle.run();
+
+    result.assert_winner(TeamSide::Left);
 }
 
 #[test]

@@ -51,7 +51,7 @@ impl NFusion {
     pub fn gather_fusion_actions<'a>(
         &self,
         ctx: &'a ClientContext,
-    ) -> Result<Vec<(u64, &'a Action)>, NodeError> {
+    ) -> Result<Vec<(u64, Action)>, NodeError> {
         let slots = self.get_slots(ctx)?;
         let mut all_actions = Vec::new();
 
@@ -65,7 +65,7 @@ impl NFusion {
                             let end = (slot.actions.start + slot.actions.length) as usize;
 
                             for i in start..end.min(reaction.actions.len()) {
-                                if let Some(action) = reaction.actions.get(i) {
+                                if let Some(action) = reaction.actions.get(i).cloned() {
                                     all_actions.push((unit.id, action));
                                 }
                             }
@@ -88,33 +88,38 @@ impl NFusion {
         Ok(&Self::get_behavior(ctx, unit_id).track()?.reaction.trigger)
     }
 
+    pub fn react_actions(
+        &self,
+        event: &Event,
+        ctx: &mut ClientContext,
+    ) -> Result<Vec<(u64, Action)>, NodeError> {
+        if Self::get_trigger(ctx, self.trigger_unit)
+            .track()?
+            .fire(event, ctx)
+            .unwrap_or_default()
+        {
+            self.gather_fusion_actions(ctx).track()
+        } else {
+            Ok(default())
+        }
+    }
+
     pub fn react(
         &self,
         event: &Event,
-        ctx: &ClientContext,
+        ctx: &mut ClientContext,
     ) -> Result<Vec<BattleAction>, NodeError> {
-        let mut battle_actions: Vec<BattleAction> = default();
-        ctx.scope(|ctx| {
-            if Self::get_trigger(ctx, self.trigger_unit)
-                .track()?
-                .fire(event, ctx)
-                .unwrap_or_default()
-            {
-                let fusion_actions = self.gather_fusion_actions(ctx).track()?;
-                let cloned_actions: Vec<(u64, Action)> = fusion_actions
-                    .into_iter()
-                    .map(|(unit_id, action)| (unit_id, action.clone()))
-                    .collect();
-
-                for (unit_id, action) in cloned_actions {
-                    ctx.set_caster(unit_id);
-                    battle_actions.extend(action.process(ctx).track()?);
-                }
+        let actions = self.react_actions(event, ctx)?;
+        if !actions.is_empty() {
+            let mut battle_actions: Vec<BattleAction> = default();
+            for (unit_id, action) in actions {
+                ctx.set_caster(unit_id);
+                battle_actions.extend(action.process(ctx).track()?);
             }
-            Ok(())
-        })?;
-
-        Ok(battle_actions)
+            Ok(battle_actions)
+        } else {
+            Ok(default())
+        }
     }
 
     pub fn paint(&self, rect: Rect, ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {

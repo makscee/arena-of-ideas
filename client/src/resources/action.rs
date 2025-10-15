@@ -2,11 +2,11 @@ use super::*;
 
 pub trait ActionsImpl {
     #[must_use]
-    fn process(&self, context: &mut ClientContext) -> NodeResult<Vec<BattleAction>>;
+    fn process(&self, ctx: &mut ClientContext) -> NodeResult<Vec<BattleAction>>;
 }
 
 pub trait ActionImpl {
-    fn process(&self, context: &mut ClientContext) -> NodeResult<Vec<BattleAction>>;
+    fn process(&self, ctx: &mut ClientContext) -> NodeResult<Vec<BattleAction>>;
 }
 
 impl ActionsImpl for Vec<Action> {

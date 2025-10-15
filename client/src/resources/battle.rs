@@ -152,6 +152,10 @@ impl BattleAction {
                         .update_value(ctx, (*x).into(), *a)
                         .get_i32()?
                         .at_least(0);
+                    let x = Event::IncomingDamage(*a, *b)
+                        .update_value(ctx, x.into(), *b)
+                        .get_i32()?
+                        .at_least(0);
                     if x > 0 {
                         if let Some(pain) = animations().get("pain_vfx") {
                             ctx.with_layer_ref(
@@ -417,7 +421,7 @@ impl BattleSimulation {
                 fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
             }
             ctx.with_owner(id, |ctx| {
-                match ctx.load::<NFusion>(id).track()?.react(&event, ctx) {
+                match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
                     Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };

@@ -34,13 +34,19 @@ impl TriggerImpl for Trigger {
                 let Some(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx.load_first_parent::<NFusion>(owner)?;
+                let owner = ctx.load::<NFusion>(owner)?;
                 if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
                     return Ok(true);
                 }
             }
-            Event::IncomingDamage(_source, _target) => {
-                todo!()
+            Event::IncomingDamage(_, target) => {
+                let Some(owner) = ctx.owner() else {
+                    return Ok(false);
+                };
+                let owner = ctx.load::<NFusion>(owner)?;
+                if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
+                    return Ok(true);
+                }
             }
         }
         Ok(false)
