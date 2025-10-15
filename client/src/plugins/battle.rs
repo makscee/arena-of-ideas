@@ -15,12 +15,8 @@ impl Plugin for BattlePlugin {
 
 #[derive(Resource)]
 pub struct BattleData {
-    pub teams_world: World,
-    pub team_left: Entity,
-    pub team_right: Entity,
     pub battle: Battle,
     pub simulation: BattleSimulation,
-    pub t: f32,
     pub playback_speed: f32,
     pub playing: bool,
     pub on_done: Option<fn(u64, bool, u64)>,
@@ -35,26 +31,10 @@ pub struct ReloadData {
 
 impl BattleData {
     fn load(battle: Battle) -> Self {
-        let mut teams_world = World::new();
-        teams_world.init_resource::<NodeEntityMap>();
-        teams_world.init_resource::<NodeLinks>();
-        let team_left = teams_world.spawn_empty().id();
-        let team_right = teams_world.spawn_empty().id();
-        teams_world
-            .with_context_mut(|ctx| {
-                battle.left.clone().spawn(ctx, Some(team_left))?;
-                battle.right.clone().spawn(ctx, Some(team_right))?;
-                Ok(())
-            })
-            .unwrap();
-        let simulation = BattleSimulation::new(battle.clone()).start();
+        let simulation = BattleSimulation::new(battle.clone());
         Self {
-            teams_world,
-            team_left,
-            team_right,
             battle,
             simulation,
-            t: 0.0,
             playing: true,
             playback_speed: 1.0,
             on_done: None,
@@ -99,31 +79,20 @@ impl BattlePlugin {
         if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
             reload.reload_requested = false;
             reload.last_reload = gt().elapsed();
-            let (left, right) = (data.team_left, data.team_right);
+            let (left_id, right_id) = (data.battle.left.id(), data.battle.right.id());
             let (left, right) = data
-                .teams_world
+                .simulation
+                .world
                 .with_context_mut(|ctx| {
-                    let left = ctx
-                        .world()?
-                        .get::<NTeam>(left)
-                        .to_not_found()?
-                        .clone()
-                        .load_all(ctx)?
-                        .clone();
-                    let right = ctx
-                        .world()?
-                        .get::<NTeam>(right)
-                        .to_not_found()?
-                        .clone()
-                        .load_all(ctx)?
-                        .clone();
+                    let left = ctx.load::<NTeam>(left_id)?.clone().load_all(ctx)?.clone();
+                    let right = ctx.load::<NTeam>(right_id)?.clone().load_all(ctx)?.clone();
                     Ok((left, right))
                 })
                 .unwrap();
             data.battle.left = left;
             data.battle.right = right;
             data.playing = false;
-            data.t = 0.0;
+            data.simulation.t = 0.0;
             data.simulation = BattleSimulation::new(data.battle.clone()).start();
             pd_mut(|pd| {
                 pd.client_state
@@ -200,7 +169,7 @@ impl BattlePlugin {
             .remove_resource::<BattleData>()
             .to_custom_e("No battle loaded")?;
 
-        let t = data.t;
+        let t = data.simulation.t;
         let main_rect = ui.available_rect_before_wrap();
 
         // Show battle camera with slot actions
@@ -209,9 +178,8 @@ impl BattlePlugin {
             t,
             ui,
             &data.slot_actions,
-            &mut data.teams_world,
-            data.team_left,
-            data.team_right,
+            data.battle.left.id(),
+            data.battle.right.id(),
         );
 
         Self::render_playback_controls(ui, &mut data, main_rect)?;
@@ -257,7 +225,7 @@ impl BattlePlugin {
                 ui.painter().rect_filled(slider_rect, 0.0, bg_color);
 
                 Slider::new("ts").name(false).full_width().ui(
-                    &mut data.t,
+                    &mut data.simulation.t,
                     0.0..=data.simulation.duration,
                     ui,
                 );
@@ -265,10 +233,10 @@ impl BattlePlugin {
         });
 
         if data.playing {
-            data.t += gt().last_delta() * data.playback_speed;
-            data.t = data.t.at_most(data.simulation.duration);
+            data.simulation.t += gt().last_delta() * data.playback_speed;
+            data.simulation.t = data.simulation.t.at_most(data.simulation.duration);
         }
-        if data.t >= data.simulation.duration && !data.simulation.ended() {
+        if data.simulation.t >= data.simulation.duration && !data.simulation.ended() {
             data.simulation.run();
         }
 
@@ -307,7 +275,7 @@ impl BattlePlugin {
                 })
                 .clicked()
             {
-                data.t -= 1.0;
+                data.simulation.t = 0.0;
             }
 
             // Play/Pause button
@@ -348,7 +316,7 @@ impl BattlePlugin {
                 })
                 .clicked()
             {
-                data.t = data.simulation.duration;
+                data.simulation.t = data.simulation.duration;
             }
         });
     }
@@ -414,7 +382,7 @@ impl BattlePlugin {
     }
 
     fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
-        if data.t >= data.simulation.duration && data.simulation.ended() {
+        if data.simulation.t >= data.simulation.duration && data.simulation.ended() {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
                 let result = data.simulation.fusions_right.is_empty();
                 ui.vertical_centered_justified(|ui| {
@@ -429,7 +397,7 @@ impl BattlePlugin {
                     ui[0].vertical_centered_justified(|ui| {
                         ui.set_max_width(200.0);
                         if "Replay".cstr().button(ui).clicked() {
-                            data.t = 0.0;
+                            data.simulation.t = 0.0;
                         }
                     });
                     ui[1].vertical_centered_justified(|ui| {

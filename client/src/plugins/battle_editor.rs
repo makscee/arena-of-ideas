@@ -164,32 +164,14 @@ impl BattleEditorPlugin {
             ui.label("Editing:");
             if ui.selectable_label(is_left, "Left Team").clicked() {
                 world.resource_mut::<BattleEditorState>().is_left_team = true;
-
-                let battle_data = world.remove_resource::<BattleData>().unwrap();
-                let team_id = battle_data
-                    .teams_world
-                    .as_context()
-                    .id(battle_data.team_left)
-                    .unwrap_or_default();
-                world.insert_resource(battle_data);
-
                 navigation_action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
-                    team_id,
+                    world.resource::<BattleData>().battle.left.id,
                 )));
             }
             if ui.selectable_label(!is_left, "Right Team").clicked() {
                 world.resource_mut::<BattleEditorState>().is_left_team = false;
-
-                let battle_data = world.remove_resource::<BattleData>().unwrap();
-                let team_id = battle_data
-                    .teams_world
-                    .as_context()
-                    .id(battle_data.team_right)
-                    .unwrap_or_default();
-                world.insert_resource(battle_data);
-
                 navigation_action = Some(BattleEditorAction::SetCurrent(BattleEditorNode::Team(
-                    team_id,
+                    world.resource::<BattleData>().battle.right.id,
                 )));
             }
         });
@@ -282,14 +264,12 @@ impl BattleEditorPlugin {
         ui.separator();
 
         let battle_data = world.resource::<BattleData>();
-        let result = battle_data.teams_world.with_context(|context| {
-            let team_entity = if is_left {
-                battle_data.team_left
+        let result = battle_data.simulation.world.with_context(|context| {
+            let team_id = if is_left {
+                battle_data.battle.left.id()
             } else {
-                battle_data.team_right
+                battle_data.battle.right.id()
             };
-
-            let team_id = context.id(team_entity)?;
             if let Ok(team) = context.load::<NTeam>(team_id) {
                 team.title(context).label(ui);
                 ui.add_space(8.0);
@@ -316,7 +296,7 @@ impl BattleEditorPlugin {
         let mut changed = false;
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = battle_data.teams_world.with_context_mut(|context| {
+        let result = battle_data.simulation.with_context_mut(|context| {
             const ACTION_DEFAULT_UNIT: &str = "Add Default Unit";
             const ACTION_UNIT_EDITOR: &str = "Open Unit Editor";
             const ACTION_DELETE_UNIT: &str = "Delete Unit";
@@ -419,7 +399,7 @@ impl BattleEditorPlugin {
         let mut changed = false;
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = battle_data.teams_world.with_context_mut(|ctx| {
+        let result = battle_data.simulation.with_context_mut(|ctx| {
             let mut house = ctx.load::<NHouse>(id)?.clone();
             let units = house.units_load(ctx)?.clone();
             ui.group(|ui| {
@@ -482,7 +462,7 @@ impl BattleEditorPlugin {
         let mut changed = false;
 
         let mut battle_data = world.remove_resource::<BattleData>().unwrap();
-        let result = battle_data.teams_world.with_context_mut(|ctx| {
+        let result = battle_data.simulation.with_context_mut(|ctx| {
             let mut unit = ctx.load::<NUnit>(id)?.clone();
 
             ui.group(|ui| {

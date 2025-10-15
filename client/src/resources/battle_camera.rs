@@ -47,15 +47,7 @@ impl BattleCamera {
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
     pub fn show(bs: &mut BattleSimulation, t: f32, ui: &mut Ui) {
-        Self::show_with_actions(
-            bs,
-            t,
-            ui,
-            &Vec::new(),
-            &mut World::default(),
-            Entity::PLACEHOLDER,
-            Entity::PLACEHOLDER,
-        );
+        Self::show_with_actions(bs, t, ui, &Vec::new(), bs.team_left, bs.team_right);
     }
 
     pub fn show_with_actions(
@@ -63,9 +55,8 @@ impl BattleCamera {
         t: f32,
         ui: &mut Ui,
         slot_actions: &Vec<(String, fn(i32, Entity, &mut ClientContext))>,
-        teams_world: &mut World,
-        team_left: Entity,
-        team_right: Entity,
+        team_left_id: u64,
+        team_right_id: u64,
     ) {
         let mut cam = ui
             .data(|r| r.get_temp::<BattleCamera>(ui.id()))
@@ -88,17 +79,17 @@ impl BattleCamera {
                 s as i32,
                 ui,
                 slot_actions,
-                teams_world,
-                team_left,
-                team_right,
+                &mut bs.world,
+                team_left_id,
+                team_right_id,
             );
             cam.show_slot_with_action(
                 -(s as i32),
                 ui,
                 slot_actions,
-                teams_world,
-                team_left,
-                team_right,
+                &mut bs.world,
+                team_left_id,
+                team_right_id,
             );
         }
         bs.world
@@ -176,9 +167,9 @@ impl BattleCamera {
         slot: i32,
         ui: &mut Ui,
         slot_actions: &Vec<(String, fn(i32, Entity, &mut ClientContext))>,
-        teams_world: &mut World,
-        team_left: Entity,
-        team_right: Entity,
+        world: &mut World,
+        team_left_id: u64,
+        team_right_id: u64,
     ) {
         let rect = self.slot_rect(slot);
         let response = RectButton::new_rect(rect).ui(ui, |color, rect, _, ui| {
@@ -191,12 +182,17 @@ impl BattleCamera {
         });
 
         if !slot_actions.is_empty() {
-            let team_entity = if slot < 0 { team_left } else { team_right };
+            let team_id = if slot < 0 {
+                team_left_id
+            } else {
+                team_right_id
+            };
             response.bar_menu(|ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
-                        teams_world
+                        world
                             .with_context_mut(|context| {
+                                let team_entity = context.entity(team_id)?;
                                 action_fn(slot, team_entity, context);
                                 Ok(())
                             })

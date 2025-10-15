@@ -109,7 +109,8 @@ impl NodeKindOnSpawn for NodeKind {
                 }
                 ctx.world_mut()?
                     .get_mut::<NodeStateHistory>(entity)
-                    .to_not_found()?
+                    .unwrap()
+                    // .to_not_found()?
                     .init_vars(
                         [
                             (VarName::pwr, 0.into()),
