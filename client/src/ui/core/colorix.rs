@@ -579,7 +579,7 @@ impl Colorix {
     fn color_dropdown(ui: &mut egui::Ui, color: &mut RadixColor) -> bool {
         let mut changed = Selector::ui_enum(color, ui).0.is_some();
         if let RadixColor::Custom(c) = color {
-            if c.edit(&EMPTY_CONTEXT, ui).changed() {
+            if c.edit(ui).changed() {
                 changed = true;
             }
         }

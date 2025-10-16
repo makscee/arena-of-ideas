@@ -78,11 +78,11 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                                     pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                 }
                             });
-                        } else if tokens_str.starts_with("show") {
+                        } else if tokens_str.starts_with("edit") {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
                                 ui.collapsing("edit", |ui| {
-                                    if settings.#field_name.edit(&EMPTY_CONTEXT, ui).changed() {
+                                    if settings.#field_name.edit(ui).changed() {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                     }
                                 });
@@ -104,7 +104,7 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
             } else {
                 ui_code.push(quote! {
                     ui.label(#label);
-                    if settings.#field_name.show_mut(&crate::prelude::Context::default(), ui) {
+                    if settings.#field_name.edit(ui) {
                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                     }
                 });

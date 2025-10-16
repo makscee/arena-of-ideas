@@ -61,7 +61,7 @@ impl BattleEditorPlugin {
 
                 ui.group(|ui| {
                     ui.label(format!("{}:", part.kind()));
-                    if part.edit(ctx, ui).changed() {
+                    if part.edit(ui).changed() {
                         part.clone().spawn(ctx, Some(part_entity)).log();
                         changed = true;
                     }
@@ -404,7 +404,7 @@ impl BattleEditorPlugin {
             let units = house.units_load(ctx)?.clone();
             ui.group(|ui| {
                 house.title(ctx).label(ui);
-                if house.edit(ctx, ui).changed() {
+                if house.edit(ui).changed() {
                     if let Ok(entity) = ctx.entity(id) {
                         house.spawn(ctx, Some(entity)).log();
                         changed = true;
@@ -467,7 +467,7 @@ impl BattleEditorPlugin {
 
             ui.group(|ui| {
                 unit.title(ctx).label(ui);
-                if unit.edit(ctx, ui).changed() {
+                if unit.edit(ui).changed() {
                     if let Ok(entity) = ctx.entity(id) {
                         unit.spawn(ctx, Some(entity)).log();
                         changed = true;

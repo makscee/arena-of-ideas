@@ -146,6 +146,10 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         }
     };
 
+    // Generate FEdit implementations
+    let fedit_impls = nodes.iter().map(|node| generate_fedit_impl(node));
+
+    // Generate ToCstr and FDisplay implementations
     let named_node_impls = nodes.iter().filter(|node| node.is_named).map(|node| {
         let struct_name = &node.name;
         let node_kind_variant = &node.name;
@@ -166,6 +170,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         #allow_attrs
         #(#tocstr_impls)*
+
+        #allow_attrs
+        #(#fedit_impls)*
 
         #node_loader_impl
 
@@ -362,6 +369,149 @@ fn generate_node_kind_spawn_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream
                 match self {
                     #(#spawn_arms,)*
                     NodeKind::None => Err(NodeError::custom("Cannot spawn None node")),
+                }
+            }
+        }
+    }
+}
+
+fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+
+    // Generate edits for data fields (non-link fields)
+    let data_field_edits = node
+        .fields
+        .iter()
+        .filter(|field| matches!(field.link_type, LinkType::None))
+        .map(|field| {
+            let field_name = &field.name;
+            let field_label = field.name.to_string();
+            quote! {
+                ui.horizontal(|ui| {
+                    ui.label(#field_label);
+                    let field_response = self.#field_name.edit(ui);
+                    if field_response.changed() {
+                        self.is_dirty = true;
+                        changed = true;
+                    }
+                    field_response
+                }).inner;
+            }
+        });
+
+    // Generate edits for linked nodes
+    let link_field_edits = node
+        .fields
+        .iter()
+        .filter(|field| !matches!(field.link_type, LinkType::None))
+        .map(|field| {
+            let field_name = &field.name;
+            let field_label = field.name.to_string();
+
+            match field.link_type {
+                LinkType::Component | LinkType::Owned => {
+                    quote! {
+                        ui.collapsing(#field_label, |ui| {
+                            ui.horizontal(|ui| {
+                                if self.#field_name.get().is_some() {
+                                    if ui.button("Delete").clicked() {
+                                        self.#field_name = Default::default();
+                                        self.is_dirty = true;
+                                        changed = true;
+                                    }
+                                } else {
+                                    ui.label("(no inner node)");
+                                }
+                            });
+
+                            if let Some(inner_node) = self.#field_name.get() {
+                                ui.label("Inner node present (editing not yet implemented)");
+                            }
+                        });
+                    }
+                }
+                LinkType::OwnedMultiple => {
+                    quote! {
+                        ui.collapsing(#field_label, |ui| {
+                            if let Some(items) = self.#field_name.get() {
+                                ui.label(format!("{} items", items.len()));
+                                for (index, _item) in items.iter().enumerate() {
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("Item {}", index));
+                                    });
+                                }
+                            } else {
+                                ui.label("(no items)");
+                            }
+                        });
+                    }
+                }
+                LinkType::Ref => {
+                    quote! {
+                        ui.horizontal(|ui| {
+                            ui.label(#field_label);
+                            if let Some(id) = self.#field_name.id() {
+                                ui.label(format!("ID: {}", id));
+                                if ui.button("Clear").clicked() {
+                                    self.#field_name = Default::default();
+                                    self.is_dirty = true;
+                                    changed = true;
+                                }
+                            } else {
+                                ui.label("(no reference)");
+                            }
+                        });
+                    }
+                }
+                LinkType::RefMultiple => {
+                    quote! {
+                        ui.collapsing(#field_label, |ui| {
+                            if let Some(ids) = self.#field_name.ids() {
+                                ui.label(format!("{} references", ids.len()));
+                                for (index, id) in ids.iter().enumerate() {
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("ID {}: {}", index, id));
+                                    });
+                                }
+                            } else {
+                                ui.label("(no references)");
+                            }
+                        });
+                    }
+                }
+                LinkType::None => unreachable!(),
+            }
+        });
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        #allow_attrs
+        impl FEdit for #struct_name {
+            fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
+                let mut changed = false;
+
+                let mut main_response = ui.vertical(|ui| {
+                    ui.group(|ui| {
+                        ui.label(format!("Node ID: {}", self.id));
+                        ui.label(format!("Owner: {}", self.owner));
+                        if self.is_dirty {
+                            ui.colored_label(egui::Color32::YELLOW, "Modified");
+                        }
+                    });
+
+                    ui.separator();
+
+                    #(#data_field_edits)*
+                    #(#link_field_edits)*
+
+                    ui.label("")
+                }).inner;
+
+                if changed {
+                    main_response.mark_changed();
+                    main_response
+                } else {
+                    main_response
                 }
             }
         }

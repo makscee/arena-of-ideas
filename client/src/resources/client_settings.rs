@@ -44,7 +44,7 @@ pub struct ClientSettings {
     #[setting(checkbox(true), "Show Debug Info")]
     pub show_debug_info: bool,
 
-    #[setting(show, "Theme")]
+    #[setting(edit, "Theme")]
     pub theme: Colorix,
 }
 
@@ -104,7 +104,7 @@ impl FDisplay for WindowMode {
 }
 
 impl FEdit for WindowMode {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (_, response) = Selector::ui_enum(self, ui);
         response
     }

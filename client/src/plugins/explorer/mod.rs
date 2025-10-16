@@ -418,7 +418,7 @@ impl ExplorerPlugin {
                     world
                         .with_context(|ctx| {
                             if let Ok(mut node) = new_node.lock() {
-                                node.edit(ctx, ui);
+                                node.edit(ui);
                             }
                             Ok(())
                         })

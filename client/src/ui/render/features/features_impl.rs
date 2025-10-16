@@ -93,31 +93,37 @@ impl FDisplay for HexColor {
 
 // FEdit implementations for basic types
 impl FEdit for i32 {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         DragValue::new(self).ui(ui)
     }
 }
 
 impl FEdit for f32 {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         DragValue::new(self).min_decimals(1).ui(ui)
     }
 }
 
 impl FEdit for String {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         Input::new("").ui_string(self, ui)
     }
 }
 
+impl FEdit for u64 {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        DragValue::new(self).ui(ui)
+    }
+}
+
 impl FEdit for bool {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         Checkbox::new(self, "").ui(ui)
     }
 }
 
 impl FEdit for Vec2 {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             let rx = DragValue::new(&mut self.x).prefix("x:").ui(ui);
             let ry = DragValue::new(&mut self.y).prefix("y:").ui(ui);
@@ -128,7 +134,7 @@ impl FEdit for Vec2 {
 }
 
 impl FEdit for Color32 {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             let mut hsva = (*self).into();
             let response = ui.color_edit_button_hsva(&mut hsva);
@@ -142,7 +148,7 @@ impl FEdit for Color32 {
 }
 
 impl FEdit for HexColor {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             let input_id = ui.next_auto_id().with("input");
             let c = self.try_c32().ok();
@@ -169,7 +175,7 @@ impl FEdit for HexColor {
 
 // UnitActionRange
 impl FEdit for UnitActionRange {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             ui.label("Trigger:");
             let mut response = ui.add(DragValue::new(&mut self.trigger));
@@ -186,7 +192,7 @@ impl FEdit for UnitActionRange {
 
 // MagicType
 impl FEdit for MagicType {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
         response
     }
@@ -216,7 +222,7 @@ impl FDisplay for VarName {
 }
 
 impl FEdit for VarName {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
         response
     }
@@ -255,21 +261,21 @@ impl FDisplay for VarValue {
 }
 
 impl FEdit for VarValue {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (_, selector_response) = Selector::ui_enum(self, ui);
         let edit_response = ui
             .horizontal(|ui| match self {
-                VarValue::i32(v) => v.edit(ctx, ui),
-                VarValue::f32(v) => v.edit(ctx, ui),
+                VarValue::i32(v) => v.edit(ui),
+                VarValue::f32(v) => v.edit(ui),
                 VarValue::u64(v) => DragValue::new(v).ui(ui),
-                VarValue::bool(v) => v.edit(ctx, ui),
-                VarValue::String(v) => v.edit(ctx, ui),
-                VarValue::Vec2(v) => v.edit(ctx, ui),
-                VarValue::Color32(v) => v.edit(ctx, ui),
+                VarValue::bool(v) => v.edit(ui),
+                VarValue::String(v) => v.edit(ui),
+                VarValue::Vec2(v) => v.edit(ui),
+                VarValue::Color32(v) => v.edit(ui),
                 VarValue::list(v) => {
                     let mut response = ui.label("");
                     for v in v {
-                        response = response.union(v.edit(ctx, ui));
+                        response = response.union(v.edit(ui));
                     }
                     response
                 }
@@ -299,7 +305,7 @@ impl FDisplay for Expression {
 }
 
 impl FEdit for Expression {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         if let Some(mut old_value) = old_value {
             self.move_inner_fields_from(&mut old_value);
@@ -315,7 +321,7 @@ impl FTitle for Trigger {
 }
 
 impl FEdit for Trigger {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         Selector::ui_enum(self, ui).1
     }
 }
@@ -374,7 +380,7 @@ impl FDisplay for Action {
 }
 
 impl FEdit for Action {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
@@ -405,7 +411,7 @@ impl FDisplay for PainterAction {
 }
 
 impl FEdit for PainterAction {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
@@ -430,13 +436,13 @@ impl FDisplay for Material {
 }
 
 impl FEdit for Material {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let paint_response = self.paint_viewer(ctx, ui);
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        let paint_response = self.paint_viewer(&EMPTY_CONTEXT, ui);
         let edit_response = ui
             .vertical(|ui| {
                 let mut response = ui.label("").union(ui.label(""));
                 for action in &mut self.0 {
-                    response = response.union(action.edit(ctx, ui));
+                    response = response.union(action.edit(ui));
                 }
                 response
             })
@@ -472,18 +478,18 @@ impl FDisplay for Reaction {
 }
 
 impl FEdit for Reaction {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             let trigger_response = ui
                 .horizontal(|ui| {
                     ui.label("Trigger:");
-                    self.trigger.edit(ctx, ui)
+                    self.trigger.edit(ui)
                 })
                 .inner;
             ui.label("Actions:");
             let mut actions_response = ui.label("").union(ui.label(""));
             for action in &mut self.actions {
-                actions_response = actions_response.union(action.edit(ctx, ui));
+                actions_response = actions_response.union(action.edit(ui));
             }
             trigger_response.union(actions_response)
         })
@@ -623,16 +629,6 @@ impl FPlaceholder for NUnit {
     }
 }
 
-impl FEdit for NUnit {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Unit Name:]".cstr().label(ui);
-            ui.text_edit_singleline(&mut self.unit_name)
-        })
-        .inner
-    }
-}
-
 // NHouse
 impl FTitle for NHouse {
     fn title(&self, ctx: &ClientContext) -> Cstr {
@@ -702,16 +698,6 @@ impl FPlaceholder for NHouse {
     }
 }
 
-impl FEdit for NHouse {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw House Name:]".cstr().label(ui);
-            ui.text_edit_singleline(&mut self.house_name)
-        })
-        .inner
-    }
-}
-
 // NAbilityMagic
 impl FTitle for NAbilityMagic {
     fn title(&self, ctx: &ClientContext) -> Cstr {
@@ -774,16 +760,6 @@ impl FPlaceholder for NAbilityMagic {
 impl FInfo for NAbilityMagic {
     fn info(&self, _ctx: &ClientContext) -> Cstr {
         format!("Ability: {}", self.ability_name).cstr()
-    }
-}
-
-impl FEdit for NAbilityMagic {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Ability Name:]".cstr().label(ui);
-            ui.text_edit_singleline(&mut self.ability_name)
-        })
-        .inner
     }
 }
 
@@ -851,16 +827,6 @@ impl FPlaceholder for NStatusMagic {
 impl FInfo for NStatusMagic {
     fn info(&self, _ctx: &ClientContext) -> Cstr {
         format!("Status: {}", self.status_name).cstr()
-    }
-}
-
-impl FEdit for NStatusMagic {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Status Name:]".cstr().label(ui);
-            ui.text_edit_singleline(&mut self.status_name)
-        })
-        .inner
     }
 }
 
@@ -1060,16 +1026,6 @@ impl FDisplay for NPlayer {
     }
 }
 
-impl FEdit for NPlayer {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Player Name:]".cstr().label(ui);
-            ui.text_edit_singleline(&mut self.player_name)
-        })
-        .inner
-    }
-}
-
 impl FTitle for NPlayerData {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Player Data".cstr()
@@ -1164,16 +1120,6 @@ impl FTag for NPlayerIdentity {
 impl FDisplay for NHouseColor {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         self.color.display(ctx, ui)
-    }
-}
-
-impl FEdit for NHouseColor {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Color:]".cstr().label(ui);
-            self.color.edit(ctx, ui)
-        })
-        .inner
     }
 }
 
@@ -1558,21 +1504,6 @@ impl FDisplay for NMatch {
     }
 }
 
-impl FEdit for NMatch {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Gold:]".cstr().label(ui);
-            let mut response = ui.add(egui::DragValue::new(&mut self.g));
-            "[tw Floor:]".cstr().label(ui);
-            response = response.union(ui.add(egui::DragValue::new(&mut self.floor)));
-            "[tw Lives:]".cstr().label(ui);
-            response = response.union(ui.add(egui::DragValue::new(&mut self.lives)));
-            response.union(ui.checkbox(&mut self.active, "Active"))
-        })
-        .inner
-    }
-}
-
 impl FPlaceholder for NMatch {
     fn placeholder(id: u64) -> Self {
         NMatch::new(id, 0, 1, 3, false, vec![])
@@ -1779,33 +1710,6 @@ impl FDisplay for NUnitDescription {
     }
 }
 
-impl FEdit for NUnitDescription {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.group(|ui| {
-            let desc_response = ui
-                .horizontal(|ui| {
-                    "[tw Description:]".cstr().label(ui);
-                    ui.text_edit_multiline(&mut self.description)
-                })
-                .inner;
-
-            let type_response = ui
-                .horizontal(|ui| {
-                    "[tw Magic Type:]".cstr().label(ui);
-                    let magic_response = self.magic_type.edit(ctx, ui);
-                    ui.separator();
-                    "[tw Trigger:]".cstr().label(ui);
-                    let trigger_response = self.trigger.edit(ctx, ui);
-                    magic_response.union(trigger_response)
-                })
-                .inner;
-
-            desc_response.union(type_response)
-        })
-        .response
-    }
-}
-
 impl FTitle for NUnitStats {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("{}/{}", self.pwr, self.hp).cstr()
@@ -1857,20 +1761,6 @@ impl FDisplay for NUnitStats {
     }
 }
 
-impl FEdit for NUnitStats {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Power:]".cstr().label(ui);
-            let pwr_response = ui.add(egui::DragValue::new(&mut self.pwr));
-            ui.separator();
-            "[tw Health:]".cstr().label(ui);
-            let hp_response = ui.add(egui::DragValue::new(&mut self.hp));
-            pwr_response.union(hp_response)
-        })
-        .inner
-    }
-}
-
 impl FTitle for NUnitState {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("{}x", self.stacks).cstr()
@@ -1912,16 +1802,6 @@ impl FDisplay for NUnitState {
                 .label(ui);
         })
         .response
-    }
-}
-
-impl FEdit for NUnitState {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Stacks:]".cstr().label(ui);
-            ui.add(egui::DragValue::new(&mut self.stacks))
-        })
-        .inner
     }
 }
 
@@ -1977,23 +1857,6 @@ impl FDisplay for NUnitBehavior {
     }
 }
 
-impl FEdit for NUnitBehavior {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.vertical(|ui| {
-            let magic_response = ui
-                .horizontal(|ui| {
-                    "[tw Magic Type:]".cstr().label(ui);
-                    self.magic_type.edit(ctx, ui)
-                })
-                .inner;
-            "[tw Reaction:]".cstr().label(ui);
-            let reaction_response = self.reaction.edit(ctx, ui);
-            magic_response.union(reaction_response)
-        })
-        .inner
-    }
-}
-
 impl FTitle for NUnitRepresentation {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Unit Representation".cstr()
@@ -2032,40 +1895,14 @@ impl FDisplay for NUnitRepresentation {
     }
 }
 
-impl FEdit for NUnitRepresentation {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.group(|ui| {
-            "[tw Material:]".cstr().label(ui);
-            self.material.edit(ctx, ui)
-        })
-        .response
-    }
-}
-
 // ============================================================================
 // Additional FEdit implementations for missing node types
 // (Ordered according to raw_nodes.rs struct definitions)
 // ============================================================================
 
-impl FEdit for NArena {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.label("Arena")
-    }
-}
-
 impl FPlaceholder for NArena {
     fn placeholder(id: u64) -> Self {
         NArena::new(id)
-    }
-}
-
-impl FEdit for NFloorPool {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Floor:]".cstr().label(ui);
-            ui.add(DragValue::new(&mut self.floor))
-        })
-        .inner
     }
 }
 
@@ -2075,63 +1912,9 @@ impl FPlaceholder for NFloorPool {
     }
 }
 
-impl FEdit for NFloorBoss {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Floor:]".cstr().label(ui);
-            ui.add(DragValue::new(&mut self.floor))
-        })
-        .inner
-    }
-}
-
 impl FPlaceholder for NFloorBoss {
     fn placeholder(id: u64) -> Self {
         NFloorBoss::new(id, 1).add_components(NTeam::placeholder(next_id()))
-    }
-}
-
-impl FEdit for NPlayerData {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Pass Hash:]".cstr().label(ui);
-                if let Some(ref mut hash) = self.pass_hash {
-                    ui.text_edit_singleline(hash)
-                } else {
-                    if ui.button("Set Password").clicked() {
-                        self.pass_hash = Some("".to_string());
-                    }
-                    ui.label("No password set")
-                }
-            })
-            .inner,
-        );
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Online:]".cstr().label(ui);
-                ui.checkbox(&mut self.online, "")
-            })
-            .inner,
-        );
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Last Login:]".cstr().label(ui);
-                let mut last_login = self.last_login as i64;
-                let drag_response = ui.add(DragValue::new(&mut last_login));
-                if drag_response.changed() {
-                    self.last_login = last_login as u64;
-                }
-                drag_response
-            })
-            .inner,
-        );
-
-        response
     }
 }
 
@@ -2144,23 +1927,6 @@ impl FPlaceholder for NPlayerData {
 impl FPlaceholder for NAbilityEffect {
     fn placeholder(id: u64) -> Self {
         NAbilityEffect::new(id, vec![Action::noop])
-    }
-}
-
-impl FEdit for NPlayerIdentity {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Identity Data:]".cstr().label(ui);
-            if let Some(ref mut data) = self.data {
-                ui.text_edit_multiline(data)
-            } else {
-                if ui.button("Set Identity").clicked() {
-                    self.data = Some("".to_string());
-                }
-                ui.label("No identity set")
-            }
-        })
-        .inner
     }
 }
 
@@ -2182,112 +1948,68 @@ impl FPlaceholder for NStatusBehavior {
     }
 }
 
-impl FEdit for NAbilityDescription {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Description:]".cstr().label(ui);
-            ui.text_edit_multiline(&mut self.description)
+impl FPlaceholder for NBattle {
+    fn placeholder(id: u64) -> Self {
+        NBattle::new(id, 0, 0, 0, 0, None)
+    }
+}
+
+impl FPlaceholder for NFusionSlot {
+    fn placeholder(id: u64) -> Self {
+        NFusionSlot::new(id, 0, default()).add_components(NUnit::placeholder(next_id()))
+    }
+}
+
+impl FEdit for ShopOffer {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        ui.vertical(|ui| {
+            ui.horizontal(|ui| {
+                ui.label("Buy Limit:");
+                if let Some(ref mut limit) = self.buy_limit {
+                    limit.edit(ui)
+                } else {
+                    if ui.button("Set Limit").clicked() {
+                        self.buy_limit = Some(1);
+                    }
+                    ui.label("No limit")
+                }
+            })
+            .inner
         })
         .inner
     }
 }
 
-impl FEdit for NAbilityEffect {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Actions:]".cstr().label(ui);
-            self.actions.edit(ctx, ui)
-        })
-        .inner
-    }
-}
-
-impl FEdit for NStatusDescription {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            "[tw Description:]".cstr().label(ui);
-            ui.text_edit_multiline(&mut self.description)
-        })
-        .inner
-    }
-}
-
-impl FEdit for NStatusBehavior {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.group(|ui| {
-            ui.label("Reactions:");
-            ui.label(format!("{} reactions configured", self.reactions.len()));
-            ui.button("Edit Reactions")
-        })
-        .response
-    }
-}
-
-impl FEdit for NStatusRepresentation {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.material.edit(ctx, ui)
-    }
-}
-
-impl FEdit for NTeam {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.label("Team")
-    }
-}
-
-impl FEdit for NBattle {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.group(|ui| {
+impl FEdit for ShopSlot {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        ui.vertical(|ui| {
             let mut response = ui
                 .horizontal(|ui| {
-                    ui.label("Team Left:");
-                    let mut team_left = self.team_left as i64;
-                    let drag_response = ui.add(DragValue::new(&mut team_left));
-                    if drag_response.changed() {
-                        self.team_left = team_left as u64;
-                    }
-                    drag_response
+                    ui.label("Card Kind:");
+                    self.card_kind.edit(ui)
                 })
                 .inner;
 
             response = response.union(
                 ui.horizontal(|ui| {
-                    ui.label("Team Right:");
-                    let mut team_right = self.team_right as i64;
-                    let drag_response = ui.add(DragValue::new(&mut team_right));
-                    if drag_response.changed() {
-                        self.team_right = team_right as u64;
-                    }
-                    drag_response
+                    ui.label("Node ID:");
+                    self.node_id.edit(ui)
                 })
                 .inner,
             );
 
             response = response.union(
                 ui.horizontal(|ui| {
-                    ui.label("Timestamp:");
-                    let mut ts = self.ts as i64;
-                    let drag_response = ui.add(DragValue::new(&mut ts));
-                    if drag_response.changed() {
-                        self.ts = ts as u64;
-                    }
-                    drag_response
+                    ui.label("Price:");
+                    self.price.edit(ui)
                 })
                 .inner,
             );
 
             response = response.union(
                 ui.horizontal(|ui| {
-                    ui.label("Result:");
-                    if let Some(ref mut result) = self.result {
-                        ui.checkbox(result, "Won")
-                    } else {
-                        let button_response = ui.button("Set Result");
-                        if button_response.clicked() {
-                            self.result = Some(true);
-                        }
-                        button_response
-                    }
+                    ui.label("Sold:");
+                    self.sold.edit(ui)
                 })
                 .inner,
             );
@@ -2298,90 +2020,11 @@ impl FEdit for NBattle {
     }
 }
 
-impl FPlaceholder for NBattle {
-    fn placeholder(id: u64) -> Self {
-        NBattle::new(id, 0, 0, 0, 0, None)
-    }
-}
-
-impl FEdit for NFusion {
-    fn edit(&mut self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let mut response = ui
-            .horizontal(|ui| {
-                "[tw Trigger Unit:]".cstr().label(ui);
-                let mut trigger_unit = self.trigger_unit as i64;
-                let drag_response = ui.add(DragValue::new(&mut trigger_unit));
-                if drag_response.changed() {
-                    self.trigger_unit = trigger_unit as u64;
-                }
-                drag_response
-            })
-            .inner;
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Index:]".cstr().label(ui);
-                ui.add(DragValue::new(&mut self.index))
-            })
-            .inner,
-        );
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Power:]".cstr().label(ui);
-                ui.add(DragValue::new(&mut self.pwr))
-            })
-            .inner,
-        );
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw HP:]".cstr().label(ui);
-                ui.add(DragValue::new(&mut self.hp))
-            })
-            .inner,
-        );
-
-        response = response.union(
-            ui.horizontal(|ui| {
-                "[tw Damage:]".cstr().label(ui);
-                ui.add(DragValue::new(&mut self.dmg))
-            })
-            .inner,
-        );
-
-        response.union(
-            ui.horizontal(|ui| {
-                "[tw Actions Limit:]".cstr().label(ui);
-                ui.add(DragValue::new(&mut self.actions_limit))
-            })
-            .inner,
-        )
-    }
-}
-
-impl FPlaceholder for NFusionSlot {
-    fn placeholder(id: u64) -> Self {
-        NFusionSlot::new(id, 0, default()).add_components(NUnit::placeholder(next_id()))
-    }
-}
-
-impl FEdit for NFusionSlot {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let response = ui
-            .horizontal(|ui| {
-                ui.label("Index:");
-                ui.add(DragValue::new(&mut self.index))
-            })
-            .inner;
-
-        response.union(
-            ui.horizontal(|ui| {
-                ui.label("Actions:");
-                self.actions.edit(ctx, ui)
-            })
-            .inner,
-        )
+impl FEdit for CardKind {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        // let (_, response) = Selector::ui_iter(self, ui);
+        // response
+        todo!()
     }
 }
 
@@ -2399,10 +2042,10 @@ impl<T: FDisplay> FDisplay for Vec<T> {
 }
 
 impl<T: FEdit> FEdit for Vec<T> {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let mut response = ui.label("");
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        let mut response = ui.label("").union(ui.label(""));
         for item in self {
-            response = response.union(item.edit(ctx, ui));
+            response = response.union(item.edit(ui));
         }
         response
     }
@@ -2460,7 +2103,7 @@ impl<T: FDisplay> FDisplay for Option<T> {
 }
 
 impl<T: FEdit + Default> FEdit for Option<T> {
-    fn edit(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         let mut is_some = self.is_some();
         let checkbox_response = Checkbox::new(&mut is_some, "").ui(ui);
         if checkbox_response.changed() {
@@ -2471,7 +2114,7 @@ impl<T: FEdit + Default> FEdit for Option<T> {
             }
         }
         let edit_response = if let Some(v) = self {
-            v.edit(ctx, ui)
+            v.edit(ui)
         } else {
             ui.label("(none)")
         };
@@ -2480,7 +2123,7 @@ impl<T: FEdit + Default> FEdit for Option<T> {
 }
 
 impl FEdit for Colorix {
-    fn edit(&mut self, _: &ClientContext, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.group(|ui| {
             ui.label("Theme Configuration");
 

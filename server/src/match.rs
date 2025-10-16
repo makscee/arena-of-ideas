@@ -64,7 +64,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
     }
     m.buy(ctx, price)?;
-    m.take().save(ctx);
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -124,7 +124,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
     unit.delete_recursive(ctx);
-    m.take().save(ctx);
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -193,7 +193,7 @@ fn match_submit_battle_result(
     }
     m.g += ctx.global_settings().match_g.initial;
     m.fill_shop_case(ctx, false)?;
-    player.take().save(ctx);
+    player.take().save(ctx)?;
     Ok(())
 }
 
@@ -243,7 +243,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .insert(ctx);
         ctx.add_link(m_id, battle.id)?;
     }
-    m.take().save(ctx);
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -280,7 +280,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     m.team.state_mut().set(team);
     m.fill_shop_case(ctx, false)?;
     player.active_match.state_mut().set(m);
-    player.take().save(ctx);
+    player.take().save(ctx)?;
     Ok(())
 }
 
