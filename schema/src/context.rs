@@ -29,6 +29,10 @@ pub trait Node: Send + Sync + Default + StringData {
     fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
     fn get_vars(&self) -> HashMap<VarName, VarValue>;
 
+    fn save<S: ContextSource>(self, ctx: &mut Context<S>) -> NodeResult<()>;
+    fn set_dirty(&mut self, value: bool);
+    fn is_dirty(&self) -> bool;
+
     fn pack(&self) -> PackedNodes {
         let mut packed = PackedNodes::default();
         let mut visited = std::collections::HashSet::new();
@@ -105,29 +109,35 @@ pub trait NodeLoader {
 }
 
 pub trait ContextSource: NodeLoader {
-    /// Get the node kind for a given ID
-    fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind>;
+    /// Get the NodeKind for a given node ID
+    fn get_node_kind(&self, node_id: u64) -> NodeResult<NodeKind>;
 
-    /// Get all children of a node
-    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>>;
+    /// Get children of a node
+    fn get_children(&self, node_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get children of a specific kind
-    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+    /// Get children of a specific node kind
+    fn get_children_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Get all parents of a node
-    fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>>;
+    /// Get parents of a node
+    fn get_parents(&self, node_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get parents of a specific kind
-    fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+    /// Get parents of a specific node kind
+    fn get_parents_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Add a link between nodes
+    /// Add a link from parent to child
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Remove a link between nodes
+    /// Remove a link from parent to child
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Check if two nodes are linked
+    /// Check if there's a link from one node to another
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
+
+    /// Insert or update a node in storage
+    fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()>;
+
+    /// Delete a node from storage (low-level operation, does not handle links)
+    fn delete_node(&mut self, id: u64) -> NodeResult<()>;
 
     /// Get a variable value from a node, recursively checking parents if not found
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
@@ -466,9 +476,42 @@ where
         self.layers.clear();
     }
 
-    /// Get the current layer stack depth
     pub fn layer_depth(&self) -> usize {
         self.layers.len()
+    }
+
+    /// Recursively delete a node and all its owned/component children
+    pub fn delete_recursive(&mut self, id: u64) -> NodeResult<()> {
+        // Get the node kind first
+        let kind = self.get_kind(id)?;
+
+        // Delete all owned and component child nodes recursively
+        let owned_children = kind.owned_children();
+        let component_children = kind.component_children();
+
+        let children = self.get_children(id)?;
+        for child_id in children {
+            if let Ok(child_kind) = self.get_kind(child_id) {
+                if owned_children.contains(&child_kind) || component_children.contains(&child_kind)
+                {
+                    self.delete_recursive(child_id)?;
+                } else {
+                    // Just remove the link for Ref children
+                    self.remove_link(id, child_id)?;
+                }
+            }
+        }
+
+        // Remove all links to this node from parents
+        let parents = self.get_parents(id)?;
+        for parent_id in parents {
+            self.remove_link(parent_id, id)?;
+        }
+
+        // Finally delete the node itself
+        self.source.delete_node(id)?;
+
+        Ok(())
     }
 
     /// Find first parent of specified kind

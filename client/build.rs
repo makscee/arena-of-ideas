@@ -51,6 +51,11 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             }
         });
 
+        // Add is_dirty field for change tracking
+        let is_dirty_field = quote! {
+            pub is_dirty: bool
+        };
+
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
@@ -88,6 +93,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 pub id: u64,
                 pub owner: u64,
                 #(#fields,)*
+                #is_dirty_field
             }
 
             #serialize_impl

@@ -7,7 +7,7 @@ use schema::NodeKind;
 
 #[reducer]
 fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.rctx().sender);
@@ -16,13 +16,13 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     player.player_data.state_mut().set(player_data);
     let identity = NPlayerIdentity::new(player.id, Some(ctx.rctx().sender.to_string())).insert(ctx);
     player.identity.state_mut().set(identity);
-    player.save(ctx.source());
+    player.take().save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, name).get_data())
         .to_custom_e_s("Player not found")?;
     debug!("{player:?}");
@@ -36,30 +36,30 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         let identity =
             NPlayerIdentity::new(player.id, Some(ctx.rctx().sender.to_string())).insert(ctx);
         player.identity.state_mut().set(identity);
-        player.login(ctx)?.save(ctx.source());
+        player.login(ctx)?.save(ctx);
         Ok(())
     }
 }
 
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
-    let ctx = &ctx.as_context();
-    ctx.player()?.login(ctx)?.save(ctx.source());
+    let ctx = &mut ctx.as_context();
+    ctx.player()?.login(ctx)?.take().save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?.logout(ctx)?;
     player.identity_load(ctx)?.delete(ctx);
-    player.save(ctx.source());
+    player.take().save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     if !player.check_pass(old_pass) {
         return Err("Old password did not match".to_owned());
@@ -67,15 +67,15 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if let Ok(player_data) = player.player_data.get_mut() {
         player_data.pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
     }
-    player.save(ctx.source());
+    player.take().save(ctx);
     Ok(())
 }
 
 #[reducer(client_disconnected)]
 fn identity_disconnected(ctx: &ReducerContext) {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     if let Ok(player) = ctx.player() {
-        player.logout(ctx).unwrap().save(ctx.source());
+        player.logout(ctx).unwrap().save(ctx);
     }
 }
 

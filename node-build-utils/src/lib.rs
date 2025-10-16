@@ -440,6 +440,224 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
     }
 }
 
+// Generate the save implementation for a node
+pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
+    let save_fields = node
+        .fields
+        .iter()
+        .filter_map(|field| match field.link_type {
+            LinkType::Component | LinkType::Owned => {
+                let field_name = &field.name;
+                Some(quote! {
+                    let state = self.#field_name.state_mut().take();
+                    if let LinkStateSingle::Loaded(child) = state {
+                        child.save(ctx)?;
+                    }
+                })
+            }
+            LinkType::OwnedMultiple => {
+                let field_name = &field.name;
+                Some(quote! {
+                    let state = self.#field_name.state_mut().take();
+                    if let LinkStateMultiple::Loaded(children) = state {
+                        for child in children {
+                            child.save(ctx)?;
+                        }
+                    }
+                })
+            }
+            _ => None,
+        });
+
+    let check_link_changes = node.fields.iter().filter_map(|field| {
+        let field_name = &field.name;
+        let target_type = if !field.target_type.is_empty() {
+            format_ident!("{}", field.target_type)
+        } else {
+            format_ident!("String")
+        };
+
+        match field.link_type {
+            LinkType::Component | LinkType::Owned => {
+                Some(quote! {
+                    match self.#field_name.state() {
+                        LinkStateSingle::Unknown => {},
+                        LinkStateSingle::None => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            for child_id in existing_children {
+                                ctx.delete_recursive(child_id)?;
+                            }
+                        }
+                        LinkStateSingle::Loaded(child) => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_children {
+                                if old_id != child.id() {
+                                    ctx.delete_recursive(old_id)?;
+                                }
+                            }
+                            // Add new link
+                            ctx.add_link(self.id, child.id())?;
+                        }
+                        LinkStateSingle::Id(id) => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_children {
+                                if old_id != *id {
+                                    ctx.remove_link(self.id, old_id)?;
+                                }
+                            }
+                            // Add new link
+                            ctx.add_link(self.id, *id)?;
+                        }
+                    }
+                })
+            }
+            LinkType::Ref => {
+                Some(quote! {
+                    match self.#field_name.state() {
+                        LinkStateSingle::Unknown => {},
+                        LinkStateSingle::None => {
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            for ref_id in existing_refs {
+                                ctx.remove_link(self.id, ref_id)?;
+                            }
+                        }
+                        LinkStateSingle::Loaded(child) => {
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_refs {
+                                if old_id != child.id() {
+                                    ctx.remove_link(self.id, old_id)?;
+                                }
+                            }
+                            // Add new link
+                            ctx.add_link(self.id, child.id())?;
+                        }
+                        LinkStateSingle::Id(id) => {
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_refs {
+                                if old_id != *id {
+                                    ctx.remove_link(self.id, old_id)?;
+                                }
+                            }
+                            // Add new link
+                            ctx.add_link(self.id, *id)?;
+                        }
+                    }
+                })
+            }
+            LinkType::OwnedMultiple => {
+                Some(quote! {
+                    match self.#field_name.state() {
+                        LinkStateMultiple::Unknown => {},
+                        LinkStateMultiple::None => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            for child_id in existing_children {
+                                ctx.delete_recursive(child_id)?;
+                            }
+                        }
+                        LinkStateMultiple::Loaded(children) => {
+                            let new_ids: Vec<u64> = children.iter().map(|c| c.id()).collect();
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in &existing_children {
+                                if !new_ids.contains(old_id) {
+                                    ctx.delete_recursive(*old_id)?;
+                                }
+                            }
+                            // Add new links
+                            for child in children {
+                                if !existing_children.contains(&child.id()) {
+                                    ctx.add_link(self.id, child.id())?;
+                                }
+                            }
+                        }
+                        LinkStateMultiple::Ids(ids) => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in &existing_children {
+                                if !ids.contains(old_id) {
+                                    ctx.delete_recursive(*old_id)?;
+                                }
+                            }
+                            // Add new links
+                            for id in ids {
+                                if !existing_children.contains(id) {
+                                    ctx.add_link(self.id, *id)?;
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+            LinkType::RefMultiple => {
+                Some(quote! {
+                    match self.#field_name.state() {
+                        LinkStateMultiple::Unknown => {},
+                        LinkStateMultiple::None => {
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            for ref_id in existing_refs {
+                                ctx.remove_link(self.id, ref_id)?;
+                            }
+                        }
+                        LinkStateMultiple::Loaded(children) => {
+                            let new_ids: Vec<u64> = children.iter().map(|c| c.id()).collect();
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_refs {
+                                if !new_ids.contains(&old_id) {
+                                    ctx.remove_link(self.id, old_id)?;
+                                }
+                            }
+                            // Add new links
+                            for child in children {
+                                if !existing_refs.contains(&child.id()) {
+                                    ctx.add_link(self.id, child.id())?;
+                                }
+                            }
+                        }
+                        LinkStateMultiple::Ids(ids) => {
+                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            // Remove old links
+                            for old_id in existing_refs {
+                                if !ids.contains(&old_id) {
+                                    ctx.remove_link(self.id, old_id)?;
+                                }
+                            }
+                            // Add new links
+                            for id in ids {
+                                if !existing_refs.contains(id) {
+                                    ctx.add_link(self.id, *id)?;
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+            _ => None,
+        }
+    });
+
+    quote! {
+        fn save<S: ContextSource>(mut self, ctx: &mut Context<S>) -> NodeResult<()> {
+            // First save all loaded child nodes recursively
+            #(#save_fields)*
+
+            // Then handle link changes only if this node is dirty
+            if self.is_dirty() {
+                #(#check_link_changes)*
+
+                // Finally, save this node's data
+                ctx.source_mut().insert_node(self.id, self.owner, self.kind(), self.get_data())?;
+            }
+
+            Ok(())
+        }
+    }
+}
+
 pub fn generate_default_accessors(node: &NodeInfo) -> Vec<TokenStream> {
     node.fields
         .iter()
@@ -484,6 +702,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
                 owner: 0,
                 #(#field_assignments)*
                 #(#component_defaults)*
+                is_dirty: false,
             }
         }
     }
@@ -584,6 +803,78 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
     }
 }
 
+// Generate simple link accessor methods for node fields
+pub fn generate_link_accessor_methods(node: &NodeInfo) -> TokenStream {
+    let methods = node.fields.iter().filter_map(|field| {
+        if matches!(field.link_type, LinkType::None) {
+            return None;
+        }
+
+        let field_name = &field.name;
+        let target_type = format_ident!("{}", field.target_type);
+
+        // Generate method names
+        let get_method = format_ident!("{}", field_name);
+        let get_mut_method = format_ident!("{}_mut", field_name);
+        let set_method = format_ident!("{}_set", field_name);
+        let clear_method = format_ident!("{}_clear", field_name);
+
+        match field.link_type {
+            LinkType::Component | LinkType::Owned | LinkType::Ref => {
+                Some(quote! {
+                    pub fn #get_method(&self) -> NodeResult<&#target_type> {
+                        self.#field_name.get()
+                            .ok_or_else(|| NodeError::custom(format!("{} not loaded", stringify!(#field_name))))
+                    }
+
+                    pub fn #get_mut_method(&mut self) -> NodeResult<&mut #target_type> {
+                        self.set_dirty(true);
+                        self.#field_name.get_mut()
+                    }
+
+                    pub fn #set_method(&mut self, value: #target_type) {
+                        self.set_dirty(true);
+                        self.#field_name.state_mut().set(value);
+                    }
+
+                    pub fn #clear_method(&mut self) {
+                        self.set_dirty(true);
+                        *self.#field_name.state_mut() = LinkStateSingle::None;
+                    }
+                })
+            }
+            LinkType::OwnedMultiple | LinkType::RefMultiple => {
+                Some(quote! {
+                    pub fn #get_method(&self) -> NodeResult<&Vec<#target_type>> {
+                        self.#field_name.get()
+                            .ok_or_else(|| NodeError::custom(format!("{} not loaded", stringify!(#field_name))))
+                    }
+
+                    pub fn #get_mut_method(&mut self) -> NodeResult<&mut Vec<#target_type>> {
+                        self.set_dirty(true);
+                        self.#field_name.get_mut()
+                    }
+
+                    pub fn #set_method(&mut self, value: Vec<#target_type>) {
+                        self.set_dirty(true);
+                        self.#field_name.state_mut().set(value);
+                    }
+
+                    pub fn #clear_method(&mut self) {
+                        self.set_dirty(true);
+                        *self.#field_name.state_mut() = LinkStateMultiple::None;
+                    }
+                })
+            }
+            _ => None
+        }
+    });
+
+    quote! {
+        #(#methods)*
+    }
+}
+
 pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
     let node_trait_impls = nodes.iter().map(|node| {
         let struct_name = &node.name;
@@ -591,6 +882,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let pack_links_impl = generate_pack_links_impl(node);
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
+        let save_impl = generate_save_impl(node);
         let allow_attrs = generated_code_allow_attrs();
 
         quote! {
@@ -624,6 +916,16 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                 fn kind_s() -> NodeKind {
                     NodeKind::#node_kind_variant
                 }
+
+                fn set_dirty(&mut self, value: bool) {
+                    self.is_dirty = value;
+                }
+
+                fn is_dirty(&self) -> bool {
+                    self.is_dirty
+                }
+
+                #save_impl
 
                 #var_methods
 
@@ -1207,6 +1509,7 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
             quote! {
                 VarName::#field_name => {
                     self.#field_name = value.try_into().map_err(|_| NodeError::custom("Value conversion failed"))?;
+                    self.set_dirty(true);
                     Ok(())
                 }
             }
@@ -1449,6 +1752,7 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     Ok(Self {
                         id: 0,
                         owner: 0,
+                        is_dirty: false,
                         #field_name: value,
                         #(#other_fields),*
                     })
@@ -1484,6 +1788,7 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     Ok(Self {
                         id: 0,
                         owner: 0,
+                        is_dirty: false,
                         #(#deserialize_fields),*,
                         #(#other_fields),*
                     })

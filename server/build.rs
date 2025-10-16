@@ -54,6 +54,11 @@ fn generate_server_nodes(
             }
         });
 
+        // Add is_dirty field for change tracking
+        let is_dirty_field = quote! {
+            pub is_dirty: bool
+        };
+
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
@@ -90,6 +95,7 @@ fn generate_server_nodes(
                 pub id: u64,
                 pub owner: u64,
                 #(#fields,)*
+                #is_dirty_field
             }
 
             #serialize_impl
@@ -247,7 +253,7 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             NodeKind::#node_name => {
                 let mut node: #node_name = node_id.load_node(self.rctx())?;
                 node.set_var(var, value)?;
-                node.save(self);
+                self.insert_node(node_id, node.owner, node_kind, node.get_data());
                 Ok(())
             }
         }

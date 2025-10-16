@@ -127,8 +127,8 @@ impl NodeKindOnSpawn for NodeKind {
 }
 
 impl NHouse {
-    pub fn color_for_text(&self, context: &ClientContext) -> Color32 {
-        self.color_ref(context)
+    pub fn color_for_text(&self, ctx: &ClientContext) -> Color32 {
+        self.color_ref(ctx)
             .map(|c| c.color.c32())
             .unwrap_or_else(|_| colorix().low_contrast_text())
     }

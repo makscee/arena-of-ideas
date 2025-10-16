@@ -60,6 +60,30 @@ impl<'a> ContextSource for ServerSource<'a> {
         Ok(from_id.has_child(&self.ctx, to_id))
     }
 
+    fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
+        match self
+            .rctx()
+            .db
+            .nodes_world()
+            .try_insert(TNode::new(id, owner, kind, data.clone()))
+        {
+            Ok(_) => {}
+            Err(_) => {
+                self.rctx()
+                    .db
+                    .nodes_world()
+                    .id()
+                    .update(TNode::new(id, owner, kind, data));
+            }
+        }
+        Ok(())
+    }
+
+    fn delete_node(&mut self, id: u64) -> NodeResult<()> {
+        self.rctx().db.nodes_world().id().delete(id);
+        Ok(())
+    }
+
     fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         let kind = self.get_node_kind(node_id)?;
         self.load_and_get_var(kind, node_id, var)

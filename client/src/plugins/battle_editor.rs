@@ -508,7 +508,6 @@ impl BattleEditorPlugin {
         if let Ok(old_slot_id) = ctx.first_parent(unit_id, NodeKind::NFusionSlot) {
             ctx.remove_link(old_slot_id, unit_id)?;
         }
-
         ctx.add_link(target_slot_id, unit_id)?;
         Ok(())
     }

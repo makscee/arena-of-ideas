@@ -53,8 +53,8 @@ impl TeamEditor {
         self
     }
 
-    pub fn ui(self, ui: &mut Ui, context: &mut ClientContext) -> NodeResult<Vec<TeamAction>> {
-        let team = context.load::<NTeam>(self.team_id)?;
+    pub fn ui(self, ui: &mut Ui, ctx: &mut ClientContext) -> NodeResult<Vec<TeamAction>> {
+        let team = ctx.load::<NTeam>(self.team_id)?;
         let mut actions = Vec::new();
 
         let state_id = egui::Id::new(self.team_id).with("team_editor_selected_fusion");
@@ -62,14 +62,14 @@ impl TeamEditor {
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
         let fusions = team
-            .fusions_ref(context)?
+            .fusions_ref(ctx)?
             .into_iter()
             .sorted_by_key(|f| f.index)
             .collect_vec();
 
         let mut fusion_slots: HashMap<u64, Vec<&NFusionSlot>> = HashMap::new();
         for fusion in &fusions {
-            let slots = context
+            let slots = ctx
                 .load_collect_children::<NFusionSlot>(fusion.id)?
                 .into_iter()
                 .sorted_by_key(|s| s.index)
@@ -77,7 +77,7 @@ impl TeamEditor {
             fusion_slots.insert(fusion.id, slots);
         }
 
-        let unlinked_units = self.get_unlinked_units(context, &fusion_slots)?;
+        let unlinked_units = self.get_unlinked_units(ctx, &fusion_slots)?;
         let total_columns = fusions.len() + 1; // +1 for bench column
 
         let mut selected_column_rect = None;
@@ -95,7 +95,7 @@ impl TeamEditor {
                         &mut columns[column_idx],
                         fusion,
                         slots,
-                        context,
+                        ctx,
                         &mut actions,
                     );
                     selected_column_rect = Some(columns[column_idx].min_rect());
@@ -104,7 +104,7 @@ impl TeamEditor {
                         &mut columns[column_idx],
                         fusion,
                         slots,
-                        context,
+                        ctx,
                         &mut actions,
                     );
                     if clicked {
@@ -114,12 +114,7 @@ impl TeamEditor {
                 column_idx += 1;
             }
             // Bench column (last column)
-            self.render_bench_column(
-                &mut columns[column_idx],
-                &unlinked_units,
-                context,
-                &mut actions,
-            );
+            self.render_bench_column(&mut columns[column_idx], &unlinked_units, ctx, &mut actions);
         });
 
         if let Some(fusion_id) = clicked_fusion_id {
@@ -152,12 +147,11 @@ impl TeamEditor {
             match action {
                 TeamAction::MoveUnit { unit_id, target } => {
                     let move_additional =
-                        self.get_move_unit_additional_actions(*unit_id, *target, context)?;
+                        self.get_move_unit_additional_actions(*unit_id, *target, ctx)?;
                     additional_actions.extend(move_additional);
                 }
                 TeamAction::BenchUnit { unit_id } => {
-                    let bench_additional =
-                        self.get_bench_unit_additional_actions(*unit_id, context)?;
+                    let bench_additional = self.get_bench_unit_additional_actions(*unit_id, ctx)?;
                     additional_actions.extend(bench_additional);
                 }
                 _ => {}
@@ -170,10 +164,10 @@ impl TeamEditor {
 
     fn get_unlinked_units<'a>(
         &self,
-        context: &'a ClientContext,
+        ctx: &'a ClientContext,
         fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
     ) -> NodeResult<Vec<&'a NUnit>> {
-        let all_units = context.load_collect_children_recursive::<NUnit>(self.team_id)?;
+        let all_units = ctx.load_collect_children_recursive::<NUnit>(self.team_id)?;
 
         // Check if any slot references this unit
         let linked_unit_ids: HashSet<u64> = fusion_slots
@@ -190,16 +184,16 @@ impl TeamEditor {
 
     fn get_available_triggers(
         &self,
-        context: &ClientContext,
+        ctx: &ClientContext,
         slots: &[&NFusionSlot],
     ) -> NodeResult<(Vec<Trigger>, HashMap<Trigger, u64>)> {
         let mut trigger_map = HashMap::new();
 
         for slot in slots {
-            if let Some(unit) = Self::get_slot_unit(slot.id, context) {
+            if let Some(unit) = Self::get_slot_unit(slot.id, ctx) {
                 // Access behavior through description component
-                if let Ok(desc) = unit.description_ref(context) {
-                    if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                if let Ok(desc) = unit.description_ref(ctx) {
+                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
                         let trigger = unit_behavior.reaction.trigger.clone();
                         if !trigger_map.contains_key(&trigger) {
                             trigger_map.insert(trigger, unit.id);
@@ -219,15 +213,15 @@ impl TeamEditor {
         &self,
         unit_id: u64,
         target_id: u64,
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
         // Find the slot that currently references this unit
         let old_fusion_id =
-            if let Ok(slot_id) = context.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
+            if let Ok(slot_id) = ctx.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
                 // Find the fusion that owns this slot
-                if let Ok(fusion_id) = context.first_parent_recursive(slot_id, NodeKind::NFusion) {
+                if let Ok(fusion_id) = ctx.first_parent_recursive(slot_id, NodeKind::NFusion) {
                     Some((fusion_id, slot_id))
                 } else {
                     None
@@ -236,9 +230,9 @@ impl TeamEditor {
                 None
             };
 
-        let new_fusion_id = if let Ok(new_slot) = context.load::<NFusionSlot>(target_id) {
+        let new_fusion_id = if let Ok(new_slot) = ctx.load::<NFusionSlot>(target_id) {
             // Find the parent fusion of this slot
-            if let Ok(fusion_id) = context.first_parent(new_slot.id, NodeKind::NFusion) {
+            if let Ok(fusion_id) = ctx.first_parent(new_slot.id, NodeKind::NFusion) {
                 Some(fusion_id)
             } else {
                 None
@@ -263,19 +257,19 @@ impl TeamEditor {
 
             // Update trigger only if moving to different fusion (not same fusion)
             if !is_same_fusion {
-                let old_fusion = context.load::<NFusion>(old_fusion_id)?;
+                let old_fusion = ctx.load::<NFusion>(old_fusion_id)?;
                 if old_fusion.trigger_unit == unit_id {
                     let remaining_slots =
-                        context.load_collect_children::<NFusionSlot>(old_fusion_id)?;
+                        ctx.load_collect_children::<NFusionSlot>(old_fusion_id)?;
                     let mut new_trigger_ref = 0u64;
 
                     for slot in remaining_slots {
                         if slot.id != old_slot_id {
                             if let Some(unit_id) = slot.unit.id() {
-                                if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
                                     // Check if unit has behavior component
-                                    if let Ok(desc) = unit.description_ref(context) {
-                                        if desc.behavior_ref(context).is_ok() {
+                                    if let Ok(desc) = unit.description_ref(ctx) {
+                                        if desc.behavior_ref(ctx).is_ok() {
                                             new_trigger_ref = unit_id;
                                             break;
                                         }
@@ -295,13 +289,13 @@ impl TeamEditor {
 
         // Handle moving into new slot
         if let Some(new_fusion_id) = new_fusion_id {
-            let new_fusion = context.load::<NFusion>(new_fusion_id)?;
+            let new_fusion = ctx.load::<NFusion>(new_fusion_id)?;
 
             // If fusion has no trigger set (unit id is 0), set it to this unit
             if new_fusion.trigger_unit == 0 {
-                if let Ok(unit) = context.load::<NUnit>(unit_id) {
-                    if let Ok(desc) = unit.description_ref(context) {
-                        if desc.behavior_ref(context).is_ok() {
+                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                    if let Ok(desc) = unit.description_ref(ctx) {
+                        if desc.behavior_ref(ctx).is_ok() {
                             additional_actions.push(TeamAction::ChangeTrigger {
                                 fusion_id: new_fusion_id,
                                 trigger: unit_id,
@@ -312,9 +306,9 @@ impl TeamEditor {
             }
 
             // Set action range to select all actions for the moved unit
-            if let Ok(unit) = context.load::<NUnit>(unit_id) {
-                if let Ok(desc) = unit.description_ref(context) {
-                    if let Ok(unit_behavior) = desc.behavior_ref(context) {
+            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                if let Ok(desc) = unit.description_ref(ctx) {
+                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
                         let reaction = &unit_behavior.reaction;
                         additional_actions.push(TeamAction::ChangeActionRange {
                             slot_id: target_id,
@@ -332,15 +326,15 @@ impl TeamEditor {
     fn get_bench_unit_additional_actions(
         &self,
         unit_id: u64,
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) -> NodeResult<Vec<TeamAction>> {
         let mut additional_actions = Vec::new();
 
         // Find the slot that currently references this unit
         let slot_and_fusion =
-            if let Ok(slot_id) = context.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
+            if let Ok(slot_id) = ctx.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
                 // Find the fusion that owns this slot
-                if let Ok(fusion_id) = context.first_parent_recursive(slot_id, NodeKind::NFusion) {
+                if let Ok(fusion_id) = ctx.first_parent_recursive(slot_id, NodeKind::NFusion) {
                     Some((slot_id, fusion_id))
                 } else {
                     None
@@ -351,7 +345,7 @@ impl TeamEditor {
 
         // Handle moving to bench
         if let Some((old_slot_id, old_fusion_id)) = slot_and_fusion {
-            let old_fusion = context.load::<NFusion>(old_fusion_id)?;
+            let old_fusion = ctx.load::<NFusion>(old_fusion_id)?;
 
             // Reset action range for the slot being vacated
             additional_actions.push(TeamAction::ChangeActionRange {
@@ -362,17 +356,16 @@ impl TeamEditor {
 
             // If this unit was the trigger unit, update trigger to another unit or default
             if old_fusion.trigger_unit == unit_id {
-                let remaining_slots =
-                    context.load_collect_children::<NFusionSlot>(old_fusion_id)?;
+                let remaining_slots = ctx.load_collect_children::<NFusionSlot>(old_fusion_id)?;
                 let mut new_trigger_ref = 0u64;
 
                 for slot in remaining_slots {
                     if slot.id != old_slot_id {
                         if let Some(unit_id) = slot.unit.id() {
-                            if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
                                 // Check if unit has behavior component
-                                if let Ok(desc) = unit.description_ref(context) {
-                                    if desc.behavior_ref(context).is_ok() {
+                                if let Ok(desc) = unit.description_ref(ctx) {
+                                    if desc.behavior_ref(ctx).is_ok() {
                                         new_trigger_ref = unit_id;
                                         break;
                                     }
@@ -396,7 +389,7 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unlinked_units: &[&NUnit],
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -407,7 +400,7 @@ impl TeamEditor {
                 let resp = self.render_unit_with_representation(
                     ui,
                     unit,
-                    context,
+                    ctx,
                     egui::Vec2::new(60.0, 60.0),
                 );
                 self.handle_bench_unit_interactions(resp, unit.id, actions);
@@ -435,7 +428,7 @@ impl TeamEditor {
         unit_id: u64,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle context menu
+        // Handle ctx menu
         if !self.filled_slot_actions.is_empty() {
             resp.bar_menu(|ui| {
                 for action_name in &self.filled_slot_actions {
@@ -457,7 +450,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) -> bool {
         let mut clicked = false;
@@ -473,7 +466,7 @@ impl TeamEditor {
             });
 
             let group_response = ui.group(|ui| {
-                self.render_fusion_action_sequence(fusion, context, ui);
+                self.render_fusion_action_sequence(fusion, ctx, ui);
             });
             let actions_response = ui.allocate_rect(group_response.response.rect, Sense::click());
 
@@ -485,7 +478,7 @@ impl TeamEditor {
             }
 
             for slot in slots {
-                self.render_slot(ui, slot.id, context, actions);
+                self.render_slot(ui, slot.id, ctx, actions);
             }
         });
 
@@ -528,11 +521,11 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         slot_id: u64,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let current_unit = Self::get_slot_unit(slot_id, context);
-        let resp = self.render_unit_in_slot(ui, current_unit, context);
+        let current_unit = Self::get_slot_unit(slot_id, ctx);
+        let resp = self.render_unit_in_slot(ui, current_unit, ctx);
         let slot_rect = resp.rect;
 
         if current_unit.is_some() {
@@ -559,10 +552,10 @@ impl TeamEditor {
         }
     }
 
-    fn get_slot_unit<'b>(slot_id: u64, context: &'b ClientContext) -> Option<&'b NUnit> {
-        let slot = context.load::<NFusionSlot>(slot_id).ok()?;
+    fn get_slot_unit<'b>(slot_id: u64, ctx: &'b ClientContext) -> Option<&'b NUnit> {
+        let slot = ctx.load::<NFusionSlot>(slot_id).ok()?;
         if let Some(unit_id) = slot.unit.id() {
-            context.load::<NUnit>(unit_id).ok()
+            ctx.load::<NUnit>(unit_id).ok()
         } else {
             None
         }
@@ -572,14 +565,14 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unit: Option<&NUnit>,
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) -> Response {
         let size = egui::Vec2::new(60.0, 60.0);
 
         if let Some(unit) = unit {
-            self.render_unit_with_representation(ui, unit, context, size)
+            self.render_unit_with_representation(ui, unit, ctx, size)
         } else {
-            Self::render_empty_slot(ui, size, context)
+            Self::render_empty_slot(ui, size, ctx)
         }
     }
 
@@ -587,18 +580,18 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         unit: &NUnit,
-        context: &ClientContext,
+        ctx: &ClientContext,
         size: egui::Vec2,
     ) -> Response {
         let mut mat_rect = MatRect::new(size);
 
-        if let Ok(desc) = unit.description_ref(context) {
-            if let Ok(rep) = desc.representation_ref(context) {
+        if let Ok(desc) = unit.description_ref(ctx) {
+            if let Ok(rep) = desc.representation_ref(ctx) {
                 mat_rect = mat_rect.add_mat(&rep.material, unit.id);
             }
         }
 
-        let resp = mat_rect.unit_rep_with_default(unit.id).ui(ui, context);
+        let resp = mat_rect.unit_rep_with_default(unit.id).ui(ui, ctx);
 
         if resp.dragged() {
             if let Some(pos) = ui.ctx().pointer_latest_pos() {
@@ -612,8 +605,8 @@ impl TeamEditor {
         resp
     }
 
-    fn render_empty_slot(ui: &mut Ui, size: egui::Vec2, context: &ClientContext) -> Response {
-        MatRect::new(size).ui(ui, context)
+    fn render_empty_slot(ui: &mut Ui, size: egui::Vec2, ctx: &ClientContext) -> Response {
+        MatRect::new(size).ui(ui, ctx)
     }
 
     fn handle_unit_interactions(
@@ -623,7 +616,7 @@ impl TeamEditor {
         current_unit: Option<&NUnit>,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle context menu for filled slots
+        // Handle ctx menu for filled slots
         if current_unit.is_some() && !self.filled_slot_actions.is_empty() {
             resp.bar_menu(|ui| {
                 for action_name in &self.filled_slot_actions {
@@ -646,7 +639,7 @@ impl TeamEditor {
         slot_id: u64,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle context menu for empty slots
+        // Handle ctx menu for empty slots
         if !self.empty_slot_actions.is_empty() {
             resp.bar_menu(|ui| {
                 for action_name in &self.empty_slot_actions {
@@ -668,7 +661,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -678,12 +671,10 @@ impl TeamEditor {
             ui.separator();
 
             // Trigger selector
-            if let Ok((available_triggers, trigger_map)) =
-                self.get_available_triggers(context, slots)
-            {
+            if let Ok((available_triggers, trigger_map)) = self.get_available_triggers(ctx, slots) {
                 if !available_triggers.is_empty() {
                     let current_trigger =
-                        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
+                        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
                             trigger.clone()
                         } else {
                             Trigger::default()
@@ -705,10 +696,10 @@ impl TeamEditor {
             }
 
             for slot in slots {
-                if let Some(unit) = Self::get_slot_unit(slot.id, context) {
+                if let Some(unit) = Self::get_slot_unit(slot.id, ctx) {
                     ui.group(|ui| {
-                        if let Ok(desc) = unit.description_ref(context) {
-                            if let Ok(unit_behavior) = desc.behavior_ref(context) {
+                        if let Ok(desc) = unit.description_ref(ctx) {
+                            if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
                                 let max_actions = unit_behavior.reaction.actions.len() as u8;
                                 if max_actions > 0 {
                                     let (current_start, current_len) =
@@ -724,7 +715,7 @@ impl TeamEditor {
 
                                     let (_, range_changed) = range_selector.ui(
                                         ui,
-                                        context,
+                                        ctx,
                                         |item_ui, ctx, action_idx, is_in_range| {
                                             let reaction = &unit_behavior.reaction;
                                             if let Some(action) = reaction.actions.get(action_idx) {
@@ -768,13 +759,13 @@ impl TeamEditor {
         });
     }
 
-    fn render_action_normal(ui: &mut Ui, context: &ClientContext, _unit: &NUnit, action: &Action) {
+    fn render_action_normal(ui: &mut Ui, ctx: &ClientContext, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
-            action.title(context).label(ui);
+            action.title(ctx).label(ui);
         });
     }
 
-    fn render_action_greyed(ui: &mut Ui, context: &ClientContext, _unit: &NUnit, action: &Action) {
+    fn render_action_greyed(ui: &mut Ui, ctx: &ClientContext, _unit: &NUnit, action: &Action) {
         ui.horizontal(|ui| {
             ui.style_mut().visuals.widgets.inactive.weak_bg_fill = ui
                 .style()
@@ -783,7 +774,7 @@ impl TeamEditor {
                 .inactive
                 .weak_bg_fill
                 .gamma_multiply(0.5);
-            action.title(context).label(ui);
+            action.title(ctx).label(ui);
         });
     }
 }

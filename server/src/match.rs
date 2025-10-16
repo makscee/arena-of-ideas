@@ -64,7 +64,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
     }
     m.buy(ctx, price)?;
-    m.save(ctx.source());
+    m.take().save(ctx);
     Ok(())
 }
 
@@ -124,13 +124,13 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     m.g += ctx.global_settings().match_g.unit_sell;
     unit.delete_recursive(ctx);
-    m.save(ctx.source());
+    m.take().save(ctx);
     Ok(())
 }
 
 #[reducer]
 fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
     let unit = ctx.load::<NUnit>(unit_id)?;
@@ -139,8 +139,7 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     }
     let m = player.active_match_load(ctx)?;
     m.unlink_unit(ctx, unit_id);
-    m.save(ctx.source());
-    Ok(())
+    m.take().save(ctx).to_server_result()
 }
 
 #[reducer]
@@ -173,7 +172,7 @@ fn match_submit_battle_result(
     result: bool,
     hash: u64,
 ) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     m.floor += 1;
@@ -194,7 +193,7 @@ fn match_submit_battle_result(
     }
     m.g += ctx.global_settings().match_g.initial;
     m.fill_shop_case(ctx, false)?;
-    player.save(ctx.source());
+    player.take().save(ctx);
     Ok(())
 }
 
@@ -244,7 +243,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         .insert(ctx);
         ctx.add_link(m_id, battle.id)?;
     }
-    m.save(ctx.source());
+    m.take().save(ctx);
     Ok(())
 }
 
@@ -263,7 +262,7 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let gs = ctx.global_settings();
     let pid = player.id;
@@ -281,7 +280,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     m.team.state_mut().set(team);
     m.fill_shop_case(ctx, false)?;
     player.active_match.state_mut().set(m);
-    player.save(ctx.source());
+    player.take().save(ctx);
     Ok(())
 }
 
@@ -294,7 +293,6 @@ impl NMatch {
             ));
         }
         self.g -= price;
-        self.save(ctx.source());
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ServerContext, unit_id: u64) -> Option<u64> {

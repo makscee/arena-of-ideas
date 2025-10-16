@@ -288,11 +288,11 @@ fn admin_upload_world(
 #[reducer]
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    let ctx = &ctx.as_context();
+    let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     m.g += 10;
-    player.save(ctx.source());
+    player.save(ctx)?;
     Ok(())
 }
 

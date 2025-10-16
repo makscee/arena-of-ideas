@@ -13,7 +13,7 @@ use bevy_egui::egui::{
 };
 use parking_lot::{Mutex, MutexGuard};
 use ron::ser::{PrettyConfig, to_string_pretty};
-use schema::{NodeError, VarName, VarValue};
+use schema::{VarName, VarValue};
 use serde::Serialize;
 
 static UNIT_PIXELS: Mutex<f32> = Mutex::new(10.0);

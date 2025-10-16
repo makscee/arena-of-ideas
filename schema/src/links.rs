@@ -1,20 +1,22 @@
 use super::*;
 
 // Single node link state
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum LinkStateSingle<T> {
     Loaded(T),
     Id(u64),
     None,
+    #[default]
     Unknown,
 }
 
 // Multiple node link state
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum LinkStateMultiple<T> {
     Loaded(Vec<T>),
     Ids(Vec<u64>),
     None,
+    #[default]
     Unknown,
 }
 

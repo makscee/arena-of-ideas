@@ -19,6 +19,14 @@ impl NodeEntityMap {
             .push(id);
     }
 
+    pub fn add_link(&mut self, id: u64, entity: Entity) {
+        self.insert(id, entity);
+    }
+
+    pub fn remove_link(&mut self, id: u64) -> Option<Entity> {
+        self.remove_by_id(id)
+    }
+
     pub fn get_entity(&self, id: u64) -> Option<Entity> {
         self.id_to_entity.get(&id).copied()
     }
@@ -141,6 +149,24 @@ impl NodeLinks {
         }
     }
 
+    pub fn remove_all_links(&mut self, node_id: u64) {
+        // Remove all outgoing links from this node
+        self.links.remove(&node_id);
+
+        // Remove all incoming links to this node
+        for (_, links) in self.links.iter_mut() {
+            links.retain(|(id, _)| *id != node_id);
+        }
+
+        // Remove from reverse links
+        self.reverse_links.remove(&node_id);
+
+        // Remove from all parent lists in reverse links
+        for (_, parents) in self.reverse_links.iter_mut() {
+            parents.retain(|(id, _)| *id != node_id);
+        }
+    }
+
     pub fn clear(&mut self) {
         self.links.clear();
         self.reverse_links.clear();
@@ -180,6 +206,10 @@ impl NodeEntity {
 
     pub fn has_kind(&self, kind: NodeKind) -> bool {
         self.nodes.contains_key(&kind)
+    }
+
+    pub fn get_kind(&self, id: u64) -> Option<NodeKind> {
+        self.nodes.iter().find(|(_, v)| **v == id).map(|(k, _)| *k)
     }
 }
 
@@ -359,6 +389,57 @@ impl<'w> ContextSource for WorldSource<'w> {
         } else {
             Ok(false)
         }
+    }
+
+    fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
+        let world = self.world_mut()?;
+        let entity = world
+            .get_resource::<NodeEntityMap>()
+            .to_not_found()?
+            .get_entity(id)
+            .unwrap_or_else(|| world.spawn_empty().id());
+
+        // Add to NodeEntityMap
+        if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
+            map.add_link(id, entity);
+        }
+        world.entity_mut(entity).insert(NodeEntity::new(id, kind));
+
+        Ok(())
+    }
+
+    fn delete_node(&mut self, id: u64) -> NodeResult<()> {
+        let world = self.world_mut()?;
+
+        // Get the entity for this node
+        let entity = {
+            if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                if let Some(entity) = map.get_entity(id) {
+                    entity
+                } else {
+                    return Err(NodeError::custom(format!("Entity not found for id {}", id)));
+                }
+            } else {
+                return Err(NodeError::custom("NodeEntityMap resource not found"));
+            }
+        };
+        let node_entity = world.get::<NodeEntity>(entity).to_not_found()?;
+        let entity_ids = node_entity.get_node_ids();
+        if entity_ids.len() == 1 {
+            if entity_ids[0] == id {
+                world.entity_mut(entity).despawn();
+                return Ok(());
+            } else {
+                panic!();
+            }
+        }
+        let kind = node_entity.get_kind(id).to_not_found()?;
+
+        // Despawn the entity - this is the low-level storage deletion
+        world.entity_mut(entity).remove::<NUnit>();
+        todo!();
+
+        Ok(())
     }
 
     fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
