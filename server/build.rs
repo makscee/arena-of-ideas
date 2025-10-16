@@ -253,7 +253,7 @@ fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             NodeKind::#node_name => {
                 let mut node: #node_name = node_id.load_node(self.rctx())?;
                 node.set_var(var, value)?;
-                self.insert_node(node_id, node.owner, node_kind, node.get_data());
+                self.insert_node(node_id, node.owner, node_kind, node.get_data())?;
                 Ok(())
             }
         }

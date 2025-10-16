@@ -451,7 +451,9 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                 Some(quote! {
                     let state = self.#field_name.state_mut().take();
                     if let LinkStateSingle::Loaded(child) = state {
+                        let child_id = child.id();
                         child.save(ctx)?;
+                        *self.#field_name.state_mut() = LinkStateSingle::Id(child_id);
                     }
                 })
             }
@@ -460,9 +462,13 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                 Some(quote! {
                     let state = self.#field_name.state_mut().take();
                     if let LinkStateMultiple::Loaded(children) = state {
+                        let mut child_ids = Vec::new();
                         for child in children {
+                            let child_id = child.id();
                             child.save(ctx)?;
+                            child_ids.push(child_id);
                         }
+                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(child_ids);
                     }
                 })
             }
@@ -488,17 +494,6 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                                 ctx.delete_recursive(child_id)?;
                             }
                         }
-                        LinkStateSingle::Loaded(child) => {
-                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in existing_children {
-                                if old_id != child.id() {
-                                    ctx.delete_recursive(old_id)?;
-                                }
-                            }
-                            // Add new link
-                            ctx.add_link(self.id, child.id())?;
-                        }
                         LinkStateSingle::Id(id) => {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             // Remove old links
@@ -509,6 +504,9 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                             }
                             // Add new link
                             ctx.add_link(self.id, *id)?;
+                        }
+                        LinkStateSingle::Loaded(_) => {
+                            unreachable!("Loaded state should have been converted to Id during save")
                         }
                     }
                 })
@@ -523,17 +521,6 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                                 ctx.remove_link(self.id, ref_id)?;
                             }
                         }
-                        LinkStateSingle::Loaded(child) => {
-                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in existing_refs {
-                                if old_id != child.id() {
-                                    ctx.remove_link(self.id, old_id)?;
-                                }
-                            }
-                            // Add new link
-                            ctx.add_link(self.id, child.id())?;
-                        }
                         LinkStateSingle::Id(id) => {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             // Remove old links
@@ -544,6 +531,9 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                             }
                             // Add new link
                             ctx.add_link(self.id, *id)?;
+                        }
+                        LinkStateSingle::Loaded(_) => {
+                            unreachable!("Loaded state should have been converted to Id during save")
                         }
                     }
                 })
@@ -556,22 +546,6 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for child_id in existing_children {
                                 ctx.delete_recursive(child_id)?;
-                            }
-                        }
-                        LinkStateMultiple::Loaded(children) => {
-                            let new_ids: Vec<u64> = children.iter().map(|c| c.id()).collect();
-                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in &existing_children {
-                                if !new_ids.contains(old_id) {
-                                    ctx.delete_recursive(*old_id)?;
-                                }
-                            }
-                            // Add new links
-                            for child in children {
-                                if !existing_children.contains(&child.id()) {
-                                    ctx.add_link(self.id, child.id())?;
-                                }
                             }
                         }
                         LinkStateMultiple::Ids(ids) => {
@@ -589,6 +563,9 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                                 }
                             }
                         }
+                        LinkStateMultiple::Loaded(_) => {
+                            unreachable!("Loaded state should have been converted to Ids during save")
+                        }
                     }
                 })
             }
@@ -600,22 +577,6 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for ref_id in existing_refs {
                                 ctx.remove_link(self.id, ref_id)?;
-                            }
-                        }
-                        LinkStateMultiple::Loaded(children) => {
-                            let new_ids: Vec<u64> = children.iter().map(|c| c.id()).collect();
-                            let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in existing_refs {
-                                if !new_ids.contains(&old_id) {
-                                    ctx.remove_link(self.id, old_id)?;
-                                }
-                            }
-                            // Add new links
-                            for child in children {
-                                if !existing_refs.contains(&child.id()) {
-                                    ctx.add_link(self.id, child.id())?;
-                                }
                             }
                         }
                         LinkStateMultiple::Ids(ids) => {
@@ -633,6 +594,9 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
                                 }
                             }
                         }
+                        LinkStateMultiple::Loaded(_) => {
+                            unreachable!("Loaded state should have been converted to Ids during save")
+                        }
                     }
                 })
             }
@@ -642,17 +606,11 @@ pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
 
     quote! {
         fn save<S: ContextSource>(mut self, ctx: &mut Context<S>) -> NodeResult<()> {
-            // First save all loaded child nodes recursively
             #(#save_fields)*
-
-            // Then handle link changes only if this node is dirty
             if self.is_dirty() {
-                #(#check_link_changes)*
-
-                // Finally, save this node's data
                 ctx.source_mut().insert_node(self.id, self.owner, self.kind(), self.get_data())?;
+                #(#check_link_changes)*
             }
-
             Ok(())
         }
     }
@@ -702,7 +660,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
                 owner: 0,
                 #(#field_assignments)*
                 #(#component_defaults)*
-                is_dirty: false,
+                is_dirty: true,
             }
         }
     }

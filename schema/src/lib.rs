@@ -4,7 +4,6 @@ mod event;
 mod expression;
 mod fusion;
 mod links;
-mod macro_fn;
 mod r#match;
 mod node_assets;
 mod node_error;
@@ -31,7 +30,6 @@ pub use event::*;
 pub use expression::*;
 pub use fusion::*;
 pub use links::*;
-pub use macro_fn::*;
 pub use r#match::*;
 pub use node_assets::*;
 #[allow(unused_imports)]
