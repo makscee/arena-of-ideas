@@ -289,97 +289,52 @@ impl<'w> WorldSource<'w> {
 impl<'w> ContextSource for WorldSource<'w> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
         let world = self.world()?;
-        if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            if let Some(entity) = map.get_entity(id) {
-                if let Some(node) = world.get::<NodeEntity>(entity) {
-                    for (kind, node_id) in &node.nodes {
-                        if *node_id == id {
-                            return Ok(*kind);
-                        }
-                    }
-                } else {
-                    return Err(NodeError::custom(format!(
-                        "NodeEntity component absent for id {id}"
-                    )));
-                }
-            } else {
-                return Err(NodeError::custom(format!("Entity not found for id {id}")));
-            }
-        } else {
-            return Err(NodeError::custom("NodeEntityMap resource not found"));
-        }
-        Err(NodeError::not_found(id))
+        let entity = world
+            .resource::<NodeEntityMap>()
+            .get_entity(id)
+            .to_not_found()?;
+        world
+            .get::<NodeEntity>(entity)
+            .to_not_found()?
+            .get_kind(id)
+            .to_not_found()
     }
 
-    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
-        let world = self.world()?;
-        if let Some(links) = world.get_resource::<NodeLinks>() {
-            Ok(links.get_children(from_id))
-        } else {
-            Ok(Vec::new())
-        }
+    fn get_children(&self, id: u64) -> NodeResult<Vec<u64>> {
+        Ok(self.world()?.resource::<NodeLinks>().get_children(id))
     }
 
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
         let world = self.world()?;
-        if let Some(links) = world.get_resource::<NodeLinks>() {
-            Ok(links.get_children_of_kind(from_id, kind))
-        } else {
-            Ok(Vec::new())
-        }
+        Ok(world
+            .resource::<NodeLinks>()
+            .get_children_of_kind(from_id, kind))
     }
 
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
-        let world = self.world()?;
-        if let Some(links) = world.get_resource::<NodeLinks>() {
-            Ok(links.get_parents(id))
-        } else {
-            Ok(Vec::new())
-        }
+        Ok(self.world()?.resource::<NodeLinks>().get_parents(id))
     }
 
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        let world = self.world()?;
-        if let Some(links) = world.get_resource::<NodeLinks>() {
-            Ok(links.get_parents_of_kind(id, kind))
-        } else {
-            Ok(Vec::new())
-        }
+        Ok(self
+            .world()?
+            .resource::<NodeLinks>()
+            .get_parents_of_kind(id, kind))
     }
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
         let to_kind = self.get_node_kind(to_id).track()?;
-        if let Ok(world) = self.world_mut() {
-            if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
-                links.add_link(from_id, to_id, to_kind);
-                Ok(())
-            } else {
-                Err(NodeError::context_error(anyhow::anyhow!(
-                    "NodeLinks resource not found"
-                )))
-            }
-        } else {
-            Err(NodeError::context_error(anyhow::anyhow!(
-                "Cannot modify links with immutable WorldSource"
-            )))
-        }
+        self.world_mut()?
+            .resource_mut::<NodeLinks>()
+            .add_link(from_id, to_id, to_kind);
+        Ok(())
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        if let Ok(world) = self.world_mut() {
-            if let Some(mut links) = world.get_resource_mut::<NodeLinks>() {
-                links.remove_link(from_id, to_id);
-                Ok(())
-            } else {
-                Err(NodeError::context_error(anyhow::anyhow!(
-                    "NodeLinks resource not found"
-                )))
-            }
-        } else {
-            Err(NodeError::context_error(anyhow::anyhow!(
-                "Cannot modify links with immutable WorldSource"
-            )))
-        }
+        self.world_mut()?
+            .resource_mut::<NodeLinks>()
+            .remove_link(from_id, to_id);
+        Ok(())
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
@@ -393,17 +348,23 @@ impl<'w> ContextSource for WorldSource<'w> {
 
     fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
         let world = self.world_mut()?;
-        let entity = world
-            .get_resource::<NodeEntityMap>()
-            .to_not_found()?
+        let mut nem = world.remove_resource::<NodeEntityMap>().to_not_found()?;
+        let entity = nem
             .get_entity(id)
             .unwrap_or_else(|| world.spawn_empty().id());
-
-        // Add to NodeEntityMap
-        if let Some(mut map) = world.get_resource_mut::<NodeEntityMap>() {
-            map.add_link(id, entity);
+        nem.add_link(id, entity);
+        world.insert_resource(nem);
+        if let Some(mut ne) = world.get_mut::<NodeEntity>(entity) {
+            ne.add_node(id, kind);
+        } else {
+            world.entity_mut(entity).insert(NodeEntity::new(id, kind));
         }
-        world.entity_mut(entity).insert(NodeEntity::new(id, kind));
+        node_kind_match!(kind, {
+            let mut n = NodeType::default();
+            n.inject_data(&data)?;
+            n.set_id(id);
+            n.set_owner(owner);
+        });
 
         Ok(())
     }
@@ -434,11 +395,9 @@ impl<'w> ContextSource for WorldSource<'w> {
             }
         }
         let kind = node_entity.get_kind(id).to_not_found()?;
-
-        // Despawn the entity - this is the low-level storage deletion
-        world.entity_mut(entity).remove::<NUnit>();
-        todo!();
-
+        node_kind_match!(kind, {
+            world.entity_mut(entity).remove::<NodeType>();
+        });
         Ok(())
     }
 
