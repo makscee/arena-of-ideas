@@ -1,32 +1,26 @@
-use super::*;
+use crate::prelude::*;
 
 pub struct TeamEditor {
-    team_id: u64,
-    empty_slot_actions: Vec<String>,
-    filled_slot_actions: Vec<String>,
+    empty_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, i32)>)>,
+    filled_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, u64, i32)>)>,
 }
 
 #[derive(Debug, Clone)]
 pub enum TeamAction {
     MoveUnit {
         unit_id: u64,
-        target: u64,
+        target: UnitTarget,
     },
     BenchUnit {
         unit_id: u64,
-    },
-    ContextMenuAction {
-        slot_id: u64,
-        action_name: String,
-        unit_id: Option<u64>,
     },
     AddSlot {
         fusion_id: u64,
     },
     ChangeActionRange {
         slot_id: u64,
-        start: u8,
-        length: u8,
+        start: i32,
+        length: i32,
     },
     ChangeTrigger {
         fusion_id: u64,
@@ -34,51 +28,53 @@ pub enum TeamAction {
     },
 }
 
+#[derive(Debug, Clone)]
+pub enum UnitTarget {
+    Bench,
+    Slot { fusion_id: u64, slot_index: i32 },
+}
+
 impl TeamEditor {
-    pub fn new(team_id: u64) -> Self {
+    pub fn new() -> Self {
         Self {
-            team_id,
-            empty_slot_actions: Vec::new(),
-            filled_slot_actions: Vec::new(),
+            empty_slot_actions: vec![],
+            filled_slot_actions: vec![],
         }
     }
 
-    pub fn empty_slot_action(mut self, action_name: &str) -> Self {
-        self.empty_slot_actions.push(action_name.to_string());
+    pub fn empty_slot_action(
+        mut self,
+        name: String,
+        action: Box<dyn Fn(&NTeam, u64, i32)>,
+    ) -> Self {
+        self.empty_slot_actions.push((name, action));
         self
     }
 
-    pub fn filled_slot_action(mut self, action_name: &str) -> Self {
-        self.filled_slot_actions.push(action_name.to_string());
+    pub fn filled_slot_action(
+        mut self,
+        name: String,
+        action: Box<dyn Fn(&NTeam, u64, u64, i32)>,
+    ) -> Self {
+        self.filled_slot_actions.push((name, action));
         self
     }
 
-    pub fn ui(self, ui: &mut Ui, ctx: &mut ClientContext) -> NodeResult<Vec<TeamAction>> {
-        let team = ctx.load::<NTeam>(self.team_id)?;
+    pub fn edit(&self, team: &NTeam, ui: &mut Ui) -> (Option<NTeam>, Vec<TeamAction>) {
         let mut actions = Vec::new();
 
-        let state_id = egui::Id::new(self.team_id).with("team_editor_selected_fusion");
+        let state_id = egui::Id::new(team.id).with("team_editor_selected_fusion");
         let mut selected_fusion_id =
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
 
-        let fusions = team
-            .fusions_ref(ctx)?
-            .into_iter()
-            .sorted_by_key(|f| f.index)
-            .collect_vec();
+        let fusions = if let Some(fusions) = team.fusions.get() {
+            fusions.iter().sorted_by_key(|f| f.index).collect_vec()
+        } else {
+            vec![]
+        };
 
-        let mut fusion_slots: HashMap<u64, Vec<&NFusionSlot>> = HashMap::new();
-        for fusion in &fusions {
-            let slots = ctx
-                .load_collect_children::<NFusionSlot>(fusion.id)?
-                .into_iter()
-                .sorted_by_key(|s| s.index)
-                .collect_vec();
-            fusion_slots.insert(fusion.id, slots);
-        }
-
-        let unlinked_units = self.get_unlinked_units(ctx, &fusion_slots)?;
-        let total_columns = fusions.len() + 1; // +1 for bench column
+        let unlinked_units = self.get_unlinked_units(team);
+        let total_columns = fusions.len() + 1;
 
         let mut selected_column_rect = None;
         let mut clicked_fusion_id = None;
@@ -87,361 +83,146 @@ impl TeamEditor {
             let mut column_idx = 0;
 
             for fusion in &fusions {
-                let empty_slots = vec![];
-                let slots = fusion_slots.get(&fusion.id).unwrap_or(&empty_slots);
+                let slots = if let Some(slots) = fusion.slots.get() {
+                    slots.iter().sorted_by_key(|s| s.index).collect_vec()
+                } else {
+                    vec![]
+                };
 
                 if selected_fusion_id == Some(fusion.id) {
                     self.render_fusion_actions_column(
                         &mut columns[column_idx],
                         fusion,
-                        slots,
-                        ctx,
+                        &slots,
+                        team,
                         &mut actions,
                     );
-                    selected_column_rect = Some(columns[column_idx].min_rect());
                 } else {
-                    let clicked = self.render_fusion_column_with_actions_display(
+                    self.render_fusion_column_with_actions_display(
                         &mut columns[column_idx],
                         fusion,
-                        slots,
-                        ctx,
+                        &slots,
+                        team,
                         &mut actions,
                     );
-                    if clicked {
-                        clicked_fusion_id = Some(fusion.id);
-                    }
                 }
+
+                if columns[column_idx].ctx().dragged_id().is_some() {
+                    selected_column_rect = Some(columns[column_idx].min_rect());
+                }
+
+                if columns[column_idx].response().clicked() {
+                    clicked_fusion_id = Some(fusion.id);
+                }
+
                 column_idx += 1;
             }
-            // Bench column (last column)
-            self.render_bench_column(&mut columns[column_idx], &unlinked_units, ctx, &mut actions);
+
+            self.render_bench_column(
+                &mut columns[column_idx],
+                &unlinked_units,
+                team,
+                &mut actions,
+            );
         });
 
-        if let Some(fusion_id) = clicked_fusion_id {
-            selected_fusion_id = Some(fusion_id);
-            ui.memory_mut(|m| {
-                m.data.insert_temp(state_id, selected_fusion_id);
-            });
-        }
-        if clicked_fusion_id.is_none()
-            && ui.input(|i| i.pointer.any_click())
-            && selected_fusion_id.is_some()
-        {
-            if let Some(pointer_pos) = ui.input(|i| i.pointer.interact_pos()) {
-                let clicked_outside =
-                    selected_column_rect.map_or(true, |rect| !rect.contains(pointer_pos));
-                if clicked_outside {
-                    selected_fusion_id = None;
-                    ui.memory_mut(|m| {
-                        m.data.insert_temp(state_id, selected_fusion_id);
-                    });
-                }
-            }
+        if let Some(id) = clicked_fusion_id {
+            selected_fusion_id = Some(id);
         }
 
-        // Process additional actions from unit moves and bench moves
-        let mut all_actions = actions;
-        let mut additional_actions = Vec::new();
+        ui.memory_mut(|m| m.data.insert_temp(state_id, selected_fusion_id));
 
-        for action in &all_actions {
-            match action {
-                TeamAction::MoveUnit { unit_id, target } => {
-                    let move_additional =
-                        self.get_move_unit_additional_actions(*unit_id, *target, ctx)?;
-                    additional_actions.extend(move_additional);
-                }
-                TeamAction::BenchUnit { unit_id } => {
-                    let bench_additional = self.get_bench_unit_additional_actions(*unit_id, ctx)?;
-                    additional_actions.extend(bench_additional);
-                }
-                _ => {}
+        if !actions.is_empty() {
+            let mut result_team = team.clone();
+            for action in &actions {
+                let _ = result_team.apply_action(action.clone());
             }
-        }
-
-        all_actions.extend(additional_actions);
-        Ok(all_actions)
-    }
-
-    fn get_unlinked_units<'a>(
-        &self,
-        ctx: &'a ClientContext,
-        fusion_slots: &HashMap<u64, Vec<&NFusionSlot>>,
-    ) -> NodeResult<Vec<&'a NUnit>> {
-        let all_units = ctx.load_collect_children_recursive::<NUnit>(self.team_id)?;
-
-        // Check if any slot references this unit
-        let linked_unit_ids: HashSet<u64> = fusion_slots
-            .values()
-            .flat_map(|slots| slots.iter())
-            .filter_map(|slot| slot.unit.id())
-            .collect();
-
-        Ok(all_units
-            .into_iter()
-            .filter(|unit| !linked_unit_ids.contains(&unit.id))
-            .collect())
-    }
-
-    fn get_available_triggers(
-        &self,
-        ctx: &ClientContext,
-        slots: &[&NFusionSlot],
-    ) -> NodeResult<(Vec<Trigger>, HashMap<Trigger, u64>)> {
-        let mut trigger_map = HashMap::new();
-
-        for slot in slots {
-            if let Some(unit) = Self::get_slot_unit(slot.id, ctx) {
-                // Access behavior through description component
-                if let Ok(desc) = unit.description_ref(ctx) {
-                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
-                        let trigger = unit_behavior.reaction.trigger.clone();
-                        if !trigger_map.contains_key(&trigger) {
-                            trigger_map.insert(trigger, unit.id);
-                        }
-                    }
-                }
-            }
-        }
-
-        let mut triggers: Vec<Trigger> = trigger_map.keys().cloned().collect();
-        triggers.sort_by(|a, b| a.as_ref().cmp(b.as_ref()));
-
-        Ok((triggers, trigger_map))
-    }
-
-    fn get_move_unit_additional_actions(
-        &self,
-        unit_id: u64,
-        target_id: u64,
-        ctx: &ClientContext,
-    ) -> NodeResult<Vec<TeamAction>> {
-        let mut additional_actions = Vec::new();
-
-        // Find the slot that currently references this unit
-        let old_fusion_id =
-            if let Ok(slot_id) = ctx.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
-                // Find the fusion that owns this slot
-                if let Ok(fusion_id) = ctx.first_parent_recursive(slot_id, NodeKind::NFusion) {
-                    Some((fusion_id, slot_id))
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-        let new_fusion_id = if let Ok(new_slot) = ctx.load::<NFusionSlot>(target_id) {
-            // Find the parent fusion of this slot
-            if let Ok(fusion_id) = ctx.first_parent(new_slot.id, NodeKind::NFusion) {
-                Some(fusion_id)
-            } else {
-                None
-            }
+            (Some(result_team), actions)
         } else {
-            None
-        };
-
-        let is_same_fusion = match (old_fusion_id, new_fusion_id) {
-            (Some((old_id, _)), Some(new_id)) => old_id == new_id,
-            _ => false,
-        };
-
-        // Handle moving out of previous slot
-        if let Some((old_fusion_id, old_slot_id)) = old_fusion_id {
-            // Reset action range for the slot being vacated
-            additional_actions.push(TeamAction::ChangeActionRange {
-                slot_id: old_slot_id,
-                start: 0,
-                length: 0,
-            });
-
-            // Update trigger only if moving to different fusion (not same fusion)
-            if !is_same_fusion {
-                let old_fusion = ctx.load::<NFusion>(old_fusion_id)?;
-                if old_fusion.trigger_unit == unit_id {
-                    let remaining_slots =
-                        ctx.load_collect_children::<NFusionSlot>(old_fusion_id)?;
-                    let mut new_trigger_ref = 0u64;
-
-                    for slot in remaining_slots {
-                        if slot.id != old_slot_id {
-                            if let Some(unit_id) = slot.unit.id() {
-                                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                                    // Check if unit has behavior component
-                                    if let Ok(desc) = unit.description_ref(ctx) {
-                                        if desc.behavior_ref(ctx).is_ok() {
-                                            new_trigger_ref = unit_id;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    additional_actions.push(TeamAction::ChangeTrigger {
-                        fusion_id: old_fusion_id,
-                        trigger: new_trigger_ref,
-                    });
-                }
-            }
+            (None, actions)
         }
-
-        // Handle moving into new slot
-        if let Some(new_fusion_id) = new_fusion_id {
-            let new_fusion = ctx.load::<NFusion>(new_fusion_id)?;
-
-            // If fusion has no trigger set (unit id is 0), set it to this unit
-            if new_fusion.trigger_unit == 0 {
-                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                    if let Ok(desc) = unit.description_ref(ctx) {
-                        if desc.behavior_ref(ctx).is_ok() {
-                            additional_actions.push(TeamAction::ChangeTrigger {
-                                fusion_id: new_fusion_id,
-                                trigger: unit_id,
-                            });
-                        }
-                    }
-                }
-            }
-
-            // Set action range to select all actions for the moved unit
-            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                if let Ok(desc) = unit.description_ref(ctx) {
-                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
-                        let reaction = &unit_behavior.reaction;
-                        additional_actions.push(TeamAction::ChangeActionRange {
-                            slot_id: target_id,
-                            start: 0,
-                            length: reaction.actions.len() as u8,
-                        });
-                    }
-                }
-            }
-        }
-
-        Ok(additional_actions)
     }
 
-    fn get_bench_unit_additional_actions(
-        &self,
-        unit_id: u64,
-        ctx: &ClientContext,
-    ) -> NodeResult<Vec<TeamAction>> {
-        let mut additional_actions = Vec::new();
+    fn get_unlinked_units(&self, team: &NTeam) -> Vec<u64> {
+        let mut linked_units = HashSet::new();
 
-        // Find the slot that currently references this unit
-        let slot_and_fusion =
-            if let Ok(slot_id) = ctx.first_parent_recursive(unit_id, NodeKind::NFusionSlot) {
-                // Find the fusion that owns this slot
-                if let Ok(fusion_id) = ctx.first_parent_recursive(slot_id, NodeKind::NFusion) {
-                    Some((slot_id, fusion_id))
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-        // Handle moving to bench
-        if let Some((old_slot_id, old_fusion_id)) = slot_and_fusion {
-            let old_fusion = ctx.load::<NFusion>(old_fusion_id)?;
-
-            // Reset action range for the slot being vacated
-            additional_actions.push(TeamAction::ChangeActionRange {
-                slot_id: old_slot_id,
-                start: 0,
-                length: 0,
-            });
-
-            // If this unit was the trigger unit, update trigger to another unit or default
-            if old_fusion.trigger_unit == unit_id {
-                let remaining_slots = ctx.load_collect_children::<NFusionSlot>(old_fusion_id)?;
-                let mut new_trigger_ref = 0u64;
-
-                for slot in remaining_slots {
-                    if slot.id != old_slot_id {
+        if let Some(fusions) = team.fusions.get() {
+            for fusion in fusions {
+                if let Some(slots) = fusion.slots.get() {
+                    for slot in slots {
                         if let Some(unit_id) = slot.unit.id() {
-                            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                                // Check if unit has behavior component
-                                if let Ok(desc) = unit.description_ref(ctx) {
-                                    if desc.behavior_ref(ctx).is_ok() {
-                                        new_trigger_ref = unit_id;
-                                        break;
-                                    }
-                                }
-                            }
+                            linked_units.insert(unit_id);
                         }
                     }
                 }
-
-                additional_actions.push(TeamAction::ChangeTrigger {
-                    fusion_id: old_fusion_id,
-                    trigger: new_trigger_ref,
-                });
             }
         }
 
-        Ok(additional_actions)
+        let mut unlinked = vec![];
+        if let Some(houses) = team.houses.get() {
+            for house in houses {
+                if let Some(units) = house.units.get() {
+                    for unit in units {
+                        if !linked_units.contains(&unit.id) {
+                            unlinked.push(unit.id);
+                        }
+                    }
+                }
+            }
+        }
+
+        unlinked
+    }
+
+    fn get_available_triggers(&self, team: &NTeam, fusion: &NFusion) -> Vec<(u64, String)> {
+        let mut triggers = vec![];
+
+        if let Some(slots) = fusion.slots.get() {
+            for slot in slots {
+                if let Some(unit_id) = slot.unit.id() {
+                    triggers.push((unit_id, format!("Unit {}", slot.index + 1)));
+                }
+            }
+        }
+
+        triggers
     }
 
     fn render_bench_column(
         &self,
         ui: &mut Ui,
-        unlinked_units: &[&NUnit],
-        ctx: &ClientContext,
+        unlinked_units: &[u64],
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
             ui.label("Bench");
             ui.separator();
 
-            for unit in unlinked_units {
-                let resp = self.render_unit_with_representation(
-                    ui,
-                    unit,
-                    ctx,
-                    egui::Vec2::new(60.0, 60.0),
-                );
-                self.handle_bench_unit_interactions(resp, unit.id, actions);
-            }
-
-            // DndArea for dropping units into bench
-            let mut drop_rect = ui.min_rect();
-            drop_rect.extend_with_y(drop_rect.top() + 60.0);
-            if drop_rect.height() > 10.0 {
-                if let Some(dragged_unit_id) = DndArea::<u64>::new(drop_rect)
-                    .text("Drop unit to bench")
-                    .ui(ui)
-                {
-                    actions.push(TeamAction::BenchUnit {
-                        unit_id: *dragged_unit_id,
-                    });
-                }
+            for &unit_id in unlinked_units {
+                self.handle_bench_unit_interactions(ui, unit_id, team, actions);
             }
         });
     }
 
     fn handle_bench_unit_interactions(
         &self,
-        resp: Response,
+        ui: &mut Ui,
         unit_id: u64,
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle ctx menu
-        if !self.filled_slot_actions.is_empty() {
-            resp.bar_menu(|ui| {
-                for action_name in &self.filled_slot_actions {
-                    if ui.button(action_name).clicked() {
-                        actions.push(TeamAction::ContextMenuAction {
-                            slot_id: 0,
-                            action_name: action_name.clone(),
-                            unit_id: Some(unit_id),
-                        });
-                        ui.close_menu();
-                    }
-                }
+        let response = self.render_unit_with_representation(ui, unit_id, team);
+
+        if response.drag_started() {
+            ui.memory_mut(|mem| {
+                mem.data
+                    .insert_temp(egui::Id::new("dragging_unit"), unit_id)
             });
+        }
+
+        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+            response.on_hover_text(unit.unit_name.clone());
         }
     }
 
@@ -450,210 +231,183 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        ctx: &ClientContext,
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
-    ) -> bool {
-        let mut clicked = false;
-
+    ) {
         ui.vertical(|ui| {
-            ui.horizontal(|ui| {
-                ui.label(format!("Fusion {}", fusion.index));
-                if ui.button("Add Slot").clicked() {
-                    actions.push(TeamAction::AddSlot {
-                        fusion_id: fusion.id,
-                    });
-                }
-            });
+            ui.label(format!("Fusion {}", fusion.index + 1));
+            ui.separator();
 
-            let group_response = ui.group(|ui| {
-                self.render_fusion_action_sequence(fusion, ctx, ui);
-            });
-            let actions_response = ui.allocate_rect(group_response.response.rect, Sense::click());
+            self.render_fusion_action_sequence(ui, fusion, slots);
+            ui.separator();
 
-            if actions_response.hovered() {
-                ui.output_mut(|o| o.cursor_icon = egui::CursorIcon::PointingHand);
-            }
-            if actions_response.clicked() {
-                clicked = true;
+            for (i, slot) in slots.iter().enumerate() {
+                self.render_slot(ui, Some(slot), fusion.id, i as i32, team, actions);
             }
 
-            for slot in slots {
-                self.render_slot(ui, slot.id, ctx, actions);
+            if ui.button("+ Add Slot").clicked() {
+                actions.push(TeamAction::AddSlot {
+                    fusion_id: fusion.id,
+                });
             }
         });
-
-        clicked
     }
 
-    fn render_fusion_action_sequence(&self, fusion: &NFusion, ctx: &ClientContext, ui: &mut Ui) {
-        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
-            ui.horizontal(|ui| {
-                Icon::Lightning.show(ui);
-                trigger.cstr().label(ui);
-            });
-            ui.separator();
-        }
-        match fusion.gather_fusion_actions(ctx) {
-            Ok(fusion_actions) => {
-                if fusion_actions.is_empty() {
-                    ui.label("No actions selected");
-                } else {
-                    ui.vertical(|ui| {
-                        for (unit_id, action) in fusion_actions {
-                            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                                ctx.with_owner_ref(unit.id, |ctx| {
-                                    action.title(ctx).label(ui);
-                                    Ok(())
-                                })
-                                .ui(ui);
-                            } else {
-                                action.cstr().label_w(ui);
-                            }
-                        }
-                    });
+    fn render_fusion_action_sequence(&self, ui: &mut Ui, fusion: &NFusion, slots: &[&NFusionSlot]) {
+        ui.horizontal(|ui| {
+            for slot in slots {
+                let range = &slot.actions;
+                let is_trigger = slot.unit.id().unwrap_or(0) == fusion.trigger_unit;
+
+                if is_trigger {
+                    ui.label("🎯");
                 }
+
+                let end_range = range.start + range.length;
+                for i in range.start..end_range {
+                    if i == 0 {
+                        self.render_action_normal(ui, i as i32);
+                    } else {
+                        self.render_action_greyed(ui, i as i32);
+                    }
+                }
+
+                ui.add_space(4.0);
             }
-            Err(e) => e.ui(ui),
-        }
+        });
     }
 
     fn render_slot(
         &self,
         ui: &mut Ui,
-        slot_id: u64,
-        ctx: &ClientContext,
+        slot: Option<&NFusionSlot>,
+        fusion_id: u64,
+        slot_index: i32,
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
-        let current_unit = Self::get_slot_unit(slot_id, ctx);
-        let resp = self.render_unit_in_slot(ui, current_unit, ctx);
-        let slot_rect = resp.rect;
+        ui.horizontal(|ui| {
+            let slot_rect = ui.min_rect();
 
-        if current_unit.is_some() {
-            self.handle_unit_interactions(&resp, slot_id, current_unit, actions);
-        } else {
-            self.handle_empty_slot_interactions(&resp, slot_id, actions);
-        }
-
-        // DndArea for dropping units onto slots
-        if let Some(dragged_unit_id) = DndArea::<u64>::new(slot_rect)
-            .text_fn(ui, |_| {
-                if current_unit.is_some() {
-                    "Swap units".to_string()
-                } else {
-                    "Drop unit here".to_string()
+            if let Some(slot) = slot {
+                if let Some(unit_id) = slot.unit.id() {
+                    self.handle_unit_interactions(
+                        ui, unit_id, fusion_id, slot_index, team, actions,
+                    );
                 }
-            })
-            .ui(ui)
-        {
-            actions.push(TeamAction::MoveUnit {
-                unit_id: *dragged_unit_id,
-                target: slot_id,
-            });
-        }
+            } else {
+                self.handle_empty_slot_interactions(ui, fusion_id, slot_index, team, actions);
+            }
+
+            if ui.ctx().dragged_id().is_some() {
+                if let Some(dragging_unit) =
+                    ui.memory(|mem| mem.data.get_temp::<u64>(egui::Id::new("dragging_unit")))
+                {
+                    if ui.rect_contains_pointer(slot_rect) {
+                        ui.painter().rect_stroke(
+                            slot_rect,
+                            0.0,
+                            Stroke::new(2.0, Color32::from_rgb(100, 200, 100)),
+                            egui::epaint::StrokeKind::Outside,
+                        );
+
+                        if ui.input(|i| i.pointer.any_released()) {
+                            actions.push(TeamAction::MoveUnit {
+                                unit_id: dragging_unit,
+                                target: UnitTarget::Slot {
+                                    fusion_id,
+                                    slot_index,
+                                },
+                            });
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    fn get_slot_unit<'b>(slot_id: u64, ctx: &'b ClientContext) -> Option<&'b NUnit> {
-        let slot = ctx.load::<NFusionSlot>(slot_id).ok()?;
-        if let Some(unit_id) = slot.unit.id() {
-            ctx.load::<NUnit>(unit_id).ok()
+    fn render_unit_with_representation(&self, ui: &mut Ui, unit_id: u64, team: &NTeam) -> Response {
+        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+            ui.label(&unit.unit_name)
         } else {
-            None
+            ui.label("[Unknown Unit]")
         }
     }
 
-    fn render_unit_in_slot(
-        &self,
-        ui: &mut Ui,
-        unit: Option<&NUnit>,
-        ctx: &ClientContext,
-    ) -> Response {
-        let size = egui::Vec2::new(60.0, 60.0);
-
-        if let Some(unit) = unit {
-            self.render_unit_with_representation(ui, unit, ctx, size)
-        } else {
-            Self::render_empty_slot(ui, size, ctx)
-        }
-    }
-
-    fn render_unit_with_representation(
-        &self,
-        ui: &mut Ui,
-        unit: &NUnit,
-        ctx: &ClientContext,
-        size: egui::Vec2,
-    ) -> Response {
-        let mut mat_rect = MatRect::new(size);
-
-        if let Ok(desc) = unit.description_ref(ctx) {
-            if let Ok(rep) = desc.representation_ref(ctx) {
-                mat_rect = mat_rect.add_mat(&rep.material, unit.id);
+    fn find_unit_in_team<'a>(&self, team: &'a NTeam, unit_id: u64) -> Option<&'a NUnit> {
+        if let Some(houses) = team.houses.get() {
+            for house in houses {
+                if let Some(units) = house.units.get() {
+                    for unit in units {
+                        if unit.id == unit_id {
+                            return Some(unit);
+                        }
+                    }
+                }
             }
         }
-
-        let resp = mat_rect.unit_rep_with_default(unit.id).ui(ui, ctx);
-
-        if resp.dragged() {
-            if let Some(pos) = ui.ctx().pointer_latest_pos() {
-                let origin = resp.rect.center();
-                ui.painter()
-                    .arrow(origin, pos - origin, ui.visuals().widgets.hovered.fg_stroke);
-            }
-        }
-
-        resp.dnd_set_drag_payload(unit.id);
-        resp
+        None
     }
 
-    fn render_empty_slot(ui: &mut Ui, size: egui::Vec2, ctx: &ClientContext) -> Response {
-        MatRect::new(size).ui(ui, ctx)
+    fn render_empty_slot(&self, ui: &mut Ui) -> Response {
+        ui.label("[Empty]")
     }
 
     fn handle_unit_interactions(
         &self,
-        resp: &Response,
-        target: u64,
-        current_unit: Option<&NUnit>,
+        ui: &mut Ui,
+        unit_id: u64,
+        fusion_id: u64,
+        slot_index: i32,
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
-        // Handle ctx menu for filled slots
-        if current_unit.is_some() && !self.filled_slot_actions.is_empty() {
-            resp.bar_menu(|ui| {
-                for action_name in &self.filled_slot_actions {
-                    if ui.button(action_name).clicked() {
-                        actions.push(TeamAction::ContextMenuAction {
-                            slot_id: target,
-                            action_name: action_name.clone(),
-                            unit_id: current_unit.map(|u| u.id),
-                        });
-                        ui.close_menu();
-                    }
-                }
+        let response = self.render_unit_with_representation(ui, unit_id, team);
+
+        if response.drag_started() {
+            ui.memory_mut(|mem| {
+                mem.data
+                    .insert_temp(egui::Id::new("dragging_unit"), unit_id)
             });
         }
+
+        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+            response.clone().on_hover_text(&unit.unit_name);
+        }
+
+        response.context_menu(|ui| {
+            if ui.button("Bench").clicked() {
+                actions.push(TeamAction::BenchUnit { unit_id });
+                ui.close_menu();
+            }
+
+            for (name, action) in &self.filled_slot_actions {
+                if ui.button(name).clicked() {
+                    action(team, fusion_id, unit_id, slot_index);
+                    ui.close_menu();
+                }
+            }
+        });
     }
 
     fn handle_empty_slot_interactions(
         &self,
-        resp: &Response,
-        slot_id: u64,
-        actions: &mut Vec<TeamAction>,
+        ui: &mut Ui,
+        fusion_id: u64,
+        slot_index: i32,
+        team: &NTeam,
+        _actions: &mut Vec<TeamAction>,
     ) {
-        // Handle ctx menu for empty slots
-        if !self.empty_slot_actions.is_empty() {
-            resp.bar_menu(|ui| {
-                for action_name in &self.empty_slot_actions {
-                    if ui.button(action_name).clicked() {
-                        actions.push(TeamAction::ContextMenuAction {
-                            slot_id,
-                            action_name: action_name.clone(),
-                            unit_id: None,
-                        });
-                        ui.close_menu();
-                    }
+        let response = self.render_empty_slot(ui);
+
+        response.context_menu(|ui| {
+            for (name, action) in &self.empty_slot_actions {
+                if ui.button(name).clicked() {
+                    action(team, fusion_id, slot_index);
+                    ui.close_menu();
                 }
-            });
-        }
+            }
+        });
     }
 
     fn render_fusion_actions_column(
@@ -661,120 +415,216 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        ctx: &ClientContext,
+        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
-            ui.horizontal(|ui| {
-                ui.label(format!("Fusion {}", fusion.index));
-            });
+            ui.label(format!("Fusion {} Actions", fusion.index + 1));
             ui.separator();
 
-            // Trigger selector
-            if let Ok((available_triggers, trigger_map)) = self.get_available_triggers(ctx, slots) {
-                if !available_triggers.is_empty() {
-                    let current_trigger =
-                        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
-                            trigger.clone()
-                        } else {
-                            Trigger::default()
-                        };
+            let triggers = self.get_available_triggers(team, fusion);
+            let mut trigger_index = triggers
+                .iter()
+                .position(|(id, _)| *id == fusion.trigger_unit)
+                .unwrap_or(0);
 
-                    let mut selected_trigger = current_trigger;
-                    let (changed, _response) =
-                        Selector::ui_iter(&mut selected_trigger, &available_triggers, ui);
-                    if changed {
-                        if let Some(trigger_ref) = trigger_map.get(&selected_trigger) {
-                            actions.push(TeamAction::ChangeTrigger {
-                                fusion_id: fusion.id,
-                                trigger: trigger_ref.clone(),
-                            });
+            ui.horizontal(|ui| {
+                ui.label("Trigger:");
+                egui::ComboBox::from_id_salt(fusion.id)
+                    .selected_text(&triggers[trigger_index].1)
+                    .show_ui(ui, |ui| {
+                        for (i, (id, name)) in triggers.iter().enumerate() {
+                            if ui.selectable_value(&mut trigger_index, i, name).clicked() {
+                                actions.push(TeamAction::ChangeTrigger {
+                                    fusion_id: fusion.id,
+                                    trigger: *id,
+                                });
+                            }
                         }
-                    }
-                    ui.separator();
-                }
-            }
+                    });
+            });
+
+            ui.separator();
 
             for slot in slots {
-                if let Some(unit) = Self::get_slot_unit(slot.id, ctx) {
-                    ui.group(|ui| {
-                        if let Ok(desc) = unit.description_ref(ctx) {
-                            if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
-                                let max_actions = unit_behavior.reaction.actions.len() as u8;
-                                if max_actions > 0 {
-                                    let (current_start, current_len) =
-                                        (slot.actions.start, slot.actions.length);
+                ui.group(|ui| {
+                    ui.vertical(|ui| {
+                        ui.label(format!(
+                            "Slot {} - {}",
+                            slot.index + 1,
+                            slot.unit.id().unwrap_or_default()
+                        ));
 
-                                    let range_selector = RangeSelector::new(max_actions)
-                                        .range(current_start, current_len)
-                                        .border_thickness(2.0)
-                                        .drag_threshold(8.0)
-                                        .show_drag_hints(true)
-                                        .show_debug_info(false)
-                                        .id(egui::Id::new("team_range_selector").with(slot.id));
+                        let mut start = slot.actions.start as i32;
+                        let mut length = slot.actions.length as i32;
 
-                                    let (_, range_changed) = range_selector.ui(
-                                        ui,
-                                        ctx,
-                                        |item_ui, ctx, action_idx, is_in_range| {
-                                            let reaction = &unit_behavior.reaction;
-                                            if let Some(action) = reaction.actions.get(action_idx) {
-                                                if is_in_range {
-                                                    Self::render_action_normal(
-                                                        item_ui, ctx, unit, action,
-                                                    );
-                                                } else {
-                                                    Self::render_action_greyed(
-                                                        item_ui, ctx, unit, action,
-                                                    );
-                                                }
-                                            }
-                                            Ok(())
-                                        },
-                                    );
-
-                                    if let Some((new_start, new_length)) = range_changed {
-                                        actions.push(TeamAction::ChangeActionRange {
-                                            slot_id: slot.id,
-                                            start: new_start,
-                                            length: new_length,
-                                        });
-                                    }
-                                } else {
-                                    ui.label("No unit actions");
-                                }
-                            } else {
-                                ui.label("No unit behavior");
+                        ui.horizontal(|ui| {
+                            ui.label("Start:");
+                            if ui.add(egui::DragValue::new(&mut start).speed(1)).changed() {
+                                actions.push(TeamAction::ChangeActionRange {
+                                    slot_id: slot.id,
+                                    start,
+                                    length,
+                                });
                             }
-                        } else {
-                            ui.label("No unit description");
-                        }
+                        });
+
+                        ui.horizontal(|ui| {
+                            ui.label("Length:");
+                            if ui
+                                .add(egui::DragValue::new(&mut length).speed(1).range(1..=10))
+                                .changed()
+                            {
+                                actions.push(TeamAction::ChangeActionRange {
+                                    slot_id: slot.id,
+                                    start,
+                                    length,
+                                });
+                            }
+                        });
+
+                        ui.horizontal(|ui| {
+                            for i in start..start + length {
+                                if i == 0 {
+                                    self.render_action_normal(ui, i);
+                                } else {
+                                    self.render_action_greyed(ui, i);
+                                }
+                            }
+                        });
                     });
-                } else {
-                    ui.group(|ui| {
-                        ui.label(format!("Empty Slot {}", slot.index));
-                    });
-                }
+                });
             }
         });
     }
 
-    fn render_action_normal(ui: &mut Ui, ctx: &ClientContext, _unit: &NUnit, action: &Action) {
-        ui.horizontal(|ui| {
-            action.title(ctx).label(ui);
-        });
+    fn render_action_normal(&self, ui: &mut Ui, index: i32) {
+        ui.label(format!("A{}", index));
     }
 
-    fn render_action_greyed(ui: &mut Ui, ctx: &ClientContext, _unit: &NUnit, action: &Action) {
-        ui.horizontal(|ui| {
-            ui.style_mut().visuals.widgets.inactive.weak_bg_fill = ui
-                .style()
-                .visuals
-                .widgets
-                .inactive
-                .weak_bg_fill
-                .gamma_multiply(0.5);
-            action.title(ctx).label(ui);
-        });
+    fn render_action_greyed(&self, ui: &mut Ui, index: i32) {
+        ui.add(egui::Label::new(
+            egui::RichText::new(format!("A{}", index)).color(Color32::from_gray(128)),
+        ));
+    }
+}
+
+impl NTeam {
+    pub fn apply_action(&mut self, action: TeamAction) -> NodeResult<()> {
+        match action {
+            TeamAction::MoveUnit { unit_id, target } => {
+                if let Ok(fusions) = self.fusions.get_mut() {
+                    for fusion in fusions.iter_mut() {
+                        if let Ok(slots) = fusion.slots.get_mut() {
+                            slots.retain(|slot| slot.unit.id().unwrap_or(0) != unit_id);
+                        }
+                    }
+                }
+
+                if let UnitTarget::Slot {
+                    fusion_id,
+                    slot_index,
+                } = target
+                {
+                    if let Ok(fusions) = self.fusions.get_mut() {
+                        if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
+                            // Find unit before mutably borrowing fusion
+                            let mut found_unit = None;
+                            if let Some(houses) = self.houses.get() {
+                                for house in houses {
+                                    if let Some(units) = house.units.get() {
+                                        if let Some(unit) = units.iter().find(|u| u.id == unit_id) {
+                                            found_unit = Some(unit.clone());
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if let Some(unit) = found_unit {
+                                let new_slot = NFusionSlot::new(
+                                    next_id(),
+                                    slot_index,
+                                    UnitActionRange::default(),
+                                )
+                                .add_components(unit);
+
+                                if let Ok(slots) = fusion.slots.get_mut() {
+                                    slots.push(new_slot);
+                                    slots.sort_by_key(|s| s.index);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            TeamAction::BenchUnit { unit_id } => {
+                if let Ok(fusions) = self.fusions.get_mut() {
+                    for fusion in fusions.iter_mut() {
+                        if let Ok(slots) = fusion.slots.get_mut() {
+                            slots.retain(|slot| slot.unit.id().unwrap_or(0) != unit_id);
+                        }
+                    }
+                }
+            }
+            TeamAction::AddSlot { fusion_id } => {
+                if let Ok(fusions) = self.fusions.get_mut() {
+                    if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
+                        if let Some(slots) = fusion.slots.get() {
+                            let max_index = slots.iter().map(|s| s.index).max().unwrap_or(-1);
+                            let new_slot = NFusionSlot::new(
+                                next_id(),
+                                max_index + 1,
+                                UnitActionRange::default(),
+                            )
+                            .add_components(NUnit::placeholder(next_id()));
+
+                            if let Ok(slots_mut) = fusion.slots.get_mut() {
+                                slots_mut.push(new_slot);
+                            }
+                        }
+                    }
+                }
+            }
+            TeamAction::ChangeActionRange {
+                slot_id,
+                start,
+                length,
+            } => {
+                if let Ok(fusions) = self.fusions.get_mut() {
+                    for fusion in fusions.iter_mut() {
+                        if let Ok(slots) = fusion.slots.get_mut() {
+                            if let Some(slot) = slots.iter_mut().find(|s| s.id == slot_id) {
+                                slot.actions.start = start as u8;
+                                slot.actions.length = length as u8;
+                            }
+                        }
+                    }
+                }
+            }
+            TeamAction::ChangeTrigger { fusion_id, trigger } => {
+                if let Ok(fusions) = self.fusions.get_mut() {
+                    if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
+                        fusion.trigger_unit = trigger;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn find_unit(&self, unit_id: u64) -> NodeResult<NUnit> {
+        if let Some(houses) = self.houses.get() {
+            for house in houses {
+                if let Some(units) = house.units.get() {
+                    for unit in units {
+                        if unit.id == unit_id {
+                            return Ok(unit.clone());
+                        }
+                    }
+                }
+            }
+        }
+        Err(NodeError::custom("Unit not found"))
     }
 }

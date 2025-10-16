@@ -209,36 +209,45 @@ impl MatchPlugin {
             let team = m.team_ref(ctx)?;
             let rect = ui.available_rect_before_wrap();
 
-            let mut team_editor = TeamEditor::new(team.id);
-            team_editor = team_editor.filled_slot_action("Sell Unit");
+            let team_editor = TeamEditor::new().filled_slot_action(
+                "Sell Unit".to_string(),
+                Box::new(|_team, _fusion_id, unit_id, _slot_index| {
+                    cn().reducers.match_sell_unit(unit_id).notify_error_op();
+                }),
+            );
 
-            if let Ok(actions) = team_editor.ui(ui, ctx) {
-                for action in actions {
-                    match action {
-                        TeamAction::MoveUnit { unit_id, target } => {
-                            cn().reducers
-                                .match_move_unit(unit_id, target)
-                                .notify_error_op();
-                        }
-                        TeamAction::AddSlot { fusion_id } => {
-                            cn().reducers
-                                .match_buy_fusion_slot(fusion_id)
-                                .notify_error_op();
-                        }
-                        TeamAction::ContextMenuAction {
-                            unit_id: Some(unit_id),
-                            action_name,
-                            ..
-                        } => {
-                            if action_name == "Sell Unit" {
-                                cn().reducers.match_sell_unit(unit_id).notify_error_op();
+            let (changed_team, actions) = team_editor.edit(team, ui);
+
+            // If team changed, we'd need to apply it back to the server
+            // but for now we'll just handle the actions
+            for action in actions {
+                match action {
+                    TeamAction::MoveUnit { unit_id, target } => {
+                        match target {
+                            crate::plugins::team_editor::UnitTarget::Slot {
+                                fusion_id,
+                                slot_index,
+                            } => {
+                                // Convert to old format for server compatibility
+                                // This is a temporary solution
+                                cn().reducers
+                                    .match_move_unit(unit_id, fusion_id)
+                                    .notify_error_op();
+                            }
+                            crate::plugins::team_editor::UnitTarget::Bench => {
+                                cn().reducers.match_bench_unit(unit_id).notify_error_op();
                             }
                         }
-                        TeamAction::BenchUnit { unit_id } => {
-                            cn().reducers.match_bench_unit(unit_id).notify_error_op();
-                        }
-                        _ => {}
                     }
+                    TeamAction::AddSlot { fusion_id } => {
+                        cn().reducers
+                            .match_buy_fusion_slot(fusion_id)
+                            .notify_error_op();
+                    }
+                    TeamAction::BenchUnit { unit_id } => {
+                        cn().reducers.match_bench_unit(unit_id).notify_error_op();
+                    }
+                    _ => {}
                 }
             }
 

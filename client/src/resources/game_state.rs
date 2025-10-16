@@ -304,7 +304,7 @@ impl Pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::EditLeftGraph => BattlePlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
-                BattlePane::BattleEditor => BattleEditorPlugin::pane(ui, world)?,
+                BattlePane::BattleEditor => BattleEditorPlugin::pane(world, ui),
             },
             Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world),
         };

@@ -29,7 +29,6 @@ impl TopBar {
                     pd_mut(|d| d.client_state.battle_test = default());
                     world.insert_resource(BattleEditorState::default());
                     BattlePlugin::load_from_client_state(world);
-                    BattleEditorPlugin::init(world);
                     ui.close_menu();
                 }
                 if "world inspector".cstr().button(ui).clicked() {
