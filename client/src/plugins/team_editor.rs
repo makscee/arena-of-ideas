@@ -570,19 +570,11 @@ impl NTeam {
             TeamAction::AddSlot { fusion_id } => {
                 if let Ok(fusions) = self.fusions.get_mut() {
                     if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
-                        if let Some(slots) = fusion.slots.get() {
-                            let max_index = slots.iter().map(|s| s.index).max().unwrap_or(-1);
-                            let new_slot = NFusionSlot::new(
-                                next_id(),
-                                max_index + 1,
-                                UnitActionRange::default(),
-                            )
-                            .with_unit(NUnit::placeholder());
-
-                            if let Ok(slots_mut) = fusion.slots.get_mut() {
-                                slots_mut.push(new_slot);
-                            }
-                        }
+                        fusion.slots_push(NFusionSlot::new(
+                            next_id(),
+                            fusion.slots()?.len() as i32,
+                            UnitActionRange::default(),
+                        ))?;
                     }
                 }
             }

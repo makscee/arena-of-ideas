@@ -413,7 +413,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     quote! {
                         if self.#field_name.get().is_some() {
                             ui.horizontal(|ui| {
-                                ui.collapsing(#field_label, |ui| {
+                                CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
                                     let inner_response = self.#field_name.get_mut().unwrap().edit(ui);
                                     if inner_response.changed() {
                                         self.is_dirty = true;
@@ -436,7 +436,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 }
                 LinkType::OwnedMultiple => {
                     quote! {
-                        ui.collapsing(#field_label, |ui| {
+                        CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
                             if let Ok(items) = self.#field_name.get_mut() {
                                 ui.label(format!("{} items", items.len()));
                                 for (index, item) in items.iter_mut().enumerate() {
@@ -476,7 +476,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 }
                 LinkType::RefMultiple => {
                     quote! {
-                        ui.collapsing(#field_label, |ui| {
+                        CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
                             if let Some(ids) = self.#field_name.ids() {
                                 ui.label(format!("{} references", ids.len()));
                                 for (index, id) in ids.iter().enumerate() {

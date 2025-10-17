@@ -1353,7 +1353,16 @@ impl FPlaceholder for NTeam {
         );
         NTeam::new(next_id())
             .with_houses([house].into())
-            .with_fusions([fusion].into())
+            .with_fusions(
+                [
+                    fusion,
+                    NFusion::new(next_id(), 0, 1, 0, 0, 0, 0),
+                    NFusion::new(next_id(), 0, 2, 0, 0, 0, 0),
+                    NFusion::new(next_id(), 0, 3, 0, 0, 0, 0),
+                    NFusion::new(next_id(), 0, 4, 0, 0, 0, 0),
+                ]
+                .into(),
+            )
     }
 }
 
