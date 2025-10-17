@@ -72,7 +72,7 @@ fn generate_server_nodes(
         let server_node_impl = generate_server_node_impl(node, node_map);
 
         // Generate link loading methods
-        let link_methods = generate_server_link_methods(node);
+        let link_methods = generate_link_methods(node, "ServerContext");
 
         let load_methods = generate_load_functions(node, "ServerContext");
 

@@ -4,7 +4,7 @@ pub struct BattleEditorPlugin;
 
 impl Plugin for BattleEditorPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<BattleEditorState>();
+        app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state);
     }
 }
 
@@ -12,100 +12,118 @@ impl Plugin for BattleEditorPlugin {
 pub struct BattleEditorState {
     pub left_team: NTeam,
     pub right_team: NTeam,
-    pub simulation: Option<BattleSimulation>,
-}
-
-impl Default for BattleEditorState {
-    fn default() -> Self {
-        let mut left_team = NTeam::new(next_id());
-        let mut right_team = NTeam::new(next_id());
-
-        let unit1 = NUnit::new(next_id(), "Unit 1".to_string()).add_components(
-            NUnitDescription::placeholder(next_id()),
-            NUnitStats::new(next_id(), 5, 10),
-            NUnitState::new(next_id(), 1),
-        );
-
-        let unit2 = NUnit::new(next_id(), "Unit 2".to_string()).add_components(
-            NUnitDescription::placeholder(next_id()),
-            NUnitStats::new(next_id(), 7, 8),
-            NUnitState::new(next_id(), 1),
-        );
-
-        let house = NHouse::new(next_id(), "Test House".to_string()).add_components(
-            NHouseColor::placeholder(next_id()),
-            NAbilityMagic::placeholder(next_id()),
-            NStatusMagic::placeholder(next_id()),
-            vec![unit1.clone(), unit2.clone()],
-        );
-
-        left_team.houses.get_mut().unwrap().push(house.clone());
-        right_team.houses.get_mut().unwrap().push(house);
-
-        let left_fusion =
-            NFusion::new(next_id(), left_team.id, 0, 5, 10, 0, 1).add_components(vec![
-                NFusionSlot::new(
-                    next_id(),
-                    0,
-                    UnitActionRange {
-                        trigger: 0,
-                        start: 0,
-                        length: 1,
-                    },
-                )
-                .add_components(unit1.clone()),
-            ]);
-
-        let right_fusion =
-            NFusion::new(next_id(), right_team.id, 0, 7, 8, 0, 1).add_components(vec![
-                NFusionSlot::new(
-                    next_id(),
-                    0,
-                    UnitActionRange {
-                        trigger: 0,
-                        start: 0,
-                        length: 1,
-                    },
-                )
-                .add_components(unit2.clone()),
-            ]);
-
-        left_team.fusions.get_mut().unwrap().push(left_fusion);
-        right_team.fusions.get_mut().unwrap().push(right_fusion);
-
-        Self {
-            left_team,
-            right_team,
-            simulation: None,
-        }
-    }
+    pub simulation: BattleSimulation,
 }
 
 impl BattleEditorPlugin {
-    pub fn init(commands: &mut Commands) {
-        commands.insert_resource(BattleEditorState::default());
+    pub fn load_from_client_state(world: &mut World) {
+        let (left_team, right_team) =
+            if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
+                (left, right)
+            } else {
+                let mut left_team = NTeam::new(next_id());
+                let mut right_team = NTeam::new(next_id());
+
+                let unit1 = NUnit::new(next_id(), "Unit 1".to_string()).add_components(
+                    NUnitDescription::placeholder(next_id()),
+                    NUnitStats::new(next_id(), 5, 10),
+                    NUnitState::new(next_id(), 1),
+                );
+
+                let unit2 = NUnit::new(next_id(), "Unit 2".to_string()).add_components(
+                    NUnitDescription::placeholder(next_id()),
+                    NUnitStats::new(next_id(), 7, 8),
+                    NUnitState::new(next_id(), 1),
+                );
+
+                let house = NHouse::new(next_id(), "Test House".to_string()).add_components(
+                    NHouseColor::placeholder(next_id()),
+                    NAbilityMagic::placeholder(next_id()),
+                    NStatusMagic::placeholder(next_id()),
+                    vec![unit1.clone(), unit2.clone()],
+                );
+                left_team.houses_push(house.clone().remap_ids()).unwrap();
+                right_team.houses_push(house).unwrap();
+
+                let left_fusion = NFusion::new(next_id(), left_team.id, 0, 5, 10, 0, 1)
+                    .add_components(vec![
+                        NFusionSlot::new(
+                            next_id(),
+                            0,
+                            UnitActionRange {
+                                trigger: 0,
+                                start: 0,
+                                length: 5,
+                            },
+                        )
+                        .add_components(unit1.clone()),
+                    ]);
+
+                let right_fusion = NFusion::new(next_id(), right_team.id, 0, 7, 8, 0, 1)
+                    .add_components(vec![
+                        NFusionSlot::new(
+                            next_id(),
+                            0,
+                            UnitActionRange {
+                                trigger: 0,
+                                start: 0,
+                                length: 5,
+                            },
+                        )
+                        .add_components(unit2.clone()),
+                    ]);
+
+                left_team.fusions_push(left_fusion).unwrap();
+                right_team.fusions_push(right_fusion).unwrap();
+
+                (left_team, right_team)
+            };
+
+        let battle = Battle {
+            id: next_id(),
+            left: left_team.clone(),
+            right: right_team.clone(),
+        };
+
+        let simulation = BattleSimulation::new(battle).start();
+
+        world.insert_resource(BattleEditorState {
+            left_team,
+            right_team,
+            simulation,
+        });
     }
 
     pub fn pane(world: &mut World, ui: &mut Ui) {
-        let mut state = world.resource_mut::<BattleEditorState>();
+        let mut load_test_battle = false;
+        let mut start_battle = false;
 
         ui.horizontal(|ui| {
             ui.heading("Battle Editor");
 
             if ui.button("Load Test Battle").clicked() {
-                *state = BattleEditorState::default();
+                load_test_battle = true;
             }
 
             if ui.button("Start Battle").clicked() {
-                let battle = Battle {
-                    id: next_id(),
-                    left: state.left_team.clone(),
-                    right: state.right_team.clone(),
-                };
-
-                state.simulation = Some(BattleSimulation::new(battle).start());
+                start_battle = true;
             }
         });
+
+        if load_test_battle {
+            Self::load_from_client_state(world);
+        }
+
+        let mut state = world.resource_mut::<BattleEditorState>();
+
+        if start_battle {
+            let battle = Battle {
+                id: next_id(),
+                left: state.left_team.clone(),
+                right: state.right_team.clone(),
+            };
+            state.simulation = BattleSimulation::new(battle).start();
+        }
 
         ui.separator();
 
@@ -121,16 +139,17 @@ impl BattleEditorPlugin {
 
                     if let Some(new_team) = changed_team {
                         state.left_team = new_team;
+                        pd_mut(|pd| {
+                            pd.client_state
+                                .set_battle_test_teams(&state.left_team, &state.right_team)
+                        });
 
-                        // Reload simulation if it exists
-                        if state.simulation.is_some() {
-                            let battle = Battle {
-                                id: next_id(),
-                                left: state.left_team.clone(),
-                                right: state.right_team.clone(),
-                            };
-                            state.simulation = Some(BattleSimulation::new(battle).start());
-                        }
+                        let battle = Battle {
+                            id: next_id(),
+                            left: state.left_team.clone(),
+                            right: state.right_team.clone(),
+                        };
+                        state.simulation = BattleSimulation::new(battle).start();
                     }
                 });
 
@@ -144,71 +163,20 @@ impl BattleEditorPlugin {
 
                     if let Some(new_team) = changed_team {
                         state.right_team = new_team;
+                        pd_mut(|pd| {
+                            pd.client_state
+                                .set_battle_test_teams(&state.left_team, &state.right_team)
+                        });
 
-                        // Reload simulation if it exists
-                        if state.simulation.is_some() {
-                            let battle = Battle {
-                                id: next_id(),
-                                left: state.left_team.clone(),
-                                right: state.right_team.clone(),
-                            };
-                            state.simulation = Some(BattleSimulation::new(battle).start());
-                        }
-                    }
-                });
-            });
-
-            ui.separator();
-
-            // Battle pane
-            let has_simulation = state.simulation.is_some();
-            if has_simulation {
-                ui.group(|ui| {
-                    ui.heading("Battle Simulation");
-                    ui.separator();
-
-                    let mut should_reset = false;
-
-                    ui.horizontal(|ui| {
-                        if ui.button("Step").clicked() {
-                            if let Some(simulation) = &mut state.simulation {
-                                simulation.run();
-                            }
-                        }
-
-                        if ui.button("Run to End").clicked() {
-                            if let Some(simulation) = &mut state.simulation {
-                                while !simulation.ended() {
-                                    simulation.run();
-                                }
-                            }
-                        }
-
-                        if ui.button("Reset").clicked() {
-                            should_reset = true;
-                        }
-
-                        if let Some(simulation) = &state.simulation {
-                            ui.label(format!("Time: {:.1}", simulation.t));
-                        }
-                    });
-
-                    if should_reset {
                         let battle = Battle {
                             id: next_id(),
                             left: state.left_team.clone(),
                             right: state.right_team.clone(),
                         };
-                        state.simulation = Some(BattleSimulation::new(battle).start());
-                    }
-
-                    ui.separator();
-
-                    if let Some(simulation) = &mut state.simulation {
-                        BattleCamera::show(simulation, simulation.t, ui);
+                        state.simulation = BattleSimulation::new(battle).start();
                     }
                 });
-            }
+            });
         });
     }
 }

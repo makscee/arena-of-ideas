@@ -27,7 +27,6 @@ impl TopBar {
             Self::state_btn(GameState::Editor, ui, world, |ui, world| {
                 if "reset state".cstr().button(ui).clicked() {
                     pd_mut(|d| d.client_state.battle_test = default());
-                    world.insert_resource(BattleEditorState::default());
                     BattlePlugin::load_from_client_state(world);
                     ui.close_menu();
                 }

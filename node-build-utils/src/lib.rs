@@ -898,8 +898,10 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
     }
 }
 
-/// Generate link loading methods for server nodes
-pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
+/// Generate link loading methods for nodes with specified context type
+pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStream {
+    let context_ident = Ident::new(context_ident, proc_macro2::Span::call_site());
+
     let link_methods = node.fields.iter().filter_map(|field| {
         if matches!(field.link_type, LinkType::None) {
             return None;
@@ -909,12 +911,13 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
 
         let load_method = format_ident!("{}_load", field_name);
         let load_id_method = format_ident!("{}_load_id", field_name);
-
+        let set_method = format_ident!("{}_set", field_name);
+        let push_method = format_ident!("{}_push", field_name);
         let get_method = format_ident!("{}", field_name);
 
         if matches!(field.link_type, LinkType::OwnedMultiple | LinkType::RefMultiple) {
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &ServerContext) -> Result<Vec<u64>, NodeError> {
+            let load_logic = if context_ident == "ServerContext" {
+                quote! {
                     if let Some(ids) = self.#field_name.ids() {
                         return Ok(ids);
                     }
@@ -928,86 +931,8 @@ pub fn generate_server_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(Vec::new())
                     }
                 }
-
-                pub fn #load_method(&mut self, ctx: &ServerContext) -> Result<&mut Vec<#target_type>, NodeError>
-                {
-                    let ids = self.#load_id_method(ctx)?;
-                    let loaded_nodes = ids
-                        .iter()
-                        .filter_map(|&id| ctx.load::<#target_type>(id).ok())
-                        .collect_vec();
-                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
-
-                pub fn #get_method(&self) -> Result<&Vec<#target_type>, NodeError>
-                {
-                    match self.#field_name.state() {
-                        LinkStateMultiple::Loaded(_) => Ok(self.#field_name.get().unwrap()),
-                        LinkStateMultiple::Ids(_) => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                        LinkStateMultiple::None => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                        LinkStateMultiple::Unknown => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                    }
-                }
-            })
-        } else {
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &ServerContext) -> Result<u64, NodeError> {
-                    if !self.#field_name.is_none() && self.#field_name.id().is_some() {
-                        return Ok(self.#field_name.id().unwrap());
-                    }
-                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                    if let Some(&first_id) = children.first() {
-                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
-                        Ok(first_id)
-                    } else {
-                        *self.#field_name.state_mut() = LinkStateSingle::None;
-                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
-                    }
-                }
-
-                pub fn #load_method(&mut self, ctx: &ServerContext) -> Result<&mut #target_type, NodeError>
-                {
-                    let id = self.#load_id_method(ctx)?;
-                    let loaded_node = ctx.load::<#target_type>(id)?;
-                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
-
-                pub fn #get_method(&self) -> Result<&#target_type, NodeError>
-                {
-                    match self.#field_name.state() {
-                        LinkStateSingle::Loaded(_) => Ok(self.#field_name.get().unwrap()),
-                        LinkStateSingle::Id(_) => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                        LinkStateSingle::None => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                        LinkStateSingle::Unknown => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                    }
-                }
-            })
-        }
-    }).collect::<Vec<_>>();
-
-    quote! {
-        #(#link_methods)*
-    }
-}
-
-pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
-    let link_methods = node.fields.iter().filter_map(|field| {
-        if matches!(field.link_type, LinkType::None) {
-            return None;
-        }
-        let field_name = &field.name;
-        let target_type = format_ident!("{}", field.target_type);
-
-        let load_method = format_ident!("{}_load", field_name);
-        let load_id_method = format_ident!("{}_load_id", field_name);
-        let ref_method = format_ident!("{}_ref", field_name);
-        let get_method = format_ident!("{}", field_name);
-
-        if matches!(field.link_type, LinkType::OwnedMultiple | LinkType::RefMultiple) {
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &ClientContext) -> Result<Vec<u64>, NodeError> {
+            } else {
+                quote! {
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
                         *self.#field_name.state_mut() = LinkStateMultiple::Ids(children.clone());
@@ -1017,9 +942,20 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         Ok(Vec::new())
                     }
                 }
+            };
 
-                pub fn #load_method(&mut self, ctx: &ClientContext) -> Result<&mut Vec<#target_type>, NodeError>
-                {
+            let load_method_logic = if context_ident == "ServerContext" {
+                quote! {
+                    let ids = self.#load_id_method(ctx)?;
+                    let loaded_nodes = ids
+                        .iter()
+                        .filter_map(|&id| ctx.load::<#target_type>(id).ok())
+                        .collect_vec();
+                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
+                    Ok(self.#field_name.get_mut().unwrap())
+                }
+            } else {
+                quote! {
                     let ids = self.#load_id_method(ctx)?;
                     let loaded_nodes = ids
                         .iter()
@@ -1027,6 +963,34 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         .collect_vec();
                     *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
                     Ok(self.#field_name.get_mut().unwrap())
+                }
+            };
+
+            let ref_method = if context_ident == "ClientContext" {
+                let ref_method_name = format_ident!("{}_ref", field_name);
+                quote! {
+                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<Vec<&'a #target_type>, NodeError>
+                    {
+                        let ids = if let Ok(ids) = ctx.get_children_of_kind(self.id, NodeKind::#target_type) {
+                            ids
+                        } else {
+                            return Ok(Vec::new());
+                        };
+                        ctx.load_many::<#target_type>(&ids)
+                    }
+                }
+            } else {
+                quote! {}
+            };
+
+            Some(quote! {
+                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<Vec<u64>, NodeError> {
+                    #load_logic
+                }
+
+                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<&mut Vec<#target_type>, NodeError>
+                {
+                    #load_method_logic
                 }
 
                 pub fn #get_method(&self) -> Result<&Vec<#target_type>, NodeError>
@@ -1039,19 +1003,28 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                 }
 
-                pub fn #ref_method<'a>(&'a self, ctx: &'a ClientContext) -> Result<Vec<&'a #target_type>, NodeError>
-                {
-                    let ids = if let Ok(ids) = ctx.get_children_of_kind(self.id, NodeKind::#target_type) {
-                        ids
-                    } else {
-                        return Ok(Vec::new());
-                    };
-                    ctx.load_many::<#target_type>(&ids)
+                pub fn #set_method(&mut self, nodes: Vec<#target_type>) {
+                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(nodes);
                 }
+
+                pub fn #push_method(&mut self, node: #target_type) -> Result<(), NodeError> {
+                    match self.#field_name.state_mut() {
+                        LinkStateMultiple::Loaded(nodes) => {
+                            nodes.push(node);
+                            Ok(())
+                        }
+                        _ => {
+                            *self.#field_name.state_mut() = LinkStateMultiple::Loaded(vec![node]);
+                            Ok(())
+                        }
+                    }
+                }
+
+                #ref_method
             })
         } else {
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &ClientContext) -> Result<u64, NodeError> {
+            let load_id_logic = if context_ident == "ServerContext" {
+                quote! {
                     if !self.#field_name.is_none() && self.#field_name.id().is_some() {
                         return Ok(self.#field_name.id().unwrap());
                     }
@@ -1064,13 +1037,70 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                         Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                     }
                 }
+            } else {
+                quote! {
+                    if !self.#field_name.is_none() && self.#field_name.id().is_some() {
+                        return Ok(self.#field_name.id().unwrap());
+                    }
+                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
+                    if let Some(&first_id) = children.first() {
+                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
+                        Ok(first_id)
+                    } else {
+                        *self.#field_name.state_mut() = LinkStateSingle::None;
+                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
+                    }
+                }
+            };
 
-                pub fn #load_method<'a>(&'a mut self, ctx: &'a ClientContext) -> Result<&'a mut #target_type, NodeError>
-                {
+            let load_method_logic = if context_ident == "ServerContext" {
+                quote! {
+                    let id = self.#load_id_method(ctx)?;
+                    let loaded_node = ctx.load::<#target_type>(id)?;
+                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
+                    Ok(self.#field_name.get_mut().unwrap())
+                }
+            } else {
+                quote! {
                     let id = self.#load_id_method(ctx)?;
                     let loaded_node = ctx.load::<#target_type>(id).cloned()?;
                     *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
                     Ok(self.#field_name.get_mut().unwrap())
+                }
+            };
+
+            let ref_method = if context_ident == "ClientContext" {
+                let ref_method_name = format_ident!("{}_ref", field_name);
+                quote! {
+                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<&'a #target_type, NodeError>
+                    {
+                        if self.#field_name.is_loaded() {
+                            return Ok(self.#field_name.get().unwrap());
+                        }
+                        let id = if let Some(id) = self.#field_name.id() {
+                            id
+                        } else if let Some(id) = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?
+                            .into_iter()
+                            .next() {
+                            id
+                        } else {
+                            return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
+                        };
+                        ctx.load::<#target_type>(id)
+                    }
+                }
+            } else {
+                quote! {}
+            };
+
+            Some(quote! {
+                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<u64, NodeError> {
+                    #load_id_logic
+                }
+
+                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<&mut #target_type, NodeError>
+                {
+                    #load_method_logic
                 }
 
                 pub fn #get_method(&self) -> Result<&#target_type, NodeError>
@@ -1083,22 +1113,11 @@ pub fn generate_client_link_methods(node: &NodeInfo) -> TokenStream {
                     }
                 }
 
-                pub fn #ref_method<'a>(&'a self, ctx: &'a ClientContext) -> Result<&'a #target_type, NodeError>
-                {
-                    if self.#field_name.is_loaded() {
-                        return Ok(self.#field_name.get().unwrap());
-                    }
-                    let id = if let Some(id) = self.#field_name.id() {
-                        id
-                    } else if let Some(id) = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?
-                        .into_iter()
-                        .next() {
-                        id
-                    } else {
-                        return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
-                    };
-                    ctx.load::<#target_type>(id)
+                pub fn #set_method(&mut self, node: #target_type) {
+                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(node);
                 }
+
+                #ref_method
             })
         }
     }).collect::<Vec<_>>();

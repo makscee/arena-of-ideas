@@ -69,7 +69,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         let client_node_impl = generate_client_node_impl(node);
 
         // Generate link loading methods
-        let link_methods = generate_client_link_methods(node);
+        let link_methods = generate_link_methods(node, "ClientContext");
 
         let load_components_method = generate_load_functions(node, "ClientContext");
 
