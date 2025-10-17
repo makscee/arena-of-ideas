@@ -21,7 +21,6 @@ pub trait ServerNode: Sized + schema::Node {
             Err(NodeError::invalid_kind(kind.to_kind(), node.kind()))
         }
     }
-    fn save(&self, source: &ServerSource);
     fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self;
     fn clone(&self, ctx: &ServerContext, owner: u64) -> Self;
     fn insert(mut self, ctx: &ServerContext) -> Self {

@@ -3,14 +3,7 @@ use super::*;
 pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state)
-            .init_resource::<ReloadData>()
-            .add_systems(
-                FixedUpdate,
-                Self::reload.run_if(in_state(GameState::Editor)),
-            );
-    }
+    fn build(&self, _app: &mut App) {}
 }
 
 #[derive(Resource)]
@@ -23,15 +16,9 @@ pub struct BattleData {
     pub slot_actions: Vec<(String, fn(i32, Entity, &mut ClientContext))>,
 }
 
-#[derive(Resource, Default)]
-pub struct ReloadData {
-    pub reload_requested: bool,
-    pub last_reload: f64,
-}
-
 impl BattleData {
     fn load(battle: Battle) -> Self {
-        let simulation = BattleSimulation::new(battle.clone());
+        let simulation = BattleSimulation::new(battle.clone()).start();
         Self {
             battle,
             simulation,
@@ -59,46 +46,9 @@ impl BattlePlugin {
         }
         world.insert_resource(BattleData::load(Battle { left, right, id }));
     }
-    pub fn load_from_client_state(world: &mut World) {
-        if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
-            Self::load_teams(0, left, right, world);
-        } else {
-            let mut left = NTeam::new(next_id());
-            left.fusions.state_mut().set(default());
-            let mut right = NTeam::new(next_id());
-            right.fusions.state_mut().set(default());
-            Self::load_teams(0, left, right, world);
-        };
-    }
     pub fn on_done_callback(f: fn(u64, bool, u64), world: &mut World) {
         if let Some(mut r) = world.get_resource_mut::<BattleData>() {
             r.on_done = Some(f);
-        }
-    }
-    fn reload(mut data: ResMut<BattleData>, mut reload: ResMut<ReloadData>) {
-        if reload.reload_requested && reload.last_reload + 0.1 < gt().elapsed() {
-            reload.reload_requested = false;
-            reload.last_reload = gt().elapsed();
-            let (left_id, right_id) = (data.battle.left.id(), data.battle.right.id());
-            let (left, right) = data
-                .simulation
-                .world
-                .with_context_mut(|ctx| {
-                    let left = ctx.load::<NTeam>(left_id)?.clone().load_all(ctx)?.clone();
-                    let right = ctx.load::<NTeam>(right_id)?.clone().load_all(ctx)?.clone();
-                    Ok((left, right))
-                })
-                .unwrap();
-            data.battle.left = left;
-            data.battle.right = right;
-            data.playing = false;
-            data.simulation.t = 0.0;
-            data.simulation = BattleSimulation::new(data.battle.clone()).start();
-            pd_mut(|pd| {
-                pd.client_state
-                    .set_battle_test_teams(&data.battle.left, &data.battle.right);
-                dbg!(&data.battle.left);
-            });
         }
     }
     pub fn open_world_inspector_window(world: &mut World) {
@@ -197,7 +147,6 @@ impl BattlePlugin {
         // Create overlay for controls at the bottom
         let overlay_height = 80.0;
         let slider_height = 20.0;
-        let controls_height = overlay_height - slider_height;
 
         let overlay_rect = Rect::from_min_size(
             main_rect.left_bottom() - egui::vec2(0.0, overlay_height),
@@ -209,16 +158,8 @@ impl BattlePlugin {
             egui::vec2(overlay_rect.width(), slider_height),
         );
 
-        let controls_rect = Rect::from_min_size(
-            overlay_rect.min,
-            egui::vec2(overlay_rect.width(), controls_height),
-        );
-
         ui.allocate_new_ui(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
-            ui.set_clip_rect(slider_rect);
-            if data.simulation.duration > 0.0 {
-                Self::render_controls(ui, data);
-            }
+            Self::render_controls(ui, data);
         });
 
         if data.playing {

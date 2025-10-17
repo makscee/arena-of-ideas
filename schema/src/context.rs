@@ -363,7 +363,6 @@ where
 
     /// Get variable value from context layers, checking layers first then owner/target/caster
     pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
-        // First check context layers
         for layer in self.layers.iter().rev() {
             match layer {
                 ContextLayer::Var(var_name, value) => {
@@ -374,23 +373,11 @@ where
                 ContextLayer::Owner(id) => {
                     if let Ok(value) = self.source.get_var(*id, var) {
                         return Ok(value);
-                    }
-                }
-                ContextLayer::Target(id) => {
-                    if let Ok(value) = self.source.get_var(*id, var) {
+                    } else if let Ok(value) = self.source().get_var_recursive(*id, var) {
                         return Ok(value);
                     }
                 }
-                ContextLayer::Caster(id) => {
-                    if let Ok(value) = self.source.get_var(*id, var) {
-                        return Ok(value);
-                    }
-                }
-                ContextLayer::Status(id) => {
-                    if let Ok(value) = self.source.get_var(*id, var) {
-                        return Ok(value);
-                    }
-                }
+                _ => {}
             }
         }
 

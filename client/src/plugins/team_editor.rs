@@ -94,7 +94,6 @@ impl TeamEditor {
                         &mut columns[column_idx],
                         fusion,
                         &slots,
-                        team,
                         &mut actions,
                     );
                 } else {
@@ -118,12 +117,7 @@ impl TeamEditor {
                 column_idx += 1;
             }
 
-            self.render_bench_column(
-                &mut columns[column_idx],
-                &unlinked_units,
-                team,
-                &mut actions,
-            );
+            self.render_bench_column(&mut columns[column_idx], &unlinked_units, team);
         });
 
         if let Some(id) = clicked_fusion_id {
@@ -174,7 +168,7 @@ impl TeamEditor {
         unlinked
     }
 
-    fn get_available_triggers(&self, team: &NTeam, fusion: &NFusion) -> Vec<(u64, String)> {
+    fn get_available_triggers(&self, fusion: &NFusion) -> Vec<(u64, String)> {
         let mut triggers = vec![];
 
         if let Some(slots) = fusion.slots.get() {
@@ -188,30 +182,18 @@ impl TeamEditor {
         triggers
     }
 
-    fn render_bench_column(
-        &self,
-        ui: &mut Ui,
-        unlinked_units: &[u64],
-        team: &NTeam,
-        actions: &mut Vec<TeamAction>,
-    ) {
+    fn render_bench_column(&self, ui: &mut Ui, unlinked_units: &[u64], team: &NTeam) {
         ui.vertical(|ui| {
             ui.label("Bench");
             ui.separator();
 
             for &unit_id in unlinked_units {
-                self.handle_bench_unit_interactions(ui, unit_id, team, actions);
+                self.handle_bench_unit_interactions(ui, unit_id, team);
             }
         });
     }
 
-    fn handle_bench_unit_interactions(
-        &self,
-        ui: &mut Ui,
-        unit_id: u64,
-        team: &NTeam,
-        actions: &mut Vec<TeamAction>,
-    ) {
+    fn handle_bench_unit_interactions(&self, ui: &mut Ui, unit_id: u64, team: &NTeam) {
         let response = self.render_unit_with_representation(ui, unit_id, team);
 
         if response.drag_started() {
@@ -241,7 +223,7 @@ impl TeamEditor {
             self.render_fusion_action_sequence(ui, fusion, slots);
             ui.separator();
 
-            for (i, slot) in slots.iter().enumerate() {
+            for slot in slots {
                 self.render_slot(ui, slot, fusion.id, team, actions);
             }
 
@@ -414,14 +396,13 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
             ui.label(format!("Fusion {} Actions", fusion.index + 1));
             ui.separator();
 
-            let triggers = self.get_available_triggers(team, fusion);
+            let triggers = self.get_available_triggers(fusion);
             let mut trigger_index = triggers
                 .iter()
                 .position(|(id, _)| *id == fusion.trigger_unit)

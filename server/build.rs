@@ -139,92 +139,10 @@ fn generate_server_node_impl(
 ) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
 
-    // Generate save implementation that handles linked fields
-    let save_fields = node
-        .fields
-        .iter()
-        .filter_map(|field| match field.link_type {
-            LinkType::Component => {
-                let field_name = &field.name;
-                Some(quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.save(source);
-                        self.id.add_child(source.rctx(), loaded.id);
-                    }
-                })
-            }
-
-            LinkType::Owned => {
-                let field_name = &field.name;
-                Some(quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.save(source);
-                        self.id.add_child(source.rctx(), loaded.id);
-                    }
-                })
-            }
-            LinkType::OwnedMultiple => {
-                let field_name = &field.name;
-                Some(quote! {
-                    for owned in &self.#field_name {
-                        owned.save(source);
-                        self.id.add_child(source.rctx(), owned.id);
-                    }
-                })
-            }
-            LinkType::Ref => {
-                let field_name = &field.name;
-                Some(quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.save(source);
-                        self.id.add_child(source.rctx(), loaded.id);
-                    }
-                })
-            }
-            LinkType::RefMultiple => {
-                let field_name = &field.name;
-                Some(quote! {
-                    for ref_link in &self.#field_name {
-                        if let Some(loaded) = ref_link.get() {
-                            loaded.save(source);
-                            self.id.add_child(source.rctx(), loaded.id);
-                        }
-                    }
-                })
-            }
-            LinkType::None => None,
-        });
-
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
         impl ServerNode for #struct_name {
-            fn save(&self, source: &ServerSource) {
-                // Save linked fields first
-                #(#save_fields)*
-
-                // Insert or update this node
-                if self.id == 0 {
-                    panic!("Node id not set before save");
-                }
-
-                let node = self.to_tnode();
-                let ctx = source.rctx();
-                match ctx.db.nodes_world().id().find(self.id) {
-                    Some(_) => {
-                        // Update existing node
-                        ctx.db.nodes_world().id().update(node);
-                    }
-                    None => {
-                        // Insert new node
-                        match ctx.db.nodes_world().try_insert(node) {
-                            Ok(_) => {}
-                            Err(e) => error!("Insert of node {} failed: {}", self.id, e),
-                        }
-                    }
-                }
-            }
-
             fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self {
                 todo!()
             }
