@@ -21,7 +21,7 @@ impl BattleEditorPlugin {
             if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
                 (left, right)
             } else {
-                (NTeam::placeholder(next_id()), NTeam::placeholder(next_id()))
+                (NTeam::placeholder(), NTeam::placeholder())
             };
 
         let battle = Battle {
@@ -40,88 +40,30 @@ impl BattleEditorPlugin {
     }
 
     pub fn pane(world: &mut World, ui: &mut Ui) {
-        let mut load_test_battle = false;
-        let mut start_battle = false;
-
-        ui.horizontal(|ui| {
-            ui.heading("Battle Editor");
-
-            if ui.button("Load Test Battle").clicked() {
-                load_test_battle = true;
-            }
-
-            if ui.button("Start Battle").clicked() {
-                start_battle = true;
-            }
-        });
-
-        if load_test_battle {
-            Self::load_from_client_state(world);
-        }
-
         let mut state = world.resource_mut::<BattleEditorState>();
-
-        if start_battle {
-            let battle = Battle {
-                id: next_id(),
-                left: state.left_team.clone(),
-                right: state.right_team.clone(),
-            };
-            state.simulation = BattleSimulation::new(battle).start();
+        let editor = TeamEditor::new();
+        let (changed_team, _actions) = editor.edit(&state.left_team, ui);
+        if let Some(new_team) = changed_team {
+            dbg!(&new_team);
+            state.left_team = new_team;
+            save_changes_and_reload(&mut state);
         }
-
-        ui.separator();
-
-        egui::ScrollArea::both().show(ui, |ui| {
-            ui.columns(2, |columns| {
-                // Left team editor
-                columns[0].group(|ui| {
-                    ui.heading("Left Team");
-                    ui.separator();
-
-                    let editor = TeamEditor::new();
-                    let (changed_team, _actions) = editor.edit(&state.left_team, ui);
-
-                    if let Some(new_team) = changed_team {
-                        state.left_team = new_team;
-                        pd_mut(|pd| {
-                            pd.client_state
-                                .set_battle_test_teams(&state.left_team, &state.right_team)
-                        });
-
-                        let battle = Battle {
-                            id: next_id(),
-                            left: state.left_team.clone(),
-                            right: state.right_team.clone(),
-                        };
-                        state.simulation = BattleSimulation::new(battle).start();
-                    }
-                });
-
-                // Right team editor
-                columns[1].group(|ui| {
-                    ui.heading("Right Team");
-                    ui.separator();
-
-                    let editor = TeamEditor::new();
-                    let (changed_team, _actions) = editor.edit(&state.right_team, ui);
-
-                    if let Some(new_team) = changed_team {
-                        state.right_team = new_team;
-                        pd_mut(|pd| {
-                            pd.client_state
-                                .set_battle_test_teams(&state.left_team, &state.right_team)
-                        });
-
-                        let battle = Battle {
-                            id: next_id(),
-                            left: state.left_team.clone(),
-                            right: state.right_team.clone(),
-                        };
-                        state.simulation = BattleSimulation::new(battle).start();
-                    }
-                });
-            });
-        });
+        if state.left_team.edit(ui).changed() {
+            save_changes_and_reload(&mut state);
+        }
     }
+}
+
+fn save_changes_and_reload(state: &mut Mut<'_, BattleEditorState>) {
+    pd_mut(|pd| {
+        pd.client_state
+            .set_battle_test_teams(&state.left_team, &state.right_team)
+    });
+
+    let battle = Battle {
+        id: 0,
+        left: state.left_team.clone(),
+        right: state.right_team.clone(),
+    };
+    state.simulation = BattleSimulation::new(battle).start();
 }

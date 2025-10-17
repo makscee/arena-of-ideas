@@ -620,11 +620,10 @@ impl FCopy for NUnit {}
 impl FPaste for NUnit {}
 
 impl FPlaceholder for NUnit {
-    fn placeholder(id: u64) -> Self {
-        NUnit::new(id, "New Unit".to_string())
-            .with_description(NUnitDescription::placeholder(next_id()))
-            .with_stats(NUnitStats::placeholder(next_id()))
-            .with_state(NUnitState::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NUnit::new(next_id(), "New Unit".to_string())
+            .with_description(NUnitDescription::placeholder())
+            .with_stats(NUnitStats::placeholder())
     }
 }
 
@@ -687,12 +686,10 @@ impl FCopy for NHouse {}
 impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
-    fn placeholder(id: u64) -> Self {
-        NHouse::new(id, "New House".to_string())
-            .with_color(NHouseColor::placeholder(next_id()))
-            .with_ability(NAbilityMagic::placeholder(next_id()))
-            .with_status(NStatusMagic::placeholder(next_id()))
-            .with_units(default())
+    fn placeholder() -> Self {
+        NHouse::new(next_id(), "New House".to_string())
+            .with_color(NHouseColor::placeholder())
+            .with_units([NUnit::placeholder()].into())
     }
 }
 
@@ -749,9 +746,9 @@ impl FCopy for NAbilityMagic {}
 impl FPaste for NAbilityMagic {}
 
 impl FPlaceholder for NAbilityMagic {
-    fn placeholder(id: u64) -> Self {
-        NAbilityMagic::new(id, "New Ability".to_string())
-            .with_description(NAbilityDescription::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NAbilityMagic::new(next_id(), "New Ability".to_string())
+            .with_description(NAbilityDescription::placeholder())
     }
 }
 
@@ -814,10 +811,10 @@ impl FCopy for NStatusMagic {}
 impl FPaste for NStatusMagic {}
 
 impl FPlaceholder for NStatusMagic {
-    fn placeholder(id: u64) -> Self {
-        NStatusMagic::new(id, "New Status".to_string())
-            .with_description(NStatusDescription::placeholder(next_id()))
-            .with_representation(NStatusRepresentation::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NStatusMagic::new(next_id(), "New Status".to_string())
+            .with_description(NStatusDescription::placeholder())
+            .with_representation(NStatusRepresentation::placeholder())
     }
 }
 
@@ -994,11 +991,11 @@ impl FCopy for NPlayer {}
 impl FPaste for NPlayer {}
 
 impl FPlaceholder for NPlayer {
-    fn placeholder(id: u64) -> Self {
-        NPlayer::new(id, "New Player".to_string())
-            .with_player_data(NPlayerData::placeholder(next_id()))
-            .with_identity(NPlayerIdentity::placeholder(next_id()))
-            .with_active_match(NMatch::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NPlayer::new(next_id(), "New Player".to_string())
+            .with_player_data(NPlayerData::placeholder())
+            .with_identity(NPlayerIdentity::placeholder())
+            .with_active_match(NMatch::placeholder())
     }
 }
 
@@ -1126,8 +1123,8 @@ impl FTitle for NHouseColor {
 }
 
 impl FPlaceholder for NHouseColor {
-    fn placeholder(id: u64) -> Self {
-        NHouseColor::new(id, HexColor("#FF0000".to_string()))
+    fn placeholder() -> Self {
+        NHouseColor::new(next_id(), HexColor("#F08050".to_string()))
     }
 }
 
@@ -1144,9 +1141,9 @@ impl FTitle for NAbilityDescription {
 }
 
 impl FPlaceholder for NAbilityDescription {
-    fn placeholder(id: u64) -> Self {
-        NAbilityDescription::new(id, "Default description".to_string())
-            .with_effect(NAbilityEffect::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NAbilityDescription::new(next_id(), "Default description".to_string())
+            .with_effect(NAbilityEffect::placeholder())
     }
 }
 
@@ -1201,9 +1198,9 @@ impl FTitle for NStatusDescription {
 }
 
 impl FPlaceholder for NStatusDescription {
-    fn placeholder(id: u64) -> Self {
-        NStatusDescription::new(id, "Default status description".to_string())
-            .with_behavior(NStatusBehavior::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NStatusDescription::new(next_id(), "Default status description".to_string())
+            .with_behavior(NStatusBehavior::placeholder())
     }
 }
 
@@ -1284,9 +1281,9 @@ impl FTag for NStatusRepresentation {
 }
 
 impl FPlaceholder for NStatusRepresentation {
-    fn placeholder(id: u64) -> Self {
+    fn placeholder() -> Self {
         NStatusRepresentation::new(
-            id,
+            next_id(),
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
     }
@@ -1338,8 +1335,25 @@ impl FCopy for NTeam {}
 impl FPaste for NTeam {}
 
 impl FPlaceholder for NTeam {
-    fn placeholder(id: u64) -> Self {
-        NTeam::new(id)
+    fn placeholder() -> Self {
+        let house = NHouse::placeholder();
+        let unit_id = house.units().unwrap()[0].id;
+        let fusion = NFusion::placeholder().with_slots(
+            [NFusionSlot::new(
+                next_id(),
+                0,
+                UnitActionRange {
+                    trigger: 0,
+                    start: 0,
+                    length: 1,
+                },
+            )
+            .with_unit_id(unit_id)]
+            .into(),
+        );
+        NTeam::new(next_id())
+            .with_houses([house].into())
+            .with_fusions([fusion].into())
     }
 }
 
@@ -1501,9 +1515,9 @@ impl FDisplay for NMatch {
 }
 
 impl FPlaceholder for NMatch {
-    fn placeholder(id: u64) -> Self {
-        NMatch::new(id, 0, 1, 3, false, vec![])
-            .with_team(NTeam::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NMatch::new(next_id(), 0, 1, 3, false, vec![])
+            .with_team(NTeam::placeholder())
             .with_battles(default())
     }
 }
@@ -1548,12 +1562,8 @@ impl FCopy for NFusion {}
 impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
-    fn placeholder(id: u64) -> Self {
-        NFusion::new(id, 1, 0, 0, 1, 1, 1).with_slots(
-            (0..5)
-                .map(|_| NFusionSlot::placeholder(next_id()))
-                .collect_vec(),
-        )
+    fn placeholder() -> Self {
+        NFusion::new(next_id(), 1, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
     }
 }
 
@@ -1898,45 +1908,45 @@ impl FDisplay for NUnitRepresentation {
 // ============================================================================
 
 impl FPlaceholder for NArena {
-    fn placeholder(id: u64) -> Self {
-        NArena::new(id)
+    fn placeholder() -> Self {
+        NArena::new(next_id())
     }
 }
 
 impl FPlaceholder for NFloorPool {
-    fn placeholder(id: u64) -> Self {
-        NFloorPool::new(id, 1)
+    fn placeholder() -> Self {
+        NFloorPool::new(next_id(), 1)
     }
 }
 
 impl FPlaceholder for NFloorBoss {
-    fn placeholder(id: u64) -> Self {
-        NFloorBoss::new(id, 1).with_team(NTeam::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NFloorBoss::new(next_id(), 1).with_team(NTeam::placeholder())
     }
 }
 
 impl FPlaceholder for NPlayerData {
-    fn placeholder(id: u64) -> Self {
-        NPlayerData::new(id, None, true, 0)
+    fn placeholder() -> Self {
+        NPlayerData::new(next_id(), None, true, 0)
     }
 }
 
 impl FPlaceholder for NAbilityEffect {
-    fn placeholder(id: u64) -> Self {
-        NAbilityEffect::new(id, vec![Action::noop])
+    fn placeholder() -> Self {
+        NAbilityEffect::new(next_id(), vec![Action::noop])
     }
 }
 
 impl FPlaceholder for NPlayerIdentity {
-    fn placeholder(id: u64) -> Self {
-        NPlayerIdentity::new(id, None)
+    fn placeholder() -> Self {
+        NPlayerIdentity::new(next_id(), None)
     }
 }
 
 impl FPlaceholder for NStatusBehavior {
-    fn placeholder(id: u64) -> Self {
+    fn placeholder() -> Self {
         NStatusBehavior::new(
-            id,
+            next_id(),
             vec![Reaction {
                 trigger: Trigger::BattleStart,
                 actions: vec![Action::noop],
@@ -1946,14 +1956,14 @@ impl FPlaceholder for NStatusBehavior {
 }
 
 impl FPlaceholder for NBattle {
-    fn placeholder(id: u64) -> Self {
-        NBattle::new(id, 0, 0, 0, 0, None)
+    fn placeholder() -> Self {
+        NBattle::new(next_id(), 0, 0, 0, 0, None)
     }
 }
 
 impl FPlaceholder for NFusionSlot {
-    fn placeholder(id: u64) -> Self {
-        NFusionSlot::new(id, 0, default()).with_unit(NUnit::placeholder(next_id()))
+    fn placeholder() -> Self {
+        NFusionSlot::new(next_id(), 0, default())
     }
 }
 
@@ -2049,12 +2059,14 @@ impl<T: FEdit> FEdit for Vec<T> {
 }
 
 impl FPlaceholder for NUnitBehavior {
-    fn placeholder(id: u64) -> Self {
+    fn placeholder() -> Self {
         NUnitBehavior::new(
-            id,
+            next_id(),
             Reaction {
                 trigger: Trigger::BattleStart,
-                actions: vec![Action::noop],
+                actions: vec![Action::debug(
+                    Expression::string("debug action".into()).into(),
+                )],
             },
             MagicType::Ability,
         )
@@ -2062,27 +2074,27 @@ impl FPlaceholder for NUnitBehavior {
 }
 
 impl FPlaceholder for NUnitState {
-    fn placeholder(id: u64) -> Self {
-        NUnitState::new(id, 1)
+    fn placeholder() -> Self {
+        NUnitState::new(next_id(), 1)
     }
 }
 
 impl FPlaceholder for NUnitStats {
-    fn placeholder(id: u64) -> Self {
-        NUnitStats::new(id, 1, 1)
+    fn placeholder() -> Self {
+        NUnitStats::new(next_id(), 1, 4)
     }
 }
 
 impl FPlaceholder for NUnitDescription {
-    fn placeholder(id: u64) -> Self {
+    fn placeholder() -> Self {
         NUnitDescription::new(
-            id,
-            "Default Description".to_string(),
+            next_id(),
+            "Placeholdeer Description".to_string(),
             MagicType::Ability,
             Trigger::BattleStart,
         )
-        .with_representation(NUnitRepresentation::placeholder(next_id()))
-        .with_behavior(NUnitBehavior::placeholder(next_id()))
+        .with_representation(NUnitRepresentation::placeholder())
+        .with_behavior(NUnitBehavior::placeholder())
     }
 }
 
@@ -2171,9 +2183,9 @@ impl FEdit for Colorix {
 }
 
 impl FPlaceholder for NUnitRepresentation {
-    fn placeholder(id: u64) -> Self {
+    fn placeholder() -> Self {
         NUnitRepresentation::new(
-            id,
+            next_id(),
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
     }

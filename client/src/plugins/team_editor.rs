@@ -577,7 +577,7 @@ impl NTeam {
                                 max_index + 1,
                                 UnitActionRange::default(),
                             )
-                            .with_unit(NUnit::placeholder(next_id()));
+                            .with_unit(NUnit::placeholder());
 
                             if let Ok(slots_mut) = fusion.slots.get_mut() {
                                 slots_mut.push(new_slot);

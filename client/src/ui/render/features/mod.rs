@@ -181,7 +181,7 @@ pub trait FCompactView {
 
 // FPlaceholder - creates placeholder instances for nodes
 pub trait FPlaceholder {
-    fn placeholder(id: u64) -> Self;
+    fn placeholder() -> Self;
 }
 
 pub trait FCard {

@@ -411,37 +411,48 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             match field.link_type {
                 LinkType::Component | LinkType::Owned => {
                     quote! {
-                        ui.collapsing(#field_label, |ui| {
+                        if self.#field_name.get().is_some() {
                             ui.horizontal(|ui| {
-                                if self.#field_name.get().is_some() {
-                                    if ui.button("Delete").clicked() {
-                                        self.#field_name = Default::default();
+                                ui.collapsing(#field_label, |ui| {
+                                    let inner_response = self.#field_name.get_mut().unwrap().edit(ui);
+                                    if inner_response.changed() {
                                         self.is_dirty = true;
                                         changed = true;
                                     }
-                                } else {
-                                    ui.label("(no inner node)");
+                                });
+                                if "[red ❌ Delete]".cstr().button(ui).clicked() {
+                                    self.#field_name = Default::default();
+                                    self.is_dirty = true;
+                                    changed = true;
                                 }
                             });
-
-                            if let Some(inner_node) = self.#field_name.get() {
-                                ui.label("Inner node present (editing not yet implemented)");
+                        } else {
+                            if ui.button("➕ Add new ".to_owned() + #field_label).clicked() {
+                                self.#field_name.state_mut().set(default());
                             }
-                        });
+                        }
+
                     }
                 }
                 LinkType::OwnedMultiple => {
                     quote! {
                         ui.collapsing(#field_label, |ui| {
-                            if let Some(items) = self.#field_name.get() {
+                            if let Ok(items) = self.#field_name.get_mut() {
                                 ui.label(format!("{} items", items.len()));
-                                for (index, _item) in items.iter().enumerate() {
-                                    ui.horizontal(|ui| {
+                                for (index, item) in items.iter_mut().enumerate() {
+                                    ui.group(|ui| {
                                         ui.label(format!("Item {}", index));
+                                        let item_response = item.edit(ui);
+                                        if item_response.changed() {
+                                            self.is_dirty = true;
+                                            changed = true;
+                                        }
                                     });
                                 }
                             } else {
-                                ui.label("(no items)");
+                                if ui.button("➕ Add").clicked() {
+                                    self.#field_name.state_mut().set([default()].into());
+                                }
                             }
                         });
                     }
@@ -452,7 +463,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                             ui.label(#field_label);
                             if let Some(id) = self.#field_name.id() {
                                 ui.label(format!("ID: {}", id));
-                                if ui.button("Clear").clicked() {
+                                if ui.button("❌ Clear").clicked() {
                                     self.#field_name = Default::default();
                                     self.is_dirty = true;
                                     changed = true;
@@ -490,29 +501,19 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 let mut changed = false;
 
-                let mut main_response = ui.vertical(|ui| {
+                let main_response = ui.vertical(|ui| {
                     ui.group(|ui| {
-                        ui.label(format!("Node ID: {}", self.id));
-                        ui.label(format!("Owner: {}", self.owner));
-                        if self.is_dirty {
-                            ui.colored_label(egui::Color32::YELLOW, "Modified");
-                        }
+                        ui.horizontal(|ui| {
+                            ui.label(format!("Node ID: {}", self.id));
+                            ui.label(format!("Owner: {}", self.owner));
+                        });
                     });
-
-                    ui.separator();
 
                     #(#data_field_edits)*
                     #(#link_field_edits)*
+                }).response;
 
-                    ui.label("")
-                }).inner;
-
-                if changed {
-                    main_response.mark_changed();
-                    main_response
-                } else {
-                    main_response
-                }
+                main_response
             }
         }
     }
