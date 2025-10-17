@@ -107,18 +107,23 @@ impl NodeKindOnSpawn for NodeKind {
                         .spawn(ctx, Some(rep_entity))?;
                     ctx.add_link_entities(entity, rep_entity)?;
                 }
+
+                let mut fusion = ctx.load::<NFusion>(id)?.clone();
+                fusion.recalculate_stats(ctx)?;
+
                 ctx.world_mut()?
                     .get_mut::<NodeStateHistory>(entity)
                     .unwrap()
-                    // .to_not_found()?
                     .init_vars(
                         [
-                            (VarName::pwr, 0.into()),
-                            (VarName::hp, 0.into()),
+                            (VarName::pwr, fusion.pwr.into()),
+                            (VarName::hp, fusion.hp.into()),
                             (VarName::dmg, 0.into()),
                         ]
                         .into_iter(),
                     );
+                dbg!(&fusion);
+                fusion.save(ctx)?;
             }
             _ => {}
         }

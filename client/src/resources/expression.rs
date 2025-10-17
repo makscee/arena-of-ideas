@@ -22,6 +22,7 @@ impl ExpressionImpl for Expression {
         match self {
             Expression::one => Ok(1.into()),
             Expression::zero => Ok(0.into()),
+
             Expression::pi => Ok(PI.into()),
             Expression::pi2 => Ok((PI * 2.0).into()),
             Expression::owner => Ok(ctx.owner().to_not_found()?.into()),
@@ -38,7 +39,6 @@ impl ExpressionImpl for Expression {
                 let v = ctx.get_var(*var);
                 if v.is_err() { Ok(0.into()) } else { v }
             }
-            Expression::var_sum(var) => ctx.sum_var(*var),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;
                 NodeStateHistory::load(id.entity(ctx)?, ctx)?

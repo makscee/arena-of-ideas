@@ -46,9 +46,19 @@ impl NFusion {
         let mut result = 0;
         let units = self.units(ctx)?;
         for unit in units {
-            result += unit.stats_ref(ctx)?.get_var(var).get_i32()?;
+            result += match var {
+                VarName::hp => unit.stats_ref(ctx)?.hp,
+                VarName::pwr => unit.stats_ref(ctx)?.pwr,
+                _ => panic!(),
+            };
         }
         Ok(result)
+    }
+
+    pub fn recalculate_stats(&mut self, ctx: &ClientContext) -> NodeResult<()> {
+        self.pwr = self.stat_sum(ctx, VarName::pwr)?;
+        self.hp = self.stat_sum(ctx, VarName::hp)?;
+        Ok(())
     }
 
     pub fn get_slots<'a>(&self, ctx: &'a ClientContext) -> Result<Vec<&'a NFusionSlot>, NodeError> {
