@@ -51,7 +51,7 @@ impl Paint for PainterAction {
     fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
         let r = p.rect;
         let up = r.width().min(r.height()) * 0.5;
-        ctx.with_layers_ref(default(), |ctx| {
+        ctx.with_layers_ref([], |ctx| {
             match self {
                 PainterAction::circle(x) => {
                     let radius = x.get_f32(ctx)? * up;

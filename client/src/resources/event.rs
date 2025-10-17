@@ -10,8 +10,7 @@ impl EventImpl for Event {
             [
                 ContextLayer::Owner(owner),
                 ContextLayer::Var(VarName::value, value.clone()),
-            ]
-            .into(),
+            ],
             |ctx| {
                 if let Ok(actions) = ctx
                     .load::<NFusion>(owner)

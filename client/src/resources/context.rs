@@ -780,7 +780,7 @@ pub const EMPTY_CONTEXT: ClientContext = Context::new(WorldSource::new_empty());
 /// Extension trait for ClientContext to handle temporary layers
 pub trait ClientContextLayersRef {
     /// Execute a closure with temporary layers added to a new ClientContext
-    fn with_layers_ref<R, F>(&self, layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    fn with_layers_ref<R, F>(&self, layers: impl Into<Vec<ContextLayer>>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>;
 
@@ -821,12 +821,12 @@ pub trait ClientContextLayersRef {
 
 /// Implementation of temporary layers for ClientContext
 impl<'w> ClientContextLayersRef for ClientContext<'w> {
-    fn with_layers_ref<R, F>(&self, mut layers: Vec<ContextLayer>, f: F) -> NodeResult<R>
+    fn with_layers_ref<R, F>(&self, layers: impl Into<Vec<ContextLayer>>, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
         let mut merged_layers = self.layers().clone();
-        merged_layers.append(&mut layers);
+        merged_layers.append(&mut layers.into());
         let mut temp_ctx = if let Ok(battle) = self.source().battle() {
             Context::new_with_layers(WorldSource::new_battle(battle), merged_layers)
         } else {
@@ -882,6 +882,6 @@ impl<'w> ClientContextLayersRef for ClientContext<'w> {
     where
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        self.with_layers_ref(default(), f)
+        self.with_layers_ref(Vec::new(), f)
     }
 }

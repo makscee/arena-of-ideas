@@ -242,7 +242,7 @@ impl TeamEditor {
             ui.separator();
 
             for (i, slot) in slots.iter().enumerate() {
-                self.render_slot(ui, Some(slot), fusion.id, i as i32, team, actions);
+                self.render_slot(ui, slot, fusion.id, team, actions);
             }
 
             if ui.button("+ Add Slot").clicked() {
@@ -280,32 +280,31 @@ impl TeamEditor {
     fn render_slot(
         &self,
         ui: &mut Ui,
-        slot: Option<&NFusionSlot>,
+        slot: &NFusionSlot,
         fusion_id: u64,
-        slot_index: i32,
         team: &NTeam,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.horizontal(|ui| {
-            let slot_rect = ui.min_rect();
-
-            if let Some(slot) = slot {
-                if let Some(unit_id) = slot.unit.id() {
-                    self.handle_unit_interactions(
-                        ui, unit_id, fusion_id, slot_index, team, actions,
-                    );
+            let slot_response = slot_rect_button(60.0.v2(), ui, |_, ui| {
+                if slot.unit.id().is_some() {
+                    if let Some(unit_id) = slot.unit.id() {
+                        self.handle_unit_interactions(
+                            ui, unit_id, fusion_id, slot.index, team, actions,
+                        );
+                    }
+                } else {
+                    self.handle_empty_slot_interactions(ui, fusion_id, slot.index, team, actions);
                 }
-            } else {
-                self.handle_empty_slot_interactions(ui, fusion_id, slot_index, team, actions);
-            }
-
+            });
+            let rect = slot_response.rect;
             if ui.ctx().dragged_id().is_some() {
                 if let Some(dragging_unit) =
                     ui.memory(|mem| mem.data.get_temp::<u64>(egui::Id::new("dragging_unit")))
                 {
-                    if ui.rect_contains_pointer(slot_rect) {
+                    if ui.rect_contains_pointer(rect) {
                         ui.painter().rect_stroke(
-                            slot_rect,
+                            rect,
                             0.0,
                             Stroke::new(2.0, Color32::from_rgb(100, 200, 100)),
                             egui::epaint::StrokeKind::Outside,
@@ -316,7 +315,7 @@ impl TeamEditor {
                                 unit_id: dragging_unit,
                                 target: UnitTarget::Slot {
                                     fusion_id,
-                                    slot_index,
+                                    slot_index: slot.index,
                                 },
                             });
                         }

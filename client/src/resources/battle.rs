@@ -139,12 +139,11 @@ impl BattleAction {
                     let owner_pos = ctx.node_get_var(*a, VarName::position)?;
                     let target_pos = ctx.node_get_var(*b, VarName::position)?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_layers_ref(
+                        ctx.with_layers(
                             [
                                 ContextLayer::Var(VarName::position, owner_pos),
                                 ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                            ]
-                            .into(),
+                            ],
                             |context| curve.apply(context),
                         )?;
                     }
@@ -158,7 +157,7 @@ impl BattleAction {
                         .at_least(0);
                     if x > 0 {
                         if let Some(pain) = animations().get("pain_vfx") {
-                            ctx.with_layer_ref(
+                            ctx.with_layer(
                                 ContextLayer::Var(VarName::position, target_pos.clone()),
                                 |context| pain.apply(context),
                             )?;
@@ -167,7 +166,7 @@ impl BattleAction {
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                     }
                     if let Some(text) = animations().get("text") {
-                        ctx.with_layers_ref(
+                        ctx.with_layers(
                             [
                                 ContextLayer::Var(VarName::text, (-x).to_string().into()),
                                 ContextLayer::Var(
@@ -175,8 +174,7 @@ impl BattleAction {
                                     HexColor::from("#FF0000".to_string()).into(),
                                 ),
                                 ContextLayer::Var(VarName::position, target_pos),
-                            ]
-                            .into(),
+                            ],
                             |context| text.apply(context),
                         )?;
                     }
@@ -184,25 +182,24 @@ impl BattleAction {
                     true
                 }
                 BattleAction::heal(a, b, x) => {
-                    let owner_pos = ctx.with_layer_ref(ContextLayer::Owner(*a), |context| {
+                    let owner_pos = ctx.with_layer(ContextLayer::Owner(*a), |context| {
                         context.get_var(VarName::position)
                     })?;
-                    let target_pos = ctx.with_layer_ref(ContextLayer::Owner(*b), |context| {
+                    let target_pos = ctx.with_layer(ContextLayer::Owner(*b), |context| {
                         context.get_var(VarName::position)
                     })?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_layers_ref(
+                        ctx.with_layers(
                             [
                                 ContextLayer::Var(VarName::position, owner_pos),
                                 ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                            ]
-                            .into(),
+                            ],
                             |context| curve.apply(context),
                         )?;
                     }
                     if *x > 0 {
                         if let Some(pleasure) = animations().get("pleasure_vfx") {
-                            ctx.with_layer_ref(
+                            ctx.with_layer(
                                 ContextLayer::Var(VarName::position, target_pos.clone()),
                                 |context| pleasure.apply(context),
                             )?;
@@ -210,7 +207,7 @@ impl BattleAction {
                         let dmg = (ctx.load::<NFusion>(*b)?.dmg - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         if let Some(text) = animations().get("text") {
-                            ctx.with_layers_ref(
+                            ctx.with_layers(
                                 [
                                     ContextLayer::Var(VarName::position, target_pos),
                                     ContextLayer::Var(VarName::text, format!("+{}", x).into()),
@@ -218,8 +215,7 @@ impl BattleAction {
                                         VarName::color,
                                         HexColor::from("#00FF00".to_string()).into(),
                                     ),
-                                ]
-                                .into(),
+                                ],
                                 |context| text.apply(context),
                             )?;
                         }

@@ -214,21 +214,10 @@ impl BattlePlugin {
             egui::vec2(overlay_rect.width(), controls_height),
         );
 
-        let pointer_pos = ui.ctx().pointer_hover_pos();
-        let show_full_controls = pointer_pos.map_or(false, |pos| overlay_rect.contains(pos));
-
-        // Always show progress slider at the bottom
         ui.allocate_new_ui(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
             ui.set_clip_rect(slider_rect);
             if data.simulation.duration > 0.0 {
-                let bg_color = ui.visuals().extreme_bg_color.gamma_multiply(0.8);
-                ui.painter().rect_filled(slider_rect, 0.0, bg_color);
-
-                Slider::new("ts").name(false).full_width().ui(
-                    &mut data.simulation.t,
-                    0.0..=data.simulation.duration,
-                    ui,
-                );
+                Self::render_controls(ui, data);
             }
         });
 
@@ -239,144 +228,68 @@ impl BattlePlugin {
         if data.simulation.t >= data.simulation.duration && !data.simulation.ended() {
             data.simulation.run();
         }
-
-        // Show full controls if pointer is in overlay area
-        if show_full_controls {
-            ui.allocate_new_ui(egui::UiBuilder::new().max_rect(controls_rect), |ui| {
-                ui.set_clip_rect(controls_rect);
-                ui.vertical(|ui| {
-                    Self::render_main_controls(ui, data, controls_rect);
-                    Self::render_speed_controls(ui, data, controls_rect);
-                });
-            });
-        }
         Ok(())
     }
 
-    fn render_main_controls(ui: &mut Ui, data: &mut BattleData, controls_rect: Rect) {
-        let main_btn_size = 35.0;
-        let btn_padding = 25.0;
+    fn render_controls(ui: &mut Ui, data: &mut BattleData) {
         ui.horizontal(|ui| {
-            let center = controls_rect.center_top() + egui::vec2(0.0, main_btn_size * 0.5);
-            let rect = Rect::from_center_size(center, main_btn_size.v2());
-
-            // Previous button
-            if RectButton::new_rect(rect.translate(egui::vec2(-(main_btn_size + btn_padding), 0.0)))
-                .ui(ui, |color, rect, _, ui| {
-                    let rect =
-                        Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                    triangle(right, color, 3, ui);
-                    ui.painter().line_segment(
-                        [left.center_top(), left.center_bottom()],
-                        color.stroke_w(6.0),
-                    );
-                })
-                .clicked()
-            {
+            // Reset button
+            if ui.button("⏮").clicked() {
                 data.simulation.t = 0.0;
             }
 
+            // Step back
+            if ui.button("⏪").clicked() {
+                data.simulation.t = (data.simulation.t - 0.1).max(0.0);
+            }
+
             // Play/Pause button
-            if RectButton::new_rect(rect)
-                .ui(ui, |color, rect, _, ui| {
-                    if !data.playing {
-                        triangle(rect, color, 1, ui);
-                    } else {
-                        let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                        let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                        ui.painter().line_segment(
-                            [left.center_top(), left.center_bottom()],
-                            color.stroke_w(10.0),
-                        );
-                        ui.painter().line_segment(
-                            [right.center_top(), right.center_bottom()],
-                            color.stroke_w(10.0),
-                        );
-                    }
-                })
-                .clicked()
-            {
+            if ui.button(if data.playing { "⏸" } else { "▶" }).clicked() {
                 data.playing = !data.playing;
             }
 
-            // Next button
-            if RectButton::new_rect(rect.translate(egui::vec2(main_btn_size + btn_padding, 0.0)))
-                .ui(ui, |color, rect, _, ui| {
-                    let rect =
-                        Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                    triangle(left, color, 1, ui);
-                    ui.painter().line_segment(
-                        [right.center_top(), right.center_bottom()],
-                        color.stroke_w(6.0),
-                    );
-                })
-                .clicked()
-            {
+            // Step forward
+            if ui.button("⏩").clicked() {
+                data.simulation.t = (data.simulation.t + 0.1).min(data.simulation.duration);
+            }
+
+            // Jump to end
+            if ui.button("⏭").clicked() {
                 data.simulation.t = data.simulation.duration;
             }
-        });
-    }
 
-    fn render_speed_controls(ui: &mut Ui, data: &mut BattleData, controls_rect: Rect) {
-        let main_btn_size = 35.0;
-        let mut rect = ui.available_rect_before_wrap();
-        rect.set_top(controls_rect.top() + main_btn_size);
+            ui.separator();
 
-        ui.horizontal(|ui| {
-            let btn_size = 25.0;
-            let btn_padding = 25.0;
+            // Speed controls
+            ui.label("Speed:");
 
-            let center = rect.center_top() + egui::vec2(0.0, btn_size * 0.5);
-            let rect = Rect::from_center_size(center, btn_size.v2());
+            ui.add(
+                DragValue::new(&mut data.playback_speed)
+                    .speed(0.1)
+                    .range(0.1..=8.0),
+            );
 
-            // Slower button
-            if RectButton::new_rect(rect.translate(egui::vec2(-(btn_size + btn_padding), 0.0)))
-                .ui(ui, |color, rect, _, ui| {
-                    let rect =
-                        Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                    triangle(left, color, 3, ui);
-                    triangle(right, color, 3, ui);
-                })
-                .clicked()
-            {
-                data.playback_speed = data.playback_speed * 0.5;
+            // Speed preset buttons
+            let speeds = [1.0, 2.0, 4.0];
+            for &speed in &speeds {
+                let is_active = (data.playback_speed - speed).abs() < 0.01;
+                if ui
+                    .selectable_label(is_active, format!("x{}", speed))
+                    .clicked()
+                {
+                    data.playback_speed = speed;
+                }
             }
 
-            ui.add_space(10.0);
+            ui.separator();
 
-            // Speed display/reset button
-            if RectButton::new_rect(rect.translate(egui::vec2(0.0, 5.0)))
-                .ui(ui, |color, _, _, ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        data.playback_speed.cstr_c(color).label(ui)
-                    });
-                })
-                .clicked()
-            {
-                data.playback_speed = 1.0;
-            }
-
-            ui.add_space(10.0);
-
-            // Faster button
-            if RectButton::new_rect(rect.translate(egui::vec2(btn_size + btn_padding, 0.0)))
-                .ui(ui, |color, rect, _, ui| {
-                    let rect =
-                        Rect::from_center_size(rect.center(), rect.size() * egui::vec2(1.0, 0.5));
-                    let left = Rect::from_min_max(rect.left_top(), rect.center_bottom());
-                    let right = Rect::from_min_max(rect.center_top(), rect.right_bottom());
-                    triangle(left, color, 1, ui);
-                    triangle(right, color, 1, ui);
-                })
-                .clicked()
-            {
-                data.playback_speed = data.playback_speed * 2.0;
+            // Duration slider
+            if data.simulation.duration > 0.0 {
+                Slider::new("time").name(false).full_width().ui(
+                    &mut data.simulation.t,
+                    0.0..=data.simulation.duration,
+                    ui,
+                );
             }
         });
     }
