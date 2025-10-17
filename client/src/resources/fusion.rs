@@ -42,6 +42,15 @@ impl NFusion {
         Ok(units)
     }
 
+    pub fn stat_sum(&self, ctx: &ClientContext, var: VarName) -> NodeResult<i32> {
+        let mut result = 0;
+        let units = self.units(ctx)?;
+        for unit in units {
+            result += unit.stats_ref(ctx)?.get_var(var).get_i32()?;
+        }
+        Ok(result)
+    }
+
     pub fn get_slots<'a>(&self, ctx: &'a ClientContext) -> Result<Vec<&'a NFusionSlot>, NodeError> {
         let mut slots = ctx.collect_children::<NFusionSlot>(self.id)?;
         slots.sort_by_key(|s| s.index);

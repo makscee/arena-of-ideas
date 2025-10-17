@@ -63,7 +63,7 @@ impl AnimAction {
                         .insert(t, a.duration, VarName::position, pos.into());
                     t += a.timeframe;
                 }
-                *ctx.t_mut()? = t;
+                ctx.battle_mut()?.duration = t;
             }
             AnimAction::set_target(x) => {
                 a.targets = x.get_u64_list(ctx)?;
@@ -104,10 +104,10 @@ impl AnimAction {
                 }
                 a.targets = vec![id];
                 t += a.timeframe;
-                *ctx.t_mut()? = t;
+                ctx.battle_mut()?.duration = t;
             }
             AnimAction::wait(expression) => {
-                *ctx.t_mut()? += expression.get_f32(ctx)?;
+                ctx.battle_mut()?.duration += expression.get_f32(ctx)?;
             }
         };
         Ok(())

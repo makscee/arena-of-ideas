@@ -140,16 +140,6 @@ impl NodeStateHistory {
         }
         None
     }
-    pub fn sum_var(ctx: &ClientContext, var: VarName, entity: Entity) -> NodeResult<VarValue> {
-        let mut result = Self::get_var(ctx, var, entity).unwrap_or_default();
-        let ids = ctx.parents_recursive(ctx.id(entity)?)?;
-        for id in ids {
-            if let Some(v) = Self::get_var(ctx, var, id.entity(ctx)?) {
-                result = result.add(&v)?;
-            }
-        }
-        Ok(result)
-    }
 }
 
 impl VarHistory {

@@ -10,6 +10,7 @@ impl Plugin for BattlePlugin {
 pub struct BattleData {
     pub battle: Battle,
     pub simulation: BattleSimulation,
+    pub t: f32,
     pub playback_speed: f32,
     pub playing: bool,
     pub on_done: Option<fn(u64, bool, u64)>,
@@ -22,6 +23,7 @@ impl BattleData {
         Self {
             battle,
             simulation,
+            t: 0.0,
             playing: true,
             playback_speed: 1.0,
             on_done: None,
@@ -119,7 +121,7 @@ impl BattlePlugin {
             .remove_resource::<BattleData>()
             .to_custom_e("No battle loaded")?;
 
-        let t = data.simulation.t;
+        let t = data.t;
         let main_rect = ui.available_rect_before_wrap();
 
         // Show battle camera with slot actions
@@ -163,10 +165,10 @@ impl BattlePlugin {
         });
 
         if data.playing {
-            data.simulation.t += gt().last_delta() * data.playback_speed;
-            data.simulation.t = data.simulation.t.at_most(data.simulation.duration);
+            data.t += gt().last_delta() * data.playback_speed;
+            data.t = data.t.at_most(data.simulation.duration);
         }
-        if data.simulation.t >= data.simulation.duration && !data.simulation.ended() {
+        if data.t >= data.simulation.duration && !data.simulation.ended() {
             data.simulation.run();
         }
         Ok(())
@@ -176,12 +178,12 @@ impl BattlePlugin {
         ui.horizontal(|ui| {
             // Reset button
             if ui.button("⏮").clicked() {
-                data.simulation.t = 0.0;
+                data.t = 0.0;
             }
 
             // Step back
             if ui.button("⏪").clicked() {
-                data.simulation.t = (data.simulation.t - 0.1).max(0.0);
+                data.t = (data.t - 0.1).max(0.0);
             }
 
             // Play/Pause button
@@ -191,12 +193,12 @@ impl BattlePlugin {
 
             // Step forward
             if ui.button("⏩").clicked() {
-                data.simulation.t = (data.simulation.t + 0.1).min(data.simulation.duration);
+                data.t = (data.t + 0.1).min(data.simulation.duration);
             }
 
             // Jump to end
             if ui.button("⏭").clicked() {
-                data.simulation.t = data.simulation.duration;
+                data.t = data.simulation.duration;
             }
 
             ui.separator();
@@ -227,7 +229,7 @@ impl BattlePlugin {
             // Duration slider
             if data.simulation.duration > 0.0 {
                 Slider::new("time").name(false).full_width().ui(
-                    &mut data.simulation.t,
+                    &mut data.t,
                     0.0..=data.simulation.duration,
                     ui,
                 );
@@ -236,7 +238,7 @@ impl BattlePlugin {
     }
 
     fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
-        if data.simulation.t >= data.simulation.duration && data.simulation.ended() {
+        if data.t >= data.simulation.duration && data.simulation.ended() {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
                 let result = data.simulation.fusions_right.is_empty();
                 ui.vertical_centered_justified(|ui| {
@@ -251,7 +253,7 @@ impl BattlePlugin {
                     ui[0].vertical_centered_justified(|ui| {
                         ui.set_max_width(200.0);
                         if "Replay".cstr().button(ui).clicked() {
-                            data.simulation.t = 0.0;
+                            data.t = 0.0;
                         }
                     });
                     ui[1].vertical_centered_justified(|ui| {

@@ -92,8 +92,7 @@ impl BattleCamera {
                 team_right_id,
             );
         }
-        bs.with_context_mut(|ctx| {
-            *ctx.t_mut()? = t;
+        bs.with_context_mut(t, |ctx| {
             let world = ctx.world_mut()?;
             for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                 ctx.with_owner(fusion.id, |context| {

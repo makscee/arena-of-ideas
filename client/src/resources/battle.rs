@@ -9,7 +9,6 @@ pub struct Battle {
 #[derive(Debug)]
 pub struct BattleSimulation {
     pub duration: f32,
-    pub t: f32,
     pub world: World,
     pub fusions_left: Vec<u64>,
     pub fusions_right: Vec<u64>,
@@ -100,7 +99,7 @@ impl std::fmt::Display for BattleAction {
 impl BattleAction {
     pub fn apply(&self, sim: &mut BattleSimulation) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        let result = sim.with_context_mut(|ctx| {
+        let result = sim.with_context_mut(sim.duration, |ctx| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
                     if let Some(strike_anim) = animations().get("strike") {
@@ -113,13 +112,9 @@ impl BattleAction {
                             |context| strike_anim.apply(context),
                         )?;
                     }
-                    let pwr = ctx
-                        .with_owner(*a, |context| context.sum_var(VarName::pwr))?
-                        .get_i32()?;
+                    let pwr = ctx.load::<NFusion>(*a)?.stat_sum(ctx, VarName::pwr)?;
                     let action_a = Self::damage(*a, *b, pwr);
-                    let pwr = ctx
-                        .with_owner(*b, |context| context.sum_var(VarName::pwr))?
-                        .get_i32()?;
+                    let pwr = ctx.load::<NFusion>(*b)?.stat_sum(ctx, VarName::pwr)?;
                     let action_b = Self::damage(*b, *a, pwr);
                     add_actions.extend_from_slice(&[action_a, action_b]);
                     add_actions.extend(ctx.battle()?.slots_sync());
@@ -307,11 +302,10 @@ impl BattleSimulation {
             team_left,
             team_right,
             duration: 0.0,
-            t: 0.0,
             log: BattleLog::default(),
             rng: rng_seeded(battle.id),
         };
-        bs.with_context_mut(|ctx| {
+        bs.with_context_mut(bs.duration, |ctx| {
             battle.left.spawn(ctx, Some(left_entity))?;
             battle.right.spawn(ctx, Some(right_entitiy))
         })
@@ -357,7 +351,9 @@ impl BattleSimulation {
         self.process_actions(spawn_actions);
         self.process_actions(self.slots_sync());
 
-        match self.with_context_mut(|context| Self::send_event(context, Event::BattleStart)) {
+        match self.with_context_mut(self.duration, |context| {
+            Self::send_event(context, Event::BattleStart)
+        }) {
             Ok(a) => {
                 self.process_actions(a);
                 let a = self.death_check();
@@ -377,7 +373,7 @@ impl BattleSimulation {
             .chain(self.fusions_right.iter())
             .copied()
             .collect_vec();
-        self.with_context_mut(|ctx| {
+        self.with_context_mut(self.duration, |ctx| {
             for id in ids {
                 let vars = ctx.get_kind(id).unwrap().get_vars(ctx, id);
                 for (var, value) in vars {
@@ -395,7 +391,9 @@ impl BattleSimulation {
         let a = self.death_check();
         self.process_actions(a);
         self.process_actions(self.slots_sync());
-        match self.with_context_mut(|context| Self::send_event(context, Event::TurnEnd)) {
+        match self.with_context_mut(self.duration, |context| {
+            Self::send_event(context, Event::TurnEnd)
+        }) {
             Ok(a) => self.process_actions(a),
             Err(e) => error!("TurnEnd event error: {e}"),
         };
@@ -497,11 +495,11 @@ impl BattleSimulation {
     #[must_use]
     fn death_check(&mut self) -> VecDeque<BattleAction> {
         let mut actions: VecDeque<BattleAction> = default();
-        self.with_context_mut(|context| {
-            for id in context.battle()?.all_fusions() {
-                let dmg = context.load::<NFusion>(id)?.dmg;
-                context.with_owner(id, |context| {
-                    if context.sum_var(VarName::hp)?.get_i32()? <= dmg {
+        self.with_context_mut(self.duration, |ctx| {
+            for id in ctx.battle()?.all_fusions() {
+                let dmg = ctx.load::<NFusion>(id)?.dmg;
+                ctx.with_owner(id, |ctx| {
+                    if ctx.load::<NFusion>(id)?.stat_sum(ctx, VarName::hp)? <= dmg {
                         actions.push_back(BattleAction::send_event(Event::Death(id)));
                         actions.push_back(BattleAction::death(id));
                     }
@@ -612,5 +610,29 @@ impl BattleSimulation {
                 None
             }
         })
+    }
+
+    pub fn as_context(&self, t: f32) -> Context<WorldSource<'_>> {
+        Context::new(WorldSource::new_battle(self, t))
+    }
+
+    pub fn as_context_mut(&mut self, t: f32) -> Context<WorldSource<'_>> {
+        Context::new(WorldSource::new_battle_mut(self, t))
+    }
+
+    pub fn with_context<R, F>(&self, t: f32, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+    {
+        let source = WorldSource::new_battle(self, t);
+        Context::exec(source, f)
+    }
+
+    pub fn with_context_mut<R, F>(&mut self, t: f32, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+    {
+        let source = WorldSource::new_battle_mut(self, t);
+        Context::exec(source, f)
     }
 }

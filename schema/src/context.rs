@@ -713,27 +713,6 @@ where
         Ok(result)
     }
 
-    /// Sum a variable recursively from all children of the current owner
-    pub fn sum_var(&self, var: VarName) -> NodeResult<VarValue> {
-        let owner_id = self
-            .owner()
-            .ok_or(NodeError::custom("No owner in context"))?;
-
-        let mut result = VarValue::default();
-        let mut ids = self.children_recursive(owner_id)?;
-        ids.push(owner_id);
-        for id in ids {
-            if !self.get_kind(id)?.var_names().contains(&var) {
-                continue;
-            }
-            if let Ok(value) = self.source.get_var_direct(id, var) {
-                result = result.add(&value)?;
-            }
-        }
-
-        Ok(result)
-    }
-
     pub fn get_vars_layers(&self) -> HashMap<VarName, VarValue> {
         let mut result = HashMap::new();
 

@@ -217,8 +217,8 @@ impl NodeEntity {
 pub enum WorldSource<'w> {
     WorldRef(&'w World),
     WorldMut(&'w mut World),
-    BattleMut(&'w mut BattleSimulation),
-    BattleRef(&'w BattleSimulation),
+    BattleMut(&'w mut BattleSimulation, f32),
+    BattleRef(&'w BattleSimulation, f32),
     None,
 }
 
@@ -235,32 +235,47 @@ impl<'w> WorldSource<'w> {
         Self::None
     }
 
-    pub fn new_battle_mut(battle: &'w mut BattleSimulation) -> Self {
-        Self::BattleMut(battle)
+    pub fn new_battle_mut(battle: &'w mut BattleSimulation, t: f32) -> Self {
+        Self::BattleMut(battle, t)
     }
 
-    pub fn new_battle(battle: &'w BattleSimulation) -> Self {
-        Self::BattleRef(battle)
+    pub fn new_battle(battle: &'w BattleSimulation, t: f32) -> Self {
+        Self::BattleRef(battle, t)
     }
 
     pub fn battle(&self) -> NodeResult<&BattleSimulation> {
         match self {
-            Self::BattleMut(battle) => Ok(battle),
-            Self::BattleRef(battle) => Ok(battle),
+            Self::BattleMut(battle, _) => Ok(battle),
+            Self::BattleRef(battle, _) => Ok(battle),
             _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
     pub fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
         match self {
-            Self::BattleMut(battle) => Ok(battle),
+            Self::BattleMut(battle, _) => Ok(battle),
+            _ => Err(NodeError::custom("Source is not a BattleSimulation")),
+        }
+    }
+
+    pub fn battle_t(&self) -> NodeResult<f32> {
+        match self {
+            Self::BattleMut(_, t) => Ok(*t),
+            Self::BattleRef(_, t) => Ok(*t),
+            _ => Err(NodeError::custom("Source is not a BattleSimulation")),
+        }
+    }
+
+    pub fn battle_t_mut(&mut self) -> NodeResult<&mut f32> {
+        match self {
+            Self::BattleMut(_, t) => Ok(t),
             _ => Err(NodeError::custom("Source is not a BattleSimulation")),
         }
     }
 
     fn get_rng(&mut self) -> Option<&mut ChaCha8Rng> {
         match self {
-            Self::BattleMut(battle) => Some(&mut battle.rng),
+            Self::BattleMut(battle, _) => Some(&mut battle.rng),
             _ => None,
         }
     }
@@ -269,18 +284,18 @@ impl<'w> WorldSource<'w> {
         match self {
             Self::WorldRef(world) => Ok(world),
             Self::WorldMut(world) => Ok(world),
-            Self::BattleMut(battle) => Ok(&battle.world),
-            Self::BattleRef(battle) => Ok(&battle.world),
-            Self::None => Err(NodeError::custom("Source World not set")),
+            Self::BattleMut(battle, _) => Ok(&battle.world),
+            Self::BattleRef(battle, _) => Ok(&battle.world),
+            Self::None => Err(NodeError::custom("Source is None")),
         }
     }
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
             Self::WorldMut(world) => Ok(world),
-            Self::BattleMut(battle) => Ok(&mut battle.world),
+            Self::BattleMut(battle, _) => Ok(&mut battle.world),
             Self::WorldRef(_) => Err(NodeError::custom("Source World is immutable")),
-            Self::BattleRef(_) => Err(NodeError::custom("Source World is immutable")),
+            Self::BattleRef(_, _) => Err(NodeError::custom("Source World is immutable")),
             Self::None => Err(NodeError::custom("Source World not set")),
         }
     }
@@ -403,8 +418,8 @@ impl<'w> ContextSource for WorldSource<'w> {
 
     fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         // For battle simulations, also track in NodeStateHistory
-        if let WorldSource::BattleMut(battle) = self {
-            let t = battle.t;
+        if let WorldSource::BattleMut(_battle, t) = self {
+            let t = *t;
             let world = self.world_mut().track()?;
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
                 if let Some(entity) = map.get_entity(id) {
@@ -431,7 +446,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
         if let Ok(battle) = self.battle() {
-            let t = battle.t;
+            let t = self.battle_t()?;
             let world = self.world()?;
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
                 if let Some(entity) = map.get_entity(id) {
@@ -571,11 +586,11 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     }
 
     fn t(&self) -> NodeResult<f32> {
-        Ok(self.source().battle()?.t)
+        self.source().battle_t()
     }
 
     fn t_mut(&mut self) -> NodeResult<&mut f32> {
-        Ok(&mut self.source_mut().battle_mut()?.t)
+        self.source_mut().battle_t_mut()
     }
 
     fn id(&self, entity: Entity) -> NodeResult<u64> {
@@ -747,31 +762,6 @@ impl WorldContextExt for World {
     }
 }
 
-impl WorldContextExt for BattleSimulation {
-    fn as_context(&self) -> Context<WorldSource<'_>> {
-        panic!()
-    }
-
-    fn as_context_mut(&mut self) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_battle_mut(self))
-    }
-
-    fn with_context<R, F>(&self, _f: F) -> NodeResult<R>
-    where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
-    {
-        panic!()
-    }
-
-    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
-    where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
-    {
-        let source = WorldSource::new_battle_mut(self);
-        Context::exec(source, f)
-    }
-}
-
 /// Type alias for convenience
 pub type ClientContext<'w> = Context<WorldSource<'w>>;
 
@@ -828,7 +818,8 @@ impl<'w> ClientContextLayersRef for ClientContext<'w> {
         let mut merged_layers = self.layers().clone();
         merged_layers.append(&mut layers.into());
         let mut temp_ctx = if let Ok(battle) = self.source().battle() {
-            Context::new_with_layers(WorldSource::new_battle(battle), merged_layers)
+            let t = self.source().battle_t().unwrap_or(0.0);
+            Context::new_with_layers(WorldSource::new_battle(battle, t), merged_layers)
         } else {
             let world = self.source().world()?;
             Context::new_with_layers(WorldSource::new_immutable(world), merged_layers)
