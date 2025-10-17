@@ -21,62 +21,7 @@ impl BattleEditorPlugin {
             if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
                 (left, right)
             } else {
-                let mut left_team = NTeam::new(next_id());
-                let mut right_team = NTeam::new(next_id());
-
-                let unit1 = NUnit::new(next_id(), "Unit 1".to_string()).add_components(
-                    NUnitDescription::placeholder(next_id()),
-                    NUnitStats::new(next_id(), 5, 10),
-                    NUnitState::new(next_id(), 1),
-                );
-
-                let unit2 = NUnit::new(next_id(), "Unit 2".to_string()).add_components(
-                    NUnitDescription::placeholder(next_id()),
-                    NUnitStats::new(next_id(), 7, 8),
-                    NUnitState::new(next_id(), 1),
-                );
-
-                let house = NHouse::new(next_id(), "Test House".to_string()).add_components(
-                    NHouseColor::placeholder(next_id()),
-                    NAbilityMagic::placeholder(next_id()),
-                    NStatusMagic::placeholder(next_id()),
-                    vec![unit1.clone(), unit2.clone()],
-                );
-                left_team.houses_push(house.clone().remap_ids()).unwrap();
-                right_team.houses_push(house).unwrap();
-
-                let left_fusion = NFusion::new(next_id(), left_team.id, 0, 5, 10, 0, 1)
-                    .add_components(vec![
-                        NFusionSlot::new(
-                            next_id(),
-                            0,
-                            UnitActionRange {
-                                trigger: 0,
-                                start: 0,
-                                length: 5,
-                            },
-                        )
-                        .add_components(unit1.clone()),
-                    ]);
-
-                let right_fusion = NFusion::new(next_id(), right_team.id, 0, 7, 8, 0, 1)
-                    .add_components(vec![
-                        NFusionSlot::new(
-                            next_id(),
-                            0,
-                            UnitActionRange {
-                                trigger: 0,
-                                start: 0,
-                                length: 5,
-                            },
-                        )
-                        .add_components(unit2.clone()),
-                    ]);
-
-                left_team.fusions_push(left_fusion).unwrap();
-                right_team.fusions_push(right_fusion).unwrap();
-
-                (left_team, right_team)
+                (NTeam::placeholder(next_id()), NTeam::placeholder(next_id()))
             };
 
         let battle = Battle {

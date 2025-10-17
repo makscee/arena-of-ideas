@@ -62,8 +62,8 @@ fn generate_server_nodes(
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
-        // Generate add_components() method
-        let add_components_method = generate_add_components(node);
+        // Generate with_* and *_clear() methods
+        let with_methods = generate_with_methods(node);
 
         // Generate default implementation
         let default_impl = generate_default_impl(node);
@@ -104,7 +104,7 @@ fn generate_server_nodes(
             impl #struct_name {
                 #new_method
 
-                #add_components_method
+                #with_methods
 
                 #link_methods
                 #load_methods

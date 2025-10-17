@@ -547,7 +547,7 @@ impl NTeam {
                                     slot_index,
                                     UnitActionRange::default(),
                                 )
-                                .add_components(unit);
+                                .with_unit(unit);
 
                                 if let Ok(slots) = fusion.slots.get_mut() {
                                     slots.push(new_slot);
@@ -577,7 +577,7 @@ impl NTeam {
                                 max_index + 1,
                                 UnitActionRange::default(),
                             )
-                            .add_components(NUnit::placeholder(next_id()));
+                            .with_unit(NUnit::placeholder(next_id()));
 
                             if let Ok(slots_mut) = fusion.slots.get_mut() {
                                 slots_mut.push(new_slot);

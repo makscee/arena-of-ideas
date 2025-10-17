@@ -621,11 +621,10 @@ impl FPaste for NUnit {}
 
 impl FPlaceholder for NUnit {
     fn placeholder(id: u64) -> Self {
-        NUnit::new(id, "New Unit".to_string()).add_components(
-            NUnitDescription::placeholder(next_id()),
-            NUnitStats::placeholder(next_id()),
-            NUnitState::placeholder(next_id()),
-        )
+        NUnit::new(id, "New Unit".to_string())
+            .with_description(NUnitDescription::placeholder(next_id()))
+            .with_stats(NUnitStats::placeholder(next_id()))
+            .with_state(NUnitState::placeholder(next_id()))
     }
 }
 
@@ -689,12 +688,11 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder(id: u64) -> Self {
-        NHouse::new(id, "New House".to_string()).add_components(
-            NHouseColor::placeholder(next_id()),
-            NAbilityMagic::placeholder(next_id()),
-            NStatusMagic::placeholder(next_id()),
-            default(),
-        )
+        NHouse::new(id, "New House".to_string())
+            .with_color(NHouseColor::placeholder(next_id()))
+            .with_ability(NAbilityMagic::placeholder(next_id()))
+            .with_status(NStatusMagic::placeholder(next_id()))
+            .with_units(default())
     }
 }
 
@@ -753,7 +751,7 @@ impl FPaste for NAbilityMagic {}
 impl FPlaceholder for NAbilityMagic {
     fn placeholder(id: u64) -> Self {
         NAbilityMagic::new(id, "New Ability".to_string())
-            .add_components(NAbilityDescription::placeholder(next_id()))
+            .with_description(NAbilityDescription::placeholder(next_id()))
     }
 }
 
@@ -817,10 +815,9 @@ impl FPaste for NStatusMagic {}
 
 impl FPlaceholder for NStatusMagic {
     fn placeholder(id: u64) -> Self {
-        NStatusMagic::new(id, "New Status".to_string()).add_components(
-            NStatusDescription::placeholder(next_id()),
-            NStatusRepresentation::placeholder(next_id()),
-        )
+        NStatusMagic::new(id, "New Status".to_string())
+            .with_description(NStatusDescription::placeholder(next_id()))
+            .with_representation(NStatusRepresentation::placeholder(next_id()))
     }
 }
 
@@ -998,11 +995,10 @@ impl FPaste for NPlayer {}
 
 impl FPlaceholder for NPlayer {
     fn placeholder(id: u64) -> Self {
-        NPlayer::new(id, "New Player".to_string()).add_components(
-            NPlayerData::placeholder(next_id()),
-            NPlayerIdentity::placeholder(next_id()),
-            NMatch::placeholder(next_id()),
-        )
+        NPlayer::new(id, "New Player".to_string())
+            .with_player_data(NPlayerData::placeholder(next_id()))
+            .with_identity(NPlayerIdentity::placeholder(next_id()))
+            .with_active_match(NMatch::placeholder(next_id()))
     }
 }
 
@@ -1150,7 +1146,7 @@ impl FTitle for NAbilityDescription {
 impl FPlaceholder for NAbilityDescription {
     fn placeholder(id: u64) -> Self {
         NAbilityDescription::new(id, "Default description".to_string())
-            .add_components(NAbilityEffect::placeholder(next_id()))
+            .with_effect(NAbilityEffect::placeholder(next_id()))
     }
 }
 
@@ -1207,7 +1203,7 @@ impl FTitle for NStatusDescription {
 impl FPlaceholder for NStatusDescription {
     fn placeholder(id: u64) -> Self {
         NStatusDescription::new(id, "Default status description".to_string())
-            .add_components(NStatusBehavior::placeholder(next_id()))
+            .with_behavior(NStatusBehavior::placeholder(next_id()))
     }
 }
 
@@ -1507,7 +1503,8 @@ impl FDisplay for NMatch {
 impl FPlaceholder for NMatch {
     fn placeholder(id: u64) -> Self {
         NMatch::new(id, 0, 1, 3, false, vec![])
-            .add_components(NTeam::placeholder(next_id()), default())
+            .with_team(NTeam::placeholder(next_id()))
+            .with_battles(default())
     }
 }
 
@@ -1552,7 +1549,7 @@ impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
     fn placeholder(id: u64) -> Self {
-        NFusion::new(id, 1, 0, 0, 1, 1, 1).add_components(
+        NFusion::new(id, 1, 0, 0, 1, 1, 1).with_slots(
             (0..5)
                 .map(|_| NFusionSlot::placeholder(next_id()))
                 .collect_vec(),
@@ -1914,7 +1911,7 @@ impl FPlaceholder for NFloorPool {
 
 impl FPlaceholder for NFloorBoss {
     fn placeholder(id: u64) -> Self {
-        NFloorBoss::new(id, 1).add_components(NTeam::placeholder(next_id()))
+        NFloorBoss::new(id, 1).with_team(NTeam::placeholder(next_id()))
     }
 }
 
@@ -1956,7 +1953,7 @@ impl FPlaceholder for NBattle {
 
 impl FPlaceholder for NFusionSlot {
     fn placeholder(id: u64) -> Self {
-        NFusionSlot::new(id, 0, default()).add_components(NUnit::placeholder(next_id()))
+        NFusionSlot::new(id, 0, default()).with_unit(NUnit::placeholder(next_id()))
     }
 }
 
@@ -2084,10 +2081,8 @@ impl FPlaceholder for NUnitDescription {
             MagicType::Ability,
             Trigger::BattleStart,
         )
-        .add_components(
-            NUnitRepresentation::placeholder(next_id()),
-            NUnitBehavior::placeholder(next_id()),
-        )
+        .with_representation(NUnitRepresentation::placeholder(next_id()))
+        .with_behavior(NUnitBehavior::placeholder(next_id()))
     }
 }
 

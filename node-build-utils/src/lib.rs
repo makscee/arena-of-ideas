@@ -666,19 +666,16 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
     }
 }
 
-pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
-    let component_fields: Vec<_> = node
-        .fields
-        .iter()
-        .filter(|field| !matches!(field.link_type, LinkType::None))
-        .collect();
+pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
+    let methods = node.fields.iter().filter_map(|field| {
+        if matches!(field.link_type, LinkType::None) {
+            return None;
+        }
 
-    if component_fields.is_empty() {
-        return quote! {};
-    }
-
-    let params = component_fields.iter().map(|field| {
         let field_name = &field.name;
+        let with_method = format_ident!("with_{}", field_name);
+        let clear_method = format_ident!("{}_clear", field_name);
+
         let target = if field.target_type.is_empty() {
             quote! { String }
         } else {
@@ -686,43 +683,73 @@ pub fn generate_add_components(node: &NodeInfo) -> TokenStream {
             quote! { #target_ident }
         };
 
-        let param_type = match field.link_type {
-            LinkType::OwnedMultiple | LinkType::RefMultiple => quote! { Vec<#target> },
-            _ => quote! { #target },
+        let (param_type, wrapped_value, clear_value) = match field.link_type {
+            LinkType::Component => (
+                quote! { #target },
+                quote! { Component::new_loaded(value) },
+                quote! { Component::none() },
+            ),
+            LinkType::Owned => (
+                quote! { #target },
+                quote! { Owned::new_loaded(value) },
+                quote! { Owned::none() },
+            ),
+            LinkType::OwnedMultiple => (
+                quote! { Vec<#target> },
+                quote! { OwnedMultiple::new_loaded(value) },
+                quote! { OwnedMultiple::none() },
+            ),
+            LinkType::Ref => (
+                quote! { #target },
+                quote! { Ref::new_loaded(value) },
+                quote! { Ref::none() },
+            ),
+            LinkType::RefMultiple => (
+                quote! { Vec<#target> },
+                quote! { RefMultiple::new_loaded(value) },
+                quote! { RefMultiple::none() },
+            ),
+            _ => return None,
         };
 
-        quote! { #field_name: #param_type }
-    });
+        let with_id_method = format_ident!("with_{}_id", field_name);
 
-    let field_assignments = component_fields.iter().map(|field| {
-        let field_name = &field.name;
-        let wrapped_value = match field.link_type {
-            LinkType::Component => {
-                quote! { Component::new_loaded(#field_name) }
-            }
-
-            LinkType::Owned => {
-                quote! { Owned::new_loaded(#field_name) }
-            }
+        let (id_param_type, wrapped_id_value) = match field.link_type {
+            LinkType::Component => (quote! { u64 }, quote! { Component::new_id(id) }),
+            LinkType::Owned => (quote! { u64 }, quote! { Owned::new_id(id) }),
             LinkType::OwnedMultiple => {
-                quote! { OwnedMultiple::new_loaded(#field_name) }
+                (quote! { Vec<u64> }, quote! { OwnedMultiple::new_ids(ids) })
             }
-            LinkType::Ref => {
-                quote! { Ref::new_loaded(#field_name) }
-            }
-            LinkType::RefMultiple => {
-                quote! { RefMultiple::new_loaded(#field_name) }
-            }
-            _ => quote! { #field_name },
+            LinkType::Ref => (quote! { u64 }, quote! { Ref::new_id(id) }),
+            LinkType::RefMultiple => (quote! { Vec<u64> }, quote! { RefMultiple::new_ids(ids) }),
+            _ => return None,
         };
-        quote! { self.#field_name = #wrapped_value; }
+
+        let id_param_name = match field.link_type {
+            LinkType::OwnedMultiple | LinkType::RefMultiple => quote! { ids },
+            _ => quote! { id },
+        };
+
+        Some(quote! {
+            pub fn #with_method(mut self, value: #param_type) -> Self {
+                self.#field_name = #wrapped_value;
+                self
+            }
+
+            pub fn #with_id_method(mut self, #id_param_name: #id_param_type) -> Self {
+                self.#field_name = #wrapped_id_value;
+                self
+            }
+
+            pub fn #clear_method(mut self) -> Self {
+                self.#field_name = #clear_value;
+                self
+            }
+        })
     });
 
     quote! {
-        pub fn add_components(mut self, #(#params),*) -> Self {
-            #(#field_assignments)*
-            self
-        }
+        #(#methods)*
     }
 }
 
