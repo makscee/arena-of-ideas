@@ -815,6 +815,7 @@ impl FPlaceholder for NStatusMagic {
         NStatusMagic::new(next_id(), "New Status".to_string())
             .with_description(NStatusDescription::placeholder())
             .with_representation(NStatusRepresentation::placeholder())
+            .with_state(NStatusState::new(next_id(), 1))
     }
 }
 
@@ -2091,6 +2092,24 @@ impl FPlaceholder for NUnitState {
 impl FPlaceholder for NUnitStats {
     fn placeholder() -> Self {
         NUnitStats::new(next_id(), 1, 4)
+    }
+}
+
+impl FPlaceholder for NStatusState {
+    fn placeholder() -> Self {
+        NStatusState::new(next_id(), 1)
+    }
+}
+
+impl FDisplay for NStatusState {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+        ui.horizontal(|ui| {
+            ui.label("Stacks:");
+            format!("{}", self.stacks)
+                .cstr_c(Color32::from_rgb(255, 255, 0))
+                .label(ui);
+        })
+        .response
     }
 }
 

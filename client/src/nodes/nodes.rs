@@ -110,18 +110,6 @@ impl NodeKindOnSpawn for NodeKind {
 
                 let mut fusion = ctx.load::<NFusion>(id)?.clone();
                 fusion.recalculate_stats(ctx)?;
-
-                ctx.world_mut()?
-                    .get_mut::<NodeStateHistory>(entity)
-                    .unwrap()
-                    .init_vars(
-                        [
-                            (VarName::pwr, fusion.pwr.into()),
-                            (VarName::hp, fusion.hp.into()),
-                            (VarName::dmg, 0.into()),
-                        ]
-                        .into_iter(),
-                    );
                 dbg!(&fusion);
                 fusion.save(ctx)?;
             }

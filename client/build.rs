@@ -77,6 +77,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
+        // Generate save method
+        let save_method = generate_save_method(node);
+
         // All nodes are Components in client
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
@@ -103,6 +106,8 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 #new_method
 
                 #with_methods
+
+                #save_method
 
                 #link_methods
 

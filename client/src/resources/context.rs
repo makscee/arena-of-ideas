@@ -223,6 +223,13 @@ pub enum WorldSource<'w> {
 }
 
 impl<'w> WorldSource<'w> {
+    pub fn is_battle(&self) -> bool {
+        matches!(
+            self,
+            WorldSource::BattleMut(..) | WorldSource::BattleRef(..)
+        )
+    }
+
     pub fn new_immutable(world: &'w World) -> Self {
         Self::WorldRef(world)
     }
@@ -379,6 +386,7 @@ impl<'w> ContextSource for WorldSource<'w> {
             n.inject_data(&data)?;
             n.set_id(id);
             n.set_owner(owner);
+            world.entity_mut(entity).insert(n);
         });
 
         Ok(())
@@ -466,6 +474,7 @@ impl<'w> ContextSource for WorldSource<'w> {
 
 /// Extension trait for Context to load nodes in client
 pub trait ClientContextExt {
+    fn is_battle(&self) -> bool;
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
     fn color(&self, ui: &mut Ui) -> Color32;
     fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
@@ -513,6 +522,10 @@ pub trait ClientContextExt {
 }
 
 impl<'w> ClientContextExt for Context<WorldSource<'w>> {
+    fn is_battle(&self) -> bool {
+        self.source().is_battle()
+    }
+
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
         self.source_mut()
             .get_rng()

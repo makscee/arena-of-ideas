@@ -105,14 +105,13 @@ impl ActionImpl for Action {
                         Ok(())
                     })?;
                     let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
-                    actions.push(BattleAction::vfx(
-                        HashMap::from_iter([
-                            (VarName::text, text.into()),
-                            (VarName::color, high_contrast_text().into()),
-                            (VarName::position, ctx.get_var(VarName::position)?),
-                        ]),
-                        "text".into(),
-                    ));
+                    actions.push(
+                        BattleAction::new_vfx("text")
+                            .with_var(VarName::text, text)
+                            .with_var(VarName::color, high_contrast_text())
+                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .into(),
+                    );
                 } else {
                     return Err("Ability not found".into());
                 }
@@ -124,25 +123,27 @@ impl ActionImpl for Action {
                 let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {
                     let name = status.status_name.clone();
-                    let status = status.clone().load_components(ctx)?.take();
+                    let status = status
+                        .clone()
+                        .load_components(ctx)?
+                        .take()
+                        .with_state(NStatusState::new(next_id(), value));
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(
                             target,
                             status.clone().remap_ids(),
-                            value,
                             color,
                         ));
                     }
                     let text = format!("apply status [{} [b {name}] [th {value}]]", color.to_hex());
-                    actions.push(BattleAction::vfx(
-                        HashMap::from_iter([
-                            (VarName::text, text.into()),
-                            (VarName::color, high_contrast_text().into()),
-                            (VarName::position, ctx.get_var(VarName::position).track()?),
-                        ]),
-                        "text".into(),
-                    ));
+                    actions.push(
+                        BattleAction::new_vfx("text")
+                            .with_var(VarName::text, text)
+                            .with_var(VarName::color, high_contrast_text())
+                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .into(),
+                    );
                 } else {
                     return Err("Status not found".into());
                 }

@@ -27,7 +27,9 @@ pub use operations::*;
 macro_rules! node_kind_match {
     ($kind:expr, $code:expr) => {
         match $kind {
-            NodeKind::None => { /* No type for None */ }
+            NodeKind::None => {
+                unreachable!()
+            }
             NodeKind::NArena => {
                 type NodeType = NArena;
                 $code
@@ -86,6 +88,10 @@ macro_rules! node_kind_match {
             }
             NodeKind::NStatusRepresentation => {
                 type NodeType = NStatusRepresentation;
+                $code
+            }
+            NodeKind::NStatusState => {
+                type NodeType = NStatusState;
                 $code
             }
             NodeKind::NTeam => {

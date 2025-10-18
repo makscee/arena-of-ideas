@@ -92,6 +92,7 @@ pub struct NStatusMagic {
     pub status_name: String,
     pub description: Component<NStatusDescription>,
     pub representation: Component<NStatusRepresentation>,
+    pub state: Component<NStatusState>,
 }
 
 #[derive(Node)]
@@ -112,6 +113,12 @@ pub struct NStatusBehavior {
 #[content]
 pub struct NStatusRepresentation {
     pub material: Material,
+}
+
+#[derive(Node)]
+pub struct NStatusState {
+    #[var]
+    pub stacks: i32,
 }
 
 #[derive(Node)]

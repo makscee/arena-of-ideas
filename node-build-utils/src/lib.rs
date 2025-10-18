@@ -441,7 +441,46 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
 }
 
 // Generate the save implementation for a node
-pub fn generate_save_impl(node: &NodeInfo) -> TokenStream {
+pub fn generate_save_method(node: &NodeInfo) -> proc_macro2::TokenStream {
+    // Generate field saves for all var fields
+    let var_saves = node.fields.iter().filter_map(|field| {
+        if field.is_var {
+            let field_name = &field.name;
+            let var_name = format_ident!("{}", field_name);
+            Some(quote! {
+                // Update NodeStateHistory for var fields only in battle context
+                if ctx.is_battle() {
+                    if let Ok(entity) = self.id.entity(ctx) {
+                        let t = ctx.t().unwrap_or(0.0);
+                        if let Ok(mut state) = NodeStateHistory::load_mut(entity, ctx) {
+                            state.insert(t, 0.0, VarName::#var_name, self.#field_name.clone().into());
+                        }
+                    }
+                }
+            })
+        } else {
+            None
+        }
+    });
+
+    quote! {
+        pub fn save(&mut self, ctx: &mut ClientContext) -> NodeResult<()> {
+            if !self.is_dirty() {
+                return Ok(());
+            }
+
+            // Save var fields to NodeStateHistory only for battle context
+            #(#var_saves)*
+
+            // Mark as clean
+            self.set_dirty(false);
+
+            Ok(())
+        }
+    }
+}
+
+pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let save_fields = node
         .fields
         .iter()
@@ -867,6 +906,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let pack_links_impl = generate_pack_links_impl(node);
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
+        let setter_methods = generate_setter_methods(node);
         let save_impl = generate_save_impl(node);
         let allow_attrs = generated_code_allow_attrs();
 
@@ -916,6 +956,11 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
                 #pack_links_impl
                 #unpack_links_impl
+            }
+
+            #allow_attrs
+            impl #struct_name {
+                #setter_methods
             }
         }
     });
@@ -1438,6 +1483,34 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         fn unpack_links(&mut self, packed: &PackedNodes) {
             #(#unpack_link_calls)*
         }
+    }
+}
+
+pub fn generate_setter_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let setter_methods = node.fields.iter().filter_map(|field| {
+        // Generate setters only for non-link, non-var fields
+        // Var fields are handled by the set_var method
+        if field.link_type == LinkType::None && !field.is_var {
+            let field_name = &field.name;
+            let setter_name = format_ident!("set_{}", field_name);
+            let field_type: syn::Type = syn::parse_str(&field.raw_type).unwrap_or_else(|_| {
+                syn::parse_quote! { String }
+            });
+
+            Some(quote! {
+                pub fn #setter_name(&mut self, value: #field_type) -> &mut Self {
+                    self.#field_name = value;
+                    self.set_dirty(true);
+                    self
+                }
+            })
+        } else {
+            None
+        }
+    });
+
+    quote! {
+        #(#setter_methods)*
     }
 }
 

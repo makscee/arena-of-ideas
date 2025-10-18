@@ -1,3 +1,22 @@
+//! # Battle System with New Node Operation Pattern
+//!
+//! This file demonstrates the new node operation pattern:
+//!
+//! ## Reading Nodes
+//! - Load nodes from context by reference using `ctx.load::<NodeType>(id)?`
+//! - Access inner nodes with generated `*_ref()` methods that can be chained with `?`
+//! - For var fields, use `NodeStateHistory::find_var(ctx, var, entity)` or `ctx.get_var(var)`
+//!
+//! ## Editing Nodes
+//! 1. Get owned node value (can clone a loaded reference): `let mut node = ctx.load::<NodeType>(id)?.clone()`
+//! 2. Edit fields with generated `set_*()` methods for data fields or `set_var(var, value)` for var fields
+//! 3. Save the node with `node.save(ctx)?` - this calls `set_dirty()` and updates NodeStateHistory
+//!
+//! ## Var Fields
+//! - All var field operations go through context and NodeStateHistory for battle simulation variants
+//! - Saving updates history for var fields automatically
+//! - Use `NodeStateHistory::get_at(t, var)` for time-based var retrieval in simulations
+
 use super::*;
 
 #[derive(Clone, Debug, Default)]
@@ -33,9 +52,9 @@ pub enum BattleAction {
     heal(u64, u64, i32),
     death(u64),
     spawn(u64),
-    apply_status(u64, NStatusMagic, i32, Color32),
+    apply_status(u64, NStatusMagic, Color32),
     send_event(Event),
-    vfx(HashMap<VarName, VarValue>, String),
+    vfx(Vec<ContextLayer>, String),
     wait(f32),
 }
 impl Hash for BattleAction {
@@ -56,10 +75,11 @@ impl Hash for BattleAction {
                 v.hash(state);
             }
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
-            BattleAction::apply_status(a, status, c, _) => {
+            BattleAction::apply_status(a, status, _) => {
                 a.hash(state);
                 status.id.hash(state);
-                c.hash(state);
+                // Note: stacks are in state component, using status_name for hash consistency
+                status.status_name.hash(state);
             }
             BattleAction::send_event(event) => event.hash(state),
             _ => {
@@ -78,11 +98,12 @@ impl ToCstr for BattleAction {
             BattleAction::death(a) => format!("x{a}"),
             BattleAction::var_set(a, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::spawn(a) => format!("*{a}"),
-            BattleAction::apply_status(a, status, charges, color) => {
+            BattleAction::apply_status(a, status, color) => {
                 format!(
-                    "+[{} {}]>{a}({charges})",
+                    "+[{} {}]>{a}({})",
                     color.to_hex(),
-                    status.status_name
+                    status.status_name,
+                    status.state().unwrap().stacks
                 )
             }
             BattleAction::wait(t) => format!("~{t}"),
@@ -102,6 +123,14 @@ impl BattleAction {
         let result = sim.with_context_mut(sim.duration, |ctx| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
+                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
+                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
+                    add_actions.push(
+                        Self::new_vfx("strike")
+                            .with_var(VarName::position, owner_pos)
+                            .with_var(VarName::extra_position, target_pos.clone())
+                            .into(),
+                    );
                     if let Some(strike_anim) = animations().get("strike") {
                         ctx.with_layers(
                             [
@@ -112,15 +141,10 @@ impl BattleAction {
                             |context| strike_anim.apply(context),
                         )?;
                     }
-                    let pwr = ctx
-                        .with_owner(*a, |ctx| ctx.get_var(VarName::pwr))?
-                        .get_i32()?;
-                    let action_a = Self::damage(*a, *b, pwr);
-                    let pwr = ctx
-                        .with_owner(*b, |ctx| ctx.get_var(VarName::pwr))?
-                        .get_i32()?;
-                    let action_b = Self::damage(*b, *a, pwr);
-                    add_actions.extend_from_slice(&[action_a, action_b]);
+                    let fusion_a = ctx.load::<NFusion>(*a)?;
+                    let fusion_b = ctx.load::<NFusion>(*b)?;
+                    add_actions.push(Self::damage(*a, *b, fusion_a.pwr));
+                    add_actions.push(Self::damage(*b, *a, fusion_b.pwr));
                     add_actions.extend(ctx.battle()?.slots_sync());
                     true
                 }
@@ -128,24 +152,22 @@ impl BattleAction {
                     let position =
                         ctx.with_owner(*a, |context| context.get_var(VarName::position))?;
                     add_actions.extend(BattleSimulation::die(ctx, *a)?);
-                    add_actions.push(BattleAction::vfx(
-                        HashMap::from_iter([(VarName::position, position)]),
-                        "death_vfx".into(),
-                    ));
+                    add_actions.push(
+                        Self::new_vfx("death_vfx")
+                            .with_var(VarName::position, position)
+                            .into(),
+                    );
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = ctx.node_get_var(*a, VarName::position)?;
-                    let target_pos = ctx.node_get_var(*b, VarName::position)?;
-                    if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_layers(
-                            [
-                                ContextLayer::Var(VarName::position, owner_pos),
-                                ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                            ],
-                            |context| curve.apply(context),
-                        )?;
-                    }
+                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
+                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
+                    add_actions.push(
+                        Self::new_vfx("range_effect_vfx")
+                            .with_var(VarName::position, owner_pos)
+                            .with_var(VarName::extra_position, target_pos.clone())
+                            .into(),
+                    );
                     let x = Event::OutgoingDamage(*a, *b)
                         .update_value(ctx, (*x).into(), *a)
                         .get_i32()?
@@ -155,38 +177,27 @@ impl BattleAction {
                         .get_i32()?
                         .at_least(0);
                     if x > 0 {
-                        if let Some(pain) = animations().get("pain_vfx") {
-                            ctx.with_layer(
-                                ContextLayer::Var(VarName::position, target_pos.clone()),
-                                |context| pain.apply(context),
-                            )?;
-                        }
                         let dmg = ctx.load::<NFusion>(*b)?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
+                        add_actions.push(
+                            Self::new_vfx("pain_vfx")
+                                .with_var(VarName::position, target_pos.clone())
+                                .into(),
+                        );
                     }
-                    if let Some(text) = animations().get("text") {
-                        ctx.with_layers(
-                            [
-                                ContextLayer::Var(VarName::text, (-x).to_string().into()),
-                                ContextLayer::Var(
-                                    VarName::color,
-                                    HexColor::from("#FF0000".to_string()).into(),
-                                ),
-                                ContextLayer::Var(VarName::position, target_pos),
-                            ],
-                            |context| text.apply(context),
-                        )?;
-                    }
-                    *ctx.t_mut()? += ANIMATION;
+                    add_actions.push(
+                        Self::new_vfx("text")
+                            .with_var(VarName::position, target_pos)
+                            .with_var(VarName::text, (-x).to_string())
+                            .with_var(VarName::color, HexColor::from("#FF0000".to_string()))
+                            .into(),
+                    );
+                    // *ctx.t_mut()? += ANIMATION;
                     true
                 }
                 BattleAction::heal(a, b, x) => {
-                    let owner_pos = ctx.with_layer(ContextLayer::Owner(*a), |context| {
-                        context.get_var(VarName::position)
-                    })?;
-                    let target_pos = ctx.with_layer(ContextLayer::Owner(*b), |context| {
-                        context.get_var(VarName::position)
-                    })?;
+                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
+                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
                         ctx.with_layers(
                             [
@@ -223,18 +234,45 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
-                    if ctx.node_get_var(*id, *var).is_ok_and(|v| v.eq(value)) {
-                        false
+                    // Try to set var on the node first
+                    let kind = ctx.get_kind(*id)?;
+                    let set_on_node = match kind {
+                        NodeKind::NFusion => {
+                            if let Ok(mut node) = ctx.load::<NFusion>(*id).cloned() {
+                                if node.set_var(*var, value.clone()).is_ok() {
+                                    node.save(ctx).is_ok()
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        }
+                        _ => false,
+                    };
+
+                    // If node set failed or var doesn't exist on node, set directly on state
+                    if !set_on_node {
+                        let entity = id.entity(ctx)?;
+                        let current = if let Ok(state) = NodeStateHistory::load(entity, ctx) {
+                            state.get(*var)
+                        } else {
+                            None
+                        };
+
+                        if current.as_ref().map_or(false, |v| v.eq(value)) {
+                            false
+                        } else {
+                            let t = ctx.t()?;
+                            let mut state = NodeStateHistory::load_mut(entity, ctx)?;
+                            state.insert(t, 0.0, *var, value.clone());
+                            true
+                        }
                     } else {
-                        ctx.node_set_var(*id, *var, value.clone())?;
                         true
                     }
                 }
                 BattleAction::spawn(id) => {
-                    let kind = ctx.get_kind(*id)?;
-                    let vars = kind.get_vars(ctx, *id);
-                    let mut ns = NodeStateHistory::load_mut(id.entity(ctx)?, ctx)?;
-                    ns.init_vars(vars.into_iter());
                     add_actions.extend_from_slice(&[BattleAction::var_set(
                         *id,
                         VarName::visible,
@@ -242,9 +280,8 @@ impl BattleAction {
                     )]);
                     true
                 }
-                BattleAction::apply_status(target, status, charges, color) => {
-                    BattleSimulation::apply_status(ctx, *target, status.clone(), *charges, *color)
-                        .log();
+                BattleAction::apply_status(target, status, color) => {
+                    BattleSimulation::apply_status(ctx, *target, status.clone(), *color).log();
                     *ctx.t_mut()? += ANIMATION;
                     true
                 }
@@ -252,14 +289,9 @@ impl BattleAction {
                     *ctx.t_mut()? += *t;
                     false
                 }
-                BattleAction::vfx(vars, vfx) => {
+                BattleAction::vfx(layers, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        ctx.with_layers(
-                            vars.iter()
-                                .map(|(var, value)| ContextLayer::Var(*var, value.clone()))
-                                .collect_vec(),
-                            |context| vfx.apply(context),
-                        )?
+                        ctx.with_layers(layers.clone(), |context| vfx.apply(context))?
                     }
                     false
                 }
@@ -286,6 +318,50 @@ impl BattleAction {
             }
         }
         add_actions
+    }
+    pub fn new_vfx(name: impl ToString) -> VfxBuilder {
+        VfxBuilder {
+            name: name.to_string(),
+            layers: Vec::new(),
+        }
+    }
+}
+
+pub struct VfxBuilder {
+    name: String,
+    layers: Vec<ContextLayer>,
+}
+
+impl VfxBuilder {
+    pub fn with_owner(mut self, id: u64) -> Self {
+        self.layers.push(ContextLayer::Owner(id));
+        self
+    }
+
+    pub fn with_target(mut self, id: u64) -> Self {
+        self.layers.push(ContextLayer::Target(id));
+        self
+    }
+
+    pub fn with_caster(mut self, id: u64) -> Self {
+        self.layers.push(ContextLayer::Caster(id));
+        self
+    }
+
+    pub fn with_status(mut self, id: u64) -> Self {
+        self.layers.push(ContextLayer::Status(id));
+        self
+    }
+
+    pub fn with_var(mut self, name: VarName, value: impl Into<VarValue>) -> Self {
+        self.layers.push(ContextLayer::Var(name, value.into()));
+        self
+    }
+}
+
+impl From<VfxBuilder> for BattleAction {
+    fn from(builder: VfxBuilder) -> Self {
+        BattleAction::vfx(builder.layers, builder.name)
     }
 }
 
@@ -318,7 +394,7 @@ impl BattleSimulation {
             world
                 .with_context(|ctx| {
                     Ok(ctx
-                        .load_collect_children_recursive::<NFusion>(ctx.id(parent)?)?
+                        .load_collect_children::<NFusion>(ctx.id(parent)?)?
                         .into_iter()
                         .sorted_by_key(|s| s.index)
                         .filter_map(|n| {
@@ -383,8 +459,9 @@ impl BattleSimulation {
                 for (var, value) in vars {
                     let value = Event::UpdateStat(var).update_value(ctx, value, id);
                     let t = ctx.t()?;
-                    ctx.load_mut::<NodeStateHistory>(id)?
-                        .insert(t, 0.0, var, value);
+                    let entity = id.entity(ctx)?;
+                    let mut state = NodeStateHistory::load_mut(entity, ctx)?;
+                    state.insert(t, 0.0, var, value);
                 }
             }
             Ok(())
@@ -419,7 +496,7 @@ impl BattleSimulation {
                 fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
             }
             ctx.with_owner(id, |ctx| {
-                match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
+                match ctx.load::<NFusion>(id)?.clone().react(&event, ctx) {
                     Ok(a) => battle_actions.extend(a),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };
@@ -437,7 +514,7 @@ impl BattleSimulation {
                     let behavior = ctx.load::<NStatusBehavior>(status_id)?;
                     let actions = behavior
                         .reactions
-                        .react(&event, &ctx)
+                        .react(&event, ctx)
                         .to_not_found()?
                         .clone();
                     actions.process(ctx)
@@ -453,38 +530,32 @@ impl BattleSimulation {
         ctx: &mut ClientContext,
         target: u64,
         status: NStatusMagic,
-        charges: i32,
         color: Color32,
     ) -> NodeResult<()> {
         let t = ctx.t()?;
         for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    let mut state = ctx.load_mut::<NodeStateHistory>(child)?;
-                    let charges = state
-                        .get(VarName::charges)
-                        .map(|v| v.get_i32().unwrap())
-                        .to_e_not_found()?
-                        + charges;
-                    state.insert(t, 0.0, VarName::charges, charges.into());
-                    return Ok(());
+                    // Update stacks on the status state component
+                    if let Ok(mut state) = child_status.state_ref(ctx).cloned() {
+                        let new_stacks = state.stacks + status.state_ref(ctx)?.stacks;
+                        state.set_var(VarName::stacks, new_stacks.into())?;
+                        state.save(ctx)?;
+                        return Ok(());
+                    }
                 }
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
-        status.remap_ids().spawn(ctx, Some(entity))?;
-        // let rep_entity = ctx.world_mut()?.spawn_empty().id();
-        // status_rep()
-        //     .clone()
-        //     .with_id(next_id())
-        //     .spawn(ctx, Some(rep_entity))?;
-        // ctx.add_link_entities(entity, rep_entity)?;
+        let new_status = status.remap_ids();
+        new_status.spawn(ctx, Some(entity))?;
+        // Status is already saved with its charges during spawn
+
         ctx.add_link_entities(target.entity(ctx)?, entity)?;
 
-        let mut state = ctx.load_entity_mut::<NodeStateHistory>(entity)?;
+        let mut state = NodeStateHistory::load_mut(entity, ctx)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
-        state.insert(t, 0.0, VarName::charges, charges.into());
         state.insert(t, 0.0, VarName::color, color.into());
         Ok(())
     }
@@ -501,15 +572,13 @@ impl BattleSimulation {
         let mut actions: VecDeque<BattleAction> = default();
         self.with_context_mut(self.duration, |ctx| {
             for id in ctx.battle()?.all_fusions() {
-                let dmg = ctx.load::<NFusion>(id)?.dmg;
-                ctx.with_owner(id, |ctx| {
-                    let hp = ctx.get_var(VarName::hp).get_i32()?;
-                    if hp <= dmg {
-                        actions.push_back(BattleAction::send_event(Event::Death(id)));
-                        actions.push_back(BattleAction::death(id));
-                    }
-                    Ok(())
-                })?;
+                let fusion = ctx.load::<NFusion>(id)?;
+                let dmg = fusion.dmg;
+                let hp = fusion.hp;
+                if hp <= dmg {
+                    actions.push_back(BattleAction::send_event(Event::Death(id)));
+                    actions.push_back(BattleAction::death(id));
+                }
             }
             Ok(())
         })
