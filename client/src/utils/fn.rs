@@ -18,7 +18,7 @@ pub fn global_settings() -> &'static GlobalSettings {
 }
 pub fn app_exit(world: &mut World) {
     world
-        .get_resource_mut::<bevy::prelude::Events<bevy::app::AppExit>>()
+        .get_resource_mut::<bevy::prelude::Messages<bevy::app::AppExit>>()
         .unwrap()
         .send(bevy::app::AppExit::Success);
 }

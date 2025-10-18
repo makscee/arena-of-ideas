@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 
 use super::*;
 
@@ -112,7 +112,7 @@ impl Button {
         let r = if let Some(icon) = self.icon {
             egui::ImageButton::new(icon.image()).sense(sense).ui(ui)
         } else {
-            egui::Button::new(WidgetText::LayoutJob(job))
+            egui::Button::new(WidgetText::LayoutJob(Arc::new(job)))
                 .wrap_mode(egui::TextWrapMode::Extend)
                 .sense(sense)
                 .min_size(egui::vec2(self.min_width, 0.0))

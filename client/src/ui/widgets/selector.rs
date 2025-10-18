@@ -1,4 +1,5 @@
 use super::*;
+use bevy_egui::egui::Popup;
 use egui::ComboBox;
 
 pub struct Selector;
@@ -67,7 +68,7 @@ impl Selector {
                     } else if take_first && !grayed_out {
                         changed = Some(value.clone());
                         *value = e;
-                        ui.memory_mut(|w| w.close_popup());
+                        Popup::close_all(ui.ctx());
                         take_first = false;
                     }
                 }

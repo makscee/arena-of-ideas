@@ -183,7 +183,7 @@ impl BattlePlugin {
 
             // Step back
             if ui.button("⏪").clicked() {
-                data.t = (data.t - 0.1).max(0.0);
+                data.t = (data.t - 1.0).max(0.0);
             }
 
             // Play/Pause button
@@ -193,7 +193,7 @@ impl BattlePlugin {
 
             // Step forward
             if ui.button("⏩").clicked() {
-                data.t = (data.t + 0.1).min(data.simulation.duration);
+                data.t = (data.t + 1.0).min(data.simulation.duration);
             }
 
             // Jump to end

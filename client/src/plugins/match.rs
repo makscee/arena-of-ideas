@@ -1,4 +1,4 @@
-use bevy::{ecs::event::EventReader, input::common_conditions::input_just_pressed};
+use bevy::input::common_conditions::input_just_pressed;
 use bevy_egui::egui::Grid;
 
 use super::*;
@@ -57,7 +57,7 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update(mut events: EventReader<StdbNodeEvent>) {
+    fn on_match_update(mut events: MessageReader<StdbNodeEvent>) {
         for event in events.read() {
             if event.node.kind == "NMatch" && event.node.owner == player_id() {
                 op(|world| {

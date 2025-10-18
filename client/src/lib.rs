@@ -84,9 +84,11 @@ pub fn run() {
                     "ron/_dynamic.assets.ron",
                 ),
         )
-        .add_plugins(EguiPlugin {
-            enable_multipass_for_primary_context: false,
-        })
+        .add_systems(
+            PreStartup,
+            (setup_camera_system.before(EguiStartupSet::InitContexts),),
+        )
+        .add_plugins(EguiPlugin::default())
         .add_systems(
             PreStartup,
             configure_context.after(EguiStartupSet::InitContexts),
@@ -134,4 +136,8 @@ fn on_error_state(world: &mut World) {
 
 fn configure_context(mut egui_settings: Query<&mut EguiContextSettings>) {
     egui_settings.single_mut().unwrap().run_manually = true;
+}
+
+fn setup_camera_system(mut commands: Commands) {
+    commands.spawn(bevy::camera::Camera2d);
 }

@@ -1,5 +1,5 @@
 use bcrypt_no_getrandom::{hash_with_salt, verify};
-use rand::RngCore;
+use spacetimedb::rand::RngCore;
 
 use super::*;
 

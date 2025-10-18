@@ -179,6 +179,6 @@ impl CstrTrait for Cstr {
     fn galley(self, alpha: f32, ui: &mut Ui) -> Arc<egui::Galley> {
         let mut job = LayoutJob::default();
         cstr_parse_into_job(&self, alpha, &mut job, ui.style());
-        ui.fonts(|r| r.layout_job(job))
+        ui.fonts_mut(|r| r.layout_job(job))
     }
 }

@@ -1,4 +1,3 @@
-use bevy::ecs::event::{Event, EventReader, Events};
 use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
 use std::collections::VecDeque;
 
@@ -20,8 +19,8 @@ pub struct StdbPlugin;
 
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Events<StdbNodeEvent>>();
-        app.init_resource::<Events<StdbLinkEvent>>();
+        app.init_resource::<Messages<StdbNodeEvent>>();
+        app.init_resource::<Messages<StdbLinkEvent>>();
         app.init_resource::<EventQueue>();
         app.add_systems(
             Update,
@@ -42,13 +41,13 @@ pub enum StdbChange {
     Delete,
 }
 
-#[derive(Event, Clone)]
+#[derive(Message, Clone)]
 pub struct StdbNodeEvent {
     pub node: TNode,
     pub change: StdbChange,
 }
 
-#[derive(Event, Clone)]
+#[derive(Message, Clone)]
 pub struct StdbLinkEvent {
     pub parent: u64,
     pub child: u64,
@@ -60,14 +59,14 @@ pub struct StdbLinkEvent {
 }
 
 impl StdbPlugin {
-    fn handle_stdb_events(mut events: EventReader<StdbNodeEvent>, state: Res<State<GameState>>) {
+    fn handle_stdb_events(mut events: MessageReader<StdbNodeEvent>, state: Res<State<GameState>>) {
         for event in events.read() {
             Self::process_stdb_event(event, state.get());
         }
     }
 
     fn handle_stdb_link_events(
-        mut events: EventReader<StdbLinkEvent>,
+        mut events: MessageReader<StdbLinkEvent>,
         state: Res<State<GameState>>,
     ) {
         for event in events.read() {

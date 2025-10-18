@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::event::EventReader,
-    window::{PresentMode, VideoModeSelection, WindowResized},
-};
+use bevy::window::{PresentMode, VideoModeSelection, WindowResized};
 
 use proc_macros::Settings;
 
@@ -224,7 +221,7 @@ fn apply_settings_changes(world: &mut World) {
     }
 }
 
-fn on_resize(mut resize_reader: EventReader<WindowResized>) {
+fn on_resize(mut resize_reader: MessageReader<WindowResized>) {
     for e in resize_reader.read() {
         debug!("Resize {e:?}");
         pd_mut(|data| {

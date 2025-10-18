@@ -609,8 +609,10 @@ impl<'w> ClientContextExt for Context<WorldSource<'w>> {
     fn id(&self, entity: Entity) -> NodeResult<u64> {
         let world = self.world()?;
         if let Some(map) = world.get_resource::<NodeEntityMap>() {
-            map.get_id(entity)
-                .ok_or(NodeError::id_not_found(entity.index(), entity.generation()))
+            map.get_id(entity).ok_or(NodeError::id_not_found(
+                entity.index(),
+                entity.generation().to_bits(),
+            ))
         } else {
             Err(NodeError::context_error(anyhow::anyhow!(
                 "NodeEntityMap resource not found"

@@ -22,7 +22,7 @@ impl ToEParam<VarName, VarValue> for Option<VarValue> {
 
 impl ToEParam<Entity, u64> for Option<u64> {
     fn to_e(self, f: Entity) -> NodeResult<u64> {
-        self.ok_or_else(|| NodeError::id_not_found(f.index(), f.generation()))
+        self.ok_or_else(|| NodeError::id_not_found(f.index(), f.generation().to_bits()))
     }
 }
 

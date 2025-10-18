@@ -1,4 +1,3 @@
-use bevy::ecs::event::{EventReader, Events};
 use bevy_http_client::{
     HttpClient, HttpClientPlugin, HttpRequest, HttpResponse, HttpResponseError,
 };
@@ -123,7 +122,8 @@ impl LoginPlugin {
                 );
                 match HttpClient::new().get(url).try_build() {
                     Ok(request) => {
-                        if let Some(mut events) = world.get_resource_mut::<Events<HttpRequest>>() {
+                        if let Some(mut events) = world.get_resource_mut::<Messages<HttpRequest>>()
+                        {
                             events.send(request);
                         }
                     }
@@ -209,7 +209,7 @@ impl LoginPlugin {
     }
 }
 
-fn handle_response(mut ev_resp: EventReader<HttpResponse>) {
+fn handle_response(mut ev_resp: MessageReader<HttpResponse>) {
     for response in ev_resp.read() {
         info!("response {}", response.text().unwrap());
         let authorize_url = format!(
@@ -221,7 +221,7 @@ fn handle_response(mut ev_resp: EventReader<HttpResponse>) {
     }
 }
 
-fn handle_error(mut ev_error: EventReader<HttpResponseError>) {
+fn handle_error(mut ev_error: MessageReader<HttpResponseError>) {
     for error in ev_error.read() {
         println!("Error retrieving IP: {}", error.err);
     }

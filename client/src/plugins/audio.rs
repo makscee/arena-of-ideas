@@ -88,7 +88,7 @@ impl AudioPlugin {
             },
         ));
     }
-    fn background_sink(world: &mut World) -> Option<(Entity, Mut<AudioSink>)> {
+    fn background_sink<'a>(world: &'a mut World) -> Option<(Entity, Mut<'a, AudioSink>)> {
         world
             .query_filtered::<(Entity, &mut AudioSink), With<BackgroundAudioMarker>>()
             .single_mut(world)
@@ -114,7 +114,7 @@ impl AudioPlugin {
     fn loaded(world: &mut World) {
         let aa = world.resource::<AudioAssets>();
         let mut bg_inds = (0..aa.audio_bg.len()).collect_vec();
-        bg_inds.shuffle(&mut thread_rng());
+        bg_inds.shuffle(&mut rng());
         let ar = AudioResource { bg_inds, bg_cur: 0 };
         world.insert_resource(ar);
     }

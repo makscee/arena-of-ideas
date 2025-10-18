@@ -1,4 +1,4 @@
-use rand::seq::SliceRandom;
+use spacetimedb::rand::seq::SliceRandom;
 
 use super::*;
 

@@ -42,27 +42,29 @@ tween = { workspace = true }
 color-hex = { workspace = true }
 egui_tiles = { workspace = true }
 egui-notify = { workspace = true }
-egui_double_slider = { workspace = true }
+
 
 backtrace = { workspace = true }
-mlua = {workspace = true }
+mlua = { workspace = true }
 
-bevy_asset_loader = { version = "0.23.0", features = [
+bevy_asset_loader = { git = "https://github.com/NiklasEi/bevy_asset_loader.git", branch = "bevy_main", features = [
     "standard_dynamic_assets",
 ] }
-bevy_common_assets = { version = "0.12.0", features = ["ron"] }
-anyhow = "1.0.75"
-clap = { version = "4.4.5", features = ["derive"] }
+bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets.git", branch = "bevy_main", features = [
+    "ron",
+] }
+anyhow = "1.0.100"
+clap = { version = "4.5.49", features = ["derive"] }
 hex = "0.4.3"
-home = "0.5.5"
-egui_commonmark = "0.20.0"
-bevy_tasks = "0.16.1"
-regex = "1.10.5"
-bevy_http_client = "0.8.3"
+home = "0.5.11"
+egui_commonmark = "0.22.0"
+bevy_tasks = "0.17.2"
+regex = "1.12.2"
+bevy_http_client = "0.9.0"
 open = "5.3.2"
 
 [dependencies.winit]
-version = "0.30.9"
+version = "0.30.12"
 features = ["default"]
 
 [build-dependencies]

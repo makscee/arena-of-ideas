@@ -32,12 +32,6 @@ pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct Credentials {
-    identity: Identity,
-    token: String,
-}
-
 fn creds_store() -> credentials::File {
     credentials::File::new("aoi")
 }

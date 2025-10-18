@@ -3,7 +3,7 @@ use super::*;
 pub fn cstr_parse(s: &str, alpha: f32, style: &Style) -> WidgetText {
     let mut job = LayoutJob::default();
     cstr_parse_into_job(s, alpha, &mut job, style);
-    WidgetText::LayoutJob(job)
+    WidgetText::LayoutJob(Arc::new(job))
 }
 
 pub fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Style) {

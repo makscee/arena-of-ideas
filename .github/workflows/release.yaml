@@ -3,10 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - '*'
+      - "*"
   workflow_dispatch:
-    tags:
-      - '*'
 
 env:
   # update with the name of the main binary
@@ -14,9 +12,7 @@ env:
   add_binaries_to_github_release: true
   itch_target: makscee/arena-of-ideas
 
-
 jobs:
-
   # Build for wasm
   # release-wasm:
   #   runs-on: ubuntu-latest
@@ -192,7 +188,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file:  ${{ env.binary }}-macOS-intel.dmg
+          file: ${{ env.binary }}-macOS-intel.dmg
           asset_name: ${{ env.binary }}-macOS-intel-${{ steps.get_version.outputs.tag }}.dmg
           tag: ${{ github.ref }}
           overwrite: true
@@ -208,7 +204,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin
-      - name: Environment 
+      - name: Environment
         # macOS 11 was the first version to support ARM
         run: |
           export MACOSX_DEPLOYMENT_TARGET="11"

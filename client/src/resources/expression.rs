@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use mlua::Lua;
-use rand::seq::SliceRandom;
+use rand::seq::IndexedRandom;
 
 use super::*;
 
