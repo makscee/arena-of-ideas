@@ -111,8 +111,8 @@ impl Default for ClientSettings {
     fn default() -> Self {
         Self {
             servers: HashMap::from([
-                ("prod", ("http://89.19.217.60:3000", "aoiprod")),
-                ("dev", ("http://89.19.217.60:3000", "aoidev")),
+                ("prod", ("http://72.56.71.60:3000", "aoiprod")),
+                ("dev", ("http://72.56.71.60:3000", "aoidev")),
             ]),
             active_server: "dev",
             dev_mode: false,
