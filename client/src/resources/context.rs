@@ -447,22 +447,7 @@ impl<'w> ContextSource for WorldSource<'w> {
                 return Err(NodeError::not_found_generic("NodeEntityMap not found"));
             }
         }
-
-        // Update the actual node data using node_kind_match
-        let kind = self.get_node_kind(id)?;
-        node_kind_match!(kind, {
-            let mut node: NodeType = {
-                let world = self.world()?;
-                let entity = world
-                    .resource::<NodeEntityMap>()
-                    .get_entity(id)
-                    .to_not_found()?;
-                world.get::<NodeType>(entity).to_not_found()?.clone()
-            };
-            node.set_var(var, value)?;
-            node.save(&mut Context::new(self))?;
-            Ok(())
-        })
+        Ok(())
     }
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
@@ -472,9 +457,6 @@ impl<'w> ContextSource for WorldSource<'w> {
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
                 if let Some(entity) = map.get_entity(id) {
                     if let Some(node_state_history) = world.get::<NodeStateHistory>(entity) {
-                        // if var == VarName::hp {
-                        //     dbg!(node_state_history);
-                        // }
                         if let Some(value) = node_state_history.get_at(t, var) {
                             return Ok(value);
                         }

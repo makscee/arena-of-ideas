@@ -80,7 +80,7 @@ pub trait Node: Send + Sync + Default + StringData {
         value: VarValue,
     ) -> NodeResult<()> {
         // First set on the node itself
-        self.set_var(var, value.clone())?;
+        let _ = self.set_var(var, value.clone());
         // Then push to context (e.g., NodeStateHistory for battles)
         ctx.source_mut().set_var(self.id(), var, value)
     }

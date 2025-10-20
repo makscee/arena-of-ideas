@@ -643,25 +643,13 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         }
     });
 
-    let var_saves = node.fields.iter().filter_map(|field| {
-        if field.is_var {
-            let field_name = &field.name;
-            let var_name = format_ident!("{}", field_name);
-            Some(quote! {
-                ctx.source_mut().set_var(self.id, VarName::#var_name, self.#field_name.clone().into())?;
-            })
-        } else {
-            None
-        }
-    });
-
     quote! {
         fn save<S: ContextSource>(&mut self, ctx: &mut Context<S>) -> NodeResult<()> {
             #(#save_fields)*
             if self.is_dirty() {
-                // Save var changes to context source (for NodeStateHistory tracking)
-                #(#var_saves)*
-
+                for (var, value) in self.get_vars() {
+                    ctx.source_mut().set_var(self.id, var, value)?;
+                }
                 ctx.source_mut().insert_node(self.id, self.owner, Self::kind_s(), self.get_data())?;
                 #(#check_link_changes)*
                 self.set_dirty(false);
@@ -1644,11 +1632,22 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
             let field_type = generate_field_type(f);
             let get_method_name = format_ident!("{}_get", field_name);
             let set_method_name = format_ident!("{}_set", field_name);
-            let _var_name = format_ident!("{}", field_name);
+            let ctx_get_method_name = format_ident!("{}_ctx_get", field_name);
+            let var_name = format_ident!("{}", field_name);
 
             quote! {
                 #allow_attrs
                 pub fn #get_method_name(&self) -> #field_type {
+                    self.#field_name.clone()
+                }
+
+                #allow_attrs
+                pub fn #ctx_get_method_name<S: ContextSource>(&self, ctx: &Context<S>) -> #field_type {
+                    if let Ok(value) = self.get_ctx_var(ctx, VarName::#var_name) {
+                        if let Ok(typed_value) = value.try_into() {
+                            return typed_value;
+                        }
+                    }
                     self.#field_name.clone()
                 }
 
@@ -1700,24 +1699,6 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
                     #(#var_names_arms,)*
                     NodeKind::None => std::collections::HashSet::new(),
                 }
-            }
-
-            pub fn get_var<S: ContextSource>(self, ctx: &Context<S>, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-                ctx.source().get_var_direct(node_id, var)
-            }
-
-            pub fn set_var<S: ContextSource>(self, ctx: &mut Context<S>, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-                ctx.source_mut().set_var(node_id, var, value)
-            }
-
-            pub fn get_vars<S: ContextSource>(self, ctx: &Context<S>, node_id: u64) -> std::collections::HashMap<VarName, VarValue> {
-                let mut vars = std::collections::HashMap::new();
-                for var in self.var_names() {
-                    if let Ok(value) = self.get_var(ctx, node_id, var) {
-                        vars.insert(var, value);
-                    }
-                }
-                vars
             }
         }
     }

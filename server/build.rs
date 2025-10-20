@@ -149,10 +149,3 @@ fn generate_server_node_impl(
         }
     }
 }
-
-fn generate_node_loader_impl(_nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
-    let allow_attrs = generated_code_allow_attrs();
-    quote! {
-        // NodeLoader trait has been removed
-    }
-}

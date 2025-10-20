@@ -143,8 +143,8 @@ impl BattleAction {
                     }
                     let fusion_a = ctx.load::<NFusion>(*a)?;
                     let fusion_b = ctx.load::<NFusion>(*b)?;
-                    add_actions.push(Self::damage(*a, *b, fusion_a.pwr));
-                    add_actions.push(Self::damage(*b, *a, fusion_b.pwr));
+                    add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
+                    add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
                     add_actions.extend(ctx.battle()?.slots_sync());
                     true
                 }
@@ -177,7 +177,7 @@ impl BattleAction {
                         .get_i32()?
                         .at_least(0);
                     if x > 0 {
-                        let dmg = ctx.load::<NFusion>(*b)?.dmg + x;
+                        let dmg = ctx.load::<NFusion>(*b)?.dmg_ctx_get(ctx) + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         add_actions.push(
                             Self::new_vfx("pain_vfx")
@@ -214,7 +214,7 @@ impl BattleAction {
                                 |context| pleasure.apply(context),
                             )?;
                         }
-                        let dmg = (ctx.load::<NFusion>(*b)?.dmg - x).at_least(0);
+                        let dmg = (ctx.load::<NFusion>(*b)?.dmg_ctx_get(ctx) - x).at_least(0);
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         if let Some(text) = animations().get("text") {
                             ctx.with_layers(
@@ -234,41 +234,17 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
-                    // Try to set var on the node first
                     let kind = ctx.get_kind(*id)?;
-                    let set_on_node = match kind {
-                        NodeKind::NFusion => {
-                            if let Ok(mut node) = ctx.load::<NFusion>(*id).cloned() {
-                                if node.set_var(*var, value.clone()).is_ok() {
-                                    node.save(ctx).is_ok()
-                                } else {
-                                    false
-                                }
-                            } else {
-                                false
-                            }
-                        }
-                        _ => false,
-                    };
+                    let cur_value =
+                        node_kind_match!(kind, ctx.load::<NodeType>(*id)?.get_ctx_var(ctx, *var));
 
-                    // If node set failed or var doesn't exist on node, set directly on state
-                    if !set_on_node {
-                        let entity = id.entity(ctx)?;
-                        let current = if let Ok(state) = NodeStateHistory::load(entity, ctx) {
-                            state.get(*var)
-                        } else {
-                            None
-                        };
-
-                        if current.as_ref().map_or(false, |v| v.eq(value)) {
-                            false
-                        } else {
-                            let t = ctx.t()?;
-                            let mut state = NodeStateHistory::load_mut(entity, ctx)?;
-                            state.insert(t, 0.0, *var, value.clone());
-                            true
-                        }
+                    if cur_value.is_ok_and(|v| v.eq(value)) {
+                        false
                     } else {
+                        node_kind_match!(kind, {
+                            let _ = ctx.load_mut::<NodeType>(*id)?.set_var(*var, value.clone());
+                            ctx.source_mut().set_var(*id, *var, value.clone())?;
+                        });
                         true
                     }
                 }
@@ -455,7 +431,8 @@ impl BattleSimulation {
             .collect_vec();
         self.with_context_mut(self.duration, |ctx| {
             for id in ids {
-                let vars = ctx.get_kind(id).unwrap().get_vars(ctx, id);
+                let vars =
+                    node_kind_match!(ctx.get_kind(id)?, ctx.load::<NodeType>(id)?.get_vars());
                 for (var, value) in vars {
                     let value = Event::UpdateStat(var).update_value(ctx, value, id);
                     let t = ctx.t()?;
@@ -573,9 +550,8 @@ impl BattleSimulation {
         self.with_context_mut(self.duration, |ctx| {
             for id in ctx.battle()?.all_fusions() {
                 let fusion = ctx.load::<NFusion>(id)?;
-                let hp = fusion.hp_get();
-                let dmg = fusion.dmg_get();
-                dbg!(hp, dmg);
+                let hp = fusion.hp_ctx_get(ctx);
+                let dmg = fusion.dmg_ctx_get(ctx);
                 if hp <= dmg {
                     actions.push_back(BattleAction::send_event(Event::Death(id)));
                     actions.push_back(BattleAction::death(id));
