@@ -124,7 +124,7 @@ impl StdbPlugin {
                 op(move |world| {
                     world
                         .with_context_mut(|ctx| {
-                            node_event.node.kind().spawn(ctx, &node_event.node)?;
+                            node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
                             ctx.world_mut()?.send_event(node_event);
                             Ok(())
                         })
@@ -135,7 +135,7 @@ impl StdbPlugin {
                 op(move |world| {
                     world
                         .with_context_mut(|ctx| {
-                            node_event.node.kind().spawn(ctx, &node_event.node)?;
+                            node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
                             ctx.world_mut()?.send_event(node_event);
                             Ok(())
                         })

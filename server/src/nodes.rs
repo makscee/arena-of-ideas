@@ -18,7 +18,10 @@ pub trait ServerNode: Sized + schema::Node {
         if node.kind == kind {
             node.to_node()
         } else {
-            Err(NodeError::invalid_kind(kind.to_kind(), node.kind()))
+            Err(NodeError::invalid_kind(
+                kind.to_kind(),
+                NodeKind::from_str(&node.kind).unwrap_or(NodeKind::None),
+            ))
         }
     }
     fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self;

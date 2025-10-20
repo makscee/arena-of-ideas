@@ -77,8 +77,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
-        // Generate save method
-        let save_method = generate_save_method(node);
+        // Save method is now provided by Node trait implementation
 
         // All nodes are Components in client
         let allow_attrs = generated_code_allow_attrs();
@@ -107,7 +106,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
                 #with_methods
 
-                #save_method
+
 
                 #link_methods
 
@@ -137,9 +136,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             }
         }
     });
-
-    // Generate NodeLoader implementation for ClientContext
-    let node_loader_impl = generate_node_loader_impl(nodes);
 
     // Generate NodeKind spawn extension
     let node_kind_spawn_impl = generate_node_kind_spawn_impl(nodes);
@@ -178,8 +174,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         #allow_attrs
         #(#fedit_impls)*
-
-        #node_loader_impl
 
         #node_kind_spawn_impl
 
@@ -281,74 +275,6 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 let id = self.id;
                 ctx.world_mut().track()?.entity_mut(entity).insert(self);
                 kind.on_spawn(ctx, id)
-            }
-        }
-    }
-}
-
-fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
-    let load_and_get_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                let world = self.world()?;
-                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
-                    if let Some(entity) = entity_map.get_entity(node_id) {
-                        if let Some(node) = world.get::<#node_name>(entity) {
-                            return node.get_var(var);
-                        }
-                    }
-                }
-                Err(NodeError::not_found(node_id))
-            }
-        }
-    });
-
-    let load_and_set_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                let world = self.world_mut()?;
-                if let Some(entity_map) = world.get_resource::<NodeEntityMap>() {
-                    if let Some(entity) = entity_map.get_entity(node_id) {
-                        if let Some(mut node) = world.get_mut::<#node_name>(entity) {
-                            node.set_var(var, value)?;
-                            return Ok(());
-                        }
-                    }
-                }
-                Err(NodeError::not_found(node_id))
-            }
-        }
-    });
-
-    let allow_attrs = generated_code_allow_attrs();
-    quote! {
-        #allow_attrs
-        impl<'w> NodeLoader for WorldSource<'w> {
-            fn load_and_get_var(
-                &self,
-                node_kind: NodeKind,
-                node_id: u64,
-                var: VarName,
-            ) -> NodeResult<VarValue> {
-                match node_kind {
-                    #(#load_and_get_var_arms,)*
-                    NodeKind::None => Err(NodeError::custom("Cannot get var from None node")),
-                }
-            }
-
-            fn load_and_set_var(
-                &mut self,
-                node_kind: NodeKind,
-                node_id: u64,
-                var: VarName,
-                value: VarValue,
-            ) -> NodeResult<()> {
-                match node_kind {
-                    #(#load_and_set_var_arms,)*
-                    NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
-                }
             }
         }
     }

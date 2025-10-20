@@ -79,7 +79,7 @@ impl ReducerEventContext {
 pub trait NodeIdExt {
     fn entity(self, ctx: &ClientContext) -> NodeResult<Entity>;
     fn get_node(self) -> Option<TNode>;
-    fn kind(self) -> Result<NodeKind, NodeError>;
+    fn kind_db(self) -> Result<NodeKind, NodeError>;
     fn label(self, ui: &mut Ui) -> Response;
     fn node_rating(self) -> Option<i32>;
 }
@@ -91,7 +91,7 @@ impl NodeIdExt for u64 {
     fn get_node(self) -> Option<TNode> {
         cn().db.nodes_world().id().find(&self)
     }
-    fn kind(self) -> Result<NodeKind, NodeError> {
+    fn kind_db(self) -> Result<NodeKind, NodeError> {
         Ok(cn()
             .db
             .nodes_world()

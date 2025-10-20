@@ -121,15 +121,11 @@ fn generate_server_nodes(
     // Generate conversion traits
     let conversions = generate_node_impl(nodes);
 
-    // Generate NodeLoader implementation for ServerContext
-    let node_loader_impl = generate_node_loader_impl(nodes);
-
+    // Generate module
     quote! {
         #(#node_structs)*
 
         #conversions
-
-        #node_loader_impl
     }
 }
 
@@ -154,57 +150,9 @@ fn generate_server_node_impl(
     }
 }
 
-fn generate_node_loader_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
-    let load_and_get_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                let node: #node_name = node_id.load_node(self.rctx())?;
-                node.get_var(var)
-            }
-        }
-    });
-
-    let load_and_set_var_arms = nodes.iter().map(|node| {
-        let node_name = &node.name;
-        quote! {
-            NodeKind::#node_name => {
-                let mut node: #node_name = node_id.load_node(self.rctx())?;
-                node.set_var(var, value)?;
-                self.insert_node(node_id, node.owner, node_kind, node.get_data())?;
-                Ok(())
-            }
-        }
-    });
-
+fn generate_node_loader_impl(_nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     let allow_attrs = generated_code_allow_attrs();
     quote! {
-        #allow_attrs
-        impl<'a> NodeLoader for ServerSource<'a> {
-            fn load_and_get_var(
-                &self,
-                node_kind: NodeKind,
-                node_id: u64,
-                var: VarName,
-            ) -> NodeResult<VarValue> {
-                match node_kind {
-                    #(#load_and_get_var_arms,)*
-                    NodeKind::None => Err(NodeError::custom("Cannot get var from None node")),
-                }
-            }
-
-            fn load_and_set_var(
-                &mut self,
-                node_kind: NodeKind,
-                node_id: u64,
-                var: VarName,
-                value: VarValue,
-            ) -> NodeResult<()> {
-                match node_kind {
-                    #(#load_and_set_var_arms,)*
-                    NodeKind::None => Err(NodeError::custom("Cannot set var on None node")),
-                }
-            }
-        }
+        // NodeLoader trait has been removed
     }
 }

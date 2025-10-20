@@ -56,8 +56,8 @@ impl NFusion {
     }
 
     pub fn recalculate_stats(&mut self, ctx: &mut ClientContext) -> NodeResult<()> {
-        self.pwr_set(ctx, self.stat_sum(ctx, VarName::pwr)?.into())?;
-        self.hp_set(ctx, self.stat_sum(ctx, VarName::hp)?.into())?;
+        self.pwr_set(self.stat_sum(ctx, VarName::pwr)?)?;
+        self.hp_set(self.stat_sum(ctx, VarName::hp)?)?;
         Ok(())
     }
 

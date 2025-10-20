@@ -2,6 +2,7 @@ use super::*;
 use bevy::ecs::component::Mutable;
 use schema::{Context, ContextSource, NodeError, NodeResult};
 use std::collections::HashMap;
+use utils_client::node_kind_match;
 
 /// Resource for mapping node IDs to entities
 #[derive(Resource, Default)]
@@ -445,11 +446,23 @@ impl<'w> ContextSource for WorldSource<'w> {
             } else {
                 return Err(NodeError::not_found_generic("NodeEntityMap not found"));
             }
-            let _ = self.load_and_set_var(self.get_node_kind(id).track()?, id, var, value.clone());
-            Ok(())
-        } else {
-            self.load_and_set_var(self.get_node_kind(id).track()?, id, var, value.clone())
         }
+
+        // Update the actual node data using node_kind_match
+        let kind = self.get_node_kind(id)?;
+        node_kind_match!(kind, {
+            let mut node: NodeType = {
+                let world = self.world()?;
+                let entity = world
+                    .resource::<NodeEntityMap>()
+                    .get_entity(id)
+                    .to_not_found()?;
+                world.get::<NodeType>(entity).to_not_found()?.clone()
+            };
+            node.set_var(var, value)?;
+            node.save(&mut Context::new(self))?;
+            Ok(())
+        })
     }
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
@@ -471,7 +484,68 @@ impl<'w> ContextSource for WorldSource<'w> {
         }
 
         // For global world or if not found in history, get from the node directly
-        self.load_and_get_var(self.get_node_kind(id).track()?, id, var)
+        let kind = self.get_node_kind(id)?;
+        node_kind_match!(kind, {
+            let node: NodeType = {
+                let world = self.world()?;
+                let entity = world
+                    .resource::<NodeEntityMap>()
+                    .get_entity(id)
+                    .to_not_found()?;
+                world.get::<NodeType>(entity).to_not_found()?.clone()
+            };
+            node.get_var(var)
+        })
+    }
+}
+
+impl<'w> ContextSource for &mut WorldSource<'w> {
+    fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
+        (**self).get_node_kind(id)
+    }
+
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        (**self).get_children(from_id)
+    }
+
+    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        (**self).get_children_of_kind(from_id, kind)
+    }
+
+    fn get_parents(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        (**self).get_parents(from_id)
+    }
+
+    fn get_parents_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        (**self).get_parents_of_kind(from_id, kind)
+    }
+
+    fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        (**self).add_link(from_id, to_id)
+    }
+
+    fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        (**self).remove_link(from_id, to_id)
+    }
+
+    fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
+        (**self).is_linked(from_id, to_id)
+    }
+
+    fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
+        (**self).insert_node(id, owner, kind, data)
+    }
+
+    fn delete_node(&mut self, id: u64) -> NodeResult<()> {
+        (**self).delete_node(id)
+    }
+
+    fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
+        (**self).get_var_direct(id, var)
+    }
+
+    fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        (**self).set_var(id, var, value)
     }
 }
 

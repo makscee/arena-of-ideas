@@ -2,7 +2,46 @@ use super::*;
 use crate::node_error::NodeResult;
 use std::collections::{HashMap, HashSet, VecDeque};
 
-// Common traits that both client and server will implement
+/// This system provides a single, consistent way to access node state through:
+/// 1. Load-Edit-Save pattern for node modifications
+/// 2. Generated field accessors for type-safe var operations
+/// 3. Context-aware var access with history support
+///
+/// USAGE PATTERNS:
+///
+/// 1. Load node using node_kind_match!:
+///    ```rust
+///    let kind = ctx.get_node_kind(id)?;
+///    node_kind_match!(kind, {
+///        let mut node = ctx.load_and_get::<NodeType>(id)?;
+///        // ... edit node
+///        node.save(ctx)?;
+///    });
+///    ```
+///
+/// 2. Edit vars via generated field setters:
+///    - node.hp_set(value) - direct field modification + dirty marking
+///    - node.set_var(var, value) - maps to appropriate field setter
+///    - node.set_ctx_var(ctx, var, value) - updates field + pushes to history
+///
+/// 3. Read vars via generated field getters:
+///    - node.hp_get() - direct field access
+///    - node.get_var(var) - maps to appropriate field getter
+///    - node.get_ctx_var(ctx, var) - checks history first, then field
+///
+/// 4. Context var access with recursive parent lookup:
+///    - ctx.owner_var(var) - gets from owner, then parents recursively
+///    - ctx.target_var(var) - gets from target, then parents recursively
+///    - ctx.caster_var(var) - gets from caster, then parents recursively
+///    - ctx.get_var(var) - compatibility method, tries all contexts
+///
+/// 5. Save pattern handles everything:
+///    - Checks is_dirty flag
+///    - Saves child nodes recursively
+///    - Updates NodeStateHistory for battle contexts
+///    - Persists to storage via ContextSource
+///    - Updates links between nodes
+///    - Clears dirty flag
 pub trait Node: Send + Sync + Default + StringData {
     fn with_owner(mut self, owner: u64) -> Self {
         self.set_owner(owner);
@@ -16,7 +55,9 @@ pub trait Node: Send + Sync + Default + StringData {
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;
     fn set_owner(&mut self, owner: u64);
-    fn kind(&self) -> NodeKind;
+    fn kind(&self) -> NodeKind {
+        Self::kind_s()
+    }
     fn reassign_ids(&mut self, next_id: &mut u64);
     fn kind_s() -> NodeKind
     where
@@ -25,11 +66,37 @@ pub trait Node: Send + Sync + Default + StringData {
     fn var_names() -> HashSet<VarName>
     where
         Self: Sized;
+
+    // Direct var access - just maps to node fields
     fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()>;
     fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
     fn get_vars(&self) -> HashMap<VarName, VarValue>;
 
-    fn save<S: ContextSource>(self, ctx: &mut Context<S>) -> NodeResult<()>;
+    // Context-aware var access - goes through history for battle context
+    fn set_ctx_var<S: ContextSource>(
+        &mut self,
+        ctx: &mut Context<S>,
+        var: VarName,
+        value: VarValue,
+    ) -> NodeResult<()> {
+        // First set on the node itself
+        self.set_var(var, value.clone())?;
+        // Then push to context (e.g., NodeStateHistory for battles)
+        ctx.source_mut().set_var(self.id(), var, value)
+    }
+
+    fn get_ctx_var<S: ContextSource>(
+        &self,
+        ctx: &Context<S>,
+        var: VarName,
+    ) -> NodeResult<VarValue> {
+        // Try to get from context first (e.g., NodeStateHistory)
+        ctx.source()
+            .get_var_direct(self.id(), var)
+            .or_else(|_| self.get_var(var))
+    }
+
+    fn save<S: ContextSource>(&mut self, ctx: &mut Context<S>) -> NodeResult<()>;
     fn set_dirty(&mut self, value: bool);
     fn is_dirty(&self) -> bool;
 
@@ -90,77 +157,42 @@ pub trait NodeKindConvert {
 
 /// Source for Context to retrieve node data and manage links
 /// Trait for loading specific node types and calling their methods
-pub trait NodeLoader {
-    /// Load a node by ID and call get_var on it using the appropriate node type
-    fn load_and_get_var(
-        &self,
-        node_kind: NodeKind,
-        node_id: u64,
-        var: VarName,
-    ) -> NodeResult<VarValue>;
-    /// Load a node by ID and call set_var on it using the appropriate node type
-    fn load_and_set_var(
-        &mut self,
-        node_kind: NodeKind,
-        node_id: u64,
-        var: VarName,
-        value: VarValue,
-    ) -> NodeResult<()>;
-}
 
-pub trait ContextSource: NodeLoader {
-    /// Get the NodeKind for a given node ID
+pub trait ContextSource {
+    /// Get the node kind for a given ID
     fn get_node_kind(&self, node_id: u64) -> NodeResult<NodeKind>;
 
-    /// Get children of a node
-    fn get_children(&self, node_id: u64) -> NodeResult<Vec<u64>>;
+    /// Get all child nodes
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get children of a specific node kind
-    fn get_children_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+    /// Get all child nodes of a specific kind
+    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Get parents of a node
-    fn get_parents(&self, node_id: u64) -> NodeResult<Vec<u64>>;
+    /// Get all parent nodes
+    fn get_parents(&self, to_id: u64) -> NodeResult<Vec<u64>>;
 
-    /// Get parents of a specific node kind
-    fn get_parents_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
+    /// Get all parent nodes of a specific kind
+    fn get_parents_of_kind(&self, to_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>>;
 
-    /// Add a link from parent to child
+    /// Add a link between nodes
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Remove a link from parent to child
+    /// Remove a link between nodes
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()>;
 
-    /// Check if there's a link from one node to another
+    /// Check if two nodes are linked
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool>;
 
-    /// Insert or update a node in storage
+    /// Insert a new node
     fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()>;
 
-    /// Delete a node from storage (low-level operation, does not handle links)
+    /// Delete a node
     fn delete_node(&mut self, id: u64) -> NodeResult<()>;
 
-    /// Get a variable value from a node, recursively checking parents if not found
-    fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        self.get_var_direct(node_id, var)
-            .or_else(|_| self.get_var_recursive(node_id, var))
-    }
-
-    /// Get a variable value directly from a node (no recursion)
+    /// Get a variable value directly from a node (no recursion, may check history)
     fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue>;
 
-    /// Get a variable value by checking the node and its parents recursively
-    fn get_var_recursive(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        let mut parents = VecDeque::from(self.get_parents(node_id)?);
-        while let Some(parent) = parents.pop_front() {
-            if let Ok(value) = self.get_var(parent, var) {
-                return Ok(value);
-            }
-            parents.extend(self.get_parents(parent)?);
-        }
-        Err(NodeError::var_not_found(var))
-    }
-
-    /// Set a variable value on a node
+    /// Set a variable value on a node (may update history for battle context)
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()>;
 }
 
@@ -325,64 +357,87 @@ where
         None
     }
 
-    /// Get variable from owner node
-    pub fn owner_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+    /// Get variable from owner node with recursive parent lookup
+    pub fn owner_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(owner_id) = self.owner() {
-            self.source.get_var(owner_id, var)
+            // First try direct access
+            self.source.get_var_direct(owner_id, var).or_else(|_| {
+                // Then check parents recursively
+                let mut parents = VecDeque::from(self.source.get_parents(owner_id)?);
+                while let Some(parent) = parents.pop_front() {
+                    if let Ok(value) = self.source.get_var_direct(parent, var) {
+                        return Ok(value);
+                    }
+                    if let Ok(more_parents) = self.source.get_parents(parent) {
+                        parents.extend(more_parents);
+                    }
+                }
+                Err(NodeError::var_not_found(var))
+            })
         } else {
             Err(NodeError::custom("No owner in context"))
         }
     }
 
-    /// Get variable from target node
-    pub fn target_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+    /// Get variable from target node with recursive parent lookup
+    pub fn target_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(target_id) = self.target() {
-            self.source.get_var(target_id, var)
+            // First try direct access
+            self.source.get_var_direct(target_id, var).or_else(|_| {
+                // Then check parents recursively
+                let mut parents = VecDeque::from(self.source.get_parents(target_id)?);
+                while let Some(parent) = parents.pop_front() {
+                    if let Ok(value) = self.source.get_var_direct(parent, var) {
+                        return Ok(value);
+                    }
+                    if let Ok(more_parents) = self.source.get_parents(parent) {
+                        parents.extend(more_parents);
+                    }
+                }
+                Err(NodeError::var_not_found(var))
+            })
         } else {
             Err(NodeError::custom("No target in context"))
         }
     }
 
-    /// Get variable from caster node
-    pub fn caster_get_var(&self, var: VarName) -> NodeResult<VarValue> {
+    /// Get variable from caster node with recursive parent lookup
+    pub fn caster_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(caster_id) = self.caster() {
-            self.source.get_var(caster_id, var)
+            // First try direct access
+            self.source.get_var_direct(caster_id, var).or_else(|_| {
+                // Then check parents recursively
+                let mut parents = VecDeque::from(self.source.get_parents(caster_id)?);
+                while let Some(parent) = parents.pop_front() {
+                    if let Ok(value) = self.source.get_var_direct(parent, var) {
+                        return Ok(value);
+                    }
+                    if let Ok(more_parents) = self.source.get_parents(parent) {
+                        parents.extend(more_parents);
+                    }
+                }
+                Err(NodeError::var_not_found(var))
+            })
         } else {
             Err(NodeError::custom("No caster in context"))
         }
     }
 
-    /// Get variable from specific node by ID
-    pub fn node_get_var(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
-        self.source().get_var(id, var)
-    }
-
-    pub fn node_set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        dbg!(var, &value);
-        self.source_mut().set_var(id, var, value)
-    }
-
-    /// Get variable value from context layers, checking layers first then owner/target/caster
+    /// Get variable from context layers, checking layers then trying owner/target/caster
     pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
+        // Check context layers first
         for layer in self.layers.iter().rev() {
-            match layer {
-                ContextLayer::Var(var_name, value) => {
-                    if *var_name == var {
-                        return Ok(value.clone());
-                    }
+            if let ContextLayer::Var(var_name, value) = layer {
+                if *var_name == var {
+                    return Ok(value.clone());
                 }
-                ContextLayer::Owner(id) => {
-                    if let Ok(value) = self.source.get_var(*id, var) {
-                        return Ok(value);
-                    } else if let Ok(value) = self.source().get_var_recursive(*id, var) {
-                        return Ok(value);
-                    }
-                }
-                _ => {}
             }
         }
 
-        Err(NodeError::var_not_found(var))
+        // Try owner, then target, then caster
+        self.owner_var(var)
+            .or_else(|_| self.target_var(var))
+            .or_else(|_| self.caster_var(var))
     }
 
     /// Add a target to the targets list

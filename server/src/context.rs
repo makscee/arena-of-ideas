@@ -86,12 +86,88 @@ impl<'a> ContextSource for ServerSource<'a> {
 
     fn get_var_direct(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         let kind = self.get_node_kind(node_id)?;
-        self.load_and_get_var(kind, node_id, var)
+        node_kind_match!(kind, {
+            let node: NodeType = {
+                let tnode = self
+                    .ctx
+                    .db
+                    .nodes_world()
+                    .id()
+                    .find(&node_id)
+                    .to_not_found()?;
+                tnode.to_node()?
+            };
+            node.get_var(var)
+        })
     }
 
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         let kind = self.get_node_kind(node_id)?;
-        self.load_and_set_var(kind, node_id, var, value)
+        node_kind_match!(kind, {
+            let mut node: NodeType = {
+                let tnode = self
+                    .ctx
+                    .db
+                    .nodes_world()
+                    .id()
+                    .find(&node_id)
+                    .to_not_found()?;
+                tnode.to_node()?
+            };
+            node.set_var(var, value)?;
+            node.save(&mut Context::new(self))?;
+            Ok(())
+        })
+    }
+}
+
+impl<'a> ContextSource for &mut ServerSource<'a> {
+    fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
+        (**self).get_node_kind(id)
+    }
+
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        (**self).get_children(from_id)
+    }
+
+    fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        (**self).get_children_of_kind(from_id, kind)
+    }
+
+    fn get_parents(&self, from_id: u64) -> NodeResult<Vec<u64>> {
+        (**self).get_parents(from_id)
+    }
+
+    fn get_parents_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        (**self).get_parents_of_kind(from_id, kind)
+    }
+
+    fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        (**self).add_link(from_id, to_id)
+    }
+
+    fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
+        (**self).remove_link(from_id, to_id)
+    }
+
+    fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
+        (**self).is_linked(from_id, to_id)
+    }
+
+    fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
+        (**self).insert_node(id, owner, kind, data)
+    }
+
+    fn delete_node(&mut self, id: u64) -> NodeResult<()> {
+        (**self).delete_node(id)
+    }
+
+    fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
+        (**self).get_var_direct(id, var)
+    }
+
+    fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        (**self).set_var(id, var, value)
     }
 }
 

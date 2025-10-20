@@ -573,8 +573,8 @@ impl BattleSimulation {
         self.with_context_mut(self.duration, |ctx| {
             for id in ctx.battle()?.all_fusions() {
                 let fusion = ctx.load::<NFusion>(id)?;
-                let hp = fusion.hp_get(ctx)?;
-                let dmg = fusion.dmg_get(ctx)?;
+                let hp = fusion.hp_get();
+                let dmg = fusion.dmg_get();
                 dbg!(hp, dmg);
                 if hp <= dmg {
                     actions.push_back(BattleAction::send_event(Event::Death(id)));

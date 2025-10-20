@@ -27,18 +27,14 @@ impl ExpressionImpl for Expression {
             Expression::pi2 => Ok((PI * 2.0).into()),
             Expression::owner => Ok(ctx.owner().to_not_found()?.into()),
             Expression::target => Ok(ctx.target().to_not_found()?.into()),
-            Expression::var(var) => {
-                let v = ctx.get_var(*var);
-                if v.is_err() && *var == VarName::index {
+            Expression::var(var) => ctx.owner_var(*var).or_else(|_| {
+                if *var == VarName::index {
                     Ok(1.into())
                 } else {
-                    v
+                    Err(NodeError::var_not_found(*var))
                 }
-            }
-            Expression::var_or_zero(var) => {
-                let v = ctx.get_var(*var);
-                if v.is_err() { Ok(0.into()) } else { v }
-            }
+            }),
+            Expression::var_or_zero(var) => ctx.owner_var(*var).or_else(|_| Ok(0.into())),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;
                 NodeStateHistory::load(id.entity(ctx)?, ctx)?
