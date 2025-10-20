@@ -55,13 +55,13 @@ macro_rules! settings_editor {
             ui[0].vertical_centered_justified(|ui| {
                 if ui.button("Save").clicked() {
                     pd_save_settings();
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                 }
             });
             ui[1].vertical_centered_justified(|ui| {
                 if ui.button("Discard").clicked() {
                     pd_discard_settings();
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                 }
             });
         });

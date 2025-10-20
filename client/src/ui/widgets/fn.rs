@@ -25,10 +25,10 @@ pub fn center_window_fullscreen(
 ) {
     egui::Window::new(name)
         .pivot(Align2::CENTER_CENTER)
-        .fixed_pos(ctx.screen_rect().center())
+        .fixed_pos(ctx.content_rect().center())
         .title_bar(false)
         .order(Order::Foreground)
-        .fixed_size(ctx.screen_rect().shrink(30.0).size())
+        .fixed_size(ctx.content_rect().shrink(30.0).size())
         .resizable([false, false])
         .show(ctx, |ui| {
             add_contents(ui);
@@ -37,7 +37,7 @@ pub fn center_window_fullscreen(
 pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(&mut Ui)) {
     egui::Window::new(name)
         .pivot(Align2::CENTER_CENTER)
-        .fixed_pos(ctx.screen_rect().center())
+        .fixed_pos(ctx.content_rect().center())
         .title_bar(false)
         .order(Order::Foreground)
         .max_width(600.0)
@@ -53,7 +53,7 @@ pub fn popup(
     ctx: &egui::Context,
     add_contents: impl FnOnce(&mut Ui),
 ) {
-    let rect = ctx.screen_rect();
+    let rect = ctx.content_rect();
     Area::new(Id::new("black_bg"))
         .constrain_to(rect)
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -108,7 +108,7 @@ pub fn cursor_window_frame(
     content: impl FnOnce(&mut Ui) -> NodeResult<()>,
 ) {
     let mut pos = ctx.pointer_latest_pos().unwrap_or_default();
-    let pivot = if pos.x > ctx.screen_rect().right() - width {
+    let pivot = if pos.x > ctx.content_rect().right() - width {
         pos.x -= 10.0;
         Align2::RIGHT_CENTER
     } else {

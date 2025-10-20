@@ -104,6 +104,7 @@ impl NodeKindOnSpawn for NodeKind {
 
                 let mut fusion = ctx.load::<NFusion>(id)?.clone();
                 fusion.recalculate_stats(ctx)?;
+                dbg!(&fusion);
                 fusion.save(ctx)?;
             }
             _ => {}

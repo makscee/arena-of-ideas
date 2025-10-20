@@ -110,7 +110,7 @@ impl Button {
             Sense::hover()
         };
         let r = if let Some(icon) = self.icon {
-            egui::ImageButton::new(icon.image()).sense(sense).ui(ui)
+            egui::Button::image(icon.image()).sense(sense).ui(ui)
         } else {
             egui::Button::new(WidgetText::LayoutJob(Arc::new(job)))
                 .wrap_mode(egui::TextWrapMode::Extend)

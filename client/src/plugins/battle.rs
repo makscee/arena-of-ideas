@@ -160,7 +160,7 @@ impl BattlePlugin {
             egui::vec2(overlay_rect.width(), slider_height),
         );
 
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(slider_rect), |ui| {
             Self::render_controls(ui, data);
         });
 

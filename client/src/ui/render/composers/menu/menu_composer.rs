@@ -1,3 +1,5 @@
+use bevy_egui::egui::UiKind;
+
 use super::*;
 
 /// Result of a menu action
@@ -221,7 +223,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
                 };
 
                 if button.clicked() {
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                     return action(data.clone(), context);
                 }
             }

@@ -1,3 +1,5 @@
+use bevy_egui::egui::UiKind;
+
 use super::*;
 
 pub struct ContextMenu {
@@ -30,11 +32,11 @@ impl ContextMenu {
             for (name, action) in self.buttons {
                 if ui.button(name).clicked() {
                     action(ui, world);
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                 }
             }
             if "[tl Close]".cstr().button(ui).clicked() {
-                ui.close_menu();
+                ui.close_kind(UiKind::Menu);
             }
         });
         bar_state.store(ui.ctx(), bar_id);

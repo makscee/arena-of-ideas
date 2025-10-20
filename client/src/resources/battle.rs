@@ -572,12 +572,10 @@ impl BattleSimulation {
         let mut actions: VecDeque<BattleAction> = default();
         self.with_context_mut(self.duration, |ctx| {
             for id in ctx.battle()?.all_fusions() {
-                let (hp, dmg) = ctx.with_owner(id, |ctx| {
-                    Ok((
-                        ctx.get_var(VarName::hp).get_i32()?,
-                        ctx.get_var(VarName::dmg).get_i32()?,
-                    ))
-                })?;
+                let fusion = ctx.load::<NFusion>(id)?;
+                let hp = fusion.hp_get(ctx)?;
+                let dmg = fusion.dmg_get(ctx)?;
+                dbg!(hp, dmg);
                 if hp <= dmg {
                     actions.push_back(BattleAction::send_event(Event::Death(id)));
                     actions.push_back(BattleAction::death(id));

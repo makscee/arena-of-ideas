@@ -1,3 +1,5 @@
+use bevy_egui::egui::{MenuBar, UiKind};
+
 use super::*;
 
 pub struct TopBar;
@@ -22,17 +24,19 @@ impl TopBar {
         }
     }
     pub fn ui(ui: &mut Ui, world: &mut World) {
-        egui::menu::bar(ui, |ui| {
+        MenuBar::new().ui(ui, |ui| {
             Self::state_btn(GameState::Title, ui, world, |_, _| {});
             Self::state_btn(GameState::Editor, ui, world, |ui, world| {
                 if "reset state".cstr().button(ui).clicked() {
                     pd_mut(|d| d.client_state.battle_test = default());
                     BattleEditorPlugin::load_from_client_state(world);
-                    ui.close_menu();
+
+                    ui.close_kind(UiKind::Menu);
                 }
                 if "world inspector".cstr().button(ui).clicked() {
                     BattlePlugin::open_world_inspector_window(world);
-                    ui.close_menu();
+
+                    ui.close_kind(UiKind::Menu);
                 }
             });
             Self::state_btn(GameState::Explorer, ui, world, |_, _| {});
@@ -42,7 +46,7 @@ impl TopBar {
                         d.client_state.tile_states.clear();
                     });
                     TilePlugin::load_state_tree(cur_state(world), world);
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                 }
 
                 let mut settings = pd().client_settings.clone();

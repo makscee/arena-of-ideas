@@ -358,6 +358,7 @@ where
     }
 
     pub fn node_set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        dbg!(var, &value);
         self.source_mut().set_var(id, var, value)
     }
 

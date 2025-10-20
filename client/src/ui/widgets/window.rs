@@ -119,7 +119,7 @@ impl Window {
             .movable(!self.expand)
             .order(self.order);
         if self.expand {
-            w = w.fixed_rect(ctx.screen_rect().shrink(13.0));
+            w = w.fixed_rect(ctx.content_rect().shrink(13.0));
         }
         if self.center_anchor {
             w = w.anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO);

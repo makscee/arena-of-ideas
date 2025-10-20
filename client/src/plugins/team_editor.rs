@@ -1,3 +1,5 @@
+use bevy_egui::egui::UiKind;
+
 use crate::prelude::*;
 
 pub struct TeamEditor {
@@ -359,13 +361,13 @@ impl TeamEditor {
         response.context_menu(|ui| {
             if ui.button("Bench").clicked() {
                 actions.push(TeamAction::BenchUnit { unit_id });
-                ui.close_menu();
+                ui.close_kind(UiKind::Menu);
             }
 
             for (name, action) in &self.filled_slot_actions {
                 if ui.button(name).clicked() {
                     action(team, fusion_id, unit_id, slot_index);
-                    ui.close_menu();
+                    ui.close_kind(UiKind::Menu);
                 }
             }
         });
@@ -385,7 +387,8 @@ impl TeamEditor {
             for (name, action) in &self.empty_slot_actions {
                 if ui.button(name).clicked() {
                     action(team, fusion_id, slot_index);
-                    ui.close_menu();
+
+                    ui.close_kind(UiKind::Menu);
                 }
             }
         });

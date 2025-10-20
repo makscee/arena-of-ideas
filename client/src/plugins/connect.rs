@@ -1,4 +1,4 @@
-use spacetimedb_lib::{Identity, de::Deserialize, ser::Serialize};
+use spacetimedb_lib::Identity;
 use spacetimedb_sdk::credentials;
 
 use super::*;

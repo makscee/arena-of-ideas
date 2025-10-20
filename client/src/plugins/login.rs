@@ -124,7 +124,7 @@ impl LoginPlugin {
                     Ok(request) => {
                         if let Some(mut events) = world.get_resource_mut::<Messages<HttpRequest>>()
                         {
-                            events.send(request);
+                            events.write(request);
                         }
                     }
                     Err(e) => {

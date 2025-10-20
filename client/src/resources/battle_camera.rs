@@ -1,3 +1,5 @@
+use bevy_egui::egui::UiKind;
+
 use super::*;
 
 #[derive(Clone, Copy)]
@@ -199,7 +201,8 @@ impl BattleCamera {
                                 Ok(())
                             })
                             .notify_error_op();
-                        ui.close_menu();
+
+                        ui.close_kind(UiKind::Menu);
                     }
                 }
             });

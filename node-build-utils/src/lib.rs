@@ -906,6 +906,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let pack_links_impl = generate_pack_links_impl(node);
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
+        let var_accessor_methods = generate_var_accessor_methods(node);
         let setter_methods = generate_setter_methods(node);
         let save_impl = generate_save_impl(node);
         let allow_attrs = generated_code_allow_attrs();
@@ -962,6 +963,8 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
             impl #struct_name {
                 #setter_methods
             }
+
+            #var_accessor_methods
         }
     });
 
@@ -1607,6 +1610,47 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         #get_var_impl
         #set_var_impl
         #get_vars_impl
+    }
+}
+
+pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
+
+    if var_fields.is_empty() {
+        return quote! {};
+    }
+
+    let allow_attrs = generated_code_allow_attrs();
+    let struct_name = &node.name;
+
+    let accessor_methods: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            let field_type = generate_field_type(f);
+            let get_method_name = format_ident!("{}_get", field_name);
+            let set_method_name = format_ident!("{}_set", field_name);
+            let var_name = format_ident!("{}", field_name);
+
+            quote! {
+                #allow_attrs
+                pub fn #get_method_name<S: ContextSource>(&self, ctx: &Context<S>) -> NodeResult<#field_type> {
+                    let value = ctx.node_get_var(self.id(), VarName::#var_name)?;
+                    value.try_into().map_err(|_| NodeError::custom("Value conversion failed"))
+                }
+
+                #allow_attrs
+                pub fn #set_method_name<S: ContextSource>(&mut self, ctx: &mut Context<S>, value: #field_type) -> NodeResult<()> {
+                    ctx.node_set_var(self.id(), VarName::#var_name, value.into())
+                }
+            }
+        })
+        .collect();
+
+    quote! {
+        impl #struct_name {
+            #(#accessor_methods)*
+        }
     }
 }
 

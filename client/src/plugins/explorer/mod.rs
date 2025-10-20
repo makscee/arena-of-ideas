@@ -410,19 +410,14 @@ impl ExplorerPlugin {
         Confirmation::new(&format!("Create New {}", kind))
             .accept_name("Publish")
             .cancel_name("Cancel")
-            .content(move |ui, world| {
+            .content(move |ui, _| {
                 ui.vertical(|ui| {
                     ui.label("Edit new node:");
                     ui.separator();
 
-                    world
-                        .with_context(|ctx| {
-                            if let Ok(mut node) = new_node.lock() {
-                                node.edit(ui);
-                            }
-                            Ok(())
-                        })
-                        .ui(ui);
+                    if let Ok(mut node) = new_node.lock() {
+                        node.edit(ui);
+                    }
                 });
                 false
             })
