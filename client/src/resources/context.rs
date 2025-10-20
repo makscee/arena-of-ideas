@@ -453,12 +453,15 @@ impl<'w> ContextSource for WorldSource<'w> {
     }
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
-        if let Ok(battle) = self.battle() {
+        if self.battle().is_ok() {
             let t = self.battle_t()?;
             let world = self.world()?;
             if let Some(map) = world.get_resource::<NodeEntityMap>() {
                 if let Some(entity) = map.get_entity(id) {
                     if let Some(node_state_history) = world.get::<NodeStateHistory>(entity) {
+                        if var == VarName::hp {
+                            dbg!(node_state_history);
+                        }
                         if let Some(value) = node_state_history.get_at(t, var) {
                             return Ok(value);
                         }

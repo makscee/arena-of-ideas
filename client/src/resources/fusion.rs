@@ -77,18 +77,16 @@ impl NFusion {
         let mut all_actions = Vec::new();
 
         for slot in slots {
-            if let Some(unit_id) = slot.unit.id() {
-                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                    if let Ok(desc) = unit.description_ref(ctx) {
-                        if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
-                            let reaction = &unit_behavior.reaction;
-                            let start = slot.actions.start as usize;
-                            let end = (slot.actions.start + slot.actions.length) as usize;
+            if let Ok(unit) = slot.unit_ref(ctx) {
+                if let Ok(desc) = unit.description_ref(ctx) {
+                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
+                        let reaction = &unit_behavior.reaction;
+                        let start = slot.actions.start as usize;
+                        let end = (slot.actions.start + slot.actions.length) as usize;
 
-                            for i in start..end.min(reaction.actions.len()) {
-                                if let Some(action) = reaction.actions.get(i).cloned() {
-                                    all_actions.push((unit.id, action));
-                                }
+                        for i in start..end.min(reaction.actions.len()) {
+                            if let Some(action) = reaction.actions.get(i).cloned() {
+                                all_actions.push((unit.id, action));
                             }
                         }
                     }

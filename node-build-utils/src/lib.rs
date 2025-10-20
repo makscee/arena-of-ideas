@@ -485,7 +485,7 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         .fields
         .iter()
         .filter_map(|field| match field.link_type {
-            LinkType::Component | LinkType::Owned => {
+            LinkType::Component | LinkType::Owned | LinkType::Ref => {
                 let field_name = &field.name;
                 Some(quote! {
                     let state = self.#field_name.state_mut().take();

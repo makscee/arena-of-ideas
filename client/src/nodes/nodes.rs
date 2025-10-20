@@ -75,12 +75,6 @@ impl NodeKindOnSpawn for NodeKind {
                     .unwrap()
             };
             ns.init_vars(vars.into_iter());
-            match self {
-                NodeKind::NUnit => {
-                    ns.init(VarName::dmg, 0.into());
-                }
-                _ => {}
-            };
         }
 
         let world = ctx.world_mut()?;
@@ -110,7 +104,6 @@ impl NodeKindOnSpawn for NodeKind {
 
                 let mut fusion = ctx.load::<NFusion>(id)?.clone();
                 fusion.recalculate_stats(ctx)?;
-                dbg!(&fusion);
                 fusion.save(ctx)?;
             }
             _ => {}
