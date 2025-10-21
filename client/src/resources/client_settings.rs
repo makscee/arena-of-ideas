@@ -111,8 +111,8 @@ impl Default for ClientSettings {
     fn default() -> Self {
         Self {
             servers: HashMap::from([
-                ("prod", ("http://72.56.71.60:3000", "aoiprod")),
-                ("dev", ("http://72.56.71.60:3000", "aoidev")),
+                ("prod", ("http://aoi.makscee.ru:3000", "aoi-prod")),
+                ("dev", ("http://aoi.makscee.ru:3000", "aoi-dev")),
             ]),
             active_server: "dev",
             dev_mode: false,

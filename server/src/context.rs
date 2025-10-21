@@ -102,22 +102,7 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        let kind = self.get_node_kind(node_id)?;
-        node_kind_match!(kind, {
-            let mut node: NodeType = {
-                let tnode = self
-                    .ctx
-                    .db
-                    .nodes_world()
-                    .id()
-                    .find(&node_id)
-                    .to_not_found()?;
-                tnode.to_node()?
-            };
-            node.set_var(var, value)?;
-            node.save(&mut Context::new(self))?;
-            Ok(())
-        })
+        Ok(())
     }
 }
 

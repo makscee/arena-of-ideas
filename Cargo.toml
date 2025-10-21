@@ -24,7 +24,7 @@ dynamic_linking = ["client/dynamic_linking"]
 
 
 [workspace.dependencies]
-spacetimedb = "1.5.0"
+spacetimedb = "1.6.0"
 bevy = { version = "0.17", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_winit",
@@ -38,9 +38,9 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_log",
 ] }
-spacetimedb-sdk = "1.5.0"
-spacetimedb-sats = "1.5.0"
-spacetimedb-lib = "1.5.0"
+spacetimedb-sdk = "1.6.0"
+spacetimedb-sats = "1.6.0"
+spacetimedb-lib = "1.6.0"
 strum = "0.27.2"
 strum_macros = "0.27.2"
 itertools = "0.14.0"
