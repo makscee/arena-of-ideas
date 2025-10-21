@@ -346,7 +346,7 @@ impl BattleSimulation {
         let mut world = World::new();
         world.init_resource::<NodeEntityMap>();
         world.init_resource::<NodeLinks>();
-        dbg!(&battle.left);
+        // dbg!(&battle.left);
         let team_left = battle.left.id;
         let team_right = battle.right.id;
         let left_entity = world.spawn_empty().id();

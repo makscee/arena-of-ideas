@@ -431,8 +431,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         impl FEdit for #struct_name {
             fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 let mut changed = false;
-
-                let main_response = ui.vertical(|ui| {
+                let mut main_response = ui.vertical(|ui| {
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
                             ui.label(format!("Node ID: {}", self.id));
@@ -443,7 +442,9 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     #(#data_field_edits)*
                     #(#link_field_edits)*
                 }).response;
-
+                if changed {
+                    main_response.mark_changed();
+                }
                 main_response
             }
         }

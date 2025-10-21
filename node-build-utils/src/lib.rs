@@ -866,8 +866,8 @@ pub fn generate_link_accessor_methods(node: &NodeInfo) -> TokenStream {
                     }
 
                     pub fn #clear_method(&mut self) {
-                        self.set_dirty(true);
                         *self.#field_name.state_mut() = LinkStateSingle::None;
+                        self.set_dirty(true);
                     }
                 })
             }
@@ -1082,6 +1082,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
 
                 pub fn #set_method(&mut self, nodes: Vec<#target_type>) {
                     *self.#field_name.state_mut() = LinkStateMultiple::Loaded(nodes);
+                    self.set_dirty(true);
                 }
 
                 pub fn #push_method(&mut self, node: #target_type) -> Result<(), NodeError> {
@@ -1192,6 +1193,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
 
                 pub fn #set_method(&mut self, node: #target_type) {
                     *self.#field_name.state_mut() = LinkStateSingle::Loaded(node);
+                    self.set_dirty(true);
                 }
 
                 #ref_method
@@ -1426,6 +1428,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 }
                 if !children.is_empty() {
                     self.#field_name = OwnedMultiple::new_loaded(children);
+                } else {
+                    self.#field_name = OwnedMultiple::none();
                 }
             },
             LinkType::RefMultiple => quote! {
@@ -1442,6 +1446,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 }
                 if !children.is_empty() {
                     self.#field_name = RefMultiple::new_loaded(children);
+                } else {
+                    self.#field_name = RefMultiple::none();
                 }
             },
             LinkType::Component => quote! {
@@ -1454,6 +1460,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.unpack_links(packed);
                         self.#field_name = Component::new_loaded(child);
                     }
+                } else {
+                    self.#field_name = Component::none();
                 }
             },
             LinkType::Owned => quote! {
@@ -1466,6 +1474,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.unpack_links(packed);
                         self.#field_name = Owned::new_loaded(child);
                     }
+                } else {
+                    self.#field_name = Owned::none();
                 }
             },
             LinkType::Ref => quote! {
@@ -1478,6 +1488,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.unpack_links(packed);
                         self.#field_name = Ref::new_loaded(child);
                     }
+                } else {
+                    self.#field_name = Ref::none();
                 }
             },
             _ => quote! {},

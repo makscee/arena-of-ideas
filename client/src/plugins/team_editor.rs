@@ -137,7 +137,7 @@ impl TeamEditor {
         if !actions.is_empty() {
             let mut result_team = team.clone();
             for action in &actions {
-                let _ = result_team.apply_action(action.clone());
+                result_team.apply_action(action.clone()).log();
             }
             (Some(result_team), actions)
         } else {
@@ -596,6 +596,7 @@ impl NTeam {
                             fusion.slots()?.len() as i32,
                             UnitActionRange::default(),
                         ))?;
+                        dbg!(&fusion);
                     }
                 }
             }

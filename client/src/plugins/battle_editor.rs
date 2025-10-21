@@ -76,7 +76,6 @@ impl BattleEditorPlugin {
             .edit(ui)
             .changed()
         {
-            dbg!("changed");
             needs_reload = true;
         }
 

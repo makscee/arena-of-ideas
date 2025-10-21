@@ -75,15 +75,14 @@ impl TNodeLink {
         child_kind: String,
         solid: bool,
     ) -> NodeResult<Self> {
-        if ctx
+        if let Some(link) = ctx
             .db
             .node_links()
             .parent_child()
             .filter((&parent, &child))
             .next()
-            .is_some()
         {
-            return Err("Link already present".into());
+            return Ok(link);
         }
         Ok(ctx.db.node_links().insert(Self {
             id: 0,

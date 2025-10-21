@@ -37,10 +37,12 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-        let identity =
-            NPlayerIdentity::new(player.id, Some(ctx.rctx().sender.to_string())).insert(ctx);
-        player.identity.state_mut().set(identity);
-        player.login(ctx)?.save(ctx)?;
+        player.identity_set(NPlayerIdentity::new(
+            ctx.next_id(),
+            Some(ctx.rctx().sender.to_string()),
+        ));
+        player = player.login(ctx)?;
+        player.save(ctx)?;
         Ok(())
     }
 }
