@@ -591,12 +591,12 @@ impl NTeam {
             TeamAction::AddSlot { fusion_id } => {
                 if let Ok(fusions) = self.fusions.get_mut() {
                     if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
+                        let index = fusion.slots().map(|s| s.len() as i32).unwrap_or(0);
                         fusion.slots_push(NFusionSlot::new(
                             next_id(),
-                            fusion.slots()?.len() as i32,
+                            index,
                             UnitActionRange::default(),
                         ))?;
-                        dbg!(&fusion);
                     }
                 }
             }
