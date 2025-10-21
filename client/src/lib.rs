@@ -42,13 +42,20 @@ pub enum RunMode {
     MigrationUpload,
 }
 
+fn fmt_layer(_app: &mut App) -> Option<bevy::log::BoxedFmtLayer> {
+    Some(Box::new(
+        bevy::log::tracing_subscriber::fmt::Layer::default().with_ansi(true),
+    ))
+}
+
 pub fn run() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
     unsafe {
-        std::env::set_var("RUST_BACKTRACE", "1");
-        std::env::set_var("RUST_LIB_BACKTRACE", "0");
+        // std::env::set_var("RUST_BACKTRACE", "1");
+        // std::env::set_var("RUST_LIB_BACKTRACE", "0");
+        std::env::set_var("NO_COLOR", "1");
     }
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
@@ -63,11 +70,12 @@ pub fn run() {
     parse_content_tree();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins
-        // .set(LogPlugin {
-        //     level: bevy::log::Level::DEBUG,
-        //     filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
-        //     ..default()
-        // })
+        .set(bevy::log::LogPlugin {
+            level: bevy::log::Level::DEBUG,
+            filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+            fmt_layer: fmt_layer,
+            ..default()
+        })
         .set(AssetPlugin {
             file_path: "assets".to_string(),
             ..default()

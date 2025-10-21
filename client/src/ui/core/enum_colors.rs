@@ -76,7 +76,11 @@ impl EnumColor for Expression {
             | Expression::lua_i32(..)
             | Expression::lua_f32(..)
             | Expression::color(..) => high_contrast_text(),
-            Expression::var(var) | Expression::var_or_zero(var) => var.color(),
+            Expression::var(var)
+            | Expression::target_var(var)
+            | Expression::owner_var(var)
+            | Expression::caster_var(var)
+            | Expression::var_or_zero(var) => var.color(),
             Expression::state_var(_x, _)
             | Expression::sin(_x)
             | Expression::cos(_x)

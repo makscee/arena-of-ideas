@@ -290,7 +290,7 @@ impl BattleAction {
                 }
             }
             Err(e) => {
-                error!("BattleAction apply error: {}", e);
+                error!("BattleAction {self:?} apply error: {}", e);
             }
         }
         add_actions

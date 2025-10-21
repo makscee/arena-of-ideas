@@ -34,6 +34,9 @@ impl ExpressionImpl for Expression {
                     Err(NodeError::var_not_found(*var))
                 }
             }),
+            Expression::owner_var(var) => ctx.owner_var(*var),
+            Expression::target_var(var) => ctx.target_var(*var),
+            Expression::caster_var(var) => ctx.caster_var(*var),
             Expression::var_or_zero(var) => ctx.owner_var(*var).or_else(|_| Ok(0.into())),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;
