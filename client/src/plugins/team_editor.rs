@@ -1,6 +1,7 @@
 use bevy_egui::egui::UiKind;
 
 use crate::prelude::*;
+use crate::ui::RangeSelector;
 
 pub struct TeamEditor {
     empty_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, i32)>)>,
@@ -101,6 +102,7 @@ impl TeamEditor {
                         &mut columns[column_idx],
                         fusion,
                         &slots,
+                        context,
                         &mut actions,
                     );
                 } else {
@@ -241,7 +243,7 @@ impl TeamEditor {
             ui.label(format!("Fusion {}", fusion.index + 1));
             ui.separator();
 
-            self.render_fusion_action_sequence(ui, fusion, slots);
+            self.render_fusion_action_sequence(ui, fusion, slots, context);
             ui.separator();
 
             for slot in slots {
@@ -256,7 +258,13 @@ impl TeamEditor {
         });
     }
 
-    fn render_fusion_action_sequence(&self, ui: &mut Ui, fusion: &NFusion, slots: &[&NFusionSlot]) {
+    fn render_fusion_action_sequence(
+        &self,
+        ui: &mut Ui,
+        fusion: &NFusion,
+        slots: &[&NFusionSlot],
+        ctx: &ClientContext,
+    ) {
         ui.horizontal(|ui| {
             for slot in slots {
                 let range = &slot.actions;
@@ -266,12 +274,24 @@ impl TeamEditor {
                     ui.label("🎯");
                 }
 
-                let end_range = range.start + range.length;
-                for i in range.start..end_range {
-                    if i == 0 {
-                        self.render_action_normal(ui, i as i32);
-                    } else {
-                        self.render_action_greyed(ui, i as i32);
+                if let Some(unit_id) = slot.unit.id() {
+                    if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                        if let Ok(unit_desc) = unit.description_ref(ctx) {
+                            if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
+                                let total_actions = unit_behavior.reaction.actions.len() as u8;
+                                let end_range = (range.start + range.length).min(total_actions);
+
+                                for i in range.start..end_range {
+                                    if let Some(action) =
+                                        unit_behavior.reaction.actions.get(i as usize)
+                                    {
+                                        self.render_action_normal(ui, ctx, action);
+                                    } else {
+                                        self.render_action_greyed(ui, ctx, &Action::noop);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -286,15 +306,71 @@ impl TeamEditor {
         slot: &NFusionSlot,
         fusion_id: u64,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
+        let state_id = egui::Id::new(team.id).with("team_editor_selected_fusion");
+        let selected_fusion_id =
+            ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
+
+        let is_fusion_editing = selected_fusion_id == Some(fusion_id);
+
+        if is_fusion_editing && slot.unit.id().is_some() {
+            if let Some(unit_id) = slot.unit.id() {
+                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                    if let Ok(unit_desc) = unit.description_ref(ctx) {
+                        if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
+                            let total_actions = unit_behavior.reaction.actions.len() as u8;
+
+                            if total_actions > 0 {
+                                ui.vertical(|ui| {
+                                    ui.label(format!("Slot {} Actions", slot.index + 1));
+
+                                    let range_selector = RangeSelector::new(total_actions)
+                                        .range(slot.actions.start, slot.actions.length)
+                                        .id(egui::Id::new(slot.id).with("slot_range_selector"))
+                                        .border_thickness(3.0)
+                                        .drag_threshold(10.0);
+
+                                    let (_, range_change) = range_selector.ui(
+                                        ui,
+                                        ctx,
+                                        |ui, _, action_index, is_in_range| {
+                                            if let Some(action) =
+                                                unit_behavior.reaction.actions.get(action_index)
+                                            {
+                                                if is_in_range {
+                                                    self.render_action_normal(ui, ctx, action);
+                                                } else {
+                                                    self.render_action_greyed(ui, ctx, action);
+                                                }
+                                            }
+                                            Ok(())
+                                        },
+                                    );
+
+                                    if let Some((new_start, new_length)) = range_change {
+                                        actions.push(TeamAction::ChangeActionRange {
+                                            slot_id: slot.id,
+                                            start: new_start as i32,
+                                            length: new_length as i32,
+                                        });
+                                    }
+                                });
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ui.horizontal(|ui| {
             let slot_response = slot_rect_button(60.0.v2(), ui, |_, ui| {
                 if slot.unit.id().is_some() {
                     if let Some(unit_id) = slot.unit.id() {
                         self.handle_unit_interactions(
-                            ui, unit_id, fusion_id, slot.index, team, context, actions,
+                            ui, unit_id, fusion_id, slot.index, team, ctx, actions,
                         );
                     }
                 } else {
@@ -437,6 +513,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -476,57 +553,70 @@ impl TeamEditor {
                             slot.unit.id().unwrap_or_default()
                         ));
 
-                        let mut start = slot.actions.start as i32;
-                        let mut length = slot.actions.length as i32;
+                        if let Some(unit_id) = slot.unit.id() {
+                            if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                                if let Ok(unit_desc) = unit.description_ref(ctx) {
+                                    if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
+                                        let total_actions =
+                                            unit_behavior.reaction.actions.len() as u8;
 
-                        ui.horizontal(|ui| {
-                            ui.label("Start:");
-                            if ui.add(egui::DragValue::new(&mut start).speed(1)).changed() {
-                                actions.push(TeamAction::ChangeActionRange {
-                                    slot_id: slot.id,
-                                    start,
-                                    length,
-                                });
-                            }
-                        });
+                                        if total_actions > 0 {
+                                            let range_selector = RangeSelector::new(total_actions)
+                                                .range(slot.actions.start, slot.actions.length)
+                                                .id(egui::Id::new(slot.id).with("range_selector"))
+                                                .border_thickness(3.0)
+                                                .drag_threshold(10.0);
 
-                        ui.horizontal(|ui| {
-                            ui.label("Length:");
-                            if ui
-                                .add(egui::DragValue::new(&mut length).speed(1).range(1..=10))
-                                .changed()
-                            {
-                                actions.push(TeamAction::ChangeActionRange {
-                                    slot_id: slot.id,
-                                    start,
-                                    length,
-                                });
-                            }
-                        });
+                                            let (_, range_change) = range_selector.ui(
+                                                ui,
+                                                ctx,
+                                                |ui, _, action_index, is_in_range| {
+                                                    if let Some(action) = unit_behavior
+                                                        .reaction
+                                                        .actions
+                                                        .get(action_index)
+                                                    {
+                                                        if is_in_range {
+                                                            self.render_action_normal(
+                                                                ui, ctx, action,
+                                                            );
+                                                        } else {
+                                                            self.render_action_greyed(
+                                                                ui, ctx, action,
+                                                            );
+                                                        }
+                                                    }
+                                                    Ok(())
+                                                },
+                                            );
 
-                        ui.horizontal(|ui| {
-                            for i in start..start + length {
-                                if i == 0 {
-                                    self.render_action_normal(ui, i);
-                                } else {
-                                    self.render_action_greyed(ui, i);
+                                            if let Some((new_start, new_length)) = range_change {
+                                                actions.push(TeamAction::ChangeActionRange {
+                                                    slot_id: slot.id,
+                                                    start: new_start as i32,
+                                                    length: new_length as i32,
+                                                });
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        });
+                        }
                     });
                 });
             }
         });
     }
 
-    fn render_action_normal(&self, ui: &mut Ui, index: i32) {
-        ui.label(format!("A{}", index));
+    fn render_action_normal(&self, ui: &mut Ui, context: &ClientContext, action: &Action) {
+        action.title(context).label(ui);
     }
 
-    fn render_action_greyed(&self, ui: &mut Ui, index: i32) {
-        ui.add(egui::Label::new(
-            egui::RichText::new(format!("A{}", index)).color(Color32::from_gray(128)),
-        ));
+    fn render_action_greyed(&self, ui: &mut Ui, context: &ClientContext, action: &Action) {
+        action
+            .title(context)
+            .cstr_c(ui.visuals().weak_text_color())
+            .label(ui);
     }
 }
 

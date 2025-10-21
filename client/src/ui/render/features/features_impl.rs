@@ -480,18 +480,14 @@ impl FDisplay for Reaction {
 impl FEdit for Reaction {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
-            let trigger_response = ui
+            let response = ui
                 .horizontal(|ui| {
                     ui.label("Trigger:");
                     self.trigger.edit(ui)
                 })
                 .inner;
             ui.label("Actions:");
-            let mut actions_response = ui.label("").union(ui.label(""));
-            for action in &mut self.actions {
-                actions_response = actions_response.union(action.edit(ui));
-            }
-            trigger_response.union(actions_response)
+            response.union(self.actions.edit(ui))
         })
         .inner
     }
@@ -2058,13 +2054,31 @@ impl<T: FDisplay> FDisplay for Vec<T> {
     }
 }
 
-impl<T: FEdit> FEdit for Vec<T> {
+impl<T: FEdit + Default> FEdit for Vec<T> {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        let mut response = ui.label("").union(ui.label(""));
-        for item in self {
-            response = response.union(item.edit(ui));
+        if self.is_empty() {
+            ui.label("Empty list")
+        } else {
+            let mut response = format!("[s {} elements]", self.len()).label(ui);
+            let mut to_remove: Option<usize> = None;
+            for (index, item) in self.iter_mut().enumerate() {
+                ui.horizontal(|ui| {
+                    if "[b [red -]]".cstr().button(ui).clicked() {
+                        to_remove = Some(index);
+                    }
+                    response = response.union(item.edit(ui));
+                });
+            }
+            if "➕ [b Add]".cstr().button(ui).clicked() {
+                self.push(T::default());
+                response.mark_changed();
+            }
+            if let Some(index) = to_remove {
+                self.remove(index);
+                response.mark_changed();
+            }
+            response
         }
-        response
     }
 }
 
