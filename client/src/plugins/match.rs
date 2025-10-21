@@ -216,7 +216,7 @@ impl MatchPlugin {
                 }),
             );
 
-            let (changed_team, actions) = team_editor.edit(team, ui);
+            let (changed_team, actions) = team_editor.edit(team, ctx, ui);
 
             // If team changed, we'd need to apply it back to the server
             // but for now we'll just handle the actions

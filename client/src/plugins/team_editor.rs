@@ -62,7 +62,12 @@ impl TeamEditor {
         self
     }
 
-    pub fn edit(&self, team: &NTeam, ui: &mut Ui) -> (Option<NTeam>, Vec<TeamAction>) {
+    pub fn edit(
+        &self,
+        team: &NTeam,
+        context: &ClientContext,
+        ui: &mut Ui,
+    ) -> (Option<NTeam>, Vec<TeamAction>) {
         let mut actions = Vec::new();
 
         let state_id = egui::Id::new(team.id).with("team_editor_selected_fusion");
@@ -104,6 +109,7 @@ impl TeamEditor {
                         fusion,
                         &slots,
                         team,
+                        context,
                         &mut actions,
                     );
                 }
@@ -119,7 +125,7 @@ impl TeamEditor {
                 column_idx += 1;
             }
 
-            self.render_bench_column(&mut columns[column_idx], &unlinked_units, team);
+            self.render_bench_column(&mut columns[column_idx], &unlinked_units, team, context);
         });
 
         if let Some(id) = clicked_fusion_id {
@@ -184,19 +190,31 @@ impl TeamEditor {
         triggers
     }
 
-    fn render_bench_column(&self, ui: &mut Ui, unlinked_units: &[u64], team: &NTeam) {
+    fn render_bench_column(
+        &self,
+        ui: &mut Ui,
+        unlinked_units: &[u64],
+        team: &NTeam,
+        context: &ClientContext,
+    ) {
         ui.vertical(|ui| {
             ui.label("Bench");
             ui.separator();
 
             for &unit_id in unlinked_units {
-                self.handle_bench_unit_interactions(ui, unit_id, team);
+                self.handle_bench_unit_interactions(ui, unit_id, team, context);
             }
         });
     }
 
-    fn handle_bench_unit_interactions(&self, ui: &mut Ui, unit_id: u64, team: &NTeam) {
-        let response = self.render_unit_with_representation(ui, unit_id, team);
+    fn handle_bench_unit_interactions(
+        &self,
+        ui: &mut Ui,
+        unit_id: u64,
+        team: &NTeam,
+        context: &ClientContext,
+    ) {
+        let response = self.render_unit_with_representation(ui, unit_id, team, context);
 
         if response.drag_started() {
             ui.memory_mut(|mem| {
@@ -216,6 +234,7 @@ impl TeamEditor {
         fusion: &NFusion,
         slots: &[&NFusionSlot],
         team: &NTeam,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -226,7 +245,7 @@ impl TeamEditor {
             ui.separator();
 
             for slot in slots {
-                self.render_slot(ui, slot, fusion.id, team, actions);
+                self.render_slot(ui, slot, fusion.id, team, context, actions);
             }
 
             if ui.button("+ Add Slot").clicked() {
@@ -267,6 +286,7 @@ impl TeamEditor {
         slot: &NFusionSlot,
         fusion_id: u64,
         team: &NTeam,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.horizontal(|ui| {
@@ -274,7 +294,7 @@ impl TeamEditor {
                 if slot.unit.id().is_some() {
                     if let Some(unit_id) = slot.unit.id() {
                         self.handle_unit_interactions(
-                            ui, unit_id, fusion_id, slot.index, team, actions,
+                            ui, unit_id, fusion_id, slot.index, team, context, actions,
                         );
                     }
                 } else {
@@ -309,9 +329,26 @@ impl TeamEditor {
         });
     }
 
-    fn render_unit_with_representation(&self, ui: &mut Ui, unit_id: u64, team: &NTeam) -> Response {
+    fn render_unit_with_representation(
+        &self,
+        ui: &mut Ui,
+        unit_id: u64,
+        team: &NTeam,
+        context: &ClientContext,
+    ) -> Response {
         if let Some(unit) = self.find_unit_in_team(team, unit_id) {
-            ui.label(&unit.unit_name)
+            if let Ok(desc) = unit.description_ref(context) {
+                if let Ok(rep) = desc.representation_ref(context) {
+                    MatRect::new(egui::Vec2::new(60.0, 60.0))
+                        .add_mat(&rep.material, unit.id)
+                        .unit_rep_with_default(unit.id)
+                        .ui(ui, context)
+                } else {
+                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+                }
+            } else {
+                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+            }
         } else {
             ui.label("[Unknown Unit]")
         }
@@ -343,9 +380,10 @@ impl TeamEditor {
         fusion_id: u64,
         slot_index: i32,
         team: &NTeam,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = self.render_unit_with_representation(ui, unit_id, team);
+        let response = self.render_unit_with_representation(ui, unit_id, team, context);
 
         if response.drag_started() {
             ui.memory_mut(|mem| {
