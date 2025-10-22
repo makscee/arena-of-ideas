@@ -73,8 +73,7 @@ impl BattleEditorPlugin {
         if world
             .resource_mut::<BattleEditorState>()
             .left_team
-            .edit(ui)
-            .changed()
+            .render_recursive(ui)
         {
             needs_reload = true;
         }

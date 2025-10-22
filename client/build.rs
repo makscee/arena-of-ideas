@@ -1,4 +1,5 @@
 use node_build_utils::*;
+
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -150,6 +151,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     // Generate FEdit implementations
     let fedit_impls = nodes.iter().map(|node| generate_fedit_impl(node));
 
+    // Generate FRecursiveRender implementations
+    let frecursive_impls = nodes.iter().map(|node| generate_frecursive_impl(node));
+
     // Generate ToCstr and FDisplay implementations
     let named_node_impls = nodes.iter().filter(|node| node.is_named).map(|node| {
         let struct_name = &node.name;
@@ -174,6 +178,9 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         #allow_attrs
         #(#fedit_impls)*
+
+        #allow_attrs
+        #(#frecursive_impls)*
 
         #node_kind_spawn_impl
 
@@ -306,6 +313,131 @@ fn generate_node_kind_spawn_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream
     }
 }
 
+fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+
+    let linked_field_calls = node
+        .fields
+        .iter()
+        .filter(|field| !matches!(field.link_type, LinkType::None))
+        .map(|field| {
+            let field_name = &field.name;
+            let field_label = field.name.to_string();
+
+            match field.link_type {
+                LinkType::Component | LinkType::Owned => {
+                    quote! {
+                        changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id);
+                    }
+                }
+                LinkType::OwnedMultiple => {
+                    quote! {
+                        changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id);
+                    }
+                }
+                LinkType::Ref => {
+                    quote! {
+                        ui.horizontal(|ui| {
+                            ui.label(format!("{} (ref):", #field_label));
+                            if let Some(id) = self.#field_name.id() {
+                                ui.label(format!("ID: {}", id));
+                                if ui.button("❌").on_hover_text("Clear reference").clicked() {
+                                    self.#field_name = Default::default();
+                                    self.is_dirty = true;
+                                    changed = true;
+                                }
+                            } else {
+                                ui.label("(no reference)");
+                            }
+                        });
+                    }
+                }
+                LinkType::RefMultiple => {
+                    quote! {
+                        ui.vertical(|ui| {
+                            ui.label(format!("{} (refs):", #field_label));
+                            if let Some(ids) = self.#field_name.ids() {
+                                for (index, id) in ids.iter().enumerate() {
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("  [{}] ID: {}", index, id));
+                                    });
+                                }
+                            } else {
+                                ui.label("  (no references)");
+                            }
+                        });
+                    }
+                }
+                LinkType::None => unreachable!(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let recursive_search_calls = node
+        .fields
+        .iter()
+        .filter(|field| matches!(field.link_type, LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple))
+        .map(|field| {
+            let field_name = &field.name;
+            let field_label = field.name.to_string();
+
+            match field.link_type {
+                LinkType::Component | LinkType::Owned => {
+                    quote! {
+                        if let Ok(loaded) = self.#field_name.get_mut() {
+                            if render_node_field_recursive_with_path(ui, #field_label, loaded, breadcrumb_path) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                LinkType::OwnedMultiple => {
+                    quote! {
+                        if let Ok(items) = self.#field_name.get_mut() {
+                            for (index, item) in items.iter_mut().enumerate() {
+                                let item_field_name = format!("{} {}", #field_label, index + 1);
+                                if render_node_field_recursive_with_path(ui, &item_field_name, item, breadcrumb_path) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let allow_attrs = generated_code_allow_attrs();
+    quote! {
+        #allow_attrs
+        impl FRecursiveRender for #struct_name {
+            fn render_linked_fields(
+                &mut self,
+                ui: &mut egui::Ui,
+                breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
+            ) -> bool {
+                use crate::ui::render::features::NodeLinkRender;
+
+                let mut changed = false;
+                #(#linked_field_calls)*
+                changed
+            }
+
+            fn render_recursive_search(
+                &mut self,
+                ui: &mut egui::Ui,
+                breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
+            ) -> bool {
+                use crate::ui::render::features::render_node_field_recursive_with_path;
+
+                #(#recursive_search_calls)*
+                false
+            }
+        }
+    }
+}
+
 fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
 
@@ -330,101 +462,6 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             }
         });
 
-    // Generate edits for linked nodes
-    let link_field_edits = node
-        .fields
-        .iter()
-        .filter(|field| !matches!(field.link_type, LinkType::None))
-        .map(|field| {
-            let field_name = &field.name;
-            let field_label = field.name.to_string();
-
-            match field.link_type {
-                LinkType::Component | LinkType::Owned => {
-                    quote! {
-                        if self.#field_name.get().is_some() {
-                            ui.horizontal(|ui| {
-                                CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
-                                    let inner_response = self.#field_name.get_mut().unwrap().edit(ui);
-                                    if inner_response.changed() {
-                                        self.is_dirty = true;
-                                        changed = true;
-                                    }
-                                });
-                                if "[red ❌ Delete]".cstr().button(ui).clicked() {
-                                    self.#field_name = Default::default();
-                                    self.is_dirty = true;
-                                    changed = true;
-                                }
-                            });
-                        } else {
-                            if ui.button("➕ Add new ".to_owned() + #field_label).clicked() {
-                                self.#field_name.state_mut().set(default());
-                            }
-                        }
-
-                    }
-                }
-                LinkType::OwnedMultiple => {
-                    quote! {
-                        CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
-                            if let Ok(items) = self.#field_name.get_mut() {
-                                ui.label(format!("{} items", items.len()));
-                                for (index, item) in items.iter_mut().enumerate() {
-                                    ui.group(|ui| {
-                                        ui.label(format!("Item {}", index));
-                                        let item_response = item.edit(ui);
-                                        if item_response.changed() {
-                                            self.is_dirty = true;
-                                            changed = true;
-                                        }
-                                    });
-                                }
-                            } else {
-                                if ui.button("➕ Add").clicked() {
-                                    self.#field_name.state_mut().set([default()].into());
-                                }
-                            }
-                        });
-                    }
-                }
-                LinkType::Ref => {
-                    quote! {
-                        ui.horizontal(|ui| {
-                            ui.label(#field_label);
-                            if let Some(id) = self.#field_name.id() {
-                                ui.label(format!("ID: {}", id));
-                                if ui.button("❌ Clear").clicked() {
-                                    self.#field_name = Default::default();
-                                    self.is_dirty = true;
-                                    changed = true;
-                                }
-                            } else {
-                                ui.label("(no reference)");
-                            }
-                        });
-                    }
-                }
-                LinkType::RefMultiple => {
-                    quote! {
-                        CollapsingHeader::new(#field_label).id_salt(Id::new(self.id()).with(#field_label)).show(ui, |ui| {
-                            if let Some(ids) = self.#field_name.ids() {
-                                ui.label(format!("{} references", ids.len()));
-                                for (index, id) in ids.iter().enumerate() {
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("ID {}: {}", index, id));
-                                    });
-                                }
-                            } else {
-                                ui.label("(no references)");
-                            }
-                        });
-                    }
-                }
-                LinkType::None => unreachable!(),
-            }
-        });
-
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
@@ -432,16 +469,19 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 let mut changed = false;
                 let mut main_response = ui.vertical(|ui| {
+                    // Node info header
                     ui.group(|ui| {
                         ui.horizontal(|ui| {
-                            ui.label(format!("Node ID: {}", self.id));
+                            ui.strong(format!("{}", stringify!(#struct_name)));
+                            ui.separator();
+                            ui.label(format!("ID: {}", self.id));
+                            ui.separator();
                             ui.label(format!("Owner: {}", self.owner));
                         });
                     });
-
                     #(#data_field_edits)*
-                    #(#link_field_edits)*
                 }).response;
+
                 if changed {
                     main_response.mark_changed();
                 }

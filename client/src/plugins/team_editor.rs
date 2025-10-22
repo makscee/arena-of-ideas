@@ -786,49 +786,16 @@ impl NTeam {
     pub fn apply_action(&mut self, action: TeamAction) -> NodeResult<()> {
         match action {
             TeamAction::MoveUnit { unit_id, target } => {
-                if let Ok(fusions) = self.fusions.get_mut() {
-                    for fusion in fusions.iter_mut() {
-                        if let Ok(slots) = fusion.slots.get_mut() {
-                            slots.retain(|slot| slot.unit.id().unwrap_or(0) != unit_id);
-                        }
-                    }
-                }
+                self.find_unit_slot_mut(unit_id).track()?.unit = Ref::none();
 
                 if let UnitTarget::Slot {
                     fusion_id,
                     slot_index,
                 } = target
                 {
-                    if let Ok(fusions) = self.fusions.get_mut() {
-                        if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
-                            // Find unit before mutably borrowing fusion
-                            let mut found_unit = None;
-                            if let Some(houses) = self.houses.get() {
-                                for house in houses {
-                                    if let Some(units) = house.units.get() {
-                                        if let Some(unit) = units.iter().find(|u| u.id == unit_id) {
-                                            found_unit = Some(unit.clone());
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if let Some(unit) = found_unit {
-                                let new_slot = NFusionSlot::new(
-                                    next_id(),
-                                    slot_index,
-                                    UnitActionRange::default(),
-                                )
-                                .with_unit(unit);
-
-                                if let Ok(slots) = fusion.slots.get_mut() {
-                                    slots.push(new_slot);
-                                    slots.sort_by_key(|s| s.index);
-                                }
-                            }
-                        }
-                    }
+                    let unit = self.find_unit(unit_id).track()?;
+                    let slot = self.fusion_slot_mut(fusion_id, slot_index).track()?;
+                    slot.unit_set(unit);
                 }
             }
             TeamAction::BenchUnit { unit_id } => {
@@ -892,5 +859,35 @@ impl NTeam {
             }
         }
         Err(NodeError::custom("Unit not found"))
+    }
+
+    fn find_unit_slot_mut(&mut self, unit_id: u64) -> NodeResult<&mut NFusionSlot> {
+        for fusion in self.fusions.get_mut().track()? {
+            for slot in fusion.slots.get_mut().track()? {
+                if slot.unit.id().unwrap_or_default() == unit_id {
+                    return Ok(slot);
+                }
+            }
+        }
+        Err(NodeError::custom("Unit slot not found"))
+    }
+
+    fn fusion_slot_mut(&mut self, id: u64, index: i32) -> NodeResult<&mut NFusionSlot> {
+        let fusions = self.fusions.get_mut()?;
+        if let Some(fusion) = fusions.iter_mut().find(|f| f.id == id) {
+            if let Some(slot) = fusion
+                .slots
+                .get_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|s| s.index == index)
+            {
+                Ok(slot)
+            } else {
+                Err(NodeError::custom("Fusion slot not found"))
+            }
+        } else {
+            Err(NodeError::custom("Fusion not found"))
+        }
     }
 }

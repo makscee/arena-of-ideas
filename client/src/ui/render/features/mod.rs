@@ -2,6 +2,7 @@ use super::*;
 use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
 
 mod features_impl;
+mod frecursive;
 
 /// Feature for types that can provide a title
 pub trait FTitle {
@@ -81,6 +82,8 @@ pub trait FDisplay {
 pub trait FEdit {
     fn edit(&mut self, ui: &mut Ui) -> Response;
 }
+
+pub use frecursive::*;
 
 /// Feature for types that can be copied to clipboard
 pub trait FCopy: StringData {

@@ -1,4 +1,5 @@
 mod core;
+mod inspected_node;
 mod mat_rect;
 mod range_selector;
 pub mod render;
@@ -10,6 +11,7 @@ mod widgets;
 use super::*;
 
 pub use core::*;
+pub use inspected_node::*;
 pub use mat_rect::*;
 pub use range_selector::*;
 pub use render::*;

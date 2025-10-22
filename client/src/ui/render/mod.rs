@@ -1,5 +1,5 @@
 mod composers;
-mod features;
+pub mod features;
 mod recursive_impl;
 
 pub use composers::*;
