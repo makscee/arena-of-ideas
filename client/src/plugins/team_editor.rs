@@ -1,7 +1,14 @@
-use bevy_egui::egui::UiKind;
+use bevy_egui::egui::{DragAndDrop, UiKind};
 
 use crate::prelude::*;
-use crate::ui::RangeSelector;
+use crate::ui::{DndArea, RangeSelector};
+
+#[derive(Debug, Clone)]
+pub struct DraggedUnit {
+    pub unit_id: u64,
+    pub from_location: UnitTarget,
+    pub drag_start_pos: Option<Pos2>,
+}
 
 pub struct TeamEditor {
     empty_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, i32)>)>,
@@ -71,6 +78,17 @@ impl TeamEditor {
     ) -> (Option<NTeam>, Vec<TeamAction>) {
         let mut actions = Vec::new();
 
+        // Handle drag arrow visualization
+        if DragAndDrop::has_payload_of_type::<DraggedUnit>(ui.ctx()) {
+            if let Some(pointer_pos) = ui.ctx().pointer_latest_pos() {
+                if let Some(payload) = DragAndDrop::payload::<DraggedUnit>(ui.ctx()) {
+                    if let Some(start_pos) = payload.drag_start_pos {
+                        self.draw_drag_arrow(ui, start_pos, pointer_pos);
+                    }
+                }
+            }
+        }
+
         let state_id = egui::Id::new(team.id).with("team_editor_selected_fusion");
         let mut selected_fusion_id =
             ui.memory(|m| m.data.get_temp::<Option<u64>>(state_id).unwrap_or(None));
@@ -127,7 +145,13 @@ impl TeamEditor {
                 column_idx += 1;
             }
 
-            self.render_bench_column(&mut columns[column_idx], &unlinked_units, team, context);
+            self.render_bench_column(
+                &mut columns[column_idx],
+                &unlinked_units,
+                team,
+                context,
+                &mut actions,
+            );
         });
 
         if let Some(id) = clicked_fusion_id {
@@ -198,13 +222,32 @@ impl TeamEditor {
         unlinked_units: &[u64],
         team: &NTeam,
         context: &ClientContext,
+        actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
             ui.label("Bench");
             ui.separator();
 
             for &unit_id in unlinked_units {
-                self.handle_bench_unit_interactions(ui, unit_id, team, context);
+                self.handle_bench_unit_interactions(ui, unit_id, team, context, actions);
+            }
+
+            // Add bench drop area
+            let available_space = ui.available_rect_before_wrap();
+            if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(available_space)
+                .id("bench_drop")
+                .text_fn(ui, |dragged| {
+                    if let Some(unit) = self.find_unit_in_team(team, dragged.unit_id) {
+                        format!("Bench {}", unit.unit_name)
+                    } else {
+                        "Bench Unit".to_string()
+                    }
+                })
+                .ui(ui)
+            {
+                actions.push(TeamAction::BenchUnit {
+                    unit_id: dropped_unit.unit_id,
+                });
             }
         });
     }
@@ -215,18 +258,60 @@ impl TeamEditor {
         unit_id: u64,
         team: &NTeam,
         context: &ClientContext,
+        actions: &mut Vec<TeamAction>,
     ) {
         let response = self.render_unit_with_representation(ui, unit_id, team, context);
 
         if response.drag_started() {
-            ui.memory_mut(|mem| {
-                mem.data
-                    .insert_temp(egui::Id::new("dragging_unit"), unit_id)
-            });
+            let from_location = UnitTarget::Bench;
+            let drag_start_pos = Some(response.rect.center());
+            let dragged_unit = DraggedUnit {
+                unit_id,
+                from_location,
+                drag_start_pos,
+            };
+            DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
         if let Some(unit) = self.find_unit_in_team(team, unit_id) {
-            response.on_hover_text(unit.unit_name.clone());
+            response.clone().on_hover_text(unit.unit_name.clone());
+        }
+
+        // Handle dropping on this bench unit
+        if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
+            .id(format!("bench_unit_{}", unit_id))
+            .text_fn(ui, |dragged| {
+                if dragged.unit_id != unit_id {
+                    format!("Swap positions")
+                } else {
+                    "Same unit".to_string()
+                }
+            })
+            .ui(ui)
+        {
+            if dropped_unit.unit_id != unit_id {
+                match dropped_unit.from_location {
+                    UnitTarget::Slot {
+                        fusion_id,
+                        slot_index,
+                    } => {
+                        // Swap: move bench unit to slot, bench the dragged unit
+                        actions.push(TeamAction::MoveUnit {
+                            unit_id: unit_id,
+                            target: UnitTarget::Slot {
+                                fusion_id,
+                                slot_index,
+                            },
+                        });
+                        actions.push(TeamAction::BenchUnit {
+                            unit_id: dropped_unit.unit_id,
+                        });
+                    }
+                    UnitTarget::Bench => {
+                        // Both on bench - no action needed
+                    }
+                }
+            }
         }
     }
 
@@ -377,29 +462,27 @@ impl TeamEditor {
                     self.handle_empty_slot_interactions(ui, fusion_id, slot.index, team, actions);
                 }
             });
-            let rect = slot_response.rect;
-            if ui.ctx().dragged_id().is_some() {
-                if let Some(dragging_unit) =
-                    ui.memory(|mem| mem.data.get_temp::<u64>(egui::Id::new("dragging_unit")))
-                {
-                    if ui.rect_contains_pointer(rect) {
-                        ui.painter().rect_stroke(
-                            rect,
-                            0.0,
-                            Stroke::new(2.0, Color32::from_rgb(100, 200, 100)),
-                            egui::epaint::StrokeKind::Outside,
-                        );
 
-                        if ui.input(|i| i.pointer.any_released()) {
-                            actions.push(TeamAction::MoveUnit {
-                                unit_id: dragging_unit,
-                                target: UnitTarget::Slot {
-                                    fusion_id,
-                                    slot_index: slot.index,
-                                },
-                            });
+            // Handle empty slot drop target outside of the slot_rect_button
+            if slot.unit.id().is_none() {
+                if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(slot_response.rect)
+                    .id(format!("empty_slot_{}_{}", fusion_id, slot.index))
+                    .text_fn(ui, |dragged| {
+                        if let Some(unit) = self.find_unit_in_team(team, dragged.unit_id) {
+                            format!("Place {}", unit.unit_name)
+                        } else {
+                            "Place Unit".to_string()
                         }
-                    }
+                    })
+                    .ui(ui)
+                {
+                    actions.push(TeamAction::MoveUnit {
+                        unit_id: dropped_unit.unit_id,
+                        target: UnitTarget::Slot {
+                            fusion_id,
+                            slot_index: slot.index,
+                        },
+                    });
                 }
             }
         });
@@ -456,23 +539,79 @@ impl TeamEditor {
         fusion_id: u64,
         slot_index: i32,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = self.render_unit_with_representation(ui, unit_id, team, context);
+        let response = self.render_unit_with_representation(ui, unit_id, team, ctx);
 
         if response.drag_started() {
-            ui.memory_mut(|mem| {
-                mem.data
-                    .insert_temp(egui::Id::new("dragging_unit"), unit_id)
-            });
+            let from_location = UnitTarget::Slot {
+                fusion_id,
+                slot_index,
+            };
+            let drag_start_pos = Some(response.rect.center());
+            let dragged_unit = DraggedUnit {
+                unit_id,
+                from_location,
+                drag_start_pos,
+            };
+            DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
         if let Some(unit) = self.find_unit_in_team(team, unit_id) {
             response.clone().on_hover_text(&unit.unit_name);
         }
 
-        response.context_menu(|ui| {
+        // Handle dropping on this slot unit
+        if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
+            .id(format!("slot_unit_{}_{}", fusion_id, slot_index))
+            .text_fn(ui, |dragged| {
+                if dragged.unit_id != unit_id {
+                    format!("Swap positions")
+                } else {
+                    "Same unit".to_string()
+                }
+            })
+            .ui(ui)
+        {
+            if dropped_unit.unit_id != unit_id {
+                match dropped_unit.from_location {
+                    UnitTarget::Bench => {
+                        // Move bench unit to this slot, current unit goes to bench
+                        actions.push(TeamAction::MoveUnit {
+                            unit_id: dropped_unit.unit_id,
+                            target: UnitTarget::Slot {
+                                fusion_id,
+                                slot_index,
+                            },
+                        });
+                        actions.push(TeamAction::BenchUnit { unit_id });
+                    }
+                    UnitTarget::Slot {
+                        fusion_id: from_fusion_id,
+                        slot_index: from_slot_index,
+                    } => {
+                        // Swap positions
+                        actions.push(TeamAction::MoveUnit {
+                            unit_id: dropped_unit.unit_id,
+                            target: UnitTarget::Slot {
+                                fusion_id,
+                                slot_index,
+                            },
+                        });
+                        actions.push(TeamAction::MoveUnit {
+                            unit_id: unit_id,
+                            target: UnitTarget::Slot {
+                                fusion_id: from_fusion_id,
+                                slot_index: from_slot_index,
+                            },
+                        });
+                    }
+                }
+            }
+        }
+
+        response.clone().context_menu(|ui| {
             if ui.button("Bench").clicked() {
                 actions.push(TeamAction::BenchUnit { unit_id });
                 ui.close_kind(UiKind::Menu);
@@ -493,7 +632,7 @@ impl TeamEditor {
         fusion_id: u64,
         slot_index: i32,
         team: &NTeam,
-        _actions: &mut Vec<TeamAction>,
+        actions: &mut Vec<TeamAction>,
     ) {
         let response = self.render_empty_slot(ui);
 
@@ -501,11 +640,34 @@ impl TeamEditor {
             for (name, action) in &self.empty_slot_actions {
                 if ui.button(name).clicked() {
                     action(team, fusion_id, slot_index);
-
                     ui.close_kind(UiKind::Menu);
                 }
             }
         });
+    }
+
+    fn draw_drag_arrow(&self, ui: &mut Ui, start_pos: Pos2, pointer_pos: Pos2) {
+        let arrow_color = Color32::from_rgb(255, 200, 0);
+        let stroke = Stroke::new(3.0, arrow_color);
+
+        ui.painter().line_segment([start_pos, pointer_pos], stroke);
+
+        // Draw arrow head
+        let arrow_length = 12.0;
+        let arrow_angle = 0.5;
+        let direction = (pointer_pos - start_pos).normalized();
+        let perpendicular = egui::Vec2::new(-direction.y, direction.x);
+
+        let arrow_base = pointer_pos - direction * arrow_length;
+        let arrow_side1 = arrow_base + perpendicular * arrow_length * arrow_angle;
+        let arrow_side2 = arrow_base - perpendicular * arrow_length * arrow_angle;
+
+        ui.painter().line_segment([arrow_base, arrow_side1], stroke);
+        ui.painter().line_segment([arrow_base, arrow_side2], stroke);
+        ui.painter()
+            .line_segment([arrow_side1, pointer_pos], stroke);
+        ui.painter()
+            .line_segment([arrow_side2, pointer_pos], stroke);
     }
 
     fn render_fusion_actions_column(
