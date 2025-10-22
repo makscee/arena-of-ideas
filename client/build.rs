@@ -1,5 +1,6 @@
 use node_build_utils::*;
 
+use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
 use std::env;
@@ -151,7 +152,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     // Generate FEdit implementations
     let fedit_impls = nodes.iter().map(|node| generate_fedit_impl(node));
 
-    // Generate FRecursiveRender implementations
+    // Generate FRecursiveNodeEdit implementations
     let frecursive_impls = nodes.iter().map(|node| generate_frecursive_impl(node));
 
     // Generate ToCstr and FDisplay implementations
@@ -323,11 +324,17 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         .map(|field| {
             let field_name = &field.name;
             let field_label = field.name.to_string();
+            let target_type = format_ident!("{}", field.target_type);
 
             match field.link_type {
                 LinkType::Component | LinkType::Owned => {
                     quote! {
                         changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id);
+                        if NodeKind::#target_type.is_compact() && self.#field_name.is_loaded() {
+                            if let Ok(loaded) = self.#field_name.get_mut() {
+                                changed |= loaded.edit(ui).changed();
+                            }
+                        }
                     }
                 }
                 LinkType::OwnedMultiple => {
@@ -394,8 +401,8 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 LinkType::OwnedMultiple => {
                     quote! {
                         if let Ok(items) = self.#field_name.get_mut() {
-                            for (index, item) in items.iter_mut().enumerate() {
-                                let item_field_name = format!("{} {}", #field_label, index + 1);
+                            for (index, item) in items.iter_mut().sorted_by_key(|i| i.id()).enumerate() {
+                                let item_field_name = format!("{}#{}", #field_label, index);
                                 if render_node_field_recursive_with_path(ui, &item_field_name, item, breadcrumb_path) {
                                     return true;
                                 }
@@ -411,7 +418,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
-        impl FRecursiveRender for #struct_name {
+        impl FRecursiveNodeEdit for #struct_name {
             fn render_linked_fields(
                 &mut self,
                 ui: &mut egui::Ui,
@@ -469,16 +476,6 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 let mut changed = false;
                 let mut main_response = ui.vertical(|ui| {
-                    // Node info header
-                    ui.group(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.strong(format!("{}", stringify!(#struct_name)));
-                            ui.separator();
-                            ui.label(format!("ID: {}", self.id));
-                            ui.separator();
-                            ui.label(format!("Owner: {}", self.owner));
-                        });
-                    });
                     #(#data_field_edits)*
                 }).response;
 

@@ -1,9 +1,9 @@
 use super::*;
 
 /// Feature for types that can be rendered recursively with breadcrumb navigation
-pub trait FRecursiveRender: FEdit + Node {
+pub trait FRecursiveNodeEdit: FEdit + Node {
     /// Render the node recursively, handling breadcrumbs and inspection state
-    fn render_recursive(&mut self, ui: &mut Ui) -> bool {
+    fn render_recursive_edit(&mut self, ui: &mut Ui) -> bool {
         let node_id = self.id();
         ui.set_edit_context(node_id);
         let result = render_node_field_recursive_with_path(ui, "root", self, &mut vec![]);
@@ -26,6 +26,26 @@ pub trait FRecursiveRender: FEdit + Node {
     ) -> bool;
 }
 
+pub trait NodeKindCompact {
+    fn is_compact(self) -> bool;
+}
+impl NodeKindCompact for NodeKind {
+    fn is_compact(self) -> bool {
+        match self {
+            Self::NUnit
+            | Self::NUnitDescription
+            | Self::NUnitBehavior
+            | Self::NAbilityDescription
+            | Self::NAbilityEffect
+            | Self::NStatusBehavior
+            | Self::NStatusDescription
+            | Self::NHouseColor
+            | Self::NUnitStats => true,
+            _ => false,
+        }
+    }
+}
+
 /// Render breadcrumbs from a path vector
 pub fn render_breadcrumbs(ui: &mut Ui, breadcrumb_path: &[NodeBreadcrumb]) -> Option<u64> {
     if breadcrumb_path.is_empty() {
@@ -42,16 +62,14 @@ pub fn render_breadcrumbs(ui: &mut Ui, breadcrumb_path: &[NodeBreadcrumb]) -> Op
 
             let is_last = i == breadcrumb_path.len() - 1;
             let label = if let Some(ref field_name) = crumb.field_name {
-                format!("{}: {:?}", field_name, crumb.kind)
+                format!("{}", field_name)
             } else {
                 format!("{:?}", crumb.kind)
             };
 
             if is_last {
-                // Current node - just show as label
                 ui.strong(&label);
             } else {
-                // Parent node - show as clickable button
                 if ui.link(&label).clicked() {
                     clicked_id = Some(crumb.id);
                 }
@@ -69,20 +87,20 @@ pub trait NodeLinkRender {
     fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: SingleLink<T>,
-        T: FEdit + FRecursiveRender + Node + Default;
+        T: FEdit + FRecursiveNodeEdit + Node + Default;
 
     /// Render a multiple link field
     fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: MultipleLink<T>,
-        T: FEdit + FRecursiveRender + Node + Default;
+        T: FEdit + FRecursiveNodeEdit + Node + Default;
 }
 
 impl NodeLinkRender for Ui {
     fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: SingleLink<T>,
-        T: FEdit + FRecursiveRender + Node + Default,
+        T: FEdit + FRecursiveNodeEdit + Node + Default,
     {
         let mut need_remove = false;
         let changed = if let Ok(loaded) = link.get_mut() {
@@ -124,7 +142,7 @@ impl NodeLinkRender for Ui {
     fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: MultipleLink<T>,
-        T: FEdit + FRecursiveRender + Node + Default,
+        T: FEdit + FRecursiveNodeEdit + Node + Default,
     {
         let mut changed = false;
 
@@ -133,7 +151,16 @@ impl NodeLinkRender for Ui {
             ui.label(format!("{}:", field_name));
             if let Ok(items) = link.get_mut() {
                 let mut to_remove: Option<usize> = None;
-                for (index, item) in items.iter_mut().enumerate() {
+                for (index, item) in items
+                    .iter_mut()
+                    .sorted_by_key(|i| {
+                        i.get_var(VarName::index)
+                            .ok()
+                            .and_then(|v| v.get_i32().ok())
+                            .unwrap_or(i.id() as i32)
+                    })
+                    .enumerate()
+                {
                     ui.horizontal(|ui| {
                         if format!("{field_name} #{index}: [tw {}]", item.kind())
                             .button(ui)
@@ -178,7 +205,7 @@ impl NodeLinkRender for Ui {
 }
 
 /// Main composition function that handles recursive rendering with breadcrumbs
-pub fn render_node_field_recursive_with_path<T: FEdit + FRecursiveRender + Node>(
+pub fn render_node_field_recursive_with_path<T: FEdit + FRecursiveNodeEdit + Node>(
     ui: &mut Ui,
     field_name: &str,
     field_node: &mut T,
@@ -197,6 +224,15 @@ pub fn render_node_field_recursive_with_path<T: FEdit + FRecursiveRender + Node>
         if let Some(clicked_id) = render_breadcrumbs(ui, &breadcrumb_path) {
             ui.set_inspected_node(clicked_id);
         }
+        ui.group(|ui| {
+            ui.horizontal(|ui| {
+                format!("[b [tw {}]]", field_node.kind()).label(ui);
+                ui.separator();
+                format!("[s #[tw {}]]", field_node.id()).label(ui);
+                ui.separator();
+                format!("[tw [b Owner:]] #[tw {}]", field_node.owner()).label(ui);
+            });
+        });
         let mut changed = field_node.edit(ui).changed();
         changed |= field_node.render_linked_fields(ui, breadcrumb_path);
 

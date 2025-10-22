@@ -54,7 +54,6 @@ impl AnimAction {
         match self {
             AnimAction::translate(x) => {
                 let pos = x.get_vec2(ctx)?;
-                dbg!(pos);
                 let mut t = ctx.t()?;
                 for target in a.targets.iter().copied() {
                     let entity = target.entity(ctx)?;

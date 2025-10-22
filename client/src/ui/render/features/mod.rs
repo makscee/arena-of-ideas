@@ -4,6 +4,8 @@ use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut}
 mod features_impl;
 mod frecursive;
 
+pub use frecursive::*;
+
 /// Feature for types that can provide a title
 pub trait FTitle {
     fn title(&self, ctx: &ClientContext) -> Cstr;

@@ -786,6 +786,7 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
 
             pub fn #clear_method(mut self) -> Self {
                 self.#field_name = #clear_value;
+                self.set_dirty(true);
                 self
             }
         })
