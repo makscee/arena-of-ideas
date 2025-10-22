@@ -53,13 +53,43 @@ impl GameState {
             GameState::Editor => {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
-                let edit_left_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
-                let edit_right_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
-                let battle_editor = tiles.insert_pane(Pane::Battle(BattlePane::BattleEditor));
-                let edit_left = tiles.insert_vertical_tile([edit_left_graph].into());
-                let edit_right = tiles.insert_vertical_tile([edit_right_graph].into());
-                let edit = tiles.insert_tab_tile([edit_left, edit_right, battle_editor].into());
-                let root = tiles.insert_vertical_tile([view, edit].into());
+
+                // Left team tab with editor and graph
+                let left_team_editor =
+                    tiles.insert_pane(Pane::Battle(BattlePane::TeamEditor(true)));
+                let left_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
+                let left_team_content =
+                    tiles.insert_horizontal_tile([left_team_editor, left_team_graph].into());
+                if let Tile::Container(h) = tiles.get_mut(left_team_content).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(left_team_editor, 2.0);
+                        h.shares.set_share(left_team_graph, 1.0);
+                    }
+                }
+                let left_team_tab = left_team_content.with_name(tile_tree, "Left Team");
+
+                // Right team tab with editor and graph
+                let right_team_editor =
+                    tiles.insert_pane(Pane::Battle(BattlePane::TeamEditor(false)));
+                let right_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
+                let right_team_content =
+                    tiles.insert_horizontal_tile([right_team_editor, right_team_graph].into());
+                if let Tile::Container(h) = tiles.get_mut(right_team_content).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(right_team_editor, 2.0);
+                        h.shares.set_share(right_team_graph, 1.0);
+                    }
+                }
+                let right_team_tab = right_team_content.with_name(tile_tree, "Right Team");
+
+                let team_tabs = tiles.insert_tab_tile([left_team_tab, right_team_tab].into());
+                let root = tiles.insert_vertical_tile([view, team_tabs].into());
+                if let Tile::Container(v) = tiles.get_mut(root).unwrap() {
+                    if let Container::Linear(v) = v {
+                        v.shares.set_share(view, 1.0);
+                        v.shares.set_share(team_tabs, 2.0);
+                    }
+                }
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Explorer => {
@@ -254,7 +284,7 @@ pub enum BattlePane {
     View,
     EditLeftGraph,
     EditRightGraph,
-    BattleEditor,
+    TeamEditor(bool), // true for left, false for right
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ShopPane {
@@ -304,7 +334,7 @@ impl Pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::EditLeftGraph => BattlePlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
-                BattlePane::BattleEditor => BattleEditorPlugin::pane(world, ui),
+                BattlePane::TeamEditor(is_left) => TeamEditorPlugin::pane(is_left, world, ui),
             },
             Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world),
         };

@@ -274,5 +274,19 @@ impl BattlePlugin {
         Ok(())
     }
 
-    pub fn pane_edit_graph(_left: bool, _ui: &mut Ui, _world: &mut World) {}
+    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
+        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
+            let needs_reload = if left {
+                state.left_team.render_recursive(ui)
+            } else {
+                state.right_team.render_recursive(ui)
+            };
+
+            if needs_reload {
+                BattleEditorPlugin::save_changes_and_reload(world);
+            }
+        } else {
+            "[red [b BattleEditoState] not found]".cstr().label(ui);
+        }
+    }
 }

@@ -108,6 +108,18 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 ExplorerPane::ContentPane(kind) => format!("{} Content", kind.cstr()),
             }
             .into(),
+            Pane::Battle(pane) => match pane {
+                BattlePane::View => "Battle View".into(),
+                BattlePane::EditLeftGraph => "Left Team".into(),
+                BattlePane::EditRightGraph => "Right Team".into(),
+                BattlePane::TeamEditor(is_left) => {
+                    if *is_left {
+                        "Left Team Editor".into()
+                    } else {
+                        "Right Team Editor".into()
+                    }
+                }
+            },
             _ => view.as_ref().into(),
         }
     }

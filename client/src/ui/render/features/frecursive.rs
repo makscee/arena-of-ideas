@@ -4,7 +4,11 @@ use super::*;
 pub trait FRecursiveRender: FEdit + Node {
     /// Render the node recursively, handling breadcrumbs and inspection state
     fn render_recursive(&mut self, ui: &mut Ui) -> bool {
-        render_node_field_recursive_with_path(ui, "root", self, &mut vec![])
+        let node_id = self.id();
+        ui.set_edit_context(node_id);
+        let result = render_node_field_recursive_with_path(ui, "root", self, &mut vec![]);
+        ui.clear_edit_context();
+        result
     }
 
     /// Render linked fields for the current node
