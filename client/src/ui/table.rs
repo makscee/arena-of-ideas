@@ -516,11 +516,11 @@ impl<'a, T> Table<'a, T> {
 }
 
 pub trait TableExt<T> {
-    fn table(&self) -> Table<T>;
+    fn table<'a>(&'a self) -> Table<'a, T>;
 }
 
 impl<T> TableExt<T> for Vec<T> {
-    fn table(&self) -> Table<T> {
+    fn table<'a>(&'a self) -> Table<'a, T> {
         Table::from_data(self)
     }
 }

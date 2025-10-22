@@ -33,7 +33,7 @@ struct WindowResource {
 }
 #[derive(Resource)]
 struct CloseCurrentWindow;
-fn rm(world: &mut World) -> Mut<WindowResource> {
+fn rm<'a>(world: &'a mut World) -> Mut<'a, WindowResource> {
     world.resource_mut::<WindowResource>()
 }
 fn r(world: &World) -> &WindowResource {

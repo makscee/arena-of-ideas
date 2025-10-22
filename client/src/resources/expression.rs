@@ -123,7 +123,7 @@ impl ExpressionImpl for Expression {
                 let mut hasher = DefaultHasher::new();
                 x.hash(&mut hasher);
                 let mut rng = ChaCha8Rng::seed_from_u64(hasher.finish());
-                Ok(rng.gen_range(0.0..1.0).into())
+                Ok(rng.random_range(0.0..1.0).into())
             }
             Expression::random_unit(x) => x
                 .get_u64_list(ctx)?

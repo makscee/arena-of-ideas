@@ -14,7 +14,7 @@ impl Plugin for TilePlugin {
     }
 }
 
-fn rm(world: &mut World) -> Mut<TileData> {
+fn rm<'a>(world: &'a mut World) -> Mut<'a, TileData> {
     world.resource_mut::<TileData>()
 }
 

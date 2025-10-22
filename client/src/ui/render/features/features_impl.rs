@@ -2495,7 +2495,7 @@ impl FCard for NUnit {
         );
 
         let text_rect = rect.shrink(10.0);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(text_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
             ui.vertical(|ui| {
                 ui.label(
                     egui::RichText::new(&self.unit_name)
@@ -2526,7 +2526,7 @@ impl FCard for NHouse {
         );
 
         let text_rect = rect.shrink(10.0);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(text_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
             ui.vertical(|ui| {
                 ui.label(
                     egui::RichText::new(&self.house_name)
@@ -2557,7 +2557,7 @@ impl FCard for NAbilityMagic {
         );
 
         let text_rect = rect.shrink(10.0);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(text_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
             ui.vertical(|ui| {
                 ui.label(
                     egui::RichText::new(&self.ability_name)
@@ -2588,7 +2588,7 @@ impl FCard for NStatusMagic {
         );
 
         let text_rect = rect.shrink(10.0);
-        ui.allocate_new_ui(egui::UiBuilder::new().max_rect(text_rect), |ui| {
+        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
             ui.vertical(|ui| {
                 ui.label(
                     egui::RichText::new(&self.status_name)

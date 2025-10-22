@@ -1656,9 +1656,7 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
                 #allow_attrs
                 pub fn #ctx_get_method_name<S: ContextSource>(&self, ctx: &Context<S>) -> #field_type {
                     if let Ok(value) = self.get_ctx_var(ctx, VarName::#var_name) {
-                        if let Ok(typed_value) = value.try_into() {
-                            return typed_value;
-                        }
+                        return value.into();
                     }
                     self.#field_name.clone()
                 }

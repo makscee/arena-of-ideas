@@ -125,7 +125,7 @@ impl StdbPlugin {
                     world
                         .with_context_mut(|ctx| {
                             node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
-                            ctx.world_mut()?.send_event(node_event);
+                            ctx.world_mut()?.write_message(node_event);
                             Ok(())
                         })
                         .log();
@@ -136,7 +136,7 @@ impl StdbPlugin {
                     world
                         .with_context_mut(|ctx| {
                             node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
-                            ctx.world_mut()?.send_event(node_event);
+                            ctx.world_mut()?.write_message(node_event);
                             Ok(())
                         })
                         .log();
@@ -147,7 +147,7 @@ impl StdbPlugin {
                     world
                         .with_context_mut(|ctx| {
                             ctx.despawn(node_event.node.id)?;
-                            ctx.world_mut()?.send_event(node_event);
+                            ctx.world_mut()?.write_message(node_event);
                             Ok(())
                         })
                         .log();
@@ -166,7 +166,7 @@ impl StdbPlugin {
                         .track()
                         .notify_error_op();
                 }
-                world.send_event(link_event.clone());
+                world.write_message(link_event.clone());
             }
             StdbChange::Update => {
                 if link_event.solid {
@@ -181,7 +181,7 @@ impl StdbPlugin {
                         .remove_link(link_event.parent, link_event.child)
                         .notify_error_op();
                 }
-                world.send_event(link_event.clone());
+                world.write_message(link_event.clone());
             }
             StdbChange::Delete => {
                 if link_event.solid {
@@ -190,7 +190,7 @@ impl StdbPlugin {
                         .remove_link(link_event.parent, link_event.child)
                         .notify_error_op();
                 }
-                world.send_event(link_event.clone());
+                world.write_message(link_event.clone());
             }
         }
     }

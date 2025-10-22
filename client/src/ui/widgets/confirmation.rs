@@ -23,7 +23,7 @@ struct ConfirmationResource {
     new: Vec<Confirmation>,
     close_requested: bool,
 }
-fn rm(world: &mut World) -> Mut<ConfirmationResource> {
+fn rm<'a>(world: &'a mut World) -> Mut<'a, ConfirmationResource> {
     world.resource_mut::<ConfirmationResource>()
 }
 

@@ -20,7 +20,7 @@ pub fn app_exit(world: &mut World) {
     world
         .get_resource_mut::<bevy::prelude::Messages<bevy::app::AppExit>>()
         .unwrap()
-        .send(bevy::app::AppExit::Success);
+        .write(bevy::app::AppExit::Success);
 }
 pub fn app_exit_op() {
     OperationsPlugin::add(app_exit)

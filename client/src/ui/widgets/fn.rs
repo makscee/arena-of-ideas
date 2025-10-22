@@ -43,7 +43,7 @@ pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(
         .max_width(600.0)
         .resizable([false, false])
         .show(ctx, |ui| {
-            ui.set_max_height(ui.ctx().screen_rect().height() * 0.9);
+            ui.set_max_height(ui.ctx().content_rect().height() * 0.9);
             add_contents(ui);
         });
 }

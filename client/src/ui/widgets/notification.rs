@@ -16,7 +16,7 @@ struct NotificationsData {
     toasts: Toasts,
 }
 
-fn rm(world: &mut World) -> Mut<NotificationsData> {
+fn rm<'a>(world: &'a mut World) -> Mut<'a, NotificationsData> {
     world.resource_mut::<NotificationsData>()
 }
 

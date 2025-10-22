@@ -101,7 +101,7 @@ impl<'a> ContextSource for ServerSource<'a> {
         })
     }
 
-    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+    fn set_var(&mut self, _: u64, _: VarName, _: VarValue) -> NodeResult<()> {
         Ok(())
     }
 }
