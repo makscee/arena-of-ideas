@@ -54,28 +54,32 @@ pub fn render_breadcrumbs(ui: &mut Ui, breadcrumb_path: &[NodeBreadcrumb]) -> Op
 
     let mut clicked_id = None;
 
-    ui.horizontal(|ui| {
-        for (i, crumb) in breadcrumb_path.iter().enumerate() {
-            if i > 0 {
-                ui.label(" > ");
-            }
+    ScrollArea::horizontal()
+        .stick_to_right(true)
+        .show(ui, |ui| {
+            ui.horizontal(|ui| {
+                for (i, crumb) in breadcrumb_path.iter().enumerate() {
+                    if i > 0 {
+                        ui.label(" > ");
+                    }
 
-            let is_last = i == breadcrumb_path.len() - 1;
-            let label = if let Some(ref field_name) = crumb.field_name {
-                format!("{}", field_name)
-            } else {
-                format!("{:?}", crumb.kind)
-            };
+                    let is_last = i == breadcrumb_path.len() - 1;
+                    let label = if let Some(ref field_name) = crumb.field_name {
+                        format!("{}", field_name)
+                    } else {
+                        format!("{:?}", crumb.kind)
+                    };
 
-            if is_last {
-                ui.strong(&label);
-            } else {
-                if ui.link(&label).clicked() {
-                    clicked_id = Some(crumb.id);
+                    if is_last {
+                        ui.strong(&label);
+                    } else {
+                        if ui.link(&label).clicked() {
+                            clicked_id = Some(crumb.id);
+                        }
+                    }
                 }
-            }
-        }
-    });
+            });
+        });
     ui.separator();
 
     clicked_id

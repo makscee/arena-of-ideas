@@ -24,7 +24,7 @@ pub trait Composer<T> {
     fn is_mutable(&self) -> bool;
 
     /// Compose (render) the data to UI
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response;
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
 
 /// Reference wrapper that composers use to hold data
@@ -87,8 +87,8 @@ impl<'a, T: FDisplay> Composer<T> for DataComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
-        self.data.as_ref().display(context, ui)
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.data.as_ref().display(ctx, ui)
     }
 }
 
@@ -124,8 +124,8 @@ impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
-        self.data.as_ref().title(context).label(ui)
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.data.as_ref().title(ctx).label(ui)
     }
 }
 
@@ -181,7 +181,7 @@ impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         use crate::ui::core::colorix::UiColorixExt;
 
         if self.disabled {
@@ -196,12 +196,12 @@ impl<T, C: Composer<T>> Composer<T> for ButtonComposer<C> {
         let response = if let Some(semantic) = self.semantic {
             ui.colorix_semantic(semantic, |ui| {
                 // Get the body content from inner composer
-                let body_response = inner.compose(context, ui);
+                let body_response = inner.compose(ctx, ui);
                 Self::apply_button_styling(body_response, disabled, min_width, ui)
             })
         } else {
             // Get the body content from inner composer
-            let body_response = inner.compose(context, ui);
+            let body_response = inner.compose(ctx, ui);
             Self::apply_button_styling(body_response, disabled, min_width, ui)
         };
 
@@ -287,12 +287,12 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
-        let name = data.tag_name(context);
-        let color = data.tag_color(context);
+        let name = data.tag_name(ctx);
+        let color = data.tag_color(ctx);
 
-        if let Some(value) = data.tag_value(context) {
+        if let Some(value) = data.tag_value(ctx) {
             TagWidget::new_name_value(name, color, value).ui(ui)
         } else {
             TagWidget::new_name(name, color).ui(ui)
@@ -300,37 +300,150 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
     }
 }
 
-/// List composer that wraps Vec<T> and an element composer function
-pub struct ListComposer<'a, T, F> {
-    data: DataRef<'a, Vec<T>>,
-    element_fn: F,
-    hover_fn: Option<Box<dyn FnMut(&T, &ClientContext, &mut Ui) + 'a>>,
-    filter_fn: Option<Box<dyn Fn(&str, &T, &ClientContext) -> bool>>,
-    filter_id: Option<egui::Id>,
+/// List data and element function wrapper
+pub enum ListData<'a, T> {
+    Immutable {
+        data: &'a Vec<T>,
+        element_fn: Box<dyn Fn(&T, &ClientContext, &mut Ui) -> Response + 'a>,
+    },
+    Mutable {
+        data: &'a mut Vec<T>,
+        element_fn: Box<dyn Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a>,
+        default_factory: Option<Box<dyn Fn() -> T + 'a>>,
+    },
 }
 
-impl<'a, T, F> ListComposer<'a, T, F>
-where
-    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
-{
-    pub fn new(data: &'a Vec<T>, element_fn: F) -> Self {
-        Self {
-            data: DataRef::Immutable(data),
-            element_fn,
-            hover_fn: None,
-            filter_fn: None,
-            filter_id: None,
+impl<'a, T> ListData<'a, T> {
+    pub fn is_mutable(&self) -> bool {
+        matches!(self, ListData::Mutable { .. })
+    }
+
+    pub fn data_ref(&self) -> &Vec<T> {
+        match self {
+            ListData::Immutable { data, .. } => data,
+            ListData::Mutable { data, .. } => data,
         }
     }
 
-    pub fn new_mut(data: &'a mut Vec<T>, element_fn: F) -> Self {
+    pub fn data_mut(&mut self) -> &mut Vec<T> {
+        match self {
+            ListData::Immutable { .. } => {
+                panic!("Cannot get mutable reference from immutable data")
+            }
+            ListData::Mutable { data, .. } => data,
+        }
+    }
+}
+
+/// Unified list composer that wraps Vec<T> with different data and element function variants
+///
+/// # Basic Usage
+///
+/// For immutable lists (display only):
+/// ```rust
+/// let items = vec![1, 2, 3];
+/// items.as_list(|item, ctx, ui| {
+///     ui.label(format!("Item: {}", item))
+/// }).compose(ctx, ui);
+/// ```
+///
+/// For mutable data with immutable element functions (editing optional):
+/// ```rust
+/// let mut items = vec![String::from("a"), String::from("b")];
+/// items.as_list_mut(|item, ctx, ui| {
+///     ui.label(item.clone())
+/// }).editable(|| String::from("new item"))
+///   .compose(ctx, ui);
+/// ```
+///
+/// For mutable data with mutable element functions (direct field editing):
+/// ```rust
+/// let mut items = vec![String::from("hello"), String::from("world")];
+/// items.as_mutable_list(|item, ctx, ui| {
+///     ui.text_edit_singleline(item)
+/// }).editable(|| String::from("new item"))
+///   .compose(ctx, ui);
+/// ```
+///
+/// # Editing Features (when `.editable()` is called)
+/// - "+ Add" button to add new elements using the default factory
+/// - "✕" button next to each element to remove it
+/// - "↑" and "↓" arrow buttons to reorder elements
+///
+/// # Additional Features
+/// - `.with_hover()` - Add hover interactions for immutable elements
+/// - `.with_hover_mut()` - Add hover interactions for mutable elements
+/// - `.with_filter()` - Add search/filter functionality
+///
+/// # Variants
+/// - **Immutable**: Read-only data, no editing possible
+/// - **ImmutableMut**: Mutable data but immutable element functions, editing enabled
+/// - **Mutable**: Mutable data with mutable element functions, editing enabled
+///
+/// **Note**: The `.editable()` method only works on mutable data variants.
+/// Calling it on immutable data will panic.
+pub struct ListComposer<'a, T> {
+    list_data: ListData<'a, T>,
+    hover_fn: Option<Box<dyn FnMut(&T, &ClientContext, &mut Ui) + 'a>>,
+    hover_fn_mut: Option<Box<dyn FnMut(&mut T, &ClientContext, &mut Ui) + 'a>>,
+    filter_fn: Option<Box<dyn Fn(&str, &T, &ClientContext) -> bool>>,
+    filter_id: Option<egui::Id>,
+    editable: bool,
+}
+
+impl<'a, T> ListComposer<'a, T> {
+    pub fn new<F>(data: &'a Vec<T>, element_fn: F) -> Self
+    where
+        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+    {
         Self {
-            data: DataRef::Mutable(data),
-            element_fn,
+            list_data: ListData::Immutable {
+                data,
+                element_fn: Box::new(element_fn),
+            },
             hover_fn: None,
+            hover_fn_mut: None,
             filter_fn: None,
             filter_id: None,
+            editable: false,
         }
+    }
+
+    pub fn new_mut<F>(data: &'a mut Vec<T>, element_fn: F) -> Self
+    where
+        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
+    {
+        Self {
+            list_data: ListData::Mutable {
+                data,
+                element_fn: Box::new(element_fn),
+                default_factory: None,
+            },
+            hover_fn: None,
+            hover_fn_mut: None,
+            filter_fn: None,
+            filter_id: None,
+            editable: false,
+        }
+    }
+
+    pub fn editable<DF>(mut self, default_factory: DF) -> Self
+    where
+        DF: Fn() -> T + 'a,
+    {
+        match &mut self.list_data {
+            ListData::Immutable { .. } => {
+                panic!("Cannot enable editing on immutable list variant");
+            }
+            ListData::Mutable {
+                default_factory: df,
+                ..
+            } => {
+                *df = Some(Box::new(default_factory));
+                self.editable = true;
+            }
+        }
+        self
     }
 
     pub fn with_hover<H>(mut self, hover_fn: H) -> Self
@@ -338,6 +451,14 @@ where
         H: FnMut(&T, &ClientContext, &mut Ui) + 'a,
     {
         self.hover_fn = Some(Box::new(hover_fn));
+        self
+    }
+
+    pub fn with_hover_mut<H>(mut self, hover_fn: H) -> Self
+    where
+        H: FnMut(&mut T, &ClientContext, &mut Ui) + 'a,
+    {
+        self.hover_fn_mut = Some(Box::new(hover_fn));
         self
     }
 
@@ -351,25 +472,48 @@ where
     }
 }
 
-impl<'a, T, F> Composer<Vec<T>> for ListComposer<'a, T, F>
-where
-    F: Fn(&T, &ClientContext, &mut Ui) -> Response,
-{
+impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
     fn data(&self) -> &Vec<T> {
-        self.data.as_ref()
+        self.list_data.data_ref()
     }
 
     fn data_mut(&mut self) -> &mut Vec<T> {
-        self.data.as_mut()
+        self.list_data.data_mut()
     }
 
     fn is_mutable(&self) -> bool {
-        self.data.is_mutable()
+        self.list_data.is_mutable()
     }
 
-    fn compose(mut self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn compose(mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = "[tw List:]".cstr().label(ui);
-        let items: Vec<&T> =
+
+        // Handle add button separately to avoid borrow checker issues
+        if self.editable {
+            let should_add_item = match &self.list_data {
+                ListData::Mutable {
+                    default_factory: Some(_),
+                    ..
+                } => ui.horizontal(|ui| ui.button("+ Add").clicked()).inner,
+                _ => false,
+            };
+
+            if should_add_item {
+                match &mut self.list_data {
+                    ListData::Mutable {
+                        default_factory: Some(factory),
+                        data,
+                        ..
+                    } => {
+                        let new_item = factory();
+                        data.push(new_item);
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let filtered_indices: Vec<usize> =
             if let (Some(filter_id), Some(filter_fn)) = (self.filter_id, &self.filter_fn) {
                 let filter_text: String = ui
                     .ctx()
@@ -386,35 +530,102 @@ where
                 });
 
                 if filter_text.is_empty() {
-                    self.data.as_ref().iter().collect()
+                    (0..self.data().len()).collect()
                 } else {
-                    self.data
-                        .as_ref()
-                        .iter()
-                        .filter(|item| filter_fn(&filter_text, item, context))
+                    (0..self.data().len())
+                        .filter(|&i| filter_fn(&filter_text, &self.data()[i], ctx))
                         .collect()
                 }
             } else {
-                self.data.as_ref().iter().collect()
+                (0..self.data().len()).collect()
             };
 
-        for item in items {
-            let item_response = ui.group(|ui| {
-                ui.expand_to_include_x(ui.available_rect_before_wrap().right());
-                (self.element_fn)(item, context, ui)
-            });
-            response = response.union(item_response.inner);
+        let mut indices_to_remove = Vec::new();
+        let mut swap_operations = Vec::new();
 
-            if let Some(hover_fn) = self.hover_fn.as_mut() {
-                if ui.rect_contains_pointer(item_response.response.rect) {
-                    let ui = &mut ui.new_child(
-                        UiBuilder::new()
-                            .max_rect(item_response.response.rect)
-                            .layout(Layout::right_to_left(Align::Center)),
-                    );
-                    ui.add_space(5.0);
-                    hover_fn(item, context, ui);
+        match &mut self.list_data {
+            ListData::Immutable { element_fn, data } => {
+                for (_display_idx, &actual_idx) in filtered_indices.iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        let item_response = ui.group(|ui| {
+                            ui.expand_to_include_x(ui.available_rect_before_wrap().right());
+                            element_fn(&data[actual_idx], ctx, ui)
+                        });
+                        response = response.union(item_response.inner);
+
+                        if let Some(hover_fn) = self.hover_fn.as_mut() {
+                            if ui.rect_contains_pointer(item_response.response.rect) {
+                                let ui = &mut ui.new_child(
+                                    UiBuilder::new()
+                                        .max_rect(item_response.response.rect)
+                                        .layout(Layout::right_to_left(Align::Center)),
+                                );
+                                ui.add_space(5.0);
+                                hover_fn(&data[actual_idx], ctx, ui);
+                            }
+                        }
+                    });
                 }
+            }
+            ListData::Mutable {
+                element_fn, data, ..
+            } => {
+                for (display_idx, &actual_idx) in filtered_indices.iter().enumerate() {
+                    ui.horizontal(|ui| {
+                        if self.editable {
+                            ui.separator();
+
+                            if "[b [red -]]".cstr().button(ui).clicked() {
+                                indices_to_remove.push(actual_idx);
+                            }
+
+                            if display_idx > 0 && ui.small_button("🔼").clicked() {
+                                let prev_actual_idx = filtered_indices[display_idx - 1];
+                                swap_operations.push((actual_idx, prev_actual_idx));
+                            }
+
+                            if display_idx < filtered_indices.len() - 1
+                                && ui.small_button("🔽").clicked()
+                            {
+                                let next_actual_idx = filtered_indices[display_idx + 1];
+                                swap_operations.push((actual_idx, next_actual_idx));
+                            }
+                        }
+
+                        let item_response = ui.group(|ui| {
+                            ui.expand_to_include_x(ui.available_rect_before_wrap().right());
+                            ui.push_id(actual_idx, |ui| element_fn(&mut data[actual_idx], ctx, ui))
+                                .inner
+                        });
+                        response = response.union(item_response.inner);
+
+                        if let Some(hover_fn) = self.hover_fn_mut.as_mut() {
+                            if ui.rect_contains_pointer(item_response.response.rect) {
+                                let ui = &mut ui.new_child(
+                                    UiBuilder::new()
+                                        .max_rect(item_response.response.rect)
+                                        .layout(Layout::right_to_left(Align::Center)),
+                                );
+                                ui.add_space(5.0);
+                                hover_fn(&mut data[actual_idx], ctx, ui);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // Apply remove operations (in reverse order to maintain indices)
+        if self.is_mutable() {
+            indices_to_remove.sort();
+            indices_to_remove.reverse();
+            for idx in indices_to_remove {
+                self.data_mut().remove(idx);
+            }
+
+            // Apply swap operations
+            for (idx1, idx2) in swap_operations {
+                self.data_mut().swap(idx1, idx2);
             }
         }
 
@@ -448,21 +659,21 @@ impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> 
         self.data.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
-        let color = context.color(ui);
+        let color = ctx.color(ui);
 
         Frame::new()
             .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(color.stroke())
             .show(ui, |ui| {
-                let resp = ui.horizontal(|ui| data.title(context).button(ui)).inner;
+                let resp = ui.horizontal(|ui| data.title(ctx).button(ui)).inner;
 
-                data.description(context).label_w(ui);
+                data.description(ctx).label_w(ui);
 
                 ui.horizontal(|ui| {
-                    for (var, var_value) in data.stats(context) {
+                    for (var, var_value) in data.stats(ctx) {
                         TagWidget::new_var_value(var, var_value).ui(ui);
                     }
                 });
@@ -503,14 +714,14 @@ impl<T, C: Composer<T>> Composer<T> for FramedComposer<C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
-        let color = self.color.unwrap_or_else(|| context.color(ui));
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        let color = self.color.unwrap_or_else(|| ctx.color(ui));
 
         Frame::new()
             .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(color.stroke())
-            .show(ui, |ui| self.inner.compose(context, ui))
+            .show(ui, |ui| self.inner.compose(ctx, ui))
             .inner
     }
 }

@@ -118,29 +118,20 @@ impl<T> Render for T {}
 /// Extension trait for Vec<T> to create list composers
 pub trait RenderList<T> {
     /// Create a list composer with a closure that creates composers for each element
-    fn as_list<'a, F>(
-        &'a self,
-        f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
+    fn as_list<'a, F>(&'a self, f: F) -> ListComposer<'a, T>
     where
         F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 
-    /// Create a mutable list composer with a closure that creates composers for each element
-    fn as_list_mut<'a, F>(
-        &'a mut self,
-        f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
+    /// Create a mutable list composer with a closure that can mutate each element
+    fn as_mutable_list<'a, F>(&'a mut self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 }
 
 impl<T> RenderList<T> for Vec<T> {
-    fn as_list<'a, F>(
-        &'a self,
-        f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
+    fn as_list<'a, F>(&'a self, f: F) -> ListComposer<'a, T>
     where
         F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
@@ -148,12 +139,9 @@ impl<T> RenderList<T> for Vec<T> {
         ListComposer::new(self, f)
     }
 
-    fn as_list_mut<'a, F>(
-        &'a mut self,
-        f: F,
-    ) -> ListComposer<'a, T, impl Fn(&T, &ClientContext, &mut Ui) -> Response>
+    fn as_mutable_list<'a, F>(&'a mut self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new_mut(self, f)

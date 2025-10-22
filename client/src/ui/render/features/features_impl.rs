@@ -487,7 +487,15 @@ impl FEdit for Reaction {
                 })
                 .inner;
             ui.label("Actions:");
-            response.union(self.actions.edit(ui))
+            self.actions
+                .as_mutable_list(|a, ctx, ui| {
+                    a.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit, ui))
+                        .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+                        .compose(ctx, ui)
+                })
+                .editable(|| Action::noop)
+                .compose(&EMPTY_CONTEXT, ui)
+                .union(response)
         })
         .inner
     }

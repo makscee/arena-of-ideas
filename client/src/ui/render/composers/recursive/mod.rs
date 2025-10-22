@@ -421,7 +421,8 @@ where
                             ui,
                             |context, ui| {
                                 ui.horizontal(|ui| {
-                                    if ui.button(if expanded { "▼" } else { "▶" }).clicked() {
+                                    if ui.button(if expanded { "🔽" } else { "▶️" }).clicked()
+                                    {
                                         ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                                     }
                                     composer_fn(context, ui, &mut field.value)
