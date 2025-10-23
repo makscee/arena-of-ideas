@@ -1,7 +1,7 @@
 use super::*;
 
 /// Feature for types that can be rendered recursively with breadcrumb navigation
-pub trait FRecursiveNodeEdit: FEdit + Node {
+pub trait FRecursiveNodeEdit: FEdit + FTitle + ClientNode + Clone + Debug {
     /// Render the node recursively, handling breadcrumbs and inspection state
     fn render_recursive_edit(&mut self, ui: &mut Ui) -> bool {
         let node_id = self.id();
@@ -91,20 +91,20 @@ pub trait NodeLinkRender {
     fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: SingleLink<T>,
-        T: FEdit + FRecursiveNodeEdit + Node + Default;
+        T: FRecursiveNodeEdit + Node + Default;
 
     /// Render a multiple link field
     fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: MultipleLink<T>,
-        T: FEdit + FRecursiveNodeEdit + Node + Default;
+        T: FRecursiveNodeEdit + Node + Default;
 }
 
 impl NodeLinkRender for Ui {
     fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: SingleLink<T>,
-        T: FEdit + FRecursiveNodeEdit + Node + Default,
+        T: FRecursiveNodeEdit + Node + Default,
     {
         let mut need_remove = false;
         let changed = if let Ok(loaded) = link.get_mut() {
@@ -146,7 +146,7 @@ impl NodeLinkRender for Ui {
     fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
     where
         L: MultipleLink<T>,
-        T: FEdit + FRecursiveNodeEdit + Node + Default,
+        T: FRecursiveNodeEdit + Default,
     {
         let mut changed = false;
 
@@ -209,7 +209,7 @@ impl NodeLinkRender for Ui {
 }
 
 /// Main composition function that handles recursive rendering with breadcrumbs
-pub fn render_node_field_recursive_with_path<T: FEdit + FRecursiveNodeEdit + Node>(
+pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
     ui: &mut Ui,
     field_name: &str,
     field_node: &mut T,
@@ -230,7 +230,27 @@ pub fn render_node_field_recursive_with_path<T: FEdit + FRecursiveNodeEdit + Nod
         }
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                format!("[b [tw {}]]", field_node.kind()).label(ui);
+                let menu_resp = field_node
+                    .as_title_mut()
+                    .as_button()
+                    .with_menu()
+                    .add_copy()
+                    .add_paste()
+                    .add_action("Copy Full", |d, _| {
+                        clipboard_set(d.pack().to_string());
+                        Some(MenuAction::Copy)
+                    })
+                    .add_action("Paste Full", |_, _| {
+                        let pack = PackedNodes::from_string(&clipboard_get()?).ok()?;
+                        let unpack = T::unpack(&pack);
+                        Some(MenuAction::Paste(unpack.ok()?))
+                    })
+                    .compose_with_menu(&EMPTY_CONTEXT, ui);
+                if let Some(action) = menu_resp.action {
+                    if let MenuAction::Paste(pasted) = action {
+                        *field_node = pasted.remap_ids();
+                    }
+                }
                 ui.separator();
                 format!("[s #[tw {}]]", field_node.id()).label(ui);
                 ui.separator();

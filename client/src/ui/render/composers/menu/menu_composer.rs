@@ -73,20 +73,21 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
         }
     }
 
-    pub fn add_action<F>(mut self, name: String, f: F) -> Self
+    pub fn add_action<F>(mut self, name: impl ToString, f: F) -> Self
     where
         F: FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a,
     {
-        self.actions.push(MenuItem::Action(name, Box::new(f)));
+        self.actions
+            .push(MenuItem::Action(name.to_string(), Box::new(f)));
         self
     }
 
-    pub fn add_dangerous_action<F>(mut self, name: String, f: F) -> Self
+    pub fn add_dangerous_action<F>(mut self, name: impl ToString, f: F) -> Self
     where
         F: FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a,
     {
         self.dangerous_actions
-            .push(MenuItem::Action(name, Box::new(f)));
+            .push(MenuItem::Action(name.to_string(), Box::new(f)));
         self
     }
 

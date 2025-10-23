@@ -85,8 +85,6 @@ pub trait FEdit {
     fn edit(&mut self, ui: &mut Ui) -> Response;
 }
 
-pub use frecursive::*;
-
 /// Feature for types that can be copied to clipboard
 pub trait FCopy: StringData {
     fn copy_to_clipboard(&self) {

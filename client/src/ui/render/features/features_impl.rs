@@ -1784,7 +1784,7 @@ impl FDisplay for NUnitStats {
 
 impl FTitle for NUnitState {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!("{}x", self.stacks).cstr()
+        format!("[tw Unit State] x{} stacks", self.stacks).cstr()
     }
 }
 
@@ -2609,5 +2609,11 @@ impl FCard for NStatusMagic {
         });
 
         response
+    }
+}
+
+impl FTitle for NStatusState {
+    fn title(&self, _ctx: &ClientContext) -> Cstr {
+        format!("Status State x{} stacks", self.stacks)
     }
 }

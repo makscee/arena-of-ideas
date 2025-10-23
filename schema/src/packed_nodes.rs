@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
+use ron::error::SpannedResult;
 
 use super::*;
 
@@ -24,7 +25,16 @@ pub struct NodeLink {
     pub child_kind: String,
 }
 
+impl ToString for PackedNodes {
+    fn to_string(&self) -> String {
+        ron::to_string(self).unwrap()
+    }
+}
+
 impl PackedNodes {
+    pub fn from_string(s: &str) -> SpannedResult<Self> {
+        ron::from_str(s)
+    }
     pub fn kind(&self) -> &String {
         &self.nodes.get(&self.root).unwrap().kind
     }
