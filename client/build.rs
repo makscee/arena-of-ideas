@@ -143,11 +143,13 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     let node_kind_spawn_impl = generate_node_kind_spawn_impl(nodes);
 
     // Generate NamedNode trait and implementations
-    let named_node_trait = quote! {
-        pub trait NamedNode {
-            fn named_kind() -> NamedNodeKind;
-        }
-    };
+    let named_node_trait = generate_named_node_trait();
+
+    // Generate named node kind match macro
+    let named_node_kind_match_macro = generate_named_node_kind_match_macro(nodes);
+
+    // Generate node kind match macro
+    let node_kind_match_macro = generate_node_kind_match_macro(nodes);
 
     // Generate FEdit implementations
     let fedit_impls = nodes.iter().map(|node| generate_fedit_impl(node));
@@ -156,18 +158,10 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     let frecursive_impls = nodes.iter().map(|node| generate_frecursive_impl(node));
 
     // Generate ToCstr and FDisplay implementations
-    let named_node_impls = nodes.iter().filter(|node| node.is_named).map(|node| {
-        let struct_name = &node.name;
-        let node_kind_variant = &node.name;
-
-        quote! {
-            impl NamedNode for #struct_name {
-                fn named_kind() -> NamedNodeKind {
-                    NamedNodeKind::#node_kind_variant
-                }
-            }
-        }
-    });
+    let named_node_impls = nodes
+        .iter()
+        .filter(|node| node.is_named)
+        .map(|node| generate_named_node_impl(node));
 
     quote! {
         #(#node_structs)*
@@ -186,6 +180,10 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         #node_kind_spawn_impl
 
         #named_node_trait
+
+        #node_kind_match_macro
+
+        #named_node_kind_match_macro
 
         #(#named_node_impls)*
     }

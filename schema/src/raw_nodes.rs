@@ -45,7 +45,7 @@ pub struct NPlayerIdentity {
 
 #[derive(Node)]
 #[content]
-#[named]
+#[named(house_name)]
 pub struct NHouse {
     #[var]
     pub house_name: String,
@@ -63,7 +63,7 @@ pub struct NHouseColor {
 
 #[derive(Node)]
 #[content]
-#[named]
+#[named(ability_name)]
 pub struct NAbilityMagic {
     #[var]
     pub ability_name: String,
@@ -86,7 +86,7 @@ pub struct NAbilityEffect {
 
 #[derive(Node)]
 #[content]
-#[named]
+#[named(status_name)]
 pub struct NStatusMagic {
     #[var]
     pub status_name: String,
@@ -177,7 +177,7 @@ pub struct NFusionSlot {
 
 #[derive(Node)]
 #[content]
-#[named]
+#[named(unit_name)]
 pub struct NUnit {
     #[var]
     pub unit_name: String,

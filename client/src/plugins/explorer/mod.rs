@@ -494,8 +494,11 @@ impl ExplorerState {
                 .iter()
                 .filter(|n| n.kind == kind_str && (n.owner == ID_CORE || n.owner == 0))
                 .map(|n| {
-                    let name = if !n.data.is_empty() {
-                        todo!()
+                    let name = if !n.data.is_empty() && n.kind().is_named() {
+                        let kind = NamedNodeKind::try_from(n.kind()).unwrap();
+                        named_node_kind_match!(kind, {
+                            n.to_node::<NamedNodeType>().unwrap().name().to_string()
+                        })
                     } else {
                         format!("{}#{}", kind, n.id)
                     };

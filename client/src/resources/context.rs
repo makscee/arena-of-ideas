@@ -2,7 +2,6 @@ use super::*;
 use bevy::ecs::component::Mutable;
 use schema::{Context, ContextSource, NodeError, NodeResult};
 use std::collections::HashMap;
-use utils_client::node_kind_match;
 
 /// Resource for mapping node IDs to entities
 #[derive(Resource, Default)]

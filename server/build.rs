@@ -121,11 +121,34 @@ fn generate_server_nodes(
     // Generate conversion traits
     let conversions = generate_node_impl(nodes);
 
+    // Generate NamedNode trait and implementations
+    let named_node_trait = generate_named_node_trait();
+
+    // Generate named node kind match macro
+    let named_node_kind_match_macro = generate_named_node_kind_match_macro(nodes);
+
+    // Generate node kind match macro
+    let node_kind_match_macro = generate_node_kind_match_macro(nodes);
+
+    // Generate NamedNode implementations for named nodes
+    let named_node_impls = nodes
+        .iter()
+        .filter(|node| node.is_named)
+        .map(|node| generate_named_node_impl(node));
+
     // Generate module
     quote! {
         #(#node_structs)*
 
         #conversions
+
+        #named_node_trait
+
+        #node_kind_match_macro
+
+        #named_node_kind_match_macro
+
+        #(#named_node_impls)*
     }
 }
 

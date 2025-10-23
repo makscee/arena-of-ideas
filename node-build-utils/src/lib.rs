@@ -24,6 +24,7 @@ pub struct NodeInfo {
     pub name: Ident,
     pub is_content: bool,
     pub is_named: bool,
+    pub name_field: Option<Ident>,
     pub fields: Vec<FieldInfo>,
 }
 
@@ -90,10 +91,22 @@ pub fn has_named_attribute(item_struct: &ItemStruct) -> bool {
         .any(|attr| attr.path().is_ident("named"))
 }
 
+pub fn parse_named_attribute(item_struct: &ItemStruct) -> Option<Ident> {
+    for attr in &item_struct.attrs {
+        if attr.path().is_ident("named") {
+            if let Ok(meta) = attr.parse_args::<Ident>() {
+                return Some(meta);
+            }
+        }
+    }
+    None
+}
+
 pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
     let name = item_struct.ident.clone();
     let is_content = has_content_attribute(item_struct);
     let is_named = has_named_attribute(item_struct);
+    let name_field = parse_named_attribute(item_struct);
 
     let fields = item_struct
         .fields
@@ -105,6 +118,7 @@ pub fn parse_node(item_struct: &ItemStruct) -> NodeInfo {
         name,
         is_content,
         is_named,
+        name_field,
         fields,
     }
 }
@@ -2025,6 +2039,102 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
 
         fn update_reference_links(&mut self, id_map: &std::collections::HashMap<u64, u64>) {
             #(#ref_update_statements)*
+        }
+    }
+}
+
+pub fn generate_named_node_trait() -> proc_macro2::TokenStream {
+    quote! {
+        pub trait NamedNode {
+            fn named_kind() -> NamedNodeKind;
+            fn name(&self) -> &str;
+        }
+    }
+}
+
+pub fn generate_named_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+    let node_kind_variant = &node.name;
+
+    let name_field = if let Some(ref field_name) = node.name_field {
+        field_name.clone()
+    } else {
+        // Default to looking for a field that contains "name" in its name
+        node.fields
+            .iter()
+            .find(|field| {
+                let field_name = field.name.to_string();
+                field_name.contains("name") && matches!(field.raw_type.as_str(), "String")
+            })
+            .map(|field| field.name.clone())
+            .unwrap_or_else(|| {
+                panic!("Named node {} must have a name field specified or a String field containing 'name'", struct_name)
+            })
+    };
+
+    quote! {
+        impl NamedNode for #struct_name {
+            fn named_kind() -> NamedNodeKind {
+                NamedNodeKind::#node_kind_variant
+            }
+
+            fn name(&self) -> &str {
+                &self.#name_field
+            }
+        }
+
+    }
+}
+
+pub fn generate_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let match_arms = nodes.iter().map(|node| {
+        let node_kind_variant = &node.name;
+        let struct_name = &node.name;
+
+        quote! {
+            NodeKind::#node_kind_variant => {
+                type NodeType = #struct_name;
+                $code
+            }
+        }
+    });
+
+    quote! {
+        #[macro_export]
+        macro_rules! node_kind_match {
+            ($kind:expr, $code:expr) => {
+                match $kind {
+                    NodeKind::None => {
+                        unreachable!()
+                    }
+                    #(#match_arms)*
+                }
+            };
+        }
+    }
+}
+
+pub fn generate_named_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+    let match_arms = nodes.iter().filter(|node| node.is_named).map(|node| {
+        let node_kind_variant = &node.name;
+        let struct_name = &node.name;
+
+        quote! {
+            NamedNodeKind::#node_kind_variant => {
+                type NamedNodeType = #struct_name;
+                $code
+            }
+        }
+    });
+
+    quote! {
+        #[macro_export]
+        macro_rules! named_node_kind_match {
+            ($kind:expr, $code:expr) => {
+                match $kind {
+                    #(#match_arms)*
+                }
+            };
         }
     }
 }
