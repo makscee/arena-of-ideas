@@ -507,6 +507,7 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
                     } => {
                         let new_item = factory();
                         data.push(new_item);
+                        response.mark_changed();
                     }
                     _ => {}
                 }
@@ -621,11 +622,13 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
             indices_to_remove.reverse();
             for idx in indices_to_remove {
                 self.data_mut().remove(idx);
+                response.mark_changed();
             }
 
             // Apply swap operations
             for (idx1, idx2) in swap_operations {
                 self.data_mut().swap(idx1, idx2);
+                response.mark_changed();
             }
         }
 

@@ -322,7 +322,15 @@ impl FTitle for Trigger {
 
 impl FEdit for Trigger {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        Selector::ui_enum(self, ui).1
+        let resp = Selector::ui_enum(self, ui).1;
+        match self {
+            Trigger::BattleStart
+            | Trigger::TurnEnd
+            | Trigger::BeforeDeath
+            | Trigger::ChangeOutgoingDamage
+            | Trigger::ChangeIncomingDamage => resp,
+            Trigger::ChangeStat(var) => var.edit(ui) | resp,
+        }
     }
 }
 
@@ -381,6 +389,11 @@ impl FDisplay for Action {
 
 impl FEdit for Action {
     fn edit(&mut self, ui: &mut Ui) -> Response {
+        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui))
+            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+            .compose(&EMPTY_CONTEXT, ui)
+    }
+    fn edit_self(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
@@ -487,15 +500,7 @@ impl FEdit for Reaction {
                 })
                 .inner;
             ui.label("Actions:");
-            self.actions
-                .as_mutable_list(|a, ctx, ui| {
-                    a.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit, ui))
-                        .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-                        .compose(ctx, ui)
-                })
-                .editable(|| Action::noop)
-                .compose(&EMPTY_CONTEXT, ui)
-                .union(response)
+            self.actions.edit(ui).union(response)
         })
         .inner
     }
@@ -2064,29 +2069,9 @@ impl<T: FDisplay> FDisplay for Vec<T> {
 
 impl<T: FEdit + Default> FEdit for Vec<T> {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        if self.is_empty() {
-            ui.label("Empty list")
-        } else {
-            let mut response = format!("[s {} elements]", self.len()).label(ui);
-            let mut to_remove: Option<usize> = None;
-            for (index, item) in self.iter_mut().enumerate() {
-                ui.horizontal(|ui| {
-                    if "[b [red -]]".cstr().button(ui).clicked() {
-                        to_remove = Some(index);
-                    }
-                    response = response.union(item.edit(ui));
-                });
-            }
-            if "➕ [b Add]".cstr().button(ui).clicked() {
-                self.push(T::default());
-                response.mark_changed();
-            }
-            if let Some(index) = to_remove {
-                self.remove(index);
-                response.mark_changed();
-            }
-            response
-        }
+        self.as_mutable_list(|a, _, ui| a.edit(ui))
+            .editable(|| T::default())
+            .compose(&EMPTY_CONTEXT, ui)
     }
 }
 

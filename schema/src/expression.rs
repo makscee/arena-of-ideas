@@ -31,6 +31,7 @@ pub enum Expression {
     owner_var(VarName),
     target_var(VarName),
     caster_var(VarName),
+    status_var(VarName),
     value(VarValue),
 
     string(String),
@@ -103,6 +104,7 @@ impl std::hash::Hash for Expression {
             | Expression::target_var(v)
             | Expression::owner_var(v)
             | Expression::caster_var(v)
+            | Expression::status_var(v)
             | Expression::var_or_zero(v) => v.hash(state),
             Expression::value(v) => v.hash(state),
             Expression::string(v) => v.hash(state),

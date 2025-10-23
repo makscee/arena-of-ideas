@@ -357,6 +357,8 @@ impl ExplorerPlugin {
         let user_selected = state.selected.get(&kind).copied();
 
         Confirmation::new("Select Content")
+            .accept(|_| {})
+            .accept_name("Close")
             .content(move |ui, world| {
                 let mut selected = None;
                 world
@@ -427,6 +429,7 @@ impl ExplorerPlugin {
                     Self::publish_new_node::<T>(node);
                 }
             })
+            .cancel(|_| {})
             .push(world);
     }
 

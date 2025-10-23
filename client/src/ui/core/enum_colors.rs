@@ -80,6 +80,7 @@ impl EnumColor for Expression {
             | Expression::target_var(var)
             | Expression::owner_var(var)
             | Expression::caster_var(var)
+            | Expression::status_var(var)
             | Expression::var_or_zero(var) => var.color(),
             Expression::state_var(_x, _)
             | Expression::sin(_x)

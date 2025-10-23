@@ -200,9 +200,9 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Component => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.clone().spawn(ctx, Some(entity)).track()?;
-                        ctx.add_link(self.id, loaded.id).track()?;
+                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut().take() {
+                        node.clone().spawn(ctx, Some(entity)).track()?;
+                        ctx.add_link(self.id, node.id).track()?;
                     }
                 })
             }
@@ -216,19 +216,19 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Owned => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Some(loaded) = self.#field_name.get() {
-                        loaded.clone().spawn(ctx, None).track()?;
-                        ctx.add_link(self.id, loaded.id).track()?;
+                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut().take() {
+                        node.clone().spawn(ctx, Some(entity)).track()?;
+                        ctx.add_link(self.id, node.id).track()?;
                     }
                 })
             }
             LinkType::OwnedMultiple => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Some(items) = self.#field_name.get() {
-                        for item in items {
-                            item.clone().spawn(ctx, None).track()?;
-                            ctx.add_link(self.id, item.id).track()?;
+                    if let LinkStateMultiple::Loaded(nodes) = self.#field_name.state_mut().take() {
+                        for node in nodes {
+                            node.clone().spawn(ctx, None).track()?;
+                            ctx.add_link(self.id, node.id).track()?;
                         }
                     }
                 })
@@ -265,7 +265,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         #allow_attrs
         impl ClientNode for #struct_name {
-            fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()> {
+            fn spawn(mut self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()> {
                 if self.id == 0 {
                     panic!("Tried to spawn node without id");
                 }
@@ -455,7 +455,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             let field_name = &field.name;
             let field_label = field.name.to_string();
             quote! {
-                ui.horizontal(|ui| {
+                ui.group(|ui| {
                     ui.label(#field_label);
                     let field_response = self.#field_name.edit(ui);
                     if field_response.changed() {
@@ -463,7 +463,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         changed = true;
                     }
                     field_response
-                }).inner;
+                });
             }
         });
 

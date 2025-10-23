@@ -83,6 +83,9 @@ pub trait FDisplay {
 /// Feature for types that can be edited
 pub trait FEdit {
     fn edit(&mut self, ui: &mut Ui) -> Response;
+    fn edit_self(&mut self, ui: &mut Ui) -> Response {
+        self.edit(ui)
+    }
 }
 
 /// Feature for types that can be copied to clipboard

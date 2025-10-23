@@ -366,7 +366,7 @@ where
                         let inner_fields =
                             call_on_recursive_value_mut!(&mut field.value, get_inner_fields_mut);
                         for mut inner_field in inner_fields {
-                            response = response.union(render_field_mut(
+                            response |= render_field_mut(
                                 &mut inner_field,
                                 context,
                                 ui,
@@ -374,7 +374,7 @@ where
                                 layout,
                                 show_field_names,
                                 depth + 1,
-                            ));
+                            );
                         }
                         response
                     })
@@ -393,7 +393,7 @@ where
                         let inner_fields =
                             call_on_recursive_value_mut!(&mut field.value, get_inner_fields_mut);
                         for mut inner_field in inner_fields {
-                            response = response.union(render_field_mut(
+                            response |= render_field_mut(
                                 &mut inner_field,
                                 context,
                                 ui,
@@ -401,7 +401,7 @@ where
                                 layout,
                                 show_field_names,
                                 depth + 1,
-                            ));
+                            );
                         }
                         response
                     })
@@ -439,7 +439,7 @@ where
 
                             ui.vertical(|ui| {
                                 for mut inner_field in inner_fields {
-                                    response = render_field_mut(
+                                    response |= render_field_mut(
                                         &mut inner_field,
                                         context,
                                         ui,

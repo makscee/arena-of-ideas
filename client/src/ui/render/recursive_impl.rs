@@ -27,6 +27,7 @@ impl FRecursive for Expression {
             | Expression::target_var(var)
             | Expression::owner_var(var)
             | Expression::caster_var(var)
+            | Expression::status_var(var)
             | Expression::var_or_zero(var) => {
                 vec![RecursiveField::named("var", RecursiveValue::Var(var))]
             }
@@ -153,6 +154,7 @@ impl FRecursive for Expression {
             | Expression::owner_var(var)
             | Expression::target_var(var)
             | Expression::caster_var(var)
+            | Expression::status_var(var)
             | Expression::var_or_zero(var) => {
                 vec![RecursiveFieldMut::named("var", RecursiveValueMut::Var(var))]
             }
