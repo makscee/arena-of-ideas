@@ -246,6 +246,12 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
                         let unpack = T::unpack(&pack);
                         Some(MenuAction::Paste(unpack.ok()?))
                     })
+                    .add_action("📦 Open Publish Window", |d, _| {
+                        op(|world| {
+                            d.open_publish_window(world);
+                        });
+                        None
+                    })
                     .compose_with_menu(&EMPTY_CONTEXT, ui);
                 if let Some(action) = menu_resp.action {
                     if let MenuAction::Paste(pasted) = action {
