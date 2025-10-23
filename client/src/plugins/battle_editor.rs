@@ -34,14 +34,54 @@ impl TeamEditorPlugin {
                 &state.right_team
             };
 
-            if let Ok(result) = battle_data.simulation.with_context(
-                t,
-                |ctx| -> NodeResult<(Option<NTeam>, Vec<TeamAction>)> {
-                    let editor = TeamEditor::new();
-                    Ok(editor.edit(current_team, ctx, ui))
-                },
-            ) {
-                changed_team = result.0;
+            if let Ok(result) =
+                battle_data
+                    .simulation
+                    .with_context(t, |ctx| -> NodeResult<Option<NTeam>> {
+                        let editor = TeamEditor::new()
+                            .empty_slot_action(
+                                "Add Placeholder Unit".to_string(),
+                                Box::new(
+                                    |team: &mut NTeam,
+                                     fusion_id: u64,
+                                     slot_index: i32,
+                                     _ctx: &ClientContext,
+                                     _ui: &mut Ui| {
+                                        let unit = NUnit::placeholder();
+                                        let unit_id = unit.id;
+                                        team.houses
+                                            .get_mut()
+                                            .unwrap()
+                                            .first_mut()
+                                            .unwrap()
+                                            .units_push(unit)
+                                            .unwrap();
+                                        let slot =
+                                            team.fusion_slot_mut(fusion_id, slot_index).unwrap();
+                                        slot.unit = Ref::new_id(unit_id);
+                                        slot.set_dirty(true);
+                                    },
+                                ),
+                            )
+                            .filled_slot_action(
+                                "Inspect Unit".to_string(),
+                                Box::new(
+                                    |team: &mut NTeam,
+                                     _fusion_id: u64,
+                                     unit_id: u64,
+                                     _slot_index: i32,
+                                     _ctx: &ClientContext,
+                                     ui: &mut Ui| {
+                                        // Set inspected node using InspectedNodeExt
+                                        ui.set_inspected_node_for_parent(team.id, unit_id);
+                                    },
+                                ),
+                            );
+
+                        Ok(editor.edit(current_team, ctx, ui))
+                    })
+            {
+                changed_team = result;
             }
         }
 

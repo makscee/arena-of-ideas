@@ -200,8 +200,8 @@ impl<'a> MatRect<'a> {
             .active(self.active);
 
         button.ui(ui, |color, rect, _, ui| {
+            corners_rounded_rect(rect, rect.width() * 0.2, color.stroke(), ui);
             let content_rect = rect.shrink(5.0);
-            corners_rounded_rect(content_rect, content_rect.width() * 0.1, color.stroke(), ui);
 
             // Render all materials
             for (material, owner_id, config) in &self.materials {

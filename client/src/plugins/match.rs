@@ -209,47 +209,39 @@ impl MatchPlugin {
             let team = m.team_ref(ctx)?;
             let rect = ui.available_rect_before_wrap();
 
-            let team_editor = TeamEditor::new().filled_slot_action(
-                "Sell Unit".to_string(),
-                Box::new(|_team, _fusion_id, unit_id, _slot_index| {
-                    cn().reducers.match_sell_unit(unit_id).notify_error_op();
-                }),
-            );
-
-            let (changed_team, actions) = team_editor.edit(team, ctx, ui);
-
-            // If team changed, we'd need to apply it back to the server
-            // but for now we'll just handle the actions
-            for action in actions {
-                match action {
-                    TeamAction::MoveUnit { unit_id, target } => {
-                        match target {
-                            crate::plugins::team_editor::UnitTarget::Slot {
-                                fusion_id,
-                                slot_index,
-                            } => {
-                                // Convert to old format for server compatibility
-                                // This is a temporary solution
-                                cn().reducers
-                                    .match_move_unit(unit_id, fusion_id)
-                                    .notify_error_op();
-                            }
-                            crate::plugins::team_editor::UnitTarget::Bench => {
-                                cn().reducers.match_bench_unit(unit_id).notify_error_op();
-                            }
+            let team_editor = TeamEditor::new()
+                .filled_slot_action(
+                    "Sell Unit".to_string(),
+                    Box::new(|_team, _fusion_id, unit_id, _slot_index, _ctx, _ui| {
+                        cn().reducers.match_sell_unit(unit_id).notify_error_op();
+                    }),
+                )
+                .with_action_handler(|action| match action {
+                    TeamAction::MoveUnit { unit_id, target } => match target {
+                        crate::plugins::team_editor::UnitTarget::Slot {
+                            fusion_id,
+                            slot_index: _,
+                        } => {
+                            cn().reducers
+                                .match_move_unit(*unit_id, *fusion_id)
+                                .notify_error_op();
                         }
-                    }
+                        crate::plugins::team_editor::UnitTarget::Bench => {
+                            cn().reducers.match_bench_unit(*unit_id).notify_error_op();
+                        }
+                    },
                     TeamAction::AddSlot { fusion_id } => {
                         cn().reducers
-                            .match_buy_fusion_slot(fusion_id)
+                            .match_buy_fusion_slot(*fusion_id)
                             .notify_error_op();
                     }
                     TeamAction::BenchUnit { unit_id } => {
-                        cn().reducers.match_bench_unit(unit_id).notify_error_op();
+                        cn().reducers.match_bench_unit(*unit_id).notify_error_op();
                     }
                     _ => {}
-                }
-            }
+                });
+
+            let _changed_team = team_editor.edit(team, ctx, ui);
 
             if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
                 .text_fn(ui, |slot| format!("buy [yellow -{}g]", slot.1.price))

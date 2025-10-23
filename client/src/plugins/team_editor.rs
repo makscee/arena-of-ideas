@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::ui::{DndArea, MatRect, RangeSelector};
-use bevy_egui::egui::{DragAndDrop, Frame, Response, RichText, Sense};
+use bevy_egui::egui::{DragAndDrop, Frame, Response, Sense};
 
 #[derive(Debug, Clone)]
 pub struct DraggedUnit {
@@ -16,11 +16,17 @@ enum EditMode {
 }
 
 pub struct TeamEditor {
-    empty_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, i32)>)>,
-    filled_slot_actions: Vec<(String, Box<dyn Fn(&NTeam, u64, u64, i32)>)>,
+    empty_slot_actions: Vec<(
+        String,
+        Box<dyn FnOnce(&mut NTeam, u64, i32, &ClientContext, &mut Ui)>,
+    )>,
+    filled_slot_actions: Vec<(
+        String,
+        Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
+    )>,
+    action_handler: Option<Box<dyn FnMut(&TeamAction)>>,
 }
 
-#[derive(Debug, Clone)]
 pub enum TeamAction {
     MoveUnit {
         unit_id: u64,
@@ -41,6 +47,17 @@ pub enum TeamAction {
         fusion_id: u64,
         trigger: u64,
     },
+    CustomEmptySlotAction {
+        action_fn: Box<dyn FnOnce(&mut NTeam, u64, i32, &ClientContext, &mut Ui)>,
+        fusion_id: u64,
+        slot_index: i32,
+    },
+    CustomFilledSlotAction {
+        action_fn: Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
+        fusion_id: u64,
+        unit_id: u64,
+        slot_index: i32,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -54,13 +71,22 @@ impl TeamEditor {
         Self {
             empty_slot_actions: vec![],
             filled_slot_actions: vec![],
+            action_handler: None,
         }
+    }
+
+    pub fn with_action_handler<F>(mut self, handler: F) -> Self
+    where
+        F: FnMut(&TeamAction) + 'static,
+    {
+        self.action_handler = Some(Box::new(handler));
+        self
     }
 
     pub fn empty_slot_action(
         mut self,
         name: String,
-        action: Box<dyn Fn(&NTeam, u64, i32)>,
+        action: Box<dyn FnOnce(&mut NTeam, u64, i32, &ClientContext, &mut Ui)>,
     ) -> Self {
         self.empty_slot_actions.push((name, action));
         self
@@ -69,18 +95,13 @@ impl TeamEditor {
     pub fn filled_slot_action(
         mut self,
         name: String,
-        action: Box<dyn Fn(&NTeam, u64, u64, i32)>,
+        action: Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
     ) -> Self {
         self.filled_slot_actions.push((name, action));
         self
     }
 
-    pub fn edit(
-        &self,
-        team: &NTeam,
-        context: &ClientContext,
-        ui: &mut Ui,
-    ) -> (Option<NTeam>, Vec<TeamAction>) {
+    pub fn edit(mut self, team: &NTeam, context: &ClientContext, ui: &mut Ui) -> Option<NTeam> {
         let mut actions = Vec::new();
 
         self.draw_drag_visual(ui);
@@ -137,7 +158,14 @@ impl TeamEditor {
                         });
                     }
                     EditMode::EditingFusion(editing_id) if editing_id == fusion.id => {
-                        self.render_fusion_edit_mode(ui, fusion, &slots, context, &mut actions);
+                        self.render_fusion_edit_mode(
+                            ui,
+                            fusion,
+                            &slots,
+                            team,
+                            context,
+                            &mut actions,
+                        );
 
                         if columns[idx].response().clicked_elsewhere() {
                             mode_change = Some(EditMode::Normal);
@@ -163,20 +191,54 @@ impl TeamEditor {
         }
 
         ui.memory_mut(|m| m.data.insert_temp(state_id, edit_mode));
-
         if !actions.is_empty() {
             let mut result_team = team.clone();
-            for action in &actions {
-                result_team.apply_action(action.clone()).notify_error_op();
+            let mut has_changes = false;
+
+            for action in actions {
+                if let Some(ref mut handler) = self.action_handler {
+                    handler(&action);
+                }
+                match action {
+                    TeamAction::CustomEmptySlotAction {
+                        action_fn,
+                        fusion_id,
+                        slot_index,
+                    } => {
+                        action_fn(&mut result_team, fusion_id, slot_index, context, ui);
+                        has_changes = true;
+                    }
+                    TeamAction::CustomFilledSlotAction {
+                        action_fn,
+                        fusion_id,
+                        unit_id,
+                        slot_index,
+                    } => {
+                        action_fn(
+                            &mut result_team,
+                            fusion_id,
+                            unit_id,
+                            slot_index,
+                            context,
+                            ui,
+                        );
+                        has_changes = true;
+                    }
+                    other => {
+                        result_team.apply_action(other).notify_error_op();
+                        has_changes = true;
+                    }
+                }
             }
-            (Some(result_team), actions)
+
+            if has_changes { Some(result_team) } else { None }
         } else {
-            (None, actions)
+            None
         }
     }
 
     fn render_fusion_normal_mode(
-        &self,
+        &mut self,
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
@@ -192,7 +254,7 @@ impl TeamEditor {
                 .fill(ui.visuals().faint_bg_color);
             let inner_response = frame
                 .show(ui, |ui| {
-                    self.render_action_list(ui, fusion, slots, context);
+                    TeamEditor::render_action_list_static(ui, fusion, &slots, context);
                 })
                 .response;
             if inner_response.hovered() {
@@ -219,6 +281,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
+        _team: &NTeam,
         context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
@@ -268,20 +331,19 @@ impl TeamEditor {
         ui.disable();
         ui.vertical(|ui| {
             format!("[s [tw Fusion #]]{}", fusion.index).label_w(ui);
-            self.render_action_list(ui, fusion, slots, context);
+            TeamEditor::render_action_list_static(ui, fusion, slots, context);
             ui.separator();
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
                     self.render_unit_display(ui, unit_id, team, context);
                 } else {
-                    self.render_empty_slot(ui);
+                    TeamEditor::render_empty_slot_static(ui, context);
                 }
             }
         });
     }
 
-    fn render_action_list(
-        &self,
+    fn render_action_list_static(
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
@@ -390,7 +452,7 @@ impl TeamEditor {
     }
 
     fn render_unit_slot(
-        &self,
+        &mut self,
         ui: &mut Ui,
         slot: &NFusionSlot,
         fusion_id: u64,
@@ -403,12 +465,12 @@ impl TeamEditor {
                 ui, unit_id, fusion_id, slot.index, team, context, actions,
             );
         } else {
-            self.handle_empty_slot_interactions(ui, fusion_id, slot.index, actions);
+            self.handle_empty_slot_interactions(ui, fusion_id, slot.index, team, context, actions);
         }
     }
 
     fn handle_slot_unit_interactions(
-        &self,
+        &mut self,
         ui: &mut Ui,
         unit_id: u64,
         fusion_id: u64,
@@ -417,7 +479,8 @@ impl TeamEditor {
         context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = self.render_unit_with_representation(ui, unit_id, team, context);
+        let response =
+            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, context);
 
         if response.drag_started() {
             let from_location = UnitTarget::Slot {
@@ -433,15 +496,22 @@ impl TeamEditor {
             DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
-        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
             response.clone().on_hover_text(unit.unit_name.clone());
         }
 
-        response.context_menu(|ui| {
-            for (name, action) in &self.filled_slot_actions {
+        response.bar_menu(|ui| {
+            for (i, (name, _)) in self.filled_slot_actions.iter().enumerate() {
                 if ui.button(name).clicked() {
-                    action(team, fusion_id, unit_id, slot_index);
+                    let (_, action) = self.filled_slot_actions.remove(i);
+                    actions.push(TeamAction::CustomFilledSlotAction {
+                        action_fn: action,
+                        fusion_id,
+                        unit_id,
+                        slot_index,
+                    });
                     ui.close();
+                    break;
                 }
             }
         });
@@ -493,13 +563,15 @@ impl TeamEditor {
     }
 
     fn handle_empty_slot_interactions(
-        &self,
+        &mut self,
         ui: &mut Ui,
         fusion_id: u64,
         slot_index: i32,
+        _team: &NTeam,
+        context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = self.render_empty_slot(ui);
+        let response = TeamEditor::render_empty_slot_static(ui, context);
 
         if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
             .id(format!("empty_slot_{}_{}", fusion_id, slot_index))
@@ -515,11 +587,17 @@ impl TeamEditor {
             });
         }
 
-        response.context_menu(|ui| {
-            for (name, action) in &self.empty_slot_actions {
+        response.bar_menu(|ui| {
+            for (i, (name, _)) in self.empty_slot_actions.iter().enumerate() {
                 if ui.button(name).clicked() {
-                    action(&NTeam::default(), fusion_id, slot_index);
+                    let (_, action) = self.empty_slot_actions.remove(i);
+                    actions.push(TeamAction::CustomEmptySlotAction {
+                        action_fn: action,
+                        fusion_id,
+                        slot_index,
+                    });
                     ui.close();
+                    break;
                 }
             }
         });
@@ -528,24 +606,24 @@ impl TeamEditor {
     fn render_bench_column(
         &self,
         ui: &mut Ui,
-        unlinked_units: &[u64],
+        unlinked_units: &[&NUnit],
         team: &NTeam,
         context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
-            ui.label("Bench");
+            "[s [tw Bench]]".cstr().label_w(ui);
             ui.separator();
-
-            for &unit_id in unlinked_units {
-                self.handle_bench_unit_interactions(ui, unit_id, team, context, actions);
+            for unit in unlinked_units {
+                self.handle_bench_unit_interactions(ui, unit.id, team, context, actions);
             }
 
             let available_space = ui.available_rect_before_wrap();
             if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(available_space)
                 .id("bench_drop")
                 .text_fn(ui, |dragged| {
-                    if let Some(unit) = self.find_unit_in_team(team, dragged.unit_id) {
+                    if let Some(unit) = TeamEditor::find_unit_in_team_static(team, dragged.unit_id)
+                    {
                         format!("Bench {}", unit.unit_name)
                     } else {
                         "Bench Unit".to_string()
@@ -568,7 +646,8 @@ impl TeamEditor {
         context: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = self.render_unit_with_representation(ui, unit_id, team, context);
+        let response =
+            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, context);
 
         if response.drag_started() {
             let from_location = UnitTarget::Bench;
@@ -581,7 +660,7 @@ impl TeamEditor {
             DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
-        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
             response.clone().on_hover_text(unit.unit_name.clone());
         }
 
@@ -619,19 +698,22 @@ impl TeamEditor {
         }
     }
 
-    fn render_unit_with_representation(
-        &self,
+    fn render_unit_with_representation_static(
         ui: &mut Ui,
         unit_id: u64,
         team: &NTeam,
         context: &ClientContext,
     ) -> Response {
-        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+        let is_inspected = ui
+            .inspected_node_for_parent(team.id)
+            .is_some_and(|id| id == unit_id);
+        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
             if let Ok(desc) = unit.description_ref(context) {
                 if let Ok(rep) = desc.representation_ref(context) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
                         .add_mat(&rep.material, unit.id)
                         .unit_rep_with_default(unit.id)
+                        .active(is_inspected)
                         .ui(ui, context)
                 } else {
                     MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
@@ -651,7 +733,7 @@ impl TeamEditor {
         team: &NTeam,
         context: &ClientContext,
     ) {
-        if let Some(unit) = self.find_unit_in_team(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
             if let Ok(desc) = unit.description_ref(context) {
                 if let Ok(rep) = desc.representation_ref(context) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
@@ -669,8 +751,8 @@ impl TeamEditor {
         }
     }
 
-    fn render_empty_slot(&self, ui: &mut Ui) -> Response {
-        ui.label("[Empty]")
+    fn render_empty_slot_static(ui: &mut Ui, context: &ClientContext) -> Response {
+        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
     }
 
     fn draw_drag_visual(&self, ui: &mut Ui) {
@@ -708,7 +790,7 @@ impl TeamEditor {
             .line_segment([arrow_side2, pointer_pos], stroke);
     }
 
-    fn get_unlinked_units(&self, team: &NTeam) -> Vec<u64> {
+    fn get_unlinked_units<'a>(&self, team: &'a NTeam) -> Vec<&'a NUnit> {
         let mut linked_units = HashSet::new();
 
         if let Some(fusions) = team.fusions.get() {
@@ -723,19 +805,18 @@ impl TeamEditor {
             }
         }
 
-        let mut unlinked = vec![];
+        let mut unlinked = Vec::new();
         if let Some(houses) = team.houses.get() {
             for house in houses {
                 if let Some(units) = house.units.get() {
                     for unit in units {
                         if !linked_units.contains(&unit.id) {
-                            unlinked.push(unit.id);
+                            unlinked.push(unit);
                         }
                     }
                 }
             }
         }
-
         unlinked
     }
 
@@ -753,7 +834,7 @@ impl TeamEditor {
         triggers
     }
 
-    fn find_unit_in_team(&self, team: &NTeam, unit_id: u64) -> Option<NUnit> {
+    fn find_unit_in_team_static(team: &NTeam, unit_id: u64) -> Option<NUnit> {
         if let Some(houses) = team.houses.get() {
             for house in houses {
                 if let Some(units) = house.units.get() {
@@ -828,6 +909,21 @@ impl NTeam {
                     }
                 }
             }
+            TeamAction::CustomEmptySlotAction {
+                action_fn: _,
+                fusion_id: _,
+                slot_index: _,
+            } => {
+                // Custom actions are already handled in edit() method
+            }
+            TeamAction::CustomFilledSlotAction {
+                action_fn: _,
+                fusion_id: _,
+                unit_id: _,
+                slot_index: _,
+            } => {
+                // Custom actions are already handled in edit() method
+            }
         }
         Ok(())
     }
@@ -856,7 +952,7 @@ impl NTeam {
         Err(NodeError::custom("Unit slot not found"))
     }
 
-    fn fusion_slot_mut(&mut self, id: u64, index: i32) -> NodeResult<&mut NFusionSlot> {
+    pub fn fusion_slot_mut(&mut self, id: u64, index: i32) -> NodeResult<&mut NFusionSlot> {
         let fusions = self.fusions.get_mut()?;
         if let Some(fusion) = fusions.iter_mut().find(|f| f.id == id) {
             if let Some(slot) = fusion
