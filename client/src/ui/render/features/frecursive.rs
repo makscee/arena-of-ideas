@@ -228,6 +228,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
         if let Some(clicked_id) = render_breadcrumbs(ui, &breadcrumb_path) {
             ui.set_inspected_node(clicked_id);
         }
+        let mut changed = false;
         ui.group(|ui| {
             ui.horizontal(|ui| {
                 let menu_resp = field_node
@@ -249,6 +250,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
                 if let Some(action) = menu_resp.action {
                     if let MenuAction::Paste(pasted) = action {
                         *field_node = pasted.remap_ids();
+                        changed = true;
                     }
                 }
                 ui.separator();
@@ -257,7 +259,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
                 format!("[tw [b Owner:]] #[tw {}]", field_node.owner()).label(ui);
             });
         });
-        let mut changed = field_node.edit(ui).changed();
+        changed |= field_node.edit(ui).changed();
         changed |= field_node.render_linked_fields(ui, breadcrumb_path);
 
         changed

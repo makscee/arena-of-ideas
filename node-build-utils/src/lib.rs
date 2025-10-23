@@ -914,6 +914,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let var_accessor_methods = generate_var_accessor_methods(node);
         let setter_methods = generate_setter_methods(node);
         let save_impl = generate_save_impl(node);
+        let update_link_references_impl = generate_update_link_references_impl(node);
         let allow_attrs = generated_code_allow_attrs();
 
         quote! {
@@ -937,9 +938,19 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
 
 
-                fn reassign_ids(&mut self, next_id: &mut u64) {
-                    self.set_id(*next_id);
+                fn reassign_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>) {
+                    // Record old ID and assign new ID
+                    let old_id = self.id();
+                    let new_id = *next_id;
+                    self.set_id(new_id);
                     *next_id += 1;
+                    id_map.insert(old_id, new_id);
+
+                    // Phase 1: Recursively reassign IDs for owned children
+                    self.reassign_owned_ids(next_id, id_map);
+
+                    // Phase 2: Update reference links using the populated id_map
+                    self.update_reference_links(id_map);
                 }
 
                 fn kind_s() -> NodeKind {
@@ -965,6 +976,8 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
             #allow_attrs
             impl #struct_name {
                 #setter_methods
+
+                #update_link_references_impl
             }
 
             #var_accessor_methods
@@ -1922,6 +1935,96 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     })
                 }
             }
+        }
+    }
+}
+
+pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
+    let mut ref_update_statements = Vec::new();
+    let mut owned_recursive_statements = Vec::new();
+
+    for field in &node.fields {
+        let field_name = &field.name;
+
+        match &field.link_type {
+            LinkType::Ref => {
+                ref_update_statements.push(quote! {
+                    match self.#field_name.state_mut() {
+                        LinkStateSingle::Loaded(node) => {
+                            if let Some(&new_id) = id_map.get(&node.id()) {
+                                *self.#field_name.state_mut() = LinkStateSingle::Id(new_id);
+                            }
+                        },
+                        LinkStateSingle::Id(id) => {
+                            if let Some(&new_id) = id_map.get(id) {
+                                *id = new_id;
+                            }
+                        },
+                        _ => {}
+                    }
+                });
+            }
+            LinkType::RefMultiple => {
+                ref_update_statements.push(quote! {
+                    match self.#field_name.state_mut() {
+                        LinkStateMultiple::Loaded(nodes) => {
+                            let mut should_convert_to_ids = false;
+                            let mut new_ids = Vec::new();
+
+                            for node in nodes.iter() {
+                                if let Some(&new_id) = id_map.get(&node.id()) {
+                                    new_ids.push(new_id);
+                                    should_convert_to_ids = true;
+                                } else {
+                                    new_ids.push(node.id());
+                                }
+                            }
+
+                            if should_convert_to_ids {
+                                *self.#field_name.state_mut() = LinkStateMultiple::Ids(new_ids);
+                            }
+                        },
+                        LinkStateMultiple::Ids(ids) => {
+                            for id in ids.iter_mut() {
+                                if let Some(&new_id) = id_map.get(id) {
+                                    *id = new_id;
+                                }
+                            }
+                        },
+                        _ => {}
+                    }
+                });
+            }
+            LinkType::Owned => {
+                owned_recursive_statements.push(quote! {
+                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut() {
+                        node.reassign_ids(next_id, id_map);
+                    }
+                });
+            }
+            LinkType::OwnedMultiple => {
+                owned_recursive_statements.push(quote! {
+                    if let LinkStateMultiple::Loaded(nodes) = self.#field_name.state_mut() {
+                        for node in nodes.iter_mut() {
+                            node.reassign_ids(next_id, id_map);
+                        }
+                    }
+                });
+            }
+            LinkType::Component => {
+                // Component links don't get recursively reassigned - they reference existing nodes
+            }
+            LinkType::None => {}
+        }
+    }
+
+    quote! {
+        fn reassign_owned_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>) {
+            #(#owned_recursive_statements)*
+        }
+
+        fn update_reference_links(&mut self, id_map: &std::collections::HashMap<u64, u64>) {
+            #(#ref_update_statements)*
         }
     }
 }

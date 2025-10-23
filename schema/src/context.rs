@@ -58,7 +58,7 @@ pub trait Node: Send + Sync + Default + StringData {
     fn kind(&self) -> NodeKind {
         Self::kind_s()
     }
-    fn reassign_ids(&mut self, next_id: &mut u64);
+    fn reassign_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>);
     fn kind_s() -> NodeKind
     where
         Self: Sized;

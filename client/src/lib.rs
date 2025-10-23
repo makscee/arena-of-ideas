@@ -53,8 +53,8 @@ pub fn run() {
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
     unsafe {
-        // std::env::set_var("RUST_BACKTRACE", "1");
-        // std::env::set_var("RUST_LIB_BACKTRACE", "0");
+        std::env::set_var("RUST_BACKTRACE", "1");
+        std::env::set_var("RUST_LIB_BACKTRACE", "0");
         std::env::set_var("NO_COLOR", "1");
     }
     let target = match args.mode {

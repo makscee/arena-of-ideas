@@ -21,7 +21,8 @@ pub trait ClientNode:
     }
     fn remap_ids(mut self) -> Self {
         let mut next_id = next_id();
-        self.reassign_ids(&mut next_id);
+        let mut id_map = std::collections::HashMap::new();
+        self.reassign_ids(&mut next_id, &mut id_map);
         set_next_id(next_id);
         self
     }
