@@ -219,7 +219,7 @@ pub enum ClientSource<'w> {
     WorldMut(&'w mut World),
     BattleMut(&'w mut BattleSimulation, f32),
     BattleRef(&'w BattleSimulation, f32),
-    Db(&'w crate::stdb::RemoteTables),
+    Db(Box<crate::plugins::explorer::DbSource<'w>>),
     None,
 }
 
@@ -255,8 +255,13 @@ impl<'w> ClientSource<'w> {
         Self::BattleRef(battle, t)
     }
 
-    pub fn new_db(db: &'w crate::stdb::RemoteTables) -> Self {
-        Self::Db(db)
+    pub fn new_db(
+        db: &'w crate::stdb::RemoteTables,
+        strategy: crate::plugins::explorer::DbLinkStrategy,
+    ) -> Self {
+        Self::Db(Box::new(crate::plugins::explorer::DbSource::with_strategy(
+            db, strategy,
+        )))
     }
 
     pub fn battle(&self) -> NodeResult<&BattleSimulation> {
@@ -322,10 +327,7 @@ impl<'w> ClientSource<'w> {
 impl<'w> ContextSource for ClientSource<'w> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_node_kind(id)
-            }
+            ClientSource::Db(db_source) => db_source.get_node_kind(id),
             _ => {
                 let world = self.world()?;
                 let entity = world
@@ -341,22 +343,16 @@ impl<'w> ContextSource for ClientSource<'w> {
         }
     }
 
-    fn get_children(&self, id: u64) -> NodeResult<Vec<u64>> {
+    fn get_children(&self, from_id: u64) -> NodeResult<Vec<u64>> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_children(id)
-            }
-            _ => Ok(self.world()?.resource::<NodeLinks>().get_children(id)),
+            ClientSource::Db(db_source) => db_source.get_children(from_id),
+            _ => Ok(self.world()?.resource::<NodeLinks>().get_children(from_id)),
         }
     }
 
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_children_of_kind(from_id, kind)
-            }
+            ClientSource::Db(db_source) => db_source.get_children_of_kind(from_id, kind),
             _ => {
                 let world = self.world()?;
                 Ok(world
@@ -366,26 +362,20 @@ impl<'w> ContextSource for ClientSource<'w> {
         }
     }
 
-    fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
+    fn get_parents(&self, to_id: u64) -> NodeResult<Vec<u64>> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_parents(id)
-            }
-            _ => Ok(self.world()?.resource::<NodeLinks>().get_parents(id)),
+            ClientSource::Db(db_source) => db_source.get_parents(to_id),
+            _ => Ok(self.world()?.resource::<NodeLinks>().get_parents(to_id)),
         }
     }
 
-    fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+    fn get_parents_of_kind(&self, to_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_parents_of_kind(id, kind)
-            }
+            ClientSource::Db(db_source) => db_source.get_parents_of_kind(to_id, kind),
             _ => Ok(self
                 .world()?
                 .resource::<NodeLinks>()
-                .get_parents_of_kind(id, kind)),
+                .get_parents_of_kind(to_id, kind)),
         }
     }
 
@@ -416,10 +406,7 @@ impl<'w> ContextSource for ClientSource<'w> {
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.is_linked(from_id, to_id)
-            }
+            ClientSource::Db(db_source) => db_source.is_linked(from_id, to_id),
             _ => {
                 let world = self.world()?;
                 if let Some(links) = world.get_resource::<NodeLinks>() {
@@ -562,10 +549,7 @@ impl<'w> ContextSource for ClientSource<'w> {
         // For global world or if not found in history, get from the node directly
         let kind = self.get_node_kind(id)?;
         match self {
-            ClientSource::Db(db) => {
-                let db_source = crate::plugins::explorer::DbSource::new(db);
-                db_source.get_var_direct(id, var)
-            }
+            ClientSource::Db(db_source) => db_source.get_var_direct(id, var),
             _ => {
                 node_kind_match!(kind, {
                     let node: NodeType = {
@@ -638,7 +622,8 @@ pub trait ClientContextExt {
     fn is_battle(&self) -> bool;
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
     fn color(&self, ui: &mut Ui) -> Color32;
-    fn load<'a, T: BevyComponent + ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T>;
+    fn load_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
     fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
         &'a mut self,
@@ -648,8 +633,10 @@ pub trait ClientContextExt {
         &'a mut self,
         entity: Entity,
     ) -> NodeResult<Mut<'a, T>>;
-    fn load_many<'a, T: BevyComponent>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>;
-    fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
+    fn load_many<T: ClientNode + Clone>(&self, ids: &Vec<u64>) -> NodeResult<Vec<T>>;
+    fn load_many_ref<'a, T: ClientNode>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>;
+    fn load_children<T: ClientNode + Clone>(&self, from_id: u64) -> NodeResult<Vec<T>>;
+    fn load_children_ref<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>>;
     fn world<'a>(&'a self) -> NodeResult<&'a World>;
     fn world_mut<'a>(&'a mut self) -> NodeResult<&'a mut World>;
     fn battle<'a>(&'a self) -> NodeResult<&'a BattleSimulation>;
@@ -666,17 +653,26 @@ pub trait ClientContextExt {
     fn owner_entity(&self) -> NodeResult<Entity>;
 
     // Load versions of new helper functions
-    fn load_first_parent<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
-    fn load_first_parent_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
-    fn load_first_child<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
-    fn load_first_child_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
-    fn load_collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
-    fn load_collect_children_recursive<'a, T: ClientNode>(
+    fn load_first_parent<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T>;
+    fn load_first_parent_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_parent_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T>;
+    fn load_first_parent_recursive_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_child<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T>;
+    fn load_first_child_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_first_child_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T>;
+    fn load_first_child_recursive_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load_collect_children<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>>;
+    fn load_collect_children_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
+    fn load_collect_children_recursive<T: ClientNode + Clone>(&self, id: u64)
+    -> NodeResult<Vec<T>>;
+    fn load_collect_children_recursive_ref<'a, T: ClientNode>(
         &'a self,
         id: u64,
     ) -> NodeResult<Vec<&'a T>>;
-    fn load_collect_parents<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
-    fn load_collect_parents_recursive<'a, T: ClientNode>(
+    fn load_collect_parents<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>>;
+    fn load_collect_parents_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>>;
+    fn load_collect_parents_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>>;
+    fn load_collect_parents_recursive_ref<'a, T: ClientNode>(
         &'a self,
         id: u64,
     ) -> NodeResult<Vec<&'a T>>;
@@ -697,22 +693,32 @@ impl<'w> ClientContextExt for Context<ClientSource<'w>> {
             .get_color()
             .unwrap_or_else(|_| ui.visuals().weak_text_color())
     }
-    fn load<'a, T: BevyComponent + ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+    fn load<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T> {
+        match self.source() {
+            ClientSource::WorldRef(..)
+            | ClientSource::WorldMut(..)
+            | ClientSource::BattleMut(..)
+            | ClientSource::BattleRef(..) => Ok(self.load_entity::<T>(self.entity(id)?)?.clone()),
+            ClientSource::Db(db_source) => cn()
+                .db
+                .nodes_world()
+                .id()
+                .find(&id)
+                .to_not_found_id(id)?
+                .to_node::<T>(),
+            ClientSource::None => Err(NodeError::custom("Cannot load from None source")),
+        }
+    }
+    fn load_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
         match self.source() {
             ClientSource::WorldRef(..)
             | ClientSource::WorldMut(..)
             | ClientSource::BattleMut(..)
             | ClientSource::BattleRef(..) => self.load_entity(self.entity(id)?),
-            ClientSource::Db(db) => {
-                let node = db
-                    .nodes_world()
-                    .id()
-                    .find(&id)
-                    .to_not_found_id(id)?
-                    .to_node::<T>()?;
-                Ok(node)
-            }
-            ClientSource::None => todo!(),
+            ClientSource::Db(_) => Err(NodeError::custom(
+                "Cannot get reference from Db source, use load() instead",
+            )),
+            ClientSource::None => Err(NodeError::custom("Cannot load from None source")),
         }
     }
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T> {
@@ -741,21 +747,38 @@ impl<'w> ClientContextExt for Context<ClientSource<'w>> {
         }
     }
 
-    fn load_many<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
+    fn load_many<T>(&self, ids: &Vec<u64>) -> NodeResult<Vec<T>>
     where
-        T: 'static + BevyComponent,
+        T: 'static + ClientNode + Clone,
     {
-        let mut results = Vec::new();
+        let mut result = Vec::new();
         for id in ids {
-            results.push(self.load::<T>(*id)?);
+            result.push(self.load::<T>(*id)?);
         }
-        Ok(results)
+        Ok(result)
     }
 
-    fn load_children<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>> {
+    fn load_many_ref<'a, T>(&'a self, ids: &Vec<u64>) -> NodeResult<Vec<&'a T>>
+    where
+        T: 'static + ClientNode,
+    {
+        let mut result = Vec::new();
+        for id in ids {
+            result.push(self.load_ref::<T>(*id)?);
+        }
+        Ok(result)
+    }
+
+    fn load_children<T: ClientNode + Clone>(&self, from_id: u64) -> NodeResult<Vec<T>> {
         let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
         self.load_many(&ids)
+    }
+
+    fn load_children_ref<'a, T: ClientNode>(&'a self, from_id: u64) -> NodeResult<Vec<&'a T>> {
+        let kind = T::kind_s();
+        let ids = self.get_children_of_kind(from_id, kind)?;
+        self.load_many_ref(&ids)
     }
 
     fn world<'a>(&'a self) -> NodeResult<&'a World> {
@@ -853,7 +876,7 @@ impl<'w> ClientContextExt for Context<ClientSource<'w>> {
         Ok(self
             .get_children_of_kind(id, T::kind_s())?
             .into_iter()
-            .filter_map(|id| self.load(id).ok())
+            .filter_map(|id| self.load_ref(id).ok())
             .collect_vec())
     }
 
@@ -861,50 +884,93 @@ impl<'w> ClientContextExt for Context<ClientSource<'w>> {
         self.entity(self.owner().to_not_found()?)
     }
 
-    fn load_first_parent<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+    fn load_first_parent<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T> {
         let parent_id = self.first_parent(id, T::kind_s())?;
         self.load(parent_id)
     }
 
-    fn load_first_parent_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+    fn load_first_parent_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let parent_id = self.first_parent(id, T::kind_s())?;
+        self.load_ref(parent_id)
+    }
+
+    fn load_first_parent_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T> {
         let parent_id = self.first_parent_recursive(id, T::kind_s())?;
         self.load(parent_id)
     }
 
-    fn load_first_child<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+    fn load_first_parent_recursive_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let parent_id = self.first_parent_recursive(id, T::kind_s())?;
+        self.load_ref(parent_id)
+    }
+
+    fn load_first_child<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T> {
         let child_id = self.first_child(id, T::kind_s())?;
         self.load(child_id)
     }
 
-    fn load_first_child_recursive<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+    fn load_first_child_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let child_id = self.first_child(id, T::kind_s())?;
+        self.load_ref(child_id)
+    }
+
+    fn load_first_child_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<T> {
         let child_id = self.first_child_recursive(id, T::kind_s())?;
         self.load(child_id)
     }
 
-    fn load_collect_children<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+    fn load_first_child_recursive_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        let child_id = self.first_child_recursive(id, T::kind_s())?;
+        self.load_ref(child_id)
+    }
+
+    fn load_collect_children<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>> {
         let child_ids = self.collect_kind_children(id, T::kind_s())?;
         self.load_many(&child_ids)
     }
 
-    fn load_collect_children_recursive<'a, T: ClientNode>(
-        &'a self,
+    fn load_collect_children_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+        let child_ids = self.collect_kind_children(id, T::kind_s())?;
+        self.load_many_ref(&child_ids)
+    }
+
+    fn load_collect_children_recursive<T: ClientNode + Clone>(
+        &self,
         id: u64,
-    ) -> NodeResult<Vec<&'a T>> {
+    ) -> NodeResult<Vec<T>> {
         let child_ids = self.collect_kind_children_recursive(id, T::kind_s())?;
         self.load_many(&child_ids)
     }
 
-    fn load_collect_parents<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+    fn load_collect_children_recursive_ref<'a, T: ClientNode>(
+        &'a self,
+        id: u64,
+    ) -> NodeResult<Vec<&'a T>> {
+        let child_ids = self.collect_kind_children_recursive(id, T::kind_s())?;
+        self.load_many_ref(&child_ids)
+    }
+
+    fn load_collect_parents<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>> {
         let parent_ids = self.collect_kind_parents(id, T::kind_s())?;
         self.load_many(&parent_ids)
     }
 
-    fn load_collect_parents_recursive<'a, T: ClientNode>(
+    fn load_collect_parents_ref<'a, T: ClientNode>(&'a self, id: u64) -> NodeResult<Vec<&'a T>> {
+        let parent_ids = self.collect_kind_parents(id, T::kind_s())?;
+        self.load_many_ref(&parent_ids)
+    }
+
+    fn load_collect_parents_recursive<T: ClientNode + Clone>(&self, id: u64) -> NodeResult<Vec<T>> {
+        let parent_ids = self.collect_kind_parents_recursive(id, T::kind_s())?;
+        self.load_many(&parent_ids)
+    }
+
+    fn load_collect_parents_recursive_ref<'a, T: ClientNode>(
         &'a self,
         id: u64,
     ) -> NodeResult<Vec<&'a T>> {
         let parent_ids = self.collect_kind_parents_recursive(id, T::kind_s())?;
-        self.load_many(&parent_ids)
+        self.load_many_ref(&parent_ids)
     }
 }
 

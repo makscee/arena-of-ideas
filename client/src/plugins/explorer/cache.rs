@@ -1,5 +1,5 @@
 use super::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default, Debug)]
 pub struct ExplorerCache {
@@ -8,279 +8,162 @@ pub struct ExplorerCache {
     pub abilities: HashMap<String, (NAbilityMagic, NAbilityMagic)>,
     pub statuses: HashMap<String, (NStatusMagic, NStatusMagic)>,
 
-    pub unit_parents: HashMap<String, Vec<String>>,
-    pub ability_parents: HashMap<String, Vec<String>>,
-    pub status_parents: HashMap<String, Vec<String>>,
+    pub unit_parents: HashMap<String, (String, String)>,
+    pub ability_parents: HashMap<String, (String, String)>,
+    pub status_parents: HashMap<String, (String, String)>,
 
-    pub unit_links: HashMap<String, (String, String)>,
-    pub ability_links: HashMap<String, (String, String)>,
-    pub status_links: HashMap<String, (String, String)>,
+    pub house_ability_children: HashMap<String, String>,
+    pub house_status_children: HashMap<String, String>,
+    pub house_units_children: HashMap<String, HashSet<String>>,
 }
 
 impl ExplorerCache {
     pub fn rebuild(&mut self) -> NodeResult<()> {
         *self = ExplorerCache::default();
-        let ctx = &cn().db().as_context();
-        for node in cn().db.nodes_world().iter() {
-            if node.owner != 0 && node.owner != ID_CORE {
-                continue;
-            }
-            let Ok(kind) = node.kind().to_named() else {
-                continue;
-            };
-            match kind {
-                NamedNodeKind::NHouse => {
-                    let house = node.to_node::<NHouse>()?;
-                    self.houses
-                        .insert(house.name().to_string(), (house.clone(), house));
-                }
-                NamedNodeKind::NAbilityMagic => {
-                    let ability = node.to_node::<NAbilityMagic>()?;
-                    self.abilities
-                        .insert(ability.name().to_string(), (ability.clone(), ability));
-                }
-                NamedNodeKind::NStatusMagic => {
-                    let status = node.to_node::<NStatusMagic>()?;
-                    self.statuses
-                        .insert(status.name().to_string(), (status.clone(), status));
-                }
-                NamedNodeKind::NUnit => {
-                    let mut unit = dbg!(ctx.load::<NUnit>(node.id)?.clone());
-                    unit.load_all(ctx)?;
-                    dbg!(&unit);
-                    let unit = node.to_node::<NUnit>()?;
-                    self.units
-                        .insert(unit.name().to_string(), (unit.clone(), unit));
-                }
-            }
-        }
 
-        let mut unit_current_links: HashMap<String, TNodeLink> = HashMap::new();
-        let mut unit_selected_links: HashMap<String, TNodeLink> = HashMap::new();
-        let mut ability_current_links: HashMap<String, TNodeLink> = HashMap::new();
-        let mut ability_selected_links: HashMap<String, TNodeLink> = HashMap::new();
-        let mut status_current_links: HashMap<String, TNodeLink> = HashMap::new();
-        let mut status_selected_links: HashMap<String, TNodeLink> = HashMap::new();
-
-        for link in cn().db.node_links().iter() {
-            if link.parent_kind == "NHouse" {
-                match link.child_kind.as_str() {
-                    "NUnit" => {
-                        if let Some(child_node) = cn().db.nodes_world().id().find(&link.child) {
-                            if let Ok(child_unit) = child_node.to_node::<NUnit>() {
-                                let child_name = child_unit.name().to_string();
-
-                                if link.solid {
-                                    unit_selected_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
-                                } else {
-                                    unit_current_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
-                                }
+        cn().db()
+            .with_context_strategy(DbLinkStrategy::TopRating, |top_ctx| {
+                cn().db()
+                    .with_context_strategy(DbLinkStrategy::PlayerSelection, |player_ctx| {
+                        for node in cn().db.nodes_world().iter() {
+                            if node.owner != 0 && node.owner != ID_CORE {
+                                continue;
                             }
-                        }
-                    }
-                    "NAbilityMagic" => {
-                        if let Some(child_node) = cn().db.nodes_world().id().find(&link.child) {
-                            if let Ok(child_ability) = child_node.to_node::<NAbilityMagic>() {
-                                let child_name = child_ability.name().to_string();
-
-                                if link.solid {
-                                    ability_selected_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
-                                } else {
-                                    ability_current_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
+                            let Ok(kind) = node.kind().to_named() else {
+                                continue;
+                            };
+                            match kind {
+                                NamedNodeKind::NHouse => {
+                                    let top_house = top_ctx
+                                        .load::<NHouse>(node.id)?
+                                        .load_components(top_ctx)?
+                                        .take();
+                                    let player_house = player_ctx
+                                        .load::<NHouse>(node.id)?
+                                        .load_components(player_ctx)?
+                                        .take();
+                                    self.houses.insert(
+                                        top_house.name().to_string(),
+                                        (top_house, player_house),
+                                    );
                                 }
-                            }
-                        }
-                    }
-                    "NStatusMagic" => {
-                        if let Some(child_node) = cn().db.nodes_world().id().find(&link.child) {
-                            if let Ok(child_status) = child_node.to_node::<NStatusMagic>() {
-                                let child_name = child_status.name().to_string();
+                                NamedNodeKind::NUnit => {
+                                    let top_unit = top_ctx
+                                        .load::<NUnit>(node.id)?
+                                        .load_components(top_ctx)?
+                                        .take();
+                                    let player_unit = player_ctx
+                                        .load::<NUnit>(node.id)?
+                                        .load_components(player_ctx)?
+                                        .take();
+                                    let unit_name = top_unit.name().to_string();
 
-                                if link.solid {
-                                    status_selected_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
-                                } else {
-                                    status_current_links
-                                        .entry(child_name.clone())
-                                        .and_modify(|existing| {
-                                            if link.rating > existing.rating
-                                                || (link.rating == existing.rating
-                                                    && link.parent < existing.parent)
-                                            {
-                                                *existing = link.clone();
-                                            }
-                                        })
-                                        .or_insert(link.clone());
-                                }
-                            }
-                        }
-                    }
-                    _ => {}
-                }
-            }
+                                    let top_parent = top_ctx
+                                        .load_first_parent::<NHouse>(top_unit.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_default();
+                                    let player_parent = player_ctx
+                                        .load_first_parent::<NHouse>(player_unit.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_else(|_| top_parent.clone());
 
-            if let (Some(child_node), Some(parent_node)) = (
-                cn().db.nodes_world().id().find(&link.child),
-                cn().db.nodes_world().id().find(&link.parent),
-            ) {
-                if let (Ok(child_kind), Ok(parent_kind)) = (
-                    NodeKind::try_from(child_node.kind.as_str()),
-                    NodeKind::try_from(parent_node.kind.as_str()),
-                ) {
-                    if parent_kind == NodeKind::NHouse {
-                        if let Ok(parent_house) = parent_node.to_node::<NHouse>() {
-                            let parent_name = parent_house.name().to_string();
-                            match child_kind {
-                                NodeKind::NUnit => {
-                                    if let Ok(child_unit) = child_node.to_node::<NUnit>() {
-                                        let child_name = child_unit.name().to_string();
-                                        self.unit_parents
-                                            .entry(child_name)
-                                            .or_default()
-                                            .push(parent_name);
+                                    self.units
+                                        .insert(unit_name.clone(), (top_unit, player_unit));
+                                    self.unit_parents.insert(
+                                        unit_name.clone(),
+                                        (top_parent.clone(), player_parent.clone()),
+                                    );
+
+                                    self.house_units_children
+                                        .entry(top_parent.clone())
+                                        .or_insert_with(HashSet::new)
+                                        .insert(unit_name.clone());
+                                    if player_parent != top_parent {
+                                        self.house_units_children
+                                            .entry(player_parent)
+                                            .or_insert_with(HashSet::new)
+                                            .insert(unit_name);
                                     }
                                 }
-                                NodeKind::NAbilityMagic => {
-                                    if let Ok(child_ability) = child_node.to_node::<NAbilityMagic>()
-                                    {
-                                        let child_name = child_ability.name().to_string();
-                                        self.ability_parents
-                                            .entry(child_name)
-                                            .or_default()
-                                            .push(parent_name);
+                                NamedNodeKind::NAbilityMagic => {
+                                    let top_ability = top_ctx
+                                        .load::<NAbilityMagic>(node.id)?
+                                        .load_components(top_ctx)?
+                                        .take();
+                                    let player_ability = player_ctx
+                                        .load::<NAbilityMagic>(node.id)?
+                                        .load_components(player_ctx)?
+                                        .take();
+                                    let ability_name = top_ability.name().to_string();
+
+                                    let top_parent = top_ctx
+                                        .load_first_parent::<NHouse>(top_ability.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_default();
+                                    let player_parent = player_ctx
+                                        .load_first_parent::<NHouse>(player_ability.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_else(|_| top_parent.clone());
+
+                                    self.abilities.insert(
+                                        ability_name.clone(),
+                                        (top_ability, player_ability),
+                                    );
+                                    self.ability_parents.insert(
+                                        ability_name.clone(),
+                                        (top_parent.clone(), player_parent.clone()),
+                                    );
+
+                                    if !top_parent.is_empty() {
+                                        self.house_ability_children
+                                            .insert(top_parent.clone(), ability_name.clone());
+                                    }
+                                    if !player_parent.is_empty() && player_parent != top_parent {
+                                        self.house_ability_children
+                                            .insert(player_parent, ability_name);
                                     }
                                 }
-                                NodeKind::NStatusMagic => {
-                                    if let Ok(child_status) = child_node.to_node::<NStatusMagic>() {
-                                        let child_name = child_status.name().to_string();
-                                        self.status_parents
-                                            .entry(child_name)
-                                            .or_default()
-                                            .push(parent_name);
+                                NamedNodeKind::NStatusMagic => {
+                                    let top_status = top_ctx
+                                        .load::<NStatusMagic>(node.id)?
+                                        .load_components(top_ctx)?
+                                        .take();
+                                    let player_status = player_ctx
+                                        .load::<NStatusMagic>(node.id)?
+                                        .load_components(player_ctx)?
+                                        .take();
+                                    let status_name = top_status.name().to_string();
+
+                                    let top_parent = top_ctx
+                                        .load_first_parent::<NHouse>(top_status.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_default();
+                                    let player_parent = player_ctx
+                                        .load_first_parent::<NHouse>(player_status.id)
+                                        .map(|h| h.name().to_string())
+                                        .unwrap_or_else(|_| top_parent.clone());
+
+                                    self.statuses
+                                        .insert(status_name.clone(), (top_status, player_status));
+                                    self.status_parents.insert(
+                                        status_name.clone(),
+                                        (top_parent.clone(), player_parent.clone()),
+                                    );
+
+                                    if !top_parent.is_empty() {
+                                        self.house_status_children
+                                            .insert(top_parent.clone(), status_name.clone());
+                                    }
+                                    if !player_parent.is_empty() && player_parent != top_parent {
+                                        self.house_status_children
+                                            .insert(player_parent, status_name);
                                     }
                                 }
-                                _ => {}
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        for (child_name, current_link) in unit_current_links {
-            if let Some(parent_node) = cn().db.nodes_world().id().find(&current_link.parent) {
-                if let Ok(parent_house) = parent_node.to_node::<NHouse>() {
-                    let current_parent = parent_house.name().to_string();
-                    let selected_parent = unit_selected_links
-                        .get(&child_name)
-                        .and_then(|selected_link| {
-                            cn().db
-                                .nodes_world()
-                                .id()
-                                .find(&selected_link.parent)
-                                .and_then(|parent_node| parent_node.to_node::<NHouse>().ok())
-                                .map(|house| house.name().to_string())
-                        })
-                        .unwrap_or_else(|| current_parent.clone());
-
-                    self.unit_links
-                        .insert(child_name, (current_parent, selected_parent));
-                }
-            }
-        }
-
-        for (child_name, current_link) in ability_current_links {
-            if let Some(parent_node) = cn().db.nodes_world().id().find(&current_link.parent) {
-                if let Ok(parent_house) = parent_node.to_node::<NHouse>() {
-                    let current_parent = parent_house.name().to_string();
-                    let selected_parent = ability_selected_links
-                        .get(&child_name)
-                        .and_then(|selected_link| {
-                            cn().db
-                                .nodes_world()
-                                .id()
-                                .find(&selected_link.parent)
-                                .and_then(|parent_node| parent_node.to_node::<NHouse>().ok())
-                                .map(|house| house.name().to_string())
-                        })
-                        .unwrap_or_else(|| current_parent.clone());
-
-                    self.ability_links
-                        .insert(child_name, (current_parent, selected_parent));
-                }
-            }
-        }
-
-        for (child_name, current_link) in status_current_links {
-            if let Some(parent_node) = cn().db.nodes_world().id().find(&current_link.parent) {
-                if let Ok(parent_house) = parent_node.to_node::<NHouse>() {
-                    let current_parent = parent_house.name().to_string();
-                    let selected_parent = status_selected_links
-                        .get(&child_name)
-                        .and_then(|selected_link| {
-                            cn().db
-                                .nodes_world()
-                                .id()
-                                .find(&selected_link.parent)
-                                .and_then(|parent_node| parent_node.to_node::<NHouse>().ok())
-                                .map(|house| house.name().to_string())
-                        })
-                        .unwrap_or_else(|| current_parent.clone());
-
-                    self.status_links
-                        .insert(child_name, (current_parent, selected_parent));
-                }
-            }
-        }
+                        Ok(())
+                    })
+            })?;
 
         Ok(())
     }

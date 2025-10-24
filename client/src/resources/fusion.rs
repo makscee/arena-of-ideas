@@ -34,7 +34,7 @@ impl NFusion {
         let mut units = Vec::new();
         for slot in slots {
             if let Some(unit_id) = slot.unit.id() {
-                if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                if let Ok(unit) = ctx.load_ref::<NUnit>(unit_id) {
                     units.push(unit);
                 }
             }
@@ -96,7 +96,7 @@ impl NFusion {
     }
 
     fn get_behavior<'a>(ctx: &'a ClientContext, unit: u64) -> Result<&'a NUnitBehavior, NodeError> {
-        let unit = ctx.load::<NUnit>(unit).track()?;
+        let unit = ctx.load_ref::<NUnit>(unit).track()?;
         let desc = unit.description_ref(ctx).track()?;
         desc.behavior_ref(ctx)
     }

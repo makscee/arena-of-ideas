@@ -87,14 +87,12 @@ impl ExplorerPanes {
         let state = world.resource::<ExplorerState>();
         let house_name = state.inspected_house.as_ref().to_not_found()?;
 
-        // Get unit names that are children of this house from cache
         let unit_names: Vec<String> = state
             .cache
-            .unit_parents
-            .iter()
-            .filter(|(_, parents)| parents.contains(house_name))
-            .map(|(unit_name, _)| unit_name.clone())
-            .collect();
+            .house_units_children
+            .get(house_name)
+            .map(|units| units.iter().cloned().collect())
+            .unwrap_or_default();
 
         let inspected_unit = state.inspected_unit.clone();
 
@@ -127,14 +125,12 @@ impl ExplorerPanes {
         let state = world.resource::<ExplorerState>();
         let house_name = state.inspected_house.as_ref().to_not_found()?;
 
-        // Get ability names that are children of this house from cache
         let ability_names: Vec<String> = state
             .cache
-            .ability_parents
-            .iter()
-            .filter(|(_, parents)| parents.contains(house_name))
-            .map(|(ability_name, _)| ability_name.clone())
-            .collect();
+            .house_ability_children
+            .get(house_name)
+            .map(|ability| vec![ability.clone()])
+            .unwrap_or_default();
 
         let inspected_ability = state.inspected_ability.clone();
 
@@ -167,14 +163,12 @@ impl ExplorerPanes {
         let state = world.resource::<ExplorerState>();
         let house_name = state.inspected_house.as_ref().to_not_found()?;
 
-        // Get status names that are children of this house from cache
         let status_names: Vec<String> = state
             .cache
-            .status_parents
-            .iter()
-            .filter(|(_, parents)| parents.contains(house_name))
-            .map(|(status_name, _)| status_name.clone())
-            .collect();
+            .house_status_children
+            .get(house_name)
+            .map(|status| vec![status.clone()])
+            .unwrap_or_default();
 
         let inspected_status = state.inspected_status.clone();
 
@@ -206,35 +200,43 @@ impl ExplorerPanes {
     pub fn pane_unit_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let state = world.resource::<ExplorerState>();
         let unit_name = state.inspected_unit.as_ref().to_not_found()?;
-        let parent_names = state
-            .cache
-            .unit_parents
-            .get(unit_name)
-            .cloned()
-            .unwrap_or_default();
+        let parents = state.cache.unit_parents.get(unit_name);
         let inspected_house = state.inspected_house.clone();
 
-        parent_names
-            .as_list(|house_name, _ctx, ui| {
-                let color = if inspected_house
-                    .as_ref()
-                    .is_some_and(|name| name.eq(house_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                house_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|house_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectHouse(house_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+        if let Some((top_parent, player_parent)) = parents {
+            let mut parent_names = vec![];
+            if !top_parent.is_empty() {
+                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
+            }
+            if !player_parent.is_empty() && player_parent != top_parent {
+                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
+            } else if !top_parent.is_empty() && player_parent == top_parent {
+                parent_names.clear();
+                parent_names.push((top_parent.clone(), top_parent.clone()));
+            }
+
+            parent_names
+                .as_list(|(display_name, house_name), _ctx, ui| {
+                    let color = if inspected_house
+                        .as_ref()
+                        .is_some_and(|name| name.eq(house_name))
+                    {
+                        YELLOW
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|(_, house_name), _ctx, ui| {
+                    if ui.button("Inspect").clicked() {
+                        let mut state = world.resource_mut::<ExplorerState>();
+                        state
+                            .pending_actions
+                            .push(ExplorerAction::InspectHouse(house_name.clone()));
+                    }
+                })
+                .compose(&cn().db.as_context(), ui);
+        }
 
         Ok(())
     }
@@ -242,35 +244,43 @@ impl ExplorerPanes {
     pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let state = world.resource::<ExplorerState>();
         let ability_name = state.inspected_ability.as_ref().to_not_found()?;
-        let parent_names = state
-            .cache
-            .ability_parents
-            .get(ability_name)
-            .cloned()
-            .unwrap_or_default();
+        let parents = state.cache.ability_parents.get(ability_name);
         let inspected_house = state.inspected_house.clone();
 
-        parent_names
-            .as_list(|house_name, _ctx, ui| {
-                let color = if inspected_house
-                    .as_ref()
-                    .is_some_and(|name| name.eq(house_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                house_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|house_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectHouse(house_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+        if let Some((top_parent, player_parent)) = parents {
+            let mut parent_names = vec![];
+            if !top_parent.is_empty() {
+                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
+            }
+            if !player_parent.is_empty() && player_parent != top_parent {
+                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
+            } else if !top_parent.is_empty() && player_parent == top_parent {
+                parent_names.clear();
+                parent_names.push((top_parent.clone(), top_parent.clone()));
+            }
+
+            parent_names
+                .as_list(|(display_name, house_name), _ctx, ui| {
+                    let color = if inspected_house
+                        .as_ref()
+                        .is_some_and(|name| name.eq(house_name))
+                    {
+                        YELLOW
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|(_, house_name), _ctx, ui| {
+                    if ui.button("Inspect").clicked() {
+                        let mut state = world.resource_mut::<ExplorerState>();
+                        state
+                            .pending_actions
+                            .push(ExplorerAction::InspectHouse(house_name.clone()));
+                    }
+                })
+                .compose(&cn().db.as_context(), ui);
+        }
 
         Ok(())
     }
@@ -278,35 +288,43 @@ impl ExplorerPanes {
     pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let state = world.resource::<ExplorerState>();
         let status_name = state.inspected_status.as_ref().to_not_found()?;
-        let parent_names = state
-            .cache
-            .status_parents
-            .get(status_name)
-            .cloned()
-            .unwrap_or_default();
+        let parents = state.cache.status_parents.get(status_name);
         let inspected_house = state.inspected_house.clone();
 
-        parent_names
-            .as_list(|house_name, _ctx, ui| {
-                let color = if inspected_house
-                    .as_ref()
-                    .is_some_and(|name| name.eq(house_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                house_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|house_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectHouse(house_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+        if let Some((top_parent, player_parent)) = parents {
+            let mut parent_names = vec![];
+            if !top_parent.is_empty() {
+                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
+            }
+            if !player_parent.is_empty() && player_parent != top_parent {
+                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
+            } else if !top_parent.is_empty() && player_parent == top_parent {
+                parent_names.clear();
+                parent_names.push((top_parent.clone(), top_parent.clone()));
+            }
+
+            parent_names
+                .as_list(|(display_name, house_name), _ctx, ui| {
+                    let color = if inspected_house
+                        .as_ref()
+                        .is_some_and(|name| name.eq(house_name))
+                    {
+                        YELLOW
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|(_, house_name), _ctx, ui| {
+                    if ui.button("Inspect").clicked() {
+                        let mut state = world.resource_mut::<ExplorerState>();
+                        state
+                            .pending_actions
+                            .push(ExplorerAction::InspectHouse(house_name.clone()));
+                    }
+                })
+                .compose(&cn().db.as_context(), ui);
+        }
 
         Ok(())
     }

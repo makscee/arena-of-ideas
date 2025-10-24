@@ -1049,26 +1049,14 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                 }
             };
 
-            let load_method_logic = if context_ident == "ServerContext" {
-                quote! {
-                    let ids = self.#load_id_method(ctx)?;
-                    let loaded_nodes = ids
-                        .iter()
-                        .filter_map(|&id| ctx.load::<#target_type>(id).ok())
-                        .collect_vec();
-                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
-            } else {
-                quote! {
-                    let ids = self.#load_id_method(ctx)?;
-                    let loaded_nodes = ids
-                        .iter()
-                        .filter_map(|&id| ctx.load::<#target_type>(id).cloned().ok())
-                        .collect_vec();
-                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
+            let load_method_logic = quote! {
+                let ids = self.#load_id_method(ctx)?;
+                let loaded_nodes = ids
+                    .iter()
+                    .filter_map(|&id| ctx.load::<#target_type>(id).ok())
+                    .collect_vec();
+                *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
+                Ok(self.#field_name.get_mut().unwrap())
             };
 
             let ref_method = if context_ident == "ClientContext" {
@@ -1081,7 +1069,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                         } else {
                             return Ok(Vec::new());
                         };
-                        ctx.load_many::<#target_type>(&ids)
+                        ctx.load_many_ref::<#target_type>(&ids)
                     }
                 }
             } else {
@@ -1159,20 +1147,11 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                 }
             };
 
-            let load_method_logic = if context_ident == "ServerContext" {
-                quote! {
-                    let id = self.#load_id_method(ctx)?;
-                    let loaded_node = ctx.load::<#target_type>(id)?;
-                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
-            } else {
-                quote! {
-                    let id = self.#load_id_method(ctx)?;
-                    let loaded_node = ctx.load::<#target_type>(id).cloned()?;
-                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
-                    Ok(self.#field_name.get_mut().unwrap())
-                }
+            let load_method_logic = quote! {
+                let id = self.#load_id_method(ctx)?;
+                let loaded_node = ctx.load::<#target_type>(id)?;
+                *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
+                Ok(self.#field_name.get_mut().unwrap())
             };
 
             let ref_method = if context_ident == "ClientContext" {
@@ -1192,7 +1171,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                         } else {
                             return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
                         };
-                        ctx.load::<#target_type>(id)
+                        ctx.load_ref::<#target_type>(id)
                     }
                 }
             } else {

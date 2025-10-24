@@ -14,7 +14,6 @@ impl EventImpl for Event {
             |ctx| {
                 if let Ok(actions) = ctx
                     .load::<NFusion>(owner)
-                    .cloned()
                     .and_then(|f| f.react_actions(self, ctx))
                 {
                     for (_, action) in actions {
@@ -29,7 +28,6 @@ impl EventImpl for Event {
                 for status in ctx
                     .load_collect_children_recursive::<NStatusMagic>(owner)?
                     .into_iter()
-                    .cloned()
                     .collect_vec()
                 {
                     let mut value = ctx.get_var(VarName::value)?;
