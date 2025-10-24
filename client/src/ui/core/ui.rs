@@ -88,16 +88,6 @@ impl<T> ErrorExt for Result<T, NodeError> {
 
 impl ErrorExt for NodeError {
     fn ui(self, ui: &mut Ui) {
-        let error_text = format!("{}\n[s {}]", self.cstr(), std::panic::Location::caller());
-        error_text.label_w(ui);
-        // error_text.clone().button(ui).bar_menu(|ui| {
-        //     ScrollArea::vertical().show(ui, |ui| {
-        //         if let Some(mut b) = self.bt {
-        //             b.resolve();
-        //             error_text.cstr().label(ui);
-        //             format!("[s {b:?}]").label(ui);
-        //         }
-        //     });
-        // });
+        self.cstr().label_w(ui);
     }
 }

@@ -638,7 +638,7 @@ pub trait ClientContextExt {
     fn is_battle(&self) -> bool;
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
     fn color(&self, ui: &mut Ui) -> Color32;
-    fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T>;
+    fn load<'a, T: BevyComponent + ClientNode>(&'a self, id: u64) -> NodeResult<&'a T>;
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T>;
     fn load_mut<'a, T: BevyComponent<Mutability = Mutable>>(
         &'a mut self,
@@ -697,8 +697,23 @@ impl<'w> ClientContextExt for Context<ClientSource<'w>> {
             .get_color()
             .unwrap_or_else(|_| ui.visuals().weak_text_color())
     }
-    fn load<'a, T: BevyComponent>(&'a self, id: u64) -> NodeResult<&'a T> {
-        self.load_entity(self.entity(id)?)
+    fn load<'a, T: BevyComponent + ClientNode>(&'a self, id: u64) -> NodeResult<&'a T> {
+        match self.source() {
+            ClientSource::WorldRef(..)
+            | ClientSource::WorldMut(..)
+            | ClientSource::BattleMut(..)
+            | ClientSource::BattleRef(..) => self.load_entity(self.entity(id)?),
+            ClientSource::Db(db) => {
+                let node = db
+                    .nodes_world()
+                    .id()
+                    .find(&id)
+                    .to_not_found_id(id)?
+                    .to_node::<T>()?;
+                Ok(node)
+            }
+            ClientSource::None => todo!(),
+        }
     }
     fn load_entity<'a, T: BevyComponent>(&'a self, entity: Entity) -> NodeResult<&'a T> {
         let world = self.source().world()?;

@@ -15,7 +15,10 @@ pub struct ExplorerPlugin;
 
 impl Plugin for ExplorerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ExplorerState>();
+        app.init_resource::<ExplorerState>().add_systems(
+            OnEnter(GameState::Explorer),
+            |mut state: ResMut<ExplorerState>| state.refresh_from_db(),
+        );
     }
 }
 

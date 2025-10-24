@@ -46,9 +46,7 @@ impl<'a> ToE<&'a mut World> for Option<&'a mut World> {
 
 impl<T> ToENotFound<T> for Option<T> {
     fn to_e_not_found(self) -> NodeResult<T> {
-        self.ok_or_else(|| {
-            NodeError::not_found_generic(format!("Not found: {}", type_name_short::<T>()))
-        })
+        self.ok_or_else(|| NodeError::not_found_generic(type_name_short::<T>()))
     }
 }
 

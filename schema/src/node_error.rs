@@ -53,30 +53,30 @@ impl std::fmt::Display for SourceTrace {
 
 #[derive(Error, Debug)]
 pub enum NodeError {
-    #[error("Node not found: {0} {1}")]
+    #[error("[red Node not found:] {0} {1}")]
     NotFound(u64, SourceTrace),
 
-    #[error("Linked node not found: node {node_id} has no {kind} link {location}")]
+    #[error("[red Linked node not found:] node {node_id} has no {kind} link {location}")]
     LinkedNodeNotFound {
         node_id: u64,
         kind: NodeKind,
         location: SourceTrace,
     },
 
-    #[error("Invalid node kind: expected {expected}, got {actual} {location}")]
+    #[error("[red Invalid node kind:] expected {expected}, got {actual} {location}")]
     InvalidKind {
         expected: NodeKind,
         actual: NodeKind,
         location: SourceTrace,
     },
 
-    #[error("Failed to load node: {0} {1}")]
+    #[error("[red Failed to load node:] {0} {1}")]
     LoadError(String, SourceTrace),
 
-    #[error("Failed to cast node {0}")]
+    #[error("[red Failed to cast node] {0}")]
     CastError(SourceTrace),
 
-    #[error("Operation {op} for {} not supported {} {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
+    #[error("[red Operation {op} for {} not supported {}] {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
     OperationNotSupported {
         values: Vec<VarValue>,
         op: &'static str,
@@ -84,22 +84,22 @@ pub enum NodeError {
         location: SourceTrace,
     },
 
-    #[error("Value not found for {0} {1}")]
+    #[error("[red Value not found for {0}] {1}")]
     VarNotFound(VarName, SourceTrace),
 
-    #[error("{0} {1}")]
+    #[error("[red {0}] {1}")]
     Custom(String, SourceTrace),
 
-    #[error("Entity#{0}_{1} not linked to id {2}")]
+    #[error("[red Entity#{0}_{1} not linked to id] {2}")]
     IdNotFound(u32, u32, SourceTrace),
 
-    #[error("Id#{0} not linked to Entity {1}")]
+    #[error("[red Id#{0} not linked to Entity] {1}")]
     EntityNotFound(u64, SourceTrace),
 
-    #[error("Not found: {0} {1}")]
+    #[error("[red Not found: {0}] {1}")]
     NotFoundGeneric(String, SourceTrace),
 
-    #[error("Context error: {0} {1}")]
+    #[error("[red Context error: {0}] {1}")]
     ContextError(anyhow::Error, SourceTrace),
 }
 
@@ -322,6 +322,7 @@ pub trait OptionNodeExt<T> {
     fn to_not_found(self) -> NodeResult<T>;
     #[track_caller]
     fn to_not_found_msg(self, msg: impl Into<String>) -> NodeResult<T>;
+    fn to_not_found_id(self, id: u64) -> NodeResult<T>;
     fn ok_or_str(self, msg: impl Into<String>) -> Result<T, String>;
     fn ok_or_str_fn(self, f: impl FnOnce() -> String) -> Result<T, String>;
     #[track_caller]
@@ -345,14 +346,16 @@ impl<T> OptionNodeExt<T> for Option<T> {
 
     #[track_caller]
     fn to_not_found(self) -> NodeResult<T> {
-        self.ok_or_else(|| {
-            NodeError::not_found_generic(format!("Not found: {}", type_name_short::<T>()))
-        })
+        self.ok_or_else(|| NodeError::not_found_generic(type_name_short::<T>()))
     }
 
     #[track_caller]
     fn to_not_found_msg(self, msg: impl Into<String>) -> NodeResult<T> {
         self.ok_or_else(|| NodeError::not_found_generic(msg))
+    }
+
+    fn to_not_found_id(self, id: u64) -> NodeResult<T> {
+        self.ok_or_else(|| NodeError::not_found(id))
     }
 
     fn ok_or_str(self, msg: impl Into<String>) -> Result<T, String> {

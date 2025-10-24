@@ -208,7 +208,7 @@ impl ToCstr for Event {
 
 impl ToCstr for NodeError {
     fn cstr(&self) -> Cstr {
-        format!("{self}").cstr_cs(RED, CstrStyle::Small)
+        format!("{self}").cstr_s(CstrStyle::Small)
     }
 }
 
