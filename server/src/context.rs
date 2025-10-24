@@ -271,7 +271,7 @@ pub trait ReducerContextExt {
     fn with_context<F>(&self, f: F) -> Result<(), String>
     where
         F: FnOnce(&mut Context<ServerSource>) -> Result<(), NodeError>;
-    fn as_context(&self) -> ServerContext;
+    fn as_context<'a>(&'a self) -> ServerContext<'a>;
 }
 
 impl ReducerContextExt for ReducerContext {
@@ -286,7 +286,7 @@ impl ReducerContextExt for ReducerContext {
             .map_err(|e| format!("{} (at {}:{})", e, location.file(), location.line()))
     }
 
-    fn as_context(&self) -> ServerContext {
+    fn as_context<'a>(&'a self) -> ServerContext<'a> {
         Context::new(ServerSource::new(self))
     }
 }

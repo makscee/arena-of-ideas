@@ -2047,7 +2047,7 @@ impl FEdit for ShopSlot {
 }
 
 impl FEdit for CardKind {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, _: &mut Ui) -> Response {
         // let (_, response) = Selector::ui_iter(self, ui);
         // response
         todo!()

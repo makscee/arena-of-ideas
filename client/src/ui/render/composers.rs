@@ -637,11 +637,11 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
 }
 
 /// Card composer for full card views
-pub struct CardComposer<'a, T: FTitle + FDescription + FStats> {
+pub struct CardComposer<'a, T: FCard> {
     data: DataRef<'a, T>,
 }
 
-impl<'a, T: FTitle + FDescription + FStats> CardComposer<'a, T> {
+impl<'a, T: FCard> CardComposer<'a, T> {
     pub fn new(data: &'a T) -> Self {
         Self {
             data: DataRef::Immutable(data),
@@ -649,7 +649,7 @@ impl<'a, T: FTitle + FDescription + FStats> CardComposer<'a, T> {
     }
 }
 
-impl<'a, T: FTitle + FDescription + FStats> Composer<T> for CardComposer<'a, T> {
+impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
     fn data(&self) -> &T {
         self.data.as_ref()
     }

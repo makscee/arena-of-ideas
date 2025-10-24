@@ -371,7 +371,8 @@ impl MatchPlugin {
             .unit_rep_with_default(fusion.id)
             .ui(ui, context)
             .on_hover_ui(|ui| {
-                fusion.as_card().compose(context, ui);
+                // fusion.as_card().compose(context, ui);
+                todo!();
             });
         ui.label(format!(
             "{}/{}",

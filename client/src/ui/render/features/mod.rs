@@ -190,6 +190,6 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-pub trait FCard {
+pub trait FCard: FDescription + FTitle + FStats {
     fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response;
 }

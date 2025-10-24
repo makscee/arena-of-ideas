@@ -101,13 +101,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
 
     fn tab_title_for_pane(&mut self, view: &Pane) -> egui::WidgetText {
         match view {
-            Pane::Explorer(pane) => match pane {
-                ExplorerPane::NamedList(kind) => format!("{} List", kind.to_kind().cstr()),
-                ExplorerPane::NamedCard(kind) => format!("{} Card", kind.to_kind().cstr()),
-                ExplorerPane::NamedSelector(kind) => format!("{} Selector", kind.to_kind().cstr()),
-                ExplorerPane::ContentPane(kind) => format!("{} Content", kind.cstr()),
-            }
-            .into(),
+            Pane::Explorer(pane) => pane.to_string().into(),
             Pane::Battle(pane) => match pane {
                 BattlePane::View => "Battle View".into(),
                 BattlePane::EditLeftGraph => "Left Team".into(),

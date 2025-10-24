@@ -76,7 +76,7 @@ pub trait Render: Sized {
     /// Create a card composer for this data
     fn as_card(&self) -> CardComposer<'_, Self>
     where
-        Self: FTitle + FDescription + FStats,
+        Self: FCard,
     {
         CardComposer::new(self)
     }

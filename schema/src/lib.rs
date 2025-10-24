@@ -69,6 +69,16 @@ impl ToNodeKind for String {
     }
 }
 
+impl NodeKind {
+    pub fn to_named(self) -> NodeResult<NamedNodeKind> {
+        if self.is_named() {
+            Ok(self.try_into().unwrap())
+        } else {
+            Err(format!("NodeKind is not named").into())
+        }
+    }
+}
+
 pub trait StringData: Sized {
     fn inject_data(&mut self, data: &str) -> NodeResult<()>;
     fn get_data(&self) -> String;

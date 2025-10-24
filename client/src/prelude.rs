@@ -82,6 +82,8 @@ pub use once_cell::sync::OnceCell;
 pub use parking_lot::{Mutex, MutexGuard, const_mutex};
 pub use rand::{Rng, SeedableRng, rng, seq::IteratorRandom};
 pub use rand_chacha::ChaCha8Rng;
+pub use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
+pub use std::collections::VecDeque;
 
 pub use ron::{
     extensions::Extensions,
@@ -93,7 +95,6 @@ pub use spacetimedb_lib::Identity;
 pub use spacetimedb_sats::serde::SerdeWrapper;
 pub use spacetimedb_sdk::Table as SdkTable;
 pub use std::cell::LazyCell;
-pub use std::collections::VecDeque;
 pub use std::{
     cell::RefCell,
     cmp::Ordering,

@@ -1,6 +1,3 @@
-use spacetimedb_sdk::{DbContext, TableWithPrimaryKey};
-use std::collections::VecDeque;
-
 use super::*;
 use crate::plugins::explorer::ExplorerState;
 
@@ -206,7 +203,7 @@ impl StdbPlugin {
                     op(move |world| {
                         if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
                         {
-                            explorer_state.refresh_named_cache();
+                            explorer_state.refresh_from_db();
                         }
                     });
                 }
@@ -223,7 +220,7 @@ impl StdbPlugin {
                     op(move |world| {
                         if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
                         {
-                            explorer_state.refresh_named_cache();
+                            explorer_state.refresh_from_db();
                         }
                     });
                 }

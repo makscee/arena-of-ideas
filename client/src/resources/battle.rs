@@ -663,27 +663,27 @@ impl BattleSimulation {
         })
     }
 
-    pub fn as_context(&self, t: f32) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_battle(self, t))
+    pub fn as_context(&self, t: f32) -> Context<ClientSource<'_>> {
+        Context::new(ClientSource::new_battle(self, t))
     }
 
-    pub fn as_context_mut(&mut self, t: f32) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_battle_mut(self, t))
+    pub fn as_context_mut(&mut self, t: f32) -> Context<ClientSource<'_>> {
+        Context::new(ClientSource::new_battle_mut(self, t))
     }
 
     pub fn with_context<R, F>(&self, t: f32, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
     {
-        let source = WorldSource::new_battle(self, t);
+        let source = ClientSource::new_battle(self, t);
         Context::exec(source, f)
     }
 
     pub fn with_context_mut<R, F>(&mut self, t: f32, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
     {
-        let source = WorldSource::new_battle_mut(self, t);
+        let source = ClientSource::new_battle_mut(self, t);
         Context::exec(source, f)
     }
 }

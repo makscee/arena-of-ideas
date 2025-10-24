@@ -120,7 +120,3 @@ impl NHouse {
             .unwrap_or_else(|_| colorix().low_contrast_text())
     }
 }
-
-pub trait TableNodeView<T> {
-    fn add_node_view_columns(self, kind: NodeKind, f: fn(&T) -> u64) -> Self;
-}

@@ -213,21 +213,26 @@ impl NodeEntity {
     }
 }
 
-/// Unified WorldSource enum for both immutable and mutable World access
-pub enum WorldSource<'w> {
+/// Unified ClientSource enum for both immutable and mutable World access
+pub enum ClientSource<'w> {
     WorldRef(&'w World),
     WorldMut(&'w mut World),
     BattleMut(&'w mut BattleSimulation, f32),
     BattleRef(&'w BattleSimulation, f32),
+    Db(&'w crate::stdb::RemoteTables),
     None,
 }
 
-impl<'w> WorldSource<'w> {
+impl<'w> ClientSource<'w> {
     pub fn is_battle(&self) -> bool {
         matches!(
             self,
-            WorldSource::BattleMut(..) | WorldSource::BattleRef(..)
+            ClientSource::BattleMut(..) | ClientSource::BattleRef(..)
         )
+    }
+
+    pub fn is_db(&self) -> bool {
+        matches!(self, ClientSource::Db(_))
     }
 
     pub fn new_immutable(world: &'w World) -> Self {
@@ -248,6 +253,10 @@ impl<'w> WorldSource<'w> {
 
     pub fn new_battle(battle: &'w BattleSimulation, t: f32) -> Self {
         Self::BattleRef(battle, t)
+    }
+
+    pub fn new_db(db: &'w crate::stdb::RemoteTables) -> Self {
+        Self::Db(db)
     }
 
     pub fn battle(&self) -> NodeResult<&BattleSimulation> {
@@ -293,6 +302,7 @@ impl<'w> WorldSource<'w> {
             Self::WorldMut(world) => Ok(world),
             Self::BattleMut(battle, _) => Ok(&battle.world),
             Self::BattleRef(battle, _) => Ok(&battle.world),
+            Self::Db(_) => Err(NodeError::custom("Tried to get &World from Db context")),
             Self::None => Err(NodeError::custom("Source is None")),
         }
     }
@@ -303,150 +313,235 @@ impl<'w> WorldSource<'w> {
             Self::BattleMut(battle, _) => Ok(&mut battle.world),
             Self::WorldRef(_) => Err(NodeError::custom("Source World is immutable")),
             Self::BattleRef(_, _) => Err(NodeError::custom("Source World is immutable")),
+            Self::Db(_) => Err(NodeError::custom("Tried to get &mut World from Db context")),
             Self::None => Err(NodeError::custom("Source World not set")),
         }
     }
 }
 
-impl<'w> ContextSource for WorldSource<'w> {
+impl<'w> ContextSource for ClientSource<'w> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
-        let world = self.world()?;
-        let entity = world
-            .resource::<NodeEntityMap>()
-            .get_entity(id)
-            .to_not_found()?;
-        world
-            .get::<NodeEntity>(entity)
-            .to_not_found()?
-            .get_kind(id)
-            .to_not_found()
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_node_kind(id)
+            }
+            _ => {
+                let world = self.world()?;
+                let entity = world
+                    .resource::<NodeEntityMap>()
+                    .get_entity(id)
+                    .to_not_found()?;
+                world
+                    .get::<NodeEntity>(entity)
+                    .to_not_found()?
+                    .get_kind(id)
+                    .ok_or_else(|| NodeError::custom("Node kind not found"))
+            }
+        }
     }
 
     fn get_children(&self, id: u64) -> NodeResult<Vec<u64>> {
-        Ok(self.world()?.resource::<NodeLinks>().get_children(id))
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_children(id)
+            }
+            _ => Ok(self.world()?.resource::<NodeLinks>().get_children(id)),
+        }
     }
 
     fn get_children_of_kind(&self, from_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        let world = self.world()?;
-        Ok(world
-            .resource::<NodeLinks>()
-            .get_children_of_kind(from_id, kind))
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_children_of_kind(from_id, kind)
+            }
+            _ => {
+                let world = self.world()?;
+                Ok(world
+                    .resource::<NodeLinks>()
+                    .get_children_of_kind(from_id, kind))
+            }
+        }
     }
 
     fn get_parents(&self, id: u64) -> NodeResult<Vec<u64>> {
-        Ok(self.world()?.resource::<NodeLinks>().get_parents(id))
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_parents(id)
+            }
+            _ => Ok(self.world()?.resource::<NodeLinks>().get_parents(id)),
+        }
     }
 
     fn get_parents_of_kind(&self, id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
-        Ok(self
-            .world()?
-            .resource::<NodeLinks>()
-            .get_parents_of_kind(id, kind))
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_parents_of_kind(id, kind)
+            }
+            _ => Ok(self
+                .world()?
+                .resource::<NodeLinks>()
+                .get_parents_of_kind(id, kind)),
+        }
     }
 
     fn add_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        let to_kind = self.get_node_kind(to_id).track()?;
-        self.world_mut()?
-            .resource_mut::<NodeLinks>()
-            .add_link(from_id, to_id, to_kind);
-        Ok(())
+        match self {
+            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
+            _ => {
+                let to_kind = self.get_node_kind(to_id).track()?;
+                self.world_mut()?
+                    .resource_mut::<NodeLinks>()
+                    .add_link(from_id, to_id, to_kind);
+                Ok(())
+            }
+        }
     }
 
     fn remove_link(&mut self, from_id: u64, to_id: u64) -> NodeResult<()> {
-        self.world_mut()?
-            .resource_mut::<NodeLinks>()
-            .remove_link(from_id, to_id);
-        Ok(())
+        match self {
+            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
+            _ => {
+                self.world_mut()?
+                    .resource_mut::<NodeLinks>()
+                    .remove_link(from_id, to_id);
+                Ok(())
+            }
+        }
     }
 
     fn is_linked(&self, from_id: u64, to_id: u64) -> NodeResult<bool> {
-        let world = self.world()?;
-        if let Some(links) = world.get_resource::<NodeLinks>() {
-            Ok(links.has_link(from_id, to_id))
-        } else {
-            Ok(false)
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.is_linked(from_id, to_id)
+            }
+            _ => {
+                let world = self.world()?;
+                if let Some(links) = world.get_resource::<NodeLinks>() {
+                    Ok(links.has_link(from_id, to_id))
+                } else {
+                    Ok(false)
+                }
+            }
         }
     }
 
     fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) -> NodeResult<()> {
-        let world = self.world_mut()?;
-        let mut nem = world.remove_resource::<NodeEntityMap>().to_not_found()?;
-        let entity = nem
-            .get_entity(id)
-            .unwrap_or_else(|| world.spawn_empty().id());
-        nem.add_link(id, entity);
-        world.insert_resource(nem);
-        if let Some(mut ne) = world.get_mut::<NodeEntity>(entity) {
-            ne.add_node(id, kind);
-        } else {
-            world.entity_mut(entity).insert(NodeEntity::new(id, kind));
-        }
-        node_kind_match!(kind, {
-            let mut n = NodeType::default();
-            n.inject_data(&data)?;
-            n.set_id(id);
-            n.set_owner(owner);
-            world.entity_mut(entity).insert(n);
-        });
+        match self {
+            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
+            _ => {
+                let world = self.world_mut()?;
+                let mut nem = world.remove_resource::<NodeEntityMap>().to_not_found()?;
+                let entity = nem
+                    .get_entity(id)
+                    .unwrap_or_else(|| world.spawn_empty().id());
+                nem.add_link(id, entity);
+                world.insert_resource(nem);
+                if let Some(mut ne) = world.get_mut::<NodeEntity>(entity) {
+                    ne.add_node(id, kind);
+                } else {
+                    world.entity_mut(entity).insert(NodeEntity::new(id, kind));
+                }
+                node_kind_match!(kind, {
+                    let mut n = NodeType::default();
+                    n.inject_data(&data)?;
+                    n.set_id(id);
+                    n.set_owner(owner);
+                    world.entity_mut(entity).insert(n);
+                });
 
-        Ok(())
+                Ok(())
+            }
+        }
     }
 
     fn delete_node(&mut self, id: u64) -> NodeResult<()> {
-        let world = self.world_mut()?;
+        match self {
+            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
+            _ => {
+                let world = self.world_mut()?;
 
-        // Get the entity for this node
-        let entity = {
-            if let Some(map) = world.get_resource::<NodeEntityMap>() {
-                if let Some(entity) = map.get_entity(id) {
-                    entity
-                } else {
-                    return Err(NodeError::custom(format!("Entity not found for id {}", id)));
+                // Get the entity for this node
+                let entity = {
+                    if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                        if let Some(entity) = map.get_entity(id) {
+                            entity
+                        } else {
+                            return Err(NodeError::custom(format!(
+                                "Entity not found for id {}",
+                                id
+                            )));
+                        }
+                    } else {
+                        return Err(NodeError::custom("NodeEntityMap resource not found"));
+                    }
+                };
+                let node_entity = world.get::<NodeEntity>(entity).to_not_found()?;
+                let entity_ids = node_entity.get_node_ids();
+                if entity_ids.len() == 1 {
+                    if entity_ids[0] == id {
+                        world.entity_mut(entity).despawn();
+                        return Ok(());
+                    } else {
+                        panic!();
+                    }
                 }
-            } else {
-                return Err(NodeError::custom("NodeEntityMap resource not found"));
-            }
-        };
-        let node_entity = world.get::<NodeEntity>(entity).to_not_found()?;
-        let entity_ids = node_entity.get_node_ids();
-        if entity_ids.len() == 1 {
-            if entity_ids[0] == id {
-                world.entity_mut(entity).despawn();
-                return Ok(());
-            } else {
-                panic!();
+                let kind = node_entity.get_kind(id).to_not_found()?;
+                node_kind_match!(kind, {
+                    world.entity_mut(entity).remove::<NodeType>();
+                });
+                Ok(())
             }
         }
-        let kind = node_entity.get_kind(id).to_not_found()?;
-        node_kind_match!(kind, {
-            world.entity_mut(entity).remove::<NodeType>();
-        });
-        Ok(())
     }
 
     fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        // For battle simulations, also track in NodeStateHistory
-        if let WorldSource::BattleMut(_battle, t) = self {
-            let t = *t;
-            let world = self.world_mut().track()?;
-            if let Some(map) = world.get_resource::<NodeEntityMap>() {
-                if let Some(entity) = map.get_entity(id) {
-                    if let Some(mut node_state_history) = world.get_mut::<NodeStateHistory>(entity)
-                    {
-                        node_state_history.insert(t, 0.0, var, value.clone());
+        match self {
+            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
+            _ => {
+                // For battle simulations, also track in NodeStateHistory
+                if let ClientSource::BattleMut(_battle, t) = self {
+                    let t = *t;
+                    let world = self.world_mut().track()?;
+                    if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                        if let Some(entity) = map.get_entity(id) {
+                            if let Some(mut node_state_history) =
+                                world.get_mut::<NodeStateHistory>(entity)
+                            {
+                                node_state_history.insert(t, 0.0, var, value.clone());
+                            } else {
+                                let mut node_state_history = NodeStateHistory::default();
+                                node_state_history.insert(t, 0.0, var, value.clone());
+                                world.entity_mut(entity).insert(node_state_history);
+                            }
+                        } else {
+                            return Err(NodeError::entity_not_found(id));
+                        }
                     } else {
-                        let mut node_state_history = NodeStateHistory::default();
-                        node_state_history.insert(t, 0.0, var, value.clone());
-                        world.entity_mut(entity).insert(node_state_history);
+                        return Err(NodeError::not_found_generic("NodeEntityMap not found"));
                     }
-                } else {
-                    return Err(NodeError::entity_not_found(id));
                 }
-            } else {
-                return Err(NodeError::not_found_generic("NodeEntityMap not found"));
+
+                // Regular set_var implementation would go here
+                let kind = self.get_node_kind(id)?;
+                node_kind_match!(kind, {
+                    let world = self.world_mut()?;
+                    let entity = world
+                        .resource::<NodeEntityMap>()
+                        .get_entity(id)
+                        .to_not_found()?;
+                    let mut node = world.get_mut::<NodeType>(entity).to_not_found()?;
+                    node.set_var(var, value)?;
+                });
+
+                Ok(())
             }
         }
-        Ok(())
     }
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
@@ -466,21 +561,29 @@ impl<'w> ContextSource for WorldSource<'w> {
 
         // For global world or if not found in history, get from the node directly
         let kind = self.get_node_kind(id)?;
-        node_kind_match!(kind, {
-            let node: NodeType = {
-                let world = self.world()?;
-                let entity = world
-                    .resource::<NodeEntityMap>()
-                    .get_entity(id)
-                    .to_not_found()?;
-                world.get::<NodeType>(entity).to_not_found()?.clone()
-            };
-            node.get_var(var)
-        })
+        match self {
+            ClientSource::Db(db) => {
+                let db_source = crate::plugins::explorer::DbSource::new(db);
+                db_source.get_var_direct(id, var)
+            }
+            _ => {
+                node_kind_match!(kind, {
+                    let node: NodeType = {
+                        let world = self.world()?;
+                        let entity = world
+                            .resource::<NodeEntityMap>()
+                            .get_entity(id)
+                            .to_not_found()?;
+                        world.get::<NodeType>(entity).to_not_found()?.clone()
+                    };
+                    node.get_var(var)
+                })
+            }
+        }
     }
 }
 
-impl<'w> ContextSource for &mut WorldSource<'w> {
+impl<'w> ContextSource for &mut ClientSource<'w> {
     fn get_node_kind(&self, id: u64) -> NodeResult<NodeKind> {
         (**self).get_node_kind(id)
     }
@@ -579,7 +682,7 @@ pub trait ClientContextExt {
     ) -> NodeResult<Vec<&'a T>>;
 }
 
-impl<'w> ClientContextExt for Context<WorldSource<'w>> {
+impl<'w> ClientContextExt for Context<ClientSource<'w>> {
     fn is_battle(&self) -> bool {
         self.source().is_battle()
     }
@@ -795,50 +898,50 @@ pub trait WorldContextExt {
     /// Execute with a context using this world as the source (immutable)
     fn with_context<R, F>(&self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>;
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>;
 
     /// Execute with a context using this world as the source (mutable)
     fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>;
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>;
 
     /// Execute with a context using this world as the source (immutable)
-    fn as_context(&self) -> Context<WorldSource<'_>>;
+    fn as_context(&self) -> Context<ClientSource<'_>>;
 
     /// Execute with a context using this world as the source (mutable)
-    fn as_context_mut(&mut self) -> Context<WorldSource<'_>>;
+    fn as_context_mut(&mut self) -> Context<ClientSource<'_>>;
 }
 
 impl WorldContextExt for World {
     fn with_context<R, F>(&self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
     {
-        let source = WorldSource::new_immutable(self);
+        let source = ClientSource::new_immutable(self);
         Context::exec(source, f)
     }
 
     fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<WorldSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
     {
-        let source = WorldSource::new_mutable(self);
+        let source = ClientSource::new_mutable(self);
         Context::exec(source, f)
     }
 
-    fn as_context(&self) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_immutable(self))
+    fn as_context(&self) -> Context<ClientSource<'_>> {
+        Context::new(ClientSource::new_immutable(self))
     }
 
-    fn as_context_mut(&mut self) -> Context<WorldSource<'_>> {
-        Context::new(WorldSource::new_mutable(self))
+    fn as_context_mut(&mut self) -> Context<ClientSource<'_>> {
+        Context::new(ClientSource::new_mutable(self))
     }
 }
 
 /// Type alias for convenience
-pub type ClientContext<'w> = Context<WorldSource<'w>>;
+pub type ClientContext<'w> = Context<ClientSource<'w>>;
 
-pub const EMPTY_CONTEXT: ClientContext = Context::new(WorldSource::new_empty());
+pub const EMPTY_CONTEXT: ClientContext = Context::new(ClientSource::new_empty());
 
 /// Extension trait for ClientContext to handle temporary layers
 pub trait ClientContextLayersRef {
@@ -892,10 +995,10 @@ impl<'w> ClientContextLayersRef for ClientContext<'w> {
         merged_layers.append(&mut layers.into());
         let mut temp_ctx = if let Ok(battle) = self.source().battle() {
             let t = self.source().battle_t().unwrap_or(0.0);
-            Context::new_with_layers(WorldSource::new_battle(battle, t), merged_layers)
+            Context::new_with_layers(ClientSource::new_battle(battle, t), merged_layers)
         } else {
             let world = self.source().world()?;
-            Context::new_with_layers(WorldSource::new_immutable(world), merged_layers)
+            Context::new_with_layers(ClientSource::new_immutable(world), merged_layers)
         };
         f(&mut temp_ctx)
     }

@@ -95,148 +95,81 @@ impl GameState {
             GameState::Explorer => {
                 let mut tiles = Tiles::default();
 
-                // Units Tab
-                let units_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedList(
-                    NamedNodeKind::NUnit,
-                )));
-                let unit_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedCard(
-                    NamedNodeKind::NUnit,
-                )));
-                let unit_desc = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NUnitDescription,
-                )));
-                let unit_behavior = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NUnitBehavior,
-                )));
-                let unit_stats = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NUnitStats,
-                )));
-                let unit_repr = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NUnitRepresentation,
-                )));
-                let unit_house = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedSelector(
-                    NamedNodeKind::NHouse,
-                )));
+                // Create Units tab with panes
+                let units_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitsList));
+                let unit_parent_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitParentList));
+                let unit_description =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitDescription));
+                let unit_behavior = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitBehavior));
+                let unit_stats = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitStats));
+                let unit_representation =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitRepresentation));
 
-                let unit_desc_behavior =
-                    tiles.insert_vertical_tile([unit_desc, unit_behavior].into());
-                let unit_top = tiles.insert_horizontal_tile([unit_card, unit_desc_behavior].into());
-                let unit_bottom =
-                    tiles.insert_horizontal_tile([unit_stats, unit_repr, unit_house].into());
-                let unit_content = tiles.insert_vertical_tile([unit_top, unit_bottom].into());
-                let units_tab = tiles
-                    .insert_horizontal_tile([units_list, unit_content].into())
-                    .with_name(tile_tree, "Units");
-                if let Tile::Container(h) = tiles.get_mut(units_tab).unwrap() {
-                    if let Container::Linear(h) = h {
-                        h.shares.set_share(units_list, 1.0);
-                        h.shares.set_share(unit_content, 4.0);
-                    }
-                }
+                let units_tab = tiles.insert_tab_tile(vec![
+                    units_list,
+                    unit_parent_list,
+                    unit_description,
+                    unit_behavior,
+                    unit_stats,
+                    unit_representation,
+                ]);
 
-                // Houses Tab
-                let houses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedList(
-                    NamedNodeKind::NHouse,
-                )));
-                let house_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedCard(
-                    NamedNodeKind::NHouse,
-                )));
-                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NHouseColor,
-                )));
-                let house_units = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedSelector(
-                    NamedNodeKind::NUnit,
-                )));
-                let house_abilities = tiles.insert_pane(Pane::Explorer(
-                    ExplorerPane::NamedSelector(NamedNodeKind::NAbilityMagic),
-                ));
-                let house_statuses = tiles.insert_pane(Pane::Explorer(
-                    ExplorerPane::NamedSelector(NamedNodeKind::NStatusMagic),
-                ));
+                // Create Houses tab with panes
+                let houses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::HousesList));
+                let house_units_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseUnitsList));
+                let house_abilities_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseAbilitiesList));
+                let house_statuses_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseStatusesList));
+                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseColor));
 
-                let house_lists = tiles
-                    .insert_vertical_tile([house_units, house_abilities, house_statuses].into());
-                let house_bottom = tiles.insert_horizontal_tile([house_color, house_lists].into());
-                let house_content = tiles.insert_vertical_tile([house_card, house_bottom].into());
-                let houses_tab = tiles
-                    .insert_horizontal_tile([houses_list, house_content].into())
-                    .with_name(tile_tree, "Houses");
-                if let Tile::Container(h) = tiles.get_mut(houses_tab).unwrap() {
-                    if let Container::Linear(h) = h {
-                        h.shares.set_share(houses_list, 1.0);
-                        h.shares.set_share(house_content, 4.0);
-                    }
-                }
+                let houses_tab = tiles.insert_tab_tile(vec![
+                    houses_list,
+                    house_units_list,
+                    house_abilities_list,
+                    house_statuses_list,
+                    house_color,
+                ]);
 
-                // Abilities Tab
-                let abilities_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedList(
-                    NamedNodeKind::NAbilityMagic,
-                )));
-                let ability_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedCard(
-                    NamedNodeKind::NAbilityMagic,
-                )));
-                let ability_desc = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NAbilityDescription,
-                )));
-                let ability_effect = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NAbilityEffect,
-                )));
-                let ability_house = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedSelector(
-                    NamedNodeKind::NHouse,
-                )));
+                // Create Abilities tab with panes
+                let abilities_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilitiesList));
+                let ability_parent_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityParentList));
+                let ability_description =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityDescription));
+                let ability_effect = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityEffect));
 
-                let ability_top = tiles.insert_horizontal_tile([ability_card, ability_desc].into());
-                let ability_bottom =
-                    tiles.insert_horizontal_tile([ability_effect, ability_house].into());
-                let ability_content =
-                    tiles.insert_vertical_tile([ability_top, ability_bottom].into());
-                let abilities_tab = tiles
-                    .insert_horizontal_tile([abilities_list, ability_content].into())
-                    .with_name(tile_tree, "Abilities");
-                if let Tile::Container(h) = tiles.get_mut(abilities_tab).unwrap() {
-                    if let Container::Linear(h) = h {
-                        h.shares.set_share(abilities_list, 1.0);
-                        h.shares.set_share(ability_content, 4.0);
-                    }
-                }
+                let abilities_tab = tiles.insert_tab_tile(vec![
+                    abilities_list,
+                    ability_parent_list,
+                    ability_description,
+                    ability_effect,
+                ]);
 
-                // Statuses Tab
-                let statuses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedList(
-                    NamedNodeKind::NStatusMagic,
-                )));
-                let status_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedCard(
-                    NamedNodeKind::NStatusMagic,
-                )));
-                let status_desc = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NStatusDescription,
-                )));
-                let status_behavior = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NStatusBehavior,
-                )));
-                let status_repr = tiles.insert_pane(Pane::Explorer(ExplorerPane::ContentPane(
-                    NodeKind::NStatusRepresentation,
-                )));
-                let status_house = tiles.insert_pane(Pane::Explorer(ExplorerPane::NamedSelector(
-                    NamedNodeKind::NHouse,
-                )));
+                // Create Statuses tab with panes
+                let statuses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusesList));
+                let status_parent_list =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusParentList));
+                let status_description =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusDescription));
+                let status_behavior =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusBehavior));
+                let status_representation =
+                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusRepresentation));
 
-                let status_top = tiles.insert_horizontal_tile([status_card, status_desc].into());
-                let status_bottom = tiles
-                    .insert_horizontal_tile([status_behavior, status_repr, status_house].into());
-                let status_content = tiles.insert_vertical_tile([status_top, status_bottom].into());
-                let statuses_tab = tiles
-                    .insert_horizontal_tile([statuses_list, status_content].into())
-                    .with_name(tile_tree, "Statuses");
-                if let Tile::Container(h) = tiles.get_mut(statuses_tab).unwrap() {
-                    if let Container::Linear(h) = h {
-                        h.shares.set_share(statuses_list, 1.0);
-                        h.shares.set_share(status_content, 4.0);
-                    }
-                }
+                let statuses_tab = tiles.insert_tab_tile(vec![
+                    statuses_list,
+                    status_parent_list,
+                    status_description,
+                    status_behavior,
+                    status_representation,
+                ]);
 
                 // Main tabs
                 let root = tiles
-                    .insert_tab_tile([houses_tab, units_tab, abilities_tab, statuses_tab].into());
+                    .insert_tab_tile([units_tab, houses_tab, abilities_tab, statuses_tab].into());
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::Shop => {
@@ -263,19 +196,17 @@ impl GameState {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
+#[derive(PartialEq, Eq, Clone, Hash, AsRefStr, Serialize, Deserialize, Debug, Display, Copy)]
 pub enum Pane {
     Connect,
     Login,
     Register,
     MainMenu,
-
     Battle(BattlePane),
     Shop(ShopPane),
     Explorer(ExplorerPane),
     MatchOver,
     Leaderboard,
-
     Admin,
 }
 
@@ -336,7 +267,7 @@ impl Pane {
                 BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
                 BattlePane::TeamEditor(is_left) => TeamEditorPlugin::pane(is_left, world, ui),
             },
-            Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world),
+            Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world)?,
         };
         Ok(())
     }
