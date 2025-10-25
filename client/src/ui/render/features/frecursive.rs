@@ -56,6 +56,7 @@ pub fn render_breadcrumbs(ui: &mut Ui, breadcrumb_path: &[NodeBreadcrumb]) -> Op
 
     ScrollArea::horizontal()
         .stick_to_right(true)
+        .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
         .show(ui, |ui| {
             ui.horizontal(|ui| {
                 for (i, crumb) in breadcrumb_path.iter().enumerate() {
@@ -130,7 +131,7 @@ impl NodeLinkRender for Ui {
                 let mut new_node = T::default();
                 new_node.set_id(next_id());
                 new_node.set_owner(owner_id);
-                link.state_mut().set(new_node);
+                link.set_loaded(new_node).unwrap();
                 return true;
             }
             false
@@ -198,7 +199,7 @@ impl NodeLinkRender for Ui {
                     .button(format!("➕ Create {} list", field_name))
                     .clicked()
                 {
-                    link.state_mut().set(vec![]);
+                    link.set_loaded(vec![]).unwrap();
                     changed = true;
                 }
             }

@@ -502,26 +502,24 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Component | LinkType::Owned | LinkType::Ref => {
                 let field_name = &field.name;
                 Some(quote! {
-                    let state = self.#field_name.state_mut().take();
-                    if let LinkStateSingle::Loaded(mut child) = state {
+                    if let Ok(mut child) = self.#field_name.take_loaded() {
                         let child_id = child.id();
                         child.save(ctx)?;
-                        *self.#field_name.state_mut() = LinkStateSingle::Id(child_id);
+                        self.#field_name.set_id(child_id)?;
                     }
                 })
             }
             LinkType::OwnedMultiple => {
                 let field_name = &field.name;
                 Some(quote! {
-                    let state = self.#field_name.state_mut().take();
-                    if let LinkStateMultiple::Loaded(children) = state {
+                    if let Ok(children) = self.#field_name.take_loaded() {
                         let mut child_ids = Vec::new();
                         for mut child in children {
                             let child_id = child.id();
                             child.save(ctx)?;
                             child_ids.push(child_id);
                         }
-                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(child_ids);
+                        self.#field_name.set_ids(child_ids)?;
                     }
                 })
             }
@@ -537,28 +535,53 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         };
 
         match field.link_type {
-            LinkType::Component | LinkType::Owned => {
+            LinkType::Component => {
                 Some(quote! {
-                    match self.#field_name.state() {
-                        LinkStateSingle::Unknown => {},
-                        LinkStateSingle::None => {
+                    match &self.#field_name {
+                        Component::Unknown => {},
+                        Component::None => {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for child_id in existing_children {
                                 ctx.delete_recursive(child_id)?;
                             }
                         }
-                        LinkStateSingle::Id(id) => {
+                        Component::Id(id) => {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in existing_children {
-                                if old_id != *id {
-                                    ctx.remove_link(self.id, old_id)?;
+                            let keep_child = Some(*id);
+                            for child_id in existing_children {
+                                if keep_child != Some(child_id) {
+                                    ctx.delete_recursive(child_id)?;
                                 }
                             }
-                            // Add new link
                             ctx.add_link(self.id, *id)?;
                         }
-                        LinkStateSingle::Loaded(_) => {
+                        Component::Loaded(_) => {
+                            unreachable!("Loaded state should have been converted to Id during save")
+                        }
+                    }
+                })
+            }
+            LinkType::Owned => {
+                Some(quote! {
+                    match &self.#field_name {
+                        Owned::Unknown => {},
+                        Owned::None => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            for child_id in existing_children {
+                                ctx.delete_recursive(child_id)?;
+                            }
+                        }
+                        Owned::Id(id) => {
+                            let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
+                            let keep_child = Some(*id);
+                            for child_id in existing_children {
+                                if keep_child != Some(child_id) {
+                                    ctx.delete_recursive(child_id)?;
+                                }
+                            }
+                            ctx.add_link(self.id, *id)?;
+                        }
+                        Owned::Loaded(_) => {
                             unreachable!("Loaded state should have been converted to Id during save")
                         }
                     }
@@ -566,57 +589,51 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             }
             LinkType::Ref => {
                 Some(quote! {
-                    match self.#field_name.state() {
-                        LinkStateSingle::Unknown => {},
-                        LinkStateSingle::None => {
+                    match &self.#field_name {
+                        Ref::Unknown => {},
+                        Ref::None => {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for ref_id in existing_refs {
                                 ctx.remove_link(self.id, ref_id)?;
                             }
                         }
-                        LinkStateSingle::Id(id) => {
+                        Ref::Id(id) => {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in existing_refs {
-                                if old_id != *id {
-                                    ctx.remove_link(self.id, old_id)?;
+                            let keep_ref = Some(*id);
+                            for ref_id in existing_refs {
+                                if keep_ref != Some(ref_id) {
+                                    ctx.remove_link(self.id, ref_id)?;
                                 }
                             }
-                            // Add new link
                             ctx.add_link(self.id, *id)?;
                         }
-                        LinkStateSingle::Loaded(_) => {
-                            unreachable!("Loaded state should have been converted to Id during save")
-                        }
+                        Ref::_Phantom(_) => {}
                     }
                 })
             }
             LinkType::OwnedMultiple => {
                 Some(quote! {
-                    match self.#field_name.state() {
-                        LinkStateMultiple::Unknown => {},
-                        LinkStateMultiple::None => {
+                    match &self.#field_name {
+                        OwnedMultiple::Unknown => {},
+                        OwnedMultiple::None => {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for child_id in existing_children {
                                 ctx.delete_recursive(child_id)?;
                             }
                         }
-                        LinkStateMultiple::Ids(ids) => {
+                        OwnedMultiple::Ids(ids) => {
                             let existing_children = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
-                            // Remove old links
-                            for old_id in &existing_children {
-                                if !ids.contains(old_id) {
-                                    ctx.delete_recursive(*old_id)?;
+                            let keep_children: Vec<_> = ids.clone();
+                            for child_id in existing_children {
+                                if !keep_children.contains(&child_id) {
+                                    ctx.delete_recursive(child_id)?;
                                 }
                             }
-                            // Add new links
-                            for id in ids {
-                                if !existing_children.contains(id) {
-                                    ctx.add_link(self.id, *id)?;
-                                }
+                            for &id in ids {
+                                ctx.add_link(self.id, id)?;
                             }
                         }
-                        LinkStateMultiple::Loaded(_) => {
+                        OwnedMultiple::Loaded(_) => {
                             unreachable!("Loaded state should have been converted to Ids during save")
                         }
                     }
@@ -624,32 +641,28 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             }
             LinkType::RefMultiple => {
                 Some(quote! {
-                    match self.#field_name.state() {
-                        LinkStateMultiple::Unknown => {},
-                        LinkStateMultiple::None => {
+                    match &self.#field_name {
+                        RefMultiple::Unknown => {},
+                        RefMultiple::None => {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             for ref_id in existing_refs {
                                 ctx.remove_link(self.id, ref_id)?;
                             }
                         }
-                        LinkStateMultiple::Ids(ids) => {
+                        RefMultiple::Ids(ids) => {
                             let existing_refs = ctx.get_children_of_kind(self.id, NodeKind::#target_type).unwrap_or_default();
                             // Remove old links
-                            for old_id in existing_refs {
-                                if !ids.contains(&old_id) {
-                                    ctx.remove_link(self.id, old_id)?;
+                            for ref_id in existing_refs {
+                                if !ids.contains(&ref_id) {
+                                    ctx.remove_link(self.id, ref_id)?;
                                 }
                             }
                             // Add new links
-                            for id in ids {
-                                if !existing_refs.contains(id) {
-                                    ctx.add_link(self.id, *id)?;
-                                }
+                            for &id in ids {
+                                ctx.add_link(self.id, id)?;
                             }
                         }
-                        LinkStateMultiple::Loaded(_) => {
-                            unreachable!("Loaded state should have been converted to Ids during save")
-                        }
+                        RefMultiple::_Phantom(_) => {}
                     }
                 })
             }
@@ -758,12 +771,12 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
             ),
             LinkType::Ref => (
                 quote! { #target },
-                quote! { Ref::new_loaded(value) },
+                quote! { Ref::new_id(value.id) },
                 quote! { Ref::none() },
             ),
             LinkType::RefMultiple => (
-                quote! { Vec<#target> },
-                quote! { RefMultiple::new_loaded(value) },
+                quote! { Vec<u64> },
+                quote! { RefMultiple::new_ids(value) },
                 quote! { RefMultiple::none() },
             ),
             _ => return None,
@@ -863,53 +876,48 @@ pub fn generate_link_accessor_methods(node: &NodeInfo) -> TokenStream {
         let clear_method = format_ident!("{}_clear", field_name);
 
         match field.link_type {
-            LinkType::Component | LinkType::Owned | LinkType::Ref => {
-                Some(quote! {
-                    pub fn #get_method(&self) -> NodeResult<&#target_type> {
-                        self.#field_name.get()
-                            .ok_or_else(|| NodeError::custom(format!("{} not loaded", stringify!(#field_name))))
-                    }
+            LinkType::Component | LinkType::Owned | LinkType::Ref => Some(quote! {
+                pub fn #get_method(&self) -> NodeResult<&#target_type> {
+                    self.#field_name.get()
+                }
 
-                    pub fn #get_mut_method(&mut self) -> NodeResult<&mut #target_type> {
-                        self.set_dirty(true);
-                        self.#field_name.get_mut()
-                    }
+                pub fn #get_mut_method(&mut self) -> NodeResult<&mut #target_type> {
+                    self.set_dirty(true);
+                    self.#field_name.get_mut()
+                }
 
-                    pub fn #set_method(&mut self, value: #target_type) {
-                        self.set_dirty(true);
-                        self.#field_name.state_mut().set(value);
-                    }
+                pub fn #set_method(&mut self, value: #target_type) -> NodeResult<()> {
+                    self.set_dirty(true);
+                    self.#field_name.set_loaded(value)
+                }
 
-                    pub fn #clear_method(&mut self) {
-                        *self.#field_name.state_mut() = LinkStateSingle::None;
-                        self.set_dirty(true);
-                    }
-                })
-            }
-            LinkType::OwnedMultiple | LinkType::RefMultiple => {
-                Some(quote! {
-                    pub fn #get_method(&self) -> NodeResult<&Vec<#target_type>> {
-                        self.#field_name.get()
-                            .ok_or_else(|| NodeError::custom(format!("{} not loaded", stringify!(#field_name))))
-                    }
+                pub fn #clear_method(&mut self) -> NodeResult<()> {
+                    self.#field_name.set_none()?;
+                    self.set_dirty(true);
+                    Ok(())
+                }
+            }),
+            LinkType::OwnedMultiple | LinkType::RefMultiple => Some(quote! {
+                pub fn #get_method(&self) -> NodeResult<&Vec<#target_type>> {
+                    self.#field_name.get()
+                }
 
-                    pub fn #get_mut_method(&mut self) -> NodeResult<&mut Vec<#target_type>> {
-                        self.set_dirty(true);
-                        self.#field_name.get_mut()
-                    }
+                pub fn #get_mut_method(&mut self) -> NodeResult<&mut Vec<#target_type>> {
+                    self.set_dirty(true);
+                    self.#field_name.get_mut()
+                }
 
-                    pub fn #set_method(&mut self, value: Vec<#target_type>) {
-                        self.set_dirty(true);
-                        self.#field_name.state_mut().set(value);
-                    }
+                pub fn #set_method(&mut self, value: Vec<#target_type>) -> NodeResult<()> {
+                    self.set_dirty(true);
+                    self.#field_name.set_loaded(value)
+                }
 
-                    pub fn #clear_method(&mut self) {
-                        self.set_dirty(true);
-                        *self.#field_name.state_mut() = LinkStateMultiple::None;
-                    }
-                })
-            }
-            _ => None
+                pub fn #clear_method(&mut self) -> NodeResult<()> {
+                    self.set_dirty(true);
+                    self.#field_name.set_none()
+                }
+            }),
+            _ => None,
         }
     });
 
@@ -1029,10 +1037,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
 
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
-                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(children);
-                        Ok(self.#field_name.ids().unwrap())
+                        self.#field_name.set_ids(children.clone())?;
+                        Ok(children)
                     } else {
-                        *self.#field_name.state_mut() = LinkStateMultiple::None;
+                        self.#field_name.set_none()?;
                         Ok(Vec::new())
                     }
                 }
@@ -1040,10 +1048,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                 quote! {
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
-                        *self.#field_name.state_mut() = LinkStateMultiple::Ids(children.clone());
+                        self.#field_name.set_ids(children.clone())?;
                         Ok(children)
                     } else {
-                        *self.#field_name.state_mut() = LinkStateMultiple::None;
+                        self.#field_name.set_none()?;
                         Ok(Vec::new())
                     }
                 }
@@ -1055,8 +1063,8 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     .iter()
                     .filter_map(|&id| ctx.load::<#target_type>(id).ok())
                     .collect_vec();
-                *self.#field_name.state_mut() = LinkStateMultiple::Loaded(loaded_nodes);
-                Ok(self.#field_name.get_mut().unwrap())
+                self.#field_name.set_loaded(loaded_nodes)?;
+                self.#field_name.get_mut()
             };
 
             let ref_method = if context_ident == "ClientContext" {
@@ -1086,32 +1094,24 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     #load_method_logic
                 }
 
-                pub fn #get_method(&self) -> Result<&Vec<#target_type>, NodeError>
-                {
-                    match self.#field_name.state() {
-                        LinkStateMultiple::Loaded(_) => Ok(self.#field_name.get().unwrap()),
-                        LinkStateMultiple::Ids(_) => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                        LinkStateMultiple::None => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                        LinkStateMultiple::Unknown => Err(NodeError::custom(format!("{} were not loaded", stringify!(#field_name)))),
-                    }
+                pub fn #get_method(&self) -> NodeResult<&Vec<#target_type>> {
+                    self.#field_name.get()
                 }
 
-                pub fn #set_method(&mut self, nodes: Vec<#target_type>) {
-                    *self.#field_name.state_mut() = LinkStateMultiple::Loaded(nodes);
+                pub fn #set_method(&mut self, nodes: Vec<#target_type>) -> NodeResult<()> {
+                    self.#field_name.set_loaded(nodes)?;
                     self.set_dirty(true);
+                    Ok(())
                 }
 
-                pub fn #push_method(&mut self, node: #target_type) -> Result<(), NodeError> {
-                    match self.#field_name.state_mut() {
-                        LinkStateMultiple::Loaded(nodes) => {
-                            nodes.push(node);
-                            Ok(())
-                        }
-                        _ => {
-                            *self.#field_name.state_mut() = LinkStateMultiple::Loaded(vec![node]);
-                            Ok(())
-                        }
+                pub fn #push_method(&mut self, node: #target_type) -> NodeResult<()> {
+                    if let Ok(nodes) = self.#field_name.get_mut() {
+                        nodes.push(node);
+                    } else {
+                        self.#field_name.set_loaded(vec![node])?;
                     }
+                    self.set_dirty(true);
+                    Ok(())
                 }
 
                 #ref_method
@@ -1124,10 +1124,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     }
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if let Some(&first_id) = children.first() {
-                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
+                        self.#field_name.set_id(first_id)?;
                         Ok(first_id)
                     } else {
-                        *self.#field_name.state_mut() = LinkStateSingle::None;
+                        self.#field_name.set_none()?;
                         Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                     }
                 }
@@ -1138,10 +1138,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     }
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if let Some(&first_id) = children.first() {
-                        *self.#field_name.state_mut() = LinkStateSingle::Id(first_id);
+                        self.#field_name.set_id(first_id)?;
                         Ok(first_id)
                     } else {
-                        *self.#field_name.state_mut() = LinkStateSingle::None;
+                        self.#field_name.set_none()?;
                         Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                     }
                 }
@@ -1150,8 +1150,8 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
             let load_method_logic = quote! {
                 let id = self.#load_id_method(ctx)?;
                 let loaded_node = ctx.load::<#target_type>(id)?;
-                *self.#field_name.state_mut() = LinkStateSingle::Loaded(loaded_node);
-                Ok(self.#field_name.get_mut().unwrap())
+                self.#field_name.set_loaded(loaded_node)?;
+                self.#field_name.get_mut()
             };
 
             let ref_method = if context_ident == "ClientContext" {
@@ -1188,19 +1188,14 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     #load_method_logic
                 }
 
-                pub fn #get_method(&self) -> Result<&#target_type, NodeError>
-                {
-                    match self.#field_name.state() {
-                        LinkStateSingle::Loaded(_) => Ok(self.#field_name.get().unwrap()),
-                        LinkStateSingle::Id(_) => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                        LinkStateSingle::None => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                        LinkStateSingle::Unknown => Err(NodeError::custom(format!("{} was not loaded", stringify!(#field_name)))),
-                    }
+                pub fn #get_method(&self) -> NodeResult<&#target_type> {
+                    self.#field_name.get()
                 }
 
-                pub fn #set_method(&mut self, node: #target_type) {
-                    *self.#field_name.state_mut() = LinkStateSingle::Loaded(node);
+                pub fn #set_method(&mut self, node: #target_type) -> NodeResult<()> {
+                    self.#field_name.set_loaded(node)?;
                     self.set_dirty(true);
+                    Ok(())
                 }
 
                 #ref_method
@@ -1331,19 +1326,8 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
 
         Some(match field.link_type {
             LinkType::OwnedMultiple => quote! {
-                for item in &self.#field_name {
-                    item.pack_recursive(packed, visited);
-                    packed.link_parent_child(
-                        self.id,
-                        item.id(),
-                        stringify!(#struct_name).to_string(),
-                        stringify!(#target_type).to_string()
-                    );
-                }
-            },
-            LinkType::RefMultiple => quote! {
-                match self.#field_name.state() {
-                    LinkStateMultiple::Loaded(items) => {
+                match &self.#field_name {
+                    OwnedMultiple::Loaded(items) => {
                         for item in items {
                             item.pack_recursive(packed, visited);
                             packed.link_parent_child(
@@ -1354,7 +1338,7 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                             );
                         }
                     },
-                    LinkStateMultiple::Ids(ids) => {
+                    OwnedMultiple::Ids(ids) => {
                         for &id in ids {
                             packed.link_parent_child(
                                 self.id,
@@ -1363,24 +1347,13 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                                 stringify!(#target_type).to_string()
                             );
                         }
-                    },
+                    }
                     _ => {}
                 }
             },
-            LinkType::Component | LinkType::Owned => quote! {
-                if let Some(loaded) = self.#field_name.get() {
-                    loaded.pack_recursive(packed, visited);
-                    packed.link_parent_child(
-                        self.id,
-                        loaded.id(),
-                        stringify!(#struct_name).to_string(),
-                        stringify!(#target_type).to_string()
-                    );
-                }
-            },
-            LinkType::Ref => quote! {
-                match self.#field_name.state() {
-                    LinkStateSingle::Loaded(item) => {
+            LinkType::Component => quote! {
+                match &self.#field_name {
+                    Component::Loaded(item) => {
                         item.pack_recursive(packed, visited);
                         packed.link_parent_child(
                             self.id,
@@ -1389,7 +1362,7 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                             stringify!(#target_type).to_string()
                         );
                     },
-                    LinkStateSingle::Id(id) => {
+                    Component::Id(id) => {
                         packed.link_parent_child(
                             self.id,
                             *id,
@@ -1397,6 +1370,41 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                             stringify!(#target_type).to_string()
                         );
                     },
+                    _ => {}
+                }
+            },
+            LinkType::Owned => quote! {
+                match &self.#field_name {
+                    Owned::Loaded(item) => {
+                        item.pack_recursive(packed, visited);
+                        packed.link_parent_child(
+                            self.id,
+                            item.id(),
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    },
+                    Owned::Id(id) => {
+                        packed.link_parent_child(
+                            self.id,
+                            *id,
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    },
+                    _ => {}
+                }
+            },
+            LinkType::Ref => quote! {
+                match &self.#field_name {
+                    Ref::Id(id) => {
+                        packed.link_parent_child(
+                            self.id,
+                            *id,
+                            stringify!(#struct_name).to_string(),
+                            stringify!(#target_type).to_string()
+                        );
+                    }
                     _ => {}
                 }
             },
@@ -1441,18 +1449,8 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::RefMultiple => quote! {
                 let child_ids = packed.kind_children(self.id, stringify!(#target_type));
-                let mut children = Vec::new();
-                for child_id in child_ids {
-                    if let Some(child_data) = packed.get(child_id) {
-                        let mut child = #target_type::default();
-                        child.inject_data(&child_data.data).unwrap();
-                        child.set_id(child_id);
-                        child.unpack_links(packed);
-                        children.push(child);
-                    }
-                }
-                if !children.is_empty() {
-                    self.#field_name = RefMultiple::new_loaded(children);
+                if !child_ids.is_empty() {
+                    self.#field_name = RefMultiple::new_ids(child_ids);
                 } else {
                     self.#field_name = RefMultiple::none();
                 }
@@ -1493,7 +1491,7 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.inject_data(&child_data.data).unwrap();
                         child.set_id(child_id);
                         child.unpack_links(packed);
-                        self.#field_name = Ref::new_loaded(child);
+                        self.#field_name = Ref::new_id(child.id);
                     }
                 } else {
                     self.#field_name = Ref::none();
@@ -1730,14 +1728,14 @@ pub fn generate_collect_owned_ids_impl(node: &NodeInfo) -> proc_macro2::TokenStr
                 let field_name = &field.name;
                 Some(match field.link_type {
                     LinkType::OwnedMultiple => quote! {
-                        if let Some(many_data) = self.#field_name.get() {
+                        if let Ok(many_data) = self.#field_name.get() {
                             for n in many_data {
                                 v.extend(n.collect_owned_ids());
                             }
                         }
                     },
                     _ => quote! {
-                        if let Some(n) = self.#field_name.get() {
+                        if let Ok(n) = self.#field_name.get() {
                             v.extend(n.collect_owned_ids());
                         }
                     },
@@ -1764,7 +1762,7 @@ pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenS
                 let field_name = &field.name;
                 Some(match field.link_type {
                     LinkType::OwnedMultiple => quote! {
-                        if let Some(children_data) = self.#field_name.get() {
+                        if let Ok(children_data) = self.#field_name.get() {
                             for n in children_data {
                                 v.push((self.id, n.id));
                                 v.extend(n.collect_owned_links());
@@ -1772,7 +1770,7 @@ pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenS
                         }
                     },
                     _ => quote! {
-                        if let Some(n) = self.#field_name.get() {
+                        if let Ok(n) = self.#field_name.get() {
                             v.push((self.id, n.id));
                             v.extend(n.collect_owned_links());
                         }
@@ -1942,13 +1940,8 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
         match &field.link_type {
             LinkType::Ref => {
                 ref_update_statements.push(quote! {
-                    match self.#field_name.state_mut() {
-                        LinkStateSingle::Loaded(node) => {
-                            if let Some(&new_id) = id_map.get(&node.id()) {
-                                *self.#field_name.state_mut() = LinkStateSingle::Id(new_id);
-                            }
-                        },
-                        LinkStateSingle::Id(id) => {
+                    match &mut self.#field_name {
+                        Ref::Id(id) => {
                             if let Some(&new_id) = id_map.get(id) {
                                 *id = new_id;
                             }
@@ -1959,25 +1952,8 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
             }
             LinkType::RefMultiple => {
                 ref_update_statements.push(quote! {
-                    match self.#field_name.state_mut() {
-                        LinkStateMultiple::Loaded(nodes) => {
-                            let mut should_convert_to_ids = false;
-                            let mut new_ids = Vec::new();
-
-                            for node in nodes.iter() {
-                                if let Some(&new_id) = id_map.get(&node.id()) {
-                                    new_ids.push(new_id);
-                                    should_convert_to_ids = true;
-                                } else {
-                                    new_ids.push(node.id());
-                                }
-                            }
-
-                            if should_convert_to_ids {
-                                *self.#field_name.state_mut() = LinkStateMultiple::Ids(new_ids);
-                            }
-                        },
-                        LinkStateMultiple::Ids(ids) => {
+                    match &mut self.#field_name {
+                        RefMultiple::Ids(ids) => {
                             for id in ids.iter_mut() {
                                 if let Some(&new_id) = id_map.get(id) {
                                     *id = new_id;
@@ -1990,14 +1966,14 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
             }
             LinkType::Owned => {
                 owned_recursive_statements.push(quote! {
-                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut() {
+                    if let Ok(node) = self.#field_name.get_mut() {
                         node.reassign_ids(next_id, id_map);
                     }
                 });
             }
             LinkType::OwnedMultiple => {
                 owned_recursive_statements.push(quote! {
-                    if let LinkStateMultiple::Loaded(nodes) = self.#field_name.state_mut() {
+                    if let Ok(nodes) = self.#field_name.get_mut() {
                         for node in nodes.iter_mut() {
                             node.reassign_ids(next_id, id_map);
                         }

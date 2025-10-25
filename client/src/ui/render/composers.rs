@@ -335,53 +335,6 @@ impl<'a, T> ListData<'a, T> {
     }
 }
 
-/// Unified list composer that wraps Vec<T> with different data and element function variants
-///
-/// # Basic Usage
-///
-/// For immutable lists (display only):
-/// ```rust
-/// let items = vec![1, 2, 3];
-/// items.as_list(|item, ctx, ui| {
-///     ui.label(format!("Item: {}", item))
-/// }).compose(ctx, ui);
-/// ```
-///
-/// For mutable data with immutable element functions (editing optional):
-/// ```rust
-/// let mut items = vec![String::from("a"), String::from("b")];
-/// items.as_list_mut(|item, ctx, ui| {
-///     ui.label(item.clone())
-/// }).editable(|| String::from("new item"))
-///   .compose(ctx, ui);
-/// ```
-///
-/// For mutable data with mutable element functions (direct field editing):
-/// ```rust
-/// let mut items = vec![String::from("hello"), String::from("world")];
-/// items.as_mutable_list(|item, ctx, ui| {
-///     ui.text_edit_singleline(item)
-/// }).editable(|| String::from("new item"))
-///   .compose(ctx, ui);
-/// ```
-///
-/// # Editing Features (when `.editable()` is called)
-/// - "+ Add" button to add new elements using the default factory
-/// - "✕" button next to each element to remove it
-/// - "↑" and "↓" arrow buttons to reorder elements
-///
-/// # Additional Features
-/// - `.with_hover()` - Add hover interactions for immutable elements
-/// - `.with_hover_mut()` - Add hover interactions for mutable elements
-/// - `.with_filter()` - Add search/filter functionality
-///
-/// # Variants
-/// - **Immutable**: Read-only data, no editing possible
-/// - **ImmutableMut**: Mutable data but immutable element functions, editing enabled
-/// - **Mutable**: Mutable data with mutable element functions, editing enabled
-///
-/// **Note**: The `.editable()` method only works on mutable data variants.
-/// Calling it on immutable data will panic.
 pub struct ListComposer<'a, T> {
     list_data: ListData<'a, T>,
     hover_fn: Option<Box<dyn FnMut(&T, &ClientContext, &mut Ui) + 'a>>,

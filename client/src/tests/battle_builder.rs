@@ -417,7 +417,7 @@ impl FusionBuilder {
                 start: 0,
                 length: 255,
             };
-            slot.unit = Ref::new_loaded(unit.clone());
+            slot.unit = Ref::new_id(unit.id);
             slots.push(slot);
         }
 
@@ -468,7 +468,7 @@ impl TeamBuilder {
         // Collect all units from all houses
         let mut all_units = vec![];
         for house in &built_houses {
-            if let Some(units) = house.units.get() {
+            if let Ok(units) = house.units.get() {
                 all_units.extend(units.iter().cloned());
             }
         }

@@ -64,7 +64,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             .mutual_top_parent(ctx.rctx(), NodeKind::NUnitBehavior)
             .and_then(|id| ctx.load::<NUnitBehavior>(id).ok())
         {
-            description.behavior.state_mut().set(behavior);
+            description.behavior.set_loaded(behavior).ok();
         } else {
             return false;
         }
@@ -73,17 +73,17 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             .mutual_top_parent(ctx.rctx(), NodeKind::NUnitRepresentation)
             .and_then(|id| ctx.load::<NUnitRepresentation>(id).ok())
         {
-            description.representation.state_mut().set(representation);
+            description.representation.set_loaded(representation).ok();
         } else {
             return false;
         }
-        unit.description.state_mut().set(description);
+        unit.description.set_loaded(description).ok();
         if let Some(stats) = unit
             .id
             .top_parent(ctx.rctx(), NodeKind::NUnitStats)
             .and_then(|id| ctx.load::<NUnitStats>(id).ok())
         {
-            unit.stats.state_mut().set(stats);
+            unit.stats.set_loaded(stats).ok();
         } else {
             return false;
         }
@@ -95,7 +95,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     let mut status_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
 
     for unit in units {
-        if let Some(description) = unit.description.get() {
+        if let Ok(description) = unit.description.get() {
             match description.magic_type {
                 MagicType::Ability => {
                     // Find the ability magic this unit should belong to
@@ -130,7 +130,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             .and_then(|id| ctx.load::<NHouseColor>(id).ok())
         {
             info!("color: {}", color.color.0);
-            house.color.state_mut().set(color);
+            house.color.set_loaded(color).ok();
         } else {
             error!("color failed");
             continue;
@@ -150,10 +150,10 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                     .mutual_top_parent(ctx.rctx(), NodeKind::NAbilityEffect)
                     .and_then(|id| ctx.load::<NAbilityEffect>(id).ok())
                 {
-                    description.effect.state_mut().set(effect);
-                    ability.description.state_mut().set(description);
+                    description.effect.set_loaded(effect).ok();
+                    ability.description.set_loaded(description).ok();
                     let ability_id = ability.id;
-                    house.ability.state_mut().set(ability);
+                    house.ability.set_loaded(ability).ok();
                     if let Some(units) = ability_units.remove(&ability_id) {
                         // TODO: Handle units assignment
                     }
@@ -184,10 +184,10 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
                     .mutual_top_parent(ctx.rctx(), NodeKind::NStatusBehavior)
                     .and_then(|id| ctx.load::<NStatusBehavior>(id).ok())
                 {
-                    description.behavior.state_mut().set(behavior);
-                    status.description.state_mut().set(description);
+                    description.behavior.set_loaded(behavior).ok();
+                    status.description.set_loaded(description).ok();
                     let status_id = status.id;
-                    house.status.state_mut().set(status);
+                    house.status.set_loaded(status).ok();
                     if let Some(units) = status_units.remove(&status_id) {
                         // TODO: Handle units assignment
                     }

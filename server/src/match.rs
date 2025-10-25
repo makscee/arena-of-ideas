@@ -40,8 +40,8 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
             let mut unit = unit.clone(ctx, pid);
             unit.state
-                .state_mut()
-                .set(NUnitState::new(pid, 1).insert(ctx));
+                .set_loaded(NUnitState::new(pid, 1).insert(ctx))
+                .ok();
             unit.id.add_parent(ctx.rctx(), house.id)?;
         }
         CardKind::House => {
@@ -49,8 +49,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
                 .houses
-                .get()
-                .to_not_found()?
+                .get()?
                 .iter()
                 .any(|h| h.house_name == house.house_name)
             {
@@ -59,7 +58,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 let house = house.clone(ctx, pid);
                 ctx.add_link(house.id, m.team_load(ctx)?.id)?;
             }
-            *m.team.state_mut() = LinkStateSingle::Unknown;
+            m.team = Owned::unknown();
             m.fill_shop_case(ctx, true)?;
         }
     }
@@ -277,9 +276,9 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         fusion.slots.get_mut()?.push(slot);
         team.fusions.get_mut()?.push(fusion);
     }
-    m.team.state_mut().set(team);
+    m.team.set_loaded(team)?;
     m.fill_shop_case(ctx, false)?;
-    player.active_match.state_mut().set(m);
+    player.active_match.set_loaded(m)?;
     player.take().save(ctx)?;
     Ok(())
 }

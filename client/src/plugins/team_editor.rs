@@ -793,9 +793,9 @@ impl TeamEditor {
     fn get_unlinked_units<'a>(&self, team: &'a NTeam) -> Vec<&'a NUnit> {
         let mut linked_units = HashSet::new();
 
-        if let Some(fusions) = team.fusions.get() {
+        if let Ok(fusions) = team.fusions.get() {
             for fusion in fusions {
-                if let Some(slots) = fusion.slots.get() {
+                if let Ok(slots) = fusion.slots.get() {
                     for slot in slots {
                         if let Some(unit_id) = slot.unit.id() {
                             linked_units.insert(unit_id);
@@ -806,9 +806,9 @@ impl TeamEditor {
         }
 
         let mut unlinked = Vec::new();
-        if let Some(houses) = team.houses.get() {
+        if let Ok(houses) = team.houses.get() {
             for house in houses {
-                if let Some(units) = house.units.get() {
+                if let Ok(units) = house.units.get() {
                     for unit in units {
                         if !linked_units.contains(&unit.id) {
                             unlinked.push(unit);
@@ -823,7 +823,7 @@ impl TeamEditor {
     fn get_available_triggers(&self, fusion: &NFusion) -> Vec<(u64, String)> {
         let mut triggers = vec![];
 
-        if let Some(slots) = fusion.slots.get() {
+        if let Ok(slots) = fusion.slots.get() {
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
                     triggers.push((unit_id, format!("Unit {}", slot.index + 1)));
@@ -835,9 +835,9 @@ impl TeamEditor {
     }
 
     fn find_unit_in_team_static(team: &NTeam, unit_id: u64) -> Option<NUnit> {
-        if let Some(houses) = team.houses.get() {
+        if let Ok(houses) = team.houses.get() {
             for house in houses {
-                if let Some(units) = house.units.get() {
+                if let Ok(units) = house.units.get() {
                     for unit in units {
                         if unit.id == unit_id {
                             return Some(unit.clone());

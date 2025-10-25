@@ -200,7 +200,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Component => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut().take() {
+                    if let Ok(node) = self.#field_name.take_loaded() {
                         node.clone().spawn(ctx, Some(entity)).track()?;
                         ctx.add_link(self.id, node.id).track()?;
                     }
@@ -216,7 +216,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Owned => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let LinkStateSingle::Loaded(node) = self.#field_name.state_mut().take() {
+                    if let Ok(node) = self.#field_name.take_loaded() {
                         node.clone().spawn(ctx, Some(entity)).track()?;
                         ctx.add_link(self.id, node.id).track()?;
                     }
@@ -225,7 +225,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::OwnedMultiple => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let LinkStateMultiple::Loaded(nodes) = self.#field_name.state_mut().take() {
+                    if let Ok(nodes) = self.#field_name.take_loaded() {
                         for node in nodes {
                             node.clone().spawn(ctx, None).track()?;
                             ctx.add_link(self.id, node.id).track()?;
@@ -455,14 +455,13 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             let field_name = &field.name;
             let field_label = field.name.to_string();
             quote! {
-                ui.group(|ui| {
+                ui.horizontal(|ui| {
                     ui.label(#field_label);
                     let field_response = self.#field_name.edit(ui);
                     if field_response.changed() {
                         self.is_dirty = true;
                         changed = true;
                     }
-                    field_response
                 });
             }
         });
@@ -473,7 +472,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         impl FEdit for #struct_name {
             fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
                 let mut changed = false;
-                let mut main_response = ui.vertical(|ui| {
+                let mut main_response = ui.group(|ui| {
                     #(#data_field_edits)*
                 }).response;
 

@@ -42,7 +42,7 @@ impl BattlePlugin {
                 fusion.owner = team.owner;
                 let mut slot = NFusionSlot::default().with_id(next_id());
                 slot.owner = team.owner;
-                fusion.slots.state_mut().set([slot].into());
+                fusion.slots.set_loaded([slot].into()).ok();
                 team.fusions.get_mut().unwrap().push(fusion);
             }
         }

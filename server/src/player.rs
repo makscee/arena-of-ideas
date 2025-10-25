@@ -14,12 +14,15 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let mut player = NPlayer::new(ctx.next_id(), name);
     player
         .player_data
-        .state_mut()
-        .set(NPlayerData::new(ctx.next_id(), pass_hash, false, 0).with_owner(player.id));
-    player.identity.state_mut().set(
-        NPlayerIdentity::new(ctx.next_id(), Some(ctx.rctx().sender.to_string()))
-            .with_owner(player.id),
-    );
+        .set_loaded(NPlayerData::new(ctx.next_id(), pass_hash, false, 0).with_owner(player.id))
+        .ok();
+    player
+        .identity
+        .set_loaded(
+            NPlayerIdentity::new(ctx.next_id(), Some(ctx.rctx().sender.to_string()))
+                .with_owner(player.id),
+        )
+        .ok();
     player.save(ctx)?;
     Ok(())
 }
@@ -99,7 +102,7 @@ impl NPlayer {
         }
     }
     fn check_pass(&self, pass: String) -> bool {
-        if let Some(player_data) = self.player_data.get() {
+        if let Ok(player_data) = self.player_data.get() {
             if let Some(pass_hash) = &player_data.pass_hash {
                 match verify(pass, pass_hash) {
                     Ok(v) => v,
