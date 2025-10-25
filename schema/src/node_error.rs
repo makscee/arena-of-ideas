@@ -53,30 +53,30 @@ impl std::fmt::Display for SourceTrace {
 
 #[derive(Error, Debug)]
 pub enum NodeError {
-    #[error("[red Node not found:] {0} {1}")]
+    #[error("Node not found: {0} {1}")]
     NotFound(u64, SourceTrace),
 
-    #[error("[red Linked node not found:] node {node_id} has no {kind} link {location}")]
+    #[error("Linked node not found: node {node_id} has no {kind} link {location}")]
     LinkedNodeNotFound {
         node_id: u64,
         kind: NodeKind,
         location: SourceTrace,
     },
 
-    #[error("[red Invalid node kind:] expected {expected}, got {actual} {location}")]
+    #[error("Invalid node kind: expected {expected}, got {actual} {location}")]
     InvalidKind {
         expected: NodeKind,
         actual: NodeKind,
         location: SourceTrace,
     },
 
-    #[error("[red Failed to load node:] {0} {1}")]
+    #[error("Failed to load node: {0} {1}")]
     LoadError(String, SourceTrace),
 
-    #[error("[red Failed to cast node] {0}")]
+    #[error("Failed to cast node: {0}")]
     CastError(SourceTrace),
 
-    #[error("[red Operation {op} for {} not supported {}] {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
+    #[error("Operation {op} for {} not supported {} {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
     OperationNotSupported {
         values: Vec<VarValue>,
         op: &'static str,
@@ -84,22 +84,22 @@ pub enum NodeError {
         location: SourceTrace,
     },
 
-    #[error("[red Value not found for {0}] {1}")]
+    #[error("Value not found for {0} {1}")]
     VarNotFound(VarName, SourceTrace),
 
-    #[error("[red {0}] {1}")]
+    #[error("Custom error: {0} {1}")]
     Custom(String, SourceTrace),
 
-    #[error("[red Entity#{0}_{1} not linked to id] {2}")]
+    #[error("Entity#{0}_{1} not linked to id {2}")]
     IdNotFound(u32, u32, SourceTrace),
 
-    #[error("[red Id#{0} not linked to Entity] {1}")]
+    #[error("Id#{0} not linked to Entity {1}")]
     EntityNotFound(u64, SourceTrace),
 
-    #[error("[red Not found: {0}] {1}")]
+    #[error("Not found: {0} {1}")]
     NotFoundGeneric(String, SourceTrace),
 
-    #[error("[red Context error: {0}] {1}")]
+    #[error("Context error: {0} {1}")]
     ContextError(anyhow::Error, SourceTrace),
 }
 

@@ -27,7 +27,7 @@ impl ExpressionImpl for Expression {
             Expression::pi2 => Ok((PI * 2.0).into()),
             Expression::owner => Ok(ctx.owner().to_not_found()?.into()),
             Expression::target => Ok(ctx.target().to_not_found()?.into()),
-            Expression::var(var) => ctx.owner_var(*var).or_else(|_| {
+            Expression::var(var) => ctx.get_var(*var).or_else(|_| {
                 if *var == VarName::index {
                     Ok(1.into())
                 } else {

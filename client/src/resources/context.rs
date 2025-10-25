@@ -488,47 +488,30 @@ impl<'w> ContextSource for ClientSource<'w> {
     }
 
     fn set_var(&mut self, id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        match self {
-            ClientSource::Db(_) => Err(NodeError::custom("Cannot modify DB source")),
-            _ => {
-                // For battle simulations, also track in NodeStateHistory
-                if let ClientSource::BattleMut(_battle, t) = self {
-                    let t = *t;
-                    let world = self.world_mut().track()?;
-                    if let Some(map) = world.get_resource::<NodeEntityMap>() {
-                        if let Some(entity) = map.get_entity(id) {
-                            if let Some(mut node_state_history) =
-                                world.get_mut::<NodeStateHistory>(entity)
-                            {
-                                node_state_history.insert(t, 0.0, var, value.clone());
-                            } else {
-                                let mut node_state_history = NodeStateHistory::default();
-                                node_state_history.insert(t, 0.0, var, value.clone());
-                                world.entity_mut(entity).insert(node_state_history);
-                            }
-                        } else {
-                            return Err(NodeError::entity_not_found(id));
-                        }
+        if matches!(self, ClientSource::Db(_)) {
+            return Err(NodeError::custom("Cannot modify DB source"));
+        }
+        if let ClientSource::BattleMut(_battle, t) = self {
+            let t = *t;
+            let world = self.world_mut().track()?;
+            if let Some(map) = world.get_resource::<NodeEntityMap>() {
+                if let Some(entity) = map.get_entity(id) {
+                    if let Some(mut node_state_history) = world.get_mut::<NodeStateHistory>(entity)
+                    {
+                        node_state_history.insert(t, 0.0, var, value.clone());
                     } else {
-                        return Err(NodeError::not_found_generic("NodeEntityMap not found"));
+                        let mut node_state_history = NodeStateHistory::default();
+                        node_state_history.insert(t, 0.0, var, value.clone());
+                        world.entity_mut(entity).insert(node_state_history);
                     }
+                } else {
+                    return Err(NodeError::entity_not_found(id));
                 }
-
-                // Regular set_var implementation would go here
-                let kind = self.get_node_kind(id)?;
-                node_kind_match!(kind, {
-                    let world = self.world_mut()?;
-                    let entity = world
-                        .resource::<NodeEntityMap>()
-                        .get_entity(id)
-                        .to_not_found()?;
-                    let mut node = world.get_mut::<NodeType>(entity).to_not_found()?;
-                    node.set_var(var, value)?;
-                });
-
-                Ok(())
+            } else {
+                return Err(NodeError::not_found_generic("NodeEntityMap not found"));
             }
         }
+        Ok(())
     }
 
     fn get_var_direct(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
