@@ -1,6 +1,7 @@
 use super::*;
 use std::collections::{HashMap, HashSet};
 
+/// Nodes cache for each name has current and selected values stored
 #[derive(Default, Debug)]
 pub struct ExplorerCache {
     pub units: HashMap<String, (NUnit, NUnit)>,
@@ -15,6 +16,12 @@ pub struct ExplorerCache {
     pub house_ability_children: HashMap<String, String>,
     pub house_status_children: HashMap<String, String>,
     pub house_units_children: HashMap<String, HashSet<String>>,
+
+    // Cached lists to avoid cloning
+    pub unit_names: Vec<String>,
+    pub house_names: Vec<String>,
+    pub ability_names: Vec<String>,
+    pub status_names: Vec<String>,
 }
 
 impl ExplorerCache {
@@ -164,6 +171,12 @@ impl ExplorerCache {
                         Ok(())
                     })
             })?;
+
+        // Cache the lists
+        self.unit_names = self.units.keys().cloned().collect();
+        self.house_names = self.houses.keys().cloned().collect();
+        self.ability_names = self.abilities.keys().cloned().collect();
+        self.status_names = self.statuses.keys().cloned().collect();
 
         Ok(())
     }

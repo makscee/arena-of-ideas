@@ -389,15 +389,19 @@ impl TPlayerLinkSelection {
         child_id: u64,
     ) -> NodeResult<()> {
         // Find the link between parent and child
-        let link = ctx
+        let link = if let Some(link) = ctx
             .db
             .node_links()
             .parent_child()
             .filter((&parent_id, &child_id))
             .next()
-            .ok_or_else(|| {
-                format!("Link between parent#{parent_id} and child#{child_id} not found")
-            })?;
+        {
+            link
+        } else {
+            let child = child_id.load_tnode_err(ctx)?;
+            let parent = parent_id.load_tnode_err(ctx)?;
+            TNodeLink::add(ctx, &child, &parent, false)?
+        };
         let kind = link.child_kind;
 
         // Remove any existing selection for this player, source, and kind

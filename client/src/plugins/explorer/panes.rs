@@ -84,249 +84,480 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_units_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let house_name = state.inspected_house.as_ref().to_not_found()?;
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit,
+                inspected_house,
+                inspected_ability: _,
+                inspected_status: _,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let house_name = inspected_house.as_ref().to_not_found()?.clone();
+            let inspected_unit = inspected_unit.clone();
 
-        let unit_names: Vec<String> = state
-            .cache
-            .house_units_children
-            .get(house_name)
-            .map(|units| units.iter().cloned().collect())
-            .unwrap_or_default();
+            cache
+                .unit_names
+                .as_list(|unit_name, _ctx, ui| {
+                    let (current_parent, selected_parent) = cache
+                        .unit_parents
+                        .get(unit_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
 
-        let inspected_unit = state.inspected_unit.clone();
+                    let mut display_parts = vec![];
+                    if current_parent == house_name {
+                        display_parts.push("Current");
+                    }
+                    if selected_parent == house_name {
+                        display_parts.push("Selected");
+                    }
 
-        unit_names
-            .as_list(|unit_name, _ctx, ui| {
-                let color = if inspected_unit
-                    .as_ref()
-                    .is_some_and(|name| name.eq(unit_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                unit_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|unit_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectUnit(unit_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+                    let display_name = if display_parts.is_empty() {
+                        unit_name.clone()
+                    } else {
+                        format!("{} ({})", unit_name, display_parts.join(", "))
+                    };
 
-        Ok(())
+                    let color = if inspected_unit
+                        .as_ref()
+                        .is_some_and(|name| name == unit_name)
+                    {
+                        YELLOW
+                    } else if current_parent == house_name || selected_parent == house_name {
+                        colorix().accent().text_1()
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|unit_name, _ctx, ui| {
+                    let (_, selected_parent) = cache
+                        .unit_parents
+                        .get(unit_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions.push(ExplorerAction::InspectUnit(unit_name.clone()));
+                        }
+                        if selected_parent != house_name {
+                            if ui.button("Select").clicked() {
+                                let state = world.resource::<ExplorerState>();
+                                if let (Some(house_node), Some(unit_node)) = (
+                                    state.cache.houses.get(house_name.as_str()),
+                                    state.cache.units.get(unit_name.as_str()),
+                                ) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), unit_node.0.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
+                })
+                .compose(&cn().db.as_context(), ui);
+
+            Ok(())
+        })
     }
 
     pub fn pane_house_abilities_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let house_name = state.inspected_house.as_ref().to_not_found()?;
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit: _,
+                inspected_house,
+                inspected_ability,
+                inspected_status: _,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let house_name = inspected_house.as_ref().to_not_found()?.clone();
+            let inspected_ability = inspected_ability.clone();
 
-        let ability_names: Vec<String> = state
-            .cache
-            .house_ability_children
-            .get(house_name)
-            .map(|ability| vec![ability.clone()])
-            .unwrap_or_default();
+            cache
+                .ability_names
+                .as_list(|ability_name, _ctx, ui| {
+                    let (current_parent, selected_parent) = cache
+                        .ability_parents
+                        .get(ability_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
 
-        let inspected_ability = state.inspected_ability.clone();
+                    let mut display_parts = vec![];
+                    if current_parent == house_name {
+                        display_parts.push("Current");
+                    }
+                    if selected_parent == house_name {
+                        display_parts.push("Selected");
+                    }
 
-        ability_names
-            .as_list(|ability_name, _ctx, ui| {
-                let color = if inspected_ability
-                    .as_ref()
-                    .is_some_and(|name| name.eq(ability_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                ability_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|ability_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectAbility(ability_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+                    let display_name = if display_parts.is_empty() {
+                        ability_name.clone()
+                    } else {
+                        format!("{} ({})", ability_name, display_parts.join(", "))
+                    };
 
-        Ok(())
+                    let color = if inspected_ability
+                        .as_ref()
+                        .is_some_and(|name| name == ability_name)
+                    {
+                        YELLOW
+                    } else if current_parent == house_name || selected_parent == house_name {
+                        colorix().accent().text_1()
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|ability_name, _ctx, ui| {
+                    let (_, selected_parent) = cache
+                        .ability_parents
+                        .get(ability_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions
+                                .push(ExplorerAction::InspectAbility(ability_name.clone()));
+                        }
+                        if selected_parent != house_name {
+                            if ui.button("Select").clicked() {
+                                let state = world.resource::<ExplorerState>();
+                                if let (Some(house_node), Some(ability_node)) = (
+                                    state.cache.houses.get(house_name.as_str()),
+                                    state.cache.abilities.get(ability_name.as_str()),
+                                ) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), ability_node.0.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
+                })
+                .compose(&cn().db.as_context(), ui);
+
+            Ok(())
+        })
     }
 
     pub fn pane_house_statuses_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let house_name = state.inspected_house.as_ref().to_not_found()?;
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit: _,
+                inspected_house,
+                inspected_ability: _,
+                inspected_status,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let house_name = inspected_house.as_ref().to_not_found()?.clone();
+            let inspected_status = inspected_status.clone();
 
-        let status_names: Vec<String> = state
-            .cache
-            .house_status_children
-            .get(house_name)
-            .map(|status| vec![status.clone()])
-            .unwrap_or_default();
+            cache
+                .status_names
+                .as_list(|status_name, _ctx, ui| {
+                    let (current_parent, selected_parent) = cache
+                        .status_parents
+                        .get(status_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
 
-        let inspected_status = state.inspected_status.clone();
+                    let mut display_parts = vec![];
+                    if current_parent == house_name {
+                        display_parts.push("Current");
+                    }
+                    if selected_parent == house_name {
+                        display_parts.push("Selected");
+                    }
 
-        status_names
-            .as_list(|status_name, _ctx, ui| {
-                let color = if inspected_status
-                    .as_ref()
-                    .is_some_and(|name| name.eq(status_name))
-                {
-                    YELLOW
-                } else {
-                    colorix().high_contrast_text()
-                };
-                status_name.cstr_c(color).label(ui)
-            })
-            .with_hover(|status_name, _ctx, ui| {
-                if ui.button("Inspect").clicked() {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state
-                        .pending_actions
-                        .push(ExplorerAction::InspectStatus(status_name.clone()));
-                }
-            })
-            .compose(&cn().db.as_context(), ui);
+                    let display_name = if display_parts.is_empty() {
+                        status_name.clone()
+                    } else {
+                        format!("{} ({})", status_name, display_parts.join(", "))
+                    };
 
-        Ok(())
+                    let color = if inspected_status
+                        .as_ref()
+                        .is_some_and(|name| name == status_name)
+                    {
+                        YELLOW
+                    } else if current_parent == house_name || selected_parent == house_name {
+                        colorix().accent().text_1()
+                    } else {
+                        colorix().high_contrast_text()
+                    };
+
+                    display_name.cstr_c(color).label(ui)
+                })
+                .with_hover(|status_name, _ctx, ui| {
+                    let (_, selected_parent) = cache
+                        .status_parents
+                        .get(status_name.as_str())
+                        .map(|(top, player)| (top.clone(), player.clone()))
+                        .unwrap_or_default();
+
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions
+                                .push(ExplorerAction::InspectStatus(status_name.clone()));
+                        }
+                        if selected_parent != house_name {
+                            if ui.button("Select").clicked() {
+                                if let (Some(house_node), Some(status_node)) = (
+                                    cache.houses.get(house_name.as_str()),
+                                    cache.statuses.get(status_name.as_str()),
+                                ) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), status_node.0.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
+                })
+                .compose(&cn().db.as_context(), ui);
+
+            Ok(())
+        })
     }
 
     pub fn pane_unit_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let unit_name = state.inspected_unit.as_ref().to_not_found()?;
-        let parents = state.cache.unit_parents.get(unit_name);
-        let inspected_house = state.inspected_house.clone();
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit,
+                inspected_house,
+                inspected_ability: _,
+                inspected_status: _,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let unit_name = inspected_unit.as_ref().to_not_found()?.clone();
+            let parents = cache.unit_parents.get(unit_name.as_str()).cloned();
+            let inspected_house = inspected_house.clone();
+            let unit_node = cache
+                .units
+                .get(unit_name.as_str())
+                .to_not_found()?
+                .0
+                .clone();
 
-        if let Some((top_parent, player_parent)) = parents {
-            let mut parent_names = vec![];
-            if !top_parent.is_empty() {
-                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
-            }
-            if !player_parent.is_empty() && player_parent != top_parent {
-                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
-            } else if !top_parent.is_empty() && player_parent == top_parent {
-                parent_names.clear();
-                parent_names.push((top_parent.clone(), top_parent.clone()));
-            }
+            let (current_parent, selected_parent) = parents
+                .map(|(top, player)| (top.clone(), player.clone()))
+                .unwrap_or_default();
 
-            parent_names
-                .as_list(|(display_name, house_name), _ctx, ui| {
+            cache
+                .house_names
+                .as_list(|house_name, _ctx, ui| {
+                    let mut display_parts = vec![];
+                    if house_name == &current_parent {
+                        display_parts.push("Current");
+                    }
+                    if house_name == &selected_parent {
+                        display_parts.push("Selected");
+                    }
+
+                    let display_name = if display_parts.is_empty() {
+                        house_name.clone()
+                    } else {
+                        format!("{} ({})", house_name, display_parts.join(", "))
+                    };
+
                     let color = if inspected_house
                         .as_ref()
-                        .is_some_and(|name| name.eq(house_name))
+                        .is_some_and(|name| name == house_name)
                     {
                         YELLOW
+                    } else if house_name == &current_parent || house_name == &selected_parent {
+                        colorix().accent().text_1()
                     } else {
                         colorix().high_contrast_text()
                     };
+
                     display_name.cstr_c(color).label(ui)
                 })
-                .with_hover(|(_, house_name), _ctx, ui| {
-                    if ui.button("Inspect").clicked() {
-                        let mut state = world.resource_mut::<ExplorerState>();
-                        state
-                            .pending_actions
-                            .push(ExplorerAction::InspectHouse(house_name.clone()));
-                    }
+                .with_hover(|house_name, _ctx, ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions.push(ExplorerAction::InspectHouse(house_name.clone()));
+                        }
+                        if house_name != &selected_parent {
+                            if ui.button("Select").clicked() {
+                                if let Some(house_node) = cache.houses.get(house_name.as_str()) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), unit_node.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
                 })
                 .compose(&cn().db.as_context(), ui);
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let ability_name = state.inspected_ability.as_ref().to_not_found()?;
-        let parents = state.cache.ability_parents.get(ability_name);
-        let inspected_house = state.inspected_house.clone();
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit: _,
+                inspected_house,
+                inspected_ability,
+                inspected_status: _,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let ability_name = inspected_ability.as_ref().to_not_found()?.clone();
+            let parents = cache.ability_parents.get(ability_name.as_str()).cloned();
+            let inspected_house = inspected_house.clone();
+            let ability_node = cache
+                .abilities
+                .get(ability_name.as_str())
+                .to_not_found()?
+                .0
+                .clone();
 
-        if let Some((top_parent, player_parent)) = parents {
-            let mut parent_names = vec![];
-            if !top_parent.is_empty() {
-                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
-            }
-            if !player_parent.is_empty() && player_parent != top_parent {
-                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
-            } else if !top_parent.is_empty() && player_parent == top_parent {
-                parent_names.clear();
-                parent_names.push((top_parent.clone(), top_parent.clone()));
-            }
+            let (current_parent, selected_parent) = parents
+                .map(|(top, player)| (top.clone(), player.clone()))
+                .unwrap_or_default();
 
-            parent_names
-                .as_list(|(display_name, house_name), _ctx, ui| {
+            cache
+                .house_names
+                .as_list(|house_name, _ctx, ui| {
+                    let mut display_parts = vec![];
+                    if house_name == &current_parent {
+                        display_parts.push("Current");
+                    }
+                    if house_name == &selected_parent {
+                        display_parts.push("Selected");
+                    }
+
+                    let display_name = if display_parts.is_empty() {
+                        house_name.clone()
+                    } else {
+                        format!("{} ({})", house_name, display_parts.join(", "))
+                    };
+
                     let color = if inspected_house
                         .as_ref()
-                        .is_some_and(|name| name.eq(house_name))
+                        .is_some_and(|name| name == house_name)
                     {
                         YELLOW
+                    } else if house_name == &current_parent || house_name == &selected_parent {
+                        colorix().accent().text_1()
                     } else {
                         colorix().high_contrast_text()
                     };
+
                     display_name.cstr_c(color).label(ui)
                 })
-                .with_hover(|(_, house_name), _ctx, ui| {
-                    if ui.button("Inspect").clicked() {
-                        let mut state = world.resource_mut::<ExplorerState>();
-                        state
-                            .pending_actions
-                            .push(ExplorerAction::InspectHouse(house_name.clone()));
-                    }
+                .with_hover(|house_name, _ctx, ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions.push(ExplorerAction::InspectHouse(house_name.clone()));
+                        }
+                        if house_name != &selected_parent {
+                            if ui.button("Select").clicked() {
+                                if let Some(house_node) = cache.houses.get(house_name.as_str()) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), ability_node.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
                 })
                 .compose(&cn().db.as_context(), ui);
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let state = world.resource::<ExplorerState>();
-        let status_name = state.inspected_status.as_ref().to_not_found()?;
-        let parents = state.cache.status_parents.get(status_name);
-        let inspected_house = state.inspected_house.clone();
+        world.resource_scope::<ExplorerState, _>(|world, mut state| {
+            let ExplorerState {
+                inspected_unit: _,
+                inspected_house,
+                inspected_ability: _,
+                inspected_status,
+                view_mode: _,
+                cache,
+                pending_actions,
+            } = state.as_mut();
+            let status_name = inspected_status.as_ref().to_not_found()?.clone();
+            let parents = cache.status_parents.get(status_name.as_str()).cloned();
+            let inspected_house = inspected_house.clone();
+            let status_node = cache
+                .statuses
+                .get(status_name.as_str())
+                .to_not_found()?
+                .0
+                .clone();
 
-        if let Some((top_parent, player_parent)) = parents {
-            let mut parent_names = vec![];
-            if !top_parent.is_empty() {
-                parent_names.push((format!("Top: {}", top_parent), top_parent.clone()));
-            }
-            if !player_parent.is_empty() && player_parent != top_parent {
-                parent_names.push((format!("Player: {}", player_parent), player_parent.clone()));
-            } else if !top_parent.is_empty() && player_parent == top_parent {
-                parent_names.clear();
-                parent_names.push((top_parent.clone(), top_parent.clone()));
-            }
+            let (current_parent, selected_parent) = parents
+                .map(|(top, player)| (top.clone(), player.clone()))
+                .unwrap_or_default();
+            cache
+                .house_names
+                .as_list(|house_name, _ctx, ui| {
+                    let mut display_parts = vec![];
+                    if house_name == &current_parent {
+                        display_parts.push("Current");
+                    }
+                    if house_name == &selected_parent {
+                        display_parts.push("Selected");
+                    }
 
-            parent_names
-                .as_list(|(display_name, house_name), _ctx, ui| {
+                    let display_name = if display_parts.is_empty() {
+                        house_name.clone()
+                    } else {
+                        format!("{} ({})", house_name, display_parts.join(", "))
+                    };
+
                     let color = if inspected_house
                         .as_ref()
-                        .is_some_and(|name| name.eq(house_name))
+                        .is_some_and(|name| name == house_name)
                     {
                         YELLOW
+                    } else if house_name == &current_parent || house_name == &selected_parent {
+                        colorix().accent().text_1()
                     } else {
                         colorix().high_contrast_text()
                     };
+
                     display_name.cstr_c(color).label(ui)
                 })
-                .with_hover(|(_, house_name), _ctx, ui| {
-                    if ui.button("Inspect").clicked() {
-                        let mut state = world.resource_mut::<ExplorerState>();
-                        state
-                            .pending_actions
-                            .push(ExplorerAction::InspectHouse(house_name.clone()));
-                    }
+                .with_hover(|house_name, _ctx, ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("Inspect").clicked() {
+                            pending_actions.push(ExplorerAction::InspectHouse(house_name.clone()));
+                        }
+                        if house_name != &selected_parent {
+                            if ui.button("Select").clicked() {
+                                if let Some(house_node) = cache.houses.get(house_name.as_str()) {
+                                    cn().reducers
+                                        .content_select_link(house_node.0.id(), status_node.id())
+                                        .notify(world);
+                                }
+                            }
+                        }
+                    });
                 })
                 .compose(&cn().db.as_context(), ui);
-        }
 
-        Ok(())
+            Ok(())
+        })
     }
 
     pub fn pane_unit_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {

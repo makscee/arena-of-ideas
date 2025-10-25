@@ -328,7 +328,7 @@ impl<'a, T> ListData<'a, T> {
     pub fn data_mut(&mut self) -> &mut Vec<T> {
         match self {
             ListData::Immutable { .. } => {
-                panic!("Cannot get mutable reference from immutable data")
+                panic!("Cannot get mutable reference to immutable list data")
             }
             ListData::Mutable { data, .. } => data,
         }
