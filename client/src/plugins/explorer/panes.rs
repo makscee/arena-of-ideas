@@ -510,19 +510,19 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let (unit, current_component_id) = {
+        let (parent, current_component_id) = {
             let cache = world.resource::<ExplorerCache>();
             let state = world.resource::<ExplorerState>();
             let unit_name = state.inspected_unit.as_ref().to_not_found()?.clone();
-            let unit = cache.units.get(&unit_name).to_not_found()?.1.clone();
+            let unit = &cache.units.get(&unit_name).to_not_found()?.1;
             let current_id = unit.description().ok().map(|desc| desc.id);
-            (unit.clone(), current_id)
+            (unit.id(), current_id)
         };
 
         Self::render_component_list(
             ui,
             NodeKind::NUnitDescription,
-            unit.id(),
+            parent,
             current_component_id,
             &world.resource::<ExplorerCache>(),
         )
@@ -532,8 +532,8 @@ impl ExplorerPanes {
         let (description_id, current_component_id) = {
             let cache = world.resource::<ExplorerCache>();
             let state = world.resource::<ExplorerState>();
-            let unit_name = state.inspected_unit.as_ref().to_not_found()?.clone();
-            let unit = cache.units.get(&unit_name).to_not_found()?.1.clone();
+            let unit_name = state.inspected_unit.as_ref().to_not_found()?;
+            let unit = &cache.units.get(unit_name).to_not_found()?.1;
             let description = unit.description()?;
             let current_id = description.behavior().ok().map(|behavior| behavior.id);
             (description.id, current_id)
@@ -549,19 +549,19 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_stats(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        let (unit, current_component_id) = {
+        let (parent, current_component_id) = {
             let cache = world.resource::<ExplorerCache>();
             let state = world.resource::<ExplorerState>();
-            let unit_name = state.inspected_unit.as_ref().to_not_found()?.clone();
-            let unit = cache.units.get(&unit_name).to_not_found()?.1.clone();
+            let unit_name = state.inspected_unit.as_ref().to_not_found()?;
+            let unit = &cache.units.get(unit_name).to_not_found()?.1;
             let current_id = unit.stats().ok().map(|stats| stats.id);
-            (unit.clone(), current_id)
+            (unit.id(), current_id)
         };
 
         Self::render_component_list(
             ui,
             NodeKind::NUnitStats,
-            unit.id(),
+            parent,
             current_component_id,
             &world.resource::<ExplorerCache>(),
         )
@@ -571,8 +571,8 @@ impl ExplorerPanes {
         let (description_id, current_component_id) = {
             let cache = world.resource::<ExplorerCache>();
             let state = world.resource::<ExplorerState>();
-            let unit_name = state.inspected_unit.as_ref().to_not_found()?.clone();
-            let unit = cache.units.get(&unit_name).to_not_found()?.1.clone();
+            let unit_name = state.inspected_unit.as_ref().to_not_found()?;
+            let unit = &cache.units.get(unit_name).to_not_found()?.1;
             let description = unit.description()?;
             let current_id = description
                 .representation()
@@ -594,8 +594,8 @@ impl ExplorerPanes {
         let (house, current_component_id) = {
             let cache = world.resource::<ExplorerCache>();
             let state = world.resource::<ExplorerState>();
-            let house_name = state.inspected_house.as_ref().to_not_found()?.clone();
-            let house = cache.houses.get(&house_name).to_not_found()?.1.clone();
+            let house_name = state.inspected_house.as_ref().to_not_found()?;
+            let house = &cache.houses.get(house_name).to_not_found()?.1;
             let current_id = house.color().ok().map(|color| color.id);
             (house.clone(), current_id)
         };

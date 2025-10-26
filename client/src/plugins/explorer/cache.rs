@@ -46,7 +46,7 @@ impl ExplorerCache {
                 | NodeKind::NStatusRepresentation => {
                     let node_name = node_kind_match!(
                         node.kind(),
-                        node.to_node::<NodeType>()?.title(&EMPTY_CONTEXT)
+                        node.to_node::<NodeType>()?.description_cstr(&EMPTY_CONTEXT)
                     );
 
                     self.component_nodes

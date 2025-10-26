@@ -22,7 +22,7 @@ pub trait FColoredTitle: FTitle {
 
 /// Feature for types that can provide a description
 pub trait FDescription {
-    fn description(&self, ctx: &ClientContext) -> Cstr;
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr;
 }
 
 /// Feature for types that can provide an icon or short representation

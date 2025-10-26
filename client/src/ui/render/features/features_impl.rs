@@ -525,7 +525,7 @@ impl FTitle for NUnit {
 }
 
 impl FDescription for NUnit {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(description) = self.description_ref(ctx) {
             description.description.clone()
         } else {
@@ -647,7 +647,7 @@ impl FTitle for NHouse {
 }
 
 impl FDescription for NHouse {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         String::new()
     }
 }
@@ -716,7 +716,7 @@ impl FTitle for NAbilityMagic {
 }
 
 impl FDescription for NAbilityMagic {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(description) = self.description_ref(ctx) {
             description.description.clone()
         } else {
@@ -781,7 +781,7 @@ impl FTitle for NStatusMagic {
 }
 
 impl FDescription for NStatusMagic {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(description) = self.description_ref(ctx) {
             description.description.clone()
         } else {
@@ -844,7 +844,7 @@ impl FTitle for NArena {
 }
 
 impl FDescription for NArena {
-    fn description(&self, _ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
         "Arena Description".into()
     }
 }
@@ -882,7 +882,7 @@ impl FTitle for NFloorPool {
 }
 
 impl FDescription for NFloorPool {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         "Floor Pool".cstr()
     }
 }
@@ -920,7 +920,7 @@ impl FTitle for NFloorBoss {
 }
 
 impl FDescription for NFloorBoss {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         "Boss team".cstr()
     }
 }
@@ -958,7 +958,7 @@ impl FTitle for NPlayer {
 }
 
 impl FDescription for NPlayer {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(data) = self.player_data_ref(ctx) {
             if data.online {
                 "Online".cstr_c(Color32::from_rgb(0, 255, 0))
@@ -1038,7 +1038,7 @@ impl FTitle for NPlayerData {
 }
 
 impl FDescription for NPlayerData {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         if self.online {
             format!("Online, last login: {}", self.last_login).cstr()
         } else {
@@ -1088,7 +1088,7 @@ impl FTitle for NPlayerIdentity {
 }
 
 impl FDescription for NPlayerIdentity {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.data
             .as_ref()
             .map(|d| d.cstr())
@@ -1159,6 +1159,12 @@ impl FPlaceholder for NAbilityDescription {
     }
 }
 
+impl FDescription for NAbilityDescription {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.description.cstr()
+    }
+}
+
 impl FTitle for NAbilityEffect {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Ability Effect".cstr()
@@ -1166,7 +1172,7 @@ impl FTitle for NAbilityEffect {
 }
 
 impl FDescription for NAbilityEffect {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         format!("{} actions", self.actions.len()).cstr()
     }
 }
@@ -1198,8 +1204,8 @@ impl FTag for NAbilityEffect {
 }
 
 impl FDisplay for NStatusDescription {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.title(ctx).label(ui)
+    fn display(&self, _: &ClientContext, ui: &mut Ui) -> Response {
+        self.description.cstr().label(ui)
     }
 }
 
@@ -1216,6 +1222,12 @@ impl FPlaceholder for NStatusDescription {
     }
 }
 
+impl FDescription for NStatusDescription {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        self.description.cstr()
+    }
+}
+
 impl FTitle for NStatusBehavior {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Status Behavior".cstr()
@@ -1223,8 +1235,8 @@ impl FTitle for NStatusBehavior {
 }
 
 impl FDescription for NStatusBehavior {
-    fn description(&self, _: &ClientContext) -> Cstr {
-        format!("{} reactions", self.reactions.len()).cstr()
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        self.reactions.iter().map(|r| r.cstr()).join("\n")
     }
 }
 
@@ -1236,7 +1248,7 @@ impl FStats for NStatusBehavior {
 
 impl FDisplay for NStatusBehavior {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.title(ctx).label(ui)
+        self.description_cstr(ctx).label_w(ui)
     }
 }
 
@@ -1267,7 +1279,7 @@ impl FTitle for NStatusRepresentation {
 }
 
 impl FDescription for NStatusRepresentation {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.material.cstr()
     }
 }
@@ -1308,16 +1320,16 @@ impl FTitle for NTeam {
 }
 
 impl FDescription for NTeam {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         let houses = self
             .houses
             .iter()
-            .map(|h: &NHouse| h.description(ctx))
+            .map(|h: &NHouse| h.description_cstr(ctx))
             .join(", ");
         let fusions = self
             .fusions
             .iter()
-            .map(|f: &NFusion| f.description(ctx))
+            .map(|f: &NFusion| f.description_cstr(ctx))
             .join(", ");
         format!("{} houses, {} fusions", houses, fusions).cstr()
     }
@@ -1411,7 +1423,7 @@ impl FTitle for NBattle {
 }
 
 impl FDescription for NBattle {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         if let Some(result) = self.result {
             if result {
                 "Victory".cstr_c(Color32::from_rgb(0, 255, 0))
@@ -1467,7 +1479,7 @@ impl FTitle for NMatch {
 }
 
 impl FDescription for NMatch {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         format!(
             "Gold: {}, Floor: {}, Lives: {}",
             self.g, self.floor, self.lives
@@ -1550,7 +1562,7 @@ impl FTitle for NFusion {
 }
 
 impl FDescription for NFusion {
-    fn description(&self, _ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
         "Fusion Slots".cstr()
     }
 }
@@ -1595,7 +1607,7 @@ impl FTitle for NFusionSlot {
 }
 
 impl FDescription for NFusionSlot {
-    fn description(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(unit) = self.unit_ref(ctx) {
             unit.unit_name.cstr()
         } else {
@@ -1696,7 +1708,7 @@ impl FTitle for NUnitDescription {
 }
 
 impl FDescription for NUnitDescription {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.description.cstr()
     }
 }
@@ -1745,8 +1757,12 @@ impl FTitle for NUnitStats {
 }
 
 impl FDescription for NUnitStats {
-    fn description(&self, _: &ClientContext) -> Cstr {
-        format!("Power: {}, Health: {}", self.pwr, self.hp).cstr()
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        format!(
+            "{}/{}",
+            self.pwr.cstr_c(VarName::pwr.color()),
+            self.hp.cstr_c(VarName::hp.color())
+        )
     }
 }
 
@@ -1796,7 +1812,7 @@ impl FTitle for NUnitState {
 }
 
 impl FDescription for NUnitState {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         format!("{} stacks", self.stacks).cstr()
     }
 }
@@ -1840,7 +1856,7 @@ impl FTitle for NUnitBehavior {
 }
 
 impl FDescription for NUnitBehavior {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.reaction.cstr()
     }
 }
@@ -1891,7 +1907,7 @@ impl FTitle for NUnitRepresentation {
 }
 
 impl FDescription for NUnitRepresentation {
-    fn description(&self, _: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.material.cstr()
     }
 }
@@ -2452,6 +2468,12 @@ impl FCompactView for NHouseColor {
     }
 }
 
+impl FDescription for NHouseColor {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
+        self.color.cstr()
+    }
+}
+
 impl<T: FCompactView> FCompactView for &T {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
         (*self).render_compact(ctx, ui)
@@ -2599,5 +2621,11 @@ impl FCard for NStatusMagic {
 impl FTitle for NStatusState {
     fn title(&self, _ctx: &ClientContext) -> Cstr {
         format!("Status State x{} stacks", self.stacks)
+    }
+}
+
+impl FDescription for NStatusState {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
+        format!("x{} stacks", self.stacks).cstr()
     }
 }

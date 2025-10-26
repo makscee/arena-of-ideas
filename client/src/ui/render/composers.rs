@@ -439,7 +439,9 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
     }
 
     fn compose(mut self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let mut response = "[tw List:]".cstr().label(ui);
+        let mut response = format!("[s [tw List ({}):]]", self.list_data.data_ref().len())
+            .cstr()
+            .label(ui);
 
         // Handle add button separately to avoid borrow checker issues
         if self.editable {
@@ -626,7 +628,7 @@ impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
             .show(ui, |ui| {
                 let resp = ui.horizontal(|ui| data.title(ctx).button(ui)).inner;
 
-                data.description(ctx).label_w(ui);
+                data.description_cstr(ctx).label_w(ui);
 
                 ui.horizontal(|ui| {
                     for (var, var_value) in data.stats(ctx) {
