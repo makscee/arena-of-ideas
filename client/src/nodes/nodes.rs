@@ -96,11 +96,12 @@ impl NodeKindOnSpawn for NodeKind {
                 {
                     let world = ctx.world_mut()?;
                     let rep_entity = world.spawn_empty().id();
+                    let rep_id = next_id();
                     unit_rep()
                         .clone()
-                        .with_id(next_id())
+                        .with_id(rep_id)
                         .spawn(ctx, Some(rep_entity))?;
-                    ctx.add_link_entities(entity, rep_entity)?;
+                    ctx.add_link(id, rep_id)?;
                 }
 
                 let mut fusion = ctx.load::<NFusion>(id)?.clone();

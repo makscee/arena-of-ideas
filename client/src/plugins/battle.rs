@@ -106,7 +106,10 @@ impl BattlePlugin {
                             .iter(ctx.world()?)
                         {
                             if format!("{}", entity).button(ui).clicked() {
-                                selected = Some(ctx.id(entity)?);
+                                let ids = entity.ids(&ctx)?;
+                                if let Some(id) = ids.into_iter().next() {
+                                    selected = Some(id);
+                                }
                             }
                         }
                     }

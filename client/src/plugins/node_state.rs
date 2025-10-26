@@ -123,7 +123,11 @@ impl NodeStateHistory {
             if v.is_some() {
                 return v;
             }
-            let Some(id) = context.id(entity).ok_log() else {
+            let ids = match entity.ids(context) {
+                Ok(ids) => ids,
+                Err(_) => continue,
+            };
+            let Some(id) = ids.into_iter().next() else {
                 continue;
             };
             let Some(parent_ids) = context.get_parents(id).ok_log() else {

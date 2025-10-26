@@ -344,7 +344,7 @@ impl From<VfxBuilder> for BattleAction {
 impl BattleSimulation {
     pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
-        world.init_resource::<NodeEntityMap>();
+        world.init_resource::<SmartNodeMap>();
         world.init_resource::<NodeLinks>();
         // dbg!(&battle.left);
         let team_left = battle.left.id;
@@ -369,8 +369,13 @@ impl BattleSimulation {
         fn ids_by_slot(parent: Entity, world: &World) -> Vec<u64> {
             world
                 .with_context(|ctx| {
+                    let ids = parent.ids(&ctx)?;
+                    let id = ids
+                        .into_iter()
+                        .next()
+                        .ok_or(NodeError::entity_not_found(parent.index() as u64))?;
                     Ok(ctx
-                        .load_collect_children::<NFusion>(ctx.id(parent)?)?
+                        .load_collect_children::<NFusion>(id)?
                         .into_iter()
                         .sorted_by_key(|s| s.index)
                         .filter_map(|n| {
@@ -525,10 +530,11 @@ impl BattleSimulation {
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
         let new_status = status.remap_ids();
+        let new_status_id = new_status.id();
         new_status.spawn(ctx, Some(entity))?;
         // Status is already saved with its charges during spawn
 
-        ctx.add_link_entities(target.entity(ctx)?, entity)?;
+        ctx.add_link(target, new_status_id)?;
 
         let mut state = NodeStateHistory::load_mut(entity, ctx)?;
         state.insert(0.0, 0.0, VarName::visible, false.into());

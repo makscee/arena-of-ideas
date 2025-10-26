@@ -25,32 +25,44 @@ impl EventImpl for Event {
                         }
                     }
                 }
-                for status in ctx
-                    .load_collect_children_recursive::<NStatusMagic>(owner)?
+                // TODO: Implement load_collect_children_recursive or replace with new API
+                let statuses = ctx
+                    .load_collect_children::<NStatusMagic>(owner)?
                     .into_iter()
-                    .collect_vec()
-                {
-                    let mut value = ctx.get_var(VarName::value)?;
-                    if let Ok(behavior) = status
+                    .collect_vec();
+
+                let mut value = ctx.get_var(VarName::value)?;
+
+                for status in statuses {
+                    // Collect behavior data without borrowing ctx
+                    let status_id = status.id;
+                    let behavior_opt = status
                         .description_ref(ctx)
                         .and_then(|d| d.behavior_ref(ctx))
-                    {
-                        ctx.with_status_ref(status.id, |ctx| {
-                            if let Some(actions) = behavior.reactions.react(self, ctx) {
-                                match actions.process(ctx) {
+                        .ok()
+                        .cloned(); // Clone the behavior to avoid borrowing issues
+
+                    if let Some(behavior) = behavior_opt {
+                        // TODO: Implement with_status_ref or replace with new API
+                        let result = ctx.with_status(status_id, |inner_ctx| {
+                            if let Some(actions) = behavior.reactions.react(self, inner_ctx) {
+                                match actions.process(inner_ctx) {
                                     Ok(_) => {}
                                     Err(e) => {
                                         return Err(e);
                                     }
                                 }
                             }
-                            value = ctx.get_var(VarName::value)?;
-                            Ok(())
-                        })
-                        .log();
-                        ctx.set_var_layer(VarName::value, value);
+                            inner_ctx.get_var(VarName::value)
+                        });
+
+                        if let Ok(new_value) = result {
+                            value = new_value;
+                        }
                     }
                 }
+
+                ctx.set_var_layer(VarName::value, value);
                 ctx.get_var(VarName::value)
             },
         ) {

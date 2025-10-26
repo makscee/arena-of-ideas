@@ -29,8 +29,7 @@ pub use bevy::{
         primitives::{Circle, Rectangle},
         vec2, vec3, vec4,
     },
-    platform::collections::{HashMap, HashSet},
-    prelude::{Camera, Commands, In, Mesh, Visibility, Without, default},
+    prelude::{Camera, ChildOf, Children, Commands, In, Mesh, Visibility, Without, default},
     prelude::{Message, MessageReader, Messages},
     reflect::{Reflect, TypePath},
     render::render_resource::{AsBindGroup, PolygonMode, RenderPipelineDescriptor},
@@ -98,6 +97,7 @@ pub use std::cell::LazyCell;
 pub use std::{
     cell::RefCell,
     cmp::Ordering,
+    collections::{HashMap, HashSet},
     f32::consts::{PI, TAU},
     fmt::Debug,
     hash::{DefaultHasher, Hash, Hasher},

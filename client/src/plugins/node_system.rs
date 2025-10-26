@@ -5,7 +5,7 @@ pub struct NodeSystemPlugin;
 
 impl Plugin for NodeSystemPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(NodeEntityMap::default())
+        app.insert_resource(SmartNodeMap::default())
             .insert_resource(NodeLinks::default());
     }
 }

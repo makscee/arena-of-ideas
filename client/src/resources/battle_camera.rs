@@ -124,7 +124,11 @@ impl BattleCamera {
                 .iter(world)
                 .collect_vec()
             {
-                let id = ctx.id(entity)?;
+                let ids = entity.ids(&ctx)?;
+                let id = ids
+                    .into_iter()
+                    .next()
+                    .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                 ctx.with_owner(id, |ctx| {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
@@ -142,7 +146,11 @@ impl BattleCamera {
                 .iter(world)
                 .collect_vec()
             {
-                let id = ctx.id(entity)?;
+                let ids = entity.ids(&ctx)?;
+                let id = ids
+                    .into_iter()
+                    .next()
+                    .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                 ctx.with_owner(id, |ctx| {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
