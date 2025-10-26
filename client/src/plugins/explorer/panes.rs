@@ -5,6 +5,12 @@ pub struct ExplorerPanes;
 
 impl ExplorerPanes {
     pub fn render_node_list(ui: &mut Ui, world: &mut World, kind: NamedNodeKind) -> NodeResult<()> {
+        named_node_kind_match!(
+            kind,
+            if "➕ Add new".cstr().button(ui).clicked() {
+                NamedNodeType::default().open_publish_window(world);
+            }
+        );
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
             let names = match kind {
@@ -212,25 +218,30 @@ impl ExplorerPanes {
 
     fn render_component_list(
         ui: &mut Ui,
-        component_kind: NodeKind,
+        kind: NodeKind,
         parent_id: u64,
         current_component_id: Option<u64>,
         cache: &ExplorerCache,
     ) -> NodeResult<()> {
-        // Display current component if present
-        if let Some(current_id) = current_component_id {
-            let ctx = &cn().db().as_context();
-            if let Ok(kind) = ctx.get_kind(current_id) {
-                let _ = node_kind_match!(kind, {
-                    if let Ok(node) = ctx.load::<NodeType>(current_id) {
-                        node.as_display().compose(ctx, ui);
-                        ui.separator();
-                    }
+        node_kind_match!(
+            kind,
+            if "➕ Add New".cstr().button(ui).clicked() {
+                op(|world| {
+                    NodeType::default().open_publish_window(world);
                 });
             }
+        );
+        if let Some(current_id) = current_component_id {
+            let ctx = &cn().db().as_context();
+            node_kind_match!(kind, {
+                if let Ok(node) = ctx.load::<NodeType>(current_id) {
+                    node.as_display().compose(ctx, ui);
+                    ui.separator();
+                }
+            });
         }
 
-        if let Some(component_nodes) = cache.component_nodes.get(&component_kind) {
+        if let Some(component_nodes) = cache.component_nodes.get(&kind) {
             component_nodes
                 .as_list(|(node_id, node_name), _ctx, ui| {
                     let color = if current_component_id == Some(*node_id) {
@@ -273,11 +284,13 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_units_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NUnit::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
             let house_name = state.inspected_house.as_ref().to_not_found()?.clone();
             let inspected_unit = state.inspected_unit.clone();
-
             cache
                 .unit_names
                 .as_list(|unit_name, _ctx, ui| {
@@ -348,6 +361,9 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_abilities_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NAbilityMagic::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
             let house_name = state.inspected_house.as_ref().to_not_found()?.clone();
@@ -368,6 +384,9 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_statuses_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NStatusMagic::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
             let house_name = state.inspected_house.as_ref().to_not_found()?.clone();
@@ -388,6 +407,9 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NHouse::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
 
@@ -414,6 +436,9 @@ impl ExplorerPanes {
     }
 
     pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NHouse::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
 
@@ -440,6 +465,9 @@ impl ExplorerPanes {
     }
 
     pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        if "➕ Add new".cstr().button(ui).clicked() {
+            NHouse::default().open_publish_window(world);
+        }
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let cache = world.resource::<ExplorerCache>();
 

@@ -2141,7 +2141,7 @@ impl FPlaceholder for NUnitDescription {
     fn placeholder() -> Self {
         NUnitDescription::new(
             next_id(),
-            "Placeholdeer Description".to_string(),
+            "Placeholder Description".to_string(),
             MagicType::Ability,
             Trigger::BattleStart,
         )
