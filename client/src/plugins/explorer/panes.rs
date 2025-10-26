@@ -88,11 +88,9 @@ impl ExplorerPanes {
             let ExplorerState {
                 inspected_unit,
                 inspected_house,
-                inspected_ability: _,
-                inspected_status: _,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let house_name = inspected_house.as_ref().to_not_found()?.clone();
             let inspected_unit = inspected_unit.clone();
@@ -146,10 +144,9 @@ impl ExplorerPanes {
                         }
                         if selected_parent != house_name {
                             if ui.button("Select").clicked() {
-                                let state = world.resource::<ExplorerState>();
                                 if let (Some(house_node), Some(unit_node)) = (
-                                    state.cache.houses.get(house_name.as_str()),
-                                    state.cache.units.get(unit_name.as_str()),
+                                    cache.houses.get(house_name.as_str()),
+                                    cache.units.get(unit_name.as_str()),
                                 ) {
                                     cn().reducers
                                         .content_select_link(house_node.0.id(), unit_node.0.id())
@@ -168,13 +165,11 @@ impl ExplorerPanes {
     pub fn pane_house_abilities_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let ExplorerState {
-                inspected_unit: _,
                 inspected_house,
                 inspected_ability,
-                inspected_status: _,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let house_name = inspected_house.as_ref().to_not_found()?.clone();
             let inspected_ability = inspected_ability.clone();
@@ -251,13 +246,11 @@ impl ExplorerPanes {
     pub fn pane_house_statuses_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let ExplorerState {
-                inspected_unit: _,
                 inspected_house,
-                inspected_ability: _,
                 inspected_status,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let house_name = inspected_house.as_ref().to_not_found()?.clone();
             let inspected_status = inspected_status.clone();
@@ -335,11 +328,9 @@ impl ExplorerPanes {
             let ExplorerState {
                 inspected_unit,
                 inspected_house,
-                inspected_ability: _,
-                inspected_status: _,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let unit_name = inspected_unit.as_ref().to_not_found()?.clone();
             let parents = cache.unit_parents.get(unit_name.as_str()).cloned();
@@ -410,13 +401,11 @@ impl ExplorerPanes {
     pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let ExplorerState {
-                inspected_unit: _,
                 inspected_house,
                 inspected_ability,
-                inspected_status: _,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let ability_name = inspected_ability.as_ref().to_not_found()?.clone();
             let parents = cache.ability_parents.get(ability_name.as_str()).cloned();
@@ -487,13 +476,11 @@ impl ExplorerPanes {
     pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|world, mut state| {
             let ExplorerState {
-                inspected_unit: _,
                 inspected_house,
-                inspected_ability: _,
                 inspected_status,
-                view_mode: _,
                 cache,
                 pending_actions,
+                ..
             } = state.as_mut();
             let status_name = inspected_status.as_ref().to_not_found()?.clone();
             let parents = cache.status_parents.get(status_name.as_str()).cloned();

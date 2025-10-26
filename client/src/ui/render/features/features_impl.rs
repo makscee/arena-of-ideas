@@ -152,22 +152,27 @@ impl FEdit for HexColor {
         ui.horizontal(|ui| {
             let input_id = ui.next_auto_id().with("input");
             let c = self.try_c32().ok();
-            let mut response = ui.label("");
-            if let Some(c) = c {
+            let color_response = if let Some(c) = c {
                 let mut rgb = [c.r(), c.g(), c.b()];
                 let color_response = ui.color_edit_button_srgb(&mut rgb);
                 if color_response.changed() {
                     *self = Color32::from_rgb(rgb[0], rgb[1], rgb[2]).into();
                 }
-                response = response.union(color_response);
-            }
+                Some(color_response)
+            } else {
+                None
+            };
             let input_response = Input::new("")
                 .char_limit(7)
                 .desired_width(60.0)
                 .color_opt(c)
                 .id(input_id)
                 .ui_string(&mut self.0, ui);
-            response.union(input_response)
+            if let Some(color_response) = color_response {
+                input_response | color_response
+            } else {
+                input_response
+            }
         })
         .inner
     }
@@ -262,26 +267,22 @@ impl FDisplay for VarValue {
 
 impl FEdit for VarValue {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        let (_, selector_response) = Selector::ui_enum(self, ui);
-        let edit_response = ui
-            .horizontal(|ui| match self {
-                VarValue::i32(v) => v.edit(ui),
-                VarValue::f32(v) => v.edit(ui),
-                VarValue::u64(v) => DragValue::new(v).ui(ui),
-                VarValue::bool(v) => v.edit(ui),
-                VarValue::String(v) => v.edit(ui),
-                VarValue::Vec2(v) => v.edit(ui),
-                VarValue::Color32(v) => v.edit(ui),
-                VarValue::list(v) => {
-                    let mut response = ui.label("");
-                    for v in v {
-                        response = response.union(v.edit(ui));
-                    }
-                    response
+        let (_, mut response) = Selector::ui_enum(self, ui);
+        ui.horizontal(|ui| match self {
+            VarValue::i32(v) => response |= v.edit(ui),
+            VarValue::f32(v) => response |= v.edit(ui),
+            VarValue::u64(v) => response |= DragValue::new(v).ui(ui),
+            VarValue::bool(v) => response |= v.edit(ui),
+            VarValue::String(v) => response |= v.edit(ui),
+            VarValue::Vec2(v) => response |= v.edit(ui),
+            VarValue::Color32(v) => response |= v.edit(ui),
+            VarValue::list(v) => {
+                for v in v {
+                    response |= v.edit(ui);
                 }
-            })
-            .inner;
-        selector_response.union(edit_response)
+            }
+        });
+        response
     }
 }
 
@@ -450,17 +451,13 @@ impl FDisplay for Material {
 
 impl FEdit for Material {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        let paint_response = self.paint_viewer(&EMPTY_CONTEXT, ui);
-        let edit_response = ui
-            .vertical(|ui| {
-                let mut response = ui.label("").union(ui.label(""));
-                for action in &mut self.0 {
-                    response = response.union(action.edit(ui));
-                }
-                response
-            })
-            .inner;
-        paint_response.union(edit_response)
+        let mut response = self.paint_viewer(&EMPTY_CONTEXT, ui);
+        ui.vertical(|ui| {
+            for action in &mut self.0 {
+                response |= action.edit(ui);
+            }
+        });
+        response
     }
 }
 
@@ -481,12 +478,17 @@ impl FDisplay for Trigger {
 
 impl FDisplay for Reaction {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let trigger_response = self.trigger.display(ctx, ui);
-        let mut actions_response = ui.label("").union(ui.label(""));
-        for action in &self.actions {
-            actions_response = actions_response.union(action.display(ctx, ui));
-        }
-        trigger_response | actions_response
+        ui.group(|ui| {
+            ui.vertical(|ui| {
+                let mut response = self.trigger.display(ctx, ui);
+                for action in &self.actions {
+                    response |= action.display(ctx, ui);
+                }
+                response
+            })
+            .inner
+        })
+        .inner
     }
 }
 
@@ -1723,7 +1725,7 @@ impl FDisplay for NUnitDescription {
     fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             let mut response = self.description.cstr().label_w(ui);
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label("Type:");
                 response |= self.magic_type.cstr_c(self.magic_type.color()).label(ui);
                 ui.separator();
@@ -1873,11 +1875,10 @@ impl FDisplay for NUnitBehavior {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
-                ui.label("Type:");
-                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
-            });
-            ui.label("Reaction:");
-            self.reaction.display(ctx, ui)
+                ui.label("Type:") | self.magic_type.cstr_c(self.magic_type.color()).label(ui)
+            })
+            .inner
+                | ui.horizontal(|ui| self.reaction.display(ctx, ui)).inner
         })
         .inner
     }
@@ -2182,29 +2183,27 @@ impl FEdit for Colorix {
                 .inner;
 
             // Semantic color selectors
-            response = response.union(
-                ui.vertical(|ui| {
-                    let mut semantic_response = ui.label("");
-                    semantic_response = semantic_response.union(ui.label("Semantic Colors"));
+            response |= ui
+                .vertical(|ui| {
+                    let mut response = ui.label("Semantic Colors");
                     if self.show_semantic_editor(Semantic::Accent, ui) {
-                        semantic_response = semantic_response.union(ui.label("Accent changed"));
+                        response.mark_changed();
                     }
                     if self.show_semantic_editor(Semantic::Background, ui) {
-                        semantic_response = semantic_response.union(ui.label("Background changed"));
+                        response.mark_changed();
                     }
                     if self.show_semantic_editor(Semantic::Success, ui) {
-                        semantic_response = semantic_response.union(ui.label("Success changed"));
+                        response.mark_changed();
                     }
                     if self.show_semantic_editor(Semantic::Error, ui) {
-                        semantic_response = semantic_response.union(ui.label("Error changed"));
+                        response.mark_changed();
                     }
                     if self.show_semantic_editor(Semantic::Warning, ui) {
-                        semantic_response = semantic_response.union(ui.label("Warning changed"));
+                        response.mark_changed();
                     }
-                    semantic_response
+                    response
                 })
-                .inner,
-            );
+                .inner;
 
             if response.changed() {
                 self.apply(ui.ctx());
