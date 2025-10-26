@@ -2,7 +2,7 @@ use super::*;
 use std::collections::{HashMap, HashSet};
 
 /// Nodes cache for each name has current and selected values stored
-#[derive(Default, Debug)]
+#[derive(Resource, Default, Debug, Clone)]
 pub struct ExplorerCache {
     pub units: HashMap<String, (NUnit, NUnit)>,
     pub houses: HashMap<String, (NHouse, NHouse)>,
@@ -17,16 +17,51 @@ pub struct ExplorerCache {
     pub house_status_children: HashMap<String, String>,
     pub house_units_children: HashMap<String, HashSet<String>>,
 
-    // Cached lists to avoid cloning
     pub unit_names: Vec<String>,
     pub house_names: Vec<String>,
     pub ability_names: Vec<String>,
     pub status_names: Vec<String>,
+
+    pub component_nodes: HashMap<NodeKind, Vec<(u64, String)>>,
 }
 
 impl ExplorerCache {
     pub fn rebuild(&mut self) -> NodeResult<()> {
         *self = ExplorerCache::default();
+
+        for node in cn().db.nodes_world().iter() {
+            if node.owner != 0 && node.owner != ID_CORE {
+                continue;
+            }
+            match node.kind() {
+                NodeKind::NUnitDescription
+                | NodeKind::NUnitBehavior
+                | NodeKind::NUnitStats
+                | NodeKind::NUnitRepresentation
+                | NodeKind::NHouseColor
+                | NodeKind::NAbilityDescription
+                | NodeKind::NAbilityEffect
+                | NodeKind::NStatusDescription
+                | NodeKind::NStatusBehavior
+                | NodeKind::NStatusRepresentation => {
+                    let node_name = node_kind_match!(
+                        node.kind(),
+                        node.to_node::<NodeType>()?.title(&EMPTY_CONTEXT)
+                    );
+
+                    self.component_nodes
+                        .entry(node.kind())
+                        .or_insert_with(Vec::new)
+                        .push((node.id, node_name));
+                }
+                _ => {}
+            }
+        }
+
+        // Sort all component node lists by id
+        for list in self.component_nodes.values_mut() {
+            list.sort_by_key(|(id, _)| *id);
+        }
 
         cn().db()
             .with_context_strategy(DbLinkStrategy::TopRating, |top_ctx| {
@@ -172,11 +207,38 @@ impl ExplorerCache {
                     })
             })?;
 
-        // Cache the lists
-        self.unit_names = self.units.keys().cloned().collect();
-        self.house_names = self.houses.keys().cloned().collect();
-        self.ability_names = self.abilities.keys().cloned().collect();
-        self.status_names = self.statuses.keys().cloned().collect();
+        // Cache the lists and sort them by id
+        let mut unit_pairs: Vec<_> = self
+            .units
+            .iter()
+            .map(|(name, (node, _))| (node.id, name.clone()))
+            .collect();
+        unit_pairs.sort_by_key(|(id, _)| *id);
+        self.unit_names = unit_pairs.into_iter().map(|(_, name)| name).collect();
+
+        let mut house_pairs: Vec<_> = self
+            .houses
+            .iter()
+            .map(|(name, (node, _))| (node.id, name.clone()))
+            .collect();
+        house_pairs.sort_by_key(|(id, _)| *id);
+        self.house_names = house_pairs.into_iter().map(|(_, name)| name).collect();
+
+        let mut ability_pairs: Vec<_> = self
+            .abilities
+            .iter()
+            .map(|(name, (node, _))| (node.id, name.clone()))
+            .collect();
+        ability_pairs.sort_by_key(|(id, _)| *id);
+        self.ability_names = ability_pairs.into_iter().map(|(_, name)| name).collect();
+
+        let mut status_pairs: Vec<_> = self
+            .statuses
+            .iter()
+            .map(|(name, (node, _))| (node.id, name.clone()))
+            .collect();
+        status_pairs.sort_by_key(|(id, _)| *id);
+        self.status_names = status_pairs.into_iter().map(|(_, name)| name).collect();
 
         Ok(())
     }

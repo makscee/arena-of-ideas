@@ -9,8 +9,6 @@ pub struct ExplorerState {
 
     pub view_mode: ViewMode,
 
-    pub cache: ExplorerCache,
-
     pub pending_actions: Vec<ExplorerAction>,
 }
 
@@ -22,14 +20,13 @@ impl Default for ExplorerState {
             inspected_ability: None,
             inspected_status: None,
             view_mode: ViewMode::default(),
-            cache: ExplorerCache::default(),
             pending_actions: Vec::new(),
         }
     }
 }
 
 impl ExplorerState {
-    pub fn refresh_from_db(&mut self) {
-        self.cache.rebuild().unwrap();
+    pub fn refresh_cache(cache: &mut ExplorerCache) {
+        cache.rebuild().unwrap();
     }
 }

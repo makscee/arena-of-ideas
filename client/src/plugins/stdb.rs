@@ -201,9 +201,9 @@ impl StdbPlugin {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
                     // Refresh Explorer cache when content nodes change
                     op(move |world| {
-                        if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
+                        if let Some(mut explorer_cache) = world.get_resource_mut::<ExplorerCache>()
                         {
-                            explorer_state.refresh_from_db();
+                            ExplorerState::refresh_cache(&mut explorer_cache);
                         }
                     });
                 }
@@ -218,9 +218,9 @@ impl StdbPlugin {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
                     // Refresh Explorer cache when links change
                     op(move |world| {
-                        if let Some(mut explorer_state) = world.get_resource_mut::<ExplorerState>()
+                        if let Some(mut explorer_cache) = world.get_resource_mut::<ExplorerCache>()
                         {
-                            explorer_state.refresh_from_db();
+                            ExplorerState::refresh_cache(&mut explorer_cache);
                         }
                     });
                 }
