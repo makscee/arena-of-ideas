@@ -261,6 +261,8 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             _ => None,
         });
 
+    let save_method = generate_save_impl(node, "ClientContext");
+
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
@@ -282,6 +284,8 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 ctx.world_mut().track()?.entity_mut(entity).insert(self);
                 kind.on_spawn(ctx, id)
             }
+
+            #save_method
         }
     }
 }

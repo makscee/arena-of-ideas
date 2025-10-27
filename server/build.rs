@@ -157,6 +157,7 @@ fn generate_server_node_impl(
     _node_map: &HashMap<String, NodeInfo>,
 ) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
+    let save_method = generate_save_impl(node, "ServerContext");
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
@@ -169,6 +170,8 @@ fn generate_server_node_impl(
             fn clone(&self, ctx: &ServerContext, owner: u64) -> Self {
                 self.clone_self(ctx, owner)
             }
+
+            #save_method
         }
     }
 }

@@ -9,6 +9,7 @@ pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
     fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()>;
+    fn save(self, ctx: &mut ClientContext) -> NodeResult<()>;
     fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
         ctx.entity(self.id())
     }

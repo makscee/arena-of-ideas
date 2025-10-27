@@ -454,7 +454,9 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
     }
 }
 
-pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
+pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::TokenStream {
+    let context_ident = format_ident!("{}", context_type);
+
     let save_fields = node
         .fields
         .iter()
@@ -631,15 +633,15 @@ pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     });
 
     quote! {
-        fn save<S: ContextSource>(&mut self, ctx: &mut Context<S>) -> NodeResult<()> {
+        fn save(mut self, ctx: &mut #context_ident) -> NodeResult<()> {
             #(#save_fields)*
             if self.is_dirty() {
                 for (var, value) in self.get_vars() {
                     ctx.source_mut().set_var(self.id, var, value)?;
                 }
-                ctx.source_mut().insert_node(self.id, self.owner, Self::kind_s(), self.get_data())?;
                 #(#check_link_changes)*
                 self.set_dirty(false);
+                ctx.source_mut().insert_node(self)?;
             }
             Ok(())
         }
@@ -895,7 +897,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let var_methods = generate_var_methods(node);
         let var_accessor_methods = generate_var_accessor_methods(node);
         let setter_methods = generate_setter_methods(node);
-        let save_impl = generate_save_impl(node);
+
         let update_link_references_impl = generate_update_link_references_impl(node);
         let allow_attrs = generated_code_allow_attrs();
 
@@ -947,7 +949,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                     self.is_dirty
                 }
 
-                #save_impl
+
 
                 #var_methods
 
@@ -1616,7 +1618,7 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
 
                 #allow_attrs
                 pub fn #ctx_get_method_name<S: ContextSource>(&self, ctx: &Context<S>) -> #field_type {
-                    if let Ok(value) = self.get_ctx_var(ctx, VarName::#var_name) {
+                    if let Ok(value) = ctx.source().get_var(self.id(), VarName::#var_name) {
                         return value.into();
                     }
                     self.#field_name.clone()

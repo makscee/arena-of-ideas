@@ -29,7 +29,6 @@ pub trait Node: Send + Sync + Default + StringData {
     fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
     fn get_vars(&self) -> Vec<(VarName, VarValue)>;
 
-    fn save<S: ContextSource>(&mut self, ctx: &mut Context<S>) -> NodeResult<()>;
     fn set_dirty(&mut self, value: bool);
     fn is_dirty(&self) -> bool;
 
@@ -276,14 +275,6 @@ impl<S: ContextSource> Context<S> {
             self.source.get_var(owner, var)
         } else {
             Err(NodeError::custom("Cannot get var without owner"))
-        }
-    }
-
-    pub fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()> {
-        if let Some(owner) = self.owner() {
-            self.source.set_var(owner, var, value)
-        } else {
-            Err(NodeError::custom("Cannot set var without owner"))
         }
     }
 

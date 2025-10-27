@@ -162,6 +162,16 @@ impl Sources<'_> {
             .ok_or_else(|| NodeError::not_found(node_id))
     }
 
+    pub fn load_mut<T: ClientNode + BevyComponent<Mutability = Mutable>>(
+        &mut self,
+        node_id: u64,
+    ) -> NodeResult<Mut<T>> {
+        let entity = self.entity(node_id)?;
+        self.world_mut()?
+            .get_mut::<T>(entity)
+            .ok_or_else(|| NodeError::not_found(node_id))
+    }
+
     pub fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
         self.load_ref::<T>(node_id).map(|node| node.clone())
     }
@@ -467,23 +477,11 @@ impl ContextSource for Sources<'_> {
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         // Update the node itself
         let kind = self.get_node_kind(node_id)?;
-        let entity = self.entity(node_id)?;
-        let world = self.world_mut()?;
-
-        match kind {
-            NodeKind::NArena => {
-                if let Some(mut node) = world.get_mut::<NArena>(entity) {
-                    node.set_var(var, value.clone())?;
-                }
-            }
-            NodeKind::NFloorPool => {
-                if let Some(mut node) = world.get_mut::<NFloorPool>(entity) {
-                    node.set_var(var, value.clone())?;
-                }
-            }
-            _ => {}
-        }
-
+        node_kind_match!(kind, {
+            let _ = self
+                .load_mut::<NodeType>(node_id)?
+                .set_var(var, value.clone());
+        });
         // Call var_updated for history tracking
         self.var_updated(node_id, var, value);
         Ok(())

@@ -235,17 +235,11 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
-                    let kind = ctx.get_kind(*id)?;
-                    let cur_value =
-                        node_kind_match!(kind, ctx.load::<NodeType>(*id)?.get_ctx_var(ctx, *var));
-
-                    if cur_value.is_ok_and(|v| v.eq(value)) {
+                    let old_value = ctx.source().get_var(*id, *var)?;
+                    if old_value.eq(value) {
                         false
                     } else {
-                        node_kind_match!(kind, {
-                            let _ = ctx.load_mut::<NodeType>(*id)?.set_var(*var, value.clone());
-                            ctx.source_mut().set_var(*id, *var, value.clone())?;
-                        });
+                        ctx.source_mut().set_var(*id, *var, value.clone())?;
                         true
                     }
                 }
@@ -376,7 +370,7 @@ impl BattleSimulation {
                         .next()
                         .ok_or(NodeError::entity_not_found(parent.index() as u64))?;
                     Ok(ctx
-                        .load_collect_children::<NFusion>(id)?
+                        .load_children_ref::<NFusion>(id)?
                         .into_iter()
                         .sorted_by_key(|s| s.index)
                         .filter_map(|n| {
