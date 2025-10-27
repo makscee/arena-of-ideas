@@ -1,13 +1,11 @@
 mod actions;
 mod cache;
-mod context;
 mod panes;
 mod state;
 
 use super::*;
 pub use actions::*;
 pub use cache::*;
-pub use context::*;
 pub use panes::*;
 pub use state::*;
 

@@ -321,6 +321,8 @@ pub trait OptionNodeExt<T> {
     #[track_caller]
     fn to_not_found(self) -> NodeResult<T>;
     #[track_caller]
+    fn to_var_not_found(self, var: VarName) -> NodeResult<T>;
+    #[track_caller]
     fn to_not_found_msg(self, msg: impl Into<String>) -> NodeResult<T>;
     fn to_not_found_id(self, id: u64) -> NodeResult<T>;
     fn ok_or_str(self, msg: impl Into<String>) -> Result<T, String>;
@@ -347,6 +349,11 @@ impl<T> OptionNodeExt<T> for Option<T> {
     #[track_caller]
     fn to_not_found(self) -> NodeResult<T> {
         self.ok_or_else(|| NodeError::not_found_generic(type_name_short::<T>()))
+    }
+
+    #[track_caller]
+    fn to_var_not_found(self, var: VarName) -> NodeResult<T> {
+        self.ok_or_else(|| NodeError::var_not_found(var))
     }
 
     #[track_caller]

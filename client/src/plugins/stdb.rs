@@ -116,6 +116,25 @@ impl StdbPlugin {
 
     fn process_queued_node_event(node_event: &StdbNodeEvent) {
         let node_event = node_event.clone();
+
+        // Only process nodes with owner_id = 0 or 1 for static sources
+        if node_event.node.owner == 0 || node_event.node.owner == 1 {
+            let stdb_update = match node_event.change {
+                StdbChange::Insert => StdbUpdate::NodeInsert(node_event.node.clone()),
+                StdbChange::Update => StdbUpdate::NodeUpdate {
+                    old: node_event.node.clone(),
+                    new: node_event.node.clone(),
+                },
+                StdbChange::Delete => StdbUpdate::NodeDelete(node_event.node.clone()),
+            };
+
+            with_static_sources(|sources| {
+                sources.solid.handle_stdb_update(&stdb_update);
+                sources.top.handle_stdb_update(&stdb_update);
+                sources.selected.handle_stdb_update(&stdb_update);
+            });
+        }
+
         match node_event.change {
             StdbChange::Insert => {
                 op(move |world| {
@@ -154,6 +173,63 @@ impl StdbPlugin {
     }
 
     fn process_queued_link_event_inner(world: &mut World, link_event: &StdbLinkEvent) {
+        // Pass link events to static sources for nodes with owner_id = 0 or 1
+        let stdb_update = match link_event.change {
+            StdbChange::Insert => {
+                if link_event.solid {
+                    StdbUpdate::LinkInsert(TNodeLink {
+                        id: 0, // ID not used in updates
+                        parent: link_event.parent,
+                        child: link_event.child,
+                        parent_kind: link_event.parent_kind.clone(),
+                        child_kind: link_event.child_kind.clone(),
+                        rating: link_event.rating,
+                        solid: link_event.solid,
+                    })
+                } else {
+                    return;
+                }
+            }
+            StdbChange::Update => {
+                if link_event.solid {
+                    StdbUpdate::LinkInsert(TNodeLink {
+                        id: 0, // ID not used in updates
+                        parent: link_event.parent,
+                        child: link_event.child,
+                        parent_kind: link_event.parent_kind.clone(),
+                        child_kind: link_event.child_kind.clone(),
+                        rating: link_event.rating,
+                        solid: link_event.solid,
+                    })
+                } else {
+                    StdbUpdate::LinkDelete(TNodeLink {
+                        id: 0, // ID not used in updates
+                        parent: link_event.parent,
+                        child: link_event.child,
+                        parent_kind: link_event.parent_kind.clone(),
+                        child_kind: link_event.child_kind.clone(),
+                        rating: link_event.rating,
+                        solid: true,
+                    })
+                }
+            }
+            StdbChange::Delete => StdbUpdate::LinkDelete(TNodeLink {
+                id: 0, // ID not used in updates
+                parent: link_event.parent,
+                child: link_event.child,
+                parent_kind: link_event.parent_kind.clone(),
+                child_kind: link_event.child_kind.clone(),
+                rating: link_event.rating,
+                solid: link_event.solid,
+            }),
+        };
+
+        with_static_sources(|sources| {
+            sources.solid.handle_stdb_update(&stdb_update);
+            sources.top.handle_stdb_update(&stdb_update);
+            sources.selected.handle_stdb_update(&stdb_update);
+        });
+
         match link_event.change {
             StdbChange::Insert => {
                 if link_event.solid {
@@ -231,6 +307,7 @@ impl StdbPlugin {
 
 pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
     info!("Apply stdb subscriptions");
+    init_static_sources();
     subscribe_table_updates();
     cn().subscription_builder()
         .on_error(|_, error| error.to_string().notify_error_op())

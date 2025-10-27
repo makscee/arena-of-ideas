@@ -508,19 +508,15 @@ impl FEdit for Reaction {
     }
 }
 
-// FRecursive is implemented in recursive_impl.rs
-
-// ============================================================================
-// Node Implementations
-// ============================================================================
-
-// NUnit
 impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
-        let color = ctx
-            .with_owner_ref(self.id, |ctx| ctx.get_var(VarName::color).get_color())
-            .unwrap_or(MISSING_COLOR);
-        self.unit_name.cstr_c(color)
+        ctx.exec_ref(|ctx| {
+            let color = ctx
+                .with_owner(self.id, |ctx| ctx.get_var(VarName::color).get_color())
+                .unwrap_or(MISSING_COLOR);
+            Ok(self.unit_name.cstr_c(color))
+        })
+        .unwrap()
     }
 }
 
@@ -614,7 +610,7 @@ impl FInfo for NUnit {
                 stats.hp
             ));
         }
-        if let Ok(house) = ctx.load_first_parent::<NHouse>(self.id()) {
+        if let Ok(house) = ctx.load_first_parent_ref::<NHouse>(self.id()) {
             let color = house.color_for_text(ctx);
             info_parts.push(house.house_name.cstr_c(color));
         }
@@ -2280,7 +2276,8 @@ impl FCompactView for NUnit {
                     desc.description.cstr().label_w(ui);
                 }
             }
-            if let Ok(house) = ctx.load_first_parent::<NHouse>(self.id()) {
+
+            if let Ok(house) = ctx.load_first_parent_ref::<NHouse>(self.id()) {
                 ui.separator();
                 ui.label(format!("House: {}", house.house_name));
             }

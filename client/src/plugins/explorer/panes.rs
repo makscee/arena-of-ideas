@@ -25,36 +25,36 @@ impl ExplorerPanes {
                 NamedNodeKind::NAbilityMagic => state.inspected_ability.clone(),
                 NamedNodeKind::NStatusMagic => state.inspected_status.clone(),
             };
+            todo!("reimplement");
+            // names
+            //     .as_list(|name, _ctx, ui| {
+            //         let color = if inspected_name
+            //             .as_ref()
+            //             .is_some_and(|inspected| inspected.eq(name))
+            //         {
+            //             YELLOW
+            //         } else {
+            //             colorix().high_contrast_text()
+            //         };
+            //         name.cstr_c(color).label(ui)
+            //     })
+            //     .with_hover(|name, _ctx, ui| {
+            //         if ui.button("Inspect").clicked() {
+            //             let action = match kind {
+            //                 NamedNodeKind::NUnit => ExplorerAction::InspectUnit(name.to_string()),
+            //                 NamedNodeKind::NHouse => ExplorerAction::InspectHouse(name.to_string()),
+            //                 NamedNodeKind::NAbilityMagic => {
+            //                     ExplorerAction::InspectAbility(name.to_string())
+            //                 }
+            //                 NamedNodeKind::NStatusMagic => {
+            //                     ExplorerAction::InspectStatus(name.to_string())
+            //                 }
+            //             };
 
-            names
-                .as_list(|name, _ctx, ui| {
-                    let color = if inspected_name
-                        .as_ref()
-                        .is_some_and(|inspected| inspected.eq(name))
-                    {
-                        YELLOW
-                    } else {
-                        colorix().high_contrast_text()
-                    };
-                    name.cstr_c(color).label(ui)
-                })
-                .with_hover(|name, _ctx, ui| {
-                    if ui.button("Inspect").clicked() {
-                        let action = match kind {
-                            NamedNodeKind::NUnit => ExplorerAction::InspectUnit(name.to_string()),
-                            NamedNodeKind::NHouse => ExplorerAction::InspectHouse(name.to_string()),
-                            NamedNodeKind::NAbilityMagic => {
-                                ExplorerAction::InspectAbility(name.to_string())
-                            }
-                            NamedNodeKind::NStatusMagic => {
-                                ExplorerAction::InspectStatus(name.to_string())
-                            }
-                        };
-
-                        state.pending_actions.push(action);
-                    }
-                })
-                .compose(&cn().db().as_context(), ui);
+            //             state.pending_actions.push(action);
+            //         }
+            //     })
+            //     .compose(&cn().db().as_context(), ui);
 
             Ok(())
         })
@@ -64,7 +64,7 @@ impl ExplorerPanes {
     where
         T: ClientNode + FCard,
     {
-        node.as_card().compose(&cn().db.as_context(), ui);
+        node.as_card().compose(&EMPTY_CONTEXT, ui);
         Ok(())
     }
 
@@ -124,7 +124,7 @@ impl ExplorerPanes {
                     }
                 });
             })
-            .compose(&cn().db.as_context(), ui);
+            .compose(&EMPTY_CONTEXT, ui);
 
         Ok(())
     }
@@ -211,7 +211,7 @@ impl ExplorerPanes {
                     }
                 });
             })
-            .compose(&cn().db.as_context(), ui);
+            .compose(&EMPTY_CONTEXT, ui);
 
         Ok(())
     }
@@ -232,7 +232,7 @@ impl ExplorerPanes {
             }
         );
         if let Some(current_id) = current_component_id {
-            let ctx = &cn().db().as_context();
+            let ctx = &EMPTY_CONTEXT;
             node_kind_match!(kind, {
                 if let Ok(node) = ctx.load::<NodeType>(current_id) {
                     node.as_display().compose(ctx, ui);
@@ -261,7 +261,7 @@ impl ExplorerPanes {
                         }
                     }
                 })
-                .compose(&cn().db.as_context(), ui);
+                .compose(&EMPTY_CONTEXT, ui);
         }
 
         Ok(())
@@ -354,7 +354,7 @@ impl ExplorerPanes {
                         }
                     });
                 })
-                .compose(&cn().db.as_context(), ui);
+                .compose(&EMPTY_CONTEXT, ui);
 
             Ok(())
         })

@@ -12,7 +12,7 @@ pub struct PackedNodes {
     pub links: HashSet<NodeLink>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Default)]
 pub struct NodeData {
     pub kind: String,
     pub data: String,

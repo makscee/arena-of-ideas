@@ -1,392 +1,573 @@
-use super::node_maps::*;
+use super::*;
 
-use crate::prelude::*;
-use crate::resources::game_option::player_id;
-use crate::stdb::{RemoteTables, TNodeLink};
-use once_cell::sync::Lazy;
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, RwLock};
-
-// Node update actions for syncing sources
-#[derive(Debug, Clone)]
-pub enum NodeUpdateAction {
-    Insert {
-        id: u64,
-        owner: u64,
-        kind: NodeKind,
-        data: String,
-    },
-    Update {
-        id: u64,
-        data: String,
-    },
-    Delete {
-        id: u64,
-    },
-    LinkAdded {
-        parent: u64,
-        child: u64,
-        link: TNodeLink,
-    },
-    LinkRemoved {
-        parent: u64,
-        child: u64,
-    },
-    LinkSelectionChanged {
-        player_id: u64,
-        parent_id: u64,
-        selected_link_id: u64,
-    },
+/// Static sources for mirroring stdb state
+pub struct StaticSources {
+    pub top: Sources<'static>,
+    pub selected: Sources<'static>,
+    pub solid: Sources<'static>,
 }
 
-#[derive(Clone)]
-pub enum LinkStrategy {
-    /// Only solid links
-    Solid,
-    /// Highest rated links first
-    TopRated,
-    /// Player-selected links only
-    Selected,
-    /// Custom filtering function
-    Custom(Arc<dyn Fn(&[TNodeLink]) -> Vec<TNodeLink> + Send + Sync>),
-}
-
-impl std::fmt::Debug for LinkStrategy {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Solid => write!(f, "Solid"),
-            Self::TopRated => write!(f, "TopRated"),
-            Self::Selected => write!(f, "Selected"),
-            Self::Custom(_) => write!(f, "Custom"),
+impl StaticSources {
+    pub fn new() -> Self {
+        Self {
+            top: Sources::new_top(),
+            selected: Sources::new_selected(),
+            solid: Sources::new_solid(),
         }
     }
 }
 
-// Individual node source with its own World and link strategy
-#[derive(Clone)]
-pub struct NodeSource {
-    world: Arc<RwLock<World>>,
-    strategy: LinkStrategy,
-    node_map: Arc<RwLock<SmartNodeMap>>,
-    links: Arc<RwLock<NodeLinks>>,
+static mut STATIC_SOURCES: Option<StaticSources> = None;
+
+pub fn init_static_sources() {
+    unsafe {
+        STATIC_SOURCES = Some(StaticSources::new());
+    }
 }
 
-impl NodeSource {
-    pub fn new(strategy: LinkStrategy) -> Self {
+pub fn with_static_sources<R, F>(f: F) -> R
+where
+    F: FnOnce(&mut StaticSources) -> R,
+{
+    unsafe {
+        if let Some(ref mut sources) = STATIC_SOURCES {
+            f(sources)
+        } else {
+            panic!("Static sources not initialized");
+        }
+    }
+}
+
+/// Trait for client-side node data sources
+pub trait ClientSource {
+    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: T) -> NodeResult<()>;
+    fn world(&self) -> NodeResult<&World>;
+    fn world_mut(&mut self) -> NodeResult<&mut World>;
+    fn entity(&self, node_id: u64) -> NodeResult<Entity>;
+    fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T>;
+    fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T>;
+    fn battle(&self) -> NodeResult<&BattleSimulation>;
+    fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
+}
+
+/// Sources enum for different node data sources
+pub enum Sources<'a> {
+    Solid(World),
+    Top(World),
+    Selected(World),
+    Battle(World),
+    ContextRef(&'a ClientContext<'a>),
+    None,
+}
+
+impl Sources<'_> {
+    pub fn new_solid() -> Self {
         let mut world = World::new();
-        world.init_resource::<SmartNodeMap>();
-        world.init_resource::<NodeLinks>();
+        Self::init_world(&mut world);
+        Sources::Solid(world)
+    }
 
-        Self {
-            world: Arc::new(RwLock::new(world)),
-            strategy,
-            node_map: Arc::new(RwLock::new(SmartNodeMap::new())),
-            links: Arc::new(RwLock::new(NodeLinks::new())),
+    pub fn new_top() -> Self {
+        let mut world = World::new();
+        Self::init_world(&mut world);
+        world.init_resource::<LinkRatings>();
+        Sources::Top(world)
+    }
+
+    pub fn new_selected() -> Self {
+        let mut world = World::new();
+        Self::init_world(&mut world);
+        Sources::Selected(world)
+    }
+
+    pub fn new_battle(world: World) -> Self {
+        Sources::Battle(world)
+    }
+
+    /// Unified initialization function for all World sources
+    fn init_world(world: &mut World) {
+        world.init_resource::<NodesMapResource>();
+        world.init_resource::<NodesLinkResource>();
+    }
+
+    pub fn world(&self) -> NodeResult<&World> {
+        match self {
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
+                Ok(w)
+            }
+            Sources::ContextRef(context) => context.world(),
+            Sources::None => Err(NodeError::custom("No world in None source")),
         }
     }
 
-    pub fn from_world(world: World, strategy: LinkStrategy) -> Self {
-        Self {
-            world: Arc::new(RwLock::new(world)),
-            strategy,
-            node_map: Arc::new(RwLock::new(SmartNodeMap::new())),
-            links: Arc::new(RwLock::new(NodeLinks::new())),
+    pub fn world_mut(&mut self) -> NodeResult<&mut World> {
+        match self {
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
+                Ok(w)
+            }
+            Sources::ContextRef(_) => {
+                Err(NodeError::custom("Can't mutate World of ContextRef source"))
+            }
+            Sources::None => Err(NodeError::custom("No world in None source")),
         }
     }
 
-    pub fn world(&self) -> Arc<RwLock<World>> {
-        self.world.clone()
+    pub fn get_nodes_map(&self) -> NodeResult<&NodesMapResource> {
+        self.world()?
+            .get_resource::<NodesMapResource>()
+            .ok_or_else(|| NodeError::custom("NodesMapResource resource not found"))
     }
 
-    pub fn node_map(&self) -> Arc<RwLock<SmartNodeMap>> {
-        self.node_map.clone()
+    fn get_nodes_map_mut(&mut self) -> NodeResult<Mut<NodesMapResource>> {
+        self.world_mut()?
+            .get_resource_mut::<NodesMapResource>()
+            .to_not_found()
     }
 
-    pub fn links(&self) -> Arc<RwLock<NodeLinks>> {
-        self.links.clone()
+    fn get_links_data(&self) -> NodeResult<&NodesLinkResource> {
+        self.world()?
+            .get_resource::<NodesLinkResource>()
+            .ok_or_else(|| NodeError::custom("NodeLinksData resource not found"))
     }
 
-    pub fn update(&mut self, action: &NodeUpdateAction, db: &RemoteTables) {
-        match action {
-            NodeUpdateAction::Insert {
-                id,
-                owner,
-                kind,
-                data,
-            } => {
-                self.insert_node(*id, *owner, kind.clone(), data.clone());
+    fn get_links_data_mut(&mut self) -> NodeResult<Mut<NodesLinkResource>> {
+        self.world_mut()?
+            .get_resource_mut::<NodesLinkResource>()
+            .ok_or_else(|| NodeError::custom("NodeLinksData resource not found"))
+    }
+
+    fn get_var_from_node(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        let kind = self.get_node_kind(node_id)?;
+        let entity = self.entity(node_id)?;
+        let world = self.world()?;
+
+        node_kind_match!(kind, {
+            world
+                .get::<NodeType>(entity)
+                .ok_or_else(|| NodeError::not_found(node_id))?
+                .get_var(var)
+        })
+    }
+
+    pub fn entity(&self, node_id: u64) -> NodeResult<Entity> {
+        self.get_nodes_map()?
+            .get_entity(node_id)
+            .ok_or_else(|| NodeError::entity_not_found(node_id))
+    }
+
+    pub fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
+        let entity = self.entity(node_id)?;
+        self.world()?
+            .get::<T>(entity)
+            .ok_or_else(|| NodeError::not_found(node_id))
+    }
+
+    pub fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
+        self.load_ref::<T>(node_id).map(|node| node.clone())
+    }
+
+    // Handle SpacetimeDB updates - unified for all sources
+    pub fn handle_stdb_update(&mut self, update: &StdbUpdate) {
+        match self {
+            Sources::Solid(_) => self.handle_solid_update(update),
+            Sources::Top(_) => self.handle_top_update(update),
+            Sources::Selected(_) => self.handle_selected_update(update),
+            Sources::Battle(_) | Sources::None | Sources::ContextRef(..) => panic!(),
+        }
+    }
+
+    fn handle_solid_update(&mut self, update: &StdbUpdate) {
+        match update {
+            StdbUpdate::NodeInsert(node) => {
+                let kind = node.kind.parse().unwrap();
+                node_kind_match!(kind, {
+                    let node = node.to_node::<NodeType>().unwrap();
+                    self.insert_node(node).unwrap();
+                });
             }
-            NodeUpdateAction::Update { id, data } => {
-                self.update_node(*id, data.clone());
-            }
-            NodeUpdateAction::Delete { id } => {
-                self.delete_node(*id);
-            }
-            NodeUpdateAction::LinkAdded {
-                parent,
-                child,
-                link,
-            } => {
-                self.add_link_from_db(*parent, *child, link, db);
-            }
-            NodeUpdateAction::LinkRemoved { parent, child } => {
-                self.remove_link(*parent, *child);
-            }
-            NodeUpdateAction::LinkSelectionChanged { .. } => {
-                if matches!(self.strategy, LinkStrategy::Selected) {
-                    self.rebuild_from_db(db);
+            StdbUpdate::NodeUpdate { old: _, new } => {
+                let kind = new.kind.parse().unwrap();
+                let entity = match self.entity(new.id) {
+                    Ok(e) => e,
+                    Err(_) => return,
+                };
+
+                let world = match self.world_mut() {
+                    Ok(w) => w,
+                    Err(_) => return,
+                };
+
+                // Update the node data based on kind
+                match kind {
+                    NodeKind::NArena => {
+                        if let Some(mut node) = world.get_mut::<NArena>(entity) {
+                            let _ = node.inject_data(&new.data);
+                        }
+                    }
+                    NodeKind::NFloorPool => {
+                        if let Some(mut node) = world.get_mut::<NFloorPool>(entity) {
+                            let _ = node.inject_data(&new.data);
+                        }
+                    }
+                    _ => {}
                 }
             }
-        }
-    }
-
-    pub fn rebuild_from_db(&mut self, db: &RemoteTables) {
-        let mut world = self.world.write().unwrap();
-        let mut node_map = self.node_map.write().unwrap();
-        let mut links = self.links.write().unwrap();
-
-        // Clear existing data
-        world.clear_all();
-        node_map.clear();
-        links.clear();
-
-        // Rebuild nodes using smart insertion
-        for node in db.nodes_world().iter() {
-            let kind = node.kind.parse().unwrap_or(NodeKind::NArena);
-            let entity = node_map.insert_smart(&mut world, node.id, node.owner, kind.clone());
-
-            // Spawn the actual node component
-            self.spawn_node_component(&mut world, entity, node.id, node.owner, kind, &node.data);
-        }
-
-        // Rebuild links based on strategy
-        let all_links: Vec<TNodeLink> = db.node_links().iter().collect();
-        let filtered_links = self.filter_links(&all_links, db);
-
-        for link in filtered_links {
-            self.add_link_internal(&mut world, &node_map, &mut links, link);
-        }
-    }
-
-    fn spawn_node_component(
-        &self,
-        world: &mut World,
-        entity: Entity,
-        id: u64,
-        owner: u64,
-        kind: NodeKind,
-        data: &str,
-    ) {
-        // Use the node system to spawn the appropriate component
-        // TODO: Replace with proper node_kind_match macro or implement per-kind logic
-        // node_kind_match!(kind, {
-        //     let mut node = NodeType::default();
-        //     if node.inject_data(data).is_ok() {
-        //         node.set_id(id);
-        //         node.set_owner(owner);
-        //         world.entity_mut(entity).insert(node);
-        //     }
-        // });
-
-        // Placeholder: Add basic components for now
-        world
-            .entity_mut(entity)
-            .insert((NodeKindMarker(kind), NodeId(id), NodeOwner(owner)));
-    }
-
-    fn filter_links(&self, links: &[TNodeLink], db: &RemoteTables) -> Vec<TNodeLink> {
-        match &self.strategy {
-            LinkStrategy::Solid => links.iter().filter(|l| l.solid).cloned().collect(),
-            LinkStrategy::TopRated => {
-                let mut by_parent: HashMap<u64, Vec<TNodeLink>> = HashMap::new();
-                for link in links {
-                    by_parent.entry(link.parent).or_default().push(link.clone());
+            StdbUpdate::NodeDelete(node) => {
+                let _ = self.delete_node(node.id);
+            }
+            StdbUpdate::LinkInsert(link) => {
+                if link.solid {
+                    let _ = self.add_link(link.parent, link.child);
                 }
+            }
+            StdbUpdate::LinkDelete(link) => {
+                if link.solid {
+                    let _ = self.remove_link(link.parent, link.child);
+                }
+            }
+            _ => {}
+        }
+    }
 
-                let mut result = Vec::new();
-                for (_, mut parent_links) in by_parent {
-                    parent_links.sort_by(|a, b| {
-                        b.rating
-                            .cmp(&a.rating)
-                            .then(b.solid.cmp(&a.solid))
-                            .then(a.id.cmp(&b.id))
-                    });
+    fn handle_top_update(&mut self, update: &StdbUpdate) {
+        match update {
+            StdbUpdate::NodeInsert(..) => {
+                self.handle_solid_update(update);
+            }
+            StdbUpdate::NodeUpdate { .. } => {
+                self.handle_solid_update(update);
+            }
+            StdbUpdate::NodeDelete(node) => {
+                let _ = self.delete_node(node.id);
+            }
+            StdbUpdate::LinkInsert(link) => {
+                let child_kind = match link.child_kind.parse::<NodeKind>() {
+                    Ok(k) => k,
+                    Err(_) => return,
+                };
 
-                    // Take top rated link for each child kind
-                    let mut seen_kinds = HashSet::new();
-                    for link in parent_links {
-                        if seen_kinds.insert(link.child_kind.clone()) {
-                            result.push(link);
+                if let Ok(world) = self.world_mut() {
+                    if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
+                        ratings.add_rating(link.parent, link.child, child_kind, link.rating);
+
+                        // Update links to only include top-rated
+                        if let Some(top_child) = ratings.get_top(link.parent, child_kind) {
+                            // Remove old links of this kind
+                            if let Ok(old_children) =
+                                self.get_children_of_kind(link.parent, child_kind)
+                            {
+                                for old_child in old_children {
+                                    let _ = self.remove_link(link.parent, old_child);
+                                }
+                            }
+                            // Add new top link
+                            let _ = self.add_link(link.parent, top_child);
                         }
                     }
                 }
-                result
             }
-            LinkStrategy::Selected => {
-                let player_id = player_id();
-                let selections: HashSet<u64> = db
-                    .player_link_selections()
-                    .iter()
-                    .filter(|s| s.player_id == player_id)
-                    .map(|s| s.selected_link_id)
-                    .collect();
+            StdbUpdate::LinkDelete(link) => {
+                let child_kind = match link.child_kind.parse::<NodeKind>() {
+                    Ok(k) => k,
+                    Err(_) => return,
+                };
 
-                links
-                    .iter()
-                    .filter(|l| selections.contains(&l.id))
-                    .cloned()
-                    .collect()
+                if let Ok(world) = self.world_mut() {
+                    if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
+                        ratings.remove_rating(link.parent, link.child, child_kind);
+
+                        // Update to new top link if any
+                        if let Some(new_top) = ratings.get_top(link.parent, child_kind) {
+                            let _ = self.remove_link(link.parent, link.child);
+                            let _ = self.add_link(link.parent, new_top);
+                        } else {
+                            let _ = self.remove_link(link.parent, link.child);
+                        }
+                    }
+                }
             }
-            LinkStrategy::Custom(filter) => filter(links),
+            _ => {}
         }
     }
 
-    pub fn insert_node(&mut self, id: u64, owner: u64, kind: NodeKind, data: String) {
-        let mut world = self.world.write().unwrap();
-        let mut node_map = self.node_map.write().unwrap();
-
-        let entity = node_map.insert_smart(&mut world, id, owner, kind.clone());
-        self.spawn_node_component(&mut world, entity, id, owner, kind, &data);
-    }
-
-    fn update_node(&mut self, id: u64, data: String) {
-        let world = self.world.read().unwrap();
-        let node_map = self.node_map.read().unwrap();
-
-        if let Some(entity) = node_map.get_entity(id) {
-            if let Some(kind) = node_map.get_node_kind(id) {
-                drop(world);
-                let mut world = self.world.write().unwrap();
-
-                // Update the node component with new data
-                // TODO: Replace with proper node_kind_match macro or implement per-kind logic
-                // node_kind_match!(kind, {
-                //     if let Some(mut node) = world.get_mut::<NodeType>(entity) {
-                //         let _ = node.inject_data(&data);
-                //     }
-                // });
-
-                // Placeholder: For now just update the basic components if needed
-                // Individual node component updates would go here based on kind
+    fn handle_selected_update(&mut self, update: &StdbUpdate) {
+        match update {
+            StdbUpdate::NodeInsert(..) => {
+                self.handle_solid_update(update);
             }
-        }
-    }
-
-    pub fn delete_node(&mut self, id: u64) {
-        let mut world = self.world.write().unwrap();
-        let mut node_map = self.node_map.write().unwrap();
-        let mut links = self.links.write().unwrap();
-
-        // Remove all links first
-        links.remove_all_links(&mut world, id, &node_map);
-
-        // Remove node (this will despawn entity if it's the last component)
-        node_map.remove_smart(&mut world, id);
-    }
-
-    fn add_link_from_db(&mut self, parent: u64, child: u64, link: &TNodeLink, db: &RemoteTables) {
-        let filtered = self.filter_links(&[link.clone()], db);
-        if !filtered.is_empty() {
-            let mut world = self.world.write().unwrap();
-            let node_map = self.node_map.read().unwrap();
-            let mut links = self.links.write().unwrap();
-            self.add_link_internal(&mut world, &node_map, &mut links, link.clone());
-        }
-    }
-
-    fn add_link_internal(
-        &self,
-        world: &mut World,
-        node_map: &SmartNodeMap,
-        links: &mut NodeLinks,
-        link: TNodeLink,
-    ) {
-        // Determine link type based on the relationship in raw_nodes.rs
-        let parent_kind = node_map.get_node_kind(link.parent);
-        let child_kind: Option<NodeKind> = link.child_kind.parse().ok();
-
-        if let (Some(parent_kind), Some(child_kind)) = (parent_kind, child_kind) {
-            // Check if this is an owned or reference relationship
-            // TODO: Implement has_owned_child() method in NodeKind
-            if false {
-                // parent_kind.has_owned_child(&child_kind) {
-                links.add_owned_link(world, link.parent, link.child, node_map);
-            // TODO: Implement has_ref_child() method in NodeKind
-            } else if false {
-                // parent_kind.has_ref_child(&child_kind) {
-                links.add_ref_link(world, link.parent, link.child, node_map);
+            StdbUpdate::NodeUpdate { .. } => {
+                self.handle_solid_update(update);
             }
-        }
-    }
-
-    fn remove_link(&mut self, parent: u64, child: u64) {
-        let mut world = self.world.write().unwrap();
-        let node_map = self.node_map.read().unwrap();
-        let mut links = self.links.write().unwrap();
-
-        // Remove both types of links (will be no-op if not present)
-        links.remove_owned_link(&mut world, parent, child, &node_map);
-        links.remove_ref_link(&mut world, parent, child, &node_map);
-    }
-}
-
-// Global static node sources
-pub struct NodeSources {
-    solid: Arc<RwLock<NodeSource>>,
-    top: Arc<RwLock<NodeSource>>,
-    selected: Arc<RwLock<NodeSource>>,
-    custom: Arc<RwLock<HashMap<String, NodeSource>>>,
-}
-
-impl NodeSources {
-    fn new() -> Self {
-        Self {
-            solid: Arc::new(RwLock::new(NodeSource::new(LinkStrategy::Solid))),
-            top: Arc::new(RwLock::new(NodeSource::new(LinkStrategy::TopRated))),
-            selected: Arc::new(RwLock::new(NodeSource::new(LinkStrategy::Selected))),
-            custom: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-
-    pub fn solid(&self) -> Arc<RwLock<NodeSource>> {
-        self.solid.clone()
-    }
-
-    pub fn top(&self) -> Arc<RwLock<NodeSource>> {
-        self.top.clone()
-    }
-
-    pub fn selected(&self) -> Arc<RwLock<NodeSource>> {
-        self.selected.clone()
-    }
-
-    pub fn get_or_create_custom(
-        &self,
-        key: String,
-        strategy: LinkStrategy,
-    ) -> Arc<RwLock<NodeSource>> {
-        let mut custom = self.custom.write().unwrap();
-        if !custom.contains_key(&key) {
-            custom.insert(key.clone(), NodeSource::new(strategy));
-        }
-        Arc::new(RwLock::new(custom.get(&key).unwrap().clone()))
-    }
-
-    pub fn update_all(&self, action: &NodeUpdateAction, db: &RemoteTables) {
-        self.solid.write().unwrap().update(action, db);
-        self.top.write().unwrap().update(action, db);
-        self.selected.write().unwrap().update(action, db);
-
-        let mut custom = self.custom.write().unwrap();
-        for source in custom.values_mut() {
-            source.update(action, db);
+            StdbUpdate::NodeDelete(node) => {
+                let _ = self.delete_node(node.id);
+            }
+            StdbUpdate::PlayerLinkSelectionInsert(selection) => {
+                if selection.player_id == player_id() {
+                    let _ = self.add_link(selection.parent_id, selection.selected_link_id);
+                }
+            }
+            StdbUpdate::PlayerLinkSelectionUpdate { old, new } => {
+                if new.player_id == player_id() {
+                    let _ = self.remove_link(old.parent_id, old.selected_link_id);
+                    let _ = self.add_link(new.parent_id, new.selected_link_id);
+                }
+            }
+            StdbUpdate::PlayerLinkSelectionDelete(selection) => {
+                if selection.player_id == player_id() {
+                    let _ = self.remove_link(selection.parent_id, selection.selected_link_id);
+                }
+            }
+            _ => {}
         }
     }
 }
 
-// Global static instance
-static NODE_SOURCES: Lazy<NodeSources> = Lazy::new(NodeSources::new);
+impl ClientSource for Sources<'_> {
+    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: T) -> NodeResult<()> {
+        let kind = node.kind();
+        let comp_children = kind.component_children();
+        let mut entity: Option<Entity> = self.entity(node.id()).ok();
+        if entity.is_none() {
+            for kind in comp_children {
+                if let Some(child) = self
+                    .get_children_of_kind(node.id(), kind)?
+                    .into_iter()
+                    .filter_map(|id| self.entity(id).ok())
+                    .next()
+                {
+                    entity = Some(child);
+                    break;
+                }
+            }
+        }
+        if entity.is_none() {
+            if let Some(parent) = kind.component_parent().and_then(|kind| {
+                self.get_parents_of_kind(node.id(), kind)
+                    .ok()?
+                    .into_iter()
+                    .next()
+                    .and_then(|id| self.entity(id).ok())
+            }) {
+                entity = Some(parent);
+            }
+        }
+        let world = self.world_mut()?;
+        if entity.is_none() {
+            entity = Some(world.spawn_empty().id());
+        }
+        let entity = entity.unwrap();
 
-pub fn node_sources() -> &'static NodeSources {
-    &NODE_SOURCES
+        let id = node.id();
+
+        world.entity_mut(entity).insert(node);
+
+        // Update NodesMapResource resource
+        if let Some(mut node_data) = world.get_resource_mut::<NodesMapResource>() {
+            node_data.insert(id, kind, entity);
+        }
+
+        Ok(())
+    }
+
+    fn world(&self) -> NodeResult<&World> {
+        match self {
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
+                Ok(w)
+            }
+            Sources::ContextRef(ctx) => ctx.world(),
+            Sources::None => Err(NodeError::custom("No world available")),
+        }
+    }
+
+    fn world_mut(&mut self) -> NodeResult<&mut World> {
+        match self {
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
+                Ok(w)
+            }
+            Sources::ContextRef(ctx) => Err(NodeError::custom("Can't mutate World of ContextRef")),
+            Sources::None => Err(NodeError::custom("No world available")),
+        }
+    }
+
+    fn entity(&self, node_id: u64) -> NodeResult<Entity> {
+        let node_data = self.get_nodes_map()?;
+        node_data
+            .get_entity(node_id)
+            .ok_or_else(|| NodeError::not_found(node_id))
+    }
+
+    fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
+        let entity = self.entity(node_id)?;
+        self.world()?
+            .get::<T>(entity)
+            .ok_or_else(|| NodeError::not_found(node_id))
+    }
+
+    fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
+        self.load_ref::<T>(node_id).map(|node| node.clone())
+    }
+
+    fn battle(&self) -> NodeResult<&BattleSimulation> {
+        match self {
+            Sources::Battle(world) => world
+                .get_resource::<BattleSimulation>()
+                .ok_or_else(|| NodeError::custom("BattleSimulation resource not found")),
+            _ => Err(NodeError::custom("Not a battle source")),
+        }
+    }
+
+    fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
+        todo!("get rng from BattleSimulation of Sources::Battle")
+    }
+}
+
+pub enum StdbUpdate {
+    NodeInsert(TNode),
+    NodeUpdate {
+        old: TNode,
+        new: TNode,
+    },
+    NodeDelete(TNode),
+    LinkInsert(TNodeLink),
+    LinkDelete(TNodeLink),
+    PlayerLinkSelectionInsert(TPlayerLinkSelection),
+    PlayerLinkSelectionUpdate {
+        old: TPlayerLinkSelection,
+        new: TPlayerLinkSelection,
+    },
+    PlayerLinkSelectionDelete(TPlayerLinkSelection),
+}
+
+impl ContextSource for Sources<'_> {
+    fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
+        match self {
+            Sources::Battle(world) => {
+                // Check NodeStateHistory first for battle contexts
+                if let Some(node_data) = world.get_resource::<NodesMapResource>() {
+                    if let Some(entity) = node_data.get_entity(node_id) {
+                        if let Some(state) = world.get::<NodeStateHistory>(entity) {
+                            if let Some(sim) = world.get_resource::<BattleSimulation>() {
+                                if let Ok(value) = state.get_at(sim.duration, var) {
+                                    return Ok(value);
+                                }
+                            } else if let Some(value) = state.get(var) {
+                                return Ok(value);
+                            }
+                        }
+                    }
+                }
+
+                // Fall back to node's own var
+                self.get_var_from_node(node_id, var)
+            }
+            _ => self.get_var_from_node(node_id, var),
+        }
+    }
+
+    fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
+        // Update the node itself
+        let kind = self.get_node_kind(node_id)?;
+        let entity = self.entity(node_id)?;
+        let world = self.world_mut()?;
+
+        match kind {
+            NodeKind::NArena => {
+                if let Some(mut node) = world.get_mut::<NArena>(entity) {
+                    node.set_var(var, value.clone())?;
+                }
+            }
+            NodeKind::NFloorPool => {
+                if let Some(mut node) = world.get_mut::<NFloorPool>(entity) {
+                    node.set_var(var, value.clone())?;
+                }
+            }
+            _ => {}
+        }
+
+        // Call var_updated for history tracking
+        self.var_updated(node_id, var, value);
+        Ok(())
+    }
+
+    fn var_updated(&mut self, node_id: u64, var: VarName, value: VarValue) {
+        match self {
+            Sources::Battle(world) => {
+                // Save to NodeStateHistory in battle contexts
+                if let Some(node_data) = world.get_resource::<NodesMapResource>() {
+                    if let Some(entity) = node_data.get_entity(node_id) {
+                        let t = world
+                            .get_resource::<BattleSimulation>()
+                            .map(|sim| sim.duration)
+                            .unwrap_or(0.0);
+
+                        if let Some(mut state) = world.get_mut::<NodeStateHistory>(entity) {
+                            state.insert(t, 0.0, var, value);
+                        } else {
+                            let mut state = NodeStateHistory::default();
+                            state.insert(t, 0.0, var, value);
+                            world.entity_mut(entity).insert(state);
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn get_node_kind(&self, node_id: u64) -> NodeResult<NodeKind> {
+        self.get_nodes_map()?
+            .get_kind(node_id)
+            .ok_or_else(|| NodeError::not_found(node_id))
+    }
+
+    fn get_children(&self, node_id: u64) -> NodeResult<Vec<u64>> {
+        Ok(self.get_links_data()?.get_children(node_id))
+    }
+
+    fn get_children_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        Ok(self.get_links_data()?.get_children_of_kind(node_id, kind))
+    }
+
+    fn get_parents(&self, node_id: u64) -> NodeResult<Vec<u64>> {
+        Ok(self.get_links_data()?.get_parents(node_id))
+    }
+
+    fn get_parents_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
+        Ok(self.get_links_data()?.get_parents_of_kind(node_id, kind))
+    }
+
+    fn add_link(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
+        let parent_kind = self.get_node_kind(parent_id)?;
+        let child_kind = self.get_node_kind(child_id)?;
+        self.get_links_data_mut()?
+            .add_link(parent_id, child_id, parent_kind, child_kind);
+        Ok(())
+    }
+
+    fn remove_link(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
+        self.get_links_data_mut()?.remove_link(parent_id, child_id);
+        Ok(())
+    }
+
+    fn clear_links(&mut self, node_id: u64) -> NodeResult<()> {
+        self.get_links_data_mut()?.clear_node(node_id);
+        Ok(())
+    }
+
+    fn is_linked(&self, parent_id: u64, child_id: u64) -> NodeResult<bool> {
+        Ok(self.get_links_data()?.is_linked(parent_id, child_id))
+    }
+
+    fn delete_node(&mut self, node_id: u64) -> NodeResult<()> {
+        // Clear all links
+        self.clear_links(node_id)?;
+
+        // Remove from NodesMapResource and get entity
+        if let Some(entity) = self.get_nodes_map_mut()?.remove(node_id) {
+            // Despawn entity
+            self.world_mut()?.despawn(entity);
+        }
+
+        Ok(())
+    }
 }

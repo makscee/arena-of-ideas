@@ -86,7 +86,7 @@ pub fn replace_description_macros(
             if result.contains("%ability") {
                 // Try to get the ability name from the context
                 if let Some(owner_id) = context.owner() {
-                    if let Ok(house) = context.load_first_parent_recursive::<NHouse>(owner_id) {
+                    if let Ok(house) = context.load_first_parent_recursive_ref::<NHouse>(owner_id) {
                         if let Ok(ability) = house.ability_ref(context) {
                             result = result.replace("%ability", &ability.ability_name);
                         } else {
@@ -104,7 +104,7 @@ pub fn replace_description_macros(
             if result.contains("%status") {
                 // Try to get the status name from the context
                 if let Some(owner_id) = context.owner() {
-                    if let Ok(house) = context.load_first_parent_recursive::<NHouse>(owner_id) {
+                    if let Ok(house) = context.load_first_parent_recursive_ref::<NHouse>(owner_id) {
                         if let Ok(status) = house.status_ref(context) {
                             result = result.replace("%status", &status.status_name);
                         } else {

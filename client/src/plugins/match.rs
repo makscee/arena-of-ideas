@@ -353,14 +353,13 @@ impl MatchPlugin {
         Ok(())
     }
 
-    fn render_fusion_header(ui: &mut Ui, context: &ClientContext, fusion: &NFusion) {
+    fn render_fusion_header(ui: &mut Ui, ctx: &ClientContext, fusion: &NFusion) {
         let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
-
-        if let Ok(units) = context.collect_children::<NUnit>(fusion.id) {
+        if let Ok(units) = ctx.load_children_ref::<NUnit>(fusion.id) {
             for unit in units {
                 if let Ok(rep) = unit
-                    .description_ref(context)
-                    .and_then(|d| d.representation_ref(context))
+                    .description_ref(ctx)
+                    .and_then(|d| d.representation_ref(ctx))
                 {
                     mat_rect = mat_rect.add_mat(&rep.material, unit.id);
                 }
@@ -369,21 +368,21 @@ impl MatchPlugin {
 
         mat_rect
             .unit_rep_with_default(fusion.id)
-            .ui(ui, context)
+            .ui(ui, ctx)
             .on_hover_ui(|ui| {
                 // fusion.as_card().compose(context, ui);
                 todo!();
             });
         ui.label(format!(
             "{}/{}",
-            fusion.get_action_count(context).unwrap_or(0),
+            fusion.get_action_count(ctx).unwrap_or(0),
             fusion.actions_limit
         ));
 
-        if let Ok(trigger) = NFusion::get_trigger(context, fusion.trigger_unit) {
+        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
             ui.horizontal(|ui| {
                 Icon::Lightning.show(ui);
-                trigger.title(context).label(ui);
+                trigger.title(ctx).label(ui);
             });
         }
     }

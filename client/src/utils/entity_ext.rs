@@ -1,6 +1,6 @@
 use super::*;
 pub trait EntityExt {
-    fn ids(self, ctx: &ClientContext) -> NodeResult<HashSet<u64>>;
+    fn ids(self, ctx: &ClientContext) -> NodeResult<Vec<u64>>;
     fn get_children(self, ctx: &ClientContext) -> NodeResult<Vec<Entity>>;
     fn get_children_recursive(self, ctx: &ClientContext) -> NodeResult<Vec<Entity>>;
     fn get_parents(self, ctx: &ClientContext) -> NodeResult<Vec<Entity>>;
@@ -24,8 +24,13 @@ pub trait EntityExt {
 }
 
 impl EntityExt for Entity {
-    fn ids(self, ctx: &ClientContext) -> NodeResult<HashSet<u64>> {
-        ctx.ids(self)
+    fn ids(self, ctx: &ClientContext) -> NodeResult<Vec<u64>> {
+        ctx.source()
+            .get_nodes_map()?
+            .entity_to_nodes
+            .get(&self)
+            .cloned()
+            .to_not_found()
     }
 
     fn get_children(self, ctx: &ClientContext) -> NodeResult<Vec<Entity>> {

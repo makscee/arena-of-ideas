@@ -80,10 +80,10 @@ impl NodeKindOnSpawn for NodeKind {
 
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);
-        if let Some(mut ne) = emut.get_mut::<NodeEntity>() {
+        if let Some(mut ne) = emut.get_mut::<NodeEntityComponent>() {
             ne.add_node(id, self);
         } else {
-            emut.insert(NodeEntity::new(id, self));
+            emut.insert(NodeEntityComponent::new(id, self));
         };
 
         emut.insert((Transform::default(), Visibility::default()));

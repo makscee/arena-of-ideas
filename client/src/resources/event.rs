@@ -6,7 +6,7 @@ pub trait EventImpl {
 
 impl EventImpl for Event {
     fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue {
-        match ctx.with_layers_ref(
+        match ctx.with_layers(
             [
                 ContextLayer::Owner(owner),
                 ContextLayer::Var(VarName::value, value.clone()),
@@ -25,10 +25,10 @@ impl EventImpl for Event {
                         }
                     }
                 }
-                // TODO: Implement load_collect_children_recursive or replace with new API
                 let statuses = ctx
-                    .load_collect_children::<NStatusMagic>(owner)?
+                    .load_children_ref::<NStatusMagic>(owner)?
                     .into_iter()
+                    .cloned()
                     .collect_vec();
 
                 let mut value = ctx.get_var(VarName::value)?;

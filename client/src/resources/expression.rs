@@ -37,9 +37,7 @@ impl ExpressionImpl for Expression {
             Expression::owner_var(var) => ctx.owner_var(*var),
             Expression::target_var(var) => ctx.target_var(*var),
             Expression::caster_var(var) => ctx.caster_var(*var),
-            Expression::status_var(var) => ctx
-                .source()
-                .get_var_direct(ctx.status().to_not_found()?, *var),
+            Expression::status_var(var) => ctx.source().get_var(ctx.status().to_not_found()?, *var),
             Expression::var_or_zero(var) => ctx.owner_var(*var).or_else(|_| Ok(0.into())),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;

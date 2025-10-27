@@ -62,7 +62,7 @@ impl NFusion {
     }
 
     pub fn get_slots<'a>(&self, ctx: &'a ClientContext) -> Result<Vec<&'a NFusionSlot>, NodeError> {
-        let mut slots = ctx.collect_children::<NFusionSlot>(self.id)?;
+        let mut slots = ctx.load_children_ref::<NFusionSlot>(self.id)?;
         slots.sort_by_key(|s| s.index);
         Ok(slots)
     }
@@ -144,25 +144,29 @@ impl NFusion {
         for unit in units {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
-                    ctx.with_owner_ref(unit.id, |ctx| {
-                        let r = RepresentationPlugin::paint_rect(rect, &ctx, &rep.material, ui);
-                        match &r {
-                            Ok(_) => {}
-                            Err(e) => {
-                                dbg!(e);
-                                ctx.debug_layers();
-                                panic!();
+                    ctx.exec_ref(|ctx| {
+                        ctx.with_owner(unit.id, |ctx| {
+                            let r = RepresentationPlugin::paint_rect(rect, &ctx, &rep.material, ui);
+                            match &r {
+                                Ok(_) => {}
+                                Err(e) => {
+                                    dbg!(e);
+                                    ctx.debug_layers();
+                                    panic!();
+                                }
                             }
-                        }
-                        r
+                            r
+                        })
                     })
                     .ui(ui);
                 }
             }
         }
-        for rep in ctx.collect_children::<NUnitRepresentation>(self.id)? {
-            ctx.with_owner_ref(self.id, |ctx| {
-                RepresentationPlugin::paint_rect(rect, ctx, &rep.material, ui)
+        for rep in ctx.load_children_ref::<NUnitRepresentation>(self.id)? {
+            ctx.exec_ref(|ctx| {
+                ctx.with_owner(self.id, |ctx| {
+                    RepresentationPlugin::paint_rect(rect, ctx, &rep.material, ui)
+                })
             })
             .ui(ui);
         }

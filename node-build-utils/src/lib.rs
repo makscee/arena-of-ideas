@@ -454,46 +454,6 @@ pub fn generate_field_type(field: &FieldInfo) -> TokenStream {
     }
 }
 
-// Generate the save implementation for a node
-pub fn generate_save_method(node: &NodeInfo) -> proc_macro2::TokenStream {
-    // Generate field saves for all var fields
-    let var_saves = node.fields.iter().filter_map(|field| {
-        if field.is_var {
-            let field_name = &field.name;
-            let var_name = format_ident!("{}", field_name);
-            Some(quote! {
-                // Update NodeStateHistory for var fields only in battle context
-                if ctx.is_battle() {
-                    if let Ok(entity) = self.id.entity(ctx) {
-                        let t = ctx.t().unwrap_or(0.0);
-                        if let Ok(mut state) = NodeStateHistory::load_mut(entity, ctx) {
-                            state.insert(t, 0.0, VarName::#var_name, self.#field_name.clone().into());
-                        }
-                    }
-                }
-            })
-        } else {
-            None
-        }
-    });
-
-    quote! {
-        pub fn save(&mut self, ctx: &mut ClientContext) -> NodeResult<()> {
-            if !self.is_dirty() {
-                return Ok(());
-            }
-
-            // Save var fields to NodeStateHistory only for battle context
-            #(#var_saves)*
-
-            // Mark as clean
-            self.set_dirty(false);
-
-            Ok(())
-        }
-    }
-}
-
 pub fn generate_save_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let save_fields = node
         .fields
@@ -1550,13 +1510,11 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
 
     let allow_attrs = generated_code_allow_attrs();
     let var_names_impl = quote! {
-        fn var_names() -> std::collections::HashSet<VarName>
+        fn var_names() -> Vec<VarName>
         where
             Self: Sized,
         {
-            let mut set = std::collections::HashSet::new();
-            #(set.insert(#var_names);)*
-            set
+            vec![#(#var_names),*]
         }
     };
 
@@ -1587,16 +1545,14 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         .map(|f| {
             let field_name = &f.name;
             quote! {
-                map.insert(VarName::#field_name, self.#field_name.clone().into());
+                (VarName::#field_name, self.#field_name.clone().into())
             }
         })
         .collect();
 
     let get_vars_impl = quote! {
-        fn get_vars(&self) -> std::collections::HashMap<VarName, VarValue> {
-            let mut map = std::collections::HashMap::new();
-            #(#get_vars_inserts)*
-            map
+        fn get_vars(&self) -> Vec<(VarName, VarValue)> {
+            vec![#(#get_vars_inserts),*]
         }
     };
 
@@ -1698,10 +1654,7 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
 
         quote! {
             NodeKind::#node_name => {
-                #allow_attrs
-                let mut set = std::collections::HashSet::new();
-                #(set.insert(#var_names);)*
-                set
+                vec![#(#var_names),*]
             }
         }
     });
@@ -1709,10 +1662,10 @@ pub fn generate_var_names_for_node_kind(nodes: &[NodeInfo]) -> proc_macro2::Toke
     quote! {
         #allow_attrs
         impl NodeKind {
-            pub fn var_names(self) -> std::collections::HashSet<VarName> {
+            pub fn var_names(self) -> Vec<VarName> {
                 match self {
                     #(#var_names_arms,)*
-                    NodeKind::None => std::collections::HashSet::new(),
+                    NodeKind::None => Vec::new(),
                 }
             }
         }

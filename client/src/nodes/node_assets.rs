@@ -213,7 +213,7 @@ impl NodeAssetsManager {
         owner_id: u64,
         rating: i32,
     ) {
-        let kind = node.kind();
+        let kind = T::kind_s();
         let id = node.id();
         let data = node.get_data();
         self.add_node(kind, id, data, owner_id, rating);

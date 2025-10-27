@@ -66,11 +66,11 @@ impl NodeStateHistory {
     pub fn get(&self, var: VarName) -> Option<VarValue> {
         self.get_state(var).map(|s| s.value.clone())
     }
-    pub fn get_at(&self, t: f32, var: VarName) -> Option<VarValue> {
+    pub fn get_at(&self, t: f32, var: VarName) -> NodeResult<VarValue> {
         if let Some(c) = self.get_state(var).map(|s| &s.history) {
-            c.get_value_at(t).ok()
+            c.get_value_at(t)
         } else {
-            self.get(var)
+            self.get(var).to_var_not_found(var)
         }
     }
     pub fn init(&mut self, var: VarName, value: VarValue) {
@@ -104,15 +104,15 @@ impl NodeStateHistory {
         }
         true
     }
-    pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
-        if let Ok(ns) = ctx.load_entity::<NodeStateHistory>(entity) {
-            if let Ok(t) = ctx.t() {
-                ns.get_at(t, var)
-            } else {
-                ns.get(var)
-            }
+    pub fn get_var(ctx: &ClientContext, var: VarName, entity: Entity) -> NodeResult<VarValue> {
+        let ns = ctx
+            .world()?
+            .get::<NodeStateHistory>(entity)
+            .to_not_found()?;
+        if let Ok(t) = ctx.t() {
+            ns.get_at(t, var)
         } else {
-            None
+            ns.get(var).to_var_not_found(var)
         }
     }
     pub fn find_var(context: &ClientContext, var: VarName, entity: Entity) -> Option<VarValue> {
@@ -120,8 +120,8 @@ impl NodeStateHistory {
         let mut q = VecDeque::from([entity]);
         while let Some(entity) = q.pop_front() {
             let v = Self::get_var(context, var, entity);
-            if v.is_some() {
-                return v;
+            if v.is_ok() {
+                return v.ok();
             }
             let ids = match entity.ids(context) {
                 Ok(ids) => ids,
@@ -147,7 +147,7 @@ impl NodeStateHistory {
 }
 
 impl VarHistory {
-    fn get_value_at(&self, t: f32) -> Result<VarValue, NodeError> {
+    fn get_value_at(&self, t: f32) -> NodeResult<VarValue> {
         if t < 0.0 {
             return Err(NodeError::custom("Not born yet").into());
         }

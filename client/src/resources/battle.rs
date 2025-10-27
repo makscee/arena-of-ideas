@@ -18,6 +18,7 @@
 //! - Use `NodeStateHistory::get_at(t, var)` for time-based var retrieval in simulations
 
 use super::*;
+use crate::resources::context::{NodesLinkResource, NodesMapResource};
 
 #[derive(Clone, Debug, Default)]
 pub struct Battle {
@@ -25,7 +26,7 @@ pub struct Battle {
     pub left: NTeam,
     pub right: NTeam,
 }
-#[derive(Debug)]
+#[derive(Debug, Resource)]
 pub struct BattleSimulation {
     pub duration: f32,
     pub world: World,
@@ -344,8 +345,8 @@ impl From<VfxBuilder> for BattleAction {
 impl BattleSimulation {
     pub fn new(battle: Battle) -> Self {
         let mut world = World::new();
-        world.init_resource::<SmartNodeMap>();
-        world.init_resource::<NodeLinks>();
+        world.init_resource::<NodesMapResource>();
+        world.init_resource::<NodesLinkResource>();
         // dbg!(&battle.left);
         let team_left = battle.left.id;
         let team_right = battle.right.id;
@@ -573,7 +574,7 @@ impl BattleSimulation {
         let entity = id.entity(ctx)?;
         ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
-        let bs = ctx.battle_mut()?;
+        let bs = ctx.battle()?;
         if let Some(p) = bs.fusions_left.iter().position(|u| *u == id) {
             bs.fusions_left.remove(p);
             died = true;
@@ -669,27 +670,27 @@ impl BattleSimulation {
         })
     }
 
-    pub fn as_context(&self, t: f32) -> Context<ClientSource<'_>> {
-        Context::new(ClientSource::new_battle(self, t))
+    pub fn as_context(&self, t: f32) -> ClientContext {
+        Context::new(Sources::new_battle(self.world.clone()))
     }
 
-    pub fn as_context_mut(&mut self, t: f32) -> Context<ClientSource<'_>> {
-        Context::new(ClientSource::new_battle_mut(self, t))
+    pub fn as_context_mut(&mut self, t: f32) -> ClientContext {
+        Context::new(Sources::new_battle(self.world.clone()))
     }
 
     pub fn with_context<R, F>(&self, t: f32, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        let source = ClientSource::new_battle(self, t);
+        let source = Sources::new_battle(self.world.clone());
         Context::exec(source, f)
     }
 
     pub fn with_context_mut<R, F>(&mut self, t: f32, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut Context<ClientSource<'_>>) -> NodeResult<R>,
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
-        let source = ClientSource::new_battle_mut(self, t);
+        let source = Sources::new_battle(self.world.clone());
         Context::exec(source, f)
     }
 }

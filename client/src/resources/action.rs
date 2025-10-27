@@ -90,7 +90,7 @@ impl ActionImpl for Action {
             }
             Action::use_ability => {
                 let caster = ctx.caster().to_not_found()?;
-                let house = ctx.load_first_parent_recursive::<NHouse>(caster)?;
+                let house = ctx.load_first_parent_recursive_ref::<NHouse>(caster)?;
                 let color = house.color_ref(ctx)?.color.c32();
                 let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(ability) = house.ability_ref(ctx) {
@@ -118,7 +118,7 @@ impl ActionImpl for Action {
             }
             Action::apply_status => {
                 let caster = ctx.caster().to_not_found()?;
-                let house = ctx.load_first_parent_recursive::<NHouse>(caster)?;
+                let house = ctx.load_first_parent_recursive_ref::<NHouse>(caster)?;
                 let color = house.color_ref(ctx)?.color.c32();
                 let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {

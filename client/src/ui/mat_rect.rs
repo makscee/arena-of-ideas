@@ -166,7 +166,7 @@ impl<'a> MatRect<'a> {
         owner_id: u64,
         rect: Rect,
         config: &RenderConfig,
-        context: &ClientContext,
+        ctx: &ClientContext,
         ui: &mut Ui,
     ) -> NodeResult<()> {
         let scaled_rect = if config.scale != 1.0 {
@@ -187,14 +187,14 @@ impl<'a> MatRect<'a> {
         }
 
         // Try to get entity from owner_id - could be any node type
-
-        context.with_owner_ref(owner_id, |ctx| {
-            RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
-        })?;
-        Ok(())
+        ctx.exec_ref(|ctx| {
+            ctx.with_owner(owner_id, |ctx| {
+                RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
+            })
+        })
     }
 
-    pub fn ui(self, ui: &mut Ui, context: &ClientContext) -> Response {
+    pub fn ui(self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let button = RectButton::new_size(self.size)
             .enabled(self.enabled)
             .active(self.active);
@@ -205,8 +205,7 @@ impl<'a> MatRect<'a> {
 
             // Render all materials
             for (material, owner_id, config) in &self.materials {
-                let _ =
-                    self.render_material(material, *owner_id, content_rect, config, context, ui);
+                let _ = self.render_material(material, *owner_id, content_rect, config, ctx, ui);
             }
 
             // Render unit_rep if configured
@@ -227,9 +226,8 @@ impl<'a> MatRect<'a> {
                     let color = Color32::from_white_alpha((config.alpha * 255.0) as u8);
                     painter.rect_filled(clipped_rect, 0.0, color);
                 }
-
-                context
-                    .with_owner_ref(*owner_id, |ctx| {
+                ctx.exec_ref(|ctx| {
+                    ctx.with_owner(*owner_id, |ctx| {
                         let r = unit_rep().material.paint(clipped_rect, ctx, ui);
                         match &r {
                             Ok(_) => {}
@@ -241,7 +239,8 @@ impl<'a> MatRect<'a> {
                         }
                         r
                     })
-                    .ui(ui);
+                })
+                .ui(ui);
             }
         })
     }
