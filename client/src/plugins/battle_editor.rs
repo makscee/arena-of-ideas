@@ -36,8 +36,8 @@ impl TeamEditorPlugin {
 
             if let Ok(result) =
                 battle_data
-                    .simulation
-                    .with_context(t, |ctx| -> NodeResult<Option<NTeam>> {
+                    .source
+                    .exec_context_ref(|ctx| -> NodeResult<Option<NTeam>> {
                         let editor = TeamEditor::new()
                             .empty_slot_action(
                                 "Add Placeholder Unit".to_string(),

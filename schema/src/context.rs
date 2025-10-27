@@ -111,9 +111,11 @@ pub enum ContextLayer {
     Caster(u64),
     Status(u64),
     Var(VarName, VarValue),
+    Time(f32),
 }
 
 /// Main context struct
+#[derive(Debug)]
 pub struct Context<S> {
     source: S,
     layers: Vec<ContextLayer>,
@@ -137,6 +139,10 @@ impl<S: ContextSource> Context<S> {
 
     pub fn source_mut(&mut self) -> &mut S {
         &mut self.source
+    }
+
+    pub fn into_inner(self) -> S {
+        self.source
     }
 
     /// Execute with a new context
@@ -201,6 +207,13 @@ impl<S: ContextSource> Context<S> {
         self.with_layer(ContextLayer::Caster(caster), f)
     }
 
+    pub fn with_time<F, R>(&mut self, time: f32, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Self) -> NodeResult<R>,
+    {
+        self.with_layer(ContextLayer::Time(time), f)
+    }
+
     pub fn with_status<F, R>(&mut self, status: u64, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut Self) -> NodeResult<R>,
@@ -232,6 +245,13 @@ impl<S: ContextSource> Context<S> {
     pub fn status(&self) -> Option<u64> {
         self.layers.iter().rev().find_map(|l| match l {
             ContextLayer::Status(id) => Some(*id),
+            _ => None,
+        })
+    }
+
+    pub fn time(&self) -> Option<f32> {
+        self.layers.iter().rev().find_map(|l| match l {
+            ContextLayer::Time(t) => Some(*t),
             _ => None,
         })
     }
@@ -302,6 +322,10 @@ impl<S: ContextSource> Context<S> {
 
     pub fn set_var_layer(&mut self, var: VarName, value: VarValue) {
         self.layers.push(ContextLayer::Var(var, value));
+    }
+
+    pub fn set_time_layer(&mut self, time: f32) {
+        self.layers.push(ContextLayer::Time(time));
     }
 
     pub fn get_kind(&self, id: u64) -> NodeResult<NodeKind> {

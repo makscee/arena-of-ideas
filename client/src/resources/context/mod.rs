@@ -235,6 +235,10 @@ impl ClientSource for ClientContext<'_> {
         self.source().battle()
     }
 
+    fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
+        self.source_mut().battle_mut()
+    }
+
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
         self.source_mut().rng()
     }
@@ -242,7 +246,6 @@ impl ClientSource for ClientContext<'_> {
 
 /// Extension methods for ClientContext
 pub trait ClientContextExt<'a> {
-    fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation>;
     fn load_mut<T: ClientNode + BevyComponent<Mutability = Mutable>>(
         &mut self,
         node_id: u64,
@@ -259,18 +262,14 @@ pub trait ClientContextExt<'a> {
     where
         F: FnOnce(&mut Self) -> NodeResult<R>;
     fn color(&self, ui: &mut Ui) -> Color32;
+
+    fn into_source(self) -> Sources<'a>;
+    fn exec_mut<F, R>(&mut self, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut Self) -> NodeResult<R>;
 }
 
 impl<'a> ClientContextExt<'a> for ClientContext<'a> {
-    fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
-        match self.source_mut() {
-            Sources::Battle(world) => world
-                .get_resource_mut::<BattleSimulation>()
-                .ok_or_else(|| NodeError::custom("BattleSimulation resource not found")),
-            _ => Err(NodeError::custom("Not a battle source")),
-        }
-    }
-
     fn load_mut<T: ClientNode + BevyComponent<Mutability = Mutable>>(
         &mut self,
         node_id: u64,
@@ -282,7 +281,11 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
     }
 
     fn t(&self) -> NodeResult<f32> {
-        self.battle().map(|sim| sim.duration)
+        if let Some(time) = self.time() {
+            Ok(time)
+        } else {
+            self.battle().map(|sim| sim.duration)
+        }
     }
 
     fn load_many_ref<T: ClientNode>(&self, ids: &[u64]) -> NodeResult<Vec<&T>> {
@@ -323,7 +326,7 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
         F: FnOnce(&mut Self) -> NodeResult<R>,
     {
         let layers = self.layers();
-        let mut ctx = ClientContext::new(Sources::ContextRef(self));
+        let mut ctx = ClientContext::new(Sources::SourceRef(self.source()));
         ctx.with_layers(layers.clone(), f)
     }
 
@@ -334,78 +337,27 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
             ui.visuals().text_color()
         }
     }
-}
 
-/// Extension for using Context with Bevy World
-pub trait WorldContextExt {
-    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
-    where
-        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
-    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
-    where
-        F: FnOnce(&mut ClientContext) -> NodeResult<R>;
-    fn as_context_mut(&mut self) -> ClientContext;
-}
-
-impl WorldContextExt for World {
-    fn with_context<R, F>(&self, f: F) -> NodeResult<R>
-    where
-        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
-    {
-        // Check if this is a battle world by looking for BattleSimulation resource
-        if self.get_resource::<BattleSimulation>().is_some() {
-            // Create a world copy for battle context since we need mut access
-            let mut battle_world = World::new();
-            battle_world.init_resource::<NodesMapResource>();
-            battle_world.init_resource::<NodesLinkResource>();
-            Context::exec(Sources::Battle(battle_world), f)
-        } else {
-            let mut solid_world = World::new();
-            solid_world.init_resource::<NodesMapResource>();
-            solid_world.init_resource::<NodesLinkResource>();
-            Context::exec(Sources::Solid(solid_world), f)
-        }
+    fn into_source(self) -> Sources<'a> {
+        self.into_inner()
     }
 
-    fn with_context_mut<R, F>(&mut self, f: F) -> NodeResult<R>
+    fn exec_mut<F, R>(&mut self, f: F) -> NodeResult<R>
     where
-        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+        F: FnOnce(&mut Self) -> NodeResult<R>,
     {
-        // Check if this is a battle world by looking for BattleSimulation resource
-        if self.get_resource::<BattleSimulation>().is_some() {
-            // Move the world temporarily to create the context
-            let world = std::mem::replace(self, World::new());
-            let source = Sources::Battle(world);
-            let result = Context::exec(source, f);
-
-            // Move the world back
-            if let Sources::Battle(world) = source {
-                *self = world;
-            }
-            result
-        } else {
-            // For non-battle worlds, create a proper solid context
-            let world = std::mem::replace(self, World::new());
-            let mut source = Sources::Solid(world);
-            let result = Context::exec(source, f);
-
-            // Move the world back
-            if let Sources::Solid(world) = source {
-                *self = world;
-            }
-            result
-        }
+        f(self)
     }
+}
 
-    fn as_context_mut(&mut self) -> ClientContext {
-        // Check if this is a battle world by looking for BattleSimulation resource
-        if self.get_resource::<BattleSimulation>().is_some() {
-            let world = std::mem::replace(self, World::new());
-            Context::new(Sources::Battle(world))
-        } else {
-            let world = std::mem::replace(self, World::new());
-            Context::new(Sources::Solid(world))
-        }
+/// Extension for creating Sources from World
+pub trait WorldExt {
+    fn to_solid_source(self) -> Sources<'static>;
+}
+
+impl WorldExt for World {
+    fn to_solid_source(self) -> Sources<'static> {
+        Sources::Solid(self)
     }
 }
 

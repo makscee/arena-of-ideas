@@ -48,12 +48,13 @@ impl BattleCamera {
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
-    pub fn show(bs: &mut BattleSimulation, t: f32, ui: &mut Ui) {
-        Self::show_with_actions(bs, t, ui, &Vec::new(), bs.team_left, bs.team_right);
+    pub fn show(ctx: &mut ClientContext, t: f32, ui: &mut Ui) {
+        let sim = ctx.battle().unwrap();
+        Self::show_with_actions(ctx, t, ui, &Vec::new(), sim.team_left, sim.team_right);
     }
 
     pub fn show_with_actions(
-        bs: &mut BattleSimulation,
+        ctx: &mut ClientContext,
         t: f32,
         ui: &mut Ui,
         slot_actions: &Vec<(String, fn(i32, Entity, &mut ClientContext))>,
@@ -77,24 +78,17 @@ impl BattleCamera {
 
         let slots = global_settings().team_slots;
         for s in 1..=slots {
-            cam.show_slot_with_action(
-                s as i32,
-                ui,
-                slot_actions,
-                &mut bs.world,
-                team_left_id,
-                team_right_id,
-            );
+            cam.show_slot_with_action(s as i32, ui, slot_actions, ctx, team_left_id, team_right_id);
             cam.show_slot_with_action(
                 -(s as i32),
                 ui,
                 slot_actions,
-                &mut bs.world,
+                ctx,
                 team_left_id,
                 team_right_id,
             );
         }
-        bs.with_context_mut(t, |ctx| {
+        ctx.with_layers([ContextLayer::Time(t)], |ctx| {
             let world = ctx.world_mut()?;
             for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                 ctx.with_owner(fusion.id, |context| {
@@ -180,7 +174,7 @@ impl BattleCamera {
         slot: i32,
         ui: &mut Ui,
         slot_actions: &Vec<(String, fn(i32, Entity, &mut ClientContext))>,
-        world: &mut World,
+        ctx: &mut ClientContext,
         team_left_id: u64,
         team_right_id: u64,
     ) {
@@ -203,13 +197,9 @@ impl BattleCamera {
             response.bar_menu(|ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
-                        world
-                            .with_context_mut(|context| {
-                                let team_entity = context.entity(team_id)?;
-                                action_fn(slot, team_entity, context);
-                                Ok(())
-                            })
-                            .notify_error_op();
+                        if let Ok(team_entity) = ctx.entity(team_id) {
+                            action_fn(slot, team_entity, ctx);
+                        }
 
                         ui.close_kind(UiKind::Menu);
                     }

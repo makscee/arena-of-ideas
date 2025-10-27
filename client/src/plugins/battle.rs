@@ -9,7 +9,7 @@ impl Plugin for BattlePlugin {
 #[derive(Resource)]
 pub struct BattleData {
     pub battle: Battle,
-    pub simulation: BattleSimulation,
+    pub source: Sources<'static>,
     pub t: f32,
     pub playback_speed: f32,
     pub playing: bool,
@@ -19,10 +19,15 @@ pub struct BattleData {
 
 impl BattleData {
     fn load(battle: Battle) -> Self {
-        let simulation = BattleSimulation::new(battle.clone()).start();
+        let mut source = battle.clone().to_source();
+        let mut context = source.as_context();
+
+        // Start the simulation
+        BattleSimulation::start(&mut context).unwrap();
+
         Self {
             battle,
-            simulation,
+            source: context.into_source(),
             t: 0.0,
             playing: true,
             playback_speed: 1.0,
@@ -60,9 +65,8 @@ impl BattlePlugin {
                 "BattleData not found".cstr().label(ui);
                 return;
             };
-            let world = &mut bd.simulation.world;
-            world
-                .with_context_mut(|ctx| {
+            bd.source
+                .exec_context_ref(|ctx| {
                     if let Some(id) = selected {
                         ui.horizontal(|ui| {
                             format!("selected {id}").label(ui);
@@ -128,14 +132,19 @@ impl BattlePlugin {
         let main_rect = ui.available_rect_before_wrap();
 
         // Show battle camera with slot actions
-        BattleCamera::show_with_actions(
-            &mut data.simulation,
-            t,
-            ui,
-            &data.slot_actions,
-            data.battle.left.id(),
-            data.battle.right.id(),
-        );
+        data.source
+            .exec_context(|ctx| {
+                BattleCamera::show_with_actions(
+                    ctx,
+                    t,
+                    ui,
+                    &data.slot_actions,
+                    data.battle.left.id(),
+                    data.battle.right.id(),
+                );
+                Ok(())
+            })
+            .log();
 
         Self::render_playback_controls(ui, &mut data, main_rect)?;
         Self::render_end_screen(ui, &mut data, main_rect)?;
@@ -167,12 +176,22 @@ impl BattlePlugin {
             Self::render_controls(ui, data);
         });
 
+        let duration = data
+            .source
+            .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+        let ended = data
+            .source
+            .exec_context_ref(|ctx| ctx.battle().map(|s| s.ended()).unwrap_or(true));
+
+        let t = data.t.at_most(duration);
         if data.playing {
             data.t += gt().last_delta() * data.playback_speed;
-            data.t = data.t.at_most(data.simulation.duration);
+            data.t = data.t.at_most(duration);
         }
-        if data.t >= data.simulation.duration && !data.simulation.ended() {
-            data.simulation.run();
+        if data.t >= duration && !ended {
+            data.source
+                .exec_context(|ctx| BattleSimulation::run(ctx))
+                .log();
         }
         Ok(())
     }
@@ -196,12 +215,18 @@ impl BattlePlugin {
 
             // Step forward
             if ui.button("⏩").clicked() {
-                data.t = (data.t + 1.0).min(data.simulation.duration);
+                let duration = data
+                    .source
+                    .exec_context(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+                data.t = (data.t + 1.0).min(duration);
             }
 
             // Jump to end
             if ui.button("⏭").clicked() {
-                data.t = data.simulation.duration;
+                let duration = data
+                    .source
+                    .exec_context(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+                data.t = duration;
             }
 
             ui.separator();
@@ -230,20 +255,26 @@ impl BattlePlugin {
             ui.separator();
 
             // Duration slider
-            if data.simulation.duration > 0.0 {
-                Slider::new("time").name(false).full_width().ui(
-                    &mut data.t,
-                    0.0..=data.simulation.duration,
-                    ui,
-                );
+            let duration = data
+                .source
+                .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+            if duration > 0.0 {
+                Slider::new("time")
+                    .name(false)
+                    .full_width()
+                    .ui(&mut data.t, 0.0..=duration, ui);
             }
         });
     }
 
     fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
-        if data.t >= data.simulation.duration && data.simulation.ended() {
+        let (duration, ended, result) = data.source.exec_context_ref(|ctx| {
+            let sim = ctx.battle().unwrap();
+            (sim.duration, sim.ended(), sim.fusions_right.is_empty())
+        });
+
+        if data.t >= duration && ended {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
-                let result = data.simulation.fusions_right.is_empty();
                 ui.vertical_centered_justified(|ui| {
                     if result {
                         "Victory".cstr_cs(GREEN, CstrStyle::Bold)
@@ -263,11 +294,14 @@ impl BattlePlugin {
                         ui.set_max_width(200.0);
                         if let Some(on_done) = data.on_done {
                             if "Complete".cstr().button(ui).clicked() {
-                                let mut h = DefaultHasher::new();
-                                for a in &data.simulation.log.actions {
-                                    a.hash(&mut h);
-                                }
-                                on_done(data.battle.id, result, h.finish());
+                                let hash = data.source.exec_context_ref(|ctx| {
+                                    let mut h = DefaultHasher::new();
+                                    for a in &ctx.battle().unwrap().log.actions {
+                                        a.hash(&mut h);
+                                    }
+                                    h.finish()
+                                });
+                                on_done(data.battle.id, result, hash);
                             }
                         }
                     });

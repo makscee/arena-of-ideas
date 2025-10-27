@@ -33,9 +33,48 @@ where
         if let Some(ref mut sources) = STATIC_SOURCES {
             f(sources)
         } else {
-            panic!("Static sources not initialized");
+            panic!("Static sources not initialized")
         }
     }
+}
+
+pub fn with_solid_source<R, F>(f: F) -> NodeResult<R>
+where
+    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+{
+    with_static_sources(|sources| {
+        let taken = std::mem::replace(&mut sources.solid, Sources::None);
+        let mut context = taken.as_context();
+        let result = f(&mut context);
+        sources.solid = context.into_source();
+        result
+    })
+}
+
+pub fn with_top_source<R, F>(f: F) -> NodeResult<R>
+where
+    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+{
+    with_static_sources(|sources| {
+        let taken = std::mem::replace(&mut sources.top, Sources::None);
+        let mut context = taken.as_context();
+        let result = f(&mut context);
+        sources.top = context.into_source();
+        result
+    })
+}
+
+pub fn with_selected_source<R, F>(f: F) -> NodeResult<R>
+where
+    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+{
+    with_static_sources(|sources| {
+        let taken = std::mem::replace(&mut sources.selected, Sources::None);
+        let mut context = taken.as_context();
+        let result = f(&mut context);
+        sources.selected = context.into_source();
+        result
+    })
 }
 
 /// Trait for client-side node data sources
@@ -47,20 +86,23 @@ pub trait ClientSource {
     fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T>;
     fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T>;
     fn battle(&self) -> NodeResult<&BattleSimulation>;
+    fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation>;
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
 }
 
 /// Sources enum for different node data sources
+#[derive(Debug, Default)]
 pub enum Sources<'a> {
     Solid(World),
     Top(World),
     Selected(World),
-    Battle(World),
-    ContextRef(&'a ClientContext<'a>),
+    Battle(BattleSimulation),
+    SourceRef(&'a Sources<'a>),
+    #[default]
     None,
 }
 
-impl Sources<'_> {
+impl<'a> Sources<'a> {
     pub fn new_solid() -> Self {
         let mut world = World::new();
         Self::init_world(&mut world);
@@ -80,8 +122,44 @@ impl Sources<'_> {
         Sources::Selected(world)
     }
 
-    pub fn new_battle(world: World) -> Self {
-        Sources::Battle(world)
+    pub fn as_context(self) -> ClientContext<'a> {
+        ClientContext::new(self)
+    }
+
+    pub fn take(&mut self) -> Sources<'a> {
+        std::mem::replace(self, Sources::None)
+    }
+
+    pub fn exec_context<F, R>(&mut self, f: F) -> R
+    where
+        F: FnOnce(&mut ClientContext) -> R,
+    {
+        let taken_source = self.take();
+        let mut ctx = taken_source.as_context();
+        let result = f(&mut ctx);
+        *self = ctx.source_mut().take();
+        result
+    }
+
+    pub fn exec_context_ref<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce(&mut ClientContext) -> R,
+    {
+        let mut ctx = ClientContext::new(Sources::SourceRef(self));
+        f(&mut ctx)
+    }
+
+    pub fn to_solid_source() -> Sources<'static> {
+        let mut world = World::new();
+        Self::init_world(&mut world);
+        Sources::Solid(world)
+    }
+
+    pub fn get_battle_simulation(&self) -> NodeResult<&BattleSimulation> {
+        match self {
+            Sources::Battle(sim) => Ok(sim),
+            _ => Err(NodeError::custom("Not a battle source")),
+        }
     }
 
     /// Unified initialization function for all World sources
@@ -92,23 +170,21 @@ impl Sources<'_> {
 
     pub fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
-                Ok(w)
-            }
-            Sources::ContextRef(context) => context.world(),
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Battle(sim) => Ok(&sim.world),
+            Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world in None source")),
         }
     }
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
-                Ok(w)
-            }
-            Sources::ContextRef(_) => {
-                Err(NodeError::custom("Can't mutate World of ContextRef source"))
-            }
-            Sources::None => Err(NodeError::custom("No world in None source")),
+            Sources::Solid(world) | Sources::Top(world) | Sources::Selected(world) => Ok(world),
+            Sources::Battle(sim) => Ok(&mut sim.world),
+            Sources::SourceRef(_) => Err(NodeError::custom(
+                "Cannot get mutable world from source ref",
+            )),
+            Sources::None => Err(NodeError::custom("No world in empty source")),
         }
     }
 
@@ -182,7 +258,7 @@ impl Sources<'_> {
             Sources::Solid(_) => self.handle_solid_update(update),
             Sources::Top(_) => self.handle_top_update(update),
             Sources::Selected(_) => self.handle_selected_update(update),
-            Sources::Battle(_) | Sources::None | Sources::ContextRef(..) => panic!(),
+            Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => panic!(),
         }
     }
 
@@ -381,20 +457,18 @@ impl ClientSource for Sources<'_> {
 
     fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
-                Ok(w)
-            }
-            Sources::ContextRef(ctx) => ctx.world(),
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Battle(sim) => Ok(&sim.world),
+            Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world available")),
         }
     }
 
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) | Sources::Battle(w) => {
-                Ok(w)
-            }
-            Sources::ContextRef(ctx) => Err(NodeError::custom("Can't mutate World of ContextRef")),
+            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Battle(sim) => Ok(&mut sim.world),
+            Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
             Sources::None => Err(NodeError::custom("No world available")),
         }
     }
@@ -419,15 +493,30 @@ impl ClientSource for Sources<'_> {
 
     fn battle(&self) -> NodeResult<&BattleSimulation> {
         match self {
-            Sources::Battle(world) => world
-                .get_resource::<BattleSimulation>()
-                .ok_or_else(|| NodeError::custom("BattleSimulation resource not found")),
+            Sources::Battle(sim) => Ok(sim),
+            Sources::SourceRef(source) => source.battle(),
+            _ => Err(NodeError::custom("Not a battle source")),
+        }
+    }
+
+    fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
+        match self {
+            Sources::Battle(sim) => Ok(sim),
+            Sources::SourceRef(_) => Err(NodeError::custom(
+                "Cannot get mutable battle from source ref",
+            )),
             _ => Err(NodeError::custom("Not a battle source")),
         }
     }
 
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
-        todo!("get rng from BattleSimulation of Sources::Battle")
+        match self {
+            Sources::Battle(sim) => Ok(&mut sim.rng),
+            Sources::SourceRef(_) => {
+                Err(NodeError::custom("Cannot get mutable RNG from source ref"))
+            }
+            _ => Err(NodeError::custom("RNG only available in battle context")),
+        }
     }
 }
 
@@ -451,15 +540,14 @@ pub enum StdbUpdate {
 impl ContextSource for Sources<'_> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         match self {
-            Sources::Battle(world) => {
+            Sources::Battle(sim) => {
+                let world = &sim.world;
                 // Check NodeStateHistory first for battle contexts
                 if let Some(node_data) = world.get_resource::<NodesMapResource>() {
                     if let Some(entity) = node_data.get_entity(node_id) {
                         if let Some(state) = world.get::<NodeStateHistory>(entity) {
-                            if let Some(sim) = world.get_resource::<BattleSimulation>() {
-                                if let Ok(value) = state.get_at(sim.duration, var) {
-                                    return Ok(value);
-                                }
+                            if let Ok(value) = state.get_at(sim.duration, var) {
+                                return Ok(value);
                             } else if let Some(value) = state.get(var) {
                                 return Ok(value);
                             }
@@ -489,21 +577,18 @@ impl ContextSource for Sources<'_> {
 
     fn var_updated(&mut self, node_id: u64, var: VarName, value: VarValue) {
         match self {
-            Sources::Battle(world) => {
+            Sources::Battle(sim) => {
                 // Save to NodeStateHistory in battle contexts
-                if let Some(node_data) = world.get_resource::<NodesMapResource>() {
+                if let Some(node_data) = sim.world.get_resource::<NodesMapResource>() {
                     if let Some(entity) = node_data.get_entity(node_id) {
-                        let t = world
-                            .get_resource::<BattleSimulation>()
-                            .map(|sim| sim.duration)
-                            .unwrap_or(0.0);
+                        let t = sim.duration;
 
-                        if let Some(mut state) = world.get_mut::<NodeStateHistory>(entity) {
+                        if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
                             state.insert(t, 0.0, var, value);
                         } else {
                             let mut state = NodeStateHistory::default();
                             state.insert(t, 0.0, var, value);
-                            world.entity_mut(entity).insert(state);
+                            sim.world.entity_mut(entity).insert(state);
                         }
                     }
                 }

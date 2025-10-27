@@ -21,11 +21,11 @@ impl Plugin for MatchPlugin {
 
 impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             if let Some(last) = m.battles_ref(ctx)?.last() {
                 if last.result.is_none() {
-                    GameState::Battle.set_next(ctx.world_mut()?);
+                    GameState::Battle.set_next(world);
                     // MatchPlugin::load_battle(ctx)?;
                     todo!();
                     return Ok(());
@@ -35,10 +35,10 @@ impl MatchPlugin {
         })
     }
     pub fn check_active(world: &mut World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             if !m.active {
-                GameState::MatchOver.set_next(ctx.world_mut()?);
+                GameState::MatchOver.set_next(world);
             }
             Ok(())
         })
@@ -60,21 +60,12 @@ impl MatchPlugin {
     fn on_match_update(mut events: MessageReader<StdbNodeEvent>) {
         for event in events.read() {
             if event.node.kind == "NMatch" && event.node.owner == player_id() {
-                op(|world| {
-                    world
-                        .with_context(|ctx| {
-                            let world = ctx.world_mut()?;
-                            Self::check_active(world).notify(world);
-                            Self::check_battles(world).notify(world);
-                            Ok(())
-                        })
-                        .log();
-                });
+                todo!("check active battle");
             }
         }
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
             // Check for unresolved battles
             if let Some(last_battle) = m.battles_load(ctx)?.last() {
@@ -169,7 +160,7 @@ impl MatchPlugin {
         })
     }
     pub fn pane_info(ui: &mut Ui, world: &World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             Grid::new("shop info").show(ui, |ui| {
                 "g".cstr().label(ui);
@@ -186,7 +177,7 @@ impl MatchPlugin {
         })
     }
     pub fn pane_roster(ui: &mut Ui, world: &World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             let team = m.team_ref(ctx)?;
             let (_, card) =
@@ -204,7 +195,7 @@ impl MatchPlugin {
         })
     }
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             let team = m.team_ref(ctx)?;
             let rect = ui.available_rect_before_wrap();
@@ -254,7 +245,7 @@ impl MatchPlugin {
         })
     }
     pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.with_context(|ctx| {
+        with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
@@ -277,12 +268,12 @@ impl MatchPlugin {
         })
     }
     pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.with_context(|ctx| {
-            let world = ctx.world_mut()?;
+        with_solid_source(|ctx| {
+            let ctx_world = ctx.world_mut()?;
 
-            let floors = world
+            let floors = ctx_world
                 .query::<&NFloorBoss>()
-                .iter(world)
+                .iter(ctx_world)
                 .sorted_by_key(|b| -b.floor)
                 .cloned()
                 .collect_vec();
@@ -321,7 +312,7 @@ impl MatchPlugin {
     }
 
     pub fn pane_fusion(ui: &mut Ui, world: &World) -> NodeResult<()> {
-        world.with_context(|context| {
+        with_solid_source(|context| {
             let m = player(context)?.active_match_ref(context)?;
             let team = m.team_ref(context)?;
             let fusions = team.fusions_ref(context)?;

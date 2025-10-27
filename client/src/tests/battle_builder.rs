@@ -497,35 +497,51 @@ pub struct BattleTestCase {
 impl BattleTestCase {
     pub fn run(self) -> BattleTestResult {
         println!("=== STARTING BATTLE TEST ===");
-        let mut simulation = BattleSimulation::new(self.battle).start();
+        let mut source = self.battle.to_source();
+
+        // Create context once and reuse it
+        let mut context = source.as_context();
+
+        // Start the simulation
+        BattleSimulation::start(&mut context).unwrap();
 
         let max_iterations = 10; // Reduce iterations for focused testing
         let mut iterations = 0;
 
-        while !simulation.ended() && iterations < max_iterations {
-            println!("--- Battle iteration {} ---", iterations + 1);
-            simulation.run();
-            iterations += 1;
+        while iterations < max_iterations {
+            let ended = context.battle().map(|s| s.ended()).unwrap_or(true);
+            if ended {
+                break;
+            }
 
-            println!(
-                "Left: {}, Right: {}, Ended: {}",
-                simulation.left_units().len(),
-                simulation.right_units().len(),
-                simulation.ended()
-            );
+            println!("--- Battle iteration {} ---", iterations + 1);
+
+            BattleSimulation::run(&mut context).unwrap();
+
+            iterations += 1;
         }
 
-        let left_alive = simulation.left_units().len();
-        let right_alive = simulation.right_units().len();
+        let (left_alive, right_alive, ended, log) = {
+            let sim = context.battle().unwrap();
+            (
+                sim.left_units().len(),
+                sim.right_units().len(),
+                sim.ended(),
+                sim.log.clone(),
+            )
+        };
+
         println!(
-            "=== BATTLE COMPLETE: Left={}, Right={}, Iterations={} ===",
-            left_alive, right_alive, iterations
+            "Left: {}, Right: {}, Ended: {}",
+            left_alive, right_alive, ended
         );
 
-        let winner = if left_alive > 0 && right_alive == 0 {
-            Some(TeamSide::Left)
-        } else if right_alive > 0 && left_alive == 0 {
-            Some(TeamSide::Right)
+        let winner = if ended {
+            match (left_alive == 0, right_alive == 0) {
+                (true, false) => Some(TeamSide::Right),
+                (false, true) => Some(TeamSide::Left),
+                _ => None, // Draw or both have units
+            }
         } else {
             None
         };
@@ -535,7 +551,7 @@ impl BattleTestCase {
             left_alive,
             right_alive,
             iterations,
-            log: simulation.log,
+            log,
         }
     }
 }
