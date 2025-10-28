@@ -20,14 +20,15 @@ pub struct BattleData {
 impl BattleData {
     fn load(battle: Battle) -> Self {
         let mut source = battle.clone().to_source();
-        let mut context = source.as_context();
 
         // Start the simulation
-        BattleSimulation::start(&mut context).unwrap();
+        source
+            .exec_context(|ctx| BattleSimulation::start(ctx))
+            .unwrap();
 
         Self {
             battle,
-            source: context.into_source(),
+            source,
             t: 0.0,
             playing: true,
             playback_speed: 1.0,
@@ -41,6 +42,9 @@ impl BattlePlugin {
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
+            if !team.fusions.is_loaded() {
+                team.fusions_set(default()).unwrap();
+            }
             while team.fusions.get().unwrap().len() < slots {
                 let mut fusion = NFusion::default().with_id(next_id());
                 fusion.index = team.fusions.get().unwrap().len() as i32;
@@ -61,7 +65,7 @@ impl BattlePlugin {
     pub fn open_world_inspector_window(world: &mut World) {
         let mut selected: Option<u64> = None;
         Window::new("battle world inspector", move |ui, world| {
-            let Some(mut bd) = world.get_resource_mut::<BattleData>() else {
+            let Some(bd) = world.get_resource_mut::<BattleData>() else {
                 "BattleData not found".cstr().label(ui);
                 return;
             };

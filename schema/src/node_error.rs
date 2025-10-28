@@ -51,7 +51,7 @@ impl std::fmt::Display for SourceTrace {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum NodeError {
     #[error("Node not found: {0} {1}")]
     NotFound(u64, SourceTrace),
@@ -98,9 +98,6 @@ pub enum NodeError {
 
     #[error("Not found: {0} {1}")]
     NotFoundGeneric(String, SourceTrace),
-
-    #[error("Context error: {0} {1}")]
-    ContextError(anyhow::Error, SourceTrace),
 }
 
 pub type NodeResult<T> = Result<T, NodeError>;
@@ -155,11 +152,6 @@ impl NodeError {
     }
 
     #[track_caller]
-    pub fn context_error(error: anyhow::Error) -> Self {
-        NodeError::ContextError(error, Location::caller().into())
-    }
-
-    #[track_caller]
     pub fn custom(msg: impl Into<String>) -> Self {
         NodeError::Custom(msg.into(), Location::caller().into())
     }
@@ -207,13 +199,6 @@ impl NodeError {
 impl From<NodeError> for String {
     fn from(value: NodeError) -> Self {
         value.to_string()
-    }
-}
-
-impl From<anyhow::Error> for NodeError {
-    #[track_caller]
-    fn from(error: anyhow::Error) -> Self {
-        NodeError::context_error(error)
     }
 }
 
@@ -296,9 +281,6 @@ impl<T> NodeErrorResultExt<T> for NodeResult<T> {
                     *trace = trace.clone().add_location(current_location);
                 }
                 NodeError::NotFoundGeneric(_, trace) => {
-                    *trace = trace.clone().add_location(current_location);
-                }
-                NodeError::ContextError(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
             }

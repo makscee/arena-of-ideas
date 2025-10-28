@@ -127,6 +127,12 @@ impl BattleCamera {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
+                    // let map = ctx.source().get_nodes_map()?;
+                    // dbg!(map.get_kind(id));
+                    // for id in ctx.parents_recursive(id)? {
+                    //     dbg!(ctx.get_kind(id)?);
+                    // }
+
                     let rect = cam.rect_from_context(ctx)?;
                     ctx.load::<NUnitRepresentation>(id)?
                         .material

@@ -539,26 +539,25 @@ pub enum StdbUpdate {
 
 impl ContextSource for Sources<'_> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        match self {
-            Sources::Battle(sim) => {
-                let world = &sim.world;
-                // Check NodeStateHistory first for battle contexts
-                if let Some(node_data) = world.get_resource::<NodesMapResource>() {
-                    if let Some(entity) = node_data.get_entity(node_id) {
-                        if let Some(state) = world.get::<NodeStateHistory>(entity) {
-                            if let Ok(value) = state.get_at(sim.duration, var) {
-                                return Ok(value);
-                            } else if let Some(value) = state.get(var) {
-                                return Ok(value);
-                            }
+        if let Ok(sim) = self.battle() {
+            let world = &sim.world;
+            // Check NodeStateHistory first for battle contexts
+            if let Some(node_data) = world.get_resource::<NodesMapResource>() {
+                if let Some(entity) = node_data.get_entity(node_id) {
+                    if let Some(state) = world.get::<NodeStateHistory>(entity) {
+                        if let Ok(value) = state.get_at(sim.duration, var) {
+                            return Ok(value);
+                        } else if let Some(value) = state.get(var) {
+                            return Ok(value);
                         }
                     }
                 }
-
-                // Fall back to node's own var
-                self.get_var_from_node(node_id, var)
             }
-            _ => self.get_var_from_node(node_id, var),
+
+            // Fall back to node's own var
+            self.get_var_from_node(node_id, var)
+        } else {
+            self.get_var_from_node(node_id, var)
         }
     }
 
@@ -576,24 +575,21 @@ impl ContextSource for Sources<'_> {
     }
 
     fn var_updated(&mut self, node_id: u64, var: VarName, value: VarValue) {
-        match self {
-            Sources::Battle(sim) => {
-                // Save to NodeStateHistory in battle contexts
-                if let Some(node_data) = sim.world.get_resource::<NodesMapResource>() {
-                    if let Some(entity) = node_data.get_entity(node_id) {
-                        let t = sim.duration;
+        if let Ok(sim) = self.battle_mut() {
+            // Save to NodeStateHistory in battle contexts
+            if let Some(node_data) = sim.world.get_resource::<NodesMapResource>() {
+                if let Some(entity) = node_data.get_entity(node_id) {
+                    let t = sim.duration;
 
-                        if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
-                            state.insert(t, 0.0, var, value);
-                        } else {
-                            let mut state = NodeStateHistory::default();
-                            state.insert(t, 0.0, var, value);
-                            sim.world.entity_mut(entity).insert(state);
-                        }
+                    if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
+                        state.insert(t, 0.0, var, value);
+                    } else {
+                        let mut state = NodeStateHistory::default();
+                        state.insert(t, 0.0, var, value);
+                        sim.world.entity_mut(entity).insert(state);
                     }
                 }
             }
-            _ => {}
         }
     }
 

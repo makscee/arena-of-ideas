@@ -40,7 +40,7 @@ impl Battle {
 
         let rng = rng_seeded(self.id);
 
-        let mut simulation = BattleSimulation {
+        let simulation = BattleSimulation {
             world,
             battle: self.clone(),
             fusions_left: Vec::new(),
@@ -201,20 +201,12 @@ impl BattleAction {
                     let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
                     add_actions.push(
                         Self::new_vfx("strike")
+                            .with_owner(*a)
+                            .with_target(*b)
                             .with_var(VarName::position, owner_pos)
                             .with_var(VarName::extra_position, target_pos.clone())
                             .into(),
                     );
-                    if let Some(strike_anim) = animations().get("strike") {
-                        ctx.with_layers(
-                            [
-                                ContextLayer::Owner(*a),
-                                ContextLayer::Target(*b),
-                                ContextLayer::Var(VarName::position, vec2(0.0, 0.0).into()),
-                            ],
-                            |context| strike_anim.apply(context),
-                        )?;
-                    }
                     let fusion_a = ctx.load::<NFusion>(*a)?;
                     let fusion_b = ctx.load::<NFusion>(*b)?;
                     add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
@@ -300,7 +292,10 @@ impl BattleAction {
                                         HexColor::from("#00FF00".to_string()).into(),
                                     ),
                                 ],
-                                |context| text.apply(context),
+                                |ctx| {
+                                    ctx.debug_layers();
+                                    text.apply(ctx)
+                                },
                             )?;
                         }
                     }

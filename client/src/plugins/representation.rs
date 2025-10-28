@@ -18,9 +18,9 @@ impl RepresentationPlugin {
             p.color = color;
         }
         for a in &m.0 {
-            a.paint(ctx, &mut p, ui)?
+            a.paint(ctx, &mut p, ui).track()?
         }
-        PainterAction::paint.paint(ctx, &mut p, ui)
+        PainterAction::paint.paint(ctx, &mut p, ui).track()
     }
 }
 

@@ -33,10 +33,10 @@ impl Anim {
             actions: actions.into_iter().map(|a| Box::new(a)).collect(),
         }
     }
-    pub fn apply(&self, context: &mut ClientContext) -> NodeResult<()> {
+    pub fn apply(&self, ctx: &mut ClientContext) -> NodeResult<()> {
         let a = &mut Animator::new();
         for action in &self.actions {
-            action.apply(a, context)?;
+            action.apply(a, ctx).track()?;
         }
         Ok(())
     }
@@ -53,7 +53,7 @@ impl AnimAction {
     fn apply(&self, a: &mut Animator, ctx: &mut ClientContext) -> NodeResult<()> {
         match self {
             AnimAction::translate(x) => {
-                let pos = x.get_vec2(ctx)?;
+                let pos = x.get_vec2(ctx).track()?;
                 let mut t = ctx.t()?;
                 for target in a.targets.iter().copied() {
                     let entity = target.entity(ctx)?;
@@ -66,21 +66,21 @@ impl AnimAction {
                 ctx.battle_mut()?.duration = t;
             }
             AnimAction::set_target(x) => {
-                a.targets = x.get_u64_list(ctx)?;
+                a.targets = x.get_u64_list(ctx).track()?;
             }
             AnimAction::add_target(x) => {
-                a.targets.push(x.get_u64(ctx)?);
+                a.targets.push(x.get_u64(ctx).track()?);
             }
             AnimAction::duration(x) => {
-                a.duration = x.get_f32(ctx)?;
+                a.duration = x.get_f32(ctx).track()?;
             }
             AnimAction::timeframe(x) => {
-                a.timeframe = x.get_f32(ctx)?;
+                a.timeframe = x.get_f32(ctx).track()?;
                 a.duration = a.duration.at_least(a.timeframe);
             }
             AnimAction::list(vec) => {
                 for aa in vec {
-                    aa.apply(a, ctx)?;
+                    aa.apply(a, ctx).track()?;
                 }
             }
             AnimAction::spawn(material) => {
@@ -88,21 +88,24 @@ impl AnimAction {
                 let id = next_id();
                 NUnitRepresentation::new(0, *material.clone())
                     .with_id(id)
-                    .spawn(ctx, Some(entity))?;
+                    .spawn(ctx, Some(entity))
+                    .track()?;
                 ctx.world_mut()?.entity_mut(entity).insert(Vfx);
 
-                let mut t = ctx.t()?;
+                let mut t = ctx.t().track()?;
                 let vars_layers = ctx.get_vars_layers();
-                let entity = ctx.entity(id)?;
+                let entity = ctx.entity(id).track()?;
                 let mut state = ctx
                     .world_mut()?
                     .get_mut::<NodeStateHistory>(entity)
-                    .to_not_found()?;
+                    .to_not_found()
+                    .track()?;
                 state.insert(0.0, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::visible, true.into());
                 state.insert(t + a.duration, 0.0, VarName::visible, false.into());
                 state.insert(t, 0.0, VarName::t, 0.0.into());
                 state.insert(t + 0.0001, a.duration, VarName::t, 1.0.into());
+                debug!("spawn {material:?} layers {vars_layers:?}");
                 for (var, value) in vars_layers {
                     state.insert(0.0, 0.0, var, value);
                 }

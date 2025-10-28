@@ -232,9 +232,7 @@ impl<'a> MatRect<'a> {
                         match &r {
                             Ok(_) => {}
                             Err(e) => {
-                                dbg!(e);
-                                ctx.debug_layers();
-                                panic!();
+                                e.clone().ui(ui);
                             }
                         }
                         r
