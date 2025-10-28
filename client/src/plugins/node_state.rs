@@ -109,7 +109,7 @@ impl NodeStateHistory {
             .world()?
             .get::<NodeStateHistory>(entity)
             .to_not_found()?;
-        if let Ok(t) = ctx.t() {
+        if let Some(t) = ctx.source().t() {
             ns.get_at(t, var)
         } else {
             ns.get(var).to_var_not_found(var)

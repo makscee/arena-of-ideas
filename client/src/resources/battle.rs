@@ -53,7 +53,7 @@ impl Battle {
         };
 
         // Initialize the battle simulation
-        let mut source = Sources::Battle(simulation);
+        let mut source = Sources::Battle(simulation, 0.0);
         source
             .exec_context(|ctx| {
                 let battle = ctx.battle()?.battle.clone();
@@ -539,7 +539,7 @@ impl BattleSimulation {
             let vars = node_kind_match!(ctx.get_kind(id)?, ctx.load::<NodeType>(id)?.get_vars());
             for (var, value) in vars {
                 let value = Event::UpdateStat(var).update_value(ctx, value, id);
-                let t = ctx.t()?;
+                let t = ctx.t().to_not_found()?;
                 let entity = id.entity(ctx)?;
                 let mut state = NodeStateHistory::load_mut(entity, ctx)?;
                 state.insert(t, 0.0, var, value);
@@ -623,7 +623,7 @@ impl BattleSimulation {
         status: NStatusMagic,
         color: Color32,
     ) -> NodeResult<()> {
-        let t = ctx.t()?;
+        let t = ctx.t().to_not_found()?;
         for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {

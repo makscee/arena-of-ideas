@@ -88,7 +88,8 @@ impl BattleCamera {
                 team_right_id,
             );
         }
-        ctx.with_layers([ContextLayer::Time(t)], |ctx| {
+        ctx.exec_mut(|ctx| {
+            *ctx.source_mut().t_mut().unwrap() = t;
             let world = ctx.world_mut()?;
             for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                 ctx.with_owner(fusion.id, |context| {

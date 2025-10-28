@@ -242,6 +242,14 @@ impl ClientSource for ClientContext<'_> {
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
         self.source_mut().rng()
     }
+
+    fn t(&self) -> Option<f32> {
+        self.source().t()
+    }
+
+    fn t_mut(&mut self) -> Option<&mut f32> {
+        self.source_mut().t_mut()
+    }
 }
 
 /// Extension methods for ClientContext
@@ -260,7 +268,6 @@ pub trait ClientContextExt<'a> {
         node_id: u64,
         entity: Entity,
     ) -> NodeResult<()>;
-    fn t(&self) -> NodeResult<f32>;
     fn despawn(&mut self, node_id: u64) -> NodeResult<()>;
 
     fn exec_ref<F, R>(&'a self, f: F) -> NodeResult<R>
@@ -283,14 +290,6 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
         self.world_mut()?
             .get_mut::<T>(entity)
             .ok_or_else(|| NodeError::not_found(node_id))
-    }
-
-    fn t(&self) -> NodeResult<f32> {
-        if let Some(time) = self.time() {
-            Ok(time)
-        } else {
-            self.battle().map(|sim| sim.duration)
-        }
     }
 
     fn load_many_ref<T: ClientNode>(&self, ids: &[u64]) -> NodeResult<Vec<&T>> {

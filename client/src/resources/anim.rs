@@ -54,7 +54,7 @@ impl AnimAction {
         match self {
             AnimAction::translate(x) => {
                 let pos = x.get_vec2(ctx).track()?;
-                let mut t = ctx.t()?;
+                let mut t = ctx.t().to_not_found()?;
                 for target in a.targets.iter().copied() {
                     let entity = target.entity(ctx)?;
                     ctx.world_mut()?
@@ -92,7 +92,7 @@ impl AnimAction {
                     .track()?;
                 ctx.world_mut()?.entity_mut(entity).insert(Vfx);
 
-                let mut t = ctx.t().track()?;
+                let mut t = ctx.t().to_not_found().track()?;
                 let vars_layers = ctx.get_vars_layers();
                 let entity = ctx.entity(id).track()?;
                 let mut state = ctx

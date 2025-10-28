@@ -88,6 +88,8 @@ pub trait ClientSource {
     fn battle(&self) -> NodeResult<&BattleSimulation>;
     fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation>;
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng>;
+    fn t(&self) -> Option<f32>;
+    fn t_mut(&mut self) -> Option<&mut f32>;
 }
 
 /// Sources enum for different node data sources
@@ -96,7 +98,7 @@ pub enum Sources<'a> {
     Solid(World),
     Top(World),
     Selected(World),
-    Battle(BattleSimulation),
+    Battle(BattleSimulation, f32),
     SourceRef(&'a Sources<'a>),
     #[default]
     None,
@@ -157,7 +159,7 @@ impl<'a> Sources<'a> {
 
     pub fn get_battle_simulation(&self) -> NodeResult<&BattleSimulation> {
         match self {
-            Sources::Battle(sim) => Ok(sim),
+            Sources::Battle(sim, _) => Ok(sim),
             _ => Err(NodeError::custom("Not a battle source")),
         }
     }
@@ -171,7 +173,7 @@ impl<'a> Sources<'a> {
     pub fn world(&self) -> NodeResult<&World> {
         match self {
             Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
-            Sources::Battle(sim) => Ok(&sim.world),
+            Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world in None source")),
         }
@@ -180,7 +182,7 @@ impl<'a> Sources<'a> {
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
             Sources::Solid(world) | Sources::Top(world) | Sources::Selected(world) => Ok(world),
-            Sources::Battle(sim) => Ok(&mut sim.world),
+            Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom(
                 "Cannot get mutable world from source ref",
             )),
@@ -458,7 +460,7 @@ impl ClientSource for Sources<'_> {
     fn world(&self) -> NodeResult<&World> {
         match self {
             Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
-            Sources::Battle(sim) => Ok(&sim.world),
+            Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world available")),
         }
@@ -467,7 +469,7 @@ impl ClientSource for Sources<'_> {
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
             Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
-            Sources::Battle(sim) => Ok(&mut sim.world),
+            Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
             Sources::None => Err(NodeError::custom("No world available")),
         }
@@ -493,7 +495,7 @@ impl ClientSource for Sources<'_> {
 
     fn battle(&self) -> NodeResult<&BattleSimulation> {
         match self {
-            Sources::Battle(sim) => Ok(sim),
+            Sources::Battle(sim, _) => Ok(sim),
             Sources::SourceRef(source) => source.battle(),
             _ => Err(NodeError::custom("Not a battle source")),
         }
@@ -501,17 +503,29 @@ impl ClientSource for Sources<'_> {
 
     fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
         match self {
-            Sources::Battle(sim) => Ok(sim),
-            Sources::SourceRef(_) => Err(NodeError::custom(
-                "Cannot get mutable battle from source ref",
-            )),
+            Sources::Battle(sim, _) => Ok(sim),
             _ => Err(NodeError::custom("Not a battle source")),
+        }
+    }
+
+    fn t(&self) -> Option<f32> {
+        match self {
+            Sources::Battle(_, time) => Some(*time),
+            Sources::SourceRef(source) => source.t(),
+            _ => None,
+        }
+    }
+
+    fn t_mut(&mut self) -> Option<&mut f32> {
+        match self {
+            Sources::Battle(_, time) => Some(time),
+            _ => None,
         }
     }
 
     fn rng(&mut self) -> NodeResult<&mut ChaCha8Rng> {
         match self {
-            Sources::Battle(sim) => Ok(&mut sim.rng),
+            Sources::Battle(sim, _) => Ok(&mut sim.rng),
             Sources::SourceRef(_) => {
                 Err(NodeError::custom("Cannot get mutable RNG from source ref"))
             }
@@ -541,11 +555,12 @@ impl ContextSource for Sources<'_> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         if let Ok(sim) = self.battle() {
             let world = &sim.world;
+            let time = self.t().unwrap_or(sim.duration);
             // Check NodeStateHistory first for battle contexts
             if let Some(node_data) = world.get_resource::<NodesMapResource>() {
                 if let Some(entity) = node_data.get_entity(node_id) {
                     if let Some(state) = world.get::<NodeStateHistory>(entity) {
-                        if let Ok(value) = state.get_at(sim.duration, var) {
+                        if let Ok(value) = state.get_at(time, var) {
                             return Ok(value);
                         } else if let Some(value) = state.get(var) {
                             return Ok(value);
