@@ -254,7 +254,12 @@ pub trait ClientContextExt<'a> {
     fn load_children_ref<T: ClientNode>(&self, id: u64) -> NodeResult<Vec<&T>>;
     fn load_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
     fn load_first_parent_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
-    fn add_id_entity_link(&mut self, node_id: u64, entity: Entity) -> NodeResult<()>;
+    fn add_id_entity_link(
+        &mut self,
+        kind: NodeKind,
+        node_id: u64,
+        entity: Entity,
+    ) -> NodeResult<()>;
     fn t(&self) -> NodeResult<f32>;
     fn despawn(&mut self, node_id: u64) -> NodeResult<()>;
 
@@ -307,8 +312,12 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
         self.load_ref(id)
     }
 
-    fn add_id_entity_link(&mut self, node_id: u64, entity: Entity) -> NodeResult<()> {
-        let kind = self.source().get_node_kind(node_id)?;
+    fn add_id_entity_link(
+        &mut self,
+        kind: NodeKind,
+        node_id: u64,
+        entity: Entity,
+    ) -> NodeResult<()> {
         if let Ok(world) = self.world_mut() {
             if let Some(mut node_data) = world.get_resource_mut::<NodesMapResource>() {
                 node_data.insert(node_id, kind, entity);

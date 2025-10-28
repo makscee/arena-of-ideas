@@ -499,30 +499,30 @@ impl BattleTestCase {
         println!("=== STARTING BATTLE TEST ===");
         let mut source = self.battle.to_source();
 
-        // Create context once and reuse it
-        let mut context = source.as_context();
-
         // Start the simulation
-        BattleSimulation::start(&mut context).unwrap();
+        source
+            .exec_context(|ctx| BattleSimulation::start(ctx))
+            .unwrap();
 
         let max_iterations = 10; // Reduce iterations for focused testing
         let mut iterations = 0;
 
         while iterations < max_iterations {
-            let ended = context.battle().map(|s| s.ended()).unwrap_or(true);
+            let ended = source.battle().map(|s| s.ended()).unwrap_or(true);
             if ended {
                 break;
             }
 
             println!("--- Battle iteration {} ---", iterations + 1);
-
-            BattleSimulation::run(&mut context).unwrap();
+            source
+                .exec_context(|ctx| BattleSimulation::run(ctx))
+                .unwrap();
 
             iterations += 1;
         }
 
         let (left_alive, right_alive, ended, log) = {
-            let sim = context.battle().unwrap();
+            let sim = source.battle().unwrap();
             (
                 sim.left_units().len(),
                 sim.right_units().len(),

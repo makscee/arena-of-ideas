@@ -57,8 +57,8 @@ impl Battle {
         source
             .exec_context(|ctx| {
                 let battle = ctx.battle()?.battle.clone();
-                battle.left.spawn(ctx, Some(left_entity))?;
-                battle.right.spawn(ctx, Some(right_entity))?;
+                battle.left.spawn(ctx, Some(left_entity)).track()?;
+                battle.right.spawn(ctx, Some(right_entity)).track()?;
                 Ok(())
             })
             .log();
@@ -194,7 +194,6 @@ impl std::fmt::Display for BattleAction {
 impl BattleAction {
     pub fn apply(&self, ctx: &mut ClientContext) -> Vec<Self> {
         let mut add_actions = Vec::default();
-        let t = ctx.battle().map(|s| s.duration).unwrap_or(0.0);
         let result: NodeResult<bool> = (|| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
@@ -309,7 +308,7 @@ impl BattleAction {
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
-                    let old_value = ctx.source().get_var(*id, *var)?;
+                    let old_value = ctx.source().get_var(*id, *var).unwrap_or_default();
                     if old_value.eq(value) {
                         false
                     } else {

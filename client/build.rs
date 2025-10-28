@@ -275,7 +275,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     Some(e) => e,
                     None => ctx.world_mut()?.spawn_empty().id(),
                 };
-                ctx.add_id_entity_link(self.id, entity).track()?;
+                ctx.add_id_entity_link(self.kind(), self.id, entity).track()?;
                 #(#spawn_components)*
                 #(#spawn_owned)*
                 #(#spawn_refs)*
