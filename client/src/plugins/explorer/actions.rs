@@ -7,16 +7,9 @@ pub enum ExplorerAction {
         component_id: String,
         kind: NodeKind,
     },
-    InspectUnit(String),
-    InspectHouse(String),
-    InspectAbility(String),
-    InspectStatus(String),
+    InspectUnit(u64),
+    InspectHouse(u64),
+    InspectAbility(u64),
+    InspectStatus(u64),
     SwitchViewMode(ViewMode),
-}
-
-#[derive(Default, Debug)]
-pub enum ViewMode {
-    #[default]
-    Current,
-    Selected,
 }

@@ -1,11 +1,12 @@
 use super::*;
+use crate::resources::context::{with_selected_source, with_solid_source, with_top_source};
 
 #[derive(Resource)]
 pub struct ExplorerState {
-    pub inspected_unit: Option<String>,
-    pub inspected_house: Option<String>,
-    pub inspected_ability: Option<String>,
-    pub inspected_status: Option<String>,
+    pub inspected_unit: Option<u64>,
+    pub inspected_house: Option<u64>,
+    pub inspected_ability: Option<u64>,
+    pub inspected_status: Option<u64>,
 
     pub view_mode: ViewMode,
 
@@ -25,8 +26,31 @@ impl Default for ExplorerState {
     }
 }
 
-impl ExplorerState {
-    pub fn refresh_cache(cache: &mut ExplorerCache) {
-        cache.rebuild().unwrap();
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ViewMode {
+    #[default]
+    Solid,
+    Top,
+    Selected,
+}
+
+impl ViewMode {
+    pub fn name(&self) -> &str {
+        match self {
+            ViewMode::Solid => "Solid",
+            ViewMode::Top => "Top",
+            ViewMode::Selected => "Selected",
+        }
+    }
+
+    pub fn exec_ctx<R, F>(self, f: F) -> NodeResult<R>
+    where
+        F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+    {
+        match self {
+            ViewMode::Solid => with_solid_source(f),
+            ViewMode::Top => with_top_source(f),
+            ViewMode::Selected => with_selected_source(f),
+        }
     }
 }

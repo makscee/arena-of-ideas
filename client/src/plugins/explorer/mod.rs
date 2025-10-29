@@ -1,11 +1,9 @@
 mod actions;
-mod cache;
 mod panes;
 mod state;
 
 use super::*;
 pub use actions::*;
-pub use cache::*;
 pub use panes::*;
 pub use state::*;
 
@@ -13,12 +11,7 @@ pub struct ExplorerPlugin;
 
 impl Plugin for ExplorerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ExplorerState>()
-            .init_resource::<ExplorerCache>()
-            .add_systems(
-                OnEnter(GameState::Explorer),
-                |mut cache: ResMut<ExplorerCache>| ExplorerState::refresh_cache(&mut cache),
-            );
+        app.init_resource::<ExplorerState>();
     }
 }
 
@@ -31,21 +24,21 @@ impl ExplorerPlugin {
 
         for action in actions {
             match action {
-                ExplorerAction::InspectUnit(name) => {
+                ExplorerAction::InspectUnit(id) => {
                     let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_unit = Some(name);
+                    state.inspected_unit = Some(id);
                 }
-                ExplorerAction::InspectHouse(name) => {
+                ExplorerAction::InspectHouse(id) => {
                     let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_house = Some(name);
+                    state.inspected_house = Some(id);
                 }
-                ExplorerAction::InspectAbility(name) => {
+                ExplorerAction::InspectAbility(id) => {
                     let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_ability = Some(name);
+                    state.inspected_ability = Some(id);
                 }
-                ExplorerAction::InspectStatus(name) => {
+                ExplorerAction::InspectStatus(id) => {
                     let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_status = Some(name);
+                    state.inspected_status = Some(id);
                 }
                 ExplorerAction::SwitchViewMode(mode) => {
                     let mut state = world.resource_mut::<ExplorerState>();

@@ -1,5 +1,4 @@
 use super::*;
-use crate::plugins::explorer::ExplorerState;
 
 #[derive(Resource, Default)]
 pub struct EventQueue {
@@ -234,12 +233,7 @@ impl StdbPlugin {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
                     // Refresh Explorer cache when content nodes change
-                    op(move |world| {
-                        if let Some(mut explorer_cache) = world.get_resource_mut::<ExplorerCache>()
-                        {
-                            ExplorerState::refresh_cache(&mut explorer_cache);
-                        }
-                    });
+                    // Explorer no longer uses cache - data is loaded directly from context
                 }
             }
         }
@@ -251,12 +245,7 @@ impl StdbPlugin {
             match event.change {
                 StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
                     // Refresh Explorer cache when links change
-                    op(move |world| {
-                        if let Some(mut explorer_cache) = world.get_resource_mut::<ExplorerCache>()
-                        {
-                            ExplorerState::refresh_cache(&mut explorer_cache);
-                        }
-                    });
+                    // Explorer no longer uses cache - data is loaded directly from context
                 }
             }
         }
