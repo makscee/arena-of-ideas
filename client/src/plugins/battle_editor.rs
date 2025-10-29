@@ -26,7 +26,6 @@ impl TeamEditorPlugin {
         let mut changed_team = None;
         let needs_reload = false;
         if let Some(battle_data) = world.get_resource::<BattleData>() {
-            let t = battle_data.t;
             let state = world.resource::<BattleEditorState>();
             let current_team = if is_left {
                 &state.left_team
@@ -107,7 +106,6 @@ impl BattleEditorPlugin {
             } else {
                 (NTeam::placeholder(), NTeam::placeholder())
             };
-
         world.insert_resource(BattleEditorState {
             left_team,
             right_team,
@@ -150,7 +148,6 @@ impl BattleEditorPlugin {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)
         });
-
         BattlePlugin::load_teams(0, state.left_team.clone(), state.right_team.clone(), world);
 
         if let Some(mut battle_data) = world.get_resource_mut::<BattleData>() {

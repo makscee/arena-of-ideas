@@ -34,6 +34,8 @@ pub trait Node: Send + Sync + Default + StringData {
 
     fn pack(&self) -> PackedNodes {
         let mut packed = PackedNodes::default();
+        let mut visited = HashSet::new();
+        self.pack_recursive(&mut packed, &mut visited);
         packed.root = self.id();
         packed.add_node(Self::kind_s().to_string(), self.get_data(), self.id());
         packed

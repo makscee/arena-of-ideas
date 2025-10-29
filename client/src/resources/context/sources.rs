@@ -597,7 +597,7 @@ impl ContextSource for Sources<'_> {
                     let t = sim.duration;
                     if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
                         if state.insert(t, 0.0, var, value) {
-                            sim.duration += 0.01;
+                            // sim.duration += 0.01;
                         }
                     } else {
                         panic!("NodeStateHistory not found for {node_id}");
