@@ -1,254 +1,78 @@
 use super::*;
 
 #[derive(Resource, Default)]
-pub struct EventQueue {
-    pending_events: VecDeque<QueuedEvent>,
-}
-
-#[derive(Clone)]
-enum QueuedEvent {
-    Node(StdbNodeEvent),
-    Link(StdbLinkEvent),
+pub struct UpdateQueue {
+    pending_updates: VecDeque<StdbUpdate>,
+    failed_updates: VecDeque<StdbUpdate>,
+    new_updates_since_retry: bool,
 }
 
 pub struct StdbPlugin;
 
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Messages<StdbNodeEvent>>();
-        app.init_resource::<Messages<StdbLinkEvent>>();
-        app.init_resource::<EventQueue>();
-        app.add_systems(
-            Update,
-            (
-                Self::handle_stdb_events,
-                Self::handle_stdb_link_events,
-                Self::process_event_queue,
-            )
-                .chain(),
-        );
+        app.init_resource::<UpdateQueue>();
+        app.add_systems(Update, Self::process_update_queue);
     }
-}
-
-#[derive(Clone)]
-pub enum StdbChange {
-    Update,
-    Insert,
-    Delete,
-}
-
-#[derive(Message, Clone)]
-pub struct StdbNodeEvent {
-    pub node: TNode,
-    pub change: StdbChange,
-}
-
-#[derive(Message, Clone)]
-pub struct StdbLinkEvent {
-    pub parent: u64,
-    pub child: u64,
-    pub parent_kind: String,
-    pub child_kind: String,
-    pub rating: i32,
-    pub solid: bool,
-    pub change: StdbChange,
 }
 
 impl StdbPlugin {
-    fn handle_stdb_events(mut events: MessageReader<StdbNodeEvent>, state: Res<State<GameState>>) {
-        for event in events.read() {
-            Self::process_stdb_event(event, state.get());
-        }
-    }
+    fn process_update_queue(mut queue: ResMut<UpdateQueue>) {
+        // Process new pending updates
+        let mut processed_successfully = Vec::new();
+        let mut failed_updates = Vec::new();
 
-    fn handle_stdb_link_events(
-        mut events: MessageReader<StdbLinkEvent>,
-        state: Res<State<GameState>>,
-    ) {
-        for event in events.read() {
-            Self::process_stdb_link_event(event, state.get());
-        }
-    }
-
-    fn process_event_queue(mut queue: ResMut<EventQueue>) {
-        let mut processed = 0;
-        let initial_len = queue.pending_events.len();
-
-        while processed < initial_len {
-            if let Some(event) = queue.pending_events.pop_front() {
-                match event {
-                    QueuedEvent::Node(node_event) => {
-                        Self::process_queued_node_event(&node_event);
-                    }
-                    QueuedEvent::Link(link_event) => {
-                        Self::try_process_queued_link_event(&link_event);
-                    }
-                }
-            }
-            processed += 1;
-        }
-    }
-
-    fn try_process_queued_link_event(link_event: &StdbLinkEvent) {
-        let event_clone = link_event.clone();
-        op(move |world| {
-            let can_process = with_solid_source(|ctx| {
-                ctx.entity(event_clone.parent)?;
-                ctx.entity(event_clone.child)?;
-                Ok(())
-            })
-            .is_ok();
-
-            if can_process {
-                Self::process_queued_link_event_inner(world, &event_clone);
-            } else {
-                // Re-queue the event if nodes aren't ready yet
-                if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-                    queue
-                        .pending_events
-                        .push_back(QueuedEvent::Link(event_clone));
-                }
-            }
-        });
-    }
-
-    fn process_queued_node_event(node_event: &StdbNodeEvent) {
-        let node_event = node_event.clone();
-
-        // Only process nodes with owner_id = 0 or 1 for static sources
-        if node_event.node.owner == 0 || node_event.node.owner == 1 {
-            let stdb_update = match node_event.change {
-                StdbChange::Insert => StdbUpdate::NodeInsert(node_event.node.clone()),
-                StdbChange::Update => StdbUpdate::NodeUpdate {
-                    old: node_event.node.clone(),
-                    new: node_event.node.clone(),
-                },
-                StdbChange::Delete => StdbUpdate::NodeDelete(node_event.node.clone()),
-            };
-
+        while let Some(update) = queue.pending_updates.pop_front() {
+            let mut all_succeeded = true;
             with_static_sources(|sources| {
-                sources.solid.handle_stdb_update(&stdb_update);
-                sources.top.handle_stdb_update(&stdb_update);
-                sources.selected.handle_stdb_update(&stdb_update);
+                if sources.solid.handle_stdb_update(&update).is_err() {
+                    all_succeeded = false;
+                }
+                if sources.top.handle_stdb_update(&update).is_err() {
+                    all_succeeded = false;
+                }
+                if sources.selected.handle_stdb_update(&update).is_err() {
+                    all_succeeded = false;
+                }
             });
+
+            if all_succeeded {
+                processed_successfully.push(update);
+            } else {
+                failed_updates.push(update);
+            }
         }
 
-        match node_event.change {
-            StdbChange::Insert => {
-                op(move |world| {
-                    with_solid_source(|ctx| {
-                        node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
-                        Ok(())
-                    })
-                    .log();
+        // Retry failed updates only if new updates were processed
+        if queue.new_updates_since_retry && !queue.failed_updates.is_empty() {
+            let mut retry_failed = Vec::new();
+
+            while let Some(update) = queue.failed_updates.pop_front() {
+                let mut all_succeeded = true;
+
+                with_static_sources(|sources| {
+                    if sources.solid.handle_stdb_update(&update).is_err() {
+                        all_succeeded = false;
+                    }
+                    if sources.top.handle_stdb_update(&update).is_err() {
+                        all_succeeded = false;
+                    }
+                    if sources.selected.handle_stdb_update(&update).is_err() {
+                        all_succeeded = false;
+                    }
                 });
+
+                if !all_succeeded {
+                    retry_failed.push(update);
+                }
             }
-            StdbChange::Update => {
-                op(move |world| {
-                    with_solid_source(|ctx| {
-                        node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
-                        Ok(())
-                    })
-                    .log();
-                });
-            }
-            StdbChange::Delete => {
-                op(move |world| {
-                    with_selected_source(|ctx| {
-                        node_event.node.id.kind_db()?.spawn(ctx, &node_event.node)?;
-                        Ok(())
-                    })
-                    .log();
-                });
-            }
+
+            queue.failed_updates.extend(retry_failed);
+            queue.new_updates_since_retry = false;
         }
-    }
 
-    fn process_queued_link_event_inner(world: &mut World, link_event: &StdbLinkEvent) {
-        // Pass link events to static sources for nodes with owner_id = 0 or 1
-        let stdb_update = match link_event.change {
-            StdbChange::Insert => {
-                if link_event.solid {
-                    StdbUpdate::LinkInsert(TNodeLink {
-                        id: 0, // ID not used in updates
-                        parent: link_event.parent,
-                        child: link_event.child,
-                        parent_kind: link_event.parent_kind.clone(),
-                        child_kind: link_event.child_kind.clone(),
-                        rating: link_event.rating,
-                        solid: link_event.solid,
-                    })
-                } else {
-                    return;
-                }
-            }
-            StdbChange::Update => {
-                if link_event.solid {
-                    StdbUpdate::LinkInsert(TNodeLink {
-                        id: 0, // ID not used in updates
-                        parent: link_event.parent,
-                        child: link_event.child,
-                        parent_kind: link_event.parent_kind.clone(),
-                        child_kind: link_event.child_kind.clone(),
-                        rating: link_event.rating,
-                        solid: link_event.solid,
-                    })
-                } else {
-                    StdbUpdate::LinkDelete(TNodeLink {
-                        id: 0, // ID not used in updates
-                        parent: link_event.parent,
-                        child: link_event.child,
-                        parent_kind: link_event.parent_kind.clone(),
-                        child_kind: link_event.child_kind.clone(),
-                        rating: link_event.rating,
-                        solid: true,
-                    })
-                }
-            }
-            StdbChange::Delete => StdbUpdate::LinkDelete(TNodeLink {
-                id: 0, // ID not used in updates
-                parent: link_event.parent,
-                child: link_event.child,
-                parent_kind: link_event.parent_kind.clone(),
-                child_kind: link_event.child_kind.clone(),
-                rating: link_event.rating,
-                solid: link_event.solid,
-            }),
-        };
-
-        with_static_sources(|sources| {
-            sources.solid.handle_stdb_update(&stdb_update);
-            sources.top.handle_stdb_update(&stdb_update);
-            sources.selected.handle_stdb_update(&stdb_update);
-        });
-
-        world.write_message(link_event.clone());
-    }
-
-    fn process_stdb_event(event: &StdbNodeEvent, current_state: &GameState) {
-        // Handle Explorer cache refresh for node changes
-        if *current_state == GameState::Explorer
-            && (event.node.owner == 0 || event.node.owner == ID_CORE)
-        {
-            match event.change {
-                StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    // Refresh Explorer cache when content nodes change
-                    // Explorer no longer uses cache - data is loaded directly from context
-                }
-            }
-        }
-    }
-
-    fn process_stdb_link_event(event: &StdbLinkEvent, current_state: &GameState) {
-        // Handle Explorer cache refresh for link changes
-        if *current_state == GameState::Explorer {
-            match event.change {
-                StdbChange::Insert | StdbChange::Update | StdbChange::Delete => {
-                    // Refresh Explorer cache when links change
-                    // Explorer no longer uses cache - data is loaded directly from context
-                }
-            }
-        }
+        // Add new failed updates to the failed queue
+        queue.failed_updates.extend(failed_updates);
     }
 }
 
@@ -267,137 +91,51 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
 
 fn subscribe_table_updates() {
     let db = cn().db();
+
     db.nodes_world().on_insert(|_, node| {
         debug!("insert node {node:?}");
-        on_insert(node);
+        queue_update(StdbUpdate::NodeInsert(node.clone()));
     });
-    db.nodes_world().on_update(|_, _, node| {
-        on_update(node);
+
+    db.nodes_world().on_update(|_, old, new| {
+        debug!("update node {new:?}");
+        queue_update(StdbUpdate::NodeUpdate {
+            old: old.clone(),
+            new: new.clone(),
+        });
     });
+
     db.nodes_world().on_delete(|_, node| {
-        on_delete(node);
+        debug!("delete node {node:?}");
+        queue_update(StdbUpdate::NodeDelete(node.clone()));
     });
 
     db.node_links().on_insert(|_, link| {
-        debug!("add link {link:?}");
-        let parent = link.parent;
-        let child = link.child;
-        let rating = link.rating;
-        let solid = link.solid;
-        let parent_kind = link.parent_kind.clone();
-        let child_kind = link.child_kind.clone();
-        op(move |world| {
-            let link_event = StdbLinkEvent {
-                parent,
-                child,
-                parent_kind,
-                child_kind,
-                rating,
-                solid,
-                change: StdbChange::Insert,
-            };
-            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-                queue
-                    .pending_events
-                    .push_back(QueuedEvent::Link(link_event));
-            }
+        debug!("insert link {link:?}");
+        queue_update(StdbUpdate::LinkInsert(link.clone()));
+    });
+
+    db.node_links().on_update(|_, old, new| {
+        debug!("update link {new:?}");
+        queue_update(StdbUpdate::LinkUpdate {
+            old: old.clone(),
+            new: new.clone(),
         });
     });
-    db.node_links().on_update(|_, _, link| {
-        debug!("update link {link:?}");
-        let parent = link.parent;
-        let child = link.child;
-        let rating = link.rating;
-        let solid = link.solid;
-        let parent_kind = link.parent_kind.clone();
-        let child_kind = link.child_kind.clone();
-        op(move |world| {
-            let link_event = StdbLinkEvent {
-                parent,
-                child,
-                parent_kind,
-                child_kind,
-                rating,
-                solid,
-                change: StdbChange::Update,
-            };
-            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-                queue
-                    .pending_events
-                    .push_back(QueuedEvent::Link(link_event));
-            }
-        });
-    });
+
     db.node_links().on_delete(|_, link| {
-        debug!("remove link {link:?}");
-        let parent = link.parent;
-        let child = link.child;
-        let rating = link.rating;
-        let solid = link.solid;
-        let parent_kind = link.parent_kind.clone();
-        let child_kind = link.child_kind.clone();
-        op(move |world| {
-            let link_event = StdbLinkEvent {
-                parent,
-                child,
-                parent_kind,
-                child_kind,
-                rating,
-                solid,
-                change: StdbChange::Delete,
-            };
-            if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-                queue
-                    .pending_events
-                    .push_back(QueuedEvent::Link(link_event));
-            }
-        });
-    });
-}
-
-fn on_insert(node: &TNode) {
-    info!("Node inserted {}#{}", node.kind, node.id);
-    let node = node.clone();
-    op(move |world| {
-        let node_event = StdbNodeEvent {
-            node,
-            change: StdbChange::Insert,
-        };
-        if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-            queue
-                .pending_events
-                .push_back(QueuedEvent::Node(node_event));
+        debug!("delete link {link:?}");
+        if link.solid {
+            queue_update(StdbUpdate::LinkDelete(link.clone()));
         }
     });
 }
 
-fn on_delete(node: &TNode) {
-    let node = node.clone();
+fn queue_update(update: StdbUpdate) {
     op(move |world| {
-        let node_event = StdbNodeEvent {
-            node,
-            change: StdbChange::Delete,
-        };
-        if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-            queue
-                .pending_events
-                .push_back(QueuedEvent::Node(node_event));
-        }
-    });
-}
-
-fn on_update(node: &TNode) {
-    info!("Node updated {}#{}", node.kind, node.id);
-    let node = node.clone();
-    op(move |world| {
-        let node_event = StdbNodeEvent {
-            node,
-            change: StdbChange::Update,
-        };
-        if let Some(mut queue) = world.get_resource_mut::<EventQueue>() {
-            queue
-                .pending_events
-                .push_back(QueuedEvent::Node(node_event));
+        if let Some(mut queue) = world.get_resource_mut::<UpdateQueue>() {
+            queue.pending_updates.push_back(update);
+            queue.new_updates_since_retry = true;
         }
     });
 }
@@ -422,4 +160,507 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_update_queue_basic() {
+        let mut queue = UpdateQueue::default();
+        let node = NHouse::new(1001, "house name".into()).to_tnode();
+
+        let update = StdbUpdate::NodeInsert(node);
+        queue.pending_updates.push_back(update);
+
+        assert_eq!(queue.pending_updates.len(), 1);
+
+        let updates: Vec<StdbUpdate> = queue.pending_updates.drain(..).collect();
+        assert_eq!(updates.len(), 1);
+        assert_eq!(queue.pending_updates.len(), 0);
+    }
+
+    #[test]
+    fn test_node_creation_and_retrieval() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, "house name".into()).to_tnode();
+        let update = StdbUpdate::NodeInsert(house_node);
+        solid_source.handle_stdb_update(&update).unwrap();
+        let entity = solid_source.entity(1001).expect("Node entity should exist");
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(entity).is_some(),
+            "NHouse component should exist"
+        );
+        let house = world.get::<NHouse>(entity).unwrap();
+        assert_eq!(house.id, 1001);
+        assert_eq!(house.house_name, "house name");
+    }
+
+    #[test]
+    fn test_component_entity_merging() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 0,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
+            .unwrap();
+        let house_entity = solid_source
+            .entity(1001)
+            .expect("House entity should exist");
+        let color_entity = solid_source
+            .entity(1002)
+            .expect("Color entity should exist");
+        assert_eq!(
+            house_entity, color_entity,
+            "House and Color should be on same entity"
+        );
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(house_entity).is_some(),
+            "NHouse should exist on entity"
+        );
+        assert!(
+            world.get::<NHouseColor>(house_entity).is_some(),
+            "NHouseColor should exist on entity"
+        );
+    }
+
+    #[test]
+    fn test_component_entity_merging_nonsolid() {
+        let mut top_source = Sources::new_top();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 0,
+            solid: false,
+        };
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
+            .unwrap();
+        let house_entity = top_source.entity(1001).expect("House entity should exist");
+        let color_entity = top_source.entity(1002).expect("Color entity should exist");
+        assert_eq!(
+            house_entity, color_entity,
+            "House and Color should be on same entity"
+        );
+        let world = top_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(house_entity).is_some(),
+            "NHouse should exist on entity"
+        );
+        assert!(
+            world.get::<NHouseColor>(house_entity).is_some(),
+            "NHouseColor should exist on entity"
+        );
+    }
+
+    #[test]
+    fn test_top_source_ratings_and_merging() {
+        let mut top_source = Sources::new_top();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node1 = NHouseColor::new(1002, default()).to_tnode();
+        let color_node2 = NHouseColor::new(1003, default()).to_tnode();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node1))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node2))
+            .unwrap();
+
+        let link1 = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 5,
+            solid: false,
+        };
+        let link2 = TNodeLink {
+            id: 2,
+            parent: 1001,
+            child: 1003,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 10, // Higher rating
+            solid: false,
+        };
+
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link1))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link2))
+            .unwrap();
+        let house_entity = top_source.entity(1001).unwrap();
+        let higher_rated_entity = top_source.entity(1003).unwrap();
+        assert_eq!(
+            house_entity, higher_rated_entity,
+            "Higher rated child should be merged with parent"
+        );
+        let children = top_source
+            .get_children_of_kind(1001, NodeKind::NHouseColor)
+            .unwrap();
+        assert!(
+            children.contains(&1003),
+            "Should contain higher rated child"
+        );
+        assert!(
+            !children.contains(&1002),
+            "Should not contain lower rated child"
+        );
+    }
+
+    #[test]
+    fn test_selected_source_player_selection() {
+        let mut selected_source = Sources::new_selected();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let unit_node = NUnit::new(1002, default()).to_tnode();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
+            .unwrap();
+        let selection = TPlayerLinkSelection {
+            id: 1,
+            player_id: player_id(),
+            parent_id: 1001,
+            kind: "NUnit".to_string(),
+            selected_link_id: 1002,
+        };
+        selected_source
+            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(selection))
+            .unwrap();
+        let children = selected_source
+            .get_children_of_kind(1001, NodeKind::NUnit)
+            .unwrap();
+        assert!(
+            children.contains(&1002),
+            "Selected source should contain player's selection"
+        );
+    }
+
+    #[test]
+    fn test_selected_source_player_selection_update() {
+        let mut selected_source = Sources::new_selected();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let unit_node1 = NUnit::new(1002, default()).to_tnode();
+        let unit_node2 = NUnit::new(1003, default()).to_tnode();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node1))
+            .unwrap();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node2))
+            .unwrap();
+        let old_selection = TPlayerLinkSelection {
+            id: 1,
+            player_id: player_id(),
+            parent_id: 1001,
+            kind: "NUnit".to_string(),
+            selected_link_id: 1002,
+        };
+        let new_selection = TPlayerLinkSelection {
+            id: 1,
+            player_id: player_id(),
+            parent_id: 1001,
+            kind: "NUnit".to_string(),
+            selected_link_id: 1003,
+        };
+        selected_source
+            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
+                old_selection.clone(),
+            ))
+            .unwrap();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionUpdate {
+                old: old_selection,
+                new: new_selection,
+            })
+            .unwrap();
+        let children = selected_source
+            .get_children_of_kind(1001, NodeKind::NUnit)
+            .unwrap();
+        assert!(children.contains(&1003), "Should contain new selection");
+        assert!(
+            !children.contains(&1002),
+            "Should not contain old selection"
+        );
+    }
+
+    #[test]
+    fn test_selected_source_ignores_other_players() {
+        let mut selected_source = Sources::new_selected();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let unit_node = NUnit::new(1002, default()).to_tnode();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        selected_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
+            .unwrap();
+        let other_player_selection = TPlayerLinkSelection {
+            id: 1,
+            player_id: player_id() + 1, // Different player
+            parent_id: 1001,
+            kind: "NUnit".to_string(),
+            selected_link_id: 1002,
+        };
+        selected_source
+            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
+                other_player_selection,
+            ))
+            .unwrap();
+        let children = selected_source
+            .get_children_of_kind(1001, NodeKind::NUnit)
+            .unwrap_or_default();
+        assert!(
+            !children.contains(&1002),
+            "Selected source should ignore other player's selections"
+        );
+    }
+
+    #[test]
+    fn test_top_source_link_deletion_and_rating_update() {
+        let mut top_source = Sources::new_top();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node1 = NHouseColor::new(1002, default()).to_tnode();
+        let color_node2 = NHouseColor::new(1003, default()).to_tnode();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node1))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node2))
+            .unwrap();
+        let link1 = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 5,
+            solid: false,
+        };
+        let link2 = TNodeLink {
+            id: 2,
+            parent: 1001,
+            child: 1003,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 10,
+            solid: false,
+        };
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link1))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link2.clone()))
+            .unwrap();
+        top_source
+            .handle_stdb_update(&StdbUpdate::LinkDelete(link2))
+            .unwrap();
+        let children = top_source
+            .get_children_of_kind(1001, NodeKind::NHouseColor)
+            .unwrap_or_default();
+        assert!(
+            children.contains(&1002),
+            "Should fall back to lower rated child after deletion"
+        );
+        assert!(!children.contains(&1003), "Should not contain deleted link");
+    }
+
+    #[test]
+    fn test_reverse_order_component_merging() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, "house name".into()).to_tnode();
+        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 0,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        let house_entity = solid_source
+            .entity(1001)
+            .expect("House entity should exist");
+        let color_entity = solid_source
+            .entity(1002)
+            .expect("Color entity should exist");
+        assert_eq!(house_entity, color_entity, "Entities should be merged");
+        let world = solid_source.world().expect("World should be accessible");
+        let house = world.get::<NHouse>(house_entity).unwrap();
+        let color = world.get::<NHouseColor>(house_entity).unwrap();
+        assert_eq!(house.house_name, "house name");
+        assert_eq!(color.color.0, "#ffffff");
+    }
+
+    #[test]
+    fn test_link_processing() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .unwrap();
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 0,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link.clone()))
+            .unwrap();
+        let children = solid_source
+            .get_children_of_kind(1001, NodeKind::NHouseColor)
+            .unwrap();
+        assert!(
+            children.contains(&1002),
+            "Link should exist from house to color"
+        );
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkDelete(link))
+            .unwrap();
+        let children_after = solid_source
+            .get_children_of_kind(1001, NodeKind::NHouseColor)
+            .unwrap();
+        assert!(!children_after.contains(&1002), "Link should be removed");
+    }
+
+    #[test]
+    fn test_node_update_preserves_entity() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, "house name".into()).to_tnode();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
+            .unwrap();
+        let original_entity = solid_source.entity(1001).unwrap();
+        let updated_node = NHouse::new(1001, "house name 2".into()).to_tnode();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeUpdate {
+                old: house_node,
+                new: updated_node,
+            })
+            .unwrap();
+        let updated_entity = solid_source.entity(1001).unwrap();
+        assert_eq!(
+            original_entity, updated_entity,
+            "Entity should remain the same after update"
+        );
+        let world = solid_source.world().unwrap();
+        let house = world.get::<NHouse>(updated_entity).unwrap();
+        assert_eq!(house.house_name, "house name 2");
+    }
+
+    #[test]
+    fn test_multiple_entity_merging() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1001, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .unwrap();
+        let house_entity = solid_source.entity(1001).unwrap();
+        let color_entity = solid_source.entity(1002).unwrap();
+        assert_ne!(
+            house_entity, color_entity,
+            "Should start on different entities"
+        );
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NHouseColor".to_string(),
+            rating: 0,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
+            .unwrap();
+        let ability_node = NAbilityMagic::new(1003, default()).to_tnode();
+        let ability_link = TNodeLink {
+            id: 2,
+            parent: 1001,
+            child: 1003,
+            parent_kind: "NHouse".to_string(),
+            child_kind: "NAbilityMagic".to_string(),
+            rating: 0,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(ability_link))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(ability_node))
+            .unwrap();
+        let final_house_entity = solid_source.entity(1001).unwrap();
+        let final_color_entity = solid_source.entity(1002).unwrap();
+        let final_ability_entity = solid_source.entity(1003).unwrap();
+        assert_eq!(final_house_entity, final_color_entity);
+        assert_eq!(final_house_entity, final_ability_entity);
+        assert_eq!(final_color_entity, final_ability_entity);
+        let world = solid_source.world().unwrap();
+        assert!(world.get::<NHouse>(final_house_entity).is_some());
+        assert!(world.get::<NHouseColor>(final_house_entity).is_some());
+        assert!(world.get::<NAbilityMagic>(final_house_entity).is_some());
+    }
 }

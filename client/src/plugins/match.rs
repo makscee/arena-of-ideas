@@ -57,12 +57,9 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update(mut events: MessageReader<StdbNodeEvent>) {
-        for event in events.read() {
-            if event.node.kind == "NMatch" && event.node.owner == player_id() {
-                todo!("check active battle");
-            }
-        }
+    fn on_match_update() {
+        // TODO: Implement match update handling using StdbUpdate messages
+        // This should listen for match-related updates from the update queue
     }
     pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {

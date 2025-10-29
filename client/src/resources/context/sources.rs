@@ -255,201 +255,477 @@ impl<'a> Sources<'a> {
     }
 
     // Handle SpacetimeDB updates - unified for all sources
-    pub fn handle_stdb_update(&mut self, update: &StdbUpdate) {
-        match self {
-            Sources::Solid(_) => self.handle_solid_update(update),
-            Sources::Top(_) => self.handle_top_update(update),
-            Sources::Selected(_) => self.handle_selected_update(update),
-            Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => panic!(),
-        }
+    pub fn handle_stdb_update(&mut self, update: &StdbUpdate) -> NodeResult<()> {
+        self.handle_update_with_filtering(update)
     }
 
-    fn handle_solid_update(&mut self, update: &StdbUpdate) {
+    fn handle_update_with_filtering(&mut self, update: &StdbUpdate) -> NodeResult<()> {
         match update {
-            StdbUpdate::NodeInsert(node) => {
-                let kind = node.kind.parse().unwrap();
-                node_kind_match!(kind, {
-                    let node = node.to_node::<NodeType>().unwrap();
-                    self.insert_node(node).unwrap();
-                });
-            }
-            StdbUpdate::NodeUpdate { old: _, new } => {
-                let kind = new.kind.parse().unwrap();
-                let entity = match self.entity(new.id) {
-                    Ok(e) => e,
-                    Err(_) => return,
-                };
-
-                let world = match self.world_mut() {
-                    Ok(w) => w,
-                    Err(_) => return,
-                };
-
-                // Update the node data based on kind
-                match kind {
-                    NodeKind::NArena => {
-                        if let Some(mut node) = world.get_mut::<NArena>(entity) {
-                            let _ = node.inject_data(&new.data);
-                        }
-                    }
-                    NodeKind::NFloorPool => {
-                        if let Some(mut node) = world.get_mut::<NFloorPool>(entity) {
-                            let _ = node.inject_data(&new.data);
-                        }
-                    }
-                    _ => {}
-                }
+            StdbUpdate::NodeInsert(node) | StdbUpdate::NodeUpdate { new: node, .. } => {
+                let kind = node
+                    .kind
+                    .parse()
+                    .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", node.kind)))?;
+                self.spawn_node_with_entity_merging(node.id, kind, node)?;
             }
             StdbUpdate::NodeDelete(node) => {
-                let _ = self.delete_node(node.id);
+                self.delete_node(node.id)?;
             }
             StdbUpdate::LinkInsert(link) => {
-                if link.solid {
-                    let _ = self.add_link(link.parent, link.child);
+                if self.should_process_link(link) {
+                    self.handle_link_insert(link)?;
                 }
+            }
+            StdbUpdate::LinkUpdate { old, new } => {
+                self.handle_link_update(old, new)?;
             }
             StdbUpdate::LinkDelete(link) => {
-                if link.solid {
-                    let _ = self.remove_link(link.parent, link.child);
+                if self.should_process_link(link) {
+                    self.handle_link_delete(link)?;
                 }
-            }
-            _ => {}
-        }
-    }
-
-    fn handle_top_update(&mut self, update: &StdbUpdate) {
-        match update {
-            StdbUpdate::NodeInsert(..) => {
-                self.handle_solid_update(update);
-            }
-            StdbUpdate::NodeUpdate { .. } => {
-                self.handle_solid_update(update);
-            }
-            StdbUpdate::NodeDelete(node) => {
-                let _ = self.delete_node(node.id);
-            }
-            StdbUpdate::LinkInsert(link) => {
-                let child_kind = match link.child_kind.parse::<NodeKind>() {
-                    Ok(k) => k,
-                    Err(_) => return,
-                };
-
-                if let Ok(world) = self.world_mut() {
-                    if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
-                        ratings.add_rating(link.parent, link.child, child_kind, link.rating);
-
-                        // Update links to only include top-rated
-                        if let Some(top_child) = ratings.get_top(link.parent, child_kind) {
-                            // Remove old links of this kind
-                            if let Ok(old_children) =
-                                self.get_children_of_kind(link.parent, child_kind)
-                            {
-                                for old_child in old_children {
-                                    let _ = self.remove_link(link.parent, old_child);
-                                }
-                            }
-                            // Add new top link
-                            let _ = self.add_link(link.parent, top_child);
-                        }
-                    }
-                }
-            }
-            StdbUpdate::LinkDelete(link) => {
-                let child_kind = match link.child_kind.parse::<NodeKind>() {
-                    Ok(k) => k,
-                    Err(_) => return,
-                };
-
-                if let Ok(world) = self.world_mut() {
-                    if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
-                        ratings.remove_rating(link.parent, link.child, child_kind);
-
-                        // Update to new top link if any
-                        if let Some(new_top) = ratings.get_top(link.parent, child_kind) {
-                            let _ = self.remove_link(link.parent, link.child);
-                            let _ = self.add_link(link.parent, new_top);
-                        } else {
-                            let _ = self.remove_link(link.parent, link.child);
-                        }
-                    }
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn handle_selected_update(&mut self, update: &StdbUpdate) {
-        match update {
-            StdbUpdate::NodeInsert(..) => {
-                self.handle_solid_update(update);
-            }
-            StdbUpdate::NodeUpdate { .. } => {
-                self.handle_solid_update(update);
-            }
-            StdbUpdate::NodeDelete(node) => {
-                let _ = self.delete_node(node.id);
             }
             StdbUpdate::PlayerLinkSelectionInsert(selection) => {
-                if selection.player_id == player_id() {
-                    let _ = self.add_link(selection.parent_id, selection.selected_link_id);
-                }
+                self.handle_player_selection_insert(selection)?;
             }
             StdbUpdate::PlayerLinkSelectionUpdate { old, new } => {
-                if new.player_id == player_id() {
-                    let _ = self.remove_link(old.parent_id, old.selected_link_id);
-                    let _ = self.add_link(new.parent_id, new.selected_link_id);
-                }
+                self.handle_player_selection_update(old, new)?;
             }
             StdbUpdate::PlayerLinkSelectionDelete(selection) => {
+                self.handle_player_selection_delete(selection)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn should_process_link(&self, link: &TNodeLink) -> bool {
+        match self {
+            Sources::Solid(_) => link.solid,
+            Sources::Top(_) => true, // Top source processes all links for ratings
+            Sources::Selected(_) => false, // Selected source doesn't process regular links
+            Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => false,
+        }
+    }
+
+    fn handle_link_insert(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        match self {
+            Sources::Solid(_) => {
+                self.get_links_data_mut()?.add_link(
+                    link.parent,
+                    link.child,
+                    link.parent_kind.to_kind(),
+                    link.child_kind.to_kind(),
+                );
+                // Attempt merging only if both nodes exist
+                if self.entity(link.parent).is_ok() && self.entity(link.child).is_ok() {
+                    self.try_merge_component_entities(link.parent, link.child)?;
+                }
+            }
+            Sources::Top(_) => {
+                self.handle_top_link_insert(link)?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_link_delete(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        match self {
+            Sources::Solid(_) => {
+                self.remove_link(link.parent, link.child)?;
+            }
+            Sources::Top(_) => {
+                self.handle_top_link_delete(link)?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_link_update(&mut self, old: &TNodeLink, new: &TNodeLink) -> NodeResult<()> {
+        match self {
+            Sources::Solid(_) => {
+                if old.solid && !new.solid {
+                    self.remove_link(old.parent, old.child)?;
+                } else if !old.solid && new.solid {
+                    self.add_link(new.parent, new.child)?;
+                    // Attempt merging only if both nodes exist
+                    if self.entity(new.parent).is_ok() && self.entity(new.child).is_ok() {
+                        self.try_merge_component_entities(new.parent, new.child)?;
+                    }
+                }
+            }
+            Sources::Top(_) => {
+                self.handle_top_link_update(old, new)?;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_player_selection_insert(
+        &mut self,
+        selection: &TPlayerLinkSelection,
+    ) -> NodeResult<()> {
+        match self {
+            Sources::Selected(_) => {
                 if selection.player_id == player_id() {
-                    let _ = self.remove_link(selection.parent_id, selection.selected_link_id);
+                    self.add_link(selection.parent_id, selection.selected_link_id)?;
                 }
             }
             _ => {}
         }
+        Ok(())
+    }
+
+    fn handle_player_selection_update(
+        &mut self,
+        old: &TPlayerLinkSelection,
+        new: &TPlayerLinkSelection,
+    ) -> NodeResult<()> {
+        match self {
+            Sources::Selected(_) => {
+                if new.player_id == player_id() {
+                    self.remove_link(old.parent_id, old.selected_link_id)?;
+                    self.add_link(new.parent_id, new.selected_link_id)?;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn handle_player_selection_delete(
+        &mut self,
+        selection: &TPlayerLinkSelection,
+    ) -> NodeResult<()> {
+        match self {
+            Sources::Selected(_) => {
+                if selection.player_id == player_id() {
+                    self.remove_link(selection.parent_id, selection.selected_link_id)?;
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    fn spawn_node_with_entity_merging(
+        &mut self,
+        node_id: u64,
+        kind: NodeKind,
+        node_data: &TNode,
+    ) -> NodeResult<()> {
+        let target_entity = self.find_or_create_component_entity(node_id, kind)?;
+
+        // For testing purposes, just create a default node and set the ID
+        let world = self.world_mut()?;
+
+        node_kind_match!(kind, {
+            let node = node_data.to_node::<NodeType>()?;
+            world.entity_mut(target_entity).insert(node);
+
+            if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                node_map.insert(node_id, kind, target_entity);
+            }
+        });
+
+        // After spawning a node, check for any pending links that can now be merged
+        self.check_pending_merges_for_node(node_id)?;
+
+        Ok(())
+    }
+
+    fn find_or_create_component_entity(
+        &mut self,
+        node_id: u64,
+        kind: NodeKind,
+    ) -> NodeResult<Entity> {
+        if let Ok(existing_entity) = self.entity(node_id) {
+            return Ok(existing_entity);
+        }
+
+        let mut candidate_entities = Vec::new();
+
+        for child_kind in kind.component_children() {
+            if let Ok(children) = self.get_children_of_kind(node_id, child_kind) {
+                for child_id in children {
+                    if let Ok(entity) = self.entity(child_id) {
+                        candidate_entities.push(entity);
+                    }
+                }
+            }
+        }
+
+        if let Some(parent_kind) = kind.component_parent() {
+            if let Ok(parents) = self.get_parents_of_kind(node_id, parent_kind) {
+                for parent_id in parents {
+                    if let Ok(entity) = self.entity(parent_id) {
+                        candidate_entities.push(entity);
+                    }
+                }
+            }
+        }
+
+        let target_entity = if let Some(&first_entity) = candidate_entities.first() {
+            self.merge_component_entities(node_id, kind, &candidate_entities)?;
+            first_entity
+        } else {
+            let world = self.world_mut()?;
+            world.spawn_empty().id()
+        };
+
+        Ok(target_entity)
+    }
+
+    fn merge_component_entities(
+        &mut self,
+        _node_id: u64,
+        _kind: NodeKind,
+        entities: &[Entity],
+    ) -> NodeResult<()> {
+        if entities.len() <= 1 {
+            return Ok(());
+        }
+
+        let world = self.world_mut()?;
+        let primary_entity = entities[0];
+
+        let nodes_to_migrate: Vec<(Entity, Vec<(u64, NodeKind)>)> = {
+            let node_map = world
+                .get_resource::<NodesMapResource>()
+                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+
+            entities[1..]
+                .iter()
+                .map(|&entity| {
+                    let nodes = node_map
+                        .entity_to_nodes
+                        .get(&entity)
+                        .unwrap_or(&Vec::new())
+                        .iter()
+                        .filter_map(|&node_id| {
+                            node_map.get_kind(node_id).map(|kind| (node_id, kind))
+                        })
+                        .collect();
+                    (entity, nodes)
+                })
+                .collect()
+        };
+
+        for (entity, nodes) in nodes_to_migrate {
+            for (_migrate_id, migrate_kind) in &nodes {
+                Self::migrate_node_component(world, entity, primary_entity, *migrate_kind)?;
+            }
+
+            if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                for (migrate_id, migrate_kind) in nodes {
+                    node_map.insert(migrate_id, migrate_kind, primary_entity);
+                }
+            }
+
+            world.despawn(entity);
+        }
+
+        Ok(())
+    }
+
+    fn try_merge_component_entities(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
+        let parent_entity = self.entity(parent_id)?;
+        let child_entity = self.entity(child_id)?;
+
+        if parent_entity != child_entity {
+            let world = self.world_mut()?;
+
+            // Get all node components from child entity to migrate
+            let nodes_to_migrate: Vec<(u64, NodeKind)> = {
+                let node_map = world
+                    .get_resource::<NodesMapResource>()
+                    .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+
+                node_map
+                    .entity_to_nodes
+                    .get(&child_entity)
+                    .unwrap_or(&Vec::new())
+                    .iter()
+                    .filter_map(|&node_id| node_map.get_kind(node_id).map(|kind| (node_id, kind)))
+                    .collect()
+            };
+
+            // Migrate each component from child to parent entity
+            for (_migrate_id, migrate_kind) in &nodes_to_migrate {
+                Self::migrate_node_component(world, child_entity, parent_entity, *migrate_kind)?;
+            }
+
+            // Update node mappings to point to parent entity
+            if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                for (migrate_id, migrate_kind) in nodes_to_migrate {
+                    node_map.insert(migrate_id, migrate_kind, parent_entity);
+                }
+            }
+
+            // Despawn the child entity as it's been merged
+            world.despawn(child_entity);
+        }
+        Ok(())
+    }
+
+    fn migrate_node_component(
+        world: &mut World,
+        from_entity: Entity,
+        to_entity: Entity,
+        kind: NodeKind,
+    ) -> NodeResult<()> {
+        node_kind_match!(kind, {
+            if let Some(component) = world.entity_mut(from_entity).take::<NodeType>() {
+                world.entity_mut(to_entity).insert(component);
+            }
+        });
+        Ok(())
+    }
+
+    fn check_pending_merges_for_node(&mut self, node_id: u64) -> NodeResult<()> {
+        // Collect all potential merges first to avoid borrow checker issues
+        let mut merges_to_process = Vec::new();
+
+        // Check all links where this node is a parent
+        if let Ok(children_data) = self.get_links_data() {
+            let all_children: Vec<u64> = children_data
+                .children
+                .get(&node_id)
+                .map(|child_map| child_map.values().flatten().cloned().collect())
+                .unwrap_or_default();
+
+            for child_id in all_children {
+                if self.entity(child_id).is_ok() {
+                    merges_to_process.push((node_id, child_id));
+                }
+            }
+        }
+
+        // Check all links where this node is a child
+        if let Ok(links_data) = self.get_links_data() {
+            for (parent_id, child_map) in &links_data.children {
+                for child_ids in child_map.values() {
+                    if child_ids.contains(&node_id) && self.entity(*parent_id).is_ok() {
+                        merges_to_process.push((*parent_id, node_id));
+                    }
+                }
+            }
+        }
+
+        // Process all merges
+        for (parent_id, child_id) in merges_to_process {
+            self.try_merge_component_entities(parent_id, child_id)?;
+        }
+
+        Ok(())
+    }
+
+    fn handle_top_link_insert(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        let child_kind = link
+            .child_kind
+            .parse::<NodeKind>()
+            .map_err(|_| NodeError::custom(format!("Invalid child kind: {}", link.child_kind)))?;
+        let world = self.world_mut()?;
+        if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
+            ratings.add_rating(link.parent, link.child, child_kind, link.rating);
+
+            // Update links to only include top-rated
+            if let Some(top_child) = ratings.get_top(link.parent, child_kind) {
+                // Remove old links of this kind
+                if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
+                    for old_child in old_children {
+                        self.remove_link(link.parent, old_child)?;
+                    }
+                }
+                // Add new top link and attempt merging
+                self.add_link(link.parent, top_child)?;
+                if self.entity(link.parent).is_ok() && self.entity(top_child).is_ok() {
+                    self.try_merge_component_entities(link.parent, top_child)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_top_link_update(&mut self, old: &TNodeLink, new: &TNodeLink) -> NodeResult<()> {
+        let child_kind = new
+            .child_kind
+            .parse::<NodeKind>()
+            .map_err(|_| NodeError::custom(format!("Invalid child kind: {}", new.child_kind)))?;
+
+        let world = self.world_mut()?;
+        if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
+            // Remove old rating and add new one
+            ratings.remove_rating(old.parent, old.child, child_kind);
+            ratings.add_rating(new.parent, new.child, child_kind, new.rating);
+
+            // Update links to reflect new top-rated child
+            if let Some(top_child) = ratings.get_top(new.parent, child_kind) {
+                // Remove old links of this kind
+                if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind) {
+                    for old_child in old_children {
+                        self.remove_link(new.parent, old_child)?;
+                    }
+                }
+                // Add new top link and attempt merging
+                self.add_link(new.parent, top_child)?;
+                if self.entity(new.parent).is_ok() && self.entity(top_child).is_ok() {
+                    self.try_merge_component_entities(new.parent, top_child)?;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_top_link_delete(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        let child_kind = link
+            .child_kind
+            .parse::<NodeKind>()
+            .map_err(|_| NodeError::custom(format!("Invalid child kind: {}", link.child_kind)))?;
+
+        // First collect old children before modifying ratings
+        let old_children = self
+            .get_children_of_kind(link.parent, child_kind)
+            .unwrap_or_default();
+
+        // Then update ratings and get new top child
+        let top_child_after_removal = {
+            let world = self.world_mut()?;
+            if let Some(mut ratings) = world.get_resource_mut::<LinkRatings>() {
+                ratings.remove_rating(link.parent, link.child, child_kind);
+                ratings.get_top(link.parent, child_kind)
+            } else {
+                None
+            }
+        };
+
+        // Remove all existing links of this kind first
+        for old_child in old_children {
+            self.remove_link(link.parent, old_child)?;
+        }
+
+        // Update links to reflect new top-rated child
+        if let Some(top_child) = top_child_after_removal {
+            self.add_link(link.parent, top_child)?;
+            if self.entity(link.parent).is_ok() && self.entity(top_child).is_ok() {
+                self.try_merge_component_entities(link.parent, top_child)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
 impl ClientSource for Sources<'_> {
     fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: T) -> NodeResult<()> {
         let kind = node.kind();
-        let comp_children = kind.component_children();
-        let mut entity: Option<Entity> = self.entity(node.id()).ok();
-        if entity.is_none() {
-            for kind in comp_children {
-                if let Some(child) = self
-                    .get_children_of_kind(node.id(), kind)?
-                    .into_iter()
-                    .filter_map(|id| self.entity(id).ok())
-                    .next()
-                {
-                    entity = Some(child);
-                    break;
-                }
-            }
-        }
-        if entity.is_none() {
-            if let Some(parent) = kind.component_parent().and_then(|kind| {
-                self.get_parents_of_kind(node.id(), kind)
-                    .ok()?
-                    .into_iter()
-                    .next()
-                    .and_then(|id| self.entity(id).ok())
-            }) {
-                entity = Some(parent);
-            }
-        }
+        let entity = self.find_or_create_component_entity(node.id(), kind)?;
         let world = self.world_mut()?;
-        if entity.is_none() {
-            entity = Some(world.spawn_empty().id());
-        }
-        let entity = entity.unwrap();
-
         let id = node.id();
 
         world.entity_mut(entity).insert(node);
 
-        // Update NodesMapResource resource
         if let Some(mut node_data) = world.get_resource_mut::<NodesMapResource>() {
             node_data.insert(id, kind, entity);
         }
@@ -534,6 +810,7 @@ impl ClientSource for Sources<'_> {
     }
 }
 
+#[derive(Debug)]
 pub enum StdbUpdate {
     NodeInsert(TNode),
     NodeUpdate {
@@ -542,6 +819,10 @@ pub enum StdbUpdate {
     },
     NodeDelete(TNode),
     LinkInsert(TNodeLink),
+    LinkUpdate {
+        old: TNodeLink,
+        new: TNodeLink,
+    },
     LinkDelete(TNodeLink),
     PlayerLinkSelectionInsert(TPlayerLinkSelection),
     PlayerLinkSelectionUpdate {

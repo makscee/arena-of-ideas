@@ -172,7 +172,7 @@ impl NodesMapResource {
 }
 
 /// Resource for storing link ratings in Top source
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug)]
 pub struct LinkRatings {
     /// Maps (parent_id, child_kind) to Vec<(child_id, rating)>
     pub ratings: HashMap<(u64, NodeKind), Vec<(u64, i32)>>,

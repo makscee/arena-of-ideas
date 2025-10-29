@@ -273,10 +273,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    if let Ok(unit) = ctx.load_ref::<NUnit>(unit_id) {
-                        Self::render_node_card(&*unit, ctx, ui)?;
-                    }
-                    Ok(())
+                    Self::render_node_card(ctx.load_ref::<NUnit>(unit_id)?, ctx, ui)
                 })
             } else {
                 Ok(())
@@ -290,10 +287,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 state.view_mode.exec_ctx(|ctx| {
-                    if let Ok(house) = ctx.load_ref::<NHouse>(house_id) {
-                        Self::render_node_card(&*house, ctx, ui)?;
-                    }
-                    Ok(())
+                    Self::render_node_card(ctx.load_ref::<NHouse>(house_id)?, ctx, ui)
                 })
             } else {
                 Ok(())
@@ -307,10 +301,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(ability_id) = state.inspected_ability {
                 state.view_mode.exec_ctx(|ctx| {
-                    if let Ok(ability) = ctx.load_ref::<NAbilityMagic>(ability_id) {
-                        Self::render_node_card(&*ability, ctx, ui)?;
-                    }
-                    Ok(())
+                    Self::render_node_card(ctx.load_ref::<NAbilityMagic>(ability_id)?, ctx, ui)
                 })
             } else {
                 Ok(())
@@ -324,10 +315,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(status_id) = state.inspected_status {
                 state.view_mode.exec_ctx(|ctx| {
-                    if let Ok(status) = ctx.load_ref::<NStatusMagic>(status_id) {
-                        Self::render_node_card(&*status, ctx, ui)?;
-                    }
-                    Ok(())
+                    Self::render_node_card(ctx.load_ref::<NStatusMagic>(status_id)?, ctx, ui)
                 })
             } else {
                 Ok(())
@@ -339,11 +327,9 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    if let Ok(unit) = ctx.load_ref::<NUnit>(unit_id) {
-                        if let Ok(desc) = unit.description_ref(ctx) {
-                            desc.display(ctx, ui);
-                        }
-                    }
+                    ctx.load_ref::<NUnit>(unit_id)?
+                        .description_ref(ctx)?
+                        .display(ctx, ui);
                     Ok(())
                 })
             } else {

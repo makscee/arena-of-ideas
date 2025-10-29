@@ -300,9 +300,6 @@ impl BattleAction {
                 }
                 BattleAction::var_set(id, var, value) => {
                     let old_value = ctx.source().get_var(*id, *var).unwrap_or_default();
-                    if *var == VarName::position {
-                        // dbg!(id, var, value, &old_value);
-                    }
                     if old_value.eq(value) {
                         false
                     } else {
@@ -668,6 +665,7 @@ impl BattleSimulation {
 fn process_actions(ctx: &mut ClientContext, actions: impl Into<VecDeque<BattleAction>>) {
     let mut actions: VecDeque<BattleAction> = actions.into();
     while let Some(a) = actions.pop_front() {
+        *ctx.t_mut().unwrap() = ctx.battle().unwrap().duration;
         actions.extend(a.apply(ctx));
     }
 }

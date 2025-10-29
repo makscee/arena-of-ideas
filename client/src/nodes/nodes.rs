@@ -27,6 +27,15 @@ pub trait ClientNode:
         set_next_id(next_id);
         self
     }
+    fn to_tnode(&self) -> TNode {
+        TNode {
+            id: self.id(),
+            owner: self.owner(),
+            kind: self.kind().to_string(),
+            data: self.get_data(),
+            rating: 0,
+        }
+    }
 }
 
 pub trait NodeExt: ClientNode {
