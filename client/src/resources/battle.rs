@@ -197,14 +197,10 @@ impl BattleAction {
         let result: NodeResult<bool> = (|| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
-                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
-                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
                     add_actions.push(
                         Self::new_vfx("strike")
                             .with_owner(*a)
                             .with_target(*b)
-                            .with_var(VarName::position, owner_pos)
-                            .with_var(VarName::extra_position, target_pos.clone())
                             .into(),
                     );
                     let fusion_a = ctx.load::<NFusion>(*a)?;
@@ -280,8 +276,8 @@ impl BattleAction {
                                 |context| pleasure.apply(context),
                             )?;
                         }
-                        let dmg = (ctx.load::<NFusion>(*b)?.dmg_ctx_get(ctx) - x).at_least(0);
-                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
+                        let dmg = ctx.load::<NFusion>(*b)?.dmg - *x;
+                        add_actions.push(Self::var_set(*b, VarName::dmg, dmg.at_least(0).into()));
                         if let Some(text) = animations().get("text") {
                             ctx.with_layers(
                                 [
@@ -304,6 +300,9 @@ impl BattleAction {
                 }
                 BattleAction::var_set(id, var, value) => {
                     let old_value = ctx.source().get_var(*id, *var).unwrap_or_default();
+                    if *var == VarName::position {
+                        // dbg!(id, var, value, &old_value);
+                    }
                     if old_value.eq(value) {
                         false
                     } else {
@@ -330,9 +329,11 @@ impl BattleAction {
                 }
                 BattleAction::vfx(layers, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        ctx.with_layers(layers.clone(), |context| vfx.apply(context))?
+                        ctx.with_layers(layers.clone(), |context| vfx.apply(context))?;
+                        true
+                    } else {
+                        false
                     }
-                    false
                 }
                 BattleAction::send_event(event) => {
                     add_actions.extend(BattleSimulation::send_event(ctx, *event)?);
@@ -345,7 +346,7 @@ impl BattleAction {
             Ok(applied) => {
                 if applied {
                     info!("{} {self}", "+".green().dimmed());
-                    if let Ok(mut sim) = ctx.battle_mut() {
+                    if let Ok(sim) = ctx.battle_mut() {
                         sim.log.actions.push(self.clone());
                     }
                 } else {
@@ -482,9 +483,6 @@ impl BattleSimulation {
     pub fn ended(&self) -> bool {
         self.fusions_left.is_empty() || self.fusions_right.is_empty()
     }
-}
-
-impl BattleSimulation {
     pub fn start(ctx: &mut ClientContext) -> NodeResult<()> {
         let spawn_actions = {
             let sim = ctx.battle()?;
@@ -519,12 +517,7 @@ impl BattleSimulation {
         Ok(())
     }
     pub fn run(ctx: &mut ClientContext) -> NodeResult<()> {
-        let ended = {
-            let sim = ctx.battle()?;
-            ended(sim)
-        };
-
-        if ended {
+        if ctx.battle()?.ended() {
             return Ok(());
         }
 
@@ -563,13 +556,6 @@ impl BattleSimulation {
 
         Ok(())
     }
-}
-
-pub fn ended(sim: &BattleSimulation) -> bool {
-    sim.ended()
-}
-
-impl BattleSimulation {
     pub fn send_event(
         ctx: &mut ClientContext,
         event: Event,
@@ -614,9 +600,6 @@ impl BattleSimulation {
         }
         Ok(battle_actions)
     }
-}
-
-impl BattleSimulation {
     pub fn apply_status(
         ctx: &mut ClientContext,
         target: u64,
@@ -667,7 +650,7 @@ impl BattleSimulation {
         }
         if died {
             if sim.ended() {
-                sim.duration += 3.0;
+                sim.duration += 1.0;
             }
 
             let mut actions = [BattleAction::var_set(id, VarName::visible, false.into())].to_vec();
@@ -682,34 +665,17 @@ impl BattleSimulation {
     }
 }
 
-pub fn send_event(
-    ctx: &mut ClientContext,
-    event: Event,
-) -> Result<VecDeque<BattleAction>, NodeError> {
-    BattleSimulation::send_event(ctx, event)
-}
-
-pub fn apply_status(
-    ctx: &mut ClientContext,
-    target: u64,
-    status: NStatusMagic,
-    color: Color32,
-) -> NodeResult<()> {
-    BattleSimulation::apply_status(ctx, target, status, color)
-}
-
-pub fn process_actions(ctx: &mut ClientContext, actions: impl Into<VecDeque<BattleAction>>) {
+fn process_actions(ctx: &mut ClientContext, actions: impl Into<VecDeque<BattleAction>>) {
     let mut actions: VecDeque<BattleAction> = actions.into();
     while let Some(a) = actions.pop_front() {
-        for new_action in a.apply(ctx) {
-            actions.push_front(new_action);
-        }
+        actions.extend(a.apply(ctx));
     }
 }
 
 impl BattleSimulation {
     pub fn death_check(ctx: &mut ClientContext) -> NodeResult<VecDeque<BattleAction>> {
         let mut actions: VecDeque<BattleAction> = default();
+        *ctx.t_mut().unwrap() = ctx.battle()?.duration;
         let sim = ctx.battle()?;
         for id in sim.all_fusions() {
             let fusion = ctx.load::<NFusion>(id)?;
@@ -722,16 +688,6 @@ impl BattleSimulation {
         }
         Ok(actions)
     }
-}
-
-pub fn death_check(ctx: &mut ClientContext) -> NodeResult<VecDeque<BattleAction>> {
-    BattleSimulation::death_check(ctx)
-}
-
-pub fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
-    BattleSimulation::die(ctx, id)
-}
-impl BattleSimulation {
     pub fn slots_sync(&self) -> VecDeque<BattleAction> {
         let mut actions = VecDeque::default();
         for (i, (e, side)) in self
@@ -753,9 +709,4 @@ impl BattleSimulation {
         actions.push_back(BattleAction::wait(ANIMATION * 3.0));
         actions
     }
-}
-
-pub fn slots_sync(ctx: &ClientContext) -> NodeResult<VecDeque<BattleAction>> {
-    let sim = ctx.battle()?;
-    Ok(sim.slots_sync())
 }

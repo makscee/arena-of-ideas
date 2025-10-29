@@ -595,13 +595,12 @@ impl ContextSource for Sources<'_> {
             if let Some(node_data) = sim.world.get_resource::<NodesMapResource>() {
                 if let Some(entity) = node_data.get_entity(node_id) {
                     let t = sim.duration;
-
                     if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
-                        state.insert(t, 0.0, var, value);
+                        if state.insert(t, 0.0, var, value) {
+                            sim.duration += 0.01;
+                        }
                     } else {
-                        let mut state = NodeStateHistory::default();
-                        state.insert(t, 0.0, var, value);
-                        sim.world.entity_mut(entity).insert(state);
+                        panic!("NodeStateHistory not found for {node_id}");
                     }
                 }
             }
