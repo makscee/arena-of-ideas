@@ -17,11 +17,10 @@ impl ExplorerPanes {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
                         .iter(ctx.world()?)
-                        .map(|(e, n)| (n.id, n.name().to_owned()))
+                        .map(|(_, n)| (n.id, n.name().to_owned()))
                         .collect_vec()
                 });
                 node_list.sort_by_key(|(id, _)| *id);
-
                 // Get inspected item
                 let inspected_id = match kind {
                     NamedNodeKind::NUnit => state.inspected_unit,
@@ -327,9 +326,28 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    ctx.load_ref::<NUnit>(unit_id)?
-                        .description_ref(ctx)?
-                        .display(ctx, ui);
+                    ctx.exec_mut(|ctx| {
+                        ctx.load_ref::<NUnit>(unit_id)?
+                            .description_ref(ctx)?
+                            .display(ctx, ui);
+                        Ok(())
+                    })
+                    .ui(ui);
+                    let nodes = ctx
+                        .world_mut()?
+                        .query::<&NUnitDescription>()
+                        .iter(ctx.world()?)
+                        .collect_vec();
+                    nodes
+                        .as_list(|node, ctx, ui| node.description_cstr(ctx).label(ui))
+                        .with_hover(move |node, _, ui| {
+                            if "Select".cstr().button(ui).clicked() {
+                                cn().reducers
+                                    .content_select_link(unit_id, node.id)
+                                    .notify_error_op();
+                            }
+                        })
+                        .compose(ctx, ui);
                     Ok(())
                 })
             } else {

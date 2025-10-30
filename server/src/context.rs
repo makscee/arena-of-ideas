@@ -5,7 +5,7 @@ use super::*;
 
 /// Trait for server-side node data sources
 pub trait ServerSourceTrait {
-    fn insert_node<T: Node>(&mut self, node: T) -> NodeResult<()>;
+    fn insert_node<T: Node>(&mut self, node: &T) -> NodeResult<()>;
 }
 
 /// Server-side source implementation
@@ -48,7 +48,7 @@ impl<'a> ServerSource<'a> {
 }
 
 impl<'a> ServerSourceTrait for ServerSource<'a> {
-    fn insert_node<T: Node>(&mut self, node: T) -> NodeResult<()> {
+    fn insert_node<T: Node>(&mut self, node: &T) -> NodeResult<()> {
         let id = node.id();
         let owner = node.owner();
         let kind = T::kind_s();
@@ -65,7 +65,7 @@ impl<'a> ServerSourceTrait for ServerSource<'a> {
 
 impl<'a> ContextSource for ServerSource<'a> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        let kind = self.get_node_kind(node_id)?;
+        let kind = self.get_node_kind(node_id).track()?;
         node_kind_match!(kind, {
             let tnode = self
                 .ctx
@@ -80,7 +80,7 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
-        let kind = self.get_node_kind(node_id)?;
+        let kind = self.get_node_kind(node_id).track()?;
         node_kind_match!(kind, {
             let tnode = self
                 .ctx

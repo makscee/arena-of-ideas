@@ -1,4 +1,5 @@
 use super::*;
+use crate::stdb::TNodeLink;
 mod sources;
 
 pub use sources::*;
@@ -178,6 +179,30 @@ pub struct LinkRatings {
     pub ratings: HashMap<(u64, NodeKind), Vec<(u64, i32)>>,
 }
 
+#[derive(Resource, Default, Debug)]
+pub struct LinksMapResource {
+    /// Maps link ID to TNodeLink
+    pub links: HashMap<u64, TNodeLink>,
+}
+
+impl LinksMapResource {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn insert(&mut self, link: TNodeLink) {
+        self.links.insert(link.id, link);
+    }
+
+    pub fn remove(&mut self, link_id: u64) {
+        self.links.remove(&link_id);
+    }
+
+    pub fn get(&self, link_id: u64) -> Option<&TNodeLink> {
+        self.links.get(&link_id)
+    }
+}
+
 impl LinkRatings {
     pub fn new() -> Self {
         Self::default()
@@ -207,7 +232,7 @@ impl LinkRatings {
 }
 
 impl ClientSource for ClientContext<'_> {
-    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: T) -> NodeResult<()> {
+    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()> {
         self.source_mut().insert_node(node)
     }
 

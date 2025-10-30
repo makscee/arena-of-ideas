@@ -110,6 +110,11 @@ pub fn player_mut<'a>(ctx: &'a mut ClientContext) -> NodeResult<Mut<'a, NPlayer>
 pub fn save_player_identity(identity: Identity) {
     *PLAYER_IDENTITY.lock() = identity;
 }
+
+#[cfg(test)]
+pub fn set_player_id_for_test(id: u64) {
+    *PLAYER_ID.lock() = id;
+}
 impl OptionResource for LoginOption {
     fn fulfill(world: &mut World) {
         GameState::Login.set_next(world);

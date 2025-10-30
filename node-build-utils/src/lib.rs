@@ -636,12 +636,12 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
         fn save(mut self, ctx: &mut #context_ident) -> NodeResult<()> {
             #(#save_fields)*
             if self.is_dirty() {
+                ctx.source_mut().insert_node(&self)?;
                 for (var, value) in self.get_vars() {
-                    ctx.source_mut().set_var(self.id, var, value)?;
+                    ctx.source_mut().var_updated(self.id, var, value);
                 }
-                #(#check_link_changes)*
                 self.set_dirty(false);
-                ctx.source_mut().insert_node(self)?;
+                #(#check_link_changes)*
             }
             Ok(())
         }
