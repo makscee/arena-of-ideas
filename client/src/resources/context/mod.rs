@@ -137,6 +137,11 @@ impl NodesMapResource {
 
     pub fn insert(&mut self, id: u64, kind: NodeKind, entity: Entity) {
         self.kinds.insert(id, kind);
+        if let Some(entity) = self.entities.get(&id) {
+            let ids = self.entity_to_nodes.get_mut(entity).unwrap();
+            let pos = ids.iter().position(|i| *i == id).unwrap();
+            ids.remove(pos);
+        }
         self.entities.insert(id, entity);
         self.entity_to_nodes.entry(entity).or_default().push(id);
     }
