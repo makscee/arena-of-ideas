@@ -8,7 +8,7 @@ pub enum MenuAction<T: Clone> {
     Delete(T),
     Paste(T),
     Copy,
-    Custom(Box<T>),
+    Custom(String),
 }
 
 /// Menu item definition
@@ -32,25 +32,25 @@ impl<T: Clone> MenuResponse<T> {
         self.response.clicked()
     }
 
-    pub fn deleted(mut self) -> Option<T> {
-        if let Some(MenuAction::Delete(item)) = self.action.take() {
+    pub fn deleted(&self) -> Option<&T> {
+        if let Some(MenuAction::Delete(item)) = &self.action {
             Some(item)
         } else {
             None
         }
     }
 
-    pub fn pasted(mut self) -> Option<T> {
-        if let Some(MenuAction::Paste(item)) = self.action.take() {
+    pub fn pasted(&self) -> Option<&T> {
+        if let Some(MenuAction::Paste(item)) = &self.action {
             Some(item)
         } else {
             None
         }
     }
 
-    pub fn custom_action(mut self) -> Option<T> {
-        if let Some(MenuAction::Custom(item)) = self.action.take() {
-            Some(*item)
+    pub fn custom_action(&self) -> Option<&String> {
+        if let Some(MenuAction::Custom(name)) = &self.action {
+            Some(name)
         } else {
             None
         }
@@ -79,6 +79,15 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
     {
         self.actions
             .push(MenuItem::Action(name.to_string(), Box::new(f)));
+        self
+    }
+
+    pub fn add_action_empty(mut self, name: impl ToString) -> Self {
+        let name = name.to_string();
+        self.actions.push(MenuItem::Action(
+            name.clone(),
+            Box::new(|_, _| Some(MenuAction::Custom(name))),
+        ));
         self
     }
 

@@ -1,12 +1,12 @@
 [
-    duration(f32(3.0)),
+    duration(f32(3.5)),
     spawn(
         (
             [
                 color(var(color)),
                 alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
                 text(var(text)),
-                translate(vec2_ee(zero, sub(zero, mul(var(t), f32(4.0))))),
+                translate(vec2_ee(zero, sub(zero, mul(var(t), f32(1.5))))),
             ],
         ),
     ),

@@ -47,6 +47,7 @@ pub enum Expression {
 
     state_var(Box<Expression>, VarName),
 
+    dbg(Box<Expression>),
     sin(Box<Expression>),
     cos(Box<Expression>),
     even(Box<Expression>),
@@ -139,6 +140,7 @@ impl std::hash::Hash for Expression {
             | Expression::ceil(e)
             | Expression::to_f32(e)
             | Expression::fract(e)
+            | Expression::dbg(e)
             | Expression::neg(e) => e.hash(state),
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)

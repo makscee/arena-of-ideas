@@ -155,32 +155,35 @@ impl ActionImpl for Action {
             Action::change_status_stacks(x) => {
                 let stack_change = x.get_i32(ctx)?;
                 if let Some(status_id) = ctx.status() {
-                    let current_stacks = ctx.status_var(VarName::stacks).get_i32().unwrap_or(0);
-                    let name = ctx.status_var(VarName::status_name).get_string()?;
+                    let mut status = ctx.load::<NStatusMagic>(status_id)?;
+                    let current_stacks = status.state_load(ctx)?.stacks;
+                    let name = status.name();
                     let color = ctx.color();
                     let new_stacks = current_stacks + stack_change;
                     actions.push(BattleAction::var_set(
-                        status_id,
+                        status.state()?.id,
                         VarName::stacks,
                         new_stacks.into(),
                     ));
 
-                    // Add text VFX for stack change
                     let stack_text = if stack_change > 0 {
                         format!("+{}", stack_change)
                     } else {
                         format!("{}", stack_change)
                     };
-                    let text = format!("+{} stacks [b [{} name]]", color.to_hex(), stack_text);
+                    let text = format!("{} stacks [b [{} {name}]]", stack_text, color.to_hex());
                     actions.push(
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
-                            .with_var(VarName::color, high_contrast_text())
+                            .with_var(VarName::color, color)
                             .with_var(VarName::position, ctx.get_var(VarName::position)?)
                             .into(),
                     );
+                    actions.push(BattleAction::wait(ANIMATION));
                 } else {
-                    error!("No status in context for change_status_stacks");
+                    return Err(NodeError::custom(
+                        "No status in context for change_status_stacks",
+                    ));
                 }
             }
             Action::repeat(x, vec) => {

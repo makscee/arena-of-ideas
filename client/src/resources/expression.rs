@@ -110,6 +110,7 @@ impl ExpressionImpl for Expression {
             Expression::floor(x) => Ok(x.get_f32(ctx)?.floor().into()),
             Expression::ceil(x) => Ok(x.get_f32(ctx)?.ceil().into()),
             Expression::fract(x) => Ok(x.get_f32(ctx)?.fract().into()),
+            Expression::dbg(x) => Ok(dbg!(x.get_value(ctx))?),
             Expression::sqr(x) => Ok({
                 let x = x.get_f32(ctx)?;
                 (x * x).into()

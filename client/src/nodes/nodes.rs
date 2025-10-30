@@ -118,6 +118,19 @@ impl NodeKindOnSpawn for NodeKind {
                 fusion.recalculate_stats(ctx)?;
                 fusion.save(ctx)?;
             }
+            NodeKind::NStatusMagic => {
+                if ctx
+                    .get_children_of_kind(id, NodeKind::NStatusRepresentation)?
+                    .is_empty()
+                {
+                    let rep_id = next_id();
+                    status_rep()
+                        .clone()
+                        .with_id(rep_id)
+                        .spawn(ctx, Some(entity))?;
+                    ctx.add_link(id, rep_id)?;
+                }
+            }
             _ => {}
         }
         Ok(())

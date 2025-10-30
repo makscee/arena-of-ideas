@@ -1,11 +1,22 @@
 use super::*;
 
 pub trait EventImpl {
-    fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue;
+    fn update_value(
+        &self,
+        ctx: &mut ClientContext,
+        value: VarValue,
+        owner: u64,
+    ) -> (VarValue, Vec<BattleAction>);
 }
 
 impl EventImpl for Event {
-    fn update_value(&self, ctx: &mut ClientContext, value: VarValue, owner: u64) -> VarValue {
+    fn update_value(
+        &self,
+        ctx: &mut ClientContext,
+        value: VarValue,
+        owner: u64,
+    ) -> (VarValue, Vec<BattleAction>) {
+        let mut battle_actions: Vec<BattleAction> = Vec::new();
         match ctx.with_layers(
             [
                 ContextLayer::Owner(owner),
@@ -18,7 +29,9 @@ impl EventImpl for Event {
                 {
                     for (_, action) in actions {
                         match action.process(ctx) {
-                            Ok(_) => {}
+                            Ok(actions) => {
+                                battle_actions.extend(actions);
+                            }
                             Err(e) => {
                                 e.log();
                             }
@@ -34,31 +47,31 @@ impl EventImpl for Event {
                 let mut value = ctx.get_var(VarName::value)?;
 
                 for status in statuses {
-                    // Collect behavior data without borrowing ctx
                     let status_id = status.id;
-                    let behavior_opt = status
-                        .description_ref(ctx)
-                        .and_then(|d| d.behavior_ref(ctx))
-                        .ok()
-                        .cloned(); // Clone the behavior to avoid borrowing issues
-
-                    if let Some(behavior) = behavior_opt {
-                        // TODO: Implement with_status_ref or replace with new API
-                        let result = ctx.with_status(status_id, |inner_ctx| {
-                            if let Some(actions) = behavior.reactions.react(self, inner_ctx) {
-                                match actions.process(inner_ctx) {
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        return Err(e);
-                                    }
+                    if status.state_ref(ctx)?.stacks <= 0 {
+                        continue;
+                    }
+                    let new_value = ctx.with_status(status_id, |ctx| {
+                        if let Some(actions) = status
+                            .description_ref(ctx)?
+                            .behavior_ref(ctx)?
+                            .reactions
+                            .react(self, ctx)
+                            .cloned()
+                        {
+                            match actions.process(ctx) {
+                                Ok(actions) => {
+                                    battle_actions.extend(actions);
+                                }
+                                Err(e) => {
+                                    return Err(e);
                                 }
                             }
-                            inner_ctx.get_var(VarName::value)
-                        });
-
-                        if let Ok(new_value) = result {
-                            value = new_value;
                         }
+                        ctx.get_var(VarName::value)
+                    });
+                    if let Ok(new_value) = new_value {
+                        value = new_value;
                     }
                 }
 
@@ -66,10 +79,10 @@ impl EventImpl for Event {
                 ctx.get_var(VarName::value)
             },
         ) {
-            Ok(value) => value,
+            Ok(value) => (value, battle_actions),
             Err(e) => {
                 error!("Update event {self} for {owner} failed: {e}");
-                value
+                (value, battle_actions)
             }
         }
     }

@@ -93,6 +93,7 @@ impl EnumColor for Expression {
             | Expression::floor(_x)
             | Expression::ceil(_x)
             | Expression::fract(_x)
+            | Expression::dbg(_x)
             | Expression::sqr(_x)
             | Expression::unit_vec(_x)
             | Expression::rand(_x)

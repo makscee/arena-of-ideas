@@ -230,14 +230,14 @@ impl BattleAction {
                             .with_var(VarName::extra_position, target_pos.clone())
                             .into(),
                     );
-                    let x = Event::OutgoingDamage(*a, *b)
-                        .update_value(ctx, (*x).into(), *a)
-                        .get_i32()?
-                        .at_least(0);
-                    let x = Event::IncomingDamage(*a, *b)
-                        .update_value(ctx, x.into(), *b)
-                        .get_i32()?
-                        .at_least(0);
+                    let (value, actions) =
+                        Event::OutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
+                    add_actions.extend(actions);
+                    let x = value.get_i32()?.at_least(0);
+                    let (value, actions) =
+                        Event::IncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
+                    add_actions.extend(actions);
+                    let x = value.get_i32()?.at_least(0);
                     if x > 0 {
                         let dmg = ctx.load::<NFusion>(*b)?.dmg_ctx_get(ctx) + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
@@ -527,13 +527,16 @@ impl BattleSimulation {
             .collect_vec();
         for id in ids {
             let vars = node_kind_match!(ctx.get_kind(id)?, ctx.load::<NodeType>(id)?.get_vars());
+            let mut actions = Vec::new();
             for (var, value) in vars {
-                let value = Event::UpdateStat(var).update_value(ctx, value, id);
+                let (value, new_actions) = Event::UpdateStat(var).update_value(ctx, value, id);
+                actions.extend(new_actions);
                 let t = ctx.t().to_not_found()?;
                 let entity = id.entity(ctx)?;
                 let mut state = NodeStateHistory::load_mut(entity, ctx)?;
                 state.insert(t, 0.0, var, value);
             }
+            process_actions(ctx, actions);
         }
 
         ctx.battle_mut()?.duration += TURN;
@@ -542,6 +545,26 @@ impl BattleSimulation {
             let a = BattleAction::strike(sim.fusions_left[0], sim.fusions_right[0]);
             process_actions(ctx, vec![a]);
         }
+        let mut actions = Vec::new();
+        for (status, state) in ctx
+            .world_mut()?
+            .query::<(&NStatusMagic, &NStatusState)>()
+            .iter(ctx.world()?)
+        {
+            let alive = state.stacks > 0;
+            let visible = ctx
+                .get_var_inherited(status.id, VarName::visible)
+                .get_bool()
+                .unwrap_or_default();
+            if alive != visible {
+                actions.push(BattleAction::var_set(
+                    status.id,
+                    VarName::visible,
+                    alive.into(),
+                ));
+            }
+        }
+        process_actions(ctx, actions);
         let a = BattleSimulation::death_check(ctx)?;
         process_actions(ctx, a);
         let sync_actions = ctx.battle()?.slots_sync();
@@ -582,6 +605,13 @@ impl BattleSimulation {
                     ContextLayer::Status(status_id),
                 ],
                 |ctx| {
+                    // Only trigger status reactions if stacks > 0
+                    let status = ctx.load::<NStatusMagic>(status_id)?;
+                    let stacks = status.state_ref(ctx)?.stacks;
+                    if stacks <= 0 {
+                        return Ok(vec![]);
+                    }
+
                     let behavior = ctx.load::<NStatusBehavior>(status_id)?;
                     let actions = behavior
                         .reactions
