@@ -25,6 +25,8 @@ impl EnumColor for Action {
             Action::heal_damage => GREEN,
             Action::use_ability => ORANGE,
             Action::apply_status => PURPLE,
+            Action::set_status(..) => PURPLE,
+            Action::change_status_stacks(..) => ORANGE,
             Action::debug(..) => high_contrast_text(),
             Action::set_value(..)
             | Action::add_value(..)
@@ -59,6 +61,7 @@ impl EnumColor for Expression {
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
+            | Expression::stacks
             | Expression::all_units
             | Expression::all_enemy_units
             | Expression::all_ally_units

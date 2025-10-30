@@ -9,6 +9,14 @@ use super::*;
 
 /// Main trait that types implement to get access to composer creation
 pub trait Render: Sized {
+    fn as_empty(&self) -> EmptyComposer<'_, Self> {
+        EmptyComposer::new(self)
+    }
+
+    fn as_empty_mut(&mut self) -> EmptyComposer<'_, Self> {
+        EmptyComposer::new_mut(self)
+    }
+
     /// Create a title composer for this data
     fn as_title(&self) -> TitleComposer<'_, Self>
     where

@@ -32,25 +32,25 @@ impl<T: Clone> MenuResponse<T> {
         self.response.clicked()
     }
 
-    pub fn deleted(&self) -> Option<&T> {
-        if let Some(MenuAction::Delete(ref item)) = self.action {
+    pub fn deleted(mut self) -> Option<T> {
+        if let Some(MenuAction::Delete(item)) = self.action.take() {
             Some(item)
         } else {
             None
         }
     }
 
-    pub fn pasted(&self) -> Option<&T> {
-        if let Some(MenuAction::Paste(ref item)) = self.action {
+    pub fn pasted(mut self) -> Option<T> {
+        if let Some(MenuAction::Paste(item)) = self.action.take() {
             Some(item)
         } else {
             None
         }
     }
 
-    pub fn custom_action(&self) -> Option<&T> {
-        if let Some(MenuAction::Custom(ref item)) = self.action {
-            Some(item.as_ref())
+    pub fn custom_action(mut self) -> Option<T> {
+        if let Some(MenuAction::Custom(item)) = self.action.take() {
+            Some(*item)
         } else {
             None
         }
@@ -132,13 +132,13 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
     }
 
     /// Compose with menu - returns MenuResponse instead of Response
-    pub fn compose_with_menu(mut self, context: &ClientContext, ui: &mut Ui) -> MenuResponse<T> {
+    pub fn compose_with_menu(mut self, ctx: &ClientContext, ui: &mut Ui) -> MenuResponse<T> {
         let mut action = None;
 
         let inner_response = ui
             .horizontal(|ui| {
-                action = self.render_menu_button(context, ui);
-                let inner_response = self.inner.compose(context, ui);
+                action = self.render_menu_button(ctx, ui);
+                let inner_response = self.inner.compose(ctx, ui);
 
                 inner_response
             })
@@ -150,11 +150,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
         }
     }
 
-    fn render_menu_button(
-        &mut self,
-        context: &ClientContext,
-        ui: &mut Ui,
-    ) -> Option<MenuAction<T>> {
+    fn render_menu_button(&mut self, ctx: &ClientContext, ui: &mut Ui) -> Option<MenuAction<T>> {
         let circle_size = 12.0;
 
         let circle_response = RectButton::new_size(egui::Vec2::splat(circle_size)).ui(
@@ -183,7 +179,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
 
             // Normal actions
             for item in actions {
-                if let Some(action) = Self::render_menu_item(item, &data, context, ui, false) {
+                if let Some(action) = Self::render_menu_item(item, &data, ctx, ui, false) {
                     result = Some(action);
                     break;
                 }
@@ -196,7 +192,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
 
             // Dangerous actions
             for item in dangerous_actions {
-                if let Some(action) = Self::render_menu_item(item, &data, context, ui, true) {
+                if let Some(action) = Self::render_menu_item(item, &data, ctx, ui, true) {
                     result = Some(action);
                     break;
                 }
@@ -208,7 +204,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
     fn render_menu_item(
         item: MenuItem<'_, T>,
         data: &T,
-        context: &ClientContext,
+        ctx: &ClientContext,
         ui: &mut egui::Ui,
         dangerous: bool,
     ) -> Option<MenuAction<T>> {
@@ -225,14 +221,14 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
 
                 if button.clicked() {
                     ui.close_kind(UiKind::Menu);
-                    return action(data.clone(), context);
+                    return action(data.clone(), ctx);
                 }
             }
             MenuItem::Submenu(name, sub_items) => {
                 ui.menu_button(&name, |ui| {
                     for sub_item in sub_items {
                         if let Some(action) =
-                            Self::render_menu_item(sub_item, data, context, ui, dangerous)
+                            Self::render_menu_item(sub_item, data, ctx, ui, dangerous)
                         {
                             return Some(action);
                         }
@@ -261,9 +257,9 @@ impl<'a, T: Clone, C: Composer<T>> Composer<T> for MenuComposer<'a, T, C> {
         self.inner.is_mutable()
     }
 
-    fn compose(self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         // For regular compose, just render the inner composer without menu
-        self.inner.compose(context, ui)
+        self.inner.compose(ctx, ui)
     }
 }
 

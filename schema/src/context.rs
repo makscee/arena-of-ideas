@@ -267,6 +267,14 @@ impl<S: ContextSource> Context<S> {
         }
     }
 
+    pub fn status_var(&self, var: VarName) -> NodeResult<VarValue> {
+        if let Some(status) = self.status() {
+            self.get_var_inherited(status, var)
+        } else {
+            Err(NodeError::custom("No status in context"))
+        }
+    }
+
     pub fn get_var(&self, var: VarName) -> NodeResult<VarValue> {
         // Check context layers first
         for layer in self.layers.iter().rev() {
@@ -317,6 +325,10 @@ impl<S: ContextSource> Context<S> {
 
     pub fn set_caster(&mut self, caster: u64) {
         self.layers.push(ContextLayer::Caster(caster));
+    }
+
+    pub fn set_status(&mut self, status: u64) {
+        self.layers.push(ContextLayer::Status(status));
     }
 
     pub fn set_var_layer(&mut self, var: VarName, value: VarValue) {

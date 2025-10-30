@@ -101,7 +101,7 @@ impl TeamEditor {
         self
     }
 
-    pub fn edit(mut self, team: &NTeam, context: &ClientContext, ui: &mut Ui) -> Option<NTeam> {
+    pub fn edit(mut self, team: &NTeam, ctx: &ClientContext, ui: &mut Ui) -> Option<NTeam> {
         let mut actions = Vec::new();
 
         self.draw_drag_visual(ui);
@@ -139,7 +139,7 @@ impl TeamEditor {
                             fusion,
                             &slots,
                             team,
-                            context,
+                            ctx,
                             &mut actions,
                         );
                         ui.scope_builder(UiBuilder::new().max_rect(response.rect), |ui| {
@@ -158,21 +158,14 @@ impl TeamEditor {
                         });
                     }
                     EditMode::EditingFusion(editing_id) if editing_id == fusion.id => {
-                        self.render_fusion_edit_mode(
-                            ui,
-                            fusion,
-                            &slots,
-                            team,
-                            context,
-                            &mut actions,
-                        );
+                        self.render_fusion_edit_mode(ui, fusion, &slots, team, ctx, &mut actions);
 
                         if columns[idx].response().clicked_elsewhere() {
                             mode_change = Some(EditMode::Normal);
                         }
                     }
                     _ => {
-                        self.render_fusion_inactive(ui, fusion, &slots, team, context);
+                        self.render_fusion_inactive(ui, fusion, &slots, team, ctx);
                     }
                 }
             }
@@ -181,7 +174,7 @@ impl TeamEditor {
                 &mut columns[fusions.len()],
                 &unlinked_units,
                 team,
-                context,
+                ctx,
                 &mut actions,
             );
         });
@@ -205,7 +198,7 @@ impl TeamEditor {
                         fusion_id,
                         slot_index,
                     } => {
-                        action_fn(&mut result_team, fusion_id, slot_index, context, ui);
+                        action_fn(&mut result_team, fusion_id, slot_index, ctx, ui);
                         has_changes = true;
                     }
                     TeamAction::CustomFilledSlotAction {
@@ -214,14 +207,7 @@ impl TeamEditor {
                         unit_id,
                         slot_index,
                     } => {
-                        action_fn(
-                            &mut result_team,
-                            fusion_id,
-                            unit_id,
-                            slot_index,
-                            context,
-                            ui,
-                        );
+                        action_fn(&mut result_team, fusion_id, unit_id, slot_index, ctx, ui);
                         has_changes = true;
                     }
                     other => {
@@ -243,7 +229,7 @@ impl TeamEditor {
         fusion: &NFusion,
         slots: &[&NFusionSlot],
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) -> Response {
         ui.vertical(|ui| {
@@ -254,7 +240,7 @@ impl TeamEditor {
                 .fill(ui.visuals().faint_bg_color);
             let inner_response = frame
                 .show(ui, |ui| {
-                    TeamEditor::render_action_list_static(ui, fusion, &slots, context);
+                    TeamEditor::render_action_list_static(ui, fusion, &slots, ctx);
                 })
                 .response;
             if inner_response.hovered() {
@@ -263,7 +249,7 @@ impl TeamEditor {
 
             ui.separator();
             for slot in slots {
-                self.render_unit_slot(ui, slot, fusion.id, team, context, actions);
+                self.render_unit_slot(ui, slot, fusion.id, team, ctx, actions);
             }
 
             if ui.button("+ Add Slot").clicked() {
@@ -282,7 +268,7 @@ impl TeamEditor {
         fusion: &NFusion,
         slots: &[&NFusionSlot],
         _team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
@@ -315,7 +301,7 @@ impl TeamEditor {
             }
 
             for slot in slots {
-                self.render_action_range_editor(ui, slot, context, actions);
+                self.render_action_range_editor(ui, slot, ctx, actions);
             }
         });
     }
@@ -326,18 +312,18 @@ impl TeamEditor {
         fusion: &NFusion,
         slots: &[&NFusionSlot],
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) {
         ui.disable();
         ui.vertical(|ui| {
             format!("[s [tw Fusion #]]{}", fusion.index).label_w(ui);
-            TeamEditor::render_action_list_static(ui, fusion, slots, context);
+            TeamEditor::render_action_list_static(ui, fusion, slots, ctx);
             ui.separator();
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
-                    self.render_unit_display(ui, unit_id, team, context);
+                    self.render_unit_display(ui, unit_id, team, ctx);
                 } else {
-                    TeamEditor::render_empty_slot_static(ui, context);
+                    TeamEditor::render_empty_slot_static(ui, ctx);
                 }
             }
         });
@@ -347,16 +333,16 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) {
         ui.vertical(|ui| {
             let mut action_list = Vec::new();
 
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
-                    if let Ok(unit) = context.load::<NUnit>(unit_id) {
-                        if let Ok(unit_desc) = unit.description_ref(context) {
-                            if let Ok(unit_behavior) = unit_desc.behavior_ref(context) {
+                    if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                        if let Ok(unit_desc) = unit.description_ref(ctx) {
+                            if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
                                 let actions = &unit_behavior.reaction.actions;
                                 let range = &slot.actions;
                                 let is_trigger = unit_id == fusion.trigger_unit;
@@ -365,7 +351,7 @@ impl TeamEditor {
                                     ..(range.start + range.length).min(actions.len() as u8)
                                 {
                                     if let Some(action) = actions.get(i as usize) {
-                                        let title = action.title(context);
+                                        let title = action.title(ctx);
                                         if is_trigger {
                                             action_list.push(format!("🎯 {}", title));
                                         } else {
@@ -393,7 +379,7 @@ impl TeamEditor {
         &self,
         ui: &mut Ui,
         slot: &NFusionSlot,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.group(|ui| {
@@ -401,11 +387,11 @@ impl TeamEditor {
                 format!("Slot {}", slot.index + 1).label_w(ui);
 
                 if let Some(unit_id) = slot.unit.id() {
-                    if let Ok(unit) = context.load::<NUnit>(unit_id) {
+                    if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
                         ui.label(&unit.unit_name);
 
-                        if let Ok(unit_desc) = unit.description_ref(context) {
-                            if let Ok(unit_behavior) = unit_desc.behavior_ref(context) {
+                        if let Ok(unit_desc) = unit.description_ref(ctx) {
+                            if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
                                 let total_actions = unit_behavior.reaction.actions.len() as u8;
 
                                 if total_actions > 0 {
@@ -417,12 +403,12 @@ impl TeamEditor {
 
                                     let (_, range_change) = range_selector.ui(
                                         ui,
-                                        context,
+                                        ctx,
                                         |ui, _, action_index, is_in_range| {
                                             if let Some(action) =
                                                 unit_behavior.reaction.actions.get(action_index)
                                             {
-                                                let title = action.title(context);
+                                                let title = action.title(ctx);
                                                 if is_in_range {
                                                     title.label_w(ui);
                                                 } else {
@@ -457,15 +443,15 @@ impl TeamEditor {
         slot: &NFusionSlot,
         fusion_id: u64,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         if let Some(unit_id) = slot.unit.id() {
             self.handle_slot_unit_interactions(
-                ui, unit_id, fusion_id, slot.index, team, context, actions,
+                ui, unit_id, fusion_id, slot.index, team, ctx, actions,
             );
         } else {
-            self.handle_empty_slot_interactions(ui, fusion_id, slot.index, team, context, actions);
+            self.handle_empty_slot_interactions(ui, fusion_id, slot.index, team, ctx, actions);
         }
     }
 
@@ -476,11 +462,10 @@ impl TeamEditor {
         fusion_id: u64,
         slot_index: i32,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response =
-            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, context);
+        let response = TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
 
         if response.drag_started() {
             let from_location = UnitTarget::Slot {
@@ -568,10 +553,10 @@ impl TeamEditor {
         fusion_id: u64,
         slot_index: i32,
         _team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = TeamEditor::render_empty_slot_static(ui, context);
+        let response = TeamEditor::render_empty_slot_static(ui, ctx);
 
         if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
             .id(format!("empty_slot_{}_{}", fusion_id, slot_index))
@@ -608,14 +593,14 @@ impl TeamEditor {
         ui: &mut Ui,
         unlinked_units: &[&NUnit],
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
         ui.vertical(|ui| {
             "[s [tw Bench]]".cstr().label_w(ui);
             ui.separator();
             for unit in unlinked_units {
-                self.handle_bench_unit_interactions(ui, unit.id, team, context, actions);
+                self.handle_bench_unit_interactions(ui, unit.id, team, ctx, actions);
             }
 
             let available_space = ui.available_rect_before_wrap();
@@ -643,11 +628,10 @@ impl TeamEditor {
         ui: &mut Ui,
         unit_id: u64,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response =
-            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, context);
+        let response = TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
 
         if response.drag_started() {
             let from_location = UnitTarget::Bench;
@@ -702,57 +686,51 @@ impl TeamEditor {
         ui: &mut Ui,
         unit_id: u64,
         team: &NTeam,
-        context: &ClientContext,
+        ctx: &ClientContext,
     ) -> Response {
         let is_inspected = ui
             .inspected_node_for_parent(team.id)
             .is_some_and(|id| id == unit_id);
         if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
-            if let Ok(desc) = unit.description_ref(context) {
-                if let Ok(rep) = desc.representation_ref(context) {
+            if let Ok(desc) = unit.description_ref(ctx) {
+                if let Ok(rep) = desc.representation_ref(ctx) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
                         .add_mat(&rep.material, unit.id)
                         .unit_rep_with_default(unit.id)
                         .active(is_inspected)
-                        .ui(ui, context)
+                        .ui(ui, ctx)
                 } else {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
                 }
             } else {
-                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
             }
         } else {
             ui.label(format!("Unit #{}", unit_id))
         }
     }
 
-    fn render_unit_display(
-        &self,
-        ui: &mut Ui,
-        unit_id: u64,
-        team: &NTeam,
-        context: &ClientContext,
-    ) {
+    fn render_unit_display(&self, ui: &mut Ui, unit_id: u64, team: &NTeam, ctx: &ClientContext) {
         if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
-            if let Ok(desc) = unit.description_ref(context) {
-                if let Ok(rep) = desc.representation_ref(context) {
+            if let Ok(desc) = unit.description_ref(ctx) {
+                if let Ok(rep) = desc.representation_ref(ctx) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
                         .add_mat(&rep.material, unit.id)
                         .unit_rep_with_default(unit.id)
-                        .ui(ui, context);
+                        .ui(ui, ctx);
                 } else {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
+                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx);
                 }
             } else {
-                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
+                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx);
             }
         } else {
             ui.label(format!("Unit #{}", unit_id));
         }
     }
 
-    fn render_empty_slot_static(ui: &mut Ui, context: &ClientContext) -> Response {
-        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
+    fn render_empty_slot_static(ui: &mut Ui, ctx: &ClientContext) -> Response {
+        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
     }
 
     fn draw_drag_visual(&self, ui: &mut Ui) {

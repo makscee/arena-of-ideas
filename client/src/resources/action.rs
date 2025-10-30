@@ -148,6 +148,41 @@ impl ActionImpl for Action {
                     return Err("Status not found".into());
                 }
             }
+            Action::set_status(x) => {
+                let status_id = x.get_u64(ctx)?;
+                ctx.set_status(status_id);
+            }
+            Action::change_status_stacks(x) => {
+                let stack_change = x.get_i32(ctx)?;
+                if let Some(status_id) = ctx.status() {
+                    let current_stacks = ctx.status_var(VarName::stacks).get_i32().unwrap_or(0);
+                    let name = ctx.status_var(VarName::status_name).get_string()?;
+                    let color = ctx.color();
+                    let new_stacks = current_stacks + stack_change;
+                    actions.push(BattleAction::var_set(
+                        status_id,
+                        VarName::stacks,
+                        new_stacks.into(),
+                    ));
+
+                    // Add text VFX for stack change
+                    let stack_text = if stack_change > 0 {
+                        format!("+{}", stack_change)
+                    } else {
+                        format!("{}", stack_change)
+                    };
+                    let text = format!("+{} stacks [b [{} name]]", color.to_hex(), stack_text);
+                    actions.push(
+                        BattleAction::new_vfx("text")
+                            .with_var(VarName::text, text)
+                            .with_var(VarName::color, high_contrast_text())
+                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .into(),
+                    );
+                } else {
+                    error!("No status in context for change_status_stacks");
+                }
+            }
             Action::repeat(x, vec) => {
                 for _ in 0..x.get_i32(ctx)? {
                     for a in vec {

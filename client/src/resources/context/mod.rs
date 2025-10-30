@@ -303,7 +303,7 @@ pub trait ClientContextExt<'a> {
     fn exec_ref<F, R>(&'a self, f: F) -> NodeResult<R>
     where
         F: FnOnce(&mut Self) -> NodeResult<R>;
-    fn color(&self, ui: &mut Ui) -> Color32;
+    fn color(&self) -> Color32;
 
     fn into_source(self) -> Sources<'a>;
     fn exec_mut<F, R>(&mut self, f: F) -> NodeResult<R>
@@ -368,11 +368,11 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
         ctx.with_layers(layers.clone(), f)
     }
 
-    fn color(&self, ui: &mut Ui) -> Color32 {
+    fn color(&self) -> Color32 {
         if let Ok(c) = self.get_var(VarName::color).and_then(|c| c.get_color()) {
             c
         } else {
-            ui.visuals().text_color()
+            colorix().low_contrast_text()
         }
     }
 

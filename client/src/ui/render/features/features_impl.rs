@@ -308,6 +308,16 @@ impl FDisplay for Expression {
 impl FEdit for Expression {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
+        if let Some(value) = self
+            .as_empty_mut()
+            .with_menu()
+            .add_copy()
+            .add_paste()
+            .compose_with_menu(&EMPTY_CONTEXT, ui)
+            .pasted()
+        {
+            *self = value;
+        }
         if let Some(mut old_value) = old_value {
             self.move_inner_fields_from(&mut old_value);
         }
@@ -396,6 +406,15 @@ impl FEdit for Action {
     }
     fn edit_self(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
+        let menu_resp = self
+            .as_empty_mut()
+            .with_menu()
+            .add_copy()
+            .add_paste()
+            .compose_with_menu(&EMPTY_CONTEXT, ui);
+        if let Some(value) = menu_resp.pasted() {
+            *self = value;
+        }
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
         }

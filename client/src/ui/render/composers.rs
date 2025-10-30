@@ -129,6 +129,43 @@ impl<'a, T: FTitle> Composer<T> for TitleComposer<'a, T> {
     }
 }
 
+pub struct EmptyComposer<'a, T> {
+    data: DataRef<'a, T>,
+}
+
+impl<'a, T> EmptyComposer<'a, T> {
+    pub fn new(data: &'a T) -> Self {
+        Self {
+            data: DataRef::Immutable(data),
+        }
+    }
+
+    pub fn new_mut(data: &'a mut T) -> Self {
+        Self {
+            data: DataRef::Mutable(data),
+        }
+    }
+}
+
+impl<'a, T> Composer<T> for EmptyComposer<'a, T> {
+    fn data(&self) -> &T {
+        self.data.as_ref()
+    }
+
+    fn data_mut(&mut self) -> &mut T {
+        self.data.as_mut()
+    }
+
+    fn is_mutable(&self) -> bool {
+        self.data.is_mutable()
+    }
+
+    fn compose(self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+        ui.new_child(UiBuilder::new())
+            .allocate_response(default(), Sense::hover())
+    }
+}
+
 /// Button composer - wraps another composer and makes it clickable
 pub struct ButtonComposer<C> {
     inner: C,
@@ -619,7 +656,7 @@ impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
 
     fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
-        let color = ctx.color(ui);
+        let color = ctx.color();
 
         Frame::new()
             .inner_margin(2)
@@ -673,7 +710,7 @@ impl<T, C: Composer<T>> Composer<T> for FramedComposer<C> {
     }
 
     fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let color = self.color.unwrap_or_else(|| ctx.color(ui));
+        let color = self.color.unwrap_or_else(|| ctx.color());
 
         Frame::new()
             .inner_margin(2)
