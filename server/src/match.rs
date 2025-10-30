@@ -284,7 +284,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 impl NMatch {
-    fn buy(&mut self, ctx: &ServerContext, price: i32) -> Result<(), String> {
+    fn buy(&mut self, _ctx: &ServerContext, price: i32) -> Result<(), String> {
         if self.g < price {
             return Err(format!(
                 "Can't afford: price = {price} match g = {}",

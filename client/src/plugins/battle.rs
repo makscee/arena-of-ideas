@@ -187,7 +187,6 @@ impl BattlePlugin {
             .source
             .exec_context_ref(|ctx| ctx.battle().map(|s| s.ended()).unwrap_or(true));
 
-        let t = data.t.at_most(duration);
         if data.playing {
             data.t += gt().last_delta() * data.playback_speed;
             data.t = data.t.at_most(duration);

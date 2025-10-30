@@ -328,6 +328,39 @@ pub fn generate_children_arms(children: &HashMap<String, HashSet<String>>) -> To
     quote! { #(#arms)* }
 }
 
+pub fn generate_children_recursive_arms(
+    children: &HashMap<String, HashSet<String>>,
+) -> TokenStream {
+    let arms: Vec<TokenStream> = children
+        .iter()
+        .map(|(parent, _)| {
+            let parent_ident = format_ident!("{}", parent);
+            quote! {
+                NodeKind::#parent_ident => {
+                    let mut result = HashSet::new();
+                    let mut to_visit = vec![self];
+                    let mut visited = HashSet::new();
+
+                    while let Some(current) = to_visit.pop() {
+                        if !visited.insert(current) {
+                            continue;
+                        }
+
+                        for child in current.component_children() {
+                            result.insert(child);
+                            to_visit.push(child);
+                        }
+                    }
+
+                    result
+                },
+            }
+        })
+        .collect();
+
+    quote! { #(#arms)* }
+}
+
 pub fn generate_other_components_arms(
     component_parents: &HashMap<String, String>,
     component_children: &HashMap<String, HashSet<String>>,

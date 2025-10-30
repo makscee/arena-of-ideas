@@ -1156,7 +1156,7 @@ impl FPlaceholder for NAbilityDescription {
 }
 
 impl FDescription for NAbilityDescription {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
         self.description.cstr()
     }
 }

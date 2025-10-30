@@ -62,6 +62,8 @@ fn generate_node_kind(
     // Generate match arms for relationship functions
     let component_parent_arms = generate_parent_arms(&relationships.component_parents);
     let component_children_arms = generate_children_arms(&relationships.component_children);
+    let component_children_recursive_arms =
+        generate_children_recursive_arms(&relationships.component_children);
     let owned_parent_arms = generate_parent_arms(&relationships.owned_parents);
     let owned_children_arms = generate_children_arms(&relationships.owned_children);
     let other_components_arms = generate_other_components_arms(
@@ -119,6 +121,13 @@ fn generate_node_kind(
             pub fn component_children(self) -> HashSet<NodeKind> {
                 match self {
                     #component_children_arms
+                    _ => HashSet::new(),
+                }
+            }
+
+            pub fn component_children_recursive(self) -> HashSet<NodeKind> {
+                match self {
+                    #component_children_recursive_arms
                     _ => HashSet::new(),
                 }
             }

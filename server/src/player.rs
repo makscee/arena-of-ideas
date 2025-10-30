@@ -40,10 +40,12 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-        player.identity_set(NPlayerIdentity::new(
-            ctx.next_id(),
-            Some(ctx.rctx().sender.to_string()),
-        ));
+        player
+            .identity_set(NPlayerIdentity::new(
+                ctx.next_id(),
+                Some(ctx.rctx().sender.to_string()),
+            ))
+            .unwrap();
         player = player.login(ctx)?;
         player.save(ctx)?;
         Ok(())

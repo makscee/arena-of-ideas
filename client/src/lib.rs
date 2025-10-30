@@ -125,7 +125,6 @@ pub fn run() {
             AdminPlugin,
             StdbPlugin,
             NotificationsPlugin,
-            NodeSystemPlugin,
         ))
         .init_state::<GameState>();
     app.run();
