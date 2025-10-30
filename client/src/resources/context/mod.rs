@@ -287,7 +287,7 @@ pub trait ClientContextExt<'a> {
     fn load_mut<T: ClientNode + BevyComponent<Mutability = Mutable>>(
         &mut self,
         node_id: u64,
-    ) -> NodeResult<Mut<T>>;
+    ) -> NodeResult<Mut<'_, T>>;
     fn load_many_ref<T: ClientNode>(&self, ids: &[u64]) -> NodeResult<Vec<&T>>;
     fn load_children_ref<T: ClientNode>(&self, id: u64) -> NodeResult<Vec<&T>>;
     fn load_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
@@ -315,7 +315,7 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
     fn load_mut<T: ClientNode + BevyComponent<Mutability = Mutable>>(
         &mut self,
         node_id: u64,
-    ) -> NodeResult<Mut<T>> {
+    ) -> NodeResult<Mut<'_, T>> {
         let entity = self.entity(node_id)?;
         self.world_mut()?
             .get_mut::<T>(entity)
