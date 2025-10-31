@@ -403,8 +403,8 @@ mod tests {
             id: 1,
             player_id: 999,
             parent_id: 1001,
-            kind: "NUnit".to_string(),
-            selected_link_id: 5001,
+            child_id: 1002,
+            link_id: 5001,
         };
         selected_source
             .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(selection))
@@ -470,15 +470,15 @@ mod tests {
             id: 1,
             player_id: 999,
             parent_id: 1001,
-            kind: "NUnit".to_string(),
-            selected_link_id: 5002,
+            child_id: 1002,
+            link_id: 5002,
         };
         let new_selection = TPlayerLinkSelection {
             id: 1,
             player_id: 999,
             parent_id: 1001,
-            kind: "NUnit".to_string(),
-            selected_link_id: 5003,
+            child_id: 1003,
+            link_id: 5003,
         };
         selected_source
             .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
@@ -542,8 +542,8 @@ mod tests {
             id: 1,
             player_id: 1000,
             parent_id: 1001,
-            kind: "NUnit".to_string(),
-            selected_link_id: 5004,
+            child_id: 1002,
+            link_id: 5004,
         };
         selected_source
             .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
@@ -1288,8 +1288,8 @@ mod tests {
             id: 1,
             player_id: 999,
             parent_id: 1001,
-            kind: "NHouseColor".to_string(),
-            selected_link_id: 6001,
+            child_id: 1002,
+            link_id: 6001,
         };
         selected_source
             .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(selection))

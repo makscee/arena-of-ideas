@@ -40,6 +40,33 @@ fn main() {
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
+fn generate_is_multiple_link_arms(
+    node_map: &HashMap<String, NodeInfo>,
+) -> proc_macro2::TokenStream {
+    use quote::quote;
+
+    let mut arms = Vec::new();
+
+    for (node_name, node_info) in node_map {
+        for field in &node_info.fields {
+            if matches!(
+                field.link_type,
+                LinkType::OwnedMultiple | LinkType::RefMultiple
+            ) {
+                let parent_ident = syn::parse_str::<syn::Ident>(node_name).unwrap();
+                let child_ident = syn::parse_str::<syn::Ident>(&field.target_type).unwrap();
+                arms.push(quote! {
+                    (NodeKind::#parent_ident, NodeKind::#child_ident) => true,
+                });
+            }
+        }
+    }
+
+    quote! {
+        #(#arms)*
+    }
+}
+
 fn generate_node_kind(
     nodes: &[NodeInfo],
     node_map: &HashMap<String, NodeInfo>,
@@ -70,6 +97,9 @@ fn generate_node_kind(
         &relationships.component_parents,
         &relationships.component_children,
     );
+
+    // Generate is_multiple_link function
+    let is_multiple_link_arms = generate_is_multiple_link_arms(node_map);
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
@@ -150,6 +180,13 @@ fn generate_node_kind(
                 match self {
                     #other_components_arms
                     _ => HashSet::new(),
+                }
+            }
+
+            pub fn is_multiple_link(parent: NodeKind, child: NodeKind) -> bool {
+                match (parent, child) {
+                    #is_multiple_link_arms
+                    _ => false,
                 }
             }
         }

@@ -474,13 +474,10 @@ impl<'a> Sources<'a> {
                     let world = self.world()?;
                     let link = world
                         .get_resource::<LinksMapResource>()
-                        .and_then(|links| links.get(selection.selected_link_id))
+                        .and_then(|links| links.get(selection.link_id))
                         .cloned()
                         .ok_or_else(|| {
-                            NodeError::custom(format!(
-                                "Link#{} not found",
-                                selection.selected_link_id
-                            ))
+                            NodeError::custom(format!("Link#{} not found", selection.link_id))
                         })?;
                     self.add_link(link.parent, link.child)?;
                 }
@@ -503,11 +500,11 @@ impl<'a> Sources<'a> {
                         .get_resource::<LinksMapResource>()
                         .ok_or_else(|| NodeError::custom("LinksMapResource not found"))?;
                     let old_link = links_map
-                        .get(old.selected_link_id)
+                        .get(old.link_id)
                         .cloned()
                         .ok_or_else(|| NodeError::custom("Old link not found"))?;
                     let new_link = links_map
-                        .get(new.selected_link_id)
+                        .get(new.link_id)
                         .cloned()
                         .ok_or_else(|| NodeError::custom("New link not found"))?;
                     self.remove_link(old_link.parent, old_link.child)?;
@@ -529,7 +526,7 @@ impl<'a> Sources<'a> {
                     let world = self.world()?;
                     let link = world
                         .get_resource::<LinksMapResource>()
-                        .and_then(|links| links.get(selection.selected_link_id))
+                        .and_then(|links| links.get(selection.link_id))
                         .cloned()
                         .ok_or_else(|| NodeError::custom("Link not found"))?;
                     self.remove_link(link.parent, link.child)?;

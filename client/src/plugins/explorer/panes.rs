@@ -168,7 +168,7 @@ impl ExplorerPanes {
                 let is_current = current_id == Some(node.id());
                 let text = node.description_cstr(ctx);
                 let text = if is_current {
-                    format!("⚫️ {text}")
+                    format!("* {text}")
                 } else {
                     text
                 };
@@ -201,7 +201,7 @@ impl ExplorerPanes {
     pub fn pane_unit_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, mut state| {
             if let Some(unit_id) = state.inspected_unit {
-                Self::render_parent_list(ui, &mut state, unit_id, NodeKind::NHouse)
+                Self::render_house_parent_list(ui, &mut state, unit_id)
             } else {
                 Ok(())
             }
@@ -237,7 +237,7 @@ impl ExplorerPanes {
     pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, mut state| {
             if let Some(ability_id) = state.inspected_ability {
-                Self::render_parent_list(ui, &mut state, ability_id, NodeKind::NHouse)
+                Self::render_house_parent_list(ui, &mut state, ability_id)
             } else {
                 Ok(())
             }
@@ -247,7 +247,7 @@ impl ExplorerPanes {
     pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, mut state| {
             if let Some(status_id) = state.inspected_status {
-                Self::render_parent_list(ui, &mut state, status_id, NodeKind::NHouse)
+                Self::render_house_parent_list(ui, &mut state, status_id)
             } else {
                 Ok(())
             }
@@ -403,27 +403,19 @@ impl ExplorerPanes {
         })
     }
 
-    fn render_parent_list(
+    fn render_house_parent_list(
         ui: &mut Ui,
         state: &mut ExplorerState,
         node_id: u64,
-        parent_kind: NodeKind,
     ) -> NodeResult<()> {
-        Self::show_add_new(ui, parent_kind);
+        let kind = NodeKind::NHouse;
+        Self::show_add_new(ui, kind);
         state.view_mode.exec_ctx(|ctx| {
-            let current_parent = ctx
-                .get_parents_of_kind(node_id, parent_kind)?
-                .into_iter()
-                .next();
+            let current_parent = ctx.get_parents_of_kind(node_id, kind)?.into_iter().next();
 
             let mut all_nodes = Vec::new();
-            match parent_kind {
-                NodeKind::NHouse => {
-                    for house in ctx.world_mut()?.query::<&NHouse>().iter(ctx.world()?) {
-                        all_nodes.push((house.id, house.name().to_string()));
-                    }
-                }
-                _ => return Ok(()),
+            for house in ctx.world_mut()?.query::<&NHouse>().iter(ctx.world()?) {
+                all_nodes.push((house.id, house.name().to_string()));
             }
 
             all_nodes.sort_by_key(|(id, _)| *id);
@@ -432,15 +424,17 @@ impl ExplorerPanes {
                 .as_list(|(id, name), _ctx, ui| {
                     let is_current = current_parent == Some(*id);
                     let text = if is_current {
-                        format!("● {}", name)
+                        format!("* {}", name)
                     } else {
                         name.clone()
                     };
                     text.cstr().label(ui)
                 })
-                .with_hover(move |(_id, _name), _, ui| {
+                .with_hover(move |(id, _name), _, ui| {
                     if "Select".cstr().button(ui).clicked() {
-                        // Parent selection logic would go here if needed
+                        cn().reducers
+                            .content_select_link(*id, node_id)
+                            .notify_error_op();
                     }
                 })
                 .compose(ctx, ui);
@@ -482,7 +476,7 @@ impl ExplorerPanes {
                 .as_list(|(id, name), _ctx, ui| {
                     let is_current = current_children.contains(id);
                     let text = if is_current {
-                        format!("● {}", name)
+                        format!("* {}", name)
                     } else {
                         name.clone()
                     };

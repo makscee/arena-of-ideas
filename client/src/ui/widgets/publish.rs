@@ -21,8 +21,9 @@ where
         Window::new(WINDOW_ID, move |ui, world| {
             ui.heading("Publish Node");
             ui.separator();
-
-            node.render_recursive_edit(ui);
+            ui.vertical(|ui| {
+                node.render_recursive_edit(ui);
+            });
 
             ui.separator();
 

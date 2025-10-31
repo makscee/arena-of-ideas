@@ -10,8 +10,8 @@ pub struct TPlayerLinkSelection {
     pub id: u64,
     pub player_id: u64,
     pub parent_id: u64,
-    pub kind: String,
-    pub selected_link_id: u64,
+    pub child_id: u64,
+    pub link_id: u64,
 }
 
 impl __sdk::InModule for TPlayerLinkSelection {

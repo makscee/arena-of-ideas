@@ -29,9 +29,9 @@ pub struct TPlayerLinkSelection {
     #[index(btree)]
     pub parent_id: u64,
     #[index(btree)]
-    pub kind: String,
+    pub child_id: u64,
     #[index(btree)]
-    pub selected_link_id: u64,
+    pub link_id: u64,
 }
 
 #[table(public, name = node_links,
@@ -377,9 +377,22 @@ impl TPlayerLinkSelection {
     pub fn count_selections_for_link(ctx: &ReducerContext, link_id: u64) -> i32 {
         ctx.db
             .player_link_selections()
-            .selected_link_id()
+            .link_id()
             .filter(link_id)
             .count() as i32
+    }
+
+    fn deselect_by_selection(
+        ctx: &ReducerContext,
+        selection: &TPlayerLinkSelection,
+    ) -> NodeResult<()> {
+        // Decrease rating of the link
+        if let Some(mut link) = ctx.db.node_links().id().find(selection.link_id) {
+            link.rating -= 1;
+            link.update(ctx);
+        }
+        ctx.db.player_link_selections().id().delete(selection.id);
+        Ok(())
     }
 
     pub fn select_link(
@@ -402,16 +415,64 @@ impl TPlayerLinkSelection {
             let parent = parent_id.load_tnode_err(ctx)?;
             TNodeLink::add(ctx, &child, &parent, false)?
         };
-        let kind = link.child_kind;
 
-        // Remove any existing selection for this player, source, and kind
-        if let Some(existing) = Self::find_selection(ctx, player_id, parent_id, &kind) {
-            // Decrease rating of previously selected link
-            if let Some(mut prev_link) = ctx.db.node_links().id().find(existing.selected_link_id) {
-                prev_link.rating -= 1;
-                prev_link.update(ctx);
+        let parent_kind: NodeKind = link.parent_kind.parse().unwrap_or(NodeKind::None);
+        let child_kind: NodeKind = link.child_kind.parse().unwrap_or(NodeKind::None);
+        let is_multiple = NodeKind::is_multiple_link(parent_kind, child_kind);
+
+        let existing_parent_selections: Vec<_> = ctx
+            .db
+            .player_link_selections()
+            .player_id()
+            .filter(&player_id)
+            .filter(|s| s.child_id == child_id)
+            .collect();
+
+        for existing in existing_parent_selections {
+            if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
+                // Only remove if the parent kind matches the one we're selecting
+                if existing_link.parent_kind == link.parent_kind {
+                    Self::deselect_by_selection(ctx, &existing)?;
+                }
             }
-            ctx.db.player_link_selections().id().delete(existing.id);
+        }
+        if !is_multiple {
+            // For single links, also clear any existing child selections of the same kind for this parent
+            let existing_child_selections: Vec<_> = ctx
+                .db
+                .player_link_selections()
+                .player_id()
+                .filter(&player_id)
+                .filter(|s| s.parent_id == parent_id)
+                .collect();
+
+            for existing in existing_child_selections {
+                if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
+                    // Only remove if the child kind matches and it's a single link
+                    let existing_parent_kind: NodeKind =
+                        existing_link.parent_kind.parse().unwrap_or(NodeKind::None);
+                    let existing_child_kind: NodeKind =
+                        existing_link.child_kind.parse().unwrap_or(NodeKind::None);
+                    if existing_link.child_kind == link.child_kind
+                        && !NodeKind::is_multiple_link(existing_parent_kind, existing_child_kind)
+                    {
+                        Self::deselect_by_selection(ctx, &existing)?;
+                    }
+                }
+            }
+        }
+
+        // Check if selection already exists
+        if let Some(existing) = ctx
+            .db
+            .player_link_selections()
+            .player_id()
+            .filter(&player_id)
+            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
+            .next()
+        {
+            // Selection already exists, do nothing
+            return Ok(());
         }
 
         // Add new selection
@@ -421,8 +482,8 @@ impl TPlayerLinkSelection {
                 id: 0,
                 player_id,
                 parent_id,
-                kind: kind,
-                selected_link_id: link.id,
+                child_id,
+                link_id: link.id,
             });
 
         // Increase rating of newly selected link
@@ -440,38 +501,26 @@ impl TPlayerLinkSelection {
 
         Ok(())
     }
+
     pub fn deselect_link(
         ctx: &ReducerContext,
         player_id: u64,
         parent_id: u64,
         child_id: u64,
     ) -> NodeResult<()> {
-        let kind = child_id.load_tnode(ctx).to_not_found()?.kind;
-        if let Some(selection) = Self::find_selection(ctx, player_id, parent_id, &kind) {
-            // Decrease rating of the link
-            if let Some(mut link) = ctx.db.node_links().id().find(selection.selected_link_id) {
-                link.rating -= 1;
-                link.update(ctx);
-            }
-            ctx.db.player_link_selections().id().delete(selection.id);
+        if let Some(selection) = ctx
+            .db
+            .player_link_selections()
+            .player_id()
+            .filter(&player_id)
+            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
+            .next()
+        {
+            Self::deselect_by_selection(ctx, &selection)?;
             Ok(())
         } else {
             Err("No selection found to remove".into())
         }
-    }
-
-    fn find_selection(
-        ctx: &ReducerContext,
-        player_id: u64,
-        parent_id: u64,
-        kind: &str,
-    ) -> Option<Self> {
-        ctx.db
-            .player_link_selections()
-            .player_id()
-            .filter(&player_id)
-            .filter(|s| s.parent_id == parent_id && s.kind == kind)
-            .next()
     }
 }
 
