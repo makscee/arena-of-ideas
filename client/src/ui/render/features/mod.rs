@@ -190,41 +190,51 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-const CARD_SIZE: egui::Vec2 = egui::vec2(120.0, 80.0);
+const CARD_SIZE: egui::Vec2 = egui::vec2(150.0, 200.0);
 pub trait FCard: FDescription + FTitle + FStats + FPreview {
     fn render_card(&self, ctx: &ClientContext, ui: &mut Ui) -> Response
     where
         Self: Sized,
     {
-        let rect = Rect::from_min_size(ui.next_widget_position(), CARD_SIZE);
-        let response = ui.allocate_rect(rect, Sense::click_and_drag());
-
+        let (rect, response) = ui.allocate_exact_size(CARD_SIZE, Sense::click_and_drag());
+        // ui.expand_to_include_rect(rect);
+        // ui.set_max_size(CARD_SIZE);
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-            ui.vertical(|ui| {
-                // Title
-                TitleComposer::new(self).compose(ctx, ui);
-                ui.separator();
-                // Stats as horizontal wrapped tags
-                ui.horizontal_wrapped(|ui| {
-                    for (var, var_value) in self.stats(ctx) {
-                        TagWidget::new_var_value(var, var_value).ui(ui);
+            Frame::new()
+                .inner_margin(2)
+                .corner_radius(ROUNDING)
+                .stroke(ctx.color().stroke())
+                .show(ui, |ui| {
+                    self.as_title().compose(ctx, ui);
+                    ui.separator();
+                    // Stats as horizontal wrapped tags
+                    ui.horizontal_wrapped(|ui| {
+                        for (var, var_value) in self.stats(ctx) {
+                            TagWidget::new_var_value(var, var_value).ui(ui);
+                        }
+                    });
+
+                    // Preview in remaining space
+                    let available_rect = ui.available_rect_before_wrap();
+                    if available_rect.height() > 10.0 {
+                        ui.scope_builder(UiBuilder::new().max_rect(available_rect), |ui| {
+                            self.preview(ctx, ui, available_rect);
+                        });
                     }
-                });
-
-                // Preview in remaining space
-                let available_rect = ui.available_rect_before_wrap();
-                if available_rect.height() > 20.0 {
-                    let preview_rect = Rect::from_min_size(
-                        available_rect.min,
-                        egui::Vec2::new(available_rect.width(), available_rect.height() - 30.0),
-                    );
-                    self.preview(ctx, ui, preview_rect);
-                }
-
-                // Description at bottom
-                ui.add_space(ui.available_height() - 20.0);
-                self.description_cstr(ctx).label_w(ui);
-            });
+                    ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                        let fill = colorix().subtle_background();
+                        let stroke = colorix().ui_element_border_and_focus_rings().stroke();
+                        Frame::new()
+                            .fill(fill)
+                            .stroke(stroke)
+                            .corner_radius(ROUNDING)
+                            .outer_margin(2)
+                            .show(ui, |ui| {
+                                self.description_cstr(ctx).label_w(ui);
+                                ui.expand_to_include_x(available_rect.right());
+                            })
+                    });
+                })
         });
 
         response

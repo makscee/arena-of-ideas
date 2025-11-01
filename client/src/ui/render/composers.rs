@@ -656,14 +656,7 @@ impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
 
     fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
-        let color = ctx.color();
-
-        Frame::new()
-            .inner_margin(2)
-            .corner_radius(ROUNDING)
-            .stroke(color.stroke())
-            .show(ui, |ui| data.render_card(ctx, ui))
-            .inner
+        data.render_card(ctx, ui)
     }
 }
 

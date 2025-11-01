@@ -72,6 +72,7 @@ pub struct MatRect<'a> {
     unit_rep: Option<(u64, RenderConfig)>,
     enabled: bool,
     active: bool,
+    corners: bool,
 }
 
 impl<'a> MatRect<'a> {
@@ -82,6 +83,7 @@ impl<'a> MatRect<'a> {
             unit_rep: None,
             enabled: true,
             active: false,
+            corners: true,
         }
     }
 
@@ -123,6 +125,11 @@ impl<'a> MatRect<'a> {
 
     pub fn active(mut self, active: bool) -> Self {
         self.active = active;
+        self
+    }
+
+    pub fn corners(mut self, corners: bool) -> Self {
+        self.corners = corners;
         self
     }
 
@@ -189,7 +196,8 @@ impl<'a> MatRect<'a> {
         // Try to get entity from owner_id - could be any node type
         ctx.exec_ref(|ctx| {
             ctx.with_owner(owner_id, |ctx| {
-                RepresentationPlugin::paint_rect(clipped_rect, ctx, material, ui)
+                material.paint(clipped_rect, ctx, ui);
+                Ok(())
             })
         })
     }
@@ -200,7 +208,9 @@ impl<'a> MatRect<'a> {
             .active(self.active);
 
         button.ui(ui, |color, rect, _, ui| {
-            corners_rounded_rect(rect, rect.width() * 0.1, color.stroke(), ui);
+            if self.corners {
+                corners_rounded_rect(rect, rect.width() * 0.1, color.stroke(), ui);
+            }
             let content_rect = rect.shrink(5.0);
 
             // Render all materials
@@ -228,14 +238,8 @@ impl<'a> MatRect<'a> {
                 }
                 ctx.exec_ref(|ctx| {
                     ctx.with_owner(*owner_id, |ctx| {
-                        let r = unit_rep().material.paint(clipped_rect, ctx, ui);
-                        match &r {
-                            Ok(_) => {}
-                            Err(e) => {
-                                e.clone().ui(ui);
-                            }
-                        }
-                        r
+                        unit_rep().material.paint(clipped_rect, ctx, ui);
+                        Ok(())
                     })
                 })
                 .ui(ui);

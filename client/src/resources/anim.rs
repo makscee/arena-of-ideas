@@ -86,7 +86,7 @@ impl AnimAction {
             AnimAction::spawn(material) => {
                 let entity = ctx.world_mut()?.spawn_empty().id();
                 let id = next_id();
-                NUnitRepresentation::new(0, *material.clone())
+                NUnitRepresentation::new(0, player_id(), *material.clone())
                     .with_id(id)
                     .spawn(ctx, Some(entity))
                     .track()?;

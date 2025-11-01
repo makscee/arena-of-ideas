@@ -654,7 +654,7 @@ impl FPaste for NUnit {}
 
 impl FPlaceholder for NUnit {
     fn placeholder() -> Self {
-        NUnit::new(next_id(), "New Unit".to_string())
+        NUnit::new(next_id(), player_id(), "New Unit".to_string())
             .with_description(NUnitDescription::placeholder())
             .with_stats(NUnitStats::placeholder())
     }
@@ -720,7 +720,7 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder() -> Self {
-        NHouse::new(next_id(), "New House".to_string())
+        NHouse::new(next_id(), player_id(), "New House".to_string())
             .with_color(NHouseColor::placeholder())
             .with_units([NUnit::placeholder()].into())
     }
@@ -780,7 +780,7 @@ impl FPaste for NAbilityMagic {}
 
 impl FPlaceholder for NAbilityMagic {
     fn placeholder() -> Self {
-        NAbilityMagic::new(next_id(), "New Ability".to_string())
+        NAbilityMagic::new(next_id(), player_id(), "New Ability".to_string())
             .with_description(NAbilityDescription::placeholder())
     }
 }
@@ -845,10 +845,10 @@ impl FPaste for NStatusMagic {}
 
 impl FPlaceholder for NStatusMagic {
     fn placeholder() -> Self {
-        NStatusMagic::new(next_id(), "New Status".to_string())
+        NStatusMagic::new(next_id(), player_id(), "New Status".to_string())
             .with_description(NStatusDescription::placeholder())
             .with_representation(NStatusRepresentation::placeholder())
-            .with_state(NStatusState::new(next_id(), 1))
+            .with_state(NStatusState::new(next_id(), player_id(), 1))
     }
 }
 
@@ -1026,7 +1026,7 @@ impl FPaste for NPlayer {}
 
 impl FPlaceholder for NPlayer {
     fn placeholder() -> Self {
-        NPlayer::new(next_id(), "New Player".to_string())
+        NPlayer::new(next_id(), player_id(), "New Player".to_string())
             .with_player_data(NPlayerData::placeholder())
             .with_identity(NPlayerIdentity::placeholder())
             .with_active_match(NMatch::placeholder())
@@ -1158,7 +1158,7 @@ impl FTitle for NHouseColor {
 
 impl FPlaceholder for NHouseColor {
     fn placeholder() -> Self {
-        NHouseColor::new(next_id(), HexColor("#F08050".to_string()))
+        NHouseColor::new(next_id(), player_id(), HexColor("#F08050".to_string()))
     }
 }
 
@@ -1176,7 +1176,7 @@ impl FTitle for NAbilityDescription {
 
 impl FPlaceholder for NAbilityDescription {
     fn placeholder() -> Self {
-        NAbilityDescription::new(next_id(), "Default description".to_string())
+        NAbilityDescription::new(next_id(), player_id(), "Default description".to_string())
             .with_effect(NAbilityEffect::placeholder())
     }
 }
@@ -1239,8 +1239,12 @@ impl FTitle for NStatusDescription {
 
 impl FPlaceholder for NStatusDescription {
     fn placeholder() -> Self {
-        NStatusDescription::new(next_id(), "Default status description".to_string())
-            .with_behavior(NStatusBehavior::placeholder())
+        NStatusDescription::new(
+            next_id(),
+            player_id(),
+            "Default status description".to_string(),
+        )
+        .with_behavior(NStatusBehavior::placeholder())
     }
 }
 
@@ -1330,6 +1334,7 @@ impl FPlaceholder for NStatusRepresentation {
     fn placeholder() -> Self {
         NStatusRepresentation::new(
             next_id(),
+            player_id(),
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
     }
@@ -1387,6 +1392,7 @@ impl FPlaceholder for NTeam {
         let fusion = NFusion::placeholder().with_slots(
             [NFusionSlot::new(
                 next_id(),
+                player_id(),
                 0,
                 UnitActionRange {
                     trigger: 0,
@@ -1397,15 +1403,15 @@ impl FPlaceholder for NTeam {
             .with_unit_id(unit_id)]
             .into(),
         );
-        NTeam::new(next_id())
+        NTeam::new(next_id(), player_id())
             .with_houses([house].into())
             .with_fusions(
                 [
                     fusion,
-                    NFusion::new(next_id(), 0, 1, 0, 0, 0, 0),
-                    NFusion::new(next_id(), 0, 2, 0, 0, 0, 0),
-                    NFusion::new(next_id(), 0, 3, 0, 0, 0, 0),
-                    NFusion::new(next_id(), 0, 4, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 0, 1, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 0, 2, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 0, 3, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 0, 4, 0, 0, 0, 0),
                 ]
                 .into(),
             )
@@ -1571,7 +1577,7 @@ impl FDisplay for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder() -> Self {
-        NMatch::new(next_id(), 0, 1, 3, false, vec![])
+        NMatch::new(next_id(), 0, 0, 1, 3, false, vec![])
             .with_team(NTeam::placeholder())
             .with_battles(default())
     }
@@ -1618,7 +1624,7 @@ impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
     fn placeholder() -> Self {
-        NFusion::new(next_id(), 1, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
+        NFusion::new(next_id(), 0, 1, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
     }
 }
 
@@ -1967,37 +1973,37 @@ impl FDisplay for NUnitRepresentation {
 
 impl FPlaceholder for NArena {
     fn placeholder() -> Self {
-        NArena::new(next_id())
+        NArena::new(next_id(), 0)
     }
 }
 
 impl FPlaceholder for NFloorPool {
     fn placeholder() -> Self {
-        NFloorPool::new(next_id(), 1)
+        NFloorPool::new(next_id(), 0, 1)
     }
 }
 
 impl FPlaceholder for NFloorBoss {
     fn placeholder() -> Self {
-        NFloorBoss::new(next_id(), 1).with_team(NTeam::placeholder())
+        NFloorBoss::new(next_id(), 0, 1).with_team(NTeam::placeholder())
     }
 }
 
 impl FPlaceholder for NPlayerData {
     fn placeholder() -> Self {
-        NPlayerData::new(next_id(), None, true, 0)
+        NPlayerData::new(next_id(), 0, None, true, 0)
     }
 }
 
 impl FPlaceholder for NAbilityEffect {
     fn placeholder() -> Self {
-        NAbilityEffect::new(next_id(), vec![Action::noop])
+        NAbilityEffect::new(next_id(), 0, vec![Action::noop])
     }
 }
 
 impl FPlaceholder for NPlayerIdentity {
     fn placeholder() -> Self {
-        NPlayerIdentity::new(next_id(), None)
+        NPlayerIdentity::new(next_id(), 0, None)
     }
 }
 
@@ -2005,6 +2011,7 @@ impl FPlaceholder for NStatusBehavior {
     fn placeholder() -> Self {
         NStatusBehavior::new(
             next_id(),
+            0,
             vec![Reaction {
                 trigger: Trigger::BattleStart,
                 actions: vec![Action::noop],
@@ -2015,13 +2022,13 @@ impl FPlaceholder for NStatusBehavior {
 
 impl FPlaceholder for NBattle {
     fn placeholder() -> Self {
-        NBattle::new(next_id(), 0, 0, 0, 0, None)
+        NBattle::new(next_id(), 0, 0, 0, 0, 0, None)
     }
 }
 
 impl FPlaceholder for NFusionSlot {
     fn placeholder() -> Self {
-        NFusionSlot::new(next_id(), 0, default())
+        NFusionSlot::new(next_id(), 0, 0, default())
     }
 }
 
@@ -2108,9 +2115,12 @@ impl<T: FDisplay> FDisplay for Vec<T> {
 
 impl<T: FEdit + Default> FEdit for Vec<T> {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        self.as_mutable_list(|a, _, ui| a.edit(ui))
-            .editable(|| T::default())
-            .compose(&EMPTY_CONTEXT, ui)
+        ui.vertical(|ui| {
+            self.as_mutable_list(|a, _, ui| a.edit(ui))
+                .editable(|| T::default())
+                .compose(&EMPTY_CONTEXT, ui)
+        })
+        .inner
     }
 }
 
@@ -2118,6 +2128,7 @@ impl FPlaceholder for NUnitBehavior {
     fn placeholder() -> Self {
         NUnitBehavior::new(
             next_id(),
+            0,
             Reaction {
                 trigger: Trigger::BattleStart,
                 actions: vec![Action::debug(
@@ -2131,19 +2142,19 @@ impl FPlaceholder for NUnitBehavior {
 
 impl FPlaceholder for NUnitState {
     fn placeholder() -> Self {
-        NUnitState::new(next_id(), 1)
+        NUnitState::new(next_id(), 0, 1)
     }
 }
 
 impl FPlaceholder for NUnitStats {
     fn placeholder() -> Self {
-        NUnitStats::new(next_id(), 1, 4)
+        NUnitStats::new(next_id(), 0, 1, 4)
     }
 }
 
 impl FPlaceholder for NStatusState {
     fn placeholder() -> Self {
-        NStatusState::new(next_id(), 1)
+        NStatusState::new(next_id(), 0, 1)
     }
 }
 
@@ -2163,6 +2174,7 @@ impl FPlaceholder for NUnitDescription {
     fn placeholder() -> Self {
         NUnitDescription::new(
             next_id(),
+            0,
             "Placeholder Description".to_string(),
             MagicType::Ability,
             Trigger::BattleStart,
@@ -2258,6 +2270,7 @@ impl FPlaceholder for NUnitRepresentation {
     fn placeholder() -> Self {
         NUnitRepresentation::new(
             next_id(),
+            0,
             Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
         )
     }
@@ -2270,7 +2283,7 @@ impl FPlaceholder for NUnitRepresentation {
 impl FCompactView for Material {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
         let (rect, _) = ui.allocate_exact_size((LINE_HEIGHT * 2.0).v2(), Sense::click());
-        self.paint(rect, ctx, ui).ui(ui);
+        self.paint(rect, ctx, ui);
     }
 
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
@@ -2528,12 +2541,19 @@ impl FCard for NStatusMagic {}
 // FPreview implementations
 impl FPreview for NUnit {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
-        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-            ui.vertical_centered(|ui| {
-                ui.label(RichText::new("⚔").size(32.0).color(ctx.color()));
-                ui.label(RichText::new(&self.unit_name).strong().color(ctx.color()));
-            });
-        });
+        ctx.exec_ref(|ctx| {
+            MatRect::new(rect.size())
+                .add_mat(
+                    &self.description_ref(ctx)?.representation_ref(ctx)?.material,
+                    self.id,
+                )
+                .unit_rep_with_default(self.id)
+                .corners(false)
+                .enabled(false)
+                .ui(ui, ctx);
+            Ok(())
+        })
+        .ui(ui);
     }
 }
 

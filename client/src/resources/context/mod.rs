@@ -29,19 +29,25 @@ impl NodesLinkResource {
         parent_kind: NodeKind,
         child_kind: NodeKind,
     ) {
-        self.children
+        let children_vec = self
+            .children
             .entry(parent_id)
             .or_default()
             .entry(child_kind)
-            .or_default()
-            .push(child_id);
+            .or_default();
+        if !children_vec.contains(&child_id) {
+            children_vec.push(child_id);
+        }
 
-        self.parents
+        let parents_vec = self
+            .parents
             .entry(child_id)
             .or_default()
             .entry(parent_kind)
-            .or_default()
-            .push(parent_id);
+            .or_default();
+        if !parents_vec.contains(&parent_id) {
+            parents_vec.push(parent_id);
+        }
     }
 
     pub fn remove_link(&mut self, parent_id: u64, child_id: u64) {

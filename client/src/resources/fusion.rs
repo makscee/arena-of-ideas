@@ -146,16 +146,8 @@ impl NFusion {
                 if let Ok(rep) = desc.representation_ref(ctx) {
                     ctx.exec_ref(|ctx| {
                         ctx.with_owner(unit.id, |ctx| {
-                            let r = RepresentationPlugin::paint_rect(rect, &ctx, &rep.material, ui);
-                            match &r {
-                                Ok(_) => {}
-                                Err(e) => {
-                                    dbg!(e);
-                                    ctx.debug_layers();
-                                    panic!();
-                                }
-                            }
-                            r
+                            rep.material.paint(rect, ctx, ui);
+                            Ok(())
                         })
                     })
                     .ui(ui);
@@ -165,7 +157,8 @@ impl NFusion {
         for rep in ctx.load_children_ref::<NUnitRepresentation>(self.id)? {
             ctx.exec_ref(|ctx| {
                 ctx.with_owner(self.id, |ctx| {
-                    RepresentationPlugin::paint_rect(rect, ctx, &rep.material, ui)
+                    rep.material.paint(rect, ctx, ui);
+                    Ok(())
                 })
             })
             .ui(ui);

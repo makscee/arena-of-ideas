@@ -11,17 +11,19 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-    let mut player = NPlayer::new(ctx.next_id(), name);
+    let mut player = NPlayer::new(ctx.next_id(), 0, name);
+    let pid = player.id;
     player
         .player_data
-        .set_loaded(NPlayerData::new(ctx.next_id(), pass_hash, false, 0).with_owner(player.id))
+        .set_loaded(NPlayerData::new(ctx.next_id(), pid, pass_hash, false, 0))
         .ok();
     player
         .identity
-        .set_loaded(
-            NPlayerIdentity::new(ctx.next_id(), Some(ctx.rctx().sender.to_string()))
-                .with_owner(player.id),
-        )
+        .set_loaded(NPlayerIdentity::new(
+            ctx.next_id(),
+            pid,
+            Some(ctx.rctx().sender.to_string()),
+        ))
         .ok();
     player.save(ctx)?;
     Ok(())
@@ -30,7 +32,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
 #[reducer]
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, name).get_data())
+    let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, 0, name).get_data())
         .to_custom_e_s("Player not found")?;
     debug!("{player:?}");
     if player.player_data_load(ctx).track()?.pass_hash.is_none() {
@@ -43,6 +45,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         player
             .identity_set(NPlayerIdentity::new(
                 ctx.next_id(),
+                player.id,
                 Some(ctx.rctx().sender.to_string()),
             ))
             .unwrap();
@@ -97,7 +100,8 @@ impl NPlayer {
             Err("Names must not be empty".to_string())
         } else if let Some(c) = name.chars().find(|c| !c.is_alphanumeric()) {
             Err(format!("Wrong character: {c}"))
-        } else if NPlayer::find_by_data(ctx, &NPlayer::new(0, name.clone()).get_data()).is_some() {
+        } else if NPlayer::find_by_data(ctx, &NPlayer::new(0, 0, name.clone()).get_data()).is_some()
+        {
             Err(format!("Name is taken"))
         } else {
             Ok(name)

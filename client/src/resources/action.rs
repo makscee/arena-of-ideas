@@ -127,7 +127,7 @@ impl ActionImpl for Action {
                         .clone()
                         .load_components(ctx)?
                         .take()
-                        .with_state(NStatusState::new(next_id(), value));
+                        .with_state(NStatusState::new(next_id(), player_id(), value));
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(

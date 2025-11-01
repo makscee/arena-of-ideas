@@ -942,7 +942,12 @@ impl NTeam {
                 let fusions = self.fusions.get_mut()?;
                 if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
                     let new_index = fusion.slots().map(|s| s.len() as i32).unwrap_or_default();
-                    fusion.slots_push(NFusionSlot::new(next_id(), new_index, default()))?;
+                    fusion.slots_push(NFusionSlot::new(
+                        next_id(),
+                        player_id(),
+                        new_index,
+                        default(),
+                    ))?;
                 }
             }
             TeamAction::ChangeActionRange {

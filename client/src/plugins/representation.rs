@@ -1,3 +1,5 @@
+use bevy_egui::egui::LayerId;
+
 use super::*;
 
 pub struct RepresentationPlugin;
@@ -7,12 +9,7 @@ impl Plugin for RepresentationPlugin {
 }
 
 impl RepresentationPlugin {
-    pub fn paint_rect(
-        rect: Rect,
-        ctx: &ClientContext,
-        m: &Material,
-        ui: &mut Ui,
-    ) -> NodeResult<()> {
+    fn paint_rect(rect: Rect, ctx: &ClientContext, m: &Material, ui: &mut Ui) -> NodeResult<()> {
         let mut p = Painter::new(rect, ui.ctx());
         if let Ok(color) = ctx.get_var(VarName::color).get_color() {
             p.color = color;
@@ -25,15 +22,32 @@ impl RepresentationPlugin {
 }
 
 pub trait MaterialPaint {
-    fn paint(&self, rect: Rect, context: &ClientContext, ui: &mut Ui) -> NodeResult<()>;
-    fn paint_viewer(&self, context: &ClientContext, ui: &mut Ui) -> Response;
+    fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui);
+    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
 
 impl MaterialPaint for Material {
-    fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
-        RepresentationPlugin::paint_rect(rect, ctx, self, ui)
+    fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) {
+        match RepresentationPlugin::paint_rect(rect, ctx, self, ui) {
+            Ok(_) => {}
+            Err(e) => {
+                ui.scope_builder(
+                    UiBuilder::new().layer_id(LayerId::debug()).max_rect(rect),
+                    |ui| {
+                        "[red [b (e)]]".cstr().button(ui).on_hover_ui(|ui| {
+                            ui.vertical(|ui| {
+                                e.ui(ui);
+                                for l in ctx.layers() {
+                                    format!("{l:?}").label(ui);
+                                }
+                            });
+                        });
+                    },
+                );
+            }
+        };
     }
-    fn paint_viewer(&self, context: &ClientContext, ui: &mut Ui) -> Response {
+    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let size_id = ui.id().with("view size");
         let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 100.0));
         if DragValue::new(&mut size).ui(ui).changed() {
@@ -41,7 +55,7 @@ impl MaterialPaint for Material {
             ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
         }
         let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-        self.paint(rect, context, ui).ui(ui);
+        self.paint(rect, ctx, ui);
         ui.painter().rect_stroke(
             rect,
             0,

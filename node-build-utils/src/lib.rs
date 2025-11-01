@@ -698,11 +698,13 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         .filter(|field| field.link_type == LinkType::None)
         .collect();
 
-    let params = std::iter::once(quote! { node_id: u64 }).chain(data_fields.iter().map(|field| {
-        let field_name = &field.name;
-        let field_type = generate_field_type(field);
-        quote! { #field_name: #field_type }
-    }));
+    let params = std::iter::once(quote! { node_id: u64 })
+        .chain(std::iter::once(quote! { owner_id: u64 }))
+        .chain(data_fields.iter().map(|field| {
+            let field_name = &field.name;
+            let field_type = generate_field_type(field);
+            quote! { #field_name: #field_type }
+        }));
 
     let field_assignments = data_fields.iter().map(|field| {
         let field_name = &field.name;
@@ -722,7 +724,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         pub fn new(#(#params),*) -> Self {
             Self {
                 id: node_id,
-                owner: 0,
+                owner: owner_id,
                 #(#field_assignments)*
                 #(#component_defaults)*
                 is_dirty: true,
@@ -827,23 +829,25 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
         .filter(|field| field.link_type == LinkType::None)
         .collect();
 
-    let default_params = std::iter::once(quote! { 0 }).chain(data_fields.iter().map(|field| {
-        if field.raw_type.contains("Option") {
-            quote! { None }
-        } else if field.raw_type.contains("String") {
-            quote! { String::new() }
-        } else if field.raw_type.contains("i32") {
-            quote! { 0 }
-        } else if field.raw_type.contains("u64") {
-            quote! { 0 }
-        } else if field.raw_type.contains("bool") {
-            quote! { false }
-        } else if field.raw_type.contains("Vec") {
-            quote! { Vec::new() }
-        } else {
-            quote! { Default::default() }
-        }
-    }));
+    let default_params = std::iter::once(quote! { 0 })
+        .chain(std::iter::once(quote! { 0 }))
+        .chain(data_fields.iter().map(|field| {
+            if field.raw_type.contains("Option") {
+                quote! { None }
+            } else if field.raw_type.contains("String") {
+                quote! { String::new() }
+            } else if field.raw_type.contains("i32") {
+                quote! { 0 }
+            } else if field.raw_type.contains("u64") {
+                quote! { 0 }
+            } else if field.raw_type.contains("bool") {
+                quote! { false }
+            } else if field.raw_type.contains("Vec") {
+                quote! { Vec::new() }
+            } else {
+                quote! { Default::default() }
+            }
+        }));
 
     quote! {
         impl Default for #struct_name {
@@ -936,6 +940,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
 
         let update_link_references_impl = generate_update_link_references_impl(node);
+        let set_owner_calls = generate_set_owner_calls(node);
         let allow_attrs = generated_code_allow_attrs();
 
         quote! {
@@ -955,6 +960,9 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
                 fn set_owner(&mut self, owner: u64) {
                     self.owner = owner;
+
+                    // Update owner for loaded linked nodes (Owned and Component types)
+                    #(#set_owner_calls)*
                 }
 
 
@@ -1960,7 +1968,7 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
                     }
                 });
             }
-            LinkType::Owned => {
+            LinkType::Owned | LinkType::Component => {
                 owned_recursive_statements.push(quote! {
                     if let Ok(node) = self.#field_name.get_mut() {
                         node.reassign_ids(next_id, id_map);
@@ -1975,9 +1983,6 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
                         }
                     }
                 });
-            }
-            LinkType::Component => {
-                // Component links don't get recursively reassigned - they reference existing nodes
             }
             LinkType::None => {}
         }
@@ -2065,7 +2070,48 @@ pub fn generate_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenS
     }
 }
 
-pub fn generate_named_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
+pub fn generate_set_owner_calls(node: &NodeInfo) -> Vec<TokenStream> {
+    node.fields
+        .iter()
+        .filter(|field| {
+            matches!(
+                field.link_type,
+                LinkType::Owned | LinkType::OwnedMultiple | LinkType::Component
+            )
+        })
+        .map(|field| {
+            let field_name = &field.name;
+            match field.link_type {
+                LinkType::Owned => {
+                    quote! {
+                        if let schema::Owned::Loaded(node) = &mut self.#field_name {
+                            node.set_owner(owner);
+                        }
+                    }
+                }
+                LinkType::Component => {
+                    quote! {
+                        if let schema::Component::Loaded(node) = &mut self.#field_name {
+                            node.set_owner(owner);
+                        }
+                    }
+                }
+                LinkType::OwnedMultiple => {
+                    quote! {
+                        if let schema::OwnedMultiple::Loaded(nodes) = &mut self.#field_name {
+                            for node in nodes.iter_mut() {
+                                node.set_owner(owner);
+                            }
+                        }
+                    }
+                }
+                _ => unreachable!(),
+            }
+        })
+        .collect()
+}
+
+pub fn generate_named_node_kind_match_macro(nodes: &[NodeInfo]) -> TokenStream {
     let match_arms = nodes.iter().filter(|node| node.is_named).map(|node| {
         let node_kind_variant = &node.name;
         let struct_name = &node.name;

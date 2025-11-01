@@ -191,7 +191,7 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            let team = m.team_ref(ctx)?;
+            let team = m.team_ref(ctx)?.clone().load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
             let team_editor = TeamEditor::new()
@@ -203,7 +203,7 @@ impl MatchPlugin {
                 )
                 .with_action_handler(|action| match action {
                     TeamAction::MoveUnit { unit_id, target } => match target {
-                        crate::plugins::team_editor::UnitTarget::Slot {
+                        UnitTarget::Slot {
                             fusion_id,
                             slot_index: _,
                         } => {
@@ -211,7 +211,7 @@ impl MatchPlugin {
                                 .match_move_unit(*unit_id, *fusion_id)
                                 .notify_error_op();
                         }
-                        crate::plugins::team_editor::UnitTarget::Bench => {
+                        UnitTarget::Bench => {
                             cn().reducers.match_bench_unit(*unit_id).notify_error_op();
                         }
                     },
@@ -226,7 +226,7 @@ impl MatchPlugin {
                     _ => {}
                 });
 
-            let _changed_team = team_editor.edit(team, ctx, ui);
+            let _changed_team = team_editor.edit(&team, ctx, ui);
 
             if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
                 .text_fn(ui, |slot| format!("buy [yellow -{}g]", slot.1.price))

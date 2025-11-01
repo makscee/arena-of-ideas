@@ -172,6 +172,12 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_shop_reroll(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_admin_upload_world(|e, _, _, _| {
         if !e.check_identity() {
             return;
@@ -199,7 +205,7 @@ mod tests {
     #[test]
     fn test_node_creation_and_retrieval() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, "house name".into()).to_tnode();
+        let house_node = NHouse::new(1001, 0, "house name".into()).to_tnode();
         let update = StdbUpdate::NodeInsert(house_node);
         solid_source.handle_stdb_update(&update).unwrap();
         let entity = solid_source.entity(1001).expect("Node entity should exist");
@@ -216,8 +222,8 @@ mod tests {
     #[test]
     fn test_component_entity_merging() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         let link = TNodeLink {
             id: 1,
             parent: 1001,
@@ -260,8 +266,8 @@ mod tests {
     #[test]
     fn test_component_entity_merging_nonsolid() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         let link = TNodeLink {
             id: 1,
             parent: 1001,
@@ -307,9 +313,9 @@ mod tests {
     #[test]
     fn test_top_source_ratings_and_merging() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
+        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -389,8 +395,8 @@ mod tests {
     fn test_selected_source_player_selection() {
         set_player_id_for_test(999);
         let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node = NUnit::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
         selected_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -440,9 +446,9 @@ mod tests {
     fn test_selected_source_player_selection_update() {
         set_player_id_for_test(999);
         let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node1 = NUnit::new(1002, default()).to_tnode();
-        let unit_node2 = NUnit::new(1003, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node1 = NUnit::new(1002, 0, default()).to_tnode();
+        let unit_node2 = NUnit::new(1003, 0, default()).to_tnode();
         selected_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -528,8 +534,8 @@ mod tests {
     fn test_selected_source_ignores_other_players() {
         set_player_id_for_test(999);
         let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node = NUnit::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
         selected_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -575,9 +581,9 @@ mod tests {
     #[test]
     fn test_top_source_link_deletion_and_rating_update() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
+        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -627,8 +633,8 @@ mod tests {
     #[test]
     fn test_link_processing() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -666,12 +672,12 @@ mod tests {
     #[test]
     fn test_node_update_preserves_entity() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, "house name".into()).to_tnode();
+        let house_node = NHouse::new(1001, 0, "house name".into()).to_tnode();
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         let original_entity = solid_source.entity(1001).unwrap();
-        let updated_node = NHouse::new(1001, "house name 2".into()).to_tnode();
+        let updated_node = NHouse::new(1001, 0, "house name 2".into()).to_tnode();
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeUpdate {
                 old: house_node,
@@ -691,8 +697,8 @@ mod tests {
     #[test]
     fn test_multiple_entity_merging() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
             .unwrap();
@@ -717,7 +723,7 @@ mod tests {
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
             .unwrap();
-        let ability_node = NAbilityMagic::new(1003, default()).to_tnode();
+        let ability_node = NAbilityMagic::new(1003, 0, default()).to_tnode();
         let ability_link = TNodeLink {
             id: 2,
             parent: 1001,
@@ -748,10 +754,10 @@ mod tests {
     #[test]
     fn test_top_source_multiple_units_not_despawned() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node1 = NUnit::new(2001, default()).to_tnode();
-        let unit_node2 = NUnit::new(2002, default()).to_tnode();
-        let unit_node3 = NUnit::new(2003, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node1 = NUnit::new(2001, 0, default()).to_tnode();
+        let unit_node2 = NUnit::new(2002, 0, default()).to_tnode();
+        let unit_node3 = NUnit::new(2003, 0, default()).to_tnode();
 
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -847,8 +853,8 @@ mod tests {
     #[test]
     fn test_solid_source_component_merging() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
 
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -893,8 +899,8 @@ mod tests {
     #[test]
     fn test_solid_source_owned_link_no_merging() {
         let mut solid_source = Sources::new_solid();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node = NUnit::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
 
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -939,8 +945,8 @@ mod tests {
     #[test]
     fn test_top_source_component_merging() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
 
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -984,17 +990,18 @@ mod tests {
     #[test]
     fn test_chain_linked_components_merge() {
         let mut solid_source = Sources::new_solid();
-        let unit_node = NUnit::new(1001, "test unit".into()).to_tnode();
+        let unit_node = NUnit::new(1001, 0, "test unit".into()).to_tnode();
         let desc_node = NUnitDescription::new(
             1002,
+            0,
             "description".into(),
             MagicType::Ability,
             Trigger::default(),
         )
         .to_tnode();
         let behavior_node =
-            NUnitBehavior::new(1003, Reaction::default(), MagicType::Ability).to_tnode();
-        let repr_node = NUnitRepresentation::new(1004, Material::default()).to_tnode();
+            NUnitBehavior::new(1003, 0, Reaction::default(), MagicType::Ability).to_tnode();
+        let repr_node = NUnitRepresentation::new(1004, 0, Material::default()).to_tnode();
 
         // Insert all nodes
         solid_source
@@ -1077,9 +1084,9 @@ mod tests {
     #[test]
     fn test_top_source_component_merge_replace() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
+        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
 
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -1149,9 +1156,9 @@ mod tests {
     #[test]
     fn test_top_source_component_remerging() {
         let mut top_source = Sources::new_top();
-        let house1_node = NHouse::new(1001, "house 1".into()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
-        let house2_node = NHouse::new(2001, "house 2".into()).to_tnode();
+        let house1_node = NHouse::new(1001, 0, "house 1".into()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
+        let house2_node = NHouse::new(2001, 0, "house 2".into()).to_tnode();
 
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house1_node))
@@ -1224,8 +1231,8 @@ mod tests {
     #[test]
     fn test_top_source_owned_link_no_merging() {
         let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let unit_node = NUnit::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
 
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -1271,8 +1278,8 @@ mod tests {
     fn test_selected_source_component_merging() {
         set_player_id_for_test(999);
         let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, default()).to_tnode();
+        let house_node = NHouse::new(1001, 0, default()).to_tnode();
+        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
 
         selected_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))

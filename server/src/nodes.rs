@@ -74,6 +74,7 @@ pub trait ServerNode: Sized + schema::Node {
     }
     fn delete_recursive(&self, ctx: &ServerContext) {
         for id in self.collect_owned_ids() {
+            debug!("delete node {id} {}", self.kind());
             TNode::delete_by_id(ctx.rctx(), id);
         }
     }

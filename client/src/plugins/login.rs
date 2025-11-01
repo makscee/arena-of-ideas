@@ -63,7 +63,7 @@ impl LoginPlugin {
         subscribe_reducers();
     }
     fn find_identity_node(identity: Identity) -> Option<NPlayerIdentity> {
-        let data = NPlayerIdentity::new(0, Some(identity.to_string())).get_data();
+        let data = NPlayerIdentity::new(0, 0, Some(identity.to_string())).get_data();
         cn().db
             .nodes_world()
             .iter()

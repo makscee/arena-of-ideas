@@ -114,6 +114,7 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                     }
                 }
             },
+            Pane::Shop(pane) => pane.as_ref().into(),
             _ => view.as_ref().into(),
         }
     }

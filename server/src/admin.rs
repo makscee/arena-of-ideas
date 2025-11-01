@@ -294,7 +294,7 @@ fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
-    m.g += 10;
+    m.g_set(m.g + 10)?;
     player.save(ctx)?;
     Ok(())
 }
