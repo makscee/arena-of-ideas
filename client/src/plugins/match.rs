@@ -103,7 +103,6 @@ impl MatchPlugin {
                         let slot = slots[i].clone();
                         ui.scope_builder(
                             UiBuilder::new()
-                                .layout(Layout::bottom_up(Align::Center).with_cross_justify(true))
                                 .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
                             |ui| {
                                 if !slot.sold {
@@ -112,13 +111,11 @@ impl MatchPlugin {
                                             let resp = match slot.card_kind {
                                                 CardKind::Unit => {
                                                     let unit = ctx.load::<NUnit>(slot.node_id)?;
-                                                    unit.as_card().compose(ctx, ui);
-                                                    ui.response()
+                                                    unit.as_card().compose(ctx, ui)
                                                 }
                                                 CardKind::House => {
                                                     let house = ctx.load::<NHouse>(slot.node_id)?;
-                                                    house.as_card().compose(ctx, ui);
-                                                    ui.response()
+                                                    house.as_card().compose(ctx, ui)
                                                 }
                                             };
                                             resp.dnd_set_drag_payload((i, slot.clone()));
@@ -306,141 +303,5 @@ impl MatchPlugin {
                 .ui(ctx, ui);
             Ok(())
         })
-    }
-
-    pub fn pane_fusion(ui: &mut Ui, world: &World) -> NodeResult<()> {
-        with_solid_source(|context| {
-            let m = player(context)?.active_match_ref(context)?;
-            let team = m.team_ref(context)?;
-            let fusions = team.fusions_ref(context)?;
-
-            if fusions.is_empty() {
-                ui.label("No fusion units available");
-                return Ok(());
-            }
-
-            Self::render_fusion_headers(ui, context, &fusions)?;
-            ui.add_space(5.0);
-            Self::render_fusion_units(ui, context, &fusions)?;
-
-            Ok(())
-        })
-    }
-
-    fn render_fusion_headers(
-        ui: &mut Ui,
-        context: &ClientContext,
-        fusions: &Vec<&NFusion>,
-    ) -> NodeResult<()> {
-        ui.columns(fusions.len(), |columns| {
-            for (fusion_idx, fusion) in fusions.iter().enumerate() {
-                let ui = &mut columns[fusion_idx];
-                Self::render_fusion_header(ui, context, fusion);
-            }
-        });
-        Ok(())
-    }
-
-    fn render_fusion_header(ui: &mut Ui, ctx: &ClientContext, fusion: &NFusion) {
-        let mut mat_rect = MatRect::new(egui::Vec2::new(80.0, 80.0));
-        if let Ok(units) = ctx.load_children_ref::<NUnit>(fusion.id) {
-            for unit in units {
-                if let Ok(rep) = unit
-                    .description_ref(ctx)
-                    .and_then(|d| d.representation_ref(ctx))
-                {
-                    mat_rect = mat_rect.add_mat(&rep.material, unit.id);
-                }
-            }
-        }
-
-        mat_rect
-            .unit_rep_with_default(fusion.id)
-            .ui(ui, ctx)
-            .on_hover_ui(|ui| {
-                // fusion.as_card().compose(context, ui);
-                todo!();
-            });
-        ui.label(format!(
-            "{}/{}",
-            fusion.get_action_count(ctx).unwrap_or(0),
-            fusion.actions_limit
-        ));
-
-        if let Ok(trigger) = NFusion::get_trigger(ctx, fusion.trigger_unit) {
-            ui.horizontal(|ui| {
-                Icon::Lightning.show(ui);
-                trigger.title(ctx).label(ui);
-            });
-        }
-    }
-
-    fn render_fusion_units(
-        ui: &mut Ui,
-        context: &ClientContext,
-        fusions: &Vec<&NFusion>,
-    ) -> NodeResult<()> {
-        ui.columns(fusions.len(), |columns| {
-            for (fusion_idx, fusion) in fusions.iter().enumerate() {
-                let ui = &mut columns[fusion_idx];
-                let result = Self::render_fusion_column(ui, context, fusion, fusion_idx);
-                if let Err(e) = result {
-                    e.ui(ui);
-                }
-            }
-        });
-        Ok(())
-    }
-
-    fn render_fusion_column(
-        ui: &mut Ui,
-        context: &ClientContext,
-        fusion: &NFusion,
-        fusion_idx: usize,
-    ) -> NodeResult<()> {
-        ui.vertical(|ui| -> NodeResult<()> {
-            let units = fusion.units(context).unwrap_or_default();
-            let max_slots = fusion.slots_ref(context)?.len();
-
-            for slot_idx in 0..max_slots {
-                if let Some(unit) = units.get(slot_idx) {
-                    Self::render_unit_icon(ui, context, unit);
-                } else {
-                    Self::render_empty_slot(ui, context, fusion, fusion_idx, slot_idx);
-                }
-            }
-
-            Ok(())
-        })
-        .inner
-    }
-
-    fn render_unit_icon(ui: &mut Ui, context: &ClientContext, unit: &NUnit) {
-        let _resp = if let Ok(desc) = unit.description_ref(context) {
-            if let Ok(rep) = desc.representation_ref(context) {
-                MatRect::new(egui::Vec2::new(60.0, 60.0))
-                    .add_mat(&rep.material, unit.id)
-                    .unit_rep_with_default(unit.id)
-                    .ui(ui, context)
-            } else {
-                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
-            }
-        } else {
-            MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context)
-        };
-
-        if let Ok(state) = unit.state_ref(context) {
-            ui.label(format!("Stacks {}", state.stacks));
-        }
-    }
-
-    fn render_empty_slot(
-        ui: &mut Ui,
-        context: &ClientContext,
-        _fusion: &NFusion,
-        _fusion_idx: usize,
-        _slot_idx: usize,
-    ) {
-        let _resp = MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, context);
     }
 }

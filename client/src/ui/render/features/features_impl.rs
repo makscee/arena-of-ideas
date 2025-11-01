@@ -2517,127 +2517,60 @@ impl FDisplay for Colorix {
     }
 }
 
-impl FCard for NUnit {
-    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
-        let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
-        let response = ui.allocate_rect(rect, egui::Sense::hover());
+impl FCard for NUnit {}
 
-        ui.painter()
-            .rect_filled(rect, 5.0, egui::Color32::from_gray(40));
-        ui.painter().rect_stroke(
-            rect,
-            5.0,
-            egui::Stroke::new(1.0, egui::Color32::WHITE),
-            egui::StrokeKind::Middle,
-        );
+impl FCard for NHouse {}
 
-        let text_rect = rect.shrink(10.0);
-        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
-            ui.vertical(|ui| {
-                ui.label(
-                    egui::RichText::new(&self.unit_name)
-                        .strong()
-                        .color(egui::Color32::WHITE),
-                );
-                ui.label(format!("ID: {}", self.id()));
-                ui.label(format!("Type: NUnit"));
+impl FCard for NAbilityMagic {}
+
+impl FCard for NStatusMagic {}
+
+// FPreview implementations
+impl FPreview for NUnit {
+    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.vertical_centered(|ui| {
+                ui.label(RichText::new("⚔").size(32.0).color(ctx.color()));
+                ui.label(RichText::new(&self.unit_name).strong().color(ctx.color()));
             });
         });
-
-        response
     }
 }
 
-impl FCard for NHouse {
-    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
-        let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
-        let response = ui.allocate_rect(rect, egui::Sense::hover());
-
-        ui.painter()
-            .rect_filled(rect, 5.0, egui::Color32::from_gray(40));
-        ui.painter().rect_stroke(
-            rect,
-            5.0,
-            egui::Stroke::new(1.0, egui::Color32::WHITE),
-            egui::StrokeKind::Middle,
-        );
-
-        let text_rect = rect.shrink(10.0);
-        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
-            ui.vertical(|ui| {
-                ui.label(
-                    egui::RichText::new(&self.house_name)
-                        .strong()
-                        .color(egui::Color32::WHITE),
-                );
-                ui.label(format!("ID: {}", self.id()));
-                ui.label(format!("Type: NHouse"));
+impl FPreview for NHouse {
+    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.vertical_centered(|ui| {
+                ui.label(RichText::new("🏠").size(32.0).color(ctx.color()));
+                ui.label(RichText::new(&self.house_name).strong().color(ctx.color()));
             });
         });
-
-        response
     }
 }
 
-impl FCard for NAbilityMagic {
-    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
-        let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
-        let response = ui.allocate_rect(rect, egui::Sense::hover());
-
-        ui.painter()
-            .rect_filled(rect, 5.0, egui::Color32::from_gray(40));
-        ui.painter().rect_stroke(
-            rect,
-            5.0,
-            egui::Stroke::new(1.0, egui::Color32::WHITE),
-            egui::StrokeKind::Middle,
-        );
-
-        let text_rect = rect.shrink(10.0);
-        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
-            ui.vertical(|ui| {
+impl FPreview for NAbilityMagic {
+    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.vertical_centered(|ui| {
+                ui.label(RichText::new("✨").size(32.0).color(ctx.color()));
                 ui.label(
-                    egui::RichText::new(&self.ability_name)
+                    RichText::new(&self.ability_name)
                         .strong()
-                        .color(egui::Color32::WHITE),
+                        .color(ctx.color()),
                 );
-                ui.label(format!("ID: {}", self.id()));
-                ui.label(format!("Type: NAbilityMagic"));
             });
         });
-
-        response
     }
 }
 
-impl FCard for NStatusMagic {
-    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response {
-        let rect = egui::Rect::from_min_size(ui.next_widget_position(), size);
-        let response = ui.allocate_rect(rect, egui::Sense::hover());
-
-        ui.painter()
-            .rect_filled(rect, 5.0, egui::Color32::from_gray(40));
-        ui.painter().rect_stroke(
-            rect,
-            5.0,
-            egui::Stroke::new(1.0, egui::Color32::WHITE),
-            egui::StrokeKind::Middle,
-        );
-
-        let text_rect = rect.shrink(10.0);
-        ui.scope_builder(egui::UiBuilder::new().max_rect(text_rect), |ui| {
-            ui.vertical(|ui| {
-                ui.label(
-                    egui::RichText::new(&self.status_name)
-                        .strong()
-                        .color(egui::Color32::WHITE),
-                );
-                ui.label(format!("ID: {}", self.id()));
-                ui.label(format!("Type: NStatusMagic"));
+impl FPreview for NStatusMagic {
+    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.vertical_centered(|ui| {
+                ui.label(RichText::new("💫").size(32.0).color(ctx.color()));
+                ui.label(RichText::new(&self.status_name).strong().color(ctx.color()));
             });
         });
-
-        response
     }
 }
 

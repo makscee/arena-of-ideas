@@ -158,7 +158,7 @@ pub trait FColor {
 
 /// Feature for types that can be previewed
 pub trait FPreview {
-    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, size: Vec2);
+    fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect);
 }
 
 /// Feature for types that have help/documentation
@@ -190,6 +190,43 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-pub trait FCard: FDescription + FTitle + FStats {
-    fn render_card(&self, ui: &mut Ui, size: egui::Vec2) -> Response;
+const CARD_SIZE: egui::Vec2 = egui::vec2(120.0, 80.0);
+pub trait FCard: FDescription + FTitle + FStats + FPreview {
+    fn render_card(&self, ctx: &ClientContext, ui: &mut Ui) -> Response
+    where
+        Self: Sized,
+    {
+        let rect = Rect::from_min_size(ui.next_widget_position(), CARD_SIZE);
+        let response = ui.allocate_rect(rect, Sense::click_and_drag());
+
+        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            ui.vertical(|ui| {
+                // Title
+                TitleComposer::new(self).compose(ctx, ui);
+                ui.separator();
+                // Stats as horizontal wrapped tags
+                ui.horizontal_wrapped(|ui| {
+                    for (var, var_value) in self.stats(ctx) {
+                        TagWidget::new_var_value(var, var_value).ui(ui);
+                    }
+                });
+
+                // Preview in remaining space
+                let available_rect = ui.available_rect_before_wrap();
+                if available_rect.height() > 20.0 {
+                    let preview_rect = Rect::from_min_size(
+                        available_rect.min,
+                        egui::Vec2::new(available_rect.width(), available_rect.height() - 30.0),
+                    );
+                    self.preview(ctx, ui, preview_rect);
+                }
+
+                // Description at bottom
+                ui.add_space(ui.available_height() - 20.0);
+                self.description_cstr(ctx).label_w(ui);
+            });
+        });
+
+        response
+    }
 }

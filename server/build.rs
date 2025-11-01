@@ -83,7 +83,7 @@ fn generate_server_nodes(
         // All nodes get SpacetimeDB derives for server
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
         };
 
         // Generate manual Serialize/Deserialize implementation
@@ -163,14 +163,6 @@ fn generate_server_node_impl(
     quote! {
         #allow_attrs
         impl ServerNode for #struct_name {
-            fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self {
-                todo!()
-            }
-
-            fn clone(&self, ctx: &ServerContext, owner: u64) -> Self {
-                self.clone_self(ctx, owner)
-            }
-
             #save_method
         }
     }

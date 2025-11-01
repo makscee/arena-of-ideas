@@ -960,6 +960,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
 
                 fn reassign_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>) {
+                    self.set_dirty(true);
                     // Record old ID and assign new ID
                     let old_id = self.id();
                     let new_id = *next_id;

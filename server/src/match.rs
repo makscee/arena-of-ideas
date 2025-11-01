@@ -38,25 +38,25 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .iter()
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
-            let mut unit = unit.clone(ctx, pid);
-            unit.state
-                .set_loaded(NUnitState::new(pid, 1).insert(ctx))
-                .ok();
+            let mut unit = unit.remap_ids(ctx);
+            unit.state.set_loaded(NUnitState::new(pid, 1))?;
             unit.id.add_parent(ctx.rctx(), house.id)?;
+            unit.save(ctx)?;
         }
         CardKind::House => {
             let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
             let _ = m.team_load(ctx)?.houses_load(ctx);
             if m.team_load(ctx)?
                 .houses
-                .get()?
                 .iter()
                 .any(|h| h.house_name == house.house_name)
             {
                 // increase house lvl
             } else {
-                let house = house.clone(ctx, pid);
-                ctx.add_link(house.id, m.team_load(ctx)?.id)?;
+                let house = house.remap_ids(ctx);
+                let house_id = house.id;
+                house.save(ctx)?;
+                ctx.add_link(house_id, m.team()?.id)?;
             }
             m.team = Owned::unknown();
             m.fill_shop_case(ctx, true)?;
@@ -229,11 +229,13 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
         panic!()
     };
     {
-        let player_team_id = player_team.clone(ctx, pid).id;
-        ctx.add_link(pool_id, player_team_id)?;
+        let team_clone = player_team.clone().remap_ids(ctx);
+        let team_clone_id = team_clone.id;
+        team_clone.save(ctx)?;
+        ctx.add_link(pool_id, team_clone_id)?;
         let battle = NBattle::new(
             pid,
-            player_team_id,
+            team_clone_id,
             enemy_team.id,
             ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64,
             default(),

@@ -166,6 +166,12 @@ pub fn subscribe_reducers() {
             });
         });
     });
+    cn().reducers.on_match_shop_buy(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_admin_upload_world(|e, _, _, _| {
         if !e.check_identity() {
             return;

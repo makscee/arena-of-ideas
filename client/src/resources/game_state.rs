@@ -244,7 +244,6 @@ pub enum ShopPane {
     Roster,
     Team,
     Info,
-    Fusion,
 }
 
 impl Into<Vec<Pane>> for Pane {
@@ -280,7 +279,6 @@ impl Pane {
                 ShopPane::Info => MatchPlugin::pane_info(ui, world)?,
                 ShopPane::Roster => MatchPlugin::pane_roster(ui, world)?,
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
-                ShopPane::Fusion => MatchPlugin::pane_fusion(ui, world)?,
             },
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,

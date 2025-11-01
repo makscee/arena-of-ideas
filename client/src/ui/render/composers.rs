@@ -662,19 +662,7 @@ impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
             .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(color.stroke())
-            .show(ui, |ui| {
-                let resp = ui.horizontal(|ui| data.title(ctx).button(ui)).inner;
-
-                data.description_cstr(ctx).label_w(ui);
-
-                ui.horizontal(|ui| {
-                    for (var, var_value) in data.stats(ctx) {
-                        TagWidget::new_var_value(var, var_value).ui(ui);
-                    }
-                });
-
-                resp
-            })
+            .show(ui, |ui| data.render_card(ctx, ui))
             .inner
     }
 }

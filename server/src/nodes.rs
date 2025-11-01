@@ -25,8 +25,6 @@ pub trait ServerNode: Sized + schema::Node {
             ))
         }
     }
-    fn clone_self(&self, ctx: &ServerContext, owner: u64) -> Self;
-    fn clone(&self, ctx: &ServerContext, owner: u64) -> Self;
     fn insert(mut self, ctx: &ServerContext) -> Self {
         if self.id() == 0 {
             self.set_id(next_id(ctx.rctx()));
@@ -94,5 +92,12 @@ pub trait ServerNode: Sized + schema::Node {
                 }
             })
             .next()
+    }
+    fn remap_ids(mut self, ctx: &ServerContext) -> Self {
+        let mut next_id = ctx.next_id();
+        let mut id_map = std::collections::HashMap::new();
+        self.reassign_ids(&mut next_id, &mut id_map);
+        GlobalData::set_next_id(ctx.rctx(), next_id);
+        self
     }
 }
