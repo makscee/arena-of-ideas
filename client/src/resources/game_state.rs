@@ -284,8 +284,8 @@ impl Pane {
             },
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
-                BattlePane::EditLeftGraph => BattlePlugin::pane_edit_graph(true, ui, world),
-                BattlePane::EditRightGraph => BattlePlugin::pane_edit_graph(false, ui, world),
+                BattlePane::EditLeftGraph => TeamEditorPlugin::pane_edit_graph(true, ui, world),
+                BattlePane::EditRightGraph => TeamEditorPlugin::pane_edit_graph(false, ui, world),
                 BattlePane::TeamEditor(is_left) => TeamEditorPlugin::pane(is_left, world, ui),
             },
             Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world)?,

@@ -84,7 +84,10 @@ impl TeamEditorPlugin {
             }
         }
 
-        if let Some(new_team) = changed_team {
+        if let Some(mut new_team) = changed_team {
+            // Fix team integrity after any changes
+            new_team.fix_integrity().notify_error_op();
+
             let mut state = world.resource_mut::<BattleEditorState>();
             if is_left {
                 state.left_team = new_team;
@@ -94,6 +97,22 @@ impl TeamEditorPlugin {
             BattleEditorPlugin::save_changes_and_reload(world);
         } else if needs_reload {
             BattleEditorPlugin::save_changes_and_reload(world);
+        }
+    }
+
+    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
+        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
+            let needs_reload = if left {
+                state.left_team.render_recursive_edit(ui)
+            } else {
+                state.right_team.render_recursive_edit(ui)
+            };
+
+            if needs_reload {
+                BattleEditorPlugin::save_changes_and_reload(world);
+            }
+        } else {
+            "[red [b BattleEditoState] not found]".cstr().label(ui);
         }
     }
 }
@@ -143,7 +162,9 @@ impl BattleEditorPlugin {
             })
             .unwrap_or(true);
 
-        let state = world.resource::<BattleEditorState>();
+        let mut state = world.resource_mut::<BattleEditorState>();
+        state.left_team.fix_integrity().unwrap();
+        state.right_team.fix_integrity().unwrap();
         pd_mut(|pd| {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)

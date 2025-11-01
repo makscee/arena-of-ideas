@@ -68,9 +68,10 @@ impl<T: Any + Send + Sync> DndArea<T> {
             ui.painter()
                 .galley(rect.min, galley, ui.visuals().text_color());
         }
+        let length = resp.rect.width().min(resp.rect.height()) * 0.2;
         corners_rounded_rect(
             self.rect,
-            resp.rect.width() * 0.2 * (t * 0.5 + 1.0),
+            length * (t * 0.5 + 1.0),
             color.stroke_w(2.0 + t * 2.0),
             ui,
         );

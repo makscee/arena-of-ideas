@@ -54,9 +54,9 @@ bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets.git
     "ron",
 ] }
 anyhow = "1.0.100"
-clap = { version = "4.5.49", features = ["derive"] }
+clap = { version = "4.5.51", features = ["derive"] }
 hex = "0.4.3"
-home = "0.5.11"
+home = "0.5.12"
 egui_commonmark = "0.22.0"
 bevy_tasks = "0.17.2"
 regex = "1.12.2"
