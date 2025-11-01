@@ -148,7 +148,18 @@ pub enum CardKind {
 }
 
 #[derive(
-    Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Default, AsRefStr, EnumIter,
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    AsRefStr,
+    EnumIter,
+    Display,
 )]
 pub enum MagicType {
     #[default]

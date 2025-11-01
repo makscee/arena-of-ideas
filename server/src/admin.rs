@@ -5,7 +5,7 @@ use spacetimedb::{Identity, ReducerContext, reducer};
 use std::collections::{HashMap, VecDeque};
 use std::str::FromStr;
 
-const ADMIN_IDENTITY_HEX: &str = "c200ef827a902b03c6c49d77435af70cad0003fc322d23cf338142fa883b2dcf";
+const ADMIN_IDENTITY_HEX: &str = "c200fd59bb7bf2e9069a5db968bea2659d6826ab39f4e07fa96b0756fae2b16a";
 
 pub fn is_admin(identity: &Identity) -> Result<bool, String> {
     Ok(Identity::from_str(ADMIN_IDENTITY_HEX)
@@ -30,7 +30,7 @@ impl AdminCheck for &ReducerContext {
 #[reducer]
 fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
-    info!("content rotation start");
+    info!("Content rotation start");
     for mut n in ctx.db.nodes_world().owner().filter(ID_CORE) {
         n.owner = 0;
         for mut l in ctx
@@ -54,172 +54,175 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
     units.retain_mut(|unit| {
         let Some(mut description) = unit
             .id
-            .top_parent(ctx.rctx(), NodeKind::NUnitDescription)
+            .top_child(ctx.rctx(), NodeKind::NUnitDescription)
             .and_then(|id| ctx.load::<NUnitDescription>(id).ok())
         else {
+            info!("Skip unit {}: no description", unit.name());
             return false;
         };
         if let Some(behavior) = description
             .id
-            .mutual_top_parent(ctx.rctx(), NodeKind::NUnitBehavior)
+            .mutual_top_child(ctx.rctx(), NodeKind::NUnitBehavior)
             .and_then(|id| ctx.load::<NUnitBehavior>(id).ok())
         {
             description.behavior.set_loaded(behavior).ok();
         } else {
+            info!("Skip unit {}: no behavior", unit.name());
             return false;
         }
         if let Some(representation) = description
             .id
-            .mutual_top_parent(ctx.rctx(), NodeKind::NUnitRepresentation)
+            .mutual_top_child(ctx.rctx(), NodeKind::NUnitRepresentation)
             .and_then(|id| ctx.load::<NUnitRepresentation>(id).ok())
         {
             description.representation.set_loaded(representation).ok();
         } else {
+            info!("Skip unit {}: no representation", unit.name());
             return false;
         }
         unit.description.set_loaded(description).ok();
         if let Some(stats) = unit
             .id
-            .top_parent(ctx.rctx(), NodeKind::NUnitStats)
+            .top_child(ctx.rctx(), NodeKind::NUnitStats)
             .and_then(|id| ctx.load::<NUnitStats>(id).ok())
         {
             unit.stats.set_loaded(stats).ok();
         } else {
+            info!("Skip unit {}: no stats", unit.name());
             return false;
         }
         true
     });
     info!("retained units {}", units.len());
-    // Group units by their magic type (ability or status)
-    let mut ability_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
-    let mut status_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
-
+    let mut house_units: HashMap<u64, Vec<NUnit>> = HashMap::new();
     for unit in units {
-        if let Ok(description) = unit.description.get() {
-            match description.magic_type {
-                MagicType::Ability => {
-                    // Find the ability magic this unit should belong to
-                    if let Some(ability_id) =
-                        unit.id.top_parent(ctx.rctx(), NodeKind::NAbilityMagic)
-                    {
-                        ability_units.entry(ability_id).or_default().push(unit);
-                    }
-                }
-                MagicType::Status => {
-                    // Find the status magic this unit should belong to
-                    if let Some(status_id) = unit.id.top_parent(ctx.rctx(), NodeKind::NStatusMagic)
-                    {
-                        status_units.entry(status_id).or_default().push(unit);
-                    }
-                }
-            }
+        if let Some(house) = unit.id.top_parent(ctx.rctx(), NodeKind::NHouse) {
+            house_units.entry(house).or_default().push(unit);
         }
     }
-    info!(
-        "ability units: {}, status units: {}",
-        ability_units.len(),
-        status_units.len()
-    );
+    info!("house units: {}", house_units.len());
+    let mut abilities: Vec<NAbilityMagic> = NAbilityMagic::collect_owner(ctx, 0);
+    abilities.retain_mut(|ability| {
+        let Some(mut description) = ability
+            .id
+            .top_child(ctx.rctx(), NodeKind::NAbilityDescription)
+            .and_then(|id| ctx.load::<NAbilityDescription>(id).ok())
+        else {
+            info!("Skip ability {}: no description", ability.name());
+            return false;
+        };
+        if let Some(effect) = description
+            .id
+            .mutual_top_child(ctx.rctx(), NodeKind::NAbilityEffect)
+            .and_then(|id| ctx.load::<NAbilityEffect>(id).ok())
+        {
+            description.effect.set_loaded(effect).unwrap();
+        } else {
+            info!("Skip ability {}: no effect", ability.name());
+            return false;
+        }
+        ability.description_set(description).unwrap();
+        info!("Keep ability {}", ability.name());
+        true
+    });
+    info!("abilities: {}", abilities.len());
+    let mut abilities: HashMap<u64, NAbilityMagic> =
+        HashMap::from_iter(abilities.into_iter().map(|s| (s.id, s)));
+
+    let mut statuses: Vec<NStatusMagic> = NStatusMagic::collect_owner(ctx, 0);
+    statuses.retain_mut(|status| {
+        let Some(mut description) = status
+            .id
+            .top_child(ctx.rctx(), NodeKind::NStatusDescription)
+            .and_then(|id| ctx.load::<NStatusDescription>(id).ok())
+        else {
+            info!("Skip status {}: no description", status.name());
+            return false;
+        };
+        if let Some(behavior) = description
+            .id
+            .mutual_top_child(ctx.rctx(), NodeKind::NStatusBehavior)
+            .and_then(|id| ctx.load::<NStatusBehavior>(id).ok())
+        {
+            description.behavior.set_loaded(behavior).unwrap();
+        } else {
+            info!("Skip status {}: no behavior", status.name());
+            return false;
+        }
+        if let Some(rep) = status
+            .id
+            .mutual_top_child(ctx.rctx(), NodeKind::NStatusRepresentation)
+            .and_then(|id| ctx.load::<NStatusRepresentation>(id).ok())
+        {
+            status.representation.set_loaded(rep).unwrap();
+        }
+        status.description_set(description).unwrap();
+        info!("Keep status {}", status.name());
+        true
+    });
+    info!("statuses: {}", statuses.len());
+    let mut statuses: HashMap<u64, NStatusMagic> =
+        HashMap::from_iter(statuses.into_iter().map(|s| (s.id, s)));
 
     let mut houses: VecDeque<NHouse> = VecDeque::from_iter(NHouse::collect_owner(ctx, 0));
     while let Some(mut house) = houses.pop_front() {
-        info!("start house {}", house.house_name);
+        info!("\n===\nstart house {}", house.house_name);
         if let Some(color) = house
             .id
-            .mutual_top_parent(ctx.rctx(), NodeKind::NHouseColor)
+            .mutual_top_child(ctx.rctx(), NodeKind::NHouseColor)
             .and_then(|id| ctx.load::<NHouseColor>(id).ok())
         {
             info!("color: {}", color.color.0);
             house.color.set_loaded(color).ok();
         } else {
-            error!("color failed");
+            info!("Skip house {}: no color", house.house_name);
             continue;
         }
-        if let Some(mut ability) = house
+        if let Some(ability) = house
             .id
             .mutual_top_child(ctx.rctx(), NodeKind::NAbilityMagic)
-            .and_then(|id| ctx.load::<NAbilityMagic>(id).ok())
+            .and_then(|id| abilities.remove(&id))
         {
-            if let Some(mut description) = ability
-                .id
-                .mutual_top_parent(ctx.rctx(), NodeKind::NAbilityDescription)
-                .and_then(|id| ctx.load::<NAbilityDescription>(id).ok())
-            {
-                if let Some(effect) = description
-                    .id
-                    .mutual_top_parent(ctx.rctx(), NodeKind::NAbilityEffect)
-                    .and_then(|id| ctx.load::<NAbilityEffect>(id).ok())
-                {
-                    description.effect.set_loaded(effect).ok();
-                    ability.description.set_loaded(description).ok();
-                    let ability_id = ability.id;
-                    house.ability.set_loaded(ability).ok();
-                    if let Some(units) = ability_units.remove(&ability_id) {
-                        // TODO: Handle units assignment
-                    }
-                } else {
-                    error!("ability effect failed");
-                    continue;
-                }
-            } else {
-                error!("ability description failed");
-                continue;
-            }
-        } else {
-            error!("ability child failed");
-            continue;
+            info!("ability: {}", ability.name());
+            house.ability_set(ability).unwrap();
         }
-        if let Some(mut status) = house
+        if let Some(status) = house
             .id
             .mutual_top_child(ctx.rctx(), NodeKind::NStatusMagic)
-            .and_then(|id| ctx.load::<NStatusMagic>(id).ok())
+            .and_then(|id| statuses.remove(&id))
         {
-            if let Some(mut description) = status
-                .id
-                .mutual_top_parent(ctx.rctx(), NodeKind::NStatusDescription)
-                .and_then(|id| ctx.load::<NStatusDescription>(id).ok())
-            {
-                if let Some(behavior) = description
-                    .id
-                    .mutual_top_parent(ctx.rctx(), NodeKind::NStatusBehavior)
-                    .and_then(|id| ctx.load::<NStatusBehavior>(id).ok())
-                {
-                    description.behavior.set_loaded(behavior).ok();
-                    status.description.set_loaded(description).ok();
-                    let status_id = status.id;
-                    house.status.set_loaded(status).ok();
-                    if let Some(units) = status_units.remove(&status_id) {
-                        // TODO: Handle units assignment
-                    }
-                } else {
-                    error!("status behavior failed");
-                    continue;
-                }
-            } else {
-                error!("status description failed");
+            info!("status: {}", status.name());
+            house.status_set(status).unwrap();
+        }
+        if house.status.is_none() && house.ability.is_none() {
+            info!("Skip house {}: no ability or status", house.name());
+            continue;
+        }
+        for unit in house_units.remove(&house.id).unwrap_or_default() {
+            if !match unit.description().unwrap().magic_type {
+                MagicType::Ability => house.ability.is_loaded(),
+                MagicType::Status => house.status.is_loaded(),
+            } {
+                error!(
+                    "Skip unit {} house {}: required {}",
+                    unit.name(),
+                    house.name(),
+                    unit.description().unwrap().magic_type
+                );
                 continue;
             }
-        } else {
-            error!("status magic failed");
-            continue;
-        }
-        if house.status.is_none() {
-            error!("failed to get status for house");
-            continue;
-        }
-        if house.ability.is_none() {
-            error!("failed to get ability for house");
-            continue;
+            info!("unit: {}", unit.name());
+            house.units_push(unit).unwrap();
         }
 
-        info!("solidifying house {}", house.house_name);
+        info!("Solidifying house {}\n===\n", house.house_name);
         for id in house.collect_owned_ids() {
             let mut node = id.load_tnode(ctx.rctx()).unwrap();
             node.owner = ID_CORE;
             node.update(ctx.rctx());
         }
         for (parent_id, child_id) in house.collect_owned_links() {
-            TNodeLink::solidify(ctx.rctx(), parent_id, child_id)?;
+            let _ = TNodeLink::solidify(ctx.rctx(), parent_id, child_id);
         }
     }
 

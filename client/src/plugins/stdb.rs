@@ -172,6 +172,12 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_content_rotation(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_content_select_link(|e, _, _| {
         if !e.check_identity() {
             return;

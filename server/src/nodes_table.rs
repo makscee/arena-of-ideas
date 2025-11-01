@@ -118,7 +118,7 @@ impl TNodeLink {
             .exactly_one()
             .map_err(|e| e.to_string())?;
         if link.solid {
-            return Err("Link is already solid".into());
+            return Err(format!("Link {link:?} is already solid").into());
         }
         link.solid = true;
         ctx.db.node_links().id().update(link);
@@ -401,6 +401,18 @@ impl TPlayerLinkSelection {
         parent_id: u64,
         child_id: u64,
     ) -> NodeResult<()> {
+        if ctx
+            .db
+            .player_link_selections()
+            .player_id()
+            .filter(&player_id)
+            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
+            .next()
+            .is_some()
+        {
+            // Selection already exists, do nothing
+            return Ok(());
+        }
         // Find the link between parent and child
         let link = if let Some(link) = ctx
             .db
@@ -419,20 +431,24 @@ impl TPlayerLinkSelection {
         let parent_kind: NodeKind = link.parent_kind.parse().unwrap_or(NodeKind::None);
         let child_kind: NodeKind = link.child_kind.parse().unwrap_or(NodeKind::None);
         let is_multiple = NodeKind::is_multiple_link(parent_kind, child_kind);
+        let is_multiple_to_one = parent_kind == NodeKind::NUnit
+            && child_kind == NodeKind::NUnitDescription
+            || parent_kind == NodeKind::NUnit && child_kind == NodeKind::NUnitStats;
+        if !is_multiple_to_one {
+            let existing_parent_selections: Vec<_> = ctx
+                .db
+                .player_link_selections()
+                .player_id()
+                .filter(&player_id)
+                .filter(|s| s.child_id == child_id)
+                .collect();
 
-        let existing_parent_selections: Vec<_> = ctx
-            .db
-            .player_link_selections()
-            .player_id()
-            .filter(&player_id)
-            .filter(|s| s.child_id == child_id)
-            .collect();
-
-        for existing in existing_parent_selections {
-            if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
-                // Only remove if the parent kind matches the one we're selecting
-                if existing_link.parent_kind == link.parent_kind {
-                    Self::deselect_by_selection(ctx, &existing)?;
+            for existing in existing_parent_selections {
+                if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
+                    // Only remove if the parent kind matches the one we're selecting
+                    if existing_link.parent_kind == link.parent_kind {
+                        Self::deselect_by_selection(ctx, &existing)?;
+                    }
                 }
             }
         }
@@ -460,19 +476,6 @@ impl TPlayerLinkSelection {
                     }
                 }
             }
-        }
-
-        // Check if selection already exists
-        if let Some(existing) = ctx
-            .db
-            .player_link_selections()
-            .player_id()
-            .filter(&player_id)
-            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
-            .next()
-        {
-            // Selection already exists, do nothing
-            return Ok(());
         }
 
         // Add new selection
