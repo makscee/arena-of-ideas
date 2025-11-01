@@ -75,10 +75,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
         let load_components_method = generate_load_functions(node, "ClientContext");
 
-        // Generate collect methods
-        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
-        let collect_owned_links_method = generate_collect_owned_links_impl(node);
-
         // Save method is now provided by Node trait implementation
 
         // All nodes are Components in client
@@ -113,8 +109,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 #link_methods
 
                 #load_components_method
-                #collect_owned_ids_method
-                #collect_owned_links_method
             }
 
             #client_node_impl

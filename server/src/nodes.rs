@@ -75,7 +75,9 @@ pub trait ServerNode: Sized + schema::Node {
             .collect_vec()
     }
     fn delete_recursive(&self, ctx: &ServerContext) {
-        todo!()
+        for id in self.collect_owned_ids() {
+            TNode::delete_by_id(ctx.rctx(), id);
+        }
     }
     fn find_by_data(ctx: &ServerContext, data: &String) -> Option<Self> {
         let kind = Self::kind_s().to_string();

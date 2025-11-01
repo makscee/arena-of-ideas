@@ -53,11 +53,13 @@ impl<'a> ServerSourceTrait for ServerSource<'a> {
         let owner = node.owner();
         let kind = T::kind_s();
         let data = node.get_data();
-
-        self.ctx
-            .db
-            .nodes_world()
-            .insert(TNode::new(id, owner, kind, data));
+        let row = TNode::new(id, owner, kind, data);
+        match self.ctx.db.nodes_world().try_insert(row.clone()) {
+            Ok(_) => {}
+            Err(_) => {
+                self.ctx.db.nodes_world().id().update(row);
+            }
+        }
 
         Ok(())
     }

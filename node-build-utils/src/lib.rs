@@ -931,6 +931,10 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let var_accessor_methods = generate_var_accessor_methods(node);
         let setter_methods = generate_setter_methods(node);
 
+        // Generate collect methods
+        let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
+        let collect_owned_links_method = generate_collect_owned_links_impl(node);
+
         let update_link_references_impl = generate_update_link_references_impl(node);
         let allow_attrs = generated_code_allow_attrs();
 
@@ -988,6 +992,9 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
                 #pack_links_impl
                 #unpack_links_impl
+
+                #collect_owned_ids_method
+                #collect_owned_links_method
             }
 
             #allow_attrs
@@ -1733,7 +1740,7 @@ pub fn generate_collect_owned_ids_impl(node: &NodeInfo) -> proc_macro2::TokenStr
         });
 
     quote! {
-        pub fn collect_owned_ids(&self) -> Vec<u64> {
+        fn collect_owned_ids(&self) -> Vec<u64> {
             let mut v = vec![self.id];
             #(#collect_calls)*
             v
@@ -1769,7 +1776,7 @@ pub fn generate_collect_owned_links_impl(node: &NodeInfo) -> proc_macro2::TokenS
         });
 
     quote! {
-        pub fn collect_owned_links(&self) -> Vec<(u64, u64)> {
+        fn collect_owned_links(&self) -> Vec<(u64, u64)> {
             let mut v = Vec::new();
             #(#link_calls)*
             v

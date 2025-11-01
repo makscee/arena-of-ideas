@@ -268,18 +268,22 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     for m in NMatch::collect_owner(ctx, player.id) {
         m.delete_recursive(ctx);
     }
-    let mut m = NMatch::new(pid, gs.match_g.initial, 0, 3, true, default()).insert(ctx);
-    let mut team = NTeam::new(pid).insert(ctx);
+    let mut m =
+        NMatch::new(ctx.next_id(), gs.match_g.initial, 0, 3, true, default()).with_owner(pid);
+    let mut team = NTeam::new(ctx.next_id()).with_owner(pid);
     for i in 0..gs.team_slots as i32 {
-        let mut fusion = NFusion::new(pid, default(), i, 0, 0, 0, 1).insert(ctx);
-        let slot = NFusionSlot::new(pid, 0, default()).insert(ctx);
-        fusion.slots.get_mut()?.push(slot);
-        team.fusions.get_mut()?.push(fusion);
+        let mut fusion = NFusion::new(ctx.next_id(), default(), i, 0, 0, 0, 1).with_owner(pid);
+        let slot = NFusionSlot::new(ctx.next_id(), 0, default()).with_owner(pid);
+        fusion.slots_push(slot)?;
+        team.fusions_push(fusion)?;
     }
-    m.team.set_loaded(team)?;
-    m.fill_shop_case(ctx, false)?;
-    player.active_match.set_loaded(m)?;
-    player.take().save(ctx)?;
+    m.team_set(team)?;
+    let mid = m.id;
+    m.save(ctx)?;
+    let mut m = ctx.load::<NMatch>(mid).track()?;
+    m.fill_shop_case(ctx, false).to_node_err().track()?;
+    player.active_match_set(m)?;
+    player.save(ctx).track()?;
     Ok(())
 }
 
@@ -357,6 +361,7 @@ impl NMatch {
             case: shop_case,
         }]
         .into();
+        self.set_dirty(true);
         Ok(())
     }
 }

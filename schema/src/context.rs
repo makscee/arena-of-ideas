@@ -76,6 +76,9 @@ pub trait Node: Send + Sync + Default + StringData {
     fn pack_links(&self, packed: &mut PackedNodes, visited: &mut std::collections::HashSet<u64>);
 
     fn unpack_links(&mut self, packed: &PackedNodes);
+
+    fn collect_owned_ids(&self) -> Vec<u64>;
+    fn collect_owned_links(&self) -> Vec<(u64, u64)>;
 }
 
 /// Trait for converting between NodeKind and concrete types
