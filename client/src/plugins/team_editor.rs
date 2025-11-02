@@ -278,7 +278,7 @@ impl TeamEditor {
                 .fill(ui.visuals().faint_bg_color);
             let inner_response = frame
                 .show(ui, |ui| {
-                    TeamEditor::render_action_list_static(ui, fusion, &slots, ctx);
+                    let _ = TeamEditor::render_action_list_static(ui, fusion, &slots, ctx);
                 })
                 .response;
             if inner_response.hovered() {
@@ -360,7 +360,7 @@ impl TeamEditor {
         ui.disable();
         ui.vertical(|ui| {
             format!("[s [tw Fusion #]]{}", fusion.index).label_w(ui);
-            TeamEditor::render_action_list_static(ui, fusion, slots, ctx);
+            let _ = TeamEditor::render_action_list_static(ui, fusion, slots, ctx);
             ui.separator();
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
@@ -565,21 +565,14 @@ impl TeamEditor {
             if dropped_unit.unit_id != unit_id {
                 match dropped_unit.from_location {
                     UnitTarget::Slot {
-                        fusion_id: from_fusion,
-                        slot_index: from_slot,
+                        fusion_id: _from_fusion,
+                        slot_index: _from_slot,
                     } => {
                         actions.push(TeamAction::MoveUnit {
                             unit_id: dropped_unit.unit_id,
                             target: UnitTarget::Slot {
                                 fusion_id,
                                 slot_index,
-                            },
-                        });
-                        actions.push(TeamAction::MoveUnit {
-                            unit_id,
-                            target: UnitTarget::Slot {
-                                fusion_id: from_fusion,
-                                slot_index: from_slot,
                             },
                         });
                     }
@@ -682,7 +675,7 @@ impl TeamEditor {
         unit_id: u64,
         team: &NTeam,
         ctx: &ClientContext,
-        actions: &mut Vec<TeamAction>,
+        _actions: &mut Vec<TeamAction>,
     ) {
         let response = TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
 
@@ -913,24 +906,84 @@ impl NTeam {
     pub fn apply_action(&mut self, action: TeamAction) -> NodeResult<()> {
         match action {
             TeamAction::MoveUnit { unit_id, target } => {
-                match self.find_unit_slot_mut(unit_id) {
-                    Ok(from_slot) => {
-                        from_slot.unit = Ref::none();
-                        from_slot.set_dirty(true);
-                    }
-                    Err(e) => e.log(),
-                }
+                // Find the source slot for the unit being moved
+                let from_slot_id = self
+                    .fusions
+                    .get()?
+                    .iter()
+                    .filter_map(|f| f.slots.get().ok())
+                    .flatten()
+                    .find(|s| matches!(s.unit, Ref::Id(id) if id == unit_id))
+                    .map(|s| s.id);
 
                 match target {
                     UnitTarget::Slot {
                         fusion_id,
                         slot_index,
                     } => {
-                        let slot = self.fusion_slot_mut(fusion_id, slot_index)?;
-                        slot.unit = Ref::new_id(unit_id);
-                        slot.set_dirty(true);
+                        // First, get the target slot's current unit ID (if any)
+                        let target_unit_id = {
+                            let target_slot = self.fusion_slot_mut(fusion_id, slot_index)?;
+                            match target_slot.unit {
+                                Ref::Id(id) => Some(id),
+                                _ => None,
+                            }
+                        };
+
+                        // Now handle the move/swap logic
+                        if let Some(displaced_unit_id) = target_unit_id {
+                            // Swap: Move displaced unit to source slot (if there is one)
+                            if let Some(source_slot_id) = from_slot_id {
+                                for fusion in self.fusions.get_mut()?.iter_mut() {
+                                    if let Ok(slots) = fusion.slots.get_mut() {
+                                        if let Some(slot) =
+                                            slots.iter_mut().find(|s| s.id == source_slot_id)
+                                        {
+                                            slot.unit = Ref::new_id(displaced_unit_id);
+                                            slot.set_dirty(true);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Simple move - clear the source slot
+                            if let Some(source_slot_id) = from_slot_id {
+                                for fusion in self.fusions.get_mut()?.iter_mut() {
+                                    if let Ok(slots) = fusion.slots.get_mut() {
+                                        if let Some(slot) =
+                                            slots.iter_mut().find(|s| s.id == source_slot_id)
+                                        {
+                                            slot.unit = Ref::none();
+                                            slot.set_dirty(true);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Set the target slot to have the moved unit
+                        let target_slot = self.fusion_slot_mut(fusion_id, slot_index)?;
+                        target_slot.unit = Ref::new_id(unit_id);
+                        target_slot.set_dirty(true);
                     }
-                    UnitTarget::Bench => {}
+                    UnitTarget::Bench => {
+                        // Move to bench - clear the source slot
+                        if let Some(source_slot_id) = from_slot_id {
+                            for fusion in self.fusions.get_mut()?.iter_mut() {
+                                if let Ok(slots) = fusion.slots.get_mut() {
+                                    if let Some(slot) =
+                                        slots.iter_mut().find(|s| s.id == source_slot_id)
+                                    {
+                                        slot.unit = Ref::none();
+                                        slot.set_dirty(true);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
             TeamAction::BenchUnit { unit_id } => {

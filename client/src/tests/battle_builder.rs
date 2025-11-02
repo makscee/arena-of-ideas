@@ -413,7 +413,6 @@ impl FusionBuilder {
             slot.set_id(slot_id);
             slot.index = slot_index as i32;
             slot.actions = UnitActionRange {
-                trigger: self.trigger_index as u8,
                 start: 0,
                 length: 255,
             };

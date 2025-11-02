@@ -182,11 +182,8 @@ impl FEdit for HexColor {
 impl FEdit for UnitActionRange {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
-            ui.label("Trigger:");
-            let mut response = ui.add(DragValue::new(&mut self.trigger));
-            ui.separator();
             ui.label("Start:");
-            response = response.union(ui.add(DragValue::new(&mut self.start)));
+            let response = ui.add(DragValue::new(&mut self.start));
             ui.separator();
             ui.label("Length:");
             response.union(ui.add(DragValue::new(&mut self.length)))
@@ -1395,7 +1392,6 @@ impl FPlaceholder for NTeam {
                 player_id(),
                 0,
                 UnitActionRange {
-                    trigger: 0,
                     start: 0,
                     length: 1,
                 },

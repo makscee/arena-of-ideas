@@ -248,11 +248,30 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     if m.active {
-        Err("Match is still active".into())
+        return Err("Match is still active".into());
     } else {
         m.delete_recursive(ctx);
         Ok(())
     }
+}
+
+#[reducer]
+fn match_change_action_range(
+    ctx: &ReducerContext,
+    slot_id: u64,
+    start: u8,
+    length: u8,
+) -> Result<(), String> {
+    let ctx = &mut ctx.as_context();
+    let player = ctx.player()?;
+    let pid = player.id;
+    let mut slot = ctx.load::<NFusionSlot>(slot_id)?;
+    if slot.owner != pid {
+        return Err("Fusion slot not owned by player".to_string());
+    }
+    slot.set_actions(UnitActionRange { start, length });
+    slot.save(ctx)?;
+    Ok(())
 }
 
 #[reducer]

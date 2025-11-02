@@ -202,6 +202,7 @@ impl MatchPlugin {
                                     .find(|s| s.index == *slot_index)
                                     .to_not_found()?
                                     .id;
+                                dbg!(slot_index, slot_id, unit_id);
                                 cn().reducers
                                     .match_move_unit(*unit_id, slot_id)
                                     .notify_error_op();
@@ -217,6 +218,15 @@ impl MatchPlugin {
                         }
                         TeamAction::BenchUnit { unit_id } => {
                             cn().reducers.match_bench_unit(*unit_id).notify_error_op();
+                        }
+                        TeamAction::ChangeActionRange {
+                            slot_id,
+                            start,
+                            length,
+                        } => {
+                            cn().reducers
+                                .match_change_action_range(*slot_id, *start as u8, *length as u8)
+                                .notify_error_op();
                         }
                         _ => {}
                     };
