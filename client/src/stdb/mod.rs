@@ -28,6 +28,7 @@ pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_bench_unit_reducer;
+pub mod match_boss_battle_reducer;
 pub mod match_buy_fusion_slot_reducer;
 pub mod match_change_action_range_reducer;
 pub mod match_complete_reducer;
@@ -98,6 +99,9 @@ pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
 pub use match_bench_unit_reducer::{
     match_bench_unit, set_flags_for_match_bench_unit, MatchBenchUnitCallbackId,
+};
+pub use match_boss_battle_reducer::{
+    match_boss_battle, set_flags_for_match_boss_battle, MatchBossBattleCallbackId,
 };
 pub use match_buy_fusion_slot_reducer::{
     match_buy_fusion_slot, set_flags_for_match_buy_fusion_slot, MatchBuyFusionSlotCallbackId,
@@ -187,6 +191,7 @@ pub enum Reducer {
     MatchBenchUnit {
         unit_id: u64,
     },
+    MatchBossBattle,
     MatchBuyFusionSlot {
         fusion_id: u64,
     },
@@ -247,6 +252,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
             Reducer::MatchBenchUnit { .. } => "match_bench_unit",
+            Reducer::MatchBossBattle => "match_boss_battle",
             Reducer::MatchBuyFusionSlot { .. } => "match_buy_fusion_slot",
             Reducer::MatchChangeActionRange { .. } => "match_change_action_range",
             Reducer::MatchComplete => "match_complete",
@@ -333,6 +339,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_bench_unit" => Ok(__sdk::parse_reducer_args::<
                 match_bench_unit_reducer::MatchBenchUnitArgs,
             >("match_bench_unit", &value.args)?
+            .into()),
+            "match_boss_battle" => Ok(__sdk::parse_reducer_args::<
+                match_boss_battle_reducer::MatchBossBattleArgs,
+            >("match_boss_battle", &value.args)?
             .into()),
             "match_buy_fusion_slot" => Ok(__sdk::parse_reducer_args::<
                 match_buy_fusion_slot_reducer::MatchBuyFusionSlotArgs,

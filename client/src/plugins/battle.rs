@@ -3,7 +3,10 @@ use super::*;
 pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
-    fn build(&self, _app: &mut App) {}
+    fn build(&self, app: &mut App) {
+        app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
+            .add_systems(Update, Self::update.run_if(in_state(GameState::Battle)));
+    }
 }
 
 #[derive(Resource)]
@@ -39,6 +42,60 @@ impl BattleData {
 }
 
 impl BattlePlugin {
+    fn on_enter(world: &mut World) {
+        // Load the latest battle from the current match
+        let result = with_solid_source(|ctx| {
+            let m = player(ctx)?.active_match_ref(ctx)?;
+            if let Some(last) = m.battles_ref(ctx)?.last() {
+                if last.result.is_none() {
+                    // Load battle teams
+                    let left = ctx
+                        .load::<NTeam>(last.team_left)?
+                        .clone()
+                        .load_all(ctx)?
+                        .take();
+                    let right = ctx
+                        .load::<NTeam>(last.team_right)?
+                        .clone()
+                        .load_all(ctx)?
+                        .take();
+                    Ok(Some((last.id, left, right)))
+                } else {
+                    Ok(None)
+                }
+            } else {
+                Ok(None)
+            }
+        });
+
+        match result {
+            Ok(Some((id, left, right))) => {
+                Self::load_teams(id, left, right, world);
+                // Set callback to submit battle result
+                Self::on_done_callback(
+                    |id, result, hash| {
+                        cn().reducers
+                            .match_submit_battle_result(id, result, hash)
+                            .notify_op();
+                    },
+                    world,
+                );
+            }
+            Ok(None) => {
+                // No active battle, go back to shop
+                GameState::Shop.set_next(world);
+            }
+            Err(e) => {
+                e.cstr().notify_error(world);
+                GameState::Shop.set_next(world);
+            }
+        }
+    }
+
+    fn update(_world: &mut World) {
+        // Monitor for state changes after battle completion
+        // The actual state transition is handled by clicking Complete button
+    }
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
@@ -295,8 +352,8 @@ impl BattlePlugin {
                     });
                     ui[1].vertical_centered_justified(|ui| {
                         ui.set_max_width(200.0);
-                        if let Some(on_done) = data.on_done {
-                            if "Complete".cstr().button(ui).clicked() {
+                        if "Complete".cstr().button(ui).clicked() {
+                            if let Some(on_done) = data.on_done.take() {
                                 let hash = data.source.exec_context_ref(|ctx| {
                                     let mut h = DefaultHasher::new();
                                     for a in &ctx.battle().unwrap().log.actions {
@@ -305,6 +362,8 @@ impl BattlePlugin {
                                     h.finish()
                                 });
                                 on_done(data.battle.id, result, hash);
+                                // Transition back to shop will happen in update()
+                                GameState::Shop.set_next_op();
                             }
                         }
                     });

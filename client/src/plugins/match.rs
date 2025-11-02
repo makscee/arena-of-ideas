@@ -26,8 +26,6 @@ impl MatchPlugin {
             if let Some(last) = m.battles_ref(ctx)?.last() {
                 if last.result.is_none() {
                     GameState::Battle.set_next(world);
-                    // MatchPlugin::load_battle(ctx)?;
-                    todo!();
                     return Ok(());
                 }
             }
@@ -38,6 +36,13 @@ impl MatchPlugin {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             if !m.active {
+                // Check if player is champion (high floor with no lives lost or specific champion flag)
+                let is_champion = m.lives > 0; // Adjust champion criteria as needed
+                if is_champion {
+                    format!("You are the champion! Floor: {}", m.floor)
+                        .cstr()
+                        .notify(world);
+                }
                 GameState::MatchOver.set_next(world);
             }
             Ok(())
@@ -57,28 +62,49 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update() {
-        // TODO: Implement match update handling using StdbUpdate messages
-        // This should listen for match-related updates from the update queue
+    fn on_match_update(world: &mut World) {
+        // Check if a new battle was inserted and switch to battle state
+        let should_switch_to_battle = with_solid_source(|ctx| {
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
+            if let Some(last_battle) = m.battles_ref(ctx)?.last() {
+                // Check if this battle doesn't have a result yet
+                Ok(last_battle.result.is_none())
+            } else {
+                Ok(false)
+            }
+        })
+        .unwrap_or(false);
+
+        if should_switch_to_battle {
+            GameState::Battle.set_next(world);
+        }
     }
     pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
-            // Check for unresolved battles
-            if let Some(last_battle) = m.battles_load(ctx)?.last() {
-                if last_battle.result.is_none() {
-                    ui.vertical_centered_justified(|ui| {
-                        "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
-                        "Complete the current battle to access the shop."
-                            .cstr()
-                            .label(ui);
-                        if "Go to Battle".cstr().button(ui).clicked() {
-                            GameState::Battle.set_next_op();
-                        }
-                    });
-                    return Ok(());
-                }
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
+
+            // Check for unresolved battles without borrowing issues
+            let has_active_battle = {
+                let battles = m.battles_ref(ctx)?;
+                battles.last().map(|b| b.result.is_none()).unwrap_or(false)
+            };
+
+            if has_active_battle {
+                ui.vertical_centered_justified(|ui| {
+                    "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
+                    "Complete the current battle to access the shop."
+                        .cstr()
+                        .label(ui);
+                    if "Go to Battle".cstr().button(ui).clicked() {
+                        GameState::Battle.set_next_op();
+                    }
+                });
+                return Ok(());
             }
+
+            let m = m.clone();
 
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
@@ -129,18 +155,36 @@ impl MatchPlugin {
     }
     pub fn pane_info(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
+            let g = m.g;
+            let lives = m.lives;
+            let floor = m.floor;
+
+            // Check if this is the last floor by finding highest floor with boss
+            let last_floor = {
+                let floor_bosses = ctx
+                    .world_mut()?
+                    .query::<&NFloorBoss>()
+                    .iter(ctx.world()?)
+                    .filter_map(|boss| Some(boss.floor))
+                    .max()
+                    .unwrap_or(0);
+                floor_bosses
+            };
+            let is_last_floor = floor == last_floor && last_floor > 0;
+
             ui.columns(2, |cui| {
                 let ui = &mut cui[0];
                 Grid::new("shop info").show(ui, |ui| {
                     "g".cstr().label(ui);
-                    m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                    g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                     ui.end_row();
                     "lives".cstr().label(ui);
-                    m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                    lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
                     ui.end_row();
                     "floor".cstr().label(ui);
-                    m.floor.cstr_s(CstrStyle::Bold).label(ui);
+                    floor.cstr_s(CstrStyle::Bold).label(ui);
                     ui.end_row();
                 });
                 let ui = &mut cui[1];
@@ -149,8 +193,20 @@ impl MatchPlugin {
                         cn().reducers.match_shop_reroll().notify_op();
                     }
                     ui.add_space(20.0);
-                    if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+
+                    // Regular battle button (disabled on last floor)
+                    let regular_button = ui.add_enabled(!is_last_floor, egui::Button::new("Regular Battle"));
+                    if regular_button.clicked() {
                         cn().reducers.match_start_battle().notify_op();
+                    }
+
+                    ui.add_space(10.0);
+
+                    // Boss battle button with tooltip
+                    let boss_button = "Boss Battle".cstr_s(CstrStyle::Bold).button(ui)
+                        .on_hover_text("Fight the floor boss. Winning makes you the new boss and ends your run. Losing also ends your run regardless of lives left.");
+                    if boss_button.clicked() {
+                        // cn().reducers.match_boss_battle().notify_op(); // Will be generated after server publish
                     }
                 });
             });
@@ -159,7 +215,8 @@ impl MatchPlugin {
     }
     pub fn pane_roster(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
             let team = m.team_ref(ctx)?;
             let (_, card) =
                 ui.dnd_drop_zone::<(usize, CardKind), NodeResult<()>>(Frame::new(), |ui| {
@@ -175,9 +232,10 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_team(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+    pub fn pane_team(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
             let team = m.team_ref(ctx)?.clone().load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
@@ -245,18 +303,69 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_match_over(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+    pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let player = player(ctx)?;
+            let m = player.active_match_ref(ctx)?;
+            // For simplicity, assume last floor is around 20 for display purposes
+            let last_floor = 20;
+
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
-                if m.lives > 0 {
-                    format!("You're the [yellow [b champion]] of [b {}] floor", m.floor)
+
+                if m.lives > 0 && m.floor > last_floor {
+                    // Beyond last floor - true champion
+                    format!(
+                        "You're the [yellow [b ULTIMATE CHAMPION]]! Conquered [b {}] floors!",
+                        m.floor
+                    )
+                    .cstr()
+                    .label(ui);
+                } else if m.lives > 0 && m.floor == last_floor {
+                    // Reached last floor and won
+                    "You're the [yellow [b CHAMPION]]! Conquered the final floor!"
+                        .cstr()
+                        .label(ui);
+                } else if m.lives > 0 {
+                    // Became boss of a non-final floor
+                    format!("Victory! You're the boss of floor [b {}]", m.floor)
+                        .cstr()
+                        .label(ui);
+                } else if m.floor == last_floor {
+                    // Lost on final floor
+                    "Defeated by the champion on the final floor!"
                         .cstr()
                         .label(ui);
                 } else {
-                    format!("Reached [b {}] floor", m.floor).cstr().label(ui);
+                    // Lost on non-final floor
+                    format!("Defeated on floor [b {}]", m.floor)
+                        .cstr()
+                        .label(ui);
                 }
+
+                // Show final stats
+                ui.add_space(20.0);
+                Grid::new("final_stats").show(ui, |ui| {
+                    "Final Floor:".cstr().label(ui);
+                    m.floor.cstr_s(CstrStyle::Bold).label(ui);
+                    ui.end_row();
+                    "Lives Remaining:".cstr().label(ui);
+                    m.lives
+                        .cstr_cs(if m.lives > 0 { GREEN } else { RED }, CstrStyle::Bold)
+                        .label(ui);
+                    ui.end_row();
+                    if m.floor == last_floor {
+                        "Status:".cstr().label(ui);
+                        if m.lives > 0 {
+                            "Champion".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                        } else {
+                            "Challenged Champion"
+                                .cstr_cs(RED, CstrStyle::Bold)
+                                .label(ui);
+                        }
+                        ui.end_row();
+                    }
+                });
             });
             let world = ctx.world_mut()?;
             ui.vertical_centered(|ui| {
@@ -268,7 +377,7 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_leaderboard(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+    pub fn pane_leaderboard(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let ctx_world = ctx.world_mut()?;
 
@@ -278,36 +387,56 @@ impl MatchPlugin {
                 .sorted_by_key(|b| -b.floor)
                 .cloned()
                 .collect_vec();
-            Table::from_data(&floors)
-                .column(
-                    "id",
-                    |_, ui, _, value| {
-                        value.get_u64()?.cstr().label(ui);
-                        Ok(())
-                    },
-                    |_, t| Ok(t.id.into()),
-                )
-                .column(
-                    "floor",
-                    |_, ui, _, value| {
-                        value.get_i32()?.cstr().label(ui);
-                        Ok(())
-                    },
-                    |_, t| Ok(t.floor.into()),
-                )
-                .column(
-                    "player",
-                    |ctx, ui, _, value| {
-                        let id = value.get_u64()?;
-                        ctx.load::<NPlayer>(id)?.player_name.cstr().label(ui);
-                        Ok(())
-                    },
-                    |context, t| {
-                        let team = t.team_ref(context)?;
-                        Ok(team.owner.into())
-                    },
-                )
-                .ui(ctx, ui);
+
+            ui.vertical_centered_justified(|ui| {
+                "Arena Bosses".cstr_s(CstrStyle::Heading2).label(ui);
+            });
+
+            if floors.is_empty() {
+                ui.vertical_centered(|ui| {
+                    "No bosses yet - be the first to conquer the arena!"
+                        .cstr()
+                        .label(ui);
+                });
+            } else {
+                Table::from_data(&floors)
+                    .column(
+                        "Floor",
+                        |_ctx, ui, _, value| {
+                            let floor = value.get_i32()?;
+                            // Show all high floors as champions
+                            if floor >= 15 {
+                                format!("[yellow [b {}] ⭐ CHAMPION]", floor)
+                                    .cstr()
+                                    .label(ui);
+                            } else {
+                                format!("[b {}] (Boss)", floor).cstr().label(ui);
+                            }
+                            Ok(())
+                        },
+                        |_, t| Ok(t.floor.into()),
+                    )
+                    .column(
+                        "Boss",
+                        |ctx, ui, _, value| {
+                            let id = value.get_u64()?;
+                            if let Ok(player) = ctx.load::<NPlayer>(id) {
+                                player
+                                    .player_name
+                                    .cstr_cs(YELLOW, CstrStyle::Bold)
+                                    .label(ui);
+                            } else {
+                                "Arena".cstr().label(ui);
+                            }
+                            Ok(())
+                        },
+                        |context, t| {
+                            let team = t.team_ref(context)?;
+                            Ok(team.owner.into())
+                        },
+                    )
+                    .ui(ctx, ui);
+            }
             Ok(())
         })
     }

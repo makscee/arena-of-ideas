@@ -196,6 +196,12 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_start_battle(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_admin_upload_world(|e, _, _, _| {
         if !e.check_identity() {
             return;

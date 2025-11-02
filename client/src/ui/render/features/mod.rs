@@ -217,12 +217,10 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
                 });
 
                 // Preview in remaining space
-                let available_rect = ui.available_rect_before_wrap();
+                let available_rect = ui.available_rect_before_wrap().shrink(5.0);
                 if available_rect.height() > 10.0 {
-                    let ui = &mut ui.new_child(
-                        UiBuilder::new().max_rect(rect.translate(egui::vec2(0.0, 50.0))),
-                    );
-                    self.preview(ctx, ui, rect);
+                    let ui = &mut ui.new_child(UiBuilder::new().max_rect(available_rect));
+                    self.preview(ctx, ui, available_rect);
                 }
                 ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
                     let fill = colorix().subtle_background();
