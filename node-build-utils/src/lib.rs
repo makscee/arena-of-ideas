@@ -799,11 +799,13 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
 
         Some(quote! {
             pub fn #with_method(mut self, value: #param_type) -> Self {
+                self.set_dirty(true);
                 self.#field_name = #wrapped_value;
                 self
             }
 
             pub fn #with_id_method(mut self, #id_param_name: #id_param_type) -> Self {
+                self.set_dirty(true);
                 self.#field_name = #wrapped_id_value;
                 self
             }
@@ -1039,7 +1041,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
         let push_method = format_ident!("{}_push", field_name);
         let get_method = format_ident!("{}", field_name);
 
-        if matches!(field.link_type, LinkType::OwnedMultiple | LinkType::RefMultiple) {
+        if matches!(field.link_type, LinkType::OwnedMultiple) {
             let load_logic = if context_ident == "ServerContext" {
                 quote! {
                     if let Some(ids) = self.#field_name.ids() {
@@ -1127,34 +1129,108 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
 
                 #ref_method
             })
-        } else {
-            let load_id_logic = if context_ident == "ServerContext" {
+        } else if matches!(field.link_type, LinkType::RefMultiple) {
+            let load_logic = quote! {
+                if let Some(ids) = self.#field_name.ids() {
+                    return Ok(ids);
+                }
+
+                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
+                if !children.is_empty() {
+                    self.#field_name.set_ids(children.clone())?;
+                    Ok(children)
+                } else {
+                    self.#field_name.set_none()?;
+                    Ok(Vec::new())
+                }
+            };
+
+            let load_method_logic = quote! {
+                let ids = self.#load_id_method(ctx)?;
+                let loaded_nodes = ids
+                    .iter()
+                    .filter_map(|&id| ctx.load::<#target_type>(id).ok())
+                    .collect_vec();
+                Ok(loaded_nodes)
+            };
+
+            Some(quote! {
+                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<Vec<u64>, NodeError> {
+                    #load_logic
+                }
+
+                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<Vec<#target_type>, NodeError>
+                {
+                    #load_method_logic
+                }
+            })
+        } else if matches!(field.link_type, LinkType::Ref) {
+            let load_id_logic = quote! {
+                if !self.#field_name.is_none() && self.#field_name.id().is_some() {
+                    return Ok(self.#field_name.id().unwrap());
+                }
+                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
+                if let Some(&first_id) = children.first() {
+                    self.#field_name.set_id(first_id)?;
+                    Ok(first_id)
+                } else {
+                    self.#field_name.set_none()?;
+                    Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
+                }
+            };
+
+            let load_method_logic = quote! {
+                let id = self.#load_id_method(ctx)?;
+                let loaded_node = ctx.load::<#target_type>(id)?;
+                Ok(loaded_node)
+            };
+
+            let ref_method = if context_ident == "ClientContext" {
+                let ref_method_name = format_ident!("{}_ref", field_name);
                 quote! {
-                    if !self.#field_name.is_none() && self.#field_name.id().is_some() {
-                        return Ok(self.#field_name.id().unwrap());
-                    }
-                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                    if let Some(&first_id) = children.first() {
-                        self.#field_name.set_id(first_id)?;
-                        Ok(first_id)
-                    } else {
-                        self.#field_name.set_none()?;
-                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
+                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<&'a #target_type, NodeError>
+                    {
+                        let id = if let Some(id) = self.#field_name.id() {
+                            id
+                        } else if let Some(id) = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?
+                            .into_iter()
+                            .next() {
+                            id
+                        } else {
+                            return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
+                        };
+                        ctx.load_ref::<#target_type>(id)
                     }
                 }
             } else {
-                quote! {
-                    if !self.#field_name.is_none() && self.#field_name.id().is_some() {
-                        return Ok(self.#field_name.id().unwrap());
-                    }
-                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                    if let Some(&first_id) = children.first() {
-                        self.#field_name.set_id(first_id)?;
-                        Ok(first_id)
-                    } else {
-                        self.#field_name.set_none()?;
-                        Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
-                    }
+                quote! {}
+            };
+
+            Some(quote! {
+                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<u64, NodeError> {
+                    #load_id_logic
+                }
+
+                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<#target_type, NodeError>
+                {
+                    #load_method_logic
+                }
+
+                #ref_method
+            })
+        } else {
+            // Handle Owned and Component links
+            let load_id_logic = quote! {
+                if !self.#field_name.is_none() && self.#field_name.id().is_some() {
+                    return Ok(self.#field_name.id().unwrap());
+                }
+                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
+                if let Some(&first_id) = children.first() {
+                    self.#field_name.set_id(first_id)?;
+                    Ok(first_id)
+                } else {
+                    self.#field_name.set_none()?;
+                    Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
                 }
             };
 

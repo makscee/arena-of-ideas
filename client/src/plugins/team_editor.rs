@@ -24,7 +24,7 @@ pub struct TeamEditor {
         String,
         Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
     )>,
-    action_handler: Option<Box<dyn FnMut(&TeamAction)>>,
+    action_handler: Option<Box<dyn FnMut(&ClientContext, &TeamAction) -> NodeResult<()>>>,
 }
 
 pub enum TeamAction {
@@ -77,7 +77,7 @@ impl TeamEditor {
 
     pub fn with_action_handler<F>(mut self, handler: F) -> Self
     where
-        F: FnMut(&TeamAction) + 'static,
+        F: FnMut(&ClientContext, &TeamAction) -> NodeResult<()> + 'static,
     {
         self.action_handler = Some(Box::new(handler));
         self
@@ -223,7 +223,7 @@ impl TeamEditor {
 
             for action in actions {
                 if let Some(ref mut handler) = self.action_handler {
-                    handler(&action);
+                    handler(ctx, &action).notify_error_op();
                 }
                 match action {
                     TeamAction::CustomEmptySlotAction {

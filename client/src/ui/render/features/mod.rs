@@ -190,7 +190,7 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-const CARD_SIZE: egui::Vec2 = egui::vec2(150.0, 200.0);
+const CARD_SIZE: egui::Vec2 = egui::vec2(150.0, 180.0);
 pub trait FCard: FDescription + FTitle + FStats + FPreview {
     fn render_card(&self, ctx: &ClientContext, ui: &mut Ui) -> Response
     where
@@ -228,7 +228,8 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
                             .fill(fill)
                             .stroke(stroke)
                             .corner_radius(ROUNDING)
-                            .outer_margin(2)
+                            .outer_margin(3)
+                            .inner_margin(3)
                             .show(ui, |ui| {
                                 self.description_cstr(ctx).label_w(ui);
                                 ui.expand_to_include_x(available_rect.right());

@@ -47,7 +47,6 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
         CardKind::House => {
             let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
-            debug!("{house:?}");
             if m.team_load(ctx)?
                 .houses_load(ctx)?
                 .iter()
@@ -56,7 +55,6 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 // increase house lvl
             } else {
                 let house = house.remap_ids(ctx).with_owner(pid);
-                debug!("{house:?}");
                 m.team_load(ctx)?.houses_push(house)?;
             }
         }
@@ -92,27 +90,14 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
     if target_node.owner != pid {
         return Err("Target node not owned by player".into());
     }
-
-    // if let Some(mut slot_unit) = target_id
-    //     .get_kind_parent(ctx, NodeKind::NUnit)
-    //     .and_then(|id| id.load_node::<NUnit>(ctx).ok())
-    // {
-    //     if slot_unit.unit_name == unit.unit_name {
-    //         let s_state = slot_unit.state_load(ctx)?;
-    //         let u_state = unit.state_load(ctx)?;
-    //         s_state.stacks += u_state.stacks;
-    //         unit.delete_recursive(ctx);
-    //         s_state.save(ctx);
-    //     } else {
-    //         m.unlink_unit(ctx, slot_unit.id);
-    //         unit_id.add_child(ctx, target_id)?;
-    //         if let Some(old_target_id) = old_target_id {
-    //             slot_unit.id.add_child(ctx, old_target_id)?;
-    //         }
-    //     }
-    // } else {
-    //     unit_id.add_child(ctx, target_id)?;
-    // }
+    let mut slot = target_node.to_node::<NFusionSlot>()?;
+    if let Ok(prev_unit) = slot.unit_load(ctx) {
+        m.unlink_unit(ctx, prev_unit.id);
+        if let Some(prev_slot) = old_target_id {
+            prev_slot.add_child(ctx.rctx(), prev_unit.id)?;
+        }
+    }
+    slot.with_unit_id(unit.id).save(ctx)?;
     Ok(())
 }
 
@@ -317,11 +302,11 @@ impl NMatch {
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ServerContext, unit_id: u64) -> Option<u64> {
-        let links = TNodeLink::children_of_kind(ctx.rctx(), unit_id, NodeKind::NFusionSlot, true);
+        let links = TNodeLink::parents_of_kind(ctx.rctx(), unit_id, NodeKind::NFusionSlot, true);
         if links.len() > 1 {
             error!("Unit#{} linked to {} slots", unit_id, links.len());
         }
-        let res = links.first().map(|l| l.child);
+        let res = links.first().map(|l| l.parent);
         for link in links {
             ctx.rctx().db.node_links().delete(link);
         }

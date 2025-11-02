@@ -178,6 +178,24 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_move_unit(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_bench_unit(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_buy_fusion_slot(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_admin_upload_world(|e, _, _, _| {
         if !e.check_identity() {
             return;

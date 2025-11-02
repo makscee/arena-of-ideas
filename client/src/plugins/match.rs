@@ -201,29 +201,39 @@ impl MatchPlugin {
                         cn().reducers.match_sell_unit(unit_id).notify_error_op();
                     }),
                 )
-                .with_action_handler(|action| match action {
-                    TeamAction::MoveUnit { unit_id, target } => match target {
-                        UnitTarget::Slot {
-                            fusion_id,
-                            slot_index: _,
-                        } => {
+                .with_action_handler(move |ctx, action| {
+                    match action {
+                        TeamAction::MoveUnit { unit_id, target } => match target {
+                            UnitTarget::Slot {
+                                fusion_id,
+                                slot_index,
+                            } => {
+                                let slot_id = ctx
+                                    .load::<NFusion>(*fusion_id)?
+                                    .slots_ref(ctx)?
+                                    .into_iter()
+                                    .find(|s| s.index == *slot_index)
+                                    .to_not_found()?
+                                    .id;
+                                cn().reducers
+                                    .match_move_unit(*unit_id, slot_id)
+                                    .notify_error_op();
+                            }
+                            UnitTarget::Bench => {
+                                cn().reducers.match_bench_unit(*unit_id).notify_error_op();
+                            }
+                        },
+                        TeamAction::AddSlot { fusion_id } => {
                             cn().reducers
-                                .match_move_unit(*unit_id, *fusion_id)
+                                .match_buy_fusion_slot(*fusion_id)
                                 .notify_error_op();
                         }
-                        UnitTarget::Bench => {
+                        TeamAction::BenchUnit { unit_id } => {
                             cn().reducers.match_bench_unit(*unit_id).notify_error_op();
                         }
-                    },
-                    TeamAction::AddSlot { fusion_id } => {
-                        cn().reducers
-                            .match_buy_fusion_slot(*fusion_id)
-                            .notify_error_op();
-                    }
-                    TeamAction::BenchUnit { unit_id } => {
-                        cn().reducers.match_bench_unit(*unit_id).notify_error_op();
-                    }
-                    _ => {}
+                        _ => {}
+                    };
+                    Ok(())
                 });
 
             let _changed_team = team_editor.edit(&team, ctx, ui);
