@@ -61,7 +61,7 @@ impl MatchPlugin {
         // TODO: Implement match update handling using StdbUpdate messages
         // This should listen for match-related updates from the update queue
     }
-    pub fn pane_shop(ui: &mut Ui, world: &World) -> NodeResult<()> {
+    pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
             // Check for unresolved battles
@@ -82,53 +82,27 @@ impl MatchPlugin {
 
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
-            ui.horizontal(|ui| {
-                ui.vertical(|ui| {
-                    format!("g: [yellow [b {}]]", m.g).label(ui);
-                    if "reroll".cstr().button(ui).clicked() {
-                        cn().reducers.match_shop_reroll().notify_op();
-                    }
-                    ui.add_space(20.0);
-                    if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
-                        cn().reducers.match_start_battle().notify_op();
-                    }
-                    ui.expand_to_include_y(available_rect.max.y);
-                });
-                if ui.available_width() < 30.0 {
-                    return;
-                }
-                ui.columns(slots.len(), |ui| {
-                    for i in 0..slots.len() {
-                        let ui = &mut ui[i];
-                        let slot = slots[i].clone();
-                        ui.scope_builder(
-                            UiBuilder::new()
-                                .layer_id(egui::LayerId::new(Order::Middle, Id::new("card"))),
-                            |ui| {
-                                if !slot.sold {
-                                    ctx.with_owner(slot.node_id, |ctx| {
-                                        ui.push_id(i, |ui| -> NodeResult<()> {
-                                            let resp = match slot.card_kind {
-                                                CardKind::Unit => {
-                                                    let unit = ctx.load::<NUnit>(slot.node_id)?;
-                                                    unit.as_card().compose(ctx, ui)
-                                                }
-                                                CardKind::House => {
-                                                    let house = ctx.load::<NHouse>(slot.node_id)?;
-                                                    house.as_card().compose(ctx, ui)
-                                                }
-                                            };
-                                            resp.dnd_set_drag_payload((i, slot.clone()));
-                                            Ok(())
-                                        })
-                                        .inner
-                                    })
-                                    .ui(ui);
+            ui.horizontal_wrapped(|ui| {
+                for i in 0..slots.len() {
+                    let slot = slots[i].clone();
+                    if !slot.sold {
+                        ctx.with_owner(slot.node_id, |ctx| {
+                            let resp = match slot.card_kind {
+                                CardKind::Unit => {
+                                    let unit = ctx.load::<NUnit>(slot.node_id)?;
+                                    unit.as_card().compose(ctx, ui)
                                 }
-                            },
-                        );
+                                CardKind::House => {
+                                    let house = ctx.load::<NHouse>(slot.node_id)?;
+                                    house.as_card().compose(ctx, ui)
+                                }
+                            };
+                            resp.dnd_set_drag_payload((i, slot.clone()));
+                            Ok(())
+                        })
+                        .ui(ui);
                     }
-                });
+                }
             });
 
             // Handle fusion unit selling with DndArea
@@ -153,24 +127,37 @@ impl MatchPlugin {
             Ok(())
         })
     }
-    pub fn pane_info(ui: &mut Ui, world: &World) -> NodeResult<()> {
+    pub fn pane_info(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            Grid::new("shop info").show(ui, |ui| {
-                "g".cstr().label(ui);
-                m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
-                ui.end_row();
-                "lives".cstr().label(ui);
-                m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
-                ui.end_row();
-                "floor".cstr().label(ui);
-                m.floor.cstr_s(CstrStyle::Bold).label(ui);
-                ui.end_row();
+            ui.columns(2, |cui| {
+                let ui = &mut cui[0];
+                Grid::new("shop info").show(ui, |ui| {
+                    "g".cstr().label(ui);
+                    m.g.cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
+                    ui.end_row();
+                    "lives".cstr().label(ui);
+                    m.lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                    ui.end_row();
+                    "floor".cstr().label(ui);
+                    m.floor.cstr_s(CstrStyle::Bold).label(ui);
+                    ui.end_row();
+                });
+                let ui = &mut cui[1];
+                ui.horizontal_wrapped(|ui| {
+                    if "Reroll".cstr().button(ui).clicked() {
+                        cn().reducers.match_shop_reroll().notify_op();
+                    }
+                    ui.add_space(20.0);
+                    if "Start Battle".cstr_s(CstrStyle::Bold).button(ui).clicked() {
+                        cn().reducers.match_start_battle().notify_op();
+                    }
+                });
             });
             Ok(())
         })
     }
-    pub fn pane_roster(ui: &mut Ui, world: &World) -> NodeResult<()> {
+    pub fn pane_roster(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             let team = m.team_ref(ctx)?;

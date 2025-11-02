@@ -197,46 +197,49 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
         Self: Sized,
     {
         let (rect, response) = ui.allocate_exact_size(CARD_SIZE, Sense::click_and_drag());
-        // ui.expand_to_include_rect(rect);
-        // ui.set_max_size(CARD_SIZE);
-        ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-            Frame::new()
-                .inner_margin(2)
-                .corner_radius(ROUNDING)
-                .stroke(ctx.color().stroke())
-                .show(ui, |ui| {
-                    self.as_title().compose(ctx, ui);
-                    ui.separator();
-                    // Stats as horizontal wrapped tags
-                    ui.horizontal_wrapped(|ui| {
-                        for (var, var_value) in self.stats(ctx) {
-                            TagWidget::new_var_value(var, var_value).ui(ui);
-                        }
-                    });
-
-                    // Preview in remaining space
-                    let available_rect = ui.available_rect_before_wrap();
-                    if available_rect.height() > 10.0 {
-                        ui.scope_builder(UiBuilder::new().max_rect(available_rect), |ui| {
-                            self.preview(ctx, ui, available_rect);
-                        });
+        let ui = &mut ui.new_child(
+            UiBuilder::new()
+                .max_rect(rect)
+                .layout(Layout::top_down(Align::Center)),
+        );
+        ui.set_clip_rect(rect);
+        Frame::new()
+            // .inner_margin(2)
+            .corner_radius(ROUNDING)
+            .stroke(ctx.color().stroke())
+            .show(ui, |ui| {
+                self.as_title().compose(ctx, ui);
+                // Stats as horizontal wrapped tags
+                ui.horizontal_wrapped(|ui| {
+                    for (var, var_value) in self.stats(ctx) {
+                        TagWidget::new_var_value(var, var_value).ui(ui);
                     }
-                    ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
-                        let fill = colorix().subtle_background();
-                        let stroke = colorix().ui_element_border_and_focus_rings().stroke();
-                        Frame::new()
-                            .fill(fill)
-                            .stroke(stroke)
-                            .corner_radius(ROUNDING)
-                            .outer_margin(3)
-                            .inner_margin(3)
-                            .show(ui, |ui| {
-                                self.description_cstr(ctx).label_w(ui);
-                                ui.expand_to_include_x(available_rect.right());
-                            })
-                    });
-                })
-        });
+                });
+
+                // Preview in remaining space
+                let available_rect = ui.available_rect_before_wrap();
+                if available_rect.height() > 10.0 {
+                    let ui = &mut ui.new_child(
+                        UiBuilder::new().max_rect(rect.translate(egui::vec2(0.0, 50.0))),
+                    );
+                    self.preview(ctx, ui, rect);
+                }
+                ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
+                    let fill = colorix().subtle_background();
+                    let stroke = colorix().ui_element_border_and_focus_rings().stroke();
+                    Frame::new()
+                        .fill(fill)
+                        .stroke(stroke)
+                        .corner_radius(ROUNDING)
+                        .outer_margin(3)
+                        .inner_margin(3)
+                        .show(ui, |ui| {
+                            self.description_cstr(ctx)
+                                .cstr_s(CstrStyle::Small)
+                                .label_w(ui);
+                        })
+                });
+            });
 
         response
     }
