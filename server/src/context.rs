@@ -141,20 +141,20 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn remove_link(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
-        parent_id.remove_child(&self.ctx, child_id)
+        parent_id.remove_child(&self.ctx, child_id).track()
     }
 
     fn clear_links(&mut self, node_id: u64) -> NodeResult<()> {
         // Remove all child links
         let children = self.get_children(node_id)?;
         for child_id in children {
-            self.remove_link(node_id, child_id)?;
+            self.remove_link(node_id, child_id).track()?;
         }
 
         // Remove all parent links
         let parents = self.get_parents(node_id)?;
         for parent_id in parents {
-            self.remove_link(parent_id, node_id)?;
+            self.remove_link(parent_id, node_id).track()?;
         }
 
         Ok(())
@@ -165,7 +165,7 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn delete_node(&mut self, node_id: u64) -> NodeResult<()> {
-        self.clear_links(node_id)?;
+        self.clear_links(node_id).track()?;
         self.ctx.db.nodes_world().id().delete(node_id);
         Ok(())
     }

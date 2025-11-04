@@ -110,6 +110,12 @@ impl FEdit for String {
     }
 }
 
+impl FEdit for u8 {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        DragValue::new(self).ui(ui)
+    }
+}
+
 impl FEdit for u64 {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         DragValue::new(self).ui(ui)
@@ -1573,7 +1579,7 @@ impl FDisplay for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder() -> Self {
-        NMatch::new(next_id(), 0, 0, 1, 3, false, vec![])
+        NMatch::new(next_id(), 0, 0, 1, 3, false, false, vec![])
             .with_team(NTeam::placeholder())
             .with_battles(default())
     }
@@ -1969,7 +1975,7 @@ impl FDisplay for NUnitRepresentation {
 
 impl FPlaceholder for NArena {
     fn placeholder() -> Self {
-        NArena::new(next_id(), 0)
+        NArena::new(next_id(), 0, 0)
     }
 }
 

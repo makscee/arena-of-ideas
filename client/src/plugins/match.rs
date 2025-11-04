@@ -10,10 +10,6 @@ impl Plugin for MatchPlugin {
         app.add_systems(OnEnter(GameState::Shop), Self::on_enter)
             .add_systems(
                 Update,
-                Self::on_match_update.run_if(in_state(GameState::Shop)),
-            )
-            .add_systems(
-                Update,
                 Self::add_g.run_if(input_just_pressed(KeyCode::KeyG)),
             );
     }
@@ -23,11 +19,8 @@ impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            if let Some(last) = m.battles_ref(ctx)?.last() {
-                if last.result.is_none() {
-                    GameState::Battle.set_next(world);
-                    return Ok(());
-                }
+            if m.pending_battle {
+                GameState::Battle.set_next(world);
             }
             Ok(())
         })
@@ -62,36 +55,12 @@ impl MatchPlugin {
     fn add_g() {
         cn().reducers.admin_add_gold().notify_op();
     }
-    fn on_match_update(world: &mut World) {
-        // Check if a new battle was inserted and switch to battle state
-        let should_switch_to_battle = with_solid_source(|ctx| {
-            let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
-            if let Some(last_battle) = m.battles_ref(ctx)?.last() {
-                // Check if this battle doesn't have a result yet
-                Ok(last_battle.result.is_none())
-            } else {
-                Ok(false)
-            }
-        })
-        .unwrap_or(false);
-
-        if should_switch_to_battle {
-            GameState::Battle.set_next(world);
-        }
-    }
     pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
 
-            // Check for unresolved battles without borrowing issues
-            let has_active_battle = {
-                let battles = m.battles_ref(ctx)?;
-                battles.last().map(|b| b.result.is_none()).unwrap_or(false)
-            };
-
-            if has_active_battle {
+            if m.pending_battle {
                 ui.vertical_centered_justified(|ui| {
                     "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
                     "Complete the current battle to access the shop."
@@ -161,18 +130,9 @@ impl MatchPlugin {
             let lives = m.lives;
             let floor = m.floor;
 
-            // Check if this is the last floor by finding highest floor with boss
-            let last_floor = {
-                let floor_bosses = ctx
-                    .world_mut()?
-                    .query::<&NFloorBoss>()
-                    .iter(ctx.world()?)
-                    .filter_map(|boss| Some(boss.floor))
-                    .max()
-                    .unwrap_or(0);
-                floor_bosses
-            };
-            let is_last_floor = floor == last_floor && last_floor > 0;
+            let arena = ctx.load::<NArena>(ID_ARENA)?;
+            let floors = arena.floors as i32;
+            let is_last_floor = floor >= floors;
 
             ui.columns(2, |cui| {
                 let ui = &mut cui[0];
@@ -184,7 +144,7 @@ impl MatchPlugin {
                     lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
                     ui.end_row();
                     "floor".cstr().label(ui);
-                    floor.cstr_s(CstrStyle::Bold).label(ui);
+                    format!("{}/{}", floor, floors).cstr_s(CstrStyle::Bold).label(ui);
                     ui.end_row();
                 });
                 let ui = &mut cui[1];
@@ -206,7 +166,7 @@ impl MatchPlugin {
                     let boss_button = "Boss Battle".cstr_s(CstrStyle::Bold).button(ui)
                         .on_hover_text("Fight the floor boss. Winning makes you the new boss and ends your run. Losing also ends your run regardless of lives left.");
                     if boss_button.clicked() {
-                        // cn().reducers.match_boss_battle().notify_op(); // Will be generated after server publish
+                        cn().reducers.match_boss_battle().notify_op();
                     }
                 });
             });

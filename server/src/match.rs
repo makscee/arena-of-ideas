@@ -11,11 +11,9 @@ fn get_floor_bosses(ctx: &ServerContext) -> Vec<TNode> {
 }
 
 fn get_last_floor(ctx: &ServerContext) -> i32 {
-    get_floor_bosses(ctx)
-        .iter()
-        .filter_map(|node| node.to_node::<NFloorBoss>().ok())
-        .map(|boss| boss.floor)
-        .max()
+    TNode::load(ctx.rctx(), ID_ARENA)
+        .and_then(|arena| arena.to_node::<NArena>().ok())
+        .map(|arena| arena.floors as i32)
         .unwrap_or(0)
 }
 
@@ -66,7 +64,7 @@ fn add_team_to_pool(
 
 fn create_battle(
     ctx: &mut ServerContext,
-    match_id: u64,
+    m: &mut NMatch,
     player_id: u64,
     player_team_id: u64,
     enemy_team_id: u64,
@@ -81,7 +79,9 @@ fn create_battle(
         None,
     )
     .insert(ctx);
-    ctx.add_link(match_id, battle.id)?;
+    ctx.add_link(m.id, battle.id)?;
+    m.set_pending_battle(true);
+
     Ok(battle)
 }
 
@@ -256,6 +256,7 @@ fn match_submit_battle_result(
     let battles = m.battles_load(ctx)?;
     battles.sort_by_key(|b| b.id);
     let battle = battles.last_mut().unwrap();
+    debug!("Submit result: flr={current_floor} {battle:?}");
     if battle.id != id {
         return Err("Wrong Battle id".into());
     }
@@ -264,8 +265,11 @@ fn match_submit_battle_result(
     }
     battle.result = Some(result);
     battle.hash = hash;
-
     let enemy_team_id = battle.team_right;
+
+    // Clear pending_battle flag on the match
+    m.pending_battle = false;
+
     let last_floor = get_last_floor(ctx);
 
     // Check if enemy was a boss
@@ -312,6 +316,14 @@ fn match_submit_battle_result(
                 new_floor_boss.team_set(champion_team)?;
                 new_floor_boss.save(ctx)?;
 
+                // Update arena floors count
+                if let Some(mut arena) =
+                    TNode::load(ctx.rctx(), ID_ARENA).and_then(|node| node.to_node::<NArena>().ok())
+                {
+                    arena.floors = m.floor as u8;
+                    arena.save(ctx)?;
+                }
+
                 // Continue to shop phase
                 m.g += ctx.global_settings().match_g.initial;
                 m.fill_shop_case(ctx, false)?;
@@ -330,7 +342,7 @@ fn match_submit_battle_result(
             m.floor += 1;
 
             // Gain life every 5 floors
-            if m.floor > 0 && m.floor % 5 == 0 {
+            if m.floor % 5 == 0 {
                 m.lives += 1;
             }
 
@@ -380,9 +392,9 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let enemy_team_id = if let Some(team_id) = pool_teams.choose(&mut ctx.rng()) {
         *team_id
     } else {
-        0 // Empty team placeholder
+        0
     };
-    create_battle(ctx, m_id, pid, pool_team_id, enemy_team_id)?;
+    create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
     m.take().save(ctx)?;
     Ok(())
 }
@@ -407,10 +419,10 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     // Get boss team ID
     let enemy_team_id = get_floor_boss_team_id(ctx, floor)
         .or_else(|| get_floor_boss_team_id(ctx, floor - 1))
-        .unwrap_or(0); // Empty team placeholder if no boss found
+        .unwrap_or(0);
 
     // Create battle
-    create_battle(ctx, m_id, pid, pool_team_id, enemy_team_id)?;
+    create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
 
     m.take().save(ctx)?;
     Ok(())
@@ -464,6 +476,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         0,
         3,
         true,
+        false,
         default(),
     );
     let mut team = NTeam::new(ctx.next_id(), pid);

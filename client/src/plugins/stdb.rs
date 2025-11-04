@@ -103,6 +103,23 @@ fn subscribe_table_updates() {
             old: old.clone(),
             new: new.clone(),
         });
+
+        // Check if this is the current player's NMatch and if pending_battle flag was set
+        if new.kind() == NodeKind::NMatch && new.owner == player_id() {
+            // Parse the data to check pending_battle field
+            if let (Ok(old_match), Ok(new_match)) =
+                (old.to_node::<NMatch>(), new.to_node::<NMatch>())
+            {
+                if !old_match.pending_battle && new_match.pending_battle {
+                    // Battle became pending, trigger state transition
+                    op(|world| {
+                        if matches!(world.resource::<State<GameState>>().get(), GameState::Shop) {
+                            GameState::Battle.set_next(world);
+                        }
+                    });
+                }
+            }
+        }
     });
 
     db.nodes_world().on_delete(|_, node| {

@@ -46,20 +46,29 @@ impl BattlePlugin {
         // Load the latest battle from the current match
         let result = with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            if let Some(last) = m.battles_ref(ctx)?.last() {
-                if last.result.is_none() {
-                    // Load battle teams
-                    let left = ctx
-                        .load::<NTeam>(last.team_left)?
-                        .clone()
-                        .load_all(ctx)?
-                        .take();
-                    let right = ctx
-                        .load::<NTeam>(last.team_right)?
-                        .clone()
-                        .load_all(ctx)?
-                        .take();
-                    Ok(Some((last.id, left, right)))
+            if m.pending_battle {
+                if let Some(last) = m.battles_ref(ctx)?.last() {
+                    if last.result.is_none() {
+                        // Check if this is an immediate victory case (no enemy team)
+                        if last.team_right == 1 {
+                            return Ok(Some((last.id, true, None)));
+                        }
+
+                        // Load battle teams
+                        let left = ctx
+                            .load::<NTeam>(last.team_left)?
+                            .clone()
+                            .load_all(ctx)?
+                            .take();
+                        let right = ctx
+                            .load::<NTeam>(last.team_right)?
+                            .clone()
+                            .load_all(ctx)?
+                            .take();
+                        Ok(Some((last.id, false, Some((left, right)))))
+                    } else {
+                        Ok(None)
+                    }
                 } else {
                     Ok(None)
                 }
@@ -69,17 +78,35 @@ impl BattlePlugin {
         });
 
         match result {
-            Ok(Some((id, left, right))) => {
-                Self::load_teams(id, left, right, world);
-                // Set callback to submit battle result
-                Self::on_done_callback(
-                    |id, result, hash| {
+            Ok(Some((id, is_immediate_victory, teams))) => {
+                if is_immediate_victory {
+                    // Immediate victory - submit result without showing battle
+                    with_solid_source(|_ctx| {
+                        let mut h = DefaultHasher::new();
+                        0u64.hash(&mut h);
+                        let hash = h.finish();
                         cn().reducers
-                            .match_submit_battle_result(id, result, hash)
+                            .match_submit_battle_result(id, true, hash)
                             .notify_op();
-                    },
-                    world,
-                );
+                        Ok(())
+                    })
+                    .log();
+                    GameState::Shop.set_next(world);
+                } else if let Some((left, right)) = teams {
+                    Self::load_teams(id, left, right, world);
+                    // Set callback to submit battle result
+                    Self::on_done_callback(
+                        |id, result, hash| {
+                            cn().reducers
+                                .match_submit_battle_result(id, result, hash)
+                                .notify_op();
+                        },
+                        world,
+                    );
+                } else {
+                    // Shouldn't happen, but go back to shop
+                    GameState::Shop.set_next(world);
+                }
             }
             Ok(None) => {
                 // No active battle, go back to shop
@@ -92,10 +119,7 @@ impl BattlePlugin {
         }
     }
 
-    fn update(_world: &mut World) {
-        // Monitor for state changes after battle completion
-        // The actual state transition is handled by clicking Complete button
-    }
+    fn update(_world: &mut World) {}
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
@@ -362,8 +386,7 @@ impl BattlePlugin {
                                     h.finish()
                                 });
                                 on_done(data.battle.id, result, hash);
-                                // Transition back to shop will happen in update()
-                                GameState::Shop.set_next_op();
+                                // State transition will happen via reducer subscription
                             }
                         }
                     });
