@@ -50,7 +50,7 @@ impl BattlePlugin {
                 if let Some(last) = m.battles_ref(ctx)?.last() {
                     if last.result.is_none() {
                         // Check if this is an immediate victory case (no enemy team)
-                        if last.team_right == 1 {
+                        if last.team_right == 0 {
                             return Ok(Some((last.id, true, None)));
                         }
 

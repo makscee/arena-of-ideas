@@ -34,7 +34,7 @@ fn init(ctx: &ReducerContext) -> Result<(), String> {
     GlobalSettings::default().replace(ctx);
     NArena {
         id: ID_ARENA,
-        floors: 0,
+        last_floor: 0,
         ..Default::default()
     }
     .insert(&ctx.as_context());

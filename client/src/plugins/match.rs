@@ -131,7 +131,7 @@ impl MatchPlugin {
             let floor = m.floor;
 
             let arena = ctx.load::<NArena>(ID_ARENA)?;
-            let floors = arena.floors as i32;
+            let floors = arena.last_floor as i32;
             let is_last_floor = floor >= floors;
 
             ui.columns(2, |cui| {
@@ -267,8 +267,8 @@ impl MatchPlugin {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
-            // For simplicity, assume last floor is around 20 for display purposes
-            let last_floor = 20;
+            let arena = ctx.load::<NArena>(ID_ARENA)?;
+            let last_floor = arena.last_floor;
 
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
@@ -291,13 +291,19 @@ impl MatchPlugin {
                     format!("Victory! You're the boss of floor [b {}]", m.floor)
                         .cstr()
                         .label(ui);
-                } else if m.floor == last_floor {
-                    // Lost on final floor
-                    "Defeated by the champion on the final floor!"
-                        .cstr()
-                        .label(ui);
+                } else if m.boss_battle {
+                    // Lost a boss battle
+                    if m.floor == last_floor {
+                        "Defeated by the champion on the final floor!"
+                            .cstr()
+                            .label(ui);
+                    } else {
+                        format!("Defeated by the boss of floor [b {}]", m.floor)
+                            .cstr()
+                            .label(ui);
+                    }
                 } else {
-                    // Lost on non-final floor
+                    // Lost a regular battle
                     format!("Defeated on floor [b {}]", m.floor)
                         .cstr()
                         .label(ui);
@@ -313,6 +319,13 @@ impl MatchPlugin {
                     m.lives
                         .cstr_cs(if m.lives > 0 { GREEN } else { RED }, CstrStyle::Bold)
                         .label(ui);
+                    ui.end_row();
+                    "Battle Type:".cstr().label(ui);
+                    if m.boss_battle {
+                        "Boss Battle".cstr_cs(RED, CstrStyle::Bold).label(ui);
+                    } else {
+                        "Regular Battle".cstr().label(ui);
+                    }
                     ui.end_row();
                     if m.floor == last_floor {
                         "Status:".cstr().label(ui);

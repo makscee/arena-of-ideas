@@ -2,19 +2,8 @@ use spacetimedb::rand::seq::SliceRandom;
 
 use super::*;
 
-fn get_floor_pools(ctx: &ServerContext) -> Vec<TNode> {
-    TNode::collect_kind_owner(ctx.rctx(), NodeKind::NFloorPool, ID_ARENA)
-}
-
 fn get_floor_bosses(ctx: &ServerContext) -> Vec<TNode> {
     TNode::collect_kind_owner(ctx.rctx(), NodeKind::NFloorBoss, ID_ARENA)
-}
-
-fn get_last_floor(ctx: &ServerContext) -> i32 {
-    TNode::load(ctx.rctx(), ID_ARENA)
-        .and_then(|arena| arena.to_node::<NArena>().ok())
-        .map(|arena| arena.floors as i32)
-        .unwrap_or(0)
 }
 
 fn get_floor_pool_teams(ctx: &ServerContext, pool_id: u64) -> Vec<u64> {
@@ -35,17 +24,25 @@ fn get_floor_boss_team_id(ctx: &ServerContext, floor: i32) -> Option<u64> {
         .and_then(|mut boss| boss.team_load_id(ctx).ok())
 }
 
-fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> Result<u64, String> {
-    if let Some(pool) = get_floor_pools(ctx).iter().find(|node| {
-        node.to_node::<NFloorPool>()
-            .map(|pool| pool.floor == floor)
-            .unwrap_or(false)
-    }) {
-        Ok(pool.id)
+fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> NodeResult<u64> {
+    let mut arena = ctx.load::<NArena>(ID_ARENA)?;
+    if arena.last_floor < floor {
+        arena.floor_pools_load(ctx)?;
+        arena.floor_bosses_load(ctx)?;
+        arena.last_floor += 1;
+        let pool = NFloorPool::new(ctx.next_id(), ID_ARENA, floor);
+        let pool_id = pool.id;
+        let boss = NFloorBoss::new(ctx.next_id(), ID_ARENA, floor);
+        arena.floor_pools_push(pool)?;
+        arena.floor_bosses_push(boss)?;
+        arena.save(ctx)?;
+        Ok(pool_id)
     } else {
-        let new_pool = NFloorPool::new(ctx.next_id(), ID_ARENA, floor).insert(ctx);
-        ctx.add_link(ID_ARENA, new_pool.id)?;
-        Ok(new_pool.id)
+        arena
+            .floor_pools_load(ctx)?
+            .into_iter()
+            .find_map(|f| if f.floor == floor { Some(f.id) } else { None })
+            .to_custom_err_fn(|| format!("Pool floor {floor} not found"))
     }
 }
 
@@ -144,7 +141,6 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     }
     m.buy(ctx, price).track()?;
     let mid = m.id;
-    debug!("{m:?}");
     m.take().save(ctx).track()?;
     if card_kind == CardKind::House {
         let mut m = ctx.load::<NMatch>(mid)?;
@@ -267,15 +263,14 @@ fn match_submit_battle_result(
     }
     battle.result = Some(result);
     battle.hash = hash;
-    let enemy_team_id = battle.team_right;
 
     // Clear pending_battle flag on the match
     m.pending_battle = false;
 
-    let last_floor = get_last_floor(ctx);
+    let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
 
-    // Check if enemy was a boss
-    let was_boss_battle = get_floor_boss_team_id(ctx, current_floor) == Some(enemy_team_id);
+    // Use boss_battle flag to determine if this was a boss battle
+    let was_boss_battle = m.boss_battle;
 
     // Handle boss battle outcomes
     if was_boss_battle {
@@ -322,7 +317,7 @@ fn match_submit_battle_result(
                 if let Some(mut arena) =
                     TNode::load(ctx.rctx(), ID_ARENA).and_then(|node| node.to_node::<NArena>().ok())
                 {
-                    arena.floors = m.floor as u8;
+                    arena.last_floor = m.floor;
                     arena.save(ctx)?;
                 }
 
@@ -373,9 +368,9 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
-    let m_id = m.id;
     let floor = m.floor;
-    let last_floor = get_last_floor(ctx);
+
+    let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
     // Regular battles not allowed on last floor
     if floor == last_floor && last_floor > 0 {
         return Err(
@@ -407,12 +402,10 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
-    let m_id = m.id;
     let floor = m.floor;
 
-    // Load player team
-    let player_team_id = m.team_load(ctx)?.id;
-    let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
+    m.boss_battle = true;
+    let player_team = m.team_load(ctx)?.load_all(ctx)?.take();
 
     // Ensure floor pool exists and add player's team to it
     let pool_id = ensure_floor_pool(ctx, floor)?;
@@ -475,9 +468,10 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         ctx.next_id(),
         pid,
         gs.match_g.initial,
-        0,
+        1,
         3,
         true,
+        false,
         false,
         default(),
     );
@@ -550,7 +544,9 @@ impl NMatch {
             .collect_vec();
         let shop_case = (0..4)
             .map(|_| {
-                let n = if units && !units_from_owned_houses.is_empty() {
+                let n = if units && !units_from_owned_houses.is_empty()
+                    || not_owned_houses.is_empty()
+                {
                     ShopSlot {
                         card_kind: CardKind::Unit,
                         node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),

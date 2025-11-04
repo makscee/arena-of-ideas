@@ -3,7 +3,7 @@ pub use proc_macros::Node;
 
 #[derive(Node)]
 pub struct NArena {
-    pub floors: u8,
+    pub last_floor: i32,
     pub floor_pools: OwnedMultiple<NFloorPool>,
     pub floor_bosses: OwnedMultiple<NFloorBoss>,
 }
@@ -148,6 +148,7 @@ pub struct NMatch {
     #[var]
     pub active: bool,
     pub pending_battle: bool,
+    pub boss_battle: bool,
     pub shop_offers: Vec<ShopOffer>,
     pub team: Owned<NTeam>,
     pub battles: OwnedMultiple<NBattle>,

@@ -1579,7 +1579,7 @@ impl FDisplay for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder() -> Self {
-        NMatch::new(next_id(), 0, 0, 1, 3, false, false, vec![])
+        NMatch::new(next_id(), 0, 0, 1, 3, false, false, false, vec![])
             .with_team(NTeam::placeholder())
             .with_battles(default())
     }
