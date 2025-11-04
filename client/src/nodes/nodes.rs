@@ -71,7 +71,7 @@ pub trait NodeKindOnSpawn {
 
 impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
-        let entity = ctx.entity(id)?;
+        let entity = ctx.entity(id).track()?;
         let vars = node_kind_match!(self, ctx.load::<NodeType>(id)?.get_vars());
 
         // Only create NodeStateHistory for battle simulations
@@ -114,7 +114,7 @@ impl NodeKindOnSpawn for NodeKind {
                     ctx.add_link(id, rep_id)?;
                 }
 
-                let mut fusion = ctx.load::<NFusion>(id)?.clone();
+                let mut fusion = ctx.load::<NFusion>(id).track()?.clone();
                 fusion.recalculate_stats(ctx)?;
                 fusion.save(ctx)?;
             }

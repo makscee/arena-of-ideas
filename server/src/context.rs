@@ -112,10 +112,7 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn get_children(&self, node_id: u64) -> NodeResult<Vec<u64>> {
-        Ok(node_id
-            .collect_children_recursive(&self.ctx)
-            .into_iter()
-            .collect())
+        Ok(node_id.collect_children(&self.ctx).into_iter().collect())
     }
 
     fn get_children_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {
@@ -126,10 +123,7 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn get_parents(&self, node_id: u64) -> NodeResult<Vec<u64>> {
-        Ok(node_id
-            .collect_parents_recursive(&self.ctx)
-            .into_iter()
-            .collect())
+        Ok(node_id.collect_parents(&self.ctx).into_iter().collect())
     }
 
     fn get_parents_of_kind(&self, node_id: u64, kind: NodeKind) -> NodeResult<Vec<u64>> {

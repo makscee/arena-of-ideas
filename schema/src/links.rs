@@ -341,6 +341,10 @@ impl<T> MultipleLink<T> for OwnedMultiple<T> {
     fn get_mut(&mut self) -> NodeResult<&mut Vec<T>> {
         match self {
             OwnedMultiple::Loaded(val) => Ok(val),
+            OwnedMultiple::None => {
+                self.set_loaded(default())?;
+                self.get_mut()
+            }
             _ => Err(NodeError::custom("OwnedMultiple link not loaded")),
         }
     }

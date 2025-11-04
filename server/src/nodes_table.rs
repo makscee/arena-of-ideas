@@ -185,6 +185,8 @@ pub trait NodeIdExt {
     fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64>;
     fn collect_parents_recursive(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn collect_children_recursive(self, ctx: &ReducerContext) -> HashSet<u64>;
+    fn collect_parents(self, ctx: &ReducerContext) -> HashSet<u64>;
+    fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
@@ -243,9 +245,8 @@ impl NodeIdExt for u64 {
             .parent_child()
             .filter((self, id))
             .next()
-            .to_custom_e_s_fn(|| {
-                format!("Failed to remove child#{id} of #{self}: link not found")
-            })?;
+            .to_custom_err_fn(|| format!("Failed to remove child#{id} of #{self}: link not found"))
+            .track()?;
         ctx.db.node_links().id().delete(l.id);
         Ok(())
     }
@@ -304,6 +305,12 @@ impl NodeIdExt for u64 {
             .into_iter()
             .map(|l| l.child)
             .collect()
+    }
+    fn collect_parents(self, ctx: &ReducerContext) -> HashSet<u64> {
+        HashSet::from_iter(TNodeLink::parents(ctx, self).into_iter().map(|l| l.parent))
+    }
+    fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64> {
+        HashSet::from_iter(TNodeLink::children(ctx, self).into_iter().map(|l| l.child))
     }
     fn collect_parents_recursive(self, ctx: &ReducerContext) -> HashSet<u64> {
         let mut result: HashSet<u64> = default();

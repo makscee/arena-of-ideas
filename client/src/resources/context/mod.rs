@@ -260,11 +260,11 @@ impl ClientSource for ClientContext<'_> {
     }
 
     fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
-        self.source().load_ref(node_id)
+        self.source().load_ref(node_id).track()
     }
 
     fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
-        self.source().load(node_id)
+        self.source().load(node_id).track()
     }
 
     fn battle(&self) -> NodeResult<&BattleSimulation> {

@@ -203,8 +203,8 @@ impl BattleAction {
                             .with_target(*b)
                             .into(),
                     );
-                    let fusion_a = ctx.load::<NFusion>(*a)?;
-                    let fusion_b = ctx.load::<NFusion>(*b)?;
+                    let fusion_a = ctx.load::<NFusion>(*a).track()?;
+                    let fusion_b = ctx.load::<NFusion>(*b).track()?;
                     add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
                     add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
                     add_actions.extend(ctx.battle()?.slots_sync());

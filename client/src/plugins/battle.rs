@@ -54,17 +54,16 @@ impl BattlePlugin {
                             return Ok(Some((last.id, true, None)));
                         }
 
-                        // Load battle teams
-                        let left = ctx
-                            .load::<NTeam>(last.team_left)?
-                            .clone()
-                            .load_all(ctx)?
-                            .take();
-                        let right = ctx
-                            .load::<NTeam>(last.team_right)?
-                            .clone()
-                            .load_all(ctx)?
-                            .take();
+                        let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
+                            team.load_all(ctx)?.take()
+                        } else {
+                            NTeam::default().with_id(next_id())
+                        };
+                        let right = if let Ok(mut team) = ctx.load::<NTeam>(last.team_right) {
+                            team.load_all(ctx)?.take()
+                        } else {
+                            NTeam::default().with_id(next_id())
+                        };
                         Ok(Some((last.id, false, Some((left, right)))))
                     } else {
                         Ok(None)

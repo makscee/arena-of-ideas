@@ -1,6 +1,7 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
+use strum_macros::AsRefStr;
 use syn::*;
 
 // Function to generate comprehensive allow attributes for all generated code
@@ -37,7 +38,7 @@ pub struct FieldInfo {
     pub is_var: bool,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, AsRefStr)]
 pub enum LinkType {
     Component,
     Owned,
@@ -681,16 +682,6 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
     }
 }
 
-pub fn generate_default_accessors(node: &NodeInfo) -> Vec<TokenStream> {
-    node.fields
-        .iter()
-        .map(|field| {
-            let field_name = &field.name;
-            quote! { #field_name: Default::default(), }
-        })
-        .collect()
-}
-
 pub fn generate_new(node: &NodeInfo) -> TokenStream {
     let data_fields: Vec<_> = node
         .fields
@@ -717,7 +708,8 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         .filter(|field| field.link_type != LinkType::None)
         .map(|field| {
             let field_name = &field.name;
-            quote! { #field_name: Default::default(), }
+            let link_type = Ident::new(field.link_type.as_ref(), Span::call_site());
+            quote! { #field_name: #link_type::None, }
         });
 
     quote! {
@@ -825,36 +817,17 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
 
 pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
     let struct_name = &node.name;
-    let data_fields: Vec<_> = node
-        .fields
-        .iter()
-        .filter(|field| field.link_type == LinkType::None)
-        .collect();
-
-    let default_params = std::iter::once(quote! { 0 })
-        .chain(std::iter::once(quote! { 0 }))
-        .chain(data_fields.iter().map(|field| {
-            if field.raw_type.contains("Option") {
-                quote! { None }
-            } else if field.raw_type.contains("String") {
-                quote! { String::new() }
-            } else if field.raw_type.contains("i32") {
-                quote! { 0 }
-            } else if field.raw_type.contains("u64") {
-                quote! { 0 }
-            } else if field.raw_type.contains("bool") {
-                quote! { false }
-            } else if field.raw_type.contains("Vec") {
-                quote! { Vec::new() }
-            } else {
-                quote! { Default::default() }
-            }
-        }));
+    let fields = node.fields.iter().map(|f| f.name.clone());
 
     quote! {
         impl Default for #struct_name {
             fn default() -> Self {
-                Self::new(#(#default_params),*)
+                Self {
+                    id: 0,
+                    owner: 0,
+                    is_dirty: true,
+                    #(#fields: default(),)*
+                }
             }
         }
     }
@@ -1040,24 +1013,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
         let set_method = format_ident!("{}_set", field_name);
         let push_method = format_ident!("{}_push", field_name);
         let get_method = format_ident!("{}", field_name);
+        let get_mut_method = format_ident!("{}_mut", field_name);
 
         if matches!(field.link_type, LinkType::OwnedMultiple) {
-            let load_logic = if context_ident == "ServerContext" {
-                quote! {
-                    if let Some(ids) = self.#field_name.ids() {
-                        return Ok(ids);
-                    }
-
-                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                    if !children.is_empty() {
-                        self.#field_name.set_ids(children.clone())?;
-                        Ok(children)
-                    } else {
-                        self.#field_name.set_none()?;
-                        Ok(Vec::new())
-                    }
-                }
-            } else {
+            let load_logic =
                 quote! {
                     let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
                     if !children.is_empty() {
@@ -1067,8 +1026,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                         self.#field_name.set_none()?;
                         Ok(Vec::new())
                     }
-                }
-            };
+                };
 
             let load_method_logic = quote! {
                 let ids = self.#load_id_method(ctx)?;
@@ -1111,6 +1069,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                     self.#field_name.get()
                 }
 
+                pub fn #get_mut_method(&mut self) -> NodeResult<&mut Vec<#target_type>> {
+                    self.#field_name.get_mut()
+                }
+
                 pub fn #set_method(&mut self, nodes: Vec<#target_type>) -> NodeResult<()> {
                     self.#field_name.set_loaded(nodes)?;
                     self.set_dirty(true);
@@ -1118,11 +1080,7 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
                 }
 
                 pub fn #push_method(&mut self, node: #target_type) -> NodeResult<()> {
-                    if let Ok(nodes) = self.#field_name.get_mut() {
-                        nodes.push(node);
-                    } else {
-                        self.#field_name.set_loaded(vec![node])?;
-                    }
+                    self.#get_mut_method()?.push(node);
                     self.set_dirty(true);
                     Ok(())
                 }
@@ -1277,6 +1235,10 @@ pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStrea
 
                 pub fn #get_method(&self) -> NodeResult<&#target_type> {
                     self.#field_name.get()
+                }
+
+                pub fn #get_mut_method(&mut self) -> NodeResult<&mut #target_type> {
+                    self.#field_name.get_mut()
                 }
 
                 pub fn #set_method(&mut self, node: #target_type) -> NodeResult<()> {

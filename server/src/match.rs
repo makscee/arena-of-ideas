@@ -90,7 +90,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
-    let m = player.active_match_load(ctx)?;
+    let m = player.active_match_load(ctx)?.load_all(ctx)?;
     let offer = m
         .shop_offers
         .last_mut()
@@ -117,8 +117,8 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .to_not_found()?;
             let house_name = ctx.load::<NHouse>(house_id)?.house_name;
             let house = m
-                .team_load(ctx)?
-                .houses_load(ctx)?
+                .team()?
+                .houses()?
                 .iter()
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
@@ -130,25 +130,26 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
         CardKind::House => {
             let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
-            if m.team_load(ctx)?
-                .houses_load(ctx)?
+            if m.team()?
+                .houses()?
                 .iter()
                 .any(|h| h.house_name == house.house_name)
             {
                 // increase house lvl
             } else {
                 let house = house.remap_ids(ctx).with_owner(pid);
-                m.team_load(ctx)?.houses_push(house)?;
+                m.team_mut()?.houses_push(house)?;
             }
         }
     }
-    m.buy(ctx, price)?;
+    m.buy(ctx, price).track()?;
     let mid = m.id;
-    m.take().save(ctx)?;
+    debug!("{m:?}");
+    m.take().save(ctx).track()?;
     if card_kind == CardKind::House {
         let mut m = ctx.load::<NMatch>(mid)?;
-        m.fill_shop_case(ctx, true)?;
-        m.save(ctx)?;
+        m.fill_shop_case(ctx, true).track()?;
+        m.save(ctx).track()?;
     }
     Ok(())
 }
@@ -226,7 +227,8 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let fs = NFusionSlot::new(ctx.next_id(), pid, slots.len() as i32, default());
     fusion.slots_push(fs)?;
     fusion.save(ctx)?;
-    m.buy(ctx, price)
+    m.buy(ctx, price)?;
+    Ok(())
 }
 
 #[reducer]
@@ -279,7 +281,7 @@ fn match_submit_battle_result(
     if was_boss_battle {
         if result {
             // Won against boss - replace boss with player's team
-            let player_team_id = m.team.get()?.id;
+            let player_team_id = m.team_load(ctx)?.id;
             let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
 
             // Create new boss team
@@ -294,7 +296,7 @@ fn match_submit_battle_result(
             }) {
                 let mut boss = ctx.load::<NFloorBoss>(boss_node.id)?;
                 // Delete old boss team
-                if let Ok(old_team) = boss.team.get() {
+                if let Ok(old_team) = boss.team_load(ctx) {
                     old_team.clone().delete_recursive(ctx);
                 }
                 boss.team_set(new_boss_team)?;
@@ -409,7 +411,7 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let floor = m.floor;
 
     // Load player team
-    let player_team_id = m.team.get()?.id;
+    let player_team_id = m.team_load(ctx)?.id;
     let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
 
     // Ensure floor pool exists and add player's team to it
@@ -490,19 +492,20 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mid = m.id;
     m.save(ctx)?;
     let mut m = ctx.load::<NMatch>(mid).track()?;
-    m.fill_shop_case(ctx, false).to_node_err().track()?;
+    m.fill_shop_case(ctx, false).track()?;
     player.active_match_set(m)?;
+    debug!("{player:?}");
     player.save(ctx).track()?;
     Ok(())
 }
 
 impl NMatch {
-    fn buy(&mut self, _ctx: &ServerContext, price: i32) -> Result<(), String> {
+    fn buy(&mut self, _ctx: &ServerContext, price: i32) -> NodeResult<()> {
         if self.g < price {
-            return Err(format!(
+            return Err(NodeError::custom(format!(
                 "Can't afford: price = {price} match g = {}",
                 self.g
-            ));
+            )));
         }
         self.g_set(self.g - price)?;
         Ok(())
@@ -518,7 +521,7 @@ impl NMatch {
         }
         res
     }
-    fn fill_shop_case(&mut self, ctx: &ServerContext, units: bool) -> Result<(), String> {
+    fn fill_shop_case(&mut self, ctx: &ServerContext, units: bool) -> NodeResult<()> {
         let gs = ctx.global_settings();
 
         let unit_price = gs.match_g.unit_buy;

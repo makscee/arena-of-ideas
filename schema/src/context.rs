@@ -383,7 +383,7 @@ impl<S: ContextSource> Context<S> {
         for child_id in children {
             self.delete_recursive(child_id)?;
         }
-        self.source.delete_node(id)
+        self.source.delete_node(id).track()
     }
 
     pub fn first_parent(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {

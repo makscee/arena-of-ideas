@@ -243,10 +243,11 @@ impl<'a> Sources<'a> {
         self.get_nodes_map()?
             .get_entity(node_id)
             .ok_or_else(|| NodeError::entity_not_found(node_id))
+            .track()
     }
 
     pub fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
-        let entity = self.entity(node_id)?;
+        let entity = self.entity(node_id).track()?;
         self.world()?
             .get::<T>(entity)
             .ok_or_else(|| NodeError::not_found(node_id))
@@ -256,14 +257,14 @@ impl<'a> Sources<'a> {
         &mut self,
         node_id: u64,
     ) -> NodeResult<Mut<'_, T>> {
-        let entity = self.entity(node_id)?;
+        let entity = self.entity(node_id).track()?;
         self.world_mut()?
             .get_mut::<T>(entity)
             .ok_or_else(|| NodeError::not_found(node_id))
     }
 
     pub fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
-        self.load_ref::<T>(node_id).map(|node| node.clone())
+        self.load_ref::<T>(node_id).track().map(|node| node.clone())
     }
 
     // Handle SpacetimeDB updates - unified for all sources
@@ -875,14 +876,14 @@ impl ClientSource for Sources<'_> {
     }
 
     fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
-        let entity = self.entity(node_id)?;
+        let entity = self.entity(node_id).track()?;
         self.world()?
             .get::<T>(entity)
             .ok_or_else(|| NodeError::not_found(node_id))
     }
 
     fn load<T: ClientNode + Clone>(&self, node_id: u64) -> NodeResult<T> {
-        self.load_ref::<T>(node_id).map(|node| node.clone())
+        self.load_ref::<T>(node_id).track().map(|node| node.clone())
     }
 
     fn battle(&self) -> NodeResult<&BattleSimulation> {
