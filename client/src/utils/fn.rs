@@ -55,20 +55,3 @@ pub fn next_id() -> u64 {
 pub fn set_next_id(id: u64) {
     *NEXT_ID.lock() = id;
 }
-// pub trait CstrExt {
-//     fn print(&self);
-//     fn info(&self);
-//     fn debug(&self);
-// }
-
-// impl CstrExt for Cstr {
-//     fn print(&self) {
-//         println!("{}", self.to_colored())
-//     }
-//     fn info(&self) {
-//         info!("{}", self.to_colored())
-//     }
-//     fn debug(&self) {
-//         debug!("{}", self.to_colored())
-//     }
-// }

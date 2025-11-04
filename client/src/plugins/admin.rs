@@ -83,39 +83,24 @@ impl AdminPlugin {
             cn().reducers.content_rotation().unwrap();
         }
         if "Download Node Assets".cstr().button(ui).clicked() {
-            let mut manager = load_node_assets().unwrap();
-            for node in cn().db.nodes_world().iter() {
-                manager.add_node_from_tnode(&node);
-            }
-            for link in cn().db.node_links().iter() {
-                manager.add_link_from_tnode_link(&link);
-            }
-            manager.save_to_files().unwrap();
-        }
-        if "Upload Node Assets".cstr().button(ui).clicked() {
-            let manager = load_node_assets().unwrap();
-            let mut all_nodes: Vec<(u64, String, NodeAsset)> = default();
-            let mut all_links: Vec<LinkAsset> = default();
-            for (kind, nodes) in manager.nodes {
-                let kind = kind.to_string();
-                for (id, node) in nodes {
-                    all_nodes.push((id, kind.clone(), node));
+            match download_world_assets_to_path(&get_world_assets_path()) {
+                Ok(count) => {
+                    format!("Downloaded {} nodes and links", count).notify(world);
+                }
+                Err(e) => {
+                    format!("Failed to download assets: {}", e).notify_error(world);
                 }
             }
-            for link in manager.links {
-                all_links.push(link);
+        }
+        if "Upload Node Assets".cstr().button(ui).clicked() {
+            match upload_world_assets_from_path(&get_world_assets_path()) {
+                Ok(count) => {
+                    format!("Uploaded {} nodes and links", count).notify(world);
+                }
+                Err(e) => {
+                    format!("Failed to upload assets: {}", e).notify_error(world);
+                }
             }
-            let all_nodes = all_nodes
-                .into_iter()
-                .map(|n| ron::to_string(&n).unwrap())
-                .collect_vec();
-            let all_links = all_links
-                .into_iter()
-                .map(|l| ron::to_string(&l).unwrap())
-                .collect_vec();
-            cn().reducers
-                .admin_upload_world(global_settings().clone(), all_nodes, all_links)
-                .unwrap();
         }
     }
 }

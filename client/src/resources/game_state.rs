@@ -22,6 +22,8 @@ pub enum GameState {
     ServerSync,
     MigrationDownload,
     MigrationUpload,
+    WorldDownload,
+    WorldUpload,
     Error,
     Query,
     Editor,
@@ -326,6 +328,14 @@ const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::n
     );
     m.insert(GameState::MigrationUpload, [GameOption::Connect].into());
     m.insert(GameState::MigrationDownload, [GameOption::Connect].into());
+    m.insert(
+        GameState::WorldUpload,
+        [GameOption::Connect, GameOption::ForceTablesSubscribe].into(),
+    );
+    m.insert(
+        GameState::WorldDownload,
+        [GameOption::Connect, GameOption::ForceTablesSubscribe].into(),
+    );
     m
 });
 

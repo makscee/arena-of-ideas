@@ -38,7 +38,7 @@ pub use node_error::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;
-use ron::ser::{PrettyConfig, to_string_pretty};
+use ron::ser::to_string;
 pub use tier::*;
 pub use trigger::*;
 pub use var_name::*;
@@ -97,7 +97,7 @@ where
         }
     }
     fn get_data(&self) -> String {
-        to_string_pretty(self, PrettyConfig::new().depth_limit(1)).unwrap()
+        to_string(self).unwrap()
     }
 }
 

@@ -38,8 +38,8 @@ pub enum RunMode {
     Shop,
     Test,
     Sync,
-    MigrationDownload,
-    MigrationUpload,
+    WorldDownload,
+    WorldUpload,
 }
 
 fn fmt_layer(_app: &mut App) -> Option<bevy::log::BoxedFmtLayer> {
@@ -62,8 +62,8 @@ pub fn run() {
         RunMode::Shop => GameState::Shop,
         RunMode::Test => GameState::TestScenariosRun,
         RunMode::Sync => GameState::ServerSync,
-        RunMode::MigrationDownload => GameState::MigrationDownload,
-        RunMode::MigrationUpload => GameState::MigrationUpload,
+        RunMode::WorldDownload => GameState::WorldDownload,
+        RunMode::WorldUpload => GameState::WorldUpload,
     };
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
@@ -123,6 +123,7 @@ pub fn run() {
             AudioPlugin,
             ConfirmationPlugin,
             AdminPlugin,
+            WorldMigrationPlugin,
             StdbPlugin,
             NotificationsPlugin,
         ))

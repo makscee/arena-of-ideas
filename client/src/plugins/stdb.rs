@@ -84,6 +84,9 @@ pub fn subscribe_game(on_success: impl FnOnce() + Send + Sync + 'static) {
         .on_error(|_, error| error.to_string().notify_error_op())
         .on_applied(move |_| {
             info!("Subscription applied");
+            op(|world| {
+                world.init_resource::<TablesSubscribeOption>();
+            });
             on_success();
         })
         .subscribe_to_all_tables();

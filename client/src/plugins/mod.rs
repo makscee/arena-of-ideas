@@ -15,6 +15,7 @@ mod stdb_ext;
 mod team_editor;
 mod tile;
 mod ui;
+mod world_migration;
 
 use super::*;
 pub use admin::*;
@@ -34,3 +35,4 @@ pub use stdb_ext::*;
 pub use team_editor::*;
 pub use tile::*;
 pub use ui::*;
+pub use world_migration::*;

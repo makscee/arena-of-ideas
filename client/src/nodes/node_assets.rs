@@ -35,7 +35,7 @@ impl NodeAssetsManager {
 
     /// Add a node from a TNode database record
     pub fn add_node_from_tnode(&mut self, tnode: &TNode) {
-        let kind = NodeKind::from_str(&tnode.kind).unwrap_or(NodeKind::default());
+        let kind = tnode.kind();
         self.add_node(
             kind,
             tnode.id,

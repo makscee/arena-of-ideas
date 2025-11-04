@@ -9,6 +9,7 @@ pub enum GameOption {
     ForceLogin,
     TestScenariosLoad,
     ActiveRun,
+    ForceTablesSubscribe,
 }
 
 impl ToCstr for GameOption {
@@ -18,6 +19,7 @@ impl ToCstr for GameOption {
             | GameOption::Login
             | GameOption::ForceLogin
             | GameOption::TestScenariosLoad
+            | GameOption::ForceTablesSubscribe
             | GameOption::ActiveRun => self.as_ref().cstr_c(GREEN),
         }
     }
@@ -37,6 +39,7 @@ impl GameOption {
             }
             GameOption::TestScenariosLoad => todo!(),
             GameOption::ActiveRun => todo!(),
+            GameOption::ForceTablesSubscribe => world.contains_resource::<TablesSubscribeOption>(),
         }
     }
     pub fn fulfill(&self, world: &mut World) {
@@ -53,6 +56,11 @@ impl GameOption {
             GameOption::ActiveRun => {
                 GameState::Title.proceed_to_target(world);
             }
+            GameOption::ForceTablesSubscribe => {
+                subscribe_game(|| {
+                    GameState::proceed_op();
+                });
+            }
         }
     }
 }
@@ -67,6 +75,9 @@ pub struct ConnectOption {
     pub identity: Identity,
     pub token: String,
 }
+
+#[derive(Resource, Default)]
+pub struct TablesSubscribeOption;
 
 pub trait OptionResource: Resource + Sized + Debug {
     fn fulfill(world: &mut World);
