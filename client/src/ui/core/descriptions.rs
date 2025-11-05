@@ -16,9 +16,9 @@ static DESCRIPTIONS: OnceCell<HashMap<u64, String>> = OnceCell::new();
 impl Descriptions {
     pub fn set(self) {
         let mut map: HashMap<u64, String> = default();
-        for (x, text) in self.expressions {
+        for (ex, text) in self.expressions {
             let mut state = DefaultHasher::new();
-            x.hash(&mut state);
+            ex.hash(&mut state);
             map.insert(state.finish(), text);
         }
         DESCRIPTIONS.set(map).unwrap();

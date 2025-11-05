@@ -300,6 +300,13 @@ impl<S: ContextSource> Context<S> {
         if let Ok(value) = self.source().get_var(id, var) {
             return Ok(value);
         }
+        for child_kind in self.get_kind(id)?.component_children_recursive() {
+            for child_id in self.collect_kind_children_recursive(id, child_kind)? {
+                if let Ok(value) = self.source().get_var(child_id, var) {
+                    return Ok(value);
+                }
+            }
+        }
         for parent in self.get_parents(id)? {
             if let Ok(value) = self.get_var_inherited(parent, var) {
                 return Ok(value);

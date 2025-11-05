@@ -576,12 +576,14 @@ impl FDescription for NUnit {
 impl FStats for NUnit {
     fn stats(&self, ctx: &ClientContext) -> Vec<(VarName, VarValue)> {
         let mut stats = vec![];
-
-        if let Ok(pwr) = ctx.get_var(VarName::pwr) {
+        if let Ok(pwr) = ctx.get_var_inherited(self.id, VarName::pwr) {
             stats.push((VarName::pwr, pwr));
         }
-        if let Ok(hp) = ctx.get_var(VarName::hp) {
+        if let Ok(hp) = ctx.get_var_inherited(self.id, VarName::hp) {
             stats.push((VarName::hp, hp));
+        }
+        if let Ok(stax) = ctx.get_var_inherited(self.id, VarName::stax) {
+            stats.push((VarName::stax, stax));
         }
         let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
         {
@@ -708,8 +710,8 @@ impl FTag for NHouse {
         self.house_name.clone()
     }
 
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        None
+    fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
+        Some(self.state_ref(ctx).ok()?.stax.cstr_c(VarName::stax.color()))
     }
 
     fn tag_color(&self, ctx: &ClientContext) -> Color32 {
@@ -865,7 +867,7 @@ impl FPlaceholder for NStatusMagic {
         NStatusMagic::new(next_id(), player_id(), "New Status".to_string())
             .with_description(NStatusDescription::placeholder())
             .with_representation(NStatusRepresentation::placeholder())
-            .with_state(NStatusState::new(next_id(), player_id(), 1))
+            .with_state(NState::new(next_id(), player_id(), 1))
     }
 }
 
@@ -1849,31 +1851,31 @@ impl FDisplay for NUnitStats {
     }
 }
 
-impl FTitle for NUnitState {
+impl FTitle for NState {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!("[tw Unit State] x{} stacks", self.stacks).cstr()
+        format!("[tw Unit State] {}x", self.stax).cstr()
     }
 }
 
-impl FDescription for NUnitState {
+impl FDescription for NState {
     fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        format!("{} stacks", self.stacks).cstr()
+        format!("{} stax", self.stax).cstr()
     }
 }
 
-impl FStats for NUnitState {
+impl FStats for NState {
     fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![(VarName::stacks, VarValue::i32(self.stacks))]
+        vec![(VarName::stax, VarValue::i32(self.stax))]
     }
 }
 
-impl FTag for NUnitState {
+impl FTag for NState {
     fn tag_name(&self, _: &ClientContext) -> Cstr {
         "State".cstr()
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{}x", self.stacks).cstr())
+        Some(format!("{}x", self.stax).cstr())
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
@@ -1881,11 +1883,11 @@ impl FTag for NUnitState {
     }
 }
 
-impl FDisplay for NUnitState {
+impl FDisplay for NState {
     fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
-            ui.label("Stacks:");
-            format!("{}", self.stacks)
+            ui.label("stax:");
+            format!("{}", self.stax)
                 .cstr_c(Color32::from_rgb(255, 255, 0))
                 .label(ui);
         })
@@ -2156,33 +2158,15 @@ impl FPlaceholder for NUnitBehavior {
     }
 }
 
-impl FPlaceholder for NUnitState {
+impl FPlaceholder for NState {
     fn placeholder() -> Self {
-        NUnitState::new(next_id(), 0, 1)
+        NState::new(next_id(), 0, 1)
     }
 }
 
 impl FPlaceholder for NUnitStats {
     fn placeholder() -> Self {
         NUnitStats::new(next_id(), 0, 1, 4)
-    }
-}
-
-impl FPlaceholder for NStatusState {
-    fn placeholder() -> Self {
-        NStatusState::new(next_id(), 0, 1)
-    }
-}
-
-impl FDisplay for NStatusState {
-    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            ui.label("Stacks:");
-            format!("{}", self.stacks)
-                .cstr_c(Color32::from_rgb(255, 255, 0))
-                .label(ui);
-        })
-        .response
     }
 }
 
@@ -2607,17 +2591,5 @@ impl FPreview for NStatusMagic {
                 ui.label(RichText::new(&self.status_name).strong().color(ctx.color()));
             });
         });
-    }
-}
-
-impl FTitle for NStatusState {
-    fn title(&self, _ctx: &ClientContext) -> Cstr {
-        format!("Status State x{} stacks", self.stacks)
-    }
-}
-
-impl FDescription for NStatusState {
-    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        format!("x{} stacks", self.stacks).cstr()
     }
 }

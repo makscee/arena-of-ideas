@@ -9,8 +9,7 @@ impl EnumColor for VarName {
         match self {
             VarName::hp => RED,
             VarName::pwr => YELLOW,
-            VarName::lvl => PURPLE,
-            VarName::xp => LIGHT_PURPLE,
+            VarName::stax => LIGHT_PURPLE,
             VarName::tier => GRAY,
             _ => low_contrast_text(),
         }
@@ -26,7 +25,7 @@ impl EnumColor for Action {
             Action::use_ability => ORANGE,
             Action::apply_status => PURPLE,
             Action::set_status(..) => PURPLE,
-            Action::change_status_stacks(..) => ORANGE,
+            Action::change_status_stax(..) => ORANGE,
             Action::debug(..) => high_contrast_text(),
             Action::set_value(..)
             | Action::add_value(..)
@@ -61,7 +60,7 @@ impl EnumColor for Expression {
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
-            | Expression::stacks
+            | Expression::x
             | Expression::all_units
             | Expression::all_enemy_units
             | Expression::all_ally_units

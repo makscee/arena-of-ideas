@@ -120,21 +120,31 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
             let mut unit = unit.remap_ids(ctx).with_owner(pid);
-            unit.state_set(NUnitState::new(ctx.next_id(), pid, 1))?;
+            unit.state_set(NState::new(ctx.next_id(), pid, 1))?;
             let unit_id = unit.id;
             unit.save(ctx)?;
             unit_id.add_parent(ctx.rctx(), house.id)?;
         }
         CardKind::House => {
             let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
-            if m.team()?
-                .houses()?
+            let team_houses = m.team()?.houses()?.clone();
+            if let Some(existing_house) = team_houses
                 .iter()
-                .any(|h| h.house_name == house.house_name)
+                .find(|h| h.house_name == house.house_name)
             {
-                // increase house lvl
+                // Stack existing house
+                let existing_house_id = existing_house.id;
+                let mut existing_house = ctx.load::<NHouse>(existing_house_id)?;
+                let existing_house_state = existing_house.state_load(ctx)?;
+                existing_house_state.stax_set(existing_house_state.stax + 1);
+                existing_house_state.clone().save(ctx)?;
             } else {
-                let house = house.remap_ids(ctx).with_owner(pid);
+                // Add new house with initial state
+                let house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
+                    ctx.next_id(),
+                    pid,
+                    1,
+                ));
                 m.team_mut()?.houses_push(house)?;
             }
         }
@@ -513,6 +523,37 @@ fn match_change_trigger(
 }
 
 #[reducer]
+fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> Result<(), String> {
+    let ctx = &mut ctx.as_context();
+    let player = ctx.player()?;
+    let pid = player.id;
+
+    let mut unit = ctx.load::<NUnit>(unit_id)?;
+    let mut target_unit = ctx.load::<NUnit>(target_unit_id)?;
+
+    if unit.owner != pid || target_unit.owner != pid {
+        return Err("Units not owned by player".into());
+    }
+
+    if unit.unit_name != target_unit.unit_name {
+        return Err("Units must have same name to stack".into());
+    }
+    let stax = unit.state_load(ctx)?.stax;
+    unit.delete_recursive(ctx);
+
+    let target_unit_state = target_unit.state_load(ctx)?;
+    target_unit_state.stax_set(target_unit_state.stax + stax);
+
+    let target_unit_stats = target_unit.stats_load(ctx)?;
+    target_unit_stats.hp_set(target_unit_stats.hp + stax);
+    target_unit_stats.pwr_set(target_unit_stats.pwr + stax);
+
+    target_unit.save(ctx)?;
+
+    Ok(())
+}
+
+#[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
@@ -585,11 +626,7 @@ impl NMatch {
                 .unwrap_or_default(),
         );
         let all_houses = NHouse::collect_owner(ctx, ID_CORE);
-        let not_owned_houses = all_houses
-            .iter()
-            .filter(|h| !owned_houses.contains(&h.house_name))
-            .map(|h| h.id)
-            .collect_vec();
+        let all_house_ids = all_houses.iter().map(|h| h.id).collect_vec();
         let units_from_owned_houses = all_houses
             .into_iter()
             .filter(|h| owned_houses.contains(&h.house_name))
@@ -600,8 +637,7 @@ impl NMatch {
             .collect_vec();
         let shop_case = (0..4)
             .map(|_| {
-                let n = if units && !units_from_owned_houses.is_empty()
-                    || not_owned_houses.is_empty()
+                let n = if units && !units_from_owned_houses.is_empty() || all_house_ids.is_empty()
                 {
                     ShopSlot {
                         card_kind: CardKind::Unit,
@@ -613,7 +649,7 @@ impl NMatch {
                 } else {
                     ShopSlot {
                         card_kind: CardKind::House,
-                        node_id: *not_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                        node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
                         sold: false,
                         price: house_price,
                         buy_text: None,

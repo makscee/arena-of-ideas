@@ -54,6 +54,7 @@ pub struct NHouse {
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
     pub units: OwnedMultiple<NUnit>,
+    pub state: Component<NState>,
 }
 
 #[derive(Node)]
@@ -93,7 +94,7 @@ pub struct NStatusMagic {
     pub status_name: String,
     pub description: Component<NStatusDescription>,
     pub representation: Component<NStatusRepresentation>,
-    pub state: Component<NStatusState>,
+    pub state: Component<NState>,
 }
 
 #[derive(Node)]
@@ -117,9 +118,9 @@ pub struct NStatusRepresentation {
 }
 
 #[derive(Node)]
-pub struct NStatusState {
+pub struct NState {
     #[var]
-    pub stacks: i32,
+    pub stax: i32,
 }
 
 #[derive(Node)]
@@ -185,7 +186,7 @@ pub struct NUnit {
     pub unit_name: String,
     pub description: Component<NUnitDescription>,
     pub stats: Component<NUnitStats>,
-    pub state: Component<NUnitState>,
+    pub state: Component<NState>,
 }
 
 #[derive(Node)]
@@ -206,12 +207,6 @@ pub struct NUnitStats {
     pub pwr: i32,
     #[var]
     pub hp: i32,
-}
-
-#[derive(Node)]
-pub struct NUnitState {
-    #[var]
-    pub stacks: i32,
 }
 
 #[derive(Node)]

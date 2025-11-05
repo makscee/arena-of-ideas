@@ -35,6 +35,10 @@ pub enum TeamAction {
     BenchUnit {
         unit_id: u64,
     },
+    StackUnit {
+        unit_id: u64,
+        target_unit_id: u64,
+    },
     AddSlot {
         fusion_id: u64,
     },
@@ -209,7 +213,10 @@ impl TeamEditor {
 
         // Render bench at bottom as full-width rectangle
         ui.scope_builder(UiBuilder::new().max_rect(bench_rect), |ui| {
-            self.render_bench_horizontal(ui, &unlinked_units, team, ctx, &mut actions);
+            ui.columns(2, |ui| {
+                self.render_bench(&mut ui[0], &unlinked_units, team, ctx, &mut actions);
+                self.render_houses(&mut ui[1], ctx, team);
+            });
         });
 
         if let Some(new_mode) = mode_change {
@@ -546,7 +553,8 @@ impl TeamEditor {
         ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
+        let mut response =
+            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
 
         if response.drag_started() {
             let from_location = UnitTarget::Slot {
@@ -563,7 +571,9 @@ impl TeamEditor {
         }
 
         if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
-            response.clone().on_hover_text(unit.unit_name.clone());
+            response = response.on_hover_ui(|ui| {
+                unit.as_card().compose(ctx, ui);
+            });
         }
 
         response.bar_menu(|ui| {
@@ -586,14 +596,34 @@ impl TeamEditor {
             .id(format!("slot_{}_{}", fusion_id, slot_index))
             .text_fn(ui, |dragged| {
                 if dragged.unit_id != unit_id {
-                    "Swap units".to_string()
+                    let dragged_unit = TeamEditor::find_unit_in_team_static(team, dragged.unit_id);
+                    let current_unit = TeamEditor::find_unit_in_team_static(team, unit_id);
+                    if let (Some(dragged_unit), Some(current_unit)) = (dragged_unit, current_unit) {
+                        if dragged_unit.unit_name == current_unit.unit_name {
+                            return "Stack\nunits".to_string();
+                        }
+                    }
+                    "Swap\nunits".to_string()
                 } else {
-                    "Same unit".to_string()
+                    "Same\nunit".to_string()
                 }
             })
             .ui(ui)
         {
             if dropped_unit.unit_id != unit_id {
+                let dragged_unit = TeamEditor::find_unit_in_team_static(team, dropped_unit.unit_id);
+                let current_unit = TeamEditor::find_unit_in_team_static(team, unit_id);
+
+                if let (Some(dragged_unit), Some(current_unit)) = (dragged_unit, current_unit) {
+                    if dragged_unit.unit_name == current_unit.unit_name {
+                        actions.push(TeamAction::StackUnit {
+                            unit_id: dropped_unit.unit_id,
+                            target_unit_id: unit_id,
+                        });
+                        return;
+                    }
+                }
+
                 match dropped_unit.from_location {
                     UnitTarget::Slot {
                         fusion_id: _from_fusion,
@@ -634,7 +664,7 @@ impl TeamEditor {
 
         if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
             .id(format!("empty_slot_{}_{}", fusion_id, slot_index))
-            .text_fn(ui, |_| "Place unit".to_string())
+            .text_fn(ui, |_| "Place\nunit".to_string())
             .ui(ui)
         {
             actions.push(TeamAction::MoveUnit {
@@ -662,7 +692,13 @@ impl TeamEditor {
         });
     }
 
-    fn render_bench_horizontal(
+    fn render_houses(&self, ui: &mut Ui, ctx: &ClientContext, team: &NTeam) {
+        for house in team.houses().unwrap() {
+            house.as_tag().compose(ctx, ui);
+        }
+    }
+
+    fn render_bench(
         &self,
         ui: &mut Ui,
         unlinked_units: &[&NUnit],
@@ -722,7 +758,9 @@ impl TeamEditor {
         }
 
         if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
-            response.clone().on_hover_text(unit.unit_name.clone());
+            response.on_hover_ui(|ui| {
+                unit.as_card().compose(ctx, ui);
+            });
         }
     }
 
@@ -1058,6 +1096,13 @@ impl NTeam {
                         fusion.trigger_unit = Ref::Id(trigger);
                     }
                 }
+            }
+            TeamAction::StackUnit {
+                unit_id: _,
+                target_unit_id: _,
+            } => {
+                // Client-side stacking is handled by server reducer
+                // This is just a placeholder for the action
             }
             TeamAction::CustomEmptySlotAction {
                 action_fn: _,

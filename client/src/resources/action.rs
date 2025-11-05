@@ -127,7 +127,7 @@ impl ActionImpl for Action {
                         .clone()
                         .load_components(ctx)?
                         .take()
-                        .with_state(NStatusState::new(next_id(), player_id(), value));
+                        .with_state(NState::new(next_id(), player_id(), value));
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(
@@ -152,18 +152,18 @@ impl ActionImpl for Action {
                 let status_id = x.get_u64(ctx)?;
                 ctx.set_status(status_id);
             }
-            Action::change_status_stacks(x) => {
+            Action::change_status_stax(x) => {
                 let stack_change = x.get_i32(ctx)?;
                 if let Some(status_id) = ctx.status() {
                     let mut status = ctx.load::<NStatusMagic>(status_id)?;
-                    let current_stacks = status.state_load(ctx)?.stacks;
+                    let current_stax = status.state_load(ctx)?.stax;
                     let name = status.name();
                     let color = ctx.color();
-                    let new_stacks = current_stacks + stack_change;
+                    let new_stax = current_stax + stack_change;
                     actions.push(BattleAction::var_set(
                         status.state()?.id,
-                        VarName::stacks,
-                        new_stacks.into(),
+                        VarName::stax,
+                        new_stax.into(),
                     ));
 
                     let stack_text = if stack_change > 0 {
@@ -171,7 +171,7 @@ impl ActionImpl for Action {
                     } else {
                         format!("{}", stack_change)
                     };
-                    let text = format!("{} stacks [b [{} {name}]]", stack_text, color.to_hex());
+                    let text = format!("[b {}x] [{} {name}]", stack_text, color.to_hex());
                     actions.push(
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
@@ -182,7 +182,7 @@ impl ActionImpl for Action {
                     actions.push(BattleAction::wait(ANIMATION));
                 } else {
                     return Err(NodeError::custom(
-                        "No status in context for change_status_stacks",
+                        "No status in context for change_status_stax",
                     ));
                 }
             }

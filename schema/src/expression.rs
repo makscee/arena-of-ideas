@@ -17,7 +17,7 @@ pub enum Expression {
     unit_size,
     pi,
     pi2,
-    stacks,
+    x,
 
     all_units,
     all_enemy_units,
@@ -91,7 +91,7 @@ impl std::hash::Hash for Expression {
             | Expression::zero
             | Expression::pi
             | Expression::pi2
-            | Expression::stacks
+            | Expression::x
             | Expression::gt
             | Expression::unit_size
             | Expression::all_units

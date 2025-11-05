@@ -152,7 +152,7 @@ impl Hash for BattleAction {
             BattleAction::apply_status(a, status, _) => {
                 a.hash(state);
                 status.id.hash(state);
-                // Note: stacks are in state component, using status_name for hash consistency
+                // Note: stax are in state component, using status_name for hash consistency
                 status.status_name.hash(state);
             }
             BattleAction::send_event(event) => event.hash(state),
@@ -177,7 +177,7 @@ impl ToCstr for BattleAction {
                     "+[{} {}]>{a}({})",
                     color.to_hex(),
                     status.status_name,
-                    status.state().unwrap().stacks
+                    status.state().unwrap().stax
                 )
             }
             BattleAction::wait(t) => format!("~{t}"),
@@ -548,10 +548,10 @@ impl BattleSimulation {
         let mut actions = Vec::new();
         for (status, state) in ctx
             .world_mut()?
-            .query::<(&NStatusMagic, &NStatusState)>()
+            .query::<(&NStatusMagic, &NState)>()
             .iter(ctx.world()?)
         {
-            let alive = state.stacks > 0;
+            let alive = state.stax > 0;
             let visible = ctx
                 .get_var_inherited(status.id, VarName::visible)
                 .get_bool()
@@ -605,10 +605,10 @@ impl BattleSimulation {
                     ContextLayer::Status(status_id),
                 ],
                 |ctx| {
-                    // Only trigger status reactions if stacks > 0
+                    // Only trigger status reactions if stax > 0
                     let status = ctx.load::<NStatusMagic>(status_id)?;
-                    let stacks = status.state_ref(ctx)?.stacks;
-                    if stacks <= 0 {
+                    let stax = status.state_ref(ctx)?.stax;
+                    if stax <= 0 {
                         return Ok(vec![]);
                     }
 
@@ -637,10 +637,10 @@ impl BattleSimulation {
         for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 if child_status.status_name == status.status_name {
-                    // Update stacks on the status state component
+                    // Update stax on the status state component
                     if let Ok(mut state) = child_status.state_ref(ctx).cloned() {
-                        let new_stacks = state.stacks + status.state_ref(ctx)?.stacks;
-                        state.set_var(VarName::stacks, new_stacks.into())?;
+                        let new_stax = state.stax + status.state_ref(ctx)?.stax;
+                        state.set_var(VarName::stax, new_stax.into())?;
                         state.save(ctx)?;
                         return Ok(());
                     }

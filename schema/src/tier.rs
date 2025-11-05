@@ -17,7 +17,7 @@ impl Tier for Action {
             | Action::use_ability
             | Action::apply_status
             | Action::set_status(..)
-            | Action::change_status_stacks(..)
+            | Action::change_status_stax(..)
             | Action::repeat(..) => 1,
         }
     }

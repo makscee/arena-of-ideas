@@ -16,6 +16,6 @@ pub enum Action {
     use_ability,
     apply_status,
     set_status(Box<Expression>),
-    change_status_stacks(Box<Expression>),
+    change_status_stax(Box<Expression>),
     repeat(Box<Expression>, Vec<Box<Action>>),
 }

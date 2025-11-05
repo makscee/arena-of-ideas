@@ -3,7 +3,6 @@ use super::*;
 #[derive(Resource, Default)]
 pub struct UpdateQueue {
     pending_updates: VecDeque<StdbUpdate>,
-    failed_updates: VecDeque<StdbUpdate>,
     new_updates_since_retry: bool,
 }
 
@@ -18,61 +17,28 @@ impl Plugin for StdbPlugin {
 
 impl StdbPlugin {
     fn process_update_queue(mut queue: ResMut<UpdateQueue>) {
-        // Process new pending updates
-        let mut processed_successfully = Vec::new();
-        let mut failed_updates = Vec::new();
-
-        while let Some(update) = queue.pending_updates.pop_front() {
-            let mut all_succeeded = true;
-            with_static_sources(|sources| {
-                if sources.solid.handle_stdb_update(&update).is_err() {
-                    all_succeeded = false;
-                }
-                if sources.top.handle_stdb_update(&update).is_err() {
-                    all_succeeded = false;
-                }
-                if sources.selected.handle_stdb_update(&update).is_err() {
-                    all_succeeded = false;
-                }
-            });
-
-            if all_succeeded {
-                processed_successfully.push(update);
-            } else {
-                failed_updates.push(update);
-            }
+        if queue.pending_updates.is_empty() {
+            return;
         }
-
-        // Retry failed updates only if new updates were processed
-        if queue.new_updates_since_retry && !queue.failed_updates.is_empty() {
-            let mut retry_failed = Vec::new();
-
-            while let Some(update) = queue.failed_updates.pop_front() {
-                let mut all_succeeded = true;
-
-                with_static_sources(|sources| {
-                    if sources.solid.handle_stdb_update(&update).is_err() {
-                        all_succeeded = false;
+        with_static_sources(|sources| {
+            loop {
+                let len = queue.pending_updates.len();
+                for _ in 0..len {
+                    let update = queue.pending_updates.pop_front().unwrap();
+                    if sources.solid.handle_stdb_update(&update).is_err()
+                        || sources.top.handle_stdb_update(&update).is_err()
+                        || sources.selected.handle_stdb_update(&update).is_err()
+                    {
+                        queue.pending_updates.push_back(update);
+                        continue;
                     }
-                    if sources.top.handle_stdb_update(&update).is_err() {
-                        all_succeeded = false;
-                    }
-                    if sources.selected.handle_stdb_update(&update).is_err() {
-                        all_succeeded = false;
-                    }
-                });
-
-                if !all_succeeded {
-                    retry_failed.push(update);
+                }
+                if queue.pending_updates.len() == len {
+                    break;
                 }
             }
-
-            queue.failed_updates.extend(retry_failed);
-            queue.new_updates_since_retry = false;
-        }
-
-        // Add new failed updates to the failed queue
-        queue.failed_updates.extend(failed_updates);
+        });
+        queue.new_updates_since_retry = false;
     }
 }
 

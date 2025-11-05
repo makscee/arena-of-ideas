@@ -55,7 +55,7 @@ pub enum VarName {
     floor,
     round,
     action_limit,
-    stacks,
+    stax,
     online,
     active,
     actions_limit,
@@ -64,7 +64,7 @@ pub enum VarName {
 impl VarName {
     pub fn is_stat(self) -> bool {
         match self {
-            VarName::pwr | VarName::hp | VarName::dmg => true,
+            VarName::pwr | VarName::hp | VarName::dmg | VarName::stax => true,
             _ => false,
         }
     }

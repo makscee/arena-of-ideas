@@ -15,7 +15,7 @@ impl FRecursive for Expression {
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
-            | Expression::stacks
+            | Expression::x
             | Expression::all_units
             | Expression::all_enemy_units
             | Expression::all_ally_units
@@ -144,7 +144,7 @@ impl FRecursive for Expression {
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
-            | Expression::stacks
+            | Expression::x
             | Expression::all_units
             | Expression::all_enemy_units
             | Expression::all_ally_units
@@ -289,7 +289,7 @@ impl FRecursive for Action {
             | Action::subtract_value(expr)
             | Action::add_target(expr)
             | Action::set_status(expr)
-            | Action::change_status_stacks(expr) => {
+            | Action::change_status_stax(expr) => {
                 vec![RecursiveField::named(
                     "expr",
                     RecursiveValue::Expr(expr.as_ref()),
@@ -334,7 +334,7 @@ impl FRecursive for Action {
             | Action::subtract_value(expr)
             | Action::add_target(expr)
             | Action::set_status(expr)
-            | Action::change_status_stacks(expr) => {
+            | Action::change_status_stax(expr) => {
                 vec![RecursiveFieldMut::named(
                     "expr",
                     RecursiveValueMut::Expr(expr.as_mut()),

@@ -253,6 +253,14 @@ impl MatchPlugin {
                                 .match_change_trigger(*fusion_id, *trigger)
                                 .notify_error_op();
                         }
+                        TeamAction::StackUnit {
+                            unit_id,
+                            target_unit_id,
+                        } => {
+                            cn().reducers
+                                .match_stack_unit(*unit_id, *target_unit_id)
+                                .notify_error_op();
+                        }
                         _ => {}
                     };
                     Ok(())

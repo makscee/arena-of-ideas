@@ -185,9 +185,9 @@ impl UnitBuilder {
             desc.behavior = Component::new_loaded(unit_behavior);
         }
 
-        let mut state = NUnitState::default();
+        let mut state = NState::default();
         state.set_id(state_id);
-        state.stacks = 1;
+        state.stax = 1;
 
         let mut unit = NUnit::default();
         unit.set_id(unit_id);

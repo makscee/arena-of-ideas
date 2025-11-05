@@ -48,7 +48,7 @@ impl EventImpl for Event {
 
                 for status in statuses {
                     let status_id = status.id;
-                    if status.state_ref(ctx)?.stacks <= 0 {
+                    if status.state_ref(ctx)?.stax <= 0 {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
