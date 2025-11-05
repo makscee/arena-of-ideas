@@ -1712,10 +1712,9 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
                 }
 
                 #allow_attrs
-                pub fn #set_method_name(&mut self, value: #field_type) -> NodeResult<()> {
+                pub fn #set_method_name(&mut self, value: #field_type) {
                     self.#field_name = value;
                     self.set_dirty(true);
-                    Ok(())
                 }
             }
         })

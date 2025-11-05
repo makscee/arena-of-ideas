@@ -177,7 +177,43 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
             prev_slot.add_child(ctx.rctx(), prev_unit.id)?;
         }
     }
+    let fusion = slot
+        .id
+        .get_kind_parent(ctx.rctx(), NodeKind::NFusion)
+        .to_not_found()?;
     slot.with_unit_id(unit.id).save(ctx)?;
+
+    // Handle trigger selection when moving unit to fusion
+    let mut fusion = ctx.load::<NFusion>(fusion)?;
+    if fusion.trigger_unit.id().is_none() {
+        fusion.trigger_unit = Ref::Id(unit_id);
+        fusion.set_dirty(true);
+        fusion.save(ctx)?;
+    }
+
+    // Handle trigger selection when moving unit out of fusion
+    if let Some(old_slot_id) = old_target_id {
+        let old_slot = ctx.load::<NFusionSlot>(old_slot_id)?;
+        let fusion_id = old_slot
+            .id
+            .get_kind_parent(ctx.rctx(), NodeKind::NFusion)
+            .to_not_found()?;
+        let mut old_fusion = ctx.load::<NFusion>(fusion_id)?.load_all(ctx)?.take();
+        if old_fusion.trigger_unit.id() == Some(unit_id) {
+            // Find another unit in the fusion to be trigger, or set to 0 if empty
+            let new_trigger = old_fusion
+                .slots()?
+                .iter()
+                .filter_map(|s| s.unit.id())
+                .find(|&id| id != unit_id)
+                .map(|id| Ref::Id(id))
+                .unwrap_or(Ref::None);
+            old_fusion.trigger_unit = new_trigger;
+            old_fusion.set_dirty(true);
+            old_fusion.save(ctx)?;
+        }
+    }
+
     Ok(())
 }
 
@@ -254,15 +290,15 @@ fn match_submit_battle_result(
     let battles = m.battles_load(ctx)?;
     battles.sort_by_key(|b| b.id);
     let battle = battles.last_mut().unwrap();
-    debug!("Submit result: flr={current_floor} {battle:?}");
+    debug!("Submit result: flr={current_floor} result={result} {battle:?}");
     if battle.id != id {
         return Err("Wrong Battle id".into());
     }
     if battle.result.is_some() {
         return Err("Battle result already submitted".into());
     }
-    battle.result = Some(result);
-    battle.hash = hash;
+    battle.set_result(Some(result));
+    battle.set_hash(hash);
 
     let current_state = m.state;
 
@@ -288,7 +324,7 @@ fn match_submit_battle_result(
                 arena.floor_pools_push(new_floor_pool)?;
                 arena.save(ctx)?;
             }
-            m.active = false;
+            m.active_set(false);
         }
         MatchState::BossBattle => {
             if result {
@@ -309,10 +345,13 @@ fn match_submit_battle_result(
                 boss.team_set(new_boss_team)?;
                 boss.save(ctx)?;
                 if current_floor == last_floor {
+                    m.set_state(MatchState::ChampionShop);
                     m.floor += 1;
+                } else {
+                    m.active_set(false);
                 }
             } else {
-                m.active = false;
+                m.active_set(false);
             }
         }
         MatchState::RegularBattle => {
@@ -333,7 +372,7 @@ fn match_submit_battle_result(
                 m.lives -= 1;
 
                 if m.lives <= 0 {
-                    m.active = false;
+                    m.active_set(false);
                 } else {
                     // Continue on same floor
                     m.state = MatchState::Shop;
@@ -342,11 +381,12 @@ fn match_submit_battle_result(
                 }
             }
         }
-        MatchState::Shop => {
+        MatchState::Shop | MatchState::ChampionShop => {
             // This shouldn't happen - no battle should be pending in shop state
             return Err("Invalid state: battle result submitted while in shop".into());
         }
     }
+    m.set_dirty(true);
     player.take().save(ctx)?;
     Ok(())
 }
@@ -360,21 +400,16 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     let floor = m.floor;
 
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
-    // Regular battles not allowed on last floor
     if floor >= last_floor {
         return Err(
             "Regular battles not allowed on the last floor. Must fight the boss!".to_string(),
         );
     }
 
-    m.state = MatchState::RegularBattle;
-    // Load player team
+    m.set_state(MatchState::RegularBattle);
     let player_team = m.team_load(ctx)?.load_all(ctx)?;
-    // Ensure floor pool exists and add player's team to it
     let pool_id = ensure_floor_pool(ctx, floor)?;
-    // Get random enemy from pool or use team id 0 if empty
     let pool_teams = get_floor_pool_teams(ctx, pool_id);
-    // Add player team to pool first
     let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
 
     let enemy_team_id = if let Some(team_id) = pool_teams.choose(&mut ctx.rng()) {
@@ -395,18 +430,18 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let m = player.active_match_load(ctx)?;
     let floor = m.floor;
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
-    if m.floor == last_floor {
+    if m.floor > last_floor {
+        m.set_state(MatchState::ChampionBattle);
+        let player_team_id = m.team_load(ctx)?.id;
+        let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
+        create_battle(ctx, m, pid, player_team_id, enemy_team_id)?;
+    } else {
         m.set_state(MatchState::BossBattle);
         let player_team = m.team_load(ctx)?.load_all(ctx)?;
         let pool_id = ensure_floor_pool(ctx, floor)?;
         let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
         let enemy_team_id = get_floor_boss_team_id(ctx, floor).unwrap_or(0);
         create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
-    } else if m.floor > last_floor {
-        m.set_state(MatchState::ChampionBattle);
-        let player_team_id = m.team_load(ctx)?.id;
-        let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
-        create_battle(ctx, m, pid, player_team_id, enemy_team_id)?;
     }
     m.take().save(ctx)?;
     Ok(())
@@ -445,6 +480,39 @@ fn match_change_action_range(
 }
 
 #[reducer]
+fn match_change_trigger(
+    ctx: &ReducerContext,
+    fusion_id: u64,
+    trigger_unit: u64,
+) -> Result<(), String> {
+    let ctx = &mut ctx.as_context();
+    let player = ctx.player()?;
+    let pid = player.id;
+    let mut fusion = ctx.load::<NFusion>(fusion_id)?;
+    if fusion.owner != pid {
+        return Err("Fusion not owned by player".to_string());
+    }
+    ctx.load::<NUnit>(trigger_unit)?;
+
+    // Verify trigger unit is in this fusion
+    if trigger_unit != 0 {
+        let slots = fusion.load_all(ctx)?.slots()?;
+        let trigger_valid = slots.iter().any(|slot| {
+            slot.unit
+                .id()
+                .map_or(false, |unit_id| unit_id == trigger_unit)
+        });
+        if !trigger_valid {
+            return Err("Trigger unit must be in the fusion".to_string());
+        }
+    }
+    fusion.trigger_unit = Ref::Id(trigger_unit);
+    fusion.set_dirty(true);
+    fusion.save(ctx)?;
+    Ok(())
+}
+
+#[reducer]
 fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
@@ -465,7 +533,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     );
     let mut team = NTeam::new(ctx.next_id(), pid);
     for i in 0..gs.team_slots as i32 {
-        let mut fusion = NFusion::new(ctx.next_id(), pid, default(), i, 0, 0, 0, 1);
+        let mut fusion = NFusion::new(ctx.next_id(), pid, i, 0, 0, 0, 10);
         let slot = NFusionSlot::new(ctx.next_id(), pid, 0, default());
         fusion.slots_push(slot)?;
         team.fusions_push(fusion)?;
@@ -489,7 +557,7 @@ impl NMatch {
                 self.g
             )));
         }
-        self.g_set(self.g - price)?;
+        self.g_set(self.g - price);
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ServerContext, unit_id: u64) -> Option<u64> {

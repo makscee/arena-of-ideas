@@ -2,7 +2,7 @@ use super::*;
 
 impl NFusion {
     pub fn remove_unit(&mut self, id: u64) -> NodeResult<()> {
-        if self.trigger_unit == id {
+        if self.trigger_unit.id() == Some(id) {
             self.trigger_unit = Default::default();
         }
 
@@ -56,8 +56,8 @@ impl NFusion {
     }
 
     pub fn recalculate_stats(&mut self, ctx: &mut ClientContext) -> NodeResult<()> {
-        self.pwr_set(self.stat_sum(ctx, VarName::pwr)?)?;
-        self.hp_set(self.stat_sum(ctx, VarName::hp)?)?;
+        self.pwr_set(self.stat_sum(ctx, VarName::pwr)?);
+        self.hp_set(self.stat_sum(ctx, VarName::hp)?);
         Ok(())
     }
 
@@ -110,15 +110,16 @@ impl NFusion {
         event: &Event,
         ctx: &mut ClientContext,
     ) -> Result<Vec<(u64, Action)>, NodeError> {
-        if Self::get_trigger(ctx, self.trigger_unit)
-            .track()?
-            .fire(event, ctx)
-            .unwrap_or_default()
-        {
-            self.gather_fusion_actions(ctx).track()
-        } else {
-            Ok(default())
+        if let Some(unit_id) = self.trigger_unit.id() {
+            if Self::get_trigger(ctx, unit_id)
+                .track()?
+                .fire(event, ctx)
+                .unwrap_or_default()
+            {
+                return self.gather_fusion_actions(ctx).track();
+            }
         }
+        Ok(default())
     }
 
     pub fn react(

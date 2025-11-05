@@ -156,7 +156,7 @@ pub struct NMatch {
 #[derive(Node)]
 pub struct NFusion {
     pub slots: OwnedMultiple<NFusionSlot>,
-    pub trigger_unit: u64,
+    pub trigger_unit: Ref<NUnit>,
     #[var]
     pub index: i32,
     #[var]

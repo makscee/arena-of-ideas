@@ -423,7 +423,7 @@ impl FusionBuilder {
         let mut fusion = NFusion::default();
         fusion.set_id(fusion_id);
         fusion.index = 0;
-        fusion.trigger_unit = house_units[self.trigger_index].id;
+        fusion.trigger_unit = Ref::Id(house_units[self.trigger_index].id);
         fusion.actions_limit = 3;
         fusion.slots = OwnedMultiple::new_loaded(slots);
 

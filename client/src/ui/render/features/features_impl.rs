@@ -1424,10 +1424,10 @@ impl FPlaceholder for NTeam {
             .with_fusions(
                 [
                     fusion,
-                    NFusion::new(next_id(), player_id(), 0, 1, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 0, 2, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 0, 3, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 0, 4, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 1, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 2, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 3, 0, 0, 0, 0),
+                    NFusion::new(next_id(), player_id(), 4, 0, 0, 0, 0),
                 ]
                 .into(),
             )
@@ -1640,7 +1640,7 @@ impl FPaste for NFusion {}
 
 impl FPlaceholder for NFusion {
     fn placeholder() -> Self {
-        NFusion::new(next_id(), 0, 1, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
+        NFusion::new(next_id(), 0, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
     }
 }
 

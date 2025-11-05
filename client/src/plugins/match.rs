@@ -19,33 +19,36 @@ impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            if !matches!(m.state, MatchState::Shop) {
+            if m.state.is_battle() {
                 GameState::Battle.set_next(world);
             }
             Ok(())
         })
     }
-    pub fn check_active(world: &mut World) -> NodeResult<()> {
+    pub fn check_active(world: &mut World) -> NodeResult<bool> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
+            dbg!(m);
             if !m.active {
-                // Check if player is champion (high floor with no lives lost or specific champion flag)
-                let is_champion = m.lives > 0; // Adjust champion criteria as needed
-                if is_champion {
-                    format!("You are the champion! Floor: {}", m.floor)
-                        .cstr()
-                        .notify(world);
-                }
                 GameState::MatchOver.set_next(world);
+                Ok(false)
+            } else {
+                Ok(true)
             }
-            Ok(())
         })
     }
     fn on_enter(world: &mut World) {
-        if let Err(e) = Self::check_active(world) {
-            e.cstr().notify_error(world);
-            GameState::Title.set_next(world);
-            return;
+        match Self::check_active(world) {
+            Ok(active) => {
+                if !active {
+                    return;
+                }
+            }
+            Err(e) => {
+                e.cstr().notify_error(world);
+                GameState::Title.set_next(world);
+                return;
+            }
         }
         if let Err(e) = Self::check_battles(world) {
             e.cstr().notify_error(world);
@@ -60,7 +63,7 @@ impl MatchPlugin {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
 
-            if !matches!(m.state, MatchState::Shop) {
+            if m.state.is_battle() {
                 ui.vertical_centered_justified(|ui| {
                     "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
                     "Complete the current battle to access the shop."
@@ -245,6 +248,11 @@ impl MatchPlugin {
                                 .match_change_action_range(*slot_id, *start as u8, *length as u8)
                                 .notify_error_op();
                         }
+                        TeamAction::ChangeTrigger { fusion_id, trigger } => {
+                            cn().reducers
+                                .match_change_trigger(*fusion_id, *trigger)
+                                .notify_error_op();
+                        }
                         _ => {}
                     };
                     Ok(())
@@ -266,32 +274,36 @@ impl MatchPlugin {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
+            let won_last = m
+                .battles_ref(ctx)?
+                .iter()
+                .sorted_by_key(|b| b.id)
+                .last()
+                .to_not_found()?
+                .result
+                == Some(true);
             let arena = ctx.load::<NArena>(ID_ARENA)?;
             let last_floor = arena.last_floor;
 
             ui.vertical_centered_justified(|ui| {
                 "Match Over".cstr_s(CstrStyle::Heading).label(ui);
 
-                if m.lives > 0 && m.floor > last_floor {
-                    // Beyond last floor - true champion
+                if won_last && m.floor > last_floor {
                     format!(
                         "You're the [yellow [b ULTIMATE CHAMPION]]! Conquered [b {}] floors!",
                         m.floor
                     )
                     .cstr()
                     .label(ui);
-                } else if m.lives > 0 && m.floor == last_floor {
-                    // Reached last floor and won
+                } else if won_last && m.floor == last_floor {
                     "You're the [yellow [b CHAMPION]]! Conquered the final floor!"
                         .cstr()
                         .label(ui);
-                } else if m.lives > 0 {
-                    // Became boss of a non-final floor
+                } else if won_last {
                     format!("Victory! You're the boss of floor [b {}]", m.floor)
                         .cstr()
                         .label(ui);
                 } else if matches!(m.state, MatchState::BossBattle | MatchState::ChampionBattle) {
-                    // Lost a boss battle
                     if m.floor == last_floor {
                         "Defeated by the champion on the final floor!"
                             .cstr()
@@ -302,7 +314,6 @@ impl MatchPlugin {
                             .label(ui);
                     }
                 } else {
-                    // Lost a regular battle
                     "Out of lives! Game over.".cstr().label(ui);
                 }
 
@@ -317,21 +328,9 @@ impl MatchPlugin {
                         .cstr_cs(if m.lives > 0 { GREEN } else { RED }, CstrStyle::Bold)
                         .label(ui);
                     ui.end_row();
-                    "Battle Type:".cstr().label(ui);
-                    match m.state {
-                        MatchState::ChampionBattle => {
-                            "Champion Battle".cstr_s(CstrStyle::Bold).label(ui)
-                        }
-                        MatchState::BossBattle => "Boss Battle".cstr_s(CstrStyle::Bold).label(ui),
-                        MatchState::RegularBattle => {
-                            "Regular Battle".cstr_s(CstrStyle::Bold).label(ui)
-                        }
-                        MatchState::Shop => "Shop".cstr_s(CstrStyle::Bold).label(ui),
-                    };
-                    ui.end_row();
                     if m.floor == last_floor {
                         "Status:".cstr().label(ui);
-                        if m.lives > 0 {
+                        if won_last {
                             "Champion".cstr_cs(YELLOW, CstrStyle::Bold).label(ui);
                         } else {
                             "Challenged Champion"
@@ -342,11 +341,12 @@ impl MatchPlugin {
                     }
                 });
             });
-            let world = ctx.world_mut()?;
             ui.vertical_centered(|ui| {
                 if "Done".cstr().button(ui).clicked() {
-                    cn().reducers.match_complete().notify(world);
-                    GameState::Title.set_next(world);
+                    op(|world| {
+                        cn().reducers.match_complete().notify(world);
+                        GameState::Title.set_next(world);
+                    });
                 }
             });
             Ok(())

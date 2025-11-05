@@ -4,8 +4,7 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
-            .add_systems(Update, Self::update.run_if(in_state(GameState::Battle)));
+        app.add_systems(OnEnter(GameState::Battle), Self::on_enter);
     }
 }
 
@@ -49,11 +48,6 @@ impl BattlePlugin {
             if m.state.is_battle() {
                 if let Some(last) = m.battles_ref(ctx)?.last() {
                     if last.result.is_none() {
-                        // Check if this is an immediate victory case (no enemy team)
-                        if last.team_right == 0 {
-                            return Ok(Some((last.id, true, None)));
-                        }
-
                         let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
                             team.load_all(ctx)?.take()
                         } else {
@@ -64,7 +58,7 @@ impl BattlePlugin {
                         } else {
                             NTeam::default().with_id(next_id())
                         };
-                        Ok(Some((last.id, false, Some((left, right)))))
+                        Ok(Some((last.id, Some((left, right)))))
                     } else {
                         Ok(None)
                     }
@@ -77,23 +71,9 @@ impl BattlePlugin {
         });
 
         match result {
-            Ok(Some((id, is_immediate_victory, teams))) => {
-                if is_immediate_victory {
-                    // Immediate victory - submit result without showing battle
-                    with_solid_source(|_ctx| {
-                        let mut h = DefaultHasher::new();
-                        0u64.hash(&mut h);
-                        let hash = h.finish();
-                        cn().reducers
-                            .match_submit_battle_result(id, true, hash)
-                            .notify_op();
-                        Ok(())
-                    })
-                    .log();
-                    GameState::Shop.set_next(world);
-                } else if let Some((left, right)) = teams {
+            Ok(Some((id, teams))) => {
+                if let Some((left, right)) = teams {
                     Self::load_teams(id, left, right, world);
-                    // Set callback to submit battle result
                     Self::on_done_callback(
                         |id, result, hash| {
                             cn().reducers
@@ -103,12 +83,12 @@ impl BattlePlugin {
                         world,
                     );
                 } else {
-                    // Shouldn't happen, but go back to shop
+                    error!("Failed to get teams for battle");
                     GameState::Shop.set_next(world);
                 }
             }
             Ok(None) => {
-                // No active battle, go back to shop
+                debug!("No active battle, go back to Shop");
                 GameState::Shop.set_next(world);
             }
             Err(e) => {
@@ -118,7 +98,6 @@ impl BattlePlugin {
         }
     }
 
-    fn update(_world: &mut World) {}
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
@@ -385,7 +364,6 @@ impl BattlePlugin {
                                     h.finish()
                                 });
                                 on_done(data.battle.id, result, hash);
-                                // State transition will happen via reducer subscription
                             }
                         }
                     });

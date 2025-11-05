@@ -1,5 +1,29 @@
 use super::*;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MatchState {
+    Shop,
+    RegularBattle,
+    BossBattle,
+    ChampionShop,
+    ChampionBattle,
+}
+
+impl Default for MatchState {
+    fn default() -> Self {
+        MatchState::Shop
+    }
+}
+
+impl MatchState {
+    pub fn is_battle(self) -> bool {
+        matches!(
+            self,
+            MatchState::RegularBattle | MatchState::BossBattle | MatchState::ChampionBattle
+        )
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
 pub struct ShopOffer {
     pub buy_limit: Option<i32>,

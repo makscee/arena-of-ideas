@@ -272,6 +272,37 @@ impl TeamEditor {
     ) -> Response {
         ui.vertical(|ui| {
             format!("[s [tw Fusion #]]{}", fusion.index).label_w(ui);
+
+            // Always show trigger selector
+            let triggers = self.get_available_triggers(fusion, team);
+            if !triggers.is_empty() {
+                let mut trigger_index = triggers
+                    .iter()
+                    .position(|(id, _)| Some(*id) == fusion.trigger_unit.id())
+                    .unwrap_or(0);
+
+                egui::ComboBox::from_id_salt(format!("normal_{}", fusion.id))
+                    .selected_text(triggers[trigger_index].1.cstr().widget(1.0, ui.style()))
+                    .show_ui(ui, |ui| {
+                        for (i, (id, name)) in triggers.iter().enumerate() {
+                            if ui
+                                .selectable_value(
+                                    &mut trigger_index,
+                                    i,
+                                    name.cstr().widget(1.0, ui.style()),
+                                )
+                                .clicked()
+                            {
+                                actions.push(TeamAction::ChangeTrigger {
+                                    fusion_id: fusion.id,
+                                    trigger: *id,
+                                });
+                            }
+                        }
+                    });
+                ui.separator();
+            }
+
             let frame = Frame::new()
                 .inner_margin(4.0)
                 .stroke(ui.visuals().window_stroke())
@@ -317,7 +348,7 @@ impl TeamEditor {
             if !triggers.is_empty() {
                 let mut trigger_index = triggers
                     .iter()
-                    .position(|(id, _)| *id == fusion.trigger_unit)
+                    .position(|(id, _)| Some(*id) == fusion.trigger_unit.id())
                     .unwrap_or(0);
 
                 ui.label("Trigger:");
@@ -380,8 +411,8 @@ impl TeamEditor {
     ) -> NodeResult<()> {
         ui.vertical(|ui| {
             let mut action_list = Vec::new();
-            if fusion.trigger_unit != 0 {
-                ctx.load::<NUnit>(fusion.trigger_unit)?
+            if let Some(id) = fusion.trigger_unit.id() {
+                ctx.load::<NUnit>(id)?
                     .description_ref(ctx)?
                     .behavior_ref(ctx)?
                     .reaction
@@ -395,7 +426,7 @@ impl TeamEditor {
                             if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
                                 let actions = &unit_behavior.reaction.actions;
                                 let range = &slot.actions;
-                                let is_trigger = unit_id == fusion.trigger_unit;
+                                let is_trigger = Some(unit_id) == fusion.trigger_unit.id();
 
                                 for i in range.start
                                     ..(range.start + range.length).min(actions.len() as u8)
@@ -880,16 +911,18 @@ impl NTeam {
                         }
                     }
                 }
-                if fusion.trigger_unit != 0 && !available_units.contains(&fusion.trigger_unit) {
-                    fusion.trigger_unit = 0;
+                if fusion.trigger_unit.id().is_some()
+                    && !available_units.contains(&fusion.trigger_unit.id().unwrap())
+                {
+                    fusion.trigger_unit = Ref::none();
                     fusion.set_dirty(true);
                 }
-                if fusion.trigger_unit == 0 {
+                if fusion.trigger_unit.id().is_none() {
                     if let Ok(slots) = fusion.slots.get() {
                         for slot in slots {
                             if let Some(unit_id) = slot.unit.id() {
                                 if available_units.contains(&unit_id) {
-                                    fusion.trigger_unit = unit_id;
+                                    fusion.trigger_unit = Ref::Id(unit_id);
                                     fusion.set_dirty(true);
                                     break;
                                 }
@@ -1022,7 +1055,7 @@ impl NTeam {
             TeamAction::ChangeTrigger { fusion_id, trigger } => {
                 if let Ok(fusions) = self.fusions.get_mut() {
                     if let Some(fusion) = fusions.iter_mut().find(|f| f.id == fusion_id) {
-                        fusion.trigger_unit = trigger;
+                        fusion.trigger_unit = Ref::Id(trigger);
                     }
                 }
             }
