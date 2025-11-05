@@ -46,7 +46,7 @@ impl BattlePlugin {
         // Load the latest battle from the current match
         let result = with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            if m.pending_battle {
+            if m.state.is_battle() {
                 if let Some(last) = m.battles_ref(ctx)?.last() {
                     if last.result.is_none() {
                         // Check if this is an immediate victory case (no enemy team)

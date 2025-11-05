@@ -198,7 +198,21 @@ impl FEdit for UnitActionRange {
     }
 }
 
-// MagicType
+impl FEdit for MatchState {
+    fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
+        let response = ui.label("MatchState");
+        egui::ComboBox::from_id_salt("match_state")
+            .selected_text(format!("{:?}", self))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(self, MatchState::Shop, "Shop");
+                ui.selectable_value(self, MatchState::RegularBattle, "Regular Battle");
+                ui.selectable_value(self, MatchState::BossBattle, "Boss Battle");
+                ui.selectable_value(self, MatchState::ChampionBattle, "Champion Battle");
+            });
+        response
+    }
+}
+
 impl FEdit for MagicType {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
@@ -1579,7 +1593,7 @@ impl FDisplay for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder() -> Self {
-        NMatch::new(next_id(), 0, 0, 1, 3, false, false, false, vec![])
+        NMatch::new(next_id(), 0, 0, 1, 3, false, MatchState::Shop, vec![])
             .with_team(NTeam::placeholder())
             .with_battles(default())
     }

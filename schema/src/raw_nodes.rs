@@ -147,8 +147,7 @@ pub struct NMatch {
     pub lives: i32,
     #[var]
     pub active: bool,
-    pub pending_battle: bool,
-    pub boss_battle: bool,
+    pub state: MatchState,
     pub shop_offers: Vec<ShopOffer>,
     pub team: Owned<NTeam>,
     pub battles: OwnedMultiple<NBattle>,

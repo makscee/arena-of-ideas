@@ -107,14 +107,14 @@ fn subscribe_table_updates() {
             new: new.clone(),
         });
 
-        // Check if this is the current player's NMatch and if pending_battle flag was set
+        // Check if this is the current player's NMatch and if battle state changed
         if new.kind() == NodeKind::NMatch && new.owner == player_id() {
-            // Parse the data to check pending_battle field
+            // Parse the data to check state field
             if let (Ok(old_match), Ok(new_match)) =
                 (old.to_node::<NMatch>(), new.to_node::<NMatch>())
             {
-                if !old_match.pending_battle && new_match.pending_battle {
-                    // Battle became pending, trigger state transition
+                if !old_match.state.is_battle() && new_match.state.is_battle() {
+                    // Battle state became active, trigger state transition
                     op(|world| {
                         if matches!(world.resource::<State<GameState>>().get(), GameState::Shop) {
                             GameState::Battle.set_next(world);

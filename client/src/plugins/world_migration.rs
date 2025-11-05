@@ -118,7 +118,6 @@ pub fn upload_world_assets_from_path<P: AsRef<Path>>(
     path: P,
 ) -> Result<usize, Box<dyn std::error::Error>> {
     let manager = load_node_assets_from_path(path)?;
-    dbg!(&manager);
 
     let mut all_nodes: Vec<(u64, String, NodeAsset)> = default();
     let mut all_links: Vec<LinkAsset> = default();

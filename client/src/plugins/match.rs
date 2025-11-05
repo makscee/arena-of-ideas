@@ -19,7 +19,7 @@ impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            if m.pending_battle {
+            if !matches!(m.state, MatchState::Shop) {
                 GameState::Battle.set_next(world);
             }
             Ok(())
@@ -60,7 +60,7 @@ impl MatchPlugin {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
 
-            if m.pending_battle {
+            if !matches!(m.state, MatchState::Shop) {
                 ui.vertical_centered_justified(|ui| {
                     "Battle in Progress".cstr_s(CstrStyle::Heading2).label(ui);
                     "Complete the current battle to access the shop."
@@ -220,7 +220,6 @@ impl MatchPlugin {
                                     .find(|s| s.index == *slot_index)
                                     .to_not_found()?
                                     .id;
-                                dbg!(slot_index, slot_id, unit_id);
                                 cn().reducers
                                     .match_move_unit(*unit_id, slot_id)
                                     .notify_error_op();
@@ -291,22 +290,20 @@ impl MatchPlugin {
                     format!("Victory! You're the boss of floor [b {}]", m.floor)
                         .cstr()
                         .label(ui);
-                } else if m.boss_battle {
+                } else if matches!(m.state, MatchState::BossBattle | MatchState::ChampionBattle) {
                     // Lost a boss battle
                     if m.floor == last_floor {
                         "Defeated by the champion on the final floor!"
                             .cstr()
                             .label(ui);
                     } else {
-                        format!("Defeated by the boss of floor [b {}]", m.floor)
+                        "Defeated by the boss! Your journey ends here."
                             .cstr()
                             .label(ui);
                     }
                 } else {
                     // Lost a regular battle
-                    format!("Defeated on floor [b {}]", m.floor)
-                        .cstr()
-                        .label(ui);
+                    "Out of lives! Game over.".cstr().label(ui);
                 }
 
                 // Show final stats
@@ -321,11 +318,16 @@ impl MatchPlugin {
                         .label(ui);
                     ui.end_row();
                     "Battle Type:".cstr().label(ui);
-                    if m.boss_battle {
-                        "Boss Battle".cstr_cs(RED, CstrStyle::Bold).label(ui);
-                    } else {
-                        "Regular Battle".cstr().label(ui);
-                    }
+                    match m.state {
+                        MatchState::ChampionBattle => {
+                            "Champion Battle".cstr_s(CstrStyle::Bold).label(ui)
+                        }
+                        MatchState::BossBattle => "Boss Battle".cstr_s(CstrStyle::Bold).label(ui),
+                        MatchState::RegularBattle => {
+                            "Regular Battle".cstr_s(CstrStyle::Bold).label(ui)
+                        }
+                        MatchState::Shop => "Shop".cstr_s(CstrStyle::Bold).label(ui),
+                    };
                     ui.end_row();
                     if m.floor == last_floor {
                         "Status:".cstr().label(ui);

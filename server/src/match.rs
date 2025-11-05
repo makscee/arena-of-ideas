@@ -1,3 +1,4 @@
+use schema::MatchState;
 use spacetimedb::rand::seq::SliceRandom;
 
 use super::*;
@@ -77,7 +78,6 @@ fn create_battle(
     )
     .insert(ctx);
     ctx.add_link(m.id, battle.id)?;
-    m.set_pending_battle(true);
 
     Ok(battle)
 }
@@ -264,98 +264,87 @@ fn match_submit_battle_result(
     battle.result = Some(result);
     battle.hash = hash;
 
-    // Clear pending_battle flag on the match
-    m.pending_battle = false;
+    let current_state = m.state;
 
-    let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
+    match current_state {
+        MatchState::ChampionBattle => {
+            if result {
+                // Won champion battle - create new floor with boss and pool
+                let player_team_id = m.team_load(ctx)?.id;
+                let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
 
-    // Use boss_battle flag to determine if this was a boss battle
-    let was_boss_battle = m.boss_battle;
+                // Create new boss team for the new floor
+                let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
+                let mut new_floor_boss = NFloorBoss::new(ctx.next_id(), ID_ARENA, current_floor);
+                new_floor_boss.team_set(new_boss_team.clone())?;
+                let mut new_floor_pool = NFloorPool::new(ctx.next_id(), ID_ARENA, current_floor);
+                new_floor_pool.teams_push(new_boss_team.clone().remap_ids(ctx))?;
 
-    // Handle boss battle outcomes
-    if was_boss_battle {
-        if result {
-            // Won against boss - replace boss with player's team
-            let player_team_id = m.team_load(ctx)?.id;
-            let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
-
-            // Create new boss team
-            let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
-
-            // Replace or create boss entry
-            let boss_nodes = get_floor_bosses(ctx);
-            if let Some(boss_node) = boss_nodes.iter().find(|n| {
-                n.to_node::<NFloorBoss>()
-                    .map(|boss| boss.floor == current_floor)
-                    .unwrap_or(false)
-            }) {
-                let mut boss = ctx.load::<NFloorBoss>(boss_node.id)?;
-                // Delete old boss team
-                if let Ok(old_team) = boss.team_load(ctx) {
-                    old_team.clone().delete_recursive(ctx);
-                }
-                boss.team_set(new_boss_team)?;
-                boss.save(ctx)?;
-            } else {
-                let mut floor_boss = NFloorBoss::new(ctx.next_id(), ID_ARENA, current_floor);
-                floor_boss.team_set(new_boss_team)?;
-                floor_boss.save(ctx)?;
+                let mut arena = ctx.load::<NArena>(ID_ARENA)?;
+                arena.floor_pools_load(ctx)?;
+                arena.floor_bosses_load(ctx)?;
+                arena.set_last_floor(current_floor);
+                arena.floor_bosses_push(new_floor_boss)?;
+                arena.floor_pools_push(new_floor_pool)?;
+                arena.save(ctx)?;
             }
-
-            // Special case: beating the last floor boss makes you champion
-            if current_floor == last_floor {
-                // Create a new floor with player as boss
-                m.floor += 1;
-
-                let champion_team = player_team.clone().remap_ids(ctx).with_owner(pid);
-
-                let mut new_floor_boss = NFloorBoss::new(ctx.next_id(), ID_ARENA, m.floor);
-                new_floor_boss.team_set(champion_team)?;
-                new_floor_boss.save(ctx)?;
-
-                // Update arena floors count
-                if let Some(mut arena) =
-                    TNode::load(ctx.rctx(), ID_ARENA).and_then(|node| node.to_node::<NArena>().ok())
-                {
-                    arena.last_floor = m.floor;
-                    arena.save(ctx)?;
-                }
-
-                // Continue to shop phase
-                m.g += ctx.global_settings().match_g.initial;
-                m.fill_shop_case(ctx, false)?;
-            } else {
-                // Regular boss defeat - end the run
-                m.active = false;
-            }
-        } else {
-            // Lost against boss - end the run
             m.active = false;
         }
-    } else {
-        // Regular battle
-        if result {
-            // Won regular battle
-            m.floor += 1;
+        MatchState::BossBattle => {
+            if result {
+                // Won against boss - replace boss with player's team
+                let player_team_id = m.team_load(ctx)?.id;
+                let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
 
-            // Gain life every 5 floors
-            if m.floor % 5 == 0 {
-                m.lives += 1;
-            }
-
-            m.g += ctx.global_settings().match_g.initial;
-            m.fill_shop_case(ctx, false)?;
-        } else {
-            // Lost regular battle
-            m.lives -= 1;
-
-            if m.lives <= 0 {
-                m.active = false;
+                // Create new boss team
+                let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
+                let mut arena = ctx.load::<NArena>(ID_ARENA)?;
+                let last_floor = arena.last_floor;
+                let mut boss = arena
+                    .floor_bosses_load(ctx)?
+                    .iter()
+                    .find(|f| f.floor == current_floor)
+                    .to_custom_err_fn(|| format!("Floor boss not found for {current_floor}"))?
+                    .clone();
+                boss.team_set(new_boss_team)?;
+                boss.save(ctx)?;
+                if current_floor == last_floor {
+                    m.floor += 1;
+                }
             } else {
-                // Continue on same floor
+                m.active = false;
+            }
+        }
+        MatchState::RegularBattle => {
+            if result {
+                // Won regular battle
+                m.floor += 1;
+
+                // Gain life every 5 floors
+                if m.floor % 5 == 0 {
+                    m.lives += 1;
+                }
+
+                m.state = MatchState::Shop;
                 m.g += ctx.global_settings().match_g.initial;
                 m.fill_shop_case(ctx, false)?;
+            } else {
+                // Lost regular battle
+                m.lives -= 1;
+
+                if m.lives <= 0 {
+                    m.active = false;
+                } else {
+                    // Continue on same floor
+                    m.state = MatchState::Shop;
+                    m.g += ctx.global_settings().match_g.initial;
+                    m.fill_shop_case(ctx, false)?;
+                }
             }
+        }
+        MatchState::Shop => {
+            // This shouldn't happen - no battle should be pending in shop state
+            return Err("Invalid state: battle result submitted while in shop".into());
         }
     }
     player.take().save(ctx)?;
@@ -372,11 +361,13 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
 
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
     // Regular battles not allowed on last floor
-    if floor == last_floor && last_floor > 0 {
+    if floor >= last_floor {
         return Err(
             "Regular battles not allowed on the last floor. Must fight the boss!".to_string(),
         );
     }
+
+    m.state = MatchState::RegularBattle;
     // Load player team
     let player_team = m.team_load(ctx)?.load_all(ctx)?;
     // Ensure floor pool exists and add player's team to it
@@ -403,22 +394,20 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let floor = m.floor;
-
-    m.boss_battle = true;
-    let player_team = m.team_load(ctx)?.load_all(ctx)?.take();
-
-    // Ensure floor pool exists and add player's team to it
-    let pool_id = ensure_floor_pool(ctx, floor)?;
-    let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
-
-    // Get boss team ID
-    let enemy_team_id = get_floor_boss_team_id(ctx, floor)
-        .or_else(|| get_floor_boss_team_id(ctx, floor - 1))
-        .unwrap_or(0);
-
-    // Create battle
-    create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
-
+    let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
+    if m.floor == last_floor {
+        m.set_state(MatchState::BossBattle);
+        let player_team = m.team_load(ctx)?.load_all(ctx)?;
+        let pool_id = ensure_floor_pool(ctx, floor)?;
+        let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
+        let enemy_team_id = get_floor_boss_team_id(ctx, floor).unwrap_or(0);
+        create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
+    } else if m.floor > last_floor {
+        m.set_state(MatchState::ChampionBattle);
+        let player_team_id = m.team_load(ctx)?.id;
+        let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
+        create_battle(ctx, m, pid, player_team_id, enemy_team_id)?;
+    }
     m.take().save(ctx)?;
     Ok(())
 }
@@ -471,8 +460,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         1,
         3,
         true,
-        false,
-        false,
+        MatchState::Shop,
         default(),
     );
     let mut team = NTeam::new(ctx.next_id(), pid);
