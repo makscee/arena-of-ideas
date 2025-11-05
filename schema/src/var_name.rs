@@ -37,8 +37,6 @@ pub enum VarName {
     status_name,
     description,
     color,
-    lvl,
-    xp,
     rarity,
     tier,
     visible,
@@ -47,18 +45,15 @@ pub enum VarName {
     unit_size,
     t,
     text,
-    charges,
     g,
     lives,
     price,
     unit,
     floor,
     round,
-    action_limit,
     stax,
     online,
     active,
-    actions_limit,
 }
 
 impl VarName {

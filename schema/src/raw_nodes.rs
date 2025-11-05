@@ -53,8 +53,8 @@ pub struct NHouse {
     pub color: Component<NHouseColor>,
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
-    pub units: OwnedMultiple<NUnit>,
     pub state: Component<NState>,
+    pub units: OwnedMultiple<NUnit>,
 }
 
 #[derive(Node)]
@@ -166,7 +166,6 @@ pub struct NFusion {
     pub hp: i32,
     #[var]
     pub dmg: i32,
-    #[var]
     pub actions_limit: i32,
 }
 

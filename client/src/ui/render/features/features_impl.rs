@@ -378,13 +378,10 @@ impl FTitle for Action {
                 if let Ok(ability) = ctx.get_var(VarName::ability_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
                         r += " ";
-                        r += &ability.cstr_cs(color, CstrStyle::Bold);
-                        if let Ok(lvl) = ctx.get_var(VarName::lvl).get_i32() {
-                            r += &format!(
-                                " [tw [s lvl]][{} [b {lvl}]]",
-                                VarName::lvl.color().to_hex()
-                            );
+                        if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
+                            r += &format!(" [{} [b x{x}]] ", VarName::stax.color().to_hex());
                         }
+                        r += &ability.cstr_cs(color, CstrStyle::Bold);
                     }
                 }
                 r
@@ -394,13 +391,10 @@ impl FTitle for Action {
                 if let Ok(status) = ctx.get_var(VarName::status_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
                         r += " ";
-                        r += &status.cstr_cs(color, CstrStyle::Bold);
-                        if let Ok(lvl) = ctx.get_var(VarName::lvl).get_i32() {
-                            r += &format!(
-                                " [tw [s lvl]][{} [b {lvl}]]",
-                                VarName::lvl.color().to_hex()
-                            );
+                        if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
+                            r += &format!(" [{} [b x{x}]] ", VarName::stax.color().to_hex());
                         }
+                        r += &status.cstr_c(color);
                     }
                 }
                 r
@@ -616,14 +610,10 @@ impl FTag for NUnit {
         } else {
             0
         };
-        let lvl = ctx.get_var(VarName::lvl).get_i32().unwrap_or_default();
-        let xp = match ctx.get_var(VarName::xp).get_i32() {
-            Ok(v) => format!(" [tw {v}]/[{} [b {lvl}]]", VarName::lvl.color().to_hex()),
-            Err(_) => default(),
-        };
+        let x = ctx.get_var(VarName::stax).get_i32().unwrap_or_default();
 
         Some(format!(
-            "[b {} {} [tw T]{}]{xp}",
+            "[b {}/{} [tw T]{}] [b x{x}]",
             ctx.get_var(VarName::pwr)
                 .get_i32()
                 .unwrap_or_default()

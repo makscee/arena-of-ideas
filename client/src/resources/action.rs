@@ -89,22 +89,36 @@ impl ActionImpl for Action {
                 }
             }
             Action::use_ability => {
-                let caster = ctx.caster().to_not_found()?;
-                let house = ctx.load_first_parent_recursive_ref::<NHouse>(caster)?;
+                let caster = ctx.caster().to_not_found().track()?;
+                let house = ctx
+                    .load_first_parent_recursive_ref::<NHouse>(caster)
+                    .track()?;
+                let x = ctx
+                    .load::<NState>(caster)
+                    .unwrap_or_default()
+                    .stax
+                    .at_most(house.state_ref(ctx).cloned().unwrap_or_default().stax)
+                    .at_least(1);
                 let color = house.color_ref(ctx)?.color.c32();
-                let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(ability) = house.ability_ref(ctx) {
                     let name = ability.ability_name.clone();
                     let effect = ability
-                        .description_ref(ctx)?
+                        .description_ref(ctx)
+                        .track()?
                         .effect_ref(ctx)?
                         .actions
                         .clone();
-                    ctx.with_layer(ContextLayer::Var(VarName::value, value.into()), |ctx| {
-                        actions.extend(effect.process(ctx)?);
-                        Ok(())
-                    })?;
-                    let text = format!("use ability [{} [b {name}] [th {value}]]", color.to_hex());
+                    ctx.with_layers(
+                        [
+                            ContextLayer::Var(VarName::stax, x.into()),
+                            ContextLayer::Var(VarName::value, x.into()),
+                        ],
+                        |ctx| {
+                            actions.extend(effect.process(ctx).track()?);
+                            Ok(())
+                        },
+                    )?;
+                    let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
                     actions.push(
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
@@ -117,17 +131,24 @@ impl ActionImpl for Action {
                 }
             }
             Action::apply_status => {
-                let caster = ctx.caster().to_not_found()?;
-                let house = ctx.load_first_parent_recursive_ref::<NHouse>(caster)?;
+                let caster = ctx.caster().to_not_found().track()?;
+                let house = ctx
+                    .load_first_parent_recursive_ref::<NHouse>(caster)
+                    .track()?;
+                let x = ctx
+                    .load::<NState>(caster)
+                    .unwrap_or_default()
+                    .stax
+                    .at_most(house.state_ref(ctx).cloned().unwrap_or_default().stax)
+                    .at_least(1);
                 let color = house.color_ref(ctx)?.color.c32();
-                let value = ctx.get_var(VarName::value).get_i32().unwrap_or(1);
                 if let Ok(status) = house.status_ref(ctx) {
                     let name = status.status_name.clone();
                     let status = status
                         .clone()
                         .load_components(ctx)?
                         .take()
-                        .with_state(NState::new(next_id(), player_id(), value));
+                        .with_state(NState::new(next_id(), player_id(), x));
                     let targets = ctx.collect_targets();
                     for target in targets {
                         actions.push(BattleAction::apply_status(
@@ -136,7 +157,7 @@ impl ActionImpl for Action {
                             color,
                         ));
                     }
-                    let text = format!("apply status [{} [b {name}] [th {value}]]", color.to_hex());
+                    let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
                     actions.push(
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
