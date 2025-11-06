@@ -347,43 +347,48 @@ impl TeamEditor {
         ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        ui.vertical(|ui| {
-            ui.label(format!("🔧 Editing Fusion {}", fusion.index + 1));
-            ui.separator();
-
-            let triggers = self.get_available_triggers(fusion, team);
-            if !triggers.is_empty() {
-                let mut trigger_index = triggers
-                    .iter()
-                    .position(|(id, _)| Some(*id) == fusion.trigger_unit.id())
-                    .unwrap_or(0);
-
-                ui.label("Trigger:");
-                egui::ComboBox::from_id_salt(fusion.id)
-                    .selected_text(triggers[trigger_index].1.cstr().widget(1.0, ui.style()))
-                    .show_ui(ui, |ui| {
-                        for (i, (id, name)) in triggers.iter().enumerate() {
-                            if ui
-                                .selectable_value(
-                                    &mut trigger_index,
-                                    i,
-                                    name.cstr().widget(1.0, ui.style()),
-                                )
-                                .clicked()
-                            {
-                                actions.push(TeamAction::ChangeTrigger {
-                                    fusion_id: fusion.id,
-                                    trigger: *id,
-                                });
-                            }
-                        }
-                    });
+        let resp = ui
+            .vertical(|ui| {
+                ui.label(format!("🔧 Editing Fusion {}", fusion.index + 1));
                 ui.separator();
-            }
 
-            for slot in slots {
-                self.render_action_range_editor(ui, slot, ctx, actions);
-            }
+                let triggers = self.get_available_triggers(fusion, team);
+                if !triggers.is_empty() {
+                    let mut trigger_index = triggers
+                        .iter()
+                        .position(|(id, _)| Some(*id) == fusion.trigger_unit.id())
+                        .unwrap_or(0);
+
+                    egui::ComboBox::from_id_salt(fusion.id)
+                        .selected_text(triggers[trigger_index].1.cstr().widget(1.0, ui.style()))
+                        .show_ui(ui, |ui| {
+                            for (i, (id, name)) in triggers.iter().enumerate() {
+                                if ui
+                                    .selectable_value(
+                                        &mut trigger_index,
+                                        i,
+                                        name.cstr().widget(1.0, ui.style()),
+                                    )
+                                    .clicked()
+                                {
+                                    actions.push(TeamAction::ChangeTrigger {
+                                        fusion_id: fusion.id,
+                                        trigger: *id,
+                                    });
+                                }
+                            }
+                        });
+                }
+                for slot in slots {
+                    if !slot.unit.is_none() {
+                        self.render_action_range_editor(ui, slot, ctx, actions);
+                    }
+                }
+            })
+            .response;
+        resp.show_tooltip_ui(|ui| {
+            ui.set_width(400.0);
+            Self::render_action_list_static(ui, fusion, slots, ctx).ui(ui);
         });
     }
 
@@ -417,7 +422,6 @@ impl TeamEditor {
         ctx: &ClientContext,
     ) -> NodeResult<()> {
         ui.vertical(|ui| {
-            let mut action_list = Vec::new();
             if let Some(id) = fusion.trigger_unit.id() {
                 ctx.load::<NUnit>(id)?
                     .description_ref(ctx)?
@@ -426,24 +430,22 @@ impl TeamEditor {
                     .trigger
                     .display(ctx, ui);
             }
-            for slot in slots {
-                if let Some(unit_id) = slot.unit.id() {
-                    if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                        if let Ok(unit_desc) = unit.description_ref(ctx) {
-                            if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
-                                let actions = &unit_behavior.reaction.actions;
-                                let range = &slot.actions;
-                                let is_trigger = Some(unit_id) == fusion.trigger_unit.id();
+            ScrollArea::horizontal().id_salt(fusion.id).show(ui, |ui| {
+                for slot in slots {
+                    if let Some(unit_id) = slot.unit.id() {
+                        if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                            if let Ok(unit_desc) = unit.description_ref(ctx) {
+                                if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
+                                    let actions = &unit_behavior.reaction.actions;
+                                    let range = &slot.actions;
 
-                                for i in range.start
-                                    ..(range.start + range.length).min(actions.len() as u8)
-                                {
-                                    if let Some(action) = actions.get(i as usize) {
-                                        let title = action.title(ctx);
-                                        if is_trigger {
-                                            action_list.push(format!("🎯 {}", title));
-                                        } else {
-                                            action_list.push(title);
+                                    for i in range.start
+                                        ..(range.start + range.length).min(actions.len() as u8)
+                                    {
+                                        if let Some(action) = actions.get(i as usize) {
+                                            ui.horizontal(|ui| {
+                                                action.display_recursive(ctx, ui);
+                                            });
                                         }
                                     }
                                 }
@@ -451,15 +453,7 @@ impl TeamEditor {
                         }
                     }
                 }
-            }
-
-            if action_list.is_empty() {
-                "[s [tw No actions configured]]".cstr().label_w(ui);
-            } else {
-                for action_title in action_list {
-                    action_title.label_w(ui);
-                }
-            }
+            });
             Ok(())
         })
         .inner
@@ -501,6 +495,8 @@ impl TeamEditor {
                                                     title.label_w(ui);
                                                 } else {
                                                     title
+                                                        .cstr()
+                                                        .get_text()
                                                         .cstr_c(ui.visuals().weak_text_color())
                                                         .label_w(ui);
                                                 }

@@ -80,6 +80,24 @@ pub trait FDisplay {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
 
+pub trait FDisplayRecursive: FRecursive + FDisplay {
+    fn display_recursive(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        ui.scope(|ui| {
+            ui.style_mut().spacing.item_spacing.x = 0.0;
+            let mut resp = self.display(ctx, ui);
+            for field in self.get_inner_fields() {
+                recursive_value_match!(field.value, v, {
+                    resp |= "[tw (]".cstr().label(ui);
+                    resp |= v.display_recursive(ctx, ui);
+                    resp |= "[tw )]".cstr().label(ui);
+                });
+            }
+            resp
+        })
+        .inner
+    }
+}
+
 /// Feature for types that can be edited
 pub trait FEdit {
     fn edit(&mut self, ui: &mut Ui) -> Response;

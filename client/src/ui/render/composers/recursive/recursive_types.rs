@@ -78,6 +78,27 @@ impl<'a> RecursiveFieldMut<'a> {
 }
 
 #[macro_export]
+
+macro_rules! recursive_value_match {
+    ($value: expr, $v: ident, $code: expr) => {
+        match $value {
+            RecursiveValue::Expr($v) => $code,
+            RecursiveValue::Action($v) => $code,
+            RecursiveValue::PainterAction($v) => $code,
+            RecursiveValue::Var($v) => $code,
+            RecursiveValue::VarValue($v) => $code,
+            RecursiveValue::HexColor($v) => $code,
+            RecursiveValue::String($v) => $code,
+            RecursiveValue::I32($v) => $code,
+            RecursiveValue::F32($v) => $code,
+            RecursiveValue::Bool($v) => $code,
+            RecursiveValue::Vec2($v) => $code,
+            RecursiveValue::Reaction($v) => $code,
+            RecursiveValue::Material($v) => $code,
+        }
+    };
+}
+#[macro_export]
 macro_rules! call_on_recursive_value {
     ($value:expr, $func:ident $(, $arg:expr)*) => {
         match $value {

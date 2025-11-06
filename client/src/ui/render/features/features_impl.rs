@@ -2583,3 +2583,5 @@ impl FPreview for NStatusMagic {
         });
     }
 }
+
+impl<T: FRecursive + FDisplay> FDisplayRecursive for T {}
