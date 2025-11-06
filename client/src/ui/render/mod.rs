@@ -215,3 +215,21 @@ impl<T: PartialEq + Clone> RenderSelectable<T> for (T, T) {
         SelectableComposer::new(&self.0, Some(self.1.clone()))
     }
 }
+
+impl Composer<String> for String {
+    fn data(&self) -> &String {
+        self
+    }
+
+    fn data_mut(&mut self) -> &mut String {
+        self
+    }
+
+    fn is_mutable(&self) -> bool {
+        false
+    }
+
+    fn compose(self, _: &ClientContext, ui: &mut Ui) -> Response {
+        self.cstr().label(ui)
+    }
+}

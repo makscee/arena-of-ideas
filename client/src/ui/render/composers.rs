@@ -194,8 +194,8 @@ impl<C> ButtonComposer<C> {
         self
     }
 
-    pub fn disabled(mut self) -> Self {
-        self.disabled = true;
+    pub fn disabled(mut self, value: bool) -> Self {
+        self.disabled = value;
         self
     }
 

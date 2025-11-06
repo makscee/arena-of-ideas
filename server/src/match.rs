@@ -237,7 +237,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
         return Err("Unit not owned by player".to_string());
     }
     let m = player.active_match_load(ctx)?;
-    m.g += ctx.global_settings().match_g.unit_sell;
+    m.g_set(ctx.global_settings().match_g.unit_sell + m.g);
     unit.delete_recursive(ctx);
     m.take().save(ctx)?;
     Ok(())

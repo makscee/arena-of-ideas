@@ -130,11 +130,11 @@ impl MatchPlugin {
             });
 
             // Handle fusion unit selling with DndArea
-            if let Some(payload) = DndArea::<(u64, usize, u64)>::new(available_rect)
-                .text_fn(ui, |(_, _, unit_id)| {
-                    if let Ok(unit) = ctx.load::<NUnit>(*unit_id) {
+            if let Some(payload) = DndArea::<DraggedUnit>::new(available_rect)
+                .text_fn(ui, |dragged_unit| {
+                    if let Ok(unit) = ctx.load::<NUnit>(dragged_unit.unit_id) {
                         format!(
-                            "sell {} [green +{}g]",
+                            "sell {} [b [yellow +{}g]]",
                             unit.unit_name,
                             global_settings().match_g.unit_sell
                         )
@@ -144,13 +144,13 @@ impl MatchPlugin {
                 })
                 .ui(ui)
             {
-                let (_fusion_id, _slot_idx, unit_id) = payload.as_ref();
-                cn().reducers.match_sell_unit(*unit_id).notify_op();
+                cn().reducers.match_sell_unit(payload.unit_id).notify_op();
             }
 
             Ok(())
         })
     }
+    const HOVER_TEXT: &str = "Fight the floor boss. Winning makes you the new boss and ends your run. Losing also ends your run regardless of lives left.";
     pub fn pane_info(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
@@ -173,25 +173,29 @@ impl MatchPlugin {
                     lives.cstr_cs(GREEN, CstrStyle::Bold).label(ui);
                     ui.end_row();
                     "floor".cstr().label(ui);
-                    format!("{}/{}", floor, floors).cstr_s(CstrStyle::Bold).label(ui);
+                    format!("{}/{}", floor, floors)
+                        .cstr_s(CstrStyle::Bold)
+                        .label(ui);
                     ui.end_row();
                 });
                 let ui = &mut cui[1];
-                ui.horizontal_wrapped(|ui| {
-
-                    // Regular battle button (disabled on last floor)
-                    let regular_button = ui.add_enabled(!is_last_floor, egui::Button::new("Regular Battle"));
-                    if regular_button.clicked() {
-                        cn().reducers.match_start_battle().notify_op();
-                    }
-
-                    ui.add_space(10.0);
-
-                    // Boss battle button with tooltip
-                    let boss_button = "Boss Battle".cstr_s(CstrStyle::Bold).button(ui)
-                        .on_hover_text("Fight the floor boss. Winning makes you the new boss and ends your run. Losing also ends your run regardless of lives left.");
+                ui.vertical(|ui| {
+                    let boss_button = "[b [red Boss Battle]]"
+                        .cstr()
+                        .button(ui)
+                        .on_hover_text(Self::HOVER_TEXT);
                     if boss_button.clicked() {
                         cn().reducers.match_boss_battle().notify_op();
+                    }
+                    ui.add_space(20.0);
+                    if "[b [yellow Regular Battle]]"
+                        .cstr()
+                        .to_button()
+                        .enabled(!is_last_floor)
+                        .ui(ui)
+                        .clicked()
+                    {
+                        cn().reducers.match_start_battle().notify_op();
                     }
                 });
             });
