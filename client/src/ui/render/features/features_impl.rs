@@ -2561,15 +2561,17 @@ impl FPreview for NUnit {
 impl FPreview for NHouse {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
-            ui.vertical_centered(|ui| {
+            ui.vertical(|ui| {
                 if let Ok(ability) = self.ability_ref(ctx) {
                     ui.group(|ui| {
                         ability
                             .ability_name
                             .cstr_cs(ctx.color(), CstrStyle::Bold)
                             .label(ui);
+                        "[s [tw ability]]".cstr().label(ui);
+                        ui.separator();
                         if let Ok(dsc) = ability.description_ref(ctx) {
-                            dsc.description.label_w(ui);
+                            dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
                         }
                     });
                 }
@@ -2579,8 +2581,10 @@ impl FPreview for NHouse {
                             .status_name
                             .cstr_cs(ctx.color(), CstrStyle::Bold)
                             .label(ui);
+                        "[s [tw status]]".cstr().label(ui);
+                        ui.separator();
                         if let Ok(dsc) = status.description_ref(ctx) {
-                            dsc.description.label_w(ui);
+                            dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
                         }
                     });
                 }

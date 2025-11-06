@@ -226,13 +226,7 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
             .corner_radius(ROUNDING)
             .stroke(ctx.color().stroke())
             .show(ui, |ui| {
-                self.as_title().compose(ctx, ui);
-                // Stats as horizontal wrapped tags
-                ui.horizontal_wrapped(|ui| {
-                    for (var, var_value) in self.stats(ctx) {
-                        TagWidget::new_var_value(var, var_value).ui(ui);
-                    }
-                });
+                self.title(ctx).cstr_s(CstrStyle::Heading2).label(ui);
 
                 // Preview in remaining space
                 let available_rect = ui.available_rect_before_wrap().shrink(5.0);
@@ -240,20 +234,31 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
                     let ui = &mut ui.new_child(UiBuilder::new().max_rect(available_rect));
                     self.preview(ctx, ui, available_rect);
                 }
+                let stats = self.stats(ctx);
+                if !stats.is_empty() {
+                    ui.horizontal_wrapped(|ui| {
+                        for (var, var_value) in self.stats(ctx) {
+                            TagWidget::new_var_value(var, var_value).ui(ui);
+                        }
+                    });
+                }
+                let dsc = self.description_cstr(ctx);
                 ui.with_layout(Layout::bottom_up(Align::Center), |ui| {
-                    let fill = colorix().subtle_background();
-                    let stroke = colorix().ui_element_border_and_focus_rings().stroke();
-                    Frame::new()
-                        .fill(fill)
-                        .stroke(stroke)
-                        .corner_radius(ROUNDING)
-                        .outer_margin(3)
-                        .inner_margin(3)
-                        .show(ui, |ui| {
-                            self.description_cstr(ctx)
-                                .cstr_s(CstrStyle::Small)
-                                .label_w(ui);
-                        })
+                    if !dsc.is_empty() {
+                        let fill = colorix().subtle_background();
+                        let stroke = colorix().ui_element_border_and_focus_rings().stroke();
+                        Frame::new()
+                            .fill(fill)
+                            .stroke(stroke)
+                            .corner_radius(ROUNDING)
+                            .outer_margin(3)
+                            .inner_margin(3)
+                            .show(ui, |ui| {
+                                self.description_cstr(ctx)
+                                    .cstr_s(CstrStyle::Small)
+                                    .label_w(ui);
+                            });
+                    }
                 });
             });
 

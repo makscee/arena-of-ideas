@@ -80,7 +80,19 @@ impl MatchPlugin {
 
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
+            ui.vertical_centered_justified(|ui| {
+                ui.set_width(200.0);
+                if format!("Reroll [b [yellow {}g]]", global_settings().match_g.reroll)
+                    .cstr()
+                    .button(ui)
+                    .clicked()
+                {
+                    cn().reducers.match_shop_reroll().notify_op();
+                }
+                ui.separator();
+            });
             ui.horizontal_wrapped(|ui| {
+                let buy_txt = format!("Buy [b [yellow {}g]]", global_settings().match_g.unit_buy);
                 for i in 0..slots.len() {
                     let slot = slots[i].clone();
                     if !slot.sold {
@@ -95,6 +107,20 @@ impl MatchPlugin {
                                     house.as_card().compose(ctx, ui)
                                 }
                             };
+                            let btn_rect = Rect::from_min_size(
+                                resp.rect.left_bottom(),
+                                egui::vec2(resp.rect.width(), LINE_HEIGHT),
+                            );
+                            ui.expand_to_include_rect(btn_rect);
+                            {
+                                let ui =
+                                    &mut ui.new_child(UiBuilder::new().max_rect(btn_rect).layout(
+                                        Layout::centered_and_justified(egui::Direction::TopDown),
+                                    ));
+                                if buy_txt.clone().button(ui).clicked() {
+                                    cn().reducers.match_shop_buy(i as u8).notify_error_op();
+                                }
+                            }
                             resp.dnd_set_drag_payload((i, slot.clone()));
                             Ok(())
                         })
@@ -152,10 +178,6 @@ impl MatchPlugin {
                 });
                 let ui = &mut cui[1];
                 ui.horizontal_wrapped(|ui| {
-                    if "Reroll".cstr().button(ui).clicked() {
-                        cn().reducers.match_shop_reroll().notify_op();
-                    }
-                    ui.add_space(20.0);
 
                     // Regular battle button (disabled on last floor)
                     let regular_button = ui.add_enabled(!is_last_floor, egui::Button::new("Regular Battle"));
