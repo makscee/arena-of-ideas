@@ -264,6 +264,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let pid = player.id;
     let m = player.active_match_load(ctx)?;
     let mut fusion = ctx.load::<NFusion>(fusion_id)?;
+    fusion.actions_limit += 1;
     let slots = fusion.slots_load(ctx)?;
     let price = ctx.global_settings().match_g.fusion_slot_mul * slots.len() as i32;
     let fs = NFusionSlot::new(ctx.next_id(), pid, slots.len() as i32, default());
@@ -484,6 +485,19 @@ fn match_change_action_range(
     if slot.owner != pid {
         return Err("Fusion slot not owned by player".to_string());
     }
+    let delta = length as i32 - slot.actions.length as i32;
+    if delta > 0 {
+        let mut fusion = slot.load_parent::<NFusion>(ctx)?;
+        let used = fusion
+            .slots_load(ctx)?
+            .iter()
+            .map(|s| s.actions.length as i32)
+            .sum::<i32>();
+        if fusion.actions_limit - used < delta {
+            return Err("Actions limit exceeded".to_string());
+        }
+    }
+
     slot.set_actions(UnitActionRange { start, length });
     slot.save(ctx)?;
     Ok(())
@@ -574,7 +588,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     );
     let mut team = NTeam::new(ctx.next_id(), pid);
     for i in 0..gs.team_slots as i32 {
-        let mut fusion = NFusion::new(ctx.next_id(), pid, i, 0, 0, 0, 10);
+        let mut fusion = NFusion::new(ctx.next_id(), pid, i, 0, 0, 0, 3);
         let slot = NFusionSlot::new(ctx.next_id(), pid, 0, default());
         fusion.slots_push(slot)?;
         team.fusions_push(fusion)?;
@@ -585,7 +599,6 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut m = ctx.load::<NMatch>(mid).track()?;
     m.fill_shop_case(ctx, false).track()?;
     player.active_match_set(m)?;
-    debug!("{player:?}");
     player.save(ctx).track()?;
     Ok(())
 }

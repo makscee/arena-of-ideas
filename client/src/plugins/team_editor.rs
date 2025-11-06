@@ -431,6 +431,7 @@ impl TeamEditor {
                     .display(ctx, ui);
             }
             ScrollArea::horizontal().id_salt(fusion.id).show(ui, |ui| {
+                let mut showed = 0;
                 for slot in slots {
                     if let Some(unit_id) = slot.unit.id() {
                         if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
@@ -438,20 +439,30 @@ impl TeamEditor {
                                 if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
                                     let actions = &unit_behavior.reaction.actions;
                                     let range = &slot.actions;
-
-                                    for i in range.start
-                                        ..(range.start + range.length).min(actions.len() as u8)
-                                    {
-                                        if let Some(action) = actions.get(i as usize) {
-                                            ui.horizontal(|ui| {
-                                                action.display_recursive(ctx, ui);
-                                            });
-                                        }
-                                    }
+                                    ctx.exec_ref(|ctx| {
+                                        ctx.with_owner(unit.id, |ctx| {
+                                            for i in range.start
+                                                ..(range.start + range.length)
+                                                    .min(actions.len() as u8)
+                                            {
+                                                showed += 1;
+                                                if let Some(action) = actions.get(i as usize) {
+                                                    ui.horizontal(|ui| {
+                                                        action.display_recursive(ctx, ui);
+                                                    });
+                                                }
+                                            }
+                                            Ok(())
+                                        })
+                                    })
+                                    .ui(ui);
                                 }
                             }
                         }
                     }
+                }
+                for _ in 0..(fusion.actions_limit - showed) {
+                    "[tw ...]".cstr().label(ui);
                 }
             });
             Ok(())

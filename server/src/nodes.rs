@@ -25,6 +25,14 @@ pub trait ServerNode: Sized + schema::Node {
             ))
         }
     }
+    fn load_parent<T: ServerNode>(&self, ctx: &ServerContext) -> NodeResult<T> {
+        let kind = T::kind_s();
+        let parent_id = self
+            .id()
+            .get_kind_parent(ctx.rctx(), kind)
+            .to_custom_err_fn(|| format!("{kind} parent of {} not found", self.id()))?;
+        T::load(ctx.source(), parent_id)
+    }
     fn insert(mut self, ctx: &ServerContext) -> Self {
         if self.id() == 0 {
             self.set_id(next_id(ctx.rctx()));

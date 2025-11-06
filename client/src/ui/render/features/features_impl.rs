@@ -411,8 +411,8 @@ impl FColoredTitle for Action {
 }
 
 impl FDisplay for Action {
-    fn display(&self, _: &ClientContext, ui: &mut Ui) -> Response {
-        self.cstr().label(ui)
+    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.title(ctx).label(ui)
     }
 }
 
