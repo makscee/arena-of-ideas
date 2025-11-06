@@ -9,7 +9,7 @@ impl EnumColor for VarName {
         match self {
             VarName::hp => RED,
             VarName::pwr => YELLOW,
-            VarName::stax => LIGHT_PURPLE,
+            VarName::stax => high_contrast_text(),
             VarName::tier => GRAY,
             _ => low_contrast_text(),
         }

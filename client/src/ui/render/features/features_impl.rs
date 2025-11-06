@@ -372,14 +372,22 @@ impl FEdit for Trigger {
 // Action
 impl FTitle for Action {
     fn title(&self, ctx: &ClientContext) -> Cstr {
+        fn x_text(ctx: &ClientContext, mut x: i32) -> NodeResult<String> {
+            let owner = ctx.owner().to_not_found()?;
+            let house = ctx.load_first_parent_recursive_ref::<NHouse>(owner)?;
+            let house_x = house.state_ref(ctx)?.stax;
+            if house_x > 0 {
+                x = x.at_most(house_x);
+            }
+            Ok(format!(" [{} x{x}] ", VarName::stax.color().to_hex()))
+        }
         match self {
             Action::use_ability => {
                 let mut r = self.cstr();
                 if let Ok(ability) = ctx.get_var(VarName::ability_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
-                        r += " ";
                         if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
-                            r += &format!(" [{} [b x{x}]] ", VarName::stax.color().to_hex());
+                            r += &x_text(ctx, x).unwrap_or_default();
                         }
                         r += &ability.cstr_cs(color, CstrStyle::Bold);
                     }
@@ -390,9 +398,8 @@ impl FTitle for Action {
                 let mut r = self.cstr();
                 if let Ok(status) = ctx.get_var(VarName::status_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
-                        r += " ";
                         if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
-                            r += &format!(" [{} [b x{x}]] ", VarName::stax.color().to_hex());
+                            r += &x_text(ctx, x).unwrap_or_default();
                         }
                         r += &status.cstr_c(color);
                     }
@@ -701,7 +708,11 @@ impl FTag for NHouse {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        Some(self.state_ref(ctx).ok()?.stax.cstr_c(VarName::stax.color()))
+        Some(format!(
+            "[{} [b x{}]]",
+            VarName::stax.color().to_hex(),
+            self.state_ref(ctx).ok()?.stax
+        ))
     }
 
     fn tag_color(&self, ctx: &ClientContext) -> Color32 {
@@ -2551,8 +2562,28 @@ impl FPreview for NHouse {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
             ui.vertical_centered(|ui| {
-                ui.label(RichText::new("🏠").size(32.0).color(ctx.color()));
-                ui.label(RichText::new(&self.house_name).strong().color(ctx.color()));
+                if let Ok(ability) = self.ability_ref(ctx) {
+                    ui.group(|ui| {
+                        ability
+                            .ability_name
+                            .cstr_cs(ctx.color(), CstrStyle::Bold)
+                            .label(ui);
+                        if let Ok(dsc) = ability.description_ref(ctx) {
+                            dsc.description.label_w(ui);
+                        }
+                    });
+                }
+                if let Ok(status) = self.status_ref(ctx) {
+                    ui.group(|ui| {
+                        status
+                            .status_name
+                            .cstr_cs(ctx.color(), CstrStyle::Bold)
+                            .label(ui);
+                        if let Ok(dsc) = status.description_ref(ctx) {
+                            dsc.description.label_w(ui);
+                        }
+                    });
+                }
             });
         });
     }

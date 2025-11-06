@@ -214,6 +214,8 @@ impl TeamEditor {
         // Render bench at bottom as full-width rectangle
         ui.scope_builder(UiBuilder::new().max_rect(bench_rect), |ui| {
             ui.columns(2, |ui| {
+                ui[0].separator();
+                ui[1].separator();
                 self.render_bench(&mut ui[0], &unlinked_units, team, ctx, &mut actions);
                 self.render_houses(&mut ui[1], ctx, team);
             });
@@ -316,7 +318,7 @@ impl TeamEditor {
                 .fill(ui.visuals().faint_bg_color);
             let inner_response = frame
                 .show(ui, |ui| {
-                    let _ = TeamEditor::render_action_list_static(ui, fusion, &slots, ctx);
+                    let _ = TeamEditor::render_action_list(ui, fusion, &slots, ctx);
                 })
                 .response;
             if inner_response.hovered() {
@@ -388,7 +390,7 @@ impl TeamEditor {
             .response;
         resp.show_tooltip_ui(|ui| {
             ui.set_width(400.0);
-            Self::render_action_list_static(ui, fusion, slots, ctx).ui(ui);
+            Self::render_action_list(ui, fusion, slots, ctx).ui(ui);
         });
     }
 
@@ -403,25 +405,26 @@ impl TeamEditor {
         ui.disable();
         ui.vertical(|ui| {
             format!("[s [tw Fusion #]]{}", fusion.index).label_w(ui);
-            let _ = TeamEditor::render_action_list_static(ui, fusion, slots, ctx);
+            let _ = TeamEditor::render_action_list(ui, fusion, slots, ctx);
             ui.separator();
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
                     self.render_unit_display(ui, unit_id, team, ctx);
                 } else {
-                    TeamEditor::render_empty_slot_static(ui, ctx);
+                    TeamEditor::render_empty_slot(ui, ctx);
                 }
             }
         });
     }
 
-    fn render_action_list_static(
+    fn render_action_list(
         ui: &mut Ui,
         fusion: &NFusion,
         slots: &[&NFusionSlot],
         ctx: &ClientContext,
     ) -> NodeResult<()> {
         ui.vertical(|ui| {
+            ui.style_mut().override_text_style = Some(TextStyle::Small);
             if let Some(id) = fusion.trigger_unit.id() {
                 ctx.load::<NUnit>(id)?
                     .description_ref(ctx)?
@@ -560,8 +563,7 @@ impl TeamEditor {
         ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let mut response =
-            TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
+        let mut response = TeamEditor::render_unit_with_representation(ui, unit_id, team, ctx);
 
         if response.drag_started() {
             let from_location = UnitTarget::Slot {
@@ -577,7 +579,7 @@ impl TeamEditor {
             DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
-        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             response = response.on_hover_ui(|ui| {
                 unit.as_card().compose(ctx, ui);
             });
@@ -603,8 +605,8 @@ impl TeamEditor {
             .id(format!("slot_{}_{}", fusion_id, slot_index))
             .text_fn(ui, |dragged| {
                 if dragged.unit_id != unit_id {
-                    let dragged_unit = TeamEditor::find_unit_in_team_static(team, dragged.unit_id);
-                    let current_unit = TeamEditor::find_unit_in_team_static(team, unit_id);
+                    let dragged_unit = TeamEditor::find_unit_in_team(team, dragged.unit_id);
+                    let current_unit = TeamEditor::find_unit_in_team(team, unit_id);
                     if let (Some(dragged_unit), Some(current_unit)) = (dragged_unit, current_unit) {
                         if dragged_unit.unit_name == current_unit.unit_name {
                             return "Stack\nunits".to_string();
@@ -618,8 +620,8 @@ impl TeamEditor {
             .ui(ui)
         {
             if dropped_unit.unit_id != unit_id {
-                let dragged_unit = TeamEditor::find_unit_in_team_static(team, dropped_unit.unit_id);
-                let current_unit = TeamEditor::find_unit_in_team_static(team, unit_id);
+                let dragged_unit = TeamEditor::find_unit_in_team(team, dropped_unit.unit_id);
+                let current_unit = TeamEditor::find_unit_in_team(team, unit_id);
 
                 if let (Some(dragged_unit), Some(current_unit)) = (dragged_unit, current_unit) {
                     if dragged_unit.unit_name == current_unit.unit_name {
@@ -667,7 +669,7 @@ impl TeamEditor {
         ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
-        let response = TeamEditor::render_empty_slot_static(ui, ctx);
+        let response = TeamEditor::render_empty_slot(ui, ctx);
 
         if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
             .id(format!("empty_slot_{}_{}", fusion_id, slot_index))
@@ -727,8 +729,7 @@ impl TeamEditor {
             if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(rect)
                 .id("bench_drop")
                 .text_fn(ui, |dragged| {
-                    if let Some(unit) = TeamEditor::find_unit_in_team_static(team, dragged.unit_id)
-                    {
+                    if let Some(unit) = TeamEditor::find_unit_in_team(team, dragged.unit_id) {
                         format!("Bench {}", unit.unit_name)
                     } else {
                         "Bench Unit".to_string()
@@ -751,7 +752,7 @@ impl TeamEditor {
         ctx: &ClientContext,
         _actions: &mut Vec<TeamAction>,
     ) {
-        let response = TeamEditor::render_unit_with_representation_static(ui, unit_id, team, ctx);
+        let response = TeamEditor::render_unit_with_representation(ui, unit_id, team, ctx);
 
         if response.drag_started() {
             let from_location = UnitTarget::Bench;
@@ -764,14 +765,14 @@ impl TeamEditor {
             DragAndDrop::set_payload(ui.ctx(), dragged_unit);
         }
 
-        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             response.on_hover_ui(|ui| {
                 unit.as_card().compose(ctx, ui);
             });
         }
     }
 
-    fn render_unit_with_representation_static(
+    fn render_unit_with_representation(
         ui: &mut Ui,
         unit_id: u64,
         team: &NTeam,
@@ -780,7 +781,7 @@ impl TeamEditor {
         let is_inspected = ui
             .inspected_node_for_parent(team.id)
             .is_some_and(|id| id == unit_id);
-        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
@@ -800,7 +801,7 @@ impl TeamEditor {
     }
 
     fn render_unit_display(&self, ui: &mut Ui, unit_id: u64, team: &NTeam, ctx: &ClientContext) {
-        if let Some(unit) = TeamEditor::find_unit_in_team_static(team, unit_id) {
+        if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
                     MatRect::new(egui::Vec2::new(60.0, 60.0))
@@ -818,7 +819,7 @@ impl TeamEditor {
         }
     }
 
-    fn render_empty_slot_static(ui: &mut Ui, ctx: &ClientContext) -> Response {
+    fn render_empty_slot(ui: &mut Ui, ctx: &ClientContext) -> Response {
         MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
     }
 
@@ -893,7 +894,7 @@ impl TeamEditor {
         if let Ok(slots) = fusion.slots.get() {
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
-                    if let Some(unit) = Self::find_unit_in_team_static(team, unit_id) {
+                    if let Some(unit) = Self::find_unit_in_team(team, unit_id) {
                         if let Ok(trigger) = unit
                             .description()
                             .and_then(|d| d.behavior())
@@ -909,7 +910,7 @@ impl TeamEditor {
         triggers
     }
 
-    fn find_unit_in_team_static(team: &NTeam, unit_id: u64) -> Option<NUnit> {
+    fn find_unit_in_team(team: &NTeam, unit_id: u64) -> Option<NUnit> {
         if let Ok(houses) = team.houses.get() {
             for house in houses {
                 if let Ok(units) = house.units.get() {

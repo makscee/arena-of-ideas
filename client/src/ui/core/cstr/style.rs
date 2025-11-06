@@ -67,12 +67,16 @@ impl StyleState {
             .find_map(|s| s.get_color())
             .unwrap_or_else(|| style.visuals.widgets.inactive.fg_stroke.color)
             .gamma_multiply(alpha);
-        let font_id = self
-            .stack
-            .iter()
-            .rev()
-            .find_map(|s| s.get_font(style))
-            .unwrap_or_default();
+        let font_id = if let Some(override_style) = &style.override_text_style {
+            style.text_styles.get(override_style).unwrap().clone()
+        } else {
+            self.stack
+                .iter()
+                .rev()
+                .find_map(|s| s.get_font(style))
+                .unwrap_or_default()
+        };
+
         job.append(
             text,
             0.0,

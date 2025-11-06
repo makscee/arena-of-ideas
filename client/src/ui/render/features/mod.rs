@@ -83,7 +83,7 @@ pub trait FDisplay {
 pub trait FDisplayRecursive: FRecursive + FDisplay {
     fn display_recursive(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.scope(|ui| {
-            ui.style_mut().spacing.item_spacing.x = 0.0;
+            ui.spacing_mut().item_spacing.x = 0.0;
             let mut resp = self.display(ctx, ui);
             for field in self.get_inner_fields() {
                 recursive_value_match!(field.value, v, {

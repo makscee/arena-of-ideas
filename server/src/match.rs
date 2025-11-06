@@ -198,8 +198,8 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
     if fusion.trigger_unit.id().is_none() {
         fusion.trigger_unit = Ref::Id(unit_id);
         fusion.set_dirty(true);
-        fusion.save(ctx)?;
     }
+    apply_slots_limit(ctx, &mut fusion)?;
 
     // Handle trigger selection when moving unit out of fusion
     if let Some(old_slot_id) = old_target_id {
@@ -471,6 +471,33 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
     }
 }
 
+fn apply_slots_limit(ctx: &mut ServerContext, fusion: &mut NFusion) -> NodeResult<()> {
+    let limit = fusion.actions_limit;
+    let mut used: i32 = 0;
+    for slot in fusion
+        .slots_load(ctx)?
+        .into_iter()
+        .sorted_by_key(|s| s.index)
+    {
+        if let Ok(mut unit) = slot.unit_load(ctx) {
+            let b = unit.description_load(ctx)?.behavior_load(ctx)?;
+            let actions = b.reaction.actions.len();
+            slot.actions.start = slot.actions.start.min(actions as u8);
+            slot.actions.length = slot
+                .actions
+                .length
+                .min((actions - slot.actions.start as usize) as u8)
+                .min((limit - used) as u8);
+            used += slot.actions.length as i32;
+            slot.set_dirty(true);
+        } else {
+            slot.set_actions(default());
+        }
+        slot.take().save(ctx)?;
+    }
+    Ok(())
+}
+
 #[reducer]
 fn match_change_action_range(
     ctx: &ReducerContext,
@@ -485,21 +512,10 @@ fn match_change_action_range(
     if slot.owner != pid {
         return Err("Fusion slot not owned by player".to_string());
     }
-    let delta = length as i32 - slot.actions.length as i32;
-    if delta > 0 {
-        let mut fusion = slot.load_parent::<NFusion>(ctx)?;
-        let used = fusion
-            .slots_load(ctx)?
-            .iter()
-            .map(|s| s.actions.length as i32)
-            .sum::<i32>();
-        if fusion.actions_limit - used < delta {
-            return Err("Actions limit exceeded".to_string());
-        }
-    }
-
     slot.set_actions(UnitActionRange { start, length });
+    let mut fusion = slot.load_parent::<NFusion>(ctx)?;
     slot.save(ctx)?;
+    apply_slots_limit(ctx, &mut fusion)?;
     Ok(())
 }
 
