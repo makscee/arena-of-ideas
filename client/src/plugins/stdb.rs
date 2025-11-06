@@ -26,6 +26,7 @@ impl StdbPlugin {
                 for _ in 0..len {
                     let update = queue.pending_updates.pop_front().unwrap();
                     if sources.solid.handle_stdb_update(&update).is_err()
+                        || sources.core.handle_stdb_update(&update).is_err()
                         || sources.top.handle_stdb_update(&update).is_err()
                         || sources.selected.handle_stdb_update(&update).is_err()
                     {

@@ -58,6 +58,7 @@ pub struct NHouse {
 }
 
 #[derive(Node)]
+#[content]
 pub struct NHouseColor {
     #[var]
     pub color: HexColor,

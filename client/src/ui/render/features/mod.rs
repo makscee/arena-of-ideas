@@ -97,6 +97,22 @@ pub trait FDisplayRecursive: FRecursive + FDisplay {
         .inner
     }
 }
+impl<T: FRecursive + FDisplay> FDisplayRecursive for T {}
+
+pub trait FTitleRecursive: FRecursive + FTitle {
+    fn title_recursive(&self, ctx: &ClientContext) -> Cstr {
+        let mut c = self.title(ctx);
+        for field in self.get_inner_fields() {
+            recursive_value_match!(field.value, v, {
+                c += "[tw (]";
+                c.push_str(&v.title_recursive(ctx));
+                c += "[tw )]";
+            });
+        }
+        c
+    }
+}
+impl<T: FRecursive + FTitle> FTitleRecursive for T {}
 
 /// Feature for types that can be edited
 pub trait FEdit {

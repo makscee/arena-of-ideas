@@ -1920,8 +1920,16 @@ impl FTitle for NUnitBehavior {
 }
 
 impl FDescription for NUnitBehavior {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.reaction.cstr()
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        format!(
+            "{}:\n{}",
+            self.reaction.trigger.cstr(),
+            self.reaction
+                .actions
+                .iter()
+                .map(|a| a.title_recursive(ctx))
+                .join("\n")
+        )
     }
 }
 
@@ -2635,5 +2643,3 @@ impl FPreview for NStatusMagic {
         });
     }
 }
-
-impl<T: FRecursive + FDisplay> FDisplayRecursive for T {}

@@ -74,7 +74,7 @@ impl ExplorerPanes {
     pub fn render_view_mode_switch(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, mut state| {
             ui.horizontal(|ui| {
-                for mode in [ViewMode::Solid, ViewMode::Top, ViewMode::Selected] {
+                for mode in [ViewMode::Core, ViewMode::Top, ViewMode::Selected] {
                     let is_current = state.view_mode == mode;
                     let color = if is_current {
                         YELLOW
@@ -172,7 +172,7 @@ impl ExplorerPanes {
                 } else {
                     text
                 };
-                text.cstr().label(ui)
+                text.cstr().label_w(ui)
             })
             .with_hover(move |node, _, ui| {
                 if "Select".cstr().button(ui).clicked() {

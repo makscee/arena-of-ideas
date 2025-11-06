@@ -98,28 +98,32 @@ impl GameState {
                 let mut tiles = Tiles::default();
 
                 // Create Units tab layout
-                let units_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitsList));
-                let unit_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitCard));
-                let left_column = tiles.insert_vertical_tile([units_list, unit_card].into());
+                let top = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitsList));
+                let bottom = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitCard));
+                let left_column = tiles.insert_vertical_tile([top, bottom].into());
+                let top = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitStats));
+                let bottom = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitParentList));
+                let right_column = tiles.insert_vertical_tile([top, bottom].into());
 
                 let unit_description =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitDescription));
                 let unit_behavior = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitBehavior));
                 let unit_representation =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitRepresentation));
-                let unit_stats = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitStats));
 
-                let middle_top =
-                    tiles.insert_horizontal_tile([unit_description, unit_behavior].into());
                 let middle_bottom =
-                    tiles.insert_horizontal_tile([unit_representation, unit_stats].into());
-                let middle_grid = tiles.insert_vertical_tile([middle_top, middle_bottom].into());
+                    tiles.insert_horizontal_tile([unit_behavior, unit_representation].into());
+                let middle_column =
+                    tiles.insert_vertical_tile([unit_description, middle_bottom].into());
 
-                let unit_parent_list =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitParentList));
+                let units_content =
+                    tiles.insert_horizontal_tile([left_column, middle_column, right_column].into());
+                if let Tile::Container(h) = tiles.get_mut(units_content).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(middle_column, 3.0);
+                    }
+                }
 
-                let units_content = tiles
-                    .insert_horizontal_tile([left_column, middle_grid, unit_parent_list].into());
                 let units_tab = units_content.with_name(tile_tree, "Units");
 
                 // Create Houses tab layout
@@ -128,21 +132,20 @@ impl GameState {
                 let houses_left_column =
                     tiles.insert_vertical_tile([houses_list, house_card].into());
 
+                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseColor));
                 let house_abilities_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseAbilitiesList));
+                let colors_abilities =
+                    tiles.insert_vertical_tile([house_color, house_abilities_list].into());
                 let house_statuses_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseStatusesList));
                 let house_units_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseUnitsList));
+                let units_statuses =
+                    tiles.insert_vertical_tile([house_units_list, house_statuses_list].into());
 
                 let houses_content = tiles.insert_horizontal_tile(
-                    [
-                        houses_left_column,
-                        house_abilities_list,
-                        house_statuses_list,
-                        house_units_list,
-                    ]
-                    .into(),
+                    [houses_left_column, colors_abilities, units_statuses].into(),
                 );
                 let houses_tab = houses_content.with_name(tile_tree, "Houses");
 

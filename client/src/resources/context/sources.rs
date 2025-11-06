@@ -5,6 +5,7 @@ pub struct StaticSources {
     pub top: Sources<'static>,
     pub selected: Sources<'static>,
     pub solid: Sources<'static>,
+    pub core: Sources<'static>,
 }
 
 impl StaticSources {
@@ -13,6 +14,7 @@ impl StaticSources {
             top: Sources::new_top(),
             selected: Sources::new_selected(),
             solid: Sources::new_solid(),
+            core: Sources::new_core(),
         }
     }
 }
@@ -77,7 +79,19 @@ where
     })
 }
 
-/// Trait for client-side node data sources
+pub fn with_core_source<R, F>(f: F) -> NodeResult<R>
+where
+    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+{
+    with_static_sources(|sources| {
+        let taken = std::mem::replace(&mut sources.core, Sources::None);
+        let mut context = taken.as_context();
+        let result = f(&mut context);
+        sources.core = context.into_source();
+        result
+    })
+}
+
 pub trait ClientSource {
     fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()>;
     fn world(&self) -> NodeResult<&World>;
@@ -96,6 +110,7 @@ pub trait ClientSource {
 #[derive(Debug, Default, Display)]
 pub enum Sources<'a> {
     Solid(World),
+    Core(World),
     Top(World),
     Selected(World),
     Battle(BattleSimulation, f32),
@@ -109,6 +124,12 @@ impl<'a> Sources<'a> {
         let mut world = World::new();
         Self::init_world(&mut world);
         Sources::Solid(world)
+    }
+
+    pub fn new_core() -> Self {
+        let mut world = World::new();
+        Self::init_world(&mut world);
+        Sources::Core(world)
     }
 
     pub fn new_top() -> Self {
@@ -175,16 +196,22 @@ impl<'a> Sources<'a> {
 
     pub fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Solid(world)
+            | Sources::Core(world)
+            | Sources::Top(world)
+            | Sources::Selected(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&sim.world),
-            Sources::SourceRef(source) => source.world(),
-            Sources::None => Err(NodeError::custom("No world in None source")),
+            Sources::SourceRef(s) => s.world(),
+            Sources::None => Err(NodeError::custom("No world in empty source")),
         }
     }
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(world) | Sources::Top(world) | Sources::Selected(world) => Ok(world),
+            Sources::Solid(world)
+            | Sources::Core(world)
+            | Sources::Top(world)
+            | Sources::Selected(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom(
                 "Cannot get mutable world from source ref",
@@ -275,11 +302,12 @@ impl<'a> Sources<'a> {
     fn handle_update_with_filtering(&mut self, update: &StdbUpdate) -> NodeResult<()> {
         match update {
             StdbUpdate::NodeInsert(node) | StdbUpdate::NodeUpdate { new: node, .. } => {
-                let kind = node
-                    .kind
-                    .parse()
-                    .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", node.kind)))?;
-                self.spawn_node_with_entity_merging(node.id, kind, node)?;
+                if self.should_process_node(node) {
+                    let kind = node.kind.parse().map_err(|_| {
+                        NodeError::custom(format!("Invalid node kind: {}", node.kind))
+                    })?;
+                    self.spawn_node_with_entity_merging(node.id, kind, node)?;
+                }
             }
             StdbUpdate::NodeDelete(node) => {
                 self.delete_node(node.id)?;
@@ -290,7 +318,9 @@ impl<'a> Sources<'a> {
                 }
             }
             StdbUpdate::LinkUpdate { old, new } => {
-                self.handle_link_update(old, new)?;
+                if self.should_process_link(new) {
+                    self.handle_link_update(old, new)?;
+                }
             }
             StdbUpdate::LinkDelete(link) => {
                 if self.should_process_link(link) {
@@ -310,10 +340,30 @@ impl<'a> Sources<'a> {
         Ok(())
     }
 
+    fn should_process_node(&self, node: &TNode) -> bool {
+        match self {
+            Sources::Solid(_) => true,
+            Sources::Core(_) => node.owner == ID_CORE,
+            Sources::Top(_) | Sources::Selected(_) => node.owner == ID_CORE || node.owner == 0,
+            Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => true,
+        }
+    }
+
     fn should_process_link(&self, link: &TNodeLink) -> bool {
+        fn check_owner(link: &TNodeLink, owners: Vec<u64>) -> bool {
+            let parent_owner = cn().db.nodes_world().id().find(&link.parent).unwrap().owner;
+            let child_owner = cn().db.nodes_world().id().find(&link.child).unwrap().owner;
+            owners.contains(&parent_owner) && owners.contains(&child_owner)
+        }
         match self {
             Sources::Solid(_) => link.solid,
-            Sources::Top(_) | Sources::Selected(_) => true,
+            Sources::Core(_) => {
+                if !link.solid {
+                    return false;
+                }
+                check_owner(link, vec![ID_CORE])
+            }
+            Sources::Top(_) | Sources::Selected(_) => check_owner(link, vec![ID_CORE, 0]),
             Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => false,
         }
     }
@@ -367,7 +417,7 @@ impl<'a> Sources<'a> {
         }
 
         match self {
-            Sources::Solid(_) => {
+            Sources::Solid(_) | Sources::Core(_) => {
                 self.get_links_data_mut()?.add_link(
                     link.parent,
                     link.child,
@@ -378,7 +428,10 @@ impl<'a> Sources<'a> {
             Sources::Top(_) => {
                 self.handle_top_link_insert(link)?;
             }
-            _ => {}
+            Sources::Selected(..)
+            | Sources::Battle(..)
+            | Sources::SourceRef(..)
+            | Sources::None => {}
         }
 
         Ok(())
@@ -396,7 +449,7 @@ impl<'a> Sources<'a> {
         }
 
         match self {
-            Sources::Solid(_) => {
+            Sources::Solid(_) | Sources::Core(_) => {
                 self.remove_link(link.parent, link.child)?;
             }
             Sources::Top(_) => {
@@ -414,7 +467,7 @@ impl<'a> Sources<'a> {
             links_map.insert(new.clone());
         }
         match self {
-            Sources::Solid(_) => {
+            Sources::Solid(_) | Sources::Core(_) => {
                 if old.solid && !new.solid {
                     self.remove_link(old.parent, old.child)?;
                 } else if !old.solid && new.solid {
@@ -424,7 +477,10 @@ impl<'a> Sources<'a> {
             Sources::Top(_) => {
                 self.handle_top_link_update(old, new)?;
             }
-            _ => {}
+            Sources::Selected(..)
+            | Sources::Battle(..)
+            | Sources::SourceRef(..)
+            | Sources::None => {}
         }
 
         // Handle component links when they become solid
@@ -562,9 +618,7 @@ impl<'a> Sources<'a> {
                 node_map.insert(node_id, kind, target_entity);
             }
         });
-        if matches!(self, Sources::Top(..)) {
-            debug!("spawn {self} {kind} {node_id} {target_entity}");
-        }
+        debug!("spawn {self} {kind} {node_id} {target_entity}");
         Ok(())
     }
 
@@ -852,7 +906,7 @@ impl ClientSource for Sources<'_> {
 
     fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world available")),
@@ -861,7 +915,7 @@ impl ClientSource for Sources<'_> {
 
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
             Sources::None => Err(NodeError::custom("No world available")),

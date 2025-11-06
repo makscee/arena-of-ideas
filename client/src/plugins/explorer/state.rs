@@ -1,5 +1,5 @@
 use super::*;
-use crate::resources::context::{with_selected_source, with_solid_source, with_top_source};
+use crate::resources::context::{with_core_source, with_selected_source, with_top_source};
 
 #[derive(Resource)]
 pub struct ExplorerState {
@@ -29,7 +29,7 @@ impl Default for ExplorerState {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ViewMode {
     #[default]
-    Solid,
+    Core,
     Top,
     Selected,
 }
@@ -37,7 +37,7 @@ pub enum ViewMode {
 impl ViewMode {
     pub fn name(&self) -> &str {
         match self {
-            ViewMode::Solid => "Solid",
+            ViewMode::Core => "Core",
             ViewMode::Top => "Top",
             ViewMode::Selected => "Selected",
         }
@@ -48,7 +48,7 @@ impl ViewMode {
         F: FnOnce(&mut ClientContext) -> NodeResult<R>,
     {
         match self {
-            ViewMode::Solid => with_solid_source(f),
+            ViewMode::Core => with_core_source(f),
             ViewMode::Top => with_top_source(f),
             ViewMode::Selected => with_selected_source(f),
         }
