@@ -482,15 +482,26 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
 
         // Handle add button separately to avoid borrow checker issues
         if self.editable {
-            let should_add_item = match &self.list_data {
+            let should_add_item: Option<bool> = match &self.list_data {
                 ListData::Mutable {
                     default_factory: Some(_),
                     ..
-                } => ui.horizontal(|ui| ui.button("+ Add").clicked()).inner,
-                _ => false,
+                } => {
+                    ui.horizontal(|ui| {
+                        if ui.button("+ Add First").clicked() {
+                            Some(true)
+                        } else if ui.button("+ Add Last").clicked() {
+                            Some(false)
+                        } else {
+                            None
+                        }
+                    })
+                    .inner
+                }
+                _ => None,
             };
 
-            if should_add_item {
+            if let Some(first) = should_add_item {
                 match &mut self.list_data {
                     ListData::Mutable {
                         default_factory: Some(factory),
@@ -498,7 +509,11 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
                         ..
                     } => {
                         let new_item = factory();
-                        data.push(new_item);
+                        if first {
+                            data.insert(0, new_item);
+                        } else {
+                            data.push(new_item);
+                        }
                         response.mark_changed();
                     }
                     _ => {}

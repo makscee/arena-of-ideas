@@ -289,7 +289,7 @@ impl<S: ContextSource> Context<S> {
         }
 
         // Try to get from owner
-        if let Some(owner) = self.owner() {
+        if let Some(owner) = self.owner().or_else(|| self.status()) {
             self.get_var_inherited(owner, var)
         } else {
             Err(NodeError::custom("Cannot get var without owner"))

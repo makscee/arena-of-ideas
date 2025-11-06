@@ -702,9 +702,11 @@ impl TeamEditor {
     }
 
     fn render_houses(&self, ui: &mut Ui, ctx: &ClientContext, team: &NTeam) {
-        for house in team.houses().unwrap() {
-            house.as_tag().compose(ctx, ui);
-        }
+        ui.horizontal_wrapped(|ui| {
+            for house in team.houses().unwrap() {
+                house.as_tag().compose(ctx, ui);
+            }
+        });
     }
 
     fn render_bench(
@@ -985,7 +987,25 @@ impl NTeam {
     pub fn apply_action(&mut self, action: TeamAction) -> NodeResult<()> {
         match action {
             TeamAction::MoveUnit { unit_id, target } => {
-                // Find the source slot for the unit being moved
+                // Find the source fusion and slot for the unit being moved
+                let source_fusion_id = {
+                    let mut source_id = None;
+                    if let Ok(fusions) = self.fusions.get() {
+                        for fusion in fusions {
+                            if let Ok(slots) = fusion.slots.get() {
+                                if slots
+                                    .iter()
+                                    .any(|s| matches!(s.unit, Ref::Id(id) if id == unit_id))
+                                {
+                                    source_id = Some(fusion.id);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    source_id
+                };
+
                 let from_slot_id = self
                     .fusions
                     .get()?
@@ -1000,6 +1020,23 @@ impl NTeam {
                         fusion_id,
                         slot_index,
                     } => {
+                        // Check if target fusion is empty before the move
+                        let target_fusion_is_empty = {
+                            if let Ok(fusions) = self.fusions.get() {
+                                if let Some(fusion) = fusions.iter().find(|f| f.id == fusion_id) {
+                                    if let Ok(slots) = fusion.slots.get() {
+                                        slots.iter().all(|s| matches!(s.unit, Ref::None))
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false
+                            }
+                        };
+
                         // First, get the target slot's current unit ID (if any)
                         let target_unit_id = {
                             let target_slot = self.fusion_slot_mut(fusion_id, slot_index)?;
@@ -1046,6 +1083,49 @@ impl NTeam {
                         let target_slot = self.fusion_slot_mut(fusion_id, slot_index)?;
                         target_slot.unit = Ref::new_id(unit_id);
                         target_slot.set_dirty(true);
+
+                        // Handle trigger unit logic
+                        if let Ok(fusions) = self.fusions.get_mut() {
+                            // If unit was moved from one fusion to another
+                            if let Some(src_fusion_id) = source_fusion_id {
+                                if src_fusion_id != fusion_id {
+                                    // Check if moved unit was the trigger of source fusion
+                                    if let Some(source_fusion) =
+                                        fusions.iter_mut().find(|f| f.id == src_fusion_id)
+                                    {
+                                        if matches!(source_fusion.trigger_unit, Ref::Id(id) if id == unit_id)
+                                        {
+                                            // Try to find another unit as trigger in source fusion
+                                            let new_trigger =
+                                                if let Ok(slots) = source_fusion.slots.get() {
+                                                    slots
+                                                        .iter()
+                                                        .find_map(|s| s.unit.id())
+                                                        .filter(|&id| id != unit_id)
+                                                } else {
+                                                    None
+                                                };
+
+                                            if let Some(new_trigger_id) = new_trigger {
+                                                source_fusion.trigger_unit =
+                                                    Ref::new_id(new_trigger_id);
+                                            } else {
+                                                source_fusion.trigger_unit = Ref::none();
+                                            }
+                                        }
+                                    }
+
+                                    // If target fusion was empty, set moved unit as trigger
+                                    if target_fusion_is_empty {
+                                        if let Some(target_fusion) =
+                                            fusions.iter_mut().find(|f| f.id == fusion_id)
+                                        {
+                                            target_fusion.trigger_unit = Ref::new_id(unit_id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     UnitTarget::Bench => {
                         // Move to bench - clear the source slot
@@ -1058,6 +1138,34 @@ impl NTeam {
                                         slot.unit = Ref::none();
                                         slot.set_dirty(true);
                                         break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // Handle trigger unit logic for bench moves
+                        if let (Some(src_fusion_id), Ok(fusions)) =
+                            (source_fusion_id, self.fusions.get_mut())
+                        {
+                            if let Some(source_fusion) =
+                                fusions.iter_mut().find(|f| f.id == src_fusion_id)
+                            {
+                                if matches!(source_fusion.trigger_unit, Ref::Id(id) if id == unit_id)
+                                {
+                                    // Try to find another unit as trigger in source fusion
+                                    let new_trigger = if let Ok(slots) = source_fusion.slots.get() {
+                                        slots
+                                            .iter()
+                                            .find_map(|s| s.unit.id())
+                                            .filter(|&id| id != unit_id)
+                                    } else {
+                                        None
+                                    };
+
+                                    if let Some(new_trigger_id) = new_trigger {
+                                        source_fusion.trigger_unit = Ref::new_id(new_trigger_id);
+                                    } else {
+                                        source_fusion.trigger_unit = Ref::none();
                                     }
                                 }
                             }

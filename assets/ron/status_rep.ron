@@ -1,1 +1,1 @@
-([scale_rect(f32(1.2)), color(var(color)), hollow(f32(1.5)), circle(one)])
+([scale_rect(sum(f32(1.2), mul(status_var(index), f32(0.1)))), color(var(color)), hollow(f32(1.5)), circle(one)])

@@ -326,17 +326,21 @@ impl FEdit for Expression {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         let (old_value, mut response) = Selector::ui_enum(self, ui);
         const DEBUG_TXT: &str = "🪲 Debug";
+        const SCALE_TXT: &str = "⚖️ Scale";
         let menu_response = self
             .as_empty_mut()
             .with_menu()
             .add_copy()
             .add_paste()
             .add_action_empty(DEBUG_TXT)
+            .add_action_empty(SCALE_TXT)
             .compose_with_menu(&EMPTY_CONTEXT, ui);
         if let Some(d) = menu_response.custom_action() {
             if d.eq(DEBUG_TXT) {
                 *self = Expression::dbg(self.clone().into());
                 response.mark_changed();
+            } else if d.eq(SCALE_TXT) {
+                *self = Expression::mul(self.clone().into(), Expression::f32(0.5).into());
             }
         } else if let Some(value) = menu_response.pasted() {
             *self = value.clone();
@@ -379,7 +383,7 @@ impl FTitle for Action {
             if house_x > 0 {
                 x = x.at_most(house_x);
             }
-            Ok(format!(" [{} x{x}] ", VarName::stax.color().to_hex()))
+            Ok(format!(" [{} x{x}]", VarName::stax.color().to_hex()))
         }
         match self {
             Action::use_ability => {
@@ -389,6 +393,7 @@ impl FTitle for Action {
                         if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
                             r += &x_text(ctx, x).unwrap_or_default();
                         }
+                        r += " ";
                         r += &ability.cstr_cs(color, CstrStyle::Bold);
                     }
                 }
@@ -401,6 +406,7 @@ impl FTitle for Action {
                         if let Ok(x) = ctx.get_var(VarName::stax).get_i32() {
                             r += &x_text(ctx, x).unwrap_or_default();
                         }
+                        r += " ";
                         r += &status.cstr_c(color);
                     }
                 }
@@ -470,7 +476,21 @@ impl FDisplay for PainterAction {
 
 impl FEdit for PainterAction {
     fn edit(&mut self, ui: &mut Ui) -> Response {
+        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui))
+            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+            .compose(&EMPTY_CONTEXT, ui)
+    }
+    fn edit_self(&mut self, ui: &mut Ui) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
+        let menu_resp = self
+            .as_empty_mut()
+            .with_menu()
+            .add_copy()
+            .add_paste()
+            .compose_with_menu(&EMPTY_CONTEXT, ui);
+        if let Some(value) = menu_resp.pasted() {
+            *self = value.clone();
+        }
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
         }
@@ -495,17 +515,14 @@ impl FDisplay for Material {
 
 impl FEdit for Material {
     fn edit(&mut self, ui: &mut Ui) -> Response {
-        let mut response = self.paint_viewer(&EMPTY_CONTEXT, ui);
         ui.vertical(|ui| {
-            for action in &mut self.0 {
-                response |= action.edit(ui);
-            }
-        });
-        response
+            let mut response = self.paint_viewer(&EMPTY_CONTEXT, ui);
+            response |= self.0.edit(ui);
+            response
+        })
+        .inner
     }
 }
-
-// FRecursive is implemented in recursive_impl.rs
 
 // Reaction
 impl FTitle for Reaction {

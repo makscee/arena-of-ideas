@@ -3,7 +3,7 @@ use super::*;
 #[reducer]
 fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
     let ctx = ctx.as_context();
-    let _ = ctx.player()?;
+    let player = ctx.player()?;
     let mut pack = ron::from_str::<PackedNodes>(&pack).map_err(|e| e.to_string())?;
     let mut next_id = ctx.next_id();
     pack.reassign_ids(&mut next_id);
@@ -21,7 +21,11 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
             remap.insert(*id, n.id);
             continue;
         }
-        let tnode = TNode::new(*id, 0, kind.to_kind(), data.clone());
+        let kind = kind.to_kind();
+        if !kind.is_content() {
+            continue;
+        }
+        let tnode = TNode::new(*id, 0, kind, data.clone());
         tnode.insert(ctx.rctx());
     }
     for NodeLink {
@@ -31,13 +35,17 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
         child_kind,
     } in pack.links
     {
+        if !parent_kind.to_kind().is_content() || !child_kind.to_kind().is_content() {
+            continue;
+        }
         if let Some(id) = remap.get(&parent) {
             parent = *id;
         }
         if let Some(id) = remap.get(&child) {
             child = *id;
         }
-        let _ = TNodeLink::add_by_id(ctx.rctx(), parent, child, parent_kind, child_kind, false);
+        TNodeLink::add_by_id(ctx.rctx(), parent, child, parent_kind, child_kind, false)?;
+        TPlayerLinkSelection::select_link(ctx.rctx(), player.id, parent, child)?;
     }
     Ok(())
 }

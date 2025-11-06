@@ -91,29 +91,6 @@ impl BattleCamera {
         ctx.exec_mut(|ctx| {
             *ctx.source_mut().t_mut().unwrap() = t;
             let world = ctx.world_mut()?;
-            for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
-                ctx.with_owner(fusion.id, |context| {
-                    if !context
-                        .get_var(VarName::visible)
-                        .get_bool()
-                        .unwrap_or_default()
-                    {
-                        return Ok(());
-                    }
-                    let rect = cam.rect_from_context(context)?;
-                    fusion.paint(rect, context, ui)?;
-                    // if ui.rect_contains_pointer(rect) {
-                    //     cursor_window(ui.ctx(), |ui| {
-                    //         // fusion.as_card().compose(context, ui);
-                    //         // Ok(())
-                    //         todo!();
-                    //     });
-                    // }
-                    Ok(())
-                })
-                .notify_error_op();
-            }
-            let world = ctx.world_mut()?;
             for entity in world
                 .query_filtered::<Entity, With<NUnitRepresentation>>()
                 .iter(world)
@@ -128,12 +105,6 @@ impl BattleCamera {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
-                    // let map = ctx.source().get_nodes_map()?;
-                    // dbg!(map.get_kind(id));
-                    // for id in ctx.parents_recursive(id)? {
-                    //     dbg!(ctx.get_kind(id)?);
-                    // }
-
                     let rect = cam.rect_from_context(ctx)?;
                     ctx.load::<NUnitRepresentation>(id)?
                         .material
@@ -153,7 +124,7 @@ impl BattleCamera {
                     .into_iter()
                     .next()
                     .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
-                ctx.with_owner(id, |ctx| {
+                ctx.with_status(id, |ctx| {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
@@ -161,6 +132,22 @@ impl BattleCamera {
                     ctx.load::<NStatusRepresentation>(id)?
                         .material
                         .paint(rect, ctx, ui);
+                    Ok(())
+                })
+                .notify_error_op();
+            }
+            let world = ctx.world_mut()?;
+            for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
+                ctx.with_owner(fusion.id, |context| {
+                    if !context
+                        .get_var(VarName::visible)
+                        .get_bool()
+                        .unwrap_or_default()
+                    {
+                        return Ok(());
+                    }
+                    let rect = cam.rect_from_context(context)?;
+                    fusion.paint(rect, context, ui)?;
                     Ok(())
                 })
                 .notify_error_op();

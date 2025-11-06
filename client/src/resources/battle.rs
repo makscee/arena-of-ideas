@@ -333,7 +333,7 @@ impl BattleAction {
                     }
                 }
                 BattleAction::send_event(event) => {
-                    add_actions.extend(BattleSimulation::send_event(ctx, *event)?);
+                    BattleSimulation::send_event(ctx, *event)?;
                     true
                 }
             };
@@ -503,8 +503,7 @@ impl BattleSimulation {
         process_actions(ctx, actions);
 
         match BattleSimulation::send_event(ctx, Event::BattleStart) {
-            Ok(a) => {
-                process_actions(ctx, a);
+            Ok(_) => {
                 let a = BattleSimulation::death_check(ctx)?;
                 process_actions(ctx, a);
             }
@@ -537,6 +536,17 @@ impl BattleSimulation {
                 state.insert(t, 0.0, var, value);
             }
             process_actions(ctx, actions);
+
+            for (index, status) in ctx
+                .get_children_of_kind(id, NodeKind::NStatusMagic)?
+                .into_iter()
+                .enumerate()
+            {
+                if ctx.load::<NState>(status)?.stax > 0 {
+                    ctx.source_mut()
+                        .set_var(status, VarName::index, (index as i32).into())?;
+                }
+            }
         }
 
         ctx.battle_mut()?.duration += TURN;
@@ -569,19 +579,11 @@ impl BattleSimulation {
         process_actions(ctx, a);
         let sync_actions = ctx.battle()?.slots_sync();
         process_actions(ctx, sync_actions);
-        match BattleSimulation::send_event(ctx, Event::TurnEnd) {
-            Ok(a) => process_actions(ctx, a),
-            Err(e) => error!("TurnEnd event error: {e}"),
-        }
-
+        BattleSimulation::send_event(ctx, Event::TurnEnd)?;
         Ok(())
     }
-    pub fn send_event(
-        ctx: &mut ClientContext,
-        event: Event,
-    ) -> Result<VecDeque<BattleAction>, NodeError> {
+    pub fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
         info!("{} {event}", "event:".dimmed().blue());
-        let mut battle_actions: VecDeque<BattleAction> = default();
         let mut fusion_statuses: Vec<(u64, u64)> = default();
         let sim = ctx.battle()?;
         for id in sim.all_fusions() {
@@ -589,9 +591,9 @@ impl BattleSimulation {
             if !statuses.is_empty() {
                 fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
             }
-            ctx.with_owner(id, |ctx| {
+            ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
                 match ctx.load::<NFusion>(id)?.clone().react(&event, ctx) {
-                    Ok(a) => battle_actions.extend(a),
+                    Ok(actions) => process_actions(ctx, actions),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };
                 Ok(())
@@ -621,11 +623,11 @@ impl BattleSimulation {
                     actions.process(ctx)
                 },
             ) {
-                Ok(actions) => battle_actions.extend(actions),
+                Ok(actions) => process_actions(ctx, actions),
                 Err(e) => e.log(),
             }
         }
-        Ok(battle_actions)
+        Ok(())
     }
     pub fn apply_status(
         ctx: &mut ClientContext,
@@ -634,8 +636,10 @@ impl BattleSimulation {
         color: Color32,
     ) -> NodeResult<()> {
         let t = ctx.t().to_not_found()?;
+        let mut new_index = 0;
         for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
+                new_index += 1;
                 if child_status.status_name == status.status_name {
                     // Update stax on the status state component
                     if let Ok(mut state) = child_status.state_ref(ctx).cloned() {
@@ -659,6 +663,7 @@ impl BattleSimulation {
         state.insert(0.0, 0.0, VarName::visible, false.into());
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::color, color.into());
+        state.insert(t, 0.0, VarName::index, new_index.into());
         Ok(())
     }
 
