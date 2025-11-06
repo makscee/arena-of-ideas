@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Meta};
 
-#[proc_macro_derive(Node, attributes(var, content, named))]
+#[proc_macro_derive(Node, attributes(var, content, named, many_to_one))]
 pub fn derive_node(_input: TokenStream) -> TokenStream {
     quote! {}.into()
 }

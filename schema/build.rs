@@ -40,9 +40,65 @@ fn main() {
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
 }
 
-fn generate_is_multiple_link_arms(
-    node_map: &HashMap<String, NodeInfo>,
-) -> proc_macro2::TokenStream {
+fn generate_node_relation_arms(node_map: &HashMap<String, NodeInfo>) -> proc_macro2::TokenStream {
+    use quote::quote;
+
+    let mut arms = Vec::new();
+
+    for (node_name, node_info) in node_map {
+        for field in &node_info.fields {
+            let parent_kind = node_name.parse::<proc_macro2::TokenStream>().unwrap();
+            let child_kind = field
+                .target_type
+                .clone()
+                .parse::<proc_macro2::TokenStream>()
+                .unwrap();
+
+            match field.link_type {
+                LinkType::OwnedMultiple | LinkType::RefMultiple => {
+                    if field.is_many_to_one {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::ManyToOne),
+                        });
+                    } else {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::OneToMany),
+                        });
+                    }
+                }
+                LinkType::Owned | LinkType::Ref => {
+                    if field.is_many_to_one {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::ManyToOne),
+                        });
+                    } else {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::OneToOne),
+                        });
+                    }
+                }
+                LinkType::Component => {
+                    if field.is_many_to_one {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::ManyToOne),
+                        });
+                    } else {
+                        arms.push(quote! {
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::OneToOne),
+                        });
+                    }
+                }
+                LinkType::None => {
+                    // Skip non-link fields
+                }
+            }
+        }
+    }
+
+    quote! { #(#arms)* }
+}
+
+fn generate_is_one_to_many_arms(node_map: &HashMap<String, NodeInfo>) -> proc_macro2::TokenStream {
     use quote::quote;
 
     let mut arms = Vec::new();
@@ -52,7 +108,8 @@ fn generate_is_multiple_link_arms(
             if matches!(
                 field.link_type,
                 LinkType::OwnedMultiple | LinkType::RefMultiple
-            ) {
+            ) && !field.is_many_to_one
+            {
                 let parent_ident = syn::parse_str::<syn::Ident>(node_name).unwrap();
                 let child_ident = syn::parse_str::<syn::Ident>(&field.target_type).unwrap();
                 arms.push(quote! {
@@ -98,12 +155,23 @@ fn generate_node_kind(
         &relationships.component_children,
     );
 
-    // Generate is_multiple_link function
-    let is_multiple_link_arms = generate_is_multiple_link_arms(node_map);
+    // Generate is_one_to_many function
+    let is_one_to_many_arms = generate_is_one_to_many_arms(node_map);
+
+    // Generate get_relation function
+    let node_relation_arms = generate_node_relation_arms(node_map);
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         use std::collections::HashSet;
+
+        #allow_attrs
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+        pub enum NodeRelation {
+            OneToOne,
+            OneToMany,
+            ManyToOne,
+        }
 
         #allow_attrs
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize, strum_macros::Display, strum_macros::EnumIter, strum_macros::EnumString, strum_macros::AsRefStr)]
@@ -183,10 +251,17 @@ fn generate_node_kind(
                 }
             }
 
-            pub fn is_multiple_link(parent: NodeKind, child: NodeKind) -> bool {
+            pub fn is_one_to_many(parent: NodeKind, child: NodeKind) -> bool {
                 match (parent, child) {
-                    #is_multiple_link_arms
+                    #is_one_to_many_arms
                     _ => false,
+                }
+            }
+
+            pub fn get_relation(parent: NodeKind, child: NodeKind) -> Option<NodeRelation> {
+                match (parent, child) {
+                    #node_relation_arms
+                    _ => None,
                 }
             }
         }

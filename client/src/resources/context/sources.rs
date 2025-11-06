@@ -817,26 +817,71 @@ impl<'a> Sources<'a> {
     }
 
     fn handle_top_link_insert(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        use schema::NodeKind;
+
+        let parent_kind = link.parent_kind.to_kind();
         let child_kind = link.child_kind.to_kind();
         let world = self.world_mut()?;
         let mut ratings = world.resource_mut::<LinkRatings>();
-        ratings.add_rating(link.parent, link.child, child_kind, link.rating);
-        if let Some(top_child) = ratings.get_top(link.parent, child_kind) {
-            if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
-                for old_child in old_children {
-                    self.remove_link(link.parent, old_child)?;
+
+        ratings.add_rating(
+            link.parent,
+            link.child,
+            parent_kind,
+            child_kind,
+            link.rating,
+        );
+
+        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
+            match relation {
+                schema::NodeRelation::OneToMany => {
+                    // For one-to-many (e.g., NHouse -> NUnit), we need to update the top parent for this child
+                    if let Some(top_parent) = ratings.get_top_parent(link.child, parent_kind) {
+                        // Remove old parent links for this child
+                        if let Ok(old_parents) = self.get_parents_of_kind(link.child, parent_kind) {
+                            for old_parent in old_parents {
+                                self.remove_link(old_parent, link.child)?;
+                            }
+                        }
+                        // Add link to top parent
+                        self.add_link(top_parent, link.child)?;
+                    }
+                }
+                schema::NodeRelation::ManyToOne => {
+                    // For many-to-one (e.g., NUnit -> NUnitDescription), we need to update the top child for this parent
+                    if let Some(top_child) = ratings.get_top_child(link.parent, child_kind) {
+                        if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind)
+                        {
+                            for old_child in old_children {
+                                self.remove_link(link.parent, old_child)?;
+                            }
+                        }
+                        self.add_link(link.parent, top_child)?;
+                    }
+                }
+                schema::NodeRelation::OneToOne => {
+                    // For one-to-one, update top child for parent
+                    if let Some(top_child) = ratings.get_top_child(link.parent, child_kind) {
+                        if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind)
+                        {
+                            for old_child in old_children {
+                                self.remove_link(link.parent, old_child)?;
+                            }
+                        }
+                        self.add_link(link.parent, top_child)?;
+                    }
                 }
             }
-            self.add_link(link.parent, top_child)?;
         }
+
         Ok(())
     }
 
     fn handle_top_link_update(&mut self, old: &TNodeLink, new: &TNodeLink) -> NodeResult<()> {
-        let child_kind = new
-            .child_kind
-            .parse::<NodeKind>()
-            .map_err(|_| NodeError::custom(format!("Invalid child kind: {}", new.child_kind)))?;
+        use schema::NodeKind;
+
+        let parent_kind = new.parent_kind.to_kind();
+        let child_kind = new.child_kind.to_kind();
 
         let world = self.world_mut()?;
         let mut links_map = world.resource_mut::<LinksMapResource>();
@@ -845,44 +890,114 @@ impl<'a> Sources<'a> {
         }
         links_map.insert(new.clone());
         let mut ratings = world.resource_mut::<LinkRatings>();
-        ratings.remove_rating(old.parent, old.child, child_kind);
-        ratings.add_rating(new.parent, new.child, child_kind, new.rating);
-        if let Some(top_child) = ratings.get_top(new.parent, child_kind) {
-            if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind) {
-                for old_child in old_children {
-                    self.remove_link(new.parent, old_child)?;
+
+        let old_parent_kind = old.parent_kind.to_kind();
+        let old_child_kind = old.child_kind.to_kind();
+        ratings.remove_rating(old.parent, old.child, old_parent_kind, old_child_kind);
+        ratings.add_rating(new.parent, new.child, parent_kind, child_kind, new.rating);
+
+        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
+            match relation {
+                schema::NodeRelation::OneToMany => {
+                    // For one-to-many (e.g., NHouse -> NUnit), we need to update the top parent for this child
+                    if let Some(top_parent) = ratings.get_top_parent(new.child, parent_kind) {
+                        // Remove old parent links for this child
+                        if let Ok(old_parents) = self.get_parents_of_kind(new.child, parent_kind) {
+                            for old_parent in old_parents {
+                                self.remove_link(old_parent, new.child)?;
+                            }
+                        }
+                        // Add link to top parent
+                        self.add_link(top_parent, new.child)?;
+                    }
+                }
+                schema::NodeRelation::ManyToOne => {
+                    // For many-to-one (e.g., NUnit -> NUnitDescription), we need to update the top child for this parent
+                    if let Some(top_child) = ratings.get_top_child(new.parent, child_kind) {
+                        if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind)
+                        {
+                            for old_child in old_children {
+                                self.remove_link(new.parent, old_child)?;
+                            }
+                        }
+                        self.add_link(new.parent, top_child)?;
+                    }
+                }
+                schema::NodeRelation::OneToOne => {
+                    // For one-to-one, update top child for parent
+                    if let Some(top_child) = ratings.get_top_child(new.parent, child_kind) {
+                        if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind)
+                        {
+                            for old_child in old_children {
+                                self.remove_link(new.parent, old_child)?;
+                            }
+                        }
+                        self.add_link(new.parent, top_child)?;
+                    }
                 }
             }
-            self.add_link(new.parent, top_child)?;
         }
         Ok(())
     }
 
     fn handle_top_link_delete(&mut self, link: &TNodeLink) -> NodeResult<()> {
-        let child_kind = link
-            .child_kind
-            .parse::<NodeKind>()
-            .map_err(|_| NodeError::custom(format!("Invalid child kind: {}", link.child_kind)))?;
-        // First collect old children before modifying ratings
-        let old_children = self
-            .get_children_of_kind(link.parent, child_kind)
-            .unwrap_or_default();
-        // Then update ratings and get new top child
-        let top_child_after_removal = {
+        use schema::NodeKind;
+
+        let parent_kind = link.parent_kind.to_kind();
+        let child_kind = link.child_kind.to_kind();
+
+        // Update ratings and get new top after removal
+        let (top_child_after_removal, top_parent_after_removal) = {
             let world = self.world_mut()?;
             let mut links_map = world.resource_mut::<LinksMapResource>();
             links_map.remove(link.id);
             let mut ratings = world.resource_mut::<LinkRatings>();
-            ratings.remove_rating(link.parent, link.child, child_kind);
-            ratings.get_top(link.parent, child_kind)
+            ratings.remove_rating(link.parent, link.child, parent_kind, child_kind);
+            (
+                ratings.get_top_child(link.parent, child_kind),
+                ratings.get_top_parent(link.child, parent_kind),
+            )
         };
-        // Remove all existing links of this kind first
-        for old_child in old_children {
-            self.remove_link(link.parent, old_child)?;
-        }
-        // Update links to reflect new top-rated child
-        if let Some(top_child) = top_child_after_removal {
-            self.add_link(link.parent, top_child)?;
+
+        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
+            match relation {
+                schema::NodeRelation::OneToMany => {
+                    // For one-to-many (e.g., NHouse -> NUnit), update the top parent for this child
+                    if let Ok(old_parents) = self.get_parents_of_kind(link.child, parent_kind) {
+                        for old_parent in old_parents {
+                            self.remove_link(old_parent, link.child)?;
+                        }
+                    }
+                    // Add link to new top parent if any
+                    if let Some(top_parent) = top_parent_after_removal {
+                        self.add_link(top_parent, link.child)?;
+                    }
+                }
+                schema::NodeRelation::ManyToOne => {
+                    // For many-to-one (e.g., NUnit -> NUnitDescription), update the top child for this parent
+                    if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
+                        for old_child in old_children {
+                            self.remove_link(link.parent, old_child)?;
+                        }
+                    }
+                    // Add link to new top child if any
+                    if let Some(top_child) = top_child_after_removal {
+                        self.add_link(link.parent, top_child)?;
+                    }
+                }
+                schema::NodeRelation::OneToOne => {
+                    // For one-to-one, update top child for parent
+                    if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
+                        for old_child in old_children {
+                            self.remove_link(link.parent, old_child)?;
+                        }
+                    }
+                    // Add link to new top child if any
+                    if let Some(top_child) = top_child_after_removal {
+                        self.add_link(link.parent, top_child)?;
+                    }
+                }
+            }
         }
         Ok(())
     }

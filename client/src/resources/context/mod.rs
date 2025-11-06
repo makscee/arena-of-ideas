@@ -186,8 +186,10 @@ impl NodesMapResource {
 /// Resource for storing link ratings in Top source
 #[derive(Resource, Default, Debug)]
 pub struct LinkRatings {
-    /// Maps (parent_id, child_kind) to Vec<(child_id, rating)>
-    pub ratings: HashMap<(u64, NodeKind), Vec<(u64, i32)>>,
+    /// Maps node_id to HashMap<NodeKind, (linked_node_id, rating)>
+    /// For one-to-many: stores many_side_id -> (one_side_kind -> (one_side_id, rating))
+    /// For one-to-one: stores either side -> (other_side_kind -> (other_side_id, rating))
+    pub ratings: HashMap<u64, HashMap<NodeKind, Vec<(u64, i32)>>>,
 }
 
 #[derive(Resource, Default, Debug)]
@@ -219,24 +221,113 @@ impl LinkRatings {
         Self::default()
     }
 
-    pub fn add_rating(&mut self, parent_id: u64, child_id: u64, child_kind: NodeKind, rating: i32) {
-        let ratings = self.ratings.entry((parent_id, child_kind)).or_default();
+    pub fn add_rating(
+        &mut self,
+        parent_id: u64,
+        child_id: u64,
+        parent_kind: NodeKind,
+        child_kind: NodeKind,
+        rating: i32,
+    ) {
+        use schema::NodeKind;
 
-        // Keep sorted by rating (highest first)
-        match ratings.binary_search_by(|&(_, r)| rating.cmp(&r)) {
-            Ok(pos) | Err(pos) => ratings.insert(pos, (child_id, rating)),
+        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
+            match relation {
+                schema::NodeRelation::OneToMany => {
+                    // Store on the "many" side (child) pointing to "one" side (parent)
+                    let child_ratings = self.ratings.entry(child_id).or_default();
+                    let parent_ratings = child_ratings.entry(parent_kind).or_default();
+
+                    // Remove existing rating for this parent if it exists
+                    parent_ratings.retain(|&(id, _)| id != parent_id);
+
+                    // Keep sorted by rating (highest first)
+                    match parent_ratings.binary_search_by(|&(_, r)| rating.cmp(&r)) {
+                        Ok(pos) | Err(pos) => parent_ratings.insert(pos, (parent_id, rating)),
+                    }
+                }
+                schema::NodeRelation::ManyToOne => {
+                    // Store on the "one" side (parent) pointing to "many" side (child)
+                    let parent_ratings = self.ratings.entry(parent_id).or_default();
+                    let child_ratings = parent_ratings.entry(child_kind).or_default();
+
+                    // Remove existing rating for this child if it exists
+                    child_ratings.retain(|&(id, _)| id != child_id);
+
+                    // Keep sorted by rating (highest first)
+                    match child_ratings.binary_search_by(|&(_, r)| rating.cmp(&r)) {
+                        Ok(pos) | Err(pos) => child_ratings.insert(pos, (child_id, rating)),
+                    }
+                }
+                schema::NodeRelation::OneToOne => {
+                    // For one-to-one, store on both sides for symmetry
+                    let parent_ratings = self.ratings.entry(parent_id).or_default();
+                    let child_ratings_for_parent = parent_ratings.entry(child_kind).or_default();
+                    child_ratings_for_parent.clear();
+                    child_ratings_for_parent.push((child_id, rating));
+
+                    let child_ratings = self.ratings.entry(child_id).or_default();
+                    let parent_ratings_for_child = child_ratings.entry(parent_kind).or_default();
+                    parent_ratings_for_child.clear();
+                    parent_ratings_for_child.push((parent_id, rating));
+                }
+            }
         }
     }
 
-    pub fn remove_rating(&mut self, parent_id: u64, child_id: u64, child_kind: NodeKind) {
-        if let Some(ratings) = self.ratings.get_mut(&(parent_id, child_kind)) {
-            ratings.retain(|&(id, _)| id != child_id);
+    pub fn remove_rating(
+        &mut self,
+        parent_id: u64,
+        child_id: u64,
+        parent_kind: NodeKind,
+        child_kind: NodeKind,
+    ) {
+        use schema::NodeKind;
+
+        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
+            match relation {
+                schema::NodeRelation::OneToMany => {
+                    if let Some(child_ratings) = self.ratings.get_mut(&child_id) {
+                        if let Some(parent_ratings) = child_ratings.get_mut(&parent_kind) {
+                            parent_ratings.retain(|&(id, _)| id != parent_id);
+                        }
+                    }
+                }
+                schema::NodeRelation::ManyToOne => {
+                    if let Some(parent_ratings) = self.ratings.get_mut(&parent_id) {
+                        if let Some(child_ratings) = parent_ratings.get_mut(&child_kind) {
+                            child_ratings.retain(|&(id, _)| id != child_id);
+                        }
+                    }
+                }
+                schema::NodeRelation::OneToOne => {
+                    if let Some(parent_ratings) = self.ratings.get_mut(&parent_id) {
+                        if let Some(child_ratings) = parent_ratings.get_mut(&child_kind) {
+                            child_ratings.retain(|&(id, _)| id != child_id);
+                        }
+                    }
+                    if let Some(child_ratings) = self.ratings.get_mut(&child_id) {
+                        if let Some(parent_ratings) = child_ratings.get_mut(&parent_kind) {
+                            parent_ratings.retain(|&(id, _)| id != parent_id);
+                        }
+                    }
+                }
+            }
         }
     }
 
-    pub fn get_top(&self, parent_id: u64, child_kind: NodeKind) -> Option<u64> {
+    pub fn get_top_child(&self, parent_id: u64, child_kind: NodeKind) -> Option<u64> {
         self.ratings
-            .get(&(parent_id, child_kind))
+            .get(&parent_id)
+            .and_then(|kind_ratings| kind_ratings.get(&child_kind))
+            .and_then(|ratings| ratings.first())
+            .map(|&(id, _)| id)
+    }
+
+    pub fn get_top_parent(&self, child_id: u64, parent_kind: NodeKind) -> Option<u64> {
+        self.ratings
+            .get(&child_id)
+            .and_then(|kind_ratings| kind_ratings.get(&parent_kind))
             .and_then(|ratings| ratings.first())
             .map(|&(id, _)| id)
     }

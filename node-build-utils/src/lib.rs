@@ -36,6 +36,7 @@ pub struct FieldInfo {
     pub target_type: String,
     pub raw_type: String,
     pub is_var: bool,
+    pub is_many_to_one: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, AsRefStr)]
@@ -134,6 +135,10 @@ pub fn parse_field(field: &Field) -> FieldInfo {
     };
 
     let is_var = field.attrs.iter().any(|attr| attr.path().is_ident("var"));
+    let is_many_to_one = field
+        .attrs
+        .iter()
+        .any(|attr| attr.path().is_ident("many_to_one"));
 
     FieldInfo {
         name,
@@ -141,6 +146,7 @@ pub fn parse_field(field: &Field) -> FieldInfo {
         target_type,
         raw_type,
         is_var,
+        is_many_to_one,
     }
 }
 

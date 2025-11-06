@@ -437,11 +437,10 @@ impl TPlayerLinkSelection {
 
         let parent_kind: NodeKind = link.parent_kind.parse().unwrap_or(NodeKind::None);
         let child_kind: NodeKind = link.child_kind.parse().unwrap_or(NodeKind::None);
-        let is_multiple = NodeKind::is_multiple_link(parent_kind, child_kind);
-        let is_multiple_to_one = parent_kind == NodeKind::NUnit
-            && child_kind == NodeKind::NUnitDescription
-            || parent_kind == NodeKind::NUnit && child_kind == NodeKind::NUnitStats;
-        if !is_multiple_to_one {
+        let relation = NodeKind::get_relation(parent_kind, child_kind);
+        let is_one_to_many = matches!(relation, Some(NodeRelation::OneToMany));
+        let is_many_to_one = matches!(relation, Some(NodeRelation::ManyToOne));
+        if !is_many_to_one {
             let existing_parent_selections: Vec<_> = ctx
                 .db
                 .player_link_selections()
@@ -459,7 +458,7 @@ impl TPlayerLinkSelection {
                 }
             }
         }
-        if !is_multiple {
+        if !is_one_to_many {
             // For single links, also clear any existing child selections of the same kind for this parent
             let existing_child_selections: Vec<_> = ctx
                 .db
@@ -477,7 +476,7 @@ impl TPlayerLinkSelection {
                     let existing_child_kind: NodeKind =
                         existing_link.child_kind.parse().unwrap_or(NodeKind::None);
                     if existing_link.child_kind == link.child_kind
-                        && !NodeKind::is_multiple_link(existing_parent_kind, existing_child_kind)
+                        && !NodeKind::is_one_to_many(existing_parent_kind, existing_child_kind)
                     {
                         Self::deselect_by_selection(ctx, &existing)?;
                     }

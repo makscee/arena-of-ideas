@@ -21,10 +21,10 @@ impl ActionsImpl for Vec<Action> {
 
 impl ActionImpl for Action {
     fn process(&self, ctx: &mut ClientContext) -> NodeResult<Vec<BattleAction>> {
-        info!(
+        println!(
             "{} {}",
             "action:".dimmed().purple(),
-            self.cstr().to_colored()
+            self.title_recursive(ctx).to_colored(),
         );
         let mut actions = Vec::default();
         match self {

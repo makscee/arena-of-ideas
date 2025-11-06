@@ -184,7 +184,9 @@ pub struct NFusionSlot {
 pub struct NUnit {
     #[var]
     pub unit_name: String,
+    #[many_to_one]
     pub description: Component<NUnitDescription>,
+    #[many_to_one]
     pub stats: Component<NUnitStats>,
     pub state: Component<NState>,
 }

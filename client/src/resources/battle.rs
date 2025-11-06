@@ -615,12 +615,12 @@ impl BattleSimulation {
                     }
 
                     let behavior = ctx.load::<NStatusBehavior>(status_id)?;
-                    let actions = behavior
-                        .reactions
-                        .react(&event, ctx)
-                        .to_not_found()?
-                        .clone();
-                    actions.process(ctx)
+                    let actions = behavior.reactions.react(&event, ctx);
+                    if let Some(actions) = actions {
+                        actions.clone().process(ctx)
+                    } else {
+                        Ok(default())
+                    }
                 },
             ) {
                 Ok(actions) => process_actions(ctx, actions),
