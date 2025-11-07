@@ -4,7 +4,7 @@ use super::*;
 
 #[table(public, name = nodes_world,
     index(name = kind_owner, btree(columns = [kind, owner])),
-    index(name = kind_data, btree(columns = [kind, data])))]
+    index(name = kind_data_owner, btree(columns = [kind, data, owner])))]
 #[derive(Clone, Debug)]
 pub struct TNode {
     #[primary_key]

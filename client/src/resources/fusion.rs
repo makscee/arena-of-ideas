@@ -18,25 +18,12 @@ impl NFusion {
         Ok(self.get_action_count(ctx)? < self.actions_limit as usize)
     }
 
-    pub fn get_unit_tier(ctx: &ClientContext, unit_id: u64) -> Result<u8, NodeError> {
-        if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-            if let Ok(desc) = unit.description_ref(ctx) {
-                if let Ok(behavior) = desc.behavior_ref(ctx) {
-                    return Ok(behavior.reaction.tier());
-                }
-            }
-        }
-        Ok(0)
-    }
-
     pub fn units<'a>(&self, ctx: &'a ClientContext) -> Result<Vec<&'a NUnit>, NodeError> {
         let slots = self.get_slots(ctx)?;
         let mut units = Vec::new();
         for slot in slots {
-            if let Some(unit_id) = slot.unit.id() {
-                if let Ok(unit) = ctx.load_ref::<NUnit>(unit_id) {
-                    units.push(unit);
-                }
+            if let Ok(unit) = slot.unit_ref(ctx) {
+                units.push(unit);
             }
         }
         Ok(units)

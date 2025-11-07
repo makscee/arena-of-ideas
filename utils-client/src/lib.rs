@@ -236,7 +236,8 @@ impl CtxExt for egui::Context {
 pub fn clipboard_get() -> Option<String> {
     Clipboard::new().and_then(|mut c| c.get_text()).ok()
 }
-pub fn clipboard_set(text: String) {
+pub fn clipboard_set(text: impl ToString) {
+    let text = text.to_string();
     log::info!("Clipboard set:\n{text}");
     Clipboard::new().unwrap().set_text(text).unwrap()
 }

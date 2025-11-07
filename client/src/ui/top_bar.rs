@@ -33,11 +33,6 @@ impl TopBar {
 
                     ui.close_kind(UiKind::Menu);
                 }
-                if "world inspector".cstr().button(ui).clicked() {
-                    BattlePlugin::open_world_inspector_window(world);
-
-                    ui.close_kind(UiKind::Menu);
-                }
             });
             Self::state_btn(GameState::Explorer, ui, world, |_, _| {});
             ui.menu_button("settings", |ui| {

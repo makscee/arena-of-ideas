@@ -51,3 +51,27 @@ pub trait Take: Sized + Default {
 }
 
 impl<T: Sized + Default> Take for T {}
+
+pub trait StringUtils {
+    fn cut_start(self) -> String;
+    fn cut_end(self) -> String;
+    fn cut_mid(self) -> String;
+}
+
+impl StringUtils for String {
+    fn cut_start(mut self) -> String {
+        self.drain(..self.len().max(3)).collect()
+    }
+    fn cut_end(mut self) -> String {
+        self.drain(self.len().saturating_sub(3)..).collect()
+    }
+    fn cut_mid(mut self) -> String {
+        if self.len() < 4 {
+            return self;
+        }
+        let cut = self.len() - 3;
+        let mut start = 0 + cut / 2;
+        let mut end = self.len() - cut / 2;
+        self.drain(start..end).collect()
+    }
+}

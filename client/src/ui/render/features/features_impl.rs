@@ -588,7 +588,7 @@ impl FTitle for NUnit {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         ctx.exec_ref(|ctx| {
             let color = ctx
-                .with_owner(self.id, |ctx| ctx.get_var(VarName::color).get_color())
+                .with_owner(self.id, |ctx| Ok(ctx.color()))
                 .unwrap_or(MISSING_COLOR);
             Ok(self.unit_name.cstr_c(color))
         })
@@ -1501,6 +1501,30 @@ impl FDisplay for NTeam {
     }
 }
 
+impl FCompactView for NTeam {
+    fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
+        ctx.exec_ref(|ctx| {
+            for fusion in self.fusions_ref(ctx)? {
+                if fusion.trigger_unit_ref(ctx).is_err() {
+                    continue;
+                }
+                fusion.title(ctx).label(ui);
+            }
+            Ok(())
+        })
+        .ui(ui);
+    }
+
+    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
+        match self.clone().load_all(ctx) {
+            Ok(team) => {
+                TeamEditor::new().edit(team, ctx, ui);
+            }
+            Err(e) => e.ui(ui),
+        }
+    }
+}
+
 impl FTitle for NBattle {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("Battle #{}", self.hash).cstr()
@@ -1641,8 +1665,30 @@ impl FPlaceholder for NMatch {
 }
 
 impl FTitle for NFusion {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        format!("Fusion #{}", self.index).cstr()
+    fn title(&self, ctx: &ClientContext) -> Cstr {
+        let units = ctx
+            .exec_ref(|ctx| {
+                let mut units = self
+                    .units(ctx)?
+                    .into_iter()
+                    .map(|u| u.title(ctx))
+                    .collect_vec();
+                match units.len() {
+                    0 => Ok(String::new()),
+                    1 => Ok(units.remove(0)),
+                    2 => Ok(units.remove(0).cut_start() + &units.remove(0).cut_end()),
+                    _ => {
+                        let mut name = units.remove(0).cut_start();
+                        for unit in units.drain(..units.len() - 1) {
+                            name += &unit.cut_mid();
+                        }
+                        name += &units.remove(0).cut_end();
+                        Ok(name)
+                    }
+                }
+            })
+            .unwrap_or_default();
+        format!("[s #{}] {units}", self.index).cstr()
     }
 }
 

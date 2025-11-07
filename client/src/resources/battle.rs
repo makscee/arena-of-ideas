@@ -239,7 +239,7 @@ impl BattleAction {
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
-                        let dmg = ctx.load::<NFusion>(*b)?.dmg_ctx_get(ctx) + x;
+                        let dmg = ctx.load::<NFusion>(*b).track()?.dmg_ctx_get(ctx) + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         add_actions.push(
                             Self::new_vfx("pain_vfx")
@@ -276,7 +276,7 @@ impl BattleAction {
                                 |context| pleasure.apply(context),
                             )?;
                         }
-                        let dmg = ctx.load::<NFusion>(*b)?.dmg - *x;
+                        let dmg = ctx.load::<NFusion>(*b).track()?.dmg - *x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.at_least(0).into()));
                         if let Some(text) = animations().get("text") {
                             ctx.with_layers(
@@ -525,7 +525,10 @@ impl BattleSimulation {
             .copied()
             .collect_vec();
         for id in ids {
-            let vars = node_kind_match!(ctx.get_kind(id)?, ctx.load::<NodeType>(id)?.get_vars());
+            let vars = node_kind_match!(
+                ctx.get_kind(id)?,
+                ctx.load::<NodeType>(id).track()?.get_vars()
+            );
             let mut actions = Vec::new();
             for (var, value) in vars {
                 let (value, new_actions) = Event::UpdateStat(var).update_value(ctx, value, id);
@@ -542,7 +545,7 @@ impl BattleSimulation {
                 .into_iter()
                 .enumerate()
             {
-                if ctx.load::<NState>(status)?.stax > 0 {
+                if ctx.load::<NState>(status).track()?.stax > 0 {
                     ctx.source_mut()
                         .set_var(status, VarName::index, (index as i32).into())?;
                 }
@@ -592,7 +595,7 @@ impl BattleSimulation {
                 fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
             }
             ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
-                match ctx.load::<NFusion>(id)?.clone().react(&event, ctx) {
+                match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
                     Ok(actions) => process_actions(ctx, actions),
                     Err(e) => error!("NFusion event {event} failed: {e}"),
                 };
@@ -608,13 +611,17 @@ impl BattleSimulation {
                 ],
                 |ctx| {
                     // Only trigger status reactions if stax > 0
-                    let status = ctx.load::<NStatusMagic>(status_id)?;
+                    let mut status = ctx.load::<NStatusMagic>(status_id)?;
                     let stax = status.state_ref(ctx)?.stax;
                     if stax <= 0 {
                         return Ok(vec![]);
                     }
-
-                    let behavior = ctx.load::<NStatusBehavior>(status_id)?;
+                    dbg!(&status);
+                    let behavior = status
+                        .description_load(ctx)
+                        .track()?
+                        .behavior_load(ctx)
+                        .track()?;
                     let actions = behavior.reactions.react(&event, ctx);
                     if let Some(actions) = actions {
                         actions.clone().process(ctx)
@@ -637,7 +644,10 @@ impl BattleSimulation {
     ) -> NodeResult<()> {
         let t = ctx.t().to_not_found()?;
         let mut new_index = 0;
-        for child in ctx.get_children_of_kind(target, NodeKind::NStatusMagic)? {
+        for child in ctx
+            .get_children_of_kind(target, NodeKind::NStatusMagic)
+            .track()?
+        {
             if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
                 new_index += 1;
                 if child_status.status_name == status.status_name {
@@ -711,7 +721,7 @@ impl BattleSimulation {
         *ctx.t_mut().unwrap() = ctx.battle()?.duration;
         let sim = ctx.battle()?;
         for id in sim.all_fusions() {
-            let fusion = ctx.load::<NFusion>(id)?;
+            let fusion = ctx.load::<NFusion>(id).track()?;
             let hp = fusion.hp_ctx_get(ctx);
             let dmg = fusion.dmg_ctx_get(ctx);
             if hp <= dmg {

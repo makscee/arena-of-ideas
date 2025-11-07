@@ -72,7 +72,7 @@ pub trait NodeKindOnSpawn {
 impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
         let entity = ctx.entity(id).track()?;
-        let vars = node_kind_match!(self, ctx.load::<NodeType>(id)?.get_vars());
+        let vars = node_kind_match!(self, ctx.load::<NodeType>(id).track()?.get_vars());
 
         // Only create NodeStateHistory for battle simulations
         if ctx.battle().is_ok() {

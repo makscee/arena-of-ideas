@@ -1,4 +1,5 @@
 use super::*;
+use bevy_egui::egui::{Popup, PopupAnchor, PopupCloseBehavior};
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
 
@@ -20,7 +21,7 @@ enum RowGetter<'a, T> {
 pub struct TableState {
     indices: Vec<usize>,
     sorting: Option<(usize, bool)>,
-    filters: Vec<(usize, String)>, // (column_index, filter_text)
+    filters: Vec<(usize, String, bool)>, // (column_index, filter_text, is_equals)
 }
 
 pub struct TableColumn<'a, T> {
@@ -83,14 +84,13 @@ impl TableState {
                                 Ok(ord) => {
                                     let primary_ord = if ascending { ord } else { ord.reverse() };
 
-                                    // If primary values are equal, sort by index (stable sort)
                                     if primary_ord == Ordering::Equal {
                                         a.cmp(b)
                                     } else {
                                         primary_ord
                                     }
                                 }
-                                Err(_) => a.cmp(b), // Fall back to index comparison
+                                Err(_) => a.cmp(b),
                             }
                         }
                         (Some(_), None) => Ordering::Less,
@@ -111,7 +111,7 @@ impl TableState {
         self.indices = (0..table.row_getter.len())
             .filter(|&index| {
                 if let Some(data) = table.row_getter.get(context, index) {
-                    for (column_index, filter_text) in &self.filters {
+                    for (column_index, filter_text, is_equals) in &self.filters {
                         if let Some(column) = table.columns.get_mut(*column_index) {
                             if let Some(value_fn) = &mut column.value {
                                 if let Ok(value) = value_fn(context, data) {
@@ -123,10 +123,14 @@ impl TableState {
                                         VarValue::bool(b) => b.to_string(),
                                         _ => continue,
                                     };
-                                    if !value_str
-                                        .to_lowercase()
-                                        .contains(&filter_text.to_lowercase())
-                                    {
+                                    let matches = if *is_equals {
+                                        value_str.to_lowercase() == filter_text.to_lowercase()
+                                    } else {
+                                        value_str
+                                            .to_lowercase()
+                                            .contains(&filter_text.to_lowercase())
+                                    };
+                                    if !matches {
                                         return false;
                                     }
                                 }
@@ -141,16 +145,15 @@ impl TableState {
             .collect();
     }
 
-    fn add_filter(&mut self, column_index: usize, filter_text: String) {
-        // Remove existing filter for this column
-        self.filters.retain(|(idx, _)| *idx != column_index);
+    fn add_filter(&mut self, column_index: usize, filter_text: String, is_equals: bool) {
+        self.filters.retain(|(idx, _, _)| *idx != column_index);
         if !filter_text.is_empty() {
-            self.filters.push((column_index, filter_text));
+            self.filters.push((column_index, filter_text, is_equals));
         }
     }
 
     fn remove_filter(&mut self, column_index: usize) {
-        self.filters.retain(|(idx, _)| *idx != column_index);
+        self.filters.retain(|(idx, _, _)| *idx != column_index);
     }
 
     fn clear_sorting(&mut self) {
@@ -240,8 +243,6 @@ impl<'a, T> Table<'a, T> {
         self
     }
 
-    /// Makes the last added column take up all remaining available space.
-    /// This is useful for columns that should expand to fill the table width.
     pub fn column_remainder(mut self) -> Self {
         if let Some(last_column) = self.columns.last_mut() {
             last_column.remainder = true;
@@ -249,22 +250,11 @@ impl<'a, T> Table<'a, T> {
         self
     }
 
-    /// Sets the default sorting for the table.
-    /// The table will be sorted by the specified column on initial display.
-    ///
-    /// # Arguments
-    /// * `column_index` - Index of the column to sort by (0-based)
-    /// * `ascending` - True for ascending order, false for descending
     pub fn default_sort(mut self, column_index: usize, ascending: bool) -> Self {
         self.default_sort = Some((column_index, ascending));
         self
     }
 
-    /// Adds hover UI for the last added column header.
-    /// When hovering over the column header, the provided closure will be called to render UI.
-    ///
-    /// # Arguments
-    /// * `hover_fn` - Function to render UI when hovering over the column header
     pub fn column_on_hover_ui(mut self, hover_fn: impl Fn(&mut Ui) + 'a + Send + Sync) -> Self {
         if let Some(last_column) = self.columns.last_mut() {
             last_column.on_hover_ui = Some(Box::new(hover_fn));
@@ -272,14 +262,6 @@ impl<'a, T> Table<'a, T> {
         self
     }
 
-    /// Convenience method to add a column with hover text on the header.
-    /// This is a shorthand for calling column() followed by column_on_hover_ui().
-    ///
-    /// # Arguments
-    /// * `name` - Column header text
-    /// * `hover_text` - Text to display when hovering over the column header
-    /// * `show_fn` - Function to render the column content
-    /// * `value_fn` - Function to extract the sortable value
     pub fn column_with_hover_text(
         self,
         name: impl Into<String>,
@@ -318,7 +300,7 @@ impl<'a, T> Table<'a, T> {
         }
     }
 
-    pub fn ui(mut self, context: &ClientContext, ui: &mut Ui) {
+    pub fn ui(mut self, ctx: &ClientContext, ui: &mut Ui) {
         let table_id = ui.id().with("table");
         let mut state = ui
             .ctx()
@@ -330,21 +312,16 @@ impl<'a, T> Table<'a, T> {
             state.indices = (0..self.row_getter.len()).collect();
         }
 
-        // Apply default sorting only if this is a new table state (no existing sorting)
         if let Some((column_index, ascending)) = self.default_sort {
             if state.sorting.is_none()
                 && state.filters.is_empty()
                 && column_index < self.columns.len()
             {
-                state.apply_sorting(&mut self, context, column_index, ascending);
+                state.apply_sorting(&mut self, ctx, column_index, ascending);
             }
         }
 
-        // Display current sorting and filters above the table
         ui.horizontal(|ui| {
-            let mut actions = Vec::new();
-
-            // Show current sorting
             if let Some((column_index, ascending)) = state.sorting {
                 if let Some(column) = self.columns.get(column_index) {
                     ui.label(format!(
@@ -353,44 +330,37 @@ impl<'a, T> Table<'a, T> {
                         if ascending { "↑" } else { "↓" }
                     ));
                     if ui.button("❌").clicked() {
-                        actions.push(("clear_sort", column_index, String::new()));
-                    }
-                }
-            }
-
-            for (column_index, filter_text) in &state.filters {
-                if let Some(column) = self.columns.get(*column_index) {
-                    ui.label(format!("Filter {}: '{}'", column.name, filter_text));
-                    if ui.button("❌").clicked() {
-                        actions.push(("remove_filter", *column_index, String::new()));
-                    }
-                }
-            }
-
-            for (action, column_index, _) in actions {
-                match action {
-                    "clear_sort" => {
                         state.clear_sorting();
-                        // Rebuild indices and reapply filters
                         state.indices = (0..self.row_getter.len()).collect();
-                        state.apply_filters(&mut self, context);
+                        state.apply_filters(&mut self, ctx);
                     }
-                    "remove_filter" => {
-                        // Clear the filter text from UI data
-                        let filter_id = ui.id().with("filter").with(column_index);
-                        ui.data_mut(|data| {
-                            data.remove::<String>(filter_id);
-                        });
-                        state.remove_filter(column_index);
-                        // Rebuild indices and reapply remaining filters
-                        state.indices = (0..self.row_getter.len()).collect();
-                        state.apply_filters(&mut self, context);
-                        // Reapply sorting if it exists
-                        if let Some((sort_column, ascending)) = state.sorting {
-                            state.apply_sorting(&mut self, context, sort_column, ascending);
-                        }
+                }
+            }
+
+            let mut filters_to_remove = Vec::new();
+            for (column_index, filter_text, is_equals) in &state.filters {
+                if let Some(column) = self.columns.get(*column_index) {
+                    let mode_str = if *is_equals { "equals" } else { "contains" };
+                    ui.label(format!(
+                        "Filter {}: '{}' ({})",
+                        column.name, filter_text, mode_str
+                    ));
+                    if ui.button("❌").clicked() {
+                        filters_to_remove.push(*column_index);
                     }
-                    _ => {}
+                }
+            }
+
+            for column_index in filters_to_remove {
+                let filter_id = ui.id().with("filter").with(column_index);
+                ui.data_mut(|data| {
+                    data.remove::<String>(filter_id);
+                });
+                state.remove_filter(column_index);
+                state.indices = (0..self.row_getter.len()).collect();
+                state.apply_filters(&mut self, ctx);
+                if let Some((sort_column, ascending)) = state.sorting {
+                    state.apply_sorting(&mut self, ctx, sort_column, ascending);
                 }
             }
         });
@@ -399,9 +369,9 @@ impl<'a, T> Table<'a, T> {
             if data_changed {
                 state.indices = (0..self.row_getter.len()).collect();
             }
-            state.apply_filters(&mut self, context);
+            state.apply_filters(&mut self, ctx);
             if let Some((column_index, ascending)) = state.sorting {
-                state.apply_sorting(&mut self, context, column_index, ascending);
+                state.apply_sorting(&mut self, ctx, column_index, ascending);
             }
         }
 
@@ -418,8 +388,8 @@ impl<'a, T> Table<'a, T> {
             table_builder = table_builder.column(col);
         }
 
-        let mut filter_updates = Vec::new();
-        let mut sort: Option<(usize, bool)> = None;
+        let mut filter_updates: Vec<(usize, String, bool)> = Vec::new();
+        let mut sort_change: Option<Option<(usize, bool)>> = None;
 
         table_builder
             .auto_shrink([false, true])
@@ -428,63 +398,129 @@ impl<'a, T> Table<'a, T> {
                 for (column_index, column) in self.columns.iter().enumerate() {
                     row.col(|ui| {
                         ui.horizontal(|ui| {
-                            let mut header_text = column.name.clone();
-                            if let Some((sorted_column, ascending)) = state.sorting {
-                                if sorted_column == column_index {
-                                    header_text += if ascending { " ↑" } else { " ↓" };
-                                }
-                            }
+                            ui.label(&column.name);
 
-                            let mut response = ui.button(&header_text);
-
-                            // Add hover UI if configured
                             if let Some(hover_fn) = &column.on_hover_ui {
-                                response = response.on_hover_ui(|ui| {
+                                ui.label(&column.name).on_hover_ui(|ui| {
                                     hover_fn(ui);
                                 });
                             }
 
                             if column.value.is_some() {
-                                response.bar_menu(|ui| {
-                                    ui.vertical(|ui| {
-                                        // Sort controls
-                                        ui.label("Sort:");
-                                        ui.horizontal(|ui| {
-                                            if ui.button("↑").clicked() {
-                                                // Force ascending sort
-                                                sort = Some((column_index, true));
-                                            }
-                                            if ui.button("↓").clicked() {
-                                                // Force descending sort
-                                                sort = Some((column_index, false));
-                                            }
+                                let filter_button = ui.button("🔍");
+                                let popup_id = ui.id().with("filter_popup").with(column_index);
+
+                                let popup = Popup::new(
+                                    popup_id,
+                                    ui.ctx().clone(),
+                                    PopupAnchor::from(&filter_button),
+                                    ui.layer_id(),
+                                )
+                                .open_memory(None)
+                                .close_behavior(PopupCloseBehavior::CloseOnClickOutside);
+
+                                if filter_button.clicked() {
+                                    Popup::toggle_id(ui.ctx(), popup_id);
+                                }
+
+                                popup.show(|ui| {
+                                    ui.set_max_width(200.0);
+                                    ui.label("Filter:");
+
+                                    let filter_id = ui.id().with("filter").with(column_index);
+                                    let is_equals_id = ui.id().with("is_equals").with(column_index);
+
+                                    let mut filter_text = ui.data_mut(|data| {
+                                        data.get_temp_mut_or_default::<String>(filter_id).clone()
+                                    });
+
+                                    let mut is_equals = ui.data_mut(|data| {
+                                        data.get_temp_mut_or_default::<bool>(is_equals_id).clone()
+                                    });
+
+                                    let response = ui.text_edit_singleline(&mut filter_text);
+                                    if response.changed() {
+                                        ui.data_mut(|data| {
+                                            data.insert_temp(filter_id, filter_text.clone());
                                         });
+                                        filter_updates.push((
+                                            column_index,
+                                            filter_text.clone(),
+                                            is_equals,
+                                        ));
+                                    }
 
-                                        ui.separator();
+                                    ui.separator();
 
-                                        ui.label("Filter:");
-                                        let filter_id = ui.id().with("filter").with(column_index);
-                                        let mut filter_text = ui.data_mut(|data| {
-                                            data.get_temp_mut_or_default::<String>(filter_id)
-                                                .clone()
-                                        });
-
-                                        let response = ui.text_edit_singleline(&mut filter_text);
-                                        if response.changed() {
+                                    ui.horizontal(|ui| {
+                                        if ui.radio(!is_equals, "Contains").clicked() {
+                                            is_equals = false;
                                             ui.data_mut(|data| {
-                                                data.insert_temp(filter_id, filter_text.clone());
+                                                data.insert_temp(is_equals_id, is_equals);
                                             });
-                                            filter_updates.push((column_index, filter_text));
+                                            if !filter_text.is_empty() {
+                                                filter_updates.push((
+                                                    column_index,
+                                                    filter_text.clone(),
+                                                    is_equals,
+                                                ));
+                                            }
                                         }
 
-                                        if ui.button("Clear Filter").clicked() {
+                                        if ui.radio(is_equals, "Equals").clicked() {
+                                            is_equals = true;
                                             ui.data_mut(|data| {
-                                                data.insert_temp(filter_id, String::new());
+                                                data.insert_temp(is_equals_id, is_equals);
                                             });
-                                            filter_updates.push((column_index, String::new()));
+                                            if !filter_text.is_empty() {
+                                                filter_updates.push((
+                                                    column_index,
+                                                    filter_text.clone(),
+                                                    is_equals,
+                                                ));
+                                            }
                                         }
                                     });
+
+                                    if ui.button("Clear Filter").clicked() {
+                                        ui.data_mut(|data| {
+                                            data.insert_temp(filter_id, String::new());
+                                        });
+                                        filter_updates.push((
+                                            column_index,
+                                            String::new(),
+                                            is_equals,
+                                        ));
+                                    }
                                 });
+
+                                let sort_icon = match state.sorting {
+                                    Some((sorted_column, ascending))
+                                        if sorted_column == column_index =>
+                                    {
+                                        if ascending {
+                                            "↑"
+                                        } else {
+                                            "↓"
+                                        }
+                                    }
+                                    _ => "-",
+                                };
+
+                                if ui.button(sort_icon).clicked() {
+                                    sort_change = Some(match state.sorting {
+                                        Some((sorted_column, ascending))
+                                            if sorted_column == column_index =>
+                                        {
+                                            if ascending {
+                                                Some((column_index, false))
+                                            } else {
+                                                None
+                                            }
+                                        }
+                                        _ => Some((column_index, true)),
+                                    });
+                                }
                             }
                         });
                     });
@@ -493,22 +529,30 @@ impl<'a, T> Table<'a, T> {
             .body(|mut body| {
                 for _ in 0..state.indices.len() {
                     body.row(24.0, |mut row| {
-                        self.show_row(context, &mut state, &mut row);
+                        self.show_row(ctx, &mut state, &mut row);
                     });
                 }
             });
-
-        for (column_index, filter_text) in filter_updates {
-            state.add_filter(column_index, filter_text);
+        for (column_index, filter_text, is_equals) in filter_updates {
+            state.add_filter(column_index, filter_text, is_equals);
             state.indices = (0..self.row_getter.len()).collect();
-            state.apply_filters(&mut self, context);
+            state.apply_filters(&mut self, ctx);
             if let Some((sort_column, ascending)) = state.sorting {
-                state.apply_sorting(&mut self, context, sort_column, ascending);
+                state.apply_sorting(&mut self, ctx, sort_column, ascending);
             }
         }
 
-        if let Some((column_index, ascending)) = sort {
-            state.apply_sorting(&mut self, context, column_index, ascending);
+        if let Some(sort_opt) = sort_change {
+            match sort_opt {
+                Some((column_index, ascending)) => {
+                    state.apply_sorting(&mut self, ctx, column_index, ascending);
+                }
+                None => {
+                    state.clear_sorting();
+                    state.indices = (0..self.row_getter.len()).collect();
+                    state.apply_filters(&mut self, ctx);
+                }
+            }
         }
 
         ui.ctx().data_mut(|w| w.insert_temp(table_id, state));

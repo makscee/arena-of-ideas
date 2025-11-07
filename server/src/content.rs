@@ -10,13 +10,11 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
     GlobalData::set_next_id(ctx.rctx(), next_id);
     let mut remap: HashMap<u64, u64> = default();
     for (id, NodeData { kind, data }) in &pack.nodes {
-        if let Some(n) = ctx
-            .rctx()
-            .db
-            .nodes_world()
-            .kind_data()
-            .filter((kind, data))
+        let filter = ctx.rctx().db.nodes_world().kind_data_owner();
+        if let Some(n) = filter
+            .filter((kind, data, ID_CORE))
             .next()
+            .or_else(|| filter.filter((kind, data, 0u64)).next())
         {
             remap.insert(*id, n.id);
             continue;

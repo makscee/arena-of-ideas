@@ -106,7 +106,8 @@ impl BattleCamera {
                         return Ok(());
                     }
                     let rect = cam.rect_from_context(ctx)?;
-                    ctx.load::<NUnitRepresentation>(id)?
+                    ctx.load::<NUnitRepresentation>(id)
+                        .track()?
                         .material
                         .paint(rect, ctx, ui);
                     Ok(())
@@ -129,7 +130,8 @@ impl BattleCamera {
                         return Ok(());
                     }
                     let rect = cam.rect_from_context(ctx)?;
-                    ctx.load::<NStatusRepresentation>(id)?
+                    ctx.load::<NStatusRepresentation>(id)
+                        .track()?
                         .material
                         .paint(rect, ctx, ui);
                     Ok(())

@@ -58,12 +58,50 @@ impl AdminPlugin {
                                 .push(world);
                         }
                     });
+                } else {
+                    "[red node not found]".cstr().label(ui);
                 }
             });
         }
         if "Inspect Nodes".cstr().button(ui).clicked() {
-            Window::new("Nodes Inspector", |ui, world| {
-                show_node_with_children(1, ui, world);
+            let all_nodes = cn().db.nodes_world().iter().collect_vec();
+            Window::new("Nodes Inspector", move |ui, _| {
+                all_nodes
+                    .table()
+                    .column(
+                        "id",
+                        |_, ui, t, _| {
+                            t.id.label(ui);
+                            Ok(())
+                        },
+                        |_, t| Ok(t.id.into()),
+                    )
+                    .column(
+                        "owner",
+                        |_, ui, t, _| {
+                            t.owner.label(ui);
+                            Ok(())
+                        },
+                        |_, t| Ok(t.owner.into()),
+                    )
+                    .column(
+                        "kind",
+                        |_, ui, t, _| {
+                            t.kind().as_ref().to_string().label(ui);
+                            Ok(())
+                        },
+                        |_, t| Ok(t.kind().to_string().into()),
+                    )
+                    .column(
+                        "data",
+                        |_, ui, t, _| {
+                            Label::new(&t.data).truncate().ui(ui);
+                            Ok(())
+                        },
+                        |_, t| Ok(t.data.clone().into()),
+                    )
+                    .column_initial_width(400.0)
+                    .ui(&EMPTY_CONTEXT, ui);
             })
             .expand()
             .push(world);

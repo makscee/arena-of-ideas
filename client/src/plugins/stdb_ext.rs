@@ -101,11 +101,15 @@ impl NodeIdExt for u64 {
             .kind())
     }
     fn label(self, ui: &mut Ui) -> Response {
-        format!("[s [tw #]{}]", self % 100000)
+        let resp = format!("[s [tw #]{}]", self % 100000)
             .label(ui)
             .on_hover_ui(|ui| {
                 format!("[tw #]{self}").label(ui);
-            })
+            });
+        if resp.clicked() {
+            clipboard_set(self);
+        }
+        resp
     }
     fn node_rating(self) -> Option<i32> {
         cn().db.nodes_world().id().find(&self).map(|n| n.rating)

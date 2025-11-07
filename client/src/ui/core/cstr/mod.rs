@@ -83,7 +83,7 @@ impl CstrTrait for Cstr {
     }
 
     fn label(&self, ui: &mut Ui) -> Response {
-        self.as_label(ui.style()).ui(ui)
+        self.as_label(ui.style()).sense(Sense::click()).ui(ui)
     }
 
     fn label_w(&self, ui: &mut Ui) -> Response {

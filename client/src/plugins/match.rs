@@ -411,21 +411,13 @@ impl MatchPlugin {
                     .column(
                         "Floor",
                         |_ctx, ui, _, value| {
-                            let floor = value.get_i32()?;
-                            // Show all high floors as champions
-                            if floor >= 15 {
-                                format!("[yellow [b {}] ⭐ CHAMPION]", floor)
-                                    .cstr()
-                                    .label(ui);
-                            } else {
-                                format!("[b {}] (Boss)", floor).cstr().label(ui);
-                            }
+                            value.cstr().label(ui);
                             Ok(())
                         },
                         |_, t| Ok(t.floor.into()),
                     )
                     .column(
-                        "Boss",
+                        "Player",
                         |ctx, ui, _, value| {
                             let id = value.get_u64()?;
                             if let Ok(player) = ctx.load::<NPlayer>(id) {
@@ -438,10 +430,25 @@ impl MatchPlugin {
                             }
                             Ok(())
                         },
-                        |context, t| {
-                            let team = t.team_ref(context)?;
+                        |ctx, t| {
+                            let team = t.team_ref(ctx)?;
                             Ok(team.owner.into())
                         },
+                    )
+                    .column(
+                        "Team",
+                        |ctx, ui, node, _| {
+                            let team = node.team_ref(ctx)?;
+                            ui.group(|ui| {
+                                team.render_compact(ctx, ui);
+                            })
+                            .response
+                            .on_hover_ui(|ui| {
+                                team.render_hover(ctx, ui);
+                            });
+                            Ok(())
+                        },
+                        |_, n| Ok(n.id.into()),
                     )
                     .ui(ctx, ui);
             }
