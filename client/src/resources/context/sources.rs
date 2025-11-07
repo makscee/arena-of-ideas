@@ -351,8 +351,13 @@ impl<'a> Sources<'a> {
 
     fn should_process_link(&self, link: &TNodeLink) -> bool {
         fn check_owner(link: &TNodeLink, owners: Vec<u64>) -> bool {
-            let parent_owner = cn().db.nodes_world().id().find(&link.parent).unwrap().owner;
-            let child_owner = cn().db.nodes_world().id().find(&link.child).unwrap().owner;
+            let nodes = cn().db.nodes_world().id();
+            let Some(parent_owner) = nodes.find(&link.parent).map(|n| n.owner) else {
+                return false;
+            };
+            let Some(child_owner) = nodes.find(&link.child).map(|n| n.owner) else {
+                return false;
+            };
             owners.contains(&parent_owner) && owners.contains(&child_owner)
         }
         match self {

@@ -198,6 +198,7 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
             info!("Skip house {}: no ability or status", house.name());
             continue;
         }
+        house.units.set_none()?;
         for unit in house_units.remove(&house.id).unwrap_or_default() {
             if !match unit.description().unwrap().magic_type {
                 MagicType::Ability => house.ability.is_loaded(),

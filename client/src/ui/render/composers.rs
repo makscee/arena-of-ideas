@@ -671,7 +671,8 @@ impl<'a, T: FCard> Composer<T> for CardComposer<'a, T> {
 
     fn compose(self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let data = self.data.as_ref();
-        data.render_card(ctx, ui)
+        ctx.exec_ref(|ctx| ctx.with_owner(data.id(), |ctx| Ok(data.render_card(ctx, ui))))
+            .unwrap()
     }
 }
 

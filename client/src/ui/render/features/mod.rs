@@ -224,8 +224,8 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-const CARD_SIZE: egui::Vec2 = egui::vec2(150.0, 180.0);
-pub trait FCard: FDescription + FTitle + FStats + FPreview {
+const CARD_SIZE: egui::Vec2 = egui::vec2(180.0, 200.0);
+pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
     fn render_card(&self, ctx: &ClientContext, ui: &mut Ui) -> Response
     where
         Self: Sized,
@@ -238,14 +238,15 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview {
         );
         ui.set_clip_rect(rect);
         Frame::new()
-            // .inner_margin(2)
             .corner_radius(ROUNDING)
             .stroke(ctx.color().stroke())
             .show(ui, |ui| {
                 self.title(ctx).cstr_s(CstrStyle::Heading2).label(ui);
 
                 // Preview in remaining space
-                let available_rect = ui.available_rect_before_wrap().shrink(5.0);
+                let available_rect = ui
+                    .available_rect_before_wrap()
+                    .shrink2(egui::vec2(5.0, 0.0));
                 if available_rect.height() > 10.0 {
                     let ui = &mut ui.new_child(UiBuilder::new().max_rect(available_rect));
                     self.preview(ctx, ui, available_rect);

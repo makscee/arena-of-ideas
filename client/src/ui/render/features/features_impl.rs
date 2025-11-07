@@ -498,12 +498,15 @@ impl FEdit for PainterAction {
     }
 }
 
-// FRecursive is implemented in recursive_impl.rs
-
-// Material
 impl FTitle for Material {
     fn title(&self, _: &ClientContext) -> Cstr {
         self.cstr()
+    }
+}
+
+impl FDescription for Material {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.0.iter().map(|p| p.title_recursive(ctx)).join("\n")
     }
 }
 
@@ -524,10 +527,22 @@ impl FEdit for Material {
     }
 }
 
-// Reaction
 impl FTitle for Reaction {
     fn title(&self, _: &ClientContext) -> Cstr {
         self.cstr()
+    }
+}
+
+impl FDescription for Reaction {
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        format!(
+            "{}:\n{}",
+            self.trigger.cstr(),
+            self.actions
+                .iter()
+                .map(|a| a.title_recursive(ctx))
+                .join("\n")
+        )
     }
 }
 
@@ -584,7 +599,7 @@ impl FTitle for NUnit {
 impl FDescription for NUnit {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(description) = self.description_ref(ctx) {
-            description.description.clone()
+            description.description_cstr(ctx)
         } else {
             "[tw -]".cstr()
         }
@@ -1231,8 +1246,11 @@ impl FTitle for NAbilityEffect {
 }
 
 impl FDescription for NAbilityEffect {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        format!("{} actions", self.actions.len()).cstr()
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.actions
+            .iter()
+            .map(|a| a.title_recursive(ctx))
+            .join("\n")
     }
 }
 
@@ -1298,8 +1316,11 @@ impl FTitle for NStatusBehavior {
 }
 
 impl FDescription for NStatusBehavior {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.reactions.iter().map(|r| r.cstr()).join("\n")
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.reactions
+            .iter()
+            .map(|r| r.description_cstr(ctx))
+            .join("\n")
     }
 }
 
@@ -1772,8 +1793,31 @@ impl FTitle for NUnitDescription {
 }
 
 impl FDescription for NUnitDescription {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.description.cstr()
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        let mut description = String::new();
+        let _ = ctx.exec_ref(|ctx| {
+            let house = ctx.load_first_parent_recursive_ref::<NHouse>(self.id)?;
+            match self.magic_type {
+                MagicType::Ability => {
+                    let ability = house.ability_ref(ctx)?;
+                    description = format!(
+                        "{}: {}\n\n",
+                        ability.title(ctx),
+                        ability.description_cstr(ctx)
+                    );
+                }
+                MagicType::Status => {
+                    let status = house.status_ref(ctx)?;
+                    description = format!(
+                        "{}: {}\n\n",
+                        status.title(ctx),
+                        status.description_cstr(ctx)
+                    );
+                }
+            }
+            Ok(())
+        });
+        description + &self.description.cstr()
     }
 }
 
@@ -1921,15 +1965,7 @@ impl FTitle for NUnitBehavior {
 
 impl FDescription for NUnitBehavior {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        format!(
-            "{}:\n{}",
-            self.reaction.trigger.cstr(),
-            self.reaction
-                .actions
-                .iter()
-                .map(|a| a.title_recursive(ctx))
-                .join("\n")
-        )
+        self.reaction.description_cstr(ctx)
     }
 }
 
@@ -1979,8 +2015,8 @@ impl FTitle for NUnitRepresentation {
 }
 
 impl FDescription for NUnitRepresentation {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.material.cstr()
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.material.description_cstr(ctx)
     }
 }
 
@@ -2586,32 +2622,22 @@ impl FPreview for NUnit {
 impl FPreview for NHouse {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
+            let color = ctx.color();
             ui.vertical(|ui| {
                 if let Ok(ability) = self.ability_ref(ctx) {
-                    ui.group(|ui| {
-                        ability
-                            .ability_name
-                            .cstr_cs(ctx.color(), CstrStyle::Bold)
-                            .label(ui);
-                        "[s [tw ability]]".cstr().label(ui);
-                        ui.separator();
-                        if let Ok(dsc) = ability.description_ref(ctx) {
-                            dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
-                        }
-                    });
+                    ability
+                        .ability_name
+                        .cstr_cs(color, CstrStyle::Bold)
+                        .label(ui);
+                    if let Ok(dsc) = ability.description_ref(ctx) {
+                        dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
+                    }
                 }
                 if let Ok(status) = self.status_ref(ctx) {
-                    ui.group(|ui| {
-                        status
-                            .status_name
-                            .cstr_cs(ctx.color(), CstrStyle::Bold)
-                            .label(ui);
-                        "[s [tw status]]".cstr().label(ui);
-                        ui.separator();
-                        if let Ok(dsc) = status.description_ref(ctx) {
-                            dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
-                        }
-                    });
+                    status.status_name.cstr_cs(color, CstrStyle::Bold).label(ui);
+                    if let Ok(dsc) = status.description_ref(ctx) {
+                        dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
+                    }
                 }
             });
         });

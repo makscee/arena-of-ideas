@@ -28,7 +28,6 @@ impl MatchPlugin {
     pub fn check_active(world: &mut World) -> NodeResult<bool> {
         with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
-            dbg!(m);
             if !m.active {
                 GameState::MatchOver.set_next(world);
                 Ok(false)
@@ -92,9 +91,9 @@ impl MatchPlugin {
                 ui.separator();
             });
             ui.horizontal_wrapped(|ui| {
-                let buy_txt = format!("Buy [b [yellow {}g]]", global_settings().match_g.unit_buy);
                 for i in 0..slots.len() {
                     let slot = slots[i].clone();
+                    let buy_txt = format!("Buy [b [yellow {}g]]", slot.price);
                     if !slot.sold {
                         ctx.with_owner(slot.node_id, |ctx| {
                             let resp = match slot.card_kind {
