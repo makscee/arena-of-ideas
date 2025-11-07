@@ -23,6 +23,9 @@ pub trait FColoredTitle: FTitle {
 /// Feature for types that can provide a description
 pub trait FDescription {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr;
+    fn description_expanded_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.description_cstr(ctx)
+    }
 }
 
 /// Feature for types that can provide an icon or short representation
@@ -272,7 +275,7 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                             .outer_margin(3)
                             .inner_margin(3)
                             .show(ui, |ui| {
-                                self.description_cstr(ctx)
+                                self.description_expanded_cstr(ctx)
                                     .cstr_s(CstrStyle::Small)
                                     .label_w(ui);
                             });

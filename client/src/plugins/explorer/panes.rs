@@ -457,7 +457,7 @@ impl ExplorerPanes {
     where
         T: ClientNode + NamedNode,
     {
-        Self::show_add_new(ui, NodeKind::NHouse);
+        Self::show_add_new(ui, T::kind_s());
         state.view_mode.exec_ctx(|ctx| {
             let current_children = if multiple_selection {
                 ctx.get_children_of_kind(house_id, T::named_kind().to_kind())?

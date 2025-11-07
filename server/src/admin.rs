@@ -55,40 +55,40 @@ fn content_rotation(ctx: &ReducerContext) -> Result<(), String> {
         let Some(mut description) = unit
             .id
             .top_child(ctx.rctx(), NodeKind::NUnitDescription)
-            .and_then(|id| ctx.load::<NUnitDescription>(id).ok())
+            .map(|id| ctx.load::<NUnitDescription>(id).unwrap())
         else {
-            info!("Skip unit {}: no description", unit.name());
+            info!("Skip unit {} {}: no description", unit.name(), unit.id);
             return false;
         };
         if let Some(behavior) = description
             .id
             .mutual_top_child(ctx.rctx(), NodeKind::NUnitBehavior)
-            .and_then(|id| ctx.load::<NUnitBehavior>(id).ok())
+            .map(|id| ctx.load::<NUnitBehavior>(id).unwrap())
         {
             description.behavior.set_loaded(behavior).ok();
         } else {
-            info!("Skip unit {}: no behavior", unit.name());
+            info!("Skip unit {} {}: no behavior", unit.name(), unit.id);
             return false;
         }
         if let Some(representation) = description
             .id
             .mutual_top_child(ctx.rctx(), NodeKind::NUnitRepresentation)
-            .and_then(|id| ctx.load::<NUnitRepresentation>(id).ok())
+            .map(|id| ctx.load::<NUnitRepresentation>(id).unwrap())
         {
             description.representation.set_loaded(representation).ok();
         } else {
-            info!("Skip unit {}: no representation", unit.name());
+            info!("Skip unit {} {}: no representation", unit.name(), unit.id);
             return false;
         }
         unit.description.set_loaded(description).ok();
         if let Some(stats) = unit
             .id
             .top_child(ctx.rctx(), NodeKind::NUnitStats)
-            .and_then(|id| ctx.load::<NUnitStats>(id).ok())
+            .map(|id| ctx.load::<NUnitStats>(id).unwrap())
         {
             unit.stats.set_loaded(stats).ok();
         } else {
-            info!("Skip unit {}: no stats", unit.name());
+            info!("Skip unit {} {}: no stats", unit.name(), unit.id);
             return false;
         }
         true

@@ -44,6 +44,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     if ctx.db.nodes_world().id().find(ID_ARENA).is_none() {
         NArena {
             id: ID_ARENA,
+            owner: ID_ARENA,
             last_floor: 0,
             ..Default::default()
         }

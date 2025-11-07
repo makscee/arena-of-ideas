@@ -182,7 +182,8 @@ impl ToCstr for Trigger {
             | Trigger::TurnEnd
             | Trigger::BeforeDeath
             | Trigger::ChangeOutgoingDamage
-            | Trigger::ChangeIncomingDamage => {}
+            | Trigger::ChangeIncomingDamage
+            | Trigger::AllyDeath => {}
         }
         s
     }

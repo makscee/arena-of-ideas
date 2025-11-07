@@ -29,6 +29,11 @@ impl TriggerImpl for Trigger {
                 if matches!(self, Trigger::BeforeDeath) && owner == *id {
                     return Ok(true);
                 }
+                if matches!(self, Trigger::AllyDeath)
+                    && ctx.battle()?.all_allies(owner)?.contains(id)
+                {
+                    return Ok(true);
+                }
             }
             Event::OutgoingDamage(source, _) => {
                 let Some(owner) = ctx.owner() else {

@@ -43,7 +43,8 @@ impl EnumColor for Trigger {
             | Trigger::TurnEnd
             | Trigger::BeforeDeath
             | Trigger::ChangeOutgoingDamage
-            | Trigger::ChangeIncomingDamage => YELLOW,
+            | Trigger::ChangeIncomingDamage
+            | Trigger::AllyDeath => YELLOW,
             Trigger::ChangeStat(var) => var.color(),
         }
     }

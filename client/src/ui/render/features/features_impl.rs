@@ -367,7 +367,8 @@ impl FEdit for Trigger {
             | Trigger::TurnEnd
             | Trigger::BeforeDeath
             | Trigger::ChangeOutgoingDamage
-            | Trigger::ChangeIncomingDamage => resp,
+            | Trigger::ChangeIncomingDamage
+            | Trigger::AllyDeath => resp,
             Trigger::ChangeStat(var) => var.edit(ui) | resp,
         }
     }
@@ -599,7 +600,7 @@ impl FTitle for NUnit {
 impl FDescription for NUnit {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(description) = self.description_ref(ctx) {
-            description.description_cstr(ctx)
+            description.description_expanded_cstr(ctx)
         } else {
             "[tw -]".cstr()
         }
@@ -1834,12 +1835,12 @@ impl FDisplay for NFusionSlot {
 
 impl FTitle for NUnitDescription {
     fn title(&self, _: &ClientContext) -> Cstr {
-        "Unit Description".cstr()
+        self.description.cstr()
     }
 }
 
 impl FDescription for NUnitDescription {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+    fn description_expanded_cstr(&self, ctx: &ClientContext) -> Cstr {
         let mut description = String::new();
         let _ = ctx.exec_ref(|ctx| {
             let house = ctx.load_first_parent_recursive_ref::<NHouse>(self.id)?;
@@ -1863,7 +1864,10 @@ impl FDescription for NUnitDescription {
             }
             Ok(())
         });
-        description + &self.description.cstr()
+        description + &self.description_cstr(ctx)
+    }
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        self.description.cstr()
     }
 }
 
@@ -2043,14 +2047,7 @@ impl FInfo for NUnitBehavior {
 
 impl FDisplay for NUnitBehavior {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.vertical(|ui| {
-            ui.horizontal(|ui| {
-                ui.label("Type:") | self.magic_type.cstr_c(self.magic_type.color()).label(ui)
-            })
-            .inner
-                | ui.horizontal(|ui| self.reaction.display(ctx, ui)).inner
-        })
-        .inner
+        self.description_expanded_cstr(ctx).label(ui)
     }
 }
 

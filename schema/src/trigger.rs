@@ -8,6 +8,7 @@ pub enum Trigger {
     BattleStart,
     TurnEnd,
     BeforeDeath,
+    AllyDeath,
     ChangeStat(VarName),
     ChangeOutgoingDamage,
     ChangeIncomingDamage,

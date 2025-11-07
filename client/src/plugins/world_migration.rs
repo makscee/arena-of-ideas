@@ -440,7 +440,11 @@ fn save_filtered_assets(manager: &NodeAssetsManager) -> Result<usize, String> {
         }
     }
 
-    for link in manager.get_links() {
+    for link in manager
+        .get_links()
+        .into_iter()
+        .sorted_by_key(|l| format!("{}_{}", l.0, l.1))
+    {
         final_manager.add_link(
             link.0,
             link.1,
