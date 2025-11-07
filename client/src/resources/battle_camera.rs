@@ -44,7 +44,11 @@ impl BattleCamera {
         self.pos = default();
     }
     fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, NodeError> {
-        let pos = context.get_var(VarName::position).get_vec2()?.to_pos2();
+        let pos = context
+            .get_var(VarName::position)
+            .get_vec2()
+            .track()?
+            .to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
     }
@@ -105,18 +109,19 @@ impl BattleCamera {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
-                    let rect = cam.rect_from_context(ctx)?;
+                    let rect = cam.rect_from_context(ctx).track()?;
                     ctx.load::<NUnitRepresentation>(id)
                         .track()?
                         .material
                         .paint(rect, ctx, ui);
                     Ok(())
                 })
+                .track()
                 .notify_error_op();
             }
             let world = ctx.world_mut()?;
             for entity in world
-                .query_filtered::<Entity, With<NStatusRepresentation>>()
+                .query_filtered::<Entity, (With<NStatusRepresentation>, Without<NHouse>)>()
                 .iter(world)
                 .collect_vec()
             {
@@ -129,7 +134,7 @@ impl BattleCamera {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
-                    let rect = cam.rect_from_context(ctx)?;
+                    let rect = cam.rect_from_context(ctx).track()?;
                     ctx.load::<NStatusRepresentation>(id)
                         .track()?
                         .material
@@ -148,7 +153,7 @@ impl BattleCamera {
                     {
                         return Ok(());
                     }
-                    let rect = cam.rect_from_context(context)?;
+                    let rect = cam.rect_from_context(context).track()?;
                     fusion.paint(rect, context, ui)?;
                     Ok(())
                 })

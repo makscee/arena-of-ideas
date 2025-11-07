@@ -481,7 +481,7 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
     where
         F: FnOnce(&mut Self) -> NodeResult<R>,
     {
-        f(self)
+        self.with_layers(Vec::new(), f)
     }
 }
 

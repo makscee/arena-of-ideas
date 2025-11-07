@@ -211,9 +211,9 @@ impl NodeIdExt for u64 {
     }
     fn add_parent(self, ctx: &ReducerContext, parent: u64) -> NodeResult<()> {
         let child =
-            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link child#{self} not found"))?;
+            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link child {self} not found"))?;
         let parent = TNode::load(ctx, parent)
-            .to_custom_e_s_fn(|| format!("Link parent#{parent} not found"))?;
+            .to_custom_e_s_fn(|| format!("Link parent {parent} not found"))?;
         TNodeLink::add(ctx, &child, &parent, true)?;
         Ok(())
     }

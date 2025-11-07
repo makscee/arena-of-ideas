@@ -242,6 +242,7 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
             .stroke(ctx.color().stroke())
             .show(ui, |ui| {
                 self.title(ctx).cstr_s(CstrStyle::Heading2).label(ui);
+                ui.separator();
 
                 // Preview in remaining space
                 let available_rect = ui

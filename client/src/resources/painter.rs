@@ -88,9 +88,19 @@ impl Paint for PainterAction {
                     thickness,
                     curvature,
                 } => {
-                    let start = ctx.get_var(VarName::position)?.get_vec2()?.to_evec2() * up;
-                    let end =
-                        ctx.get_var(VarName::extra_position)?.get_vec2()?.to_pos2() * up - start;
+                    let start = ctx
+                        .get_var(VarName::position)
+                        .track()?
+                        .get_vec2()?
+                        .to_evec2()
+                        * up;
+                    let end = ctx
+                        .get_var(VarName::extra_position)
+                        .track()?
+                        .get_vec2()?
+                        .to_pos2()
+                        * up
+                        - start;
                     let thickness = thickness.get_f32(ctx)? * up;
                     let curvature = curvature.get_f32(ctx)? * up;
                     let stroke = Stroke::new(thickness, p.color);

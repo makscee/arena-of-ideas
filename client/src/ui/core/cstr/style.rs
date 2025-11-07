@@ -112,7 +112,7 @@ impl StyleState {
 static STRING_STYLE_MAP: OnceCell<Mutex<HashMap<&'static str, CstrStyle>>> = OnceCell::new();
 static STYLE_STRING_MAP: OnceCell<Mutex<HashMap<CstrStyle, &'static str>>> = OnceCell::new();
 
-pub fn init_style_map(colorix: &Colorix, style: &Style) {
+pub fn init_style_map(colorix: &Colorix) {
     let pairs = [
         ("b", CstrStyle::Bold),
         ("s", CstrStyle::Small),
@@ -122,7 +122,10 @@ pub fn init_style_map(colorix: &Colorix, style: &Style) {
         ("red", CstrStyle::Color(RED)),
         ("green", CstrStyle::Color(GREEN)),
         ("yellow", CstrStyle::Color(YELLOW)),
-        ("tw", CstrStyle::Color(style.visuals.weak_text_color())),
+        (
+            "tw",
+            CstrStyle::Color(colorix.low_contrast_text().gamma_multiply(0.6)),
+        ),
         ("tl", CstrStyle::Color(colorix.low_contrast_text())),
         ("th", CstrStyle::Color(colorix.high_contrast_text())),
     ];

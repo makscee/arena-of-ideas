@@ -889,7 +889,7 @@ impl Colorix {
         ctx.style_mut(|style| {
             self.set_egui_style(style);
         });
-        init_style_map(self, &ctx.style());
+        init_style_map(self);
     }
 
     pub fn save(self) {

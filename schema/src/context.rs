@@ -172,10 +172,7 @@ impl<S: ContextSource> Context<S> {
     where
         F: FnOnce(&mut Self) -> NodeResult<R>,
     {
-        self.layers.push(layer);
-        let result = f(self);
-        self.layers.pop();
-        result
+        self.with_layers([layer], f)
     }
 
     /// Execute with multiple context layers
@@ -215,7 +212,10 @@ impl<S: ContextSource> Context<S> {
     where
         F: FnOnce(&mut Self) -> NodeResult<R>,
     {
-        self.with_layer(ContextLayer::Status(status), f)
+        self.with_layers(
+            [ContextLayer::Owner(status), ContextLayer::Status(status)],
+            f,
+        )
     }
 
     pub fn owner(&self) -> Option<u64> {
@@ -289,7 +289,7 @@ impl<S: ContextSource> Context<S> {
         }
 
         // Try to get from owner
-        if let Some(owner) = self.owner().or_else(|| self.status()) {
+        if let Some(owner) = self.owner() {
             self.get_var_inherited(owner, var).track()
         } else {
             Err(NodeError::custom("Cannot get var without owner"))
@@ -338,6 +338,7 @@ impl<S: ContextSource> Context<S> {
     }
 
     pub fn set_status(&mut self, status: u64) {
+        self.layers.push(ContextLayer::Owner(status));
         self.layers.push(ContextLayer::Status(status));
     }
 

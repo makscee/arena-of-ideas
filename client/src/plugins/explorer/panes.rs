@@ -164,9 +164,14 @@ impl ExplorerPanes {
             .query::<&T>()
             .iter(ctx.world()?)
             .collect_vec()
-            .as_list(|node, _ctx, ui| {
+            .as_list(|node, ctx, ui| {
                 let is_current = current_id == Some(node.id());
-                let text = node.description_cstr(ctx);
+                let text = ctx
+                    .exec_ref(|ctx| {
+                        ctx.set_owner(node.id());
+                        Ok(node.description_cstr(ctx))
+                    })
+                    .unwrap();
                 let text = if is_current {
                     format!("* {text}")
                 } else {

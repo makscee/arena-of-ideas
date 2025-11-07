@@ -18,6 +18,7 @@ impl TestBuilder {
         INIT.get_or_init(|| {
             crate::resources::init_for_tests();
             colorix().generate_palettes();
+            init_style_map(&colorix());
         });
     }
 

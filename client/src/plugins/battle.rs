@@ -46,7 +46,12 @@ impl BattlePlugin {
         let result = with_solid_source(|ctx| {
             let m = player(ctx)?.active_match_ref(ctx)?;
             if m.state.is_battle() {
-                if let Some(last) = m.battles_ref(ctx)?.last() {
+                if let Some(last) = m
+                    .battles_ref(ctx)?
+                    .into_iter()
+                    .sorted_by_key(|b| b.id)
+                    .last()
+                {
                     if last.result.is_none() {
                         let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
                             team.load_all(ctx)?.take()
@@ -274,9 +279,9 @@ impl BattlePlugin {
             ui.scope_builder(UiBuilder::new().max_rect(main_rect), |ui| {
                 ui.vertical_centered_justified(|ui| {
                     if result {
-                        "Victory".cstr_cs(GREEN, CstrStyle::Bold)
+                        "Victory".cstr_cs(GREEN, CstrStyle::Heading)
                     } else {
-                        "Defeat".cstr_cs(RED, CstrStyle::Bold)
+                        "Defeat".cstr_cs(RED, CstrStyle::Heading)
                     }
                     .label(ui);
                 });

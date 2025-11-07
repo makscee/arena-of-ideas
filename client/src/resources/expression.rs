@@ -32,7 +32,7 @@ impl ExpressionImpl for Expression {
                 if *var == VarName::index {
                     Ok(1.into())
                 } else {
-                    Err(NodeError::var_not_found(*var))
+                    Err(NodeError::var_not_found(*var)).track()
                 }
             }),
             Expression::owner_var(var) => ctx.owner_var(*var),

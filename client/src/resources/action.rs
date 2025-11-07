@@ -123,7 +123,7 @@ impl ActionImpl for Action {
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
                             .with_var(VarName::color, high_contrast_text())
-                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
                             .into(),
                     );
                 } else {
@@ -162,7 +162,7 @@ impl ActionImpl for Action {
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
                             .with_var(VarName::color, high_contrast_text())
-                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
                             .into(),
                     );
                 } else {
@@ -197,7 +197,7 @@ impl ActionImpl for Action {
                         BattleAction::new_vfx("text")
                             .with_var(VarName::text, text)
                             .with_var(VarName::color, color)
-                            .with_var(VarName::position, ctx.get_var(VarName::position)?)
+                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
                             .into(),
                     );
                     actions.push(BattleAction::wait(ANIMATION));

@@ -199,7 +199,8 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
         fusion.trigger_unit = Ref::Id(unit_id);
         fusion.set_dirty(true);
     }
-    apply_slots_limit(ctx, &mut fusion)?;
+    apply_slots_limit(ctx, &mut fusion).track()?;
+    fusion.save(ctx).track()?;
 
     // Handle trigger selection when moving unit out of fusion
     if let Some(old_slot_id) = old_target_id {
@@ -493,7 +494,6 @@ fn apply_slots_limit(ctx: &mut ServerContext, fusion: &mut NFusion) -> NodeResul
         } else {
             slot.set_actions(default());
         }
-        slot.take().save(ctx)?;
     }
     Ok(())
 }
@@ -516,6 +516,7 @@ fn match_change_action_range(
     let mut fusion = slot.load_parent::<NFusion>(ctx)?;
     slot.save(ctx)?;
     apply_slots_limit(ctx, &mut fusion)?;
+    fusion.save(ctx)?;
     Ok(())
 }
 

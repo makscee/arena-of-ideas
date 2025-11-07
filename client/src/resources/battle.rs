@@ -211,8 +211,9 @@ impl BattleAction {
                     true
                 }
                 BattleAction::death(a) => {
-                    let position =
-                        ctx.with_owner(*a, |context| context.get_var(VarName::position))?;
+                    let position = ctx
+                        .with_owner(*a, |context| context.get_var(VarName::position))
+                        .track()?;
                     add_actions.extend(BattleSimulation::die(ctx, *a)?);
                     add_actions.push(
                         Self::new_vfx("death_vfx")
@@ -222,8 +223,12 @@ impl BattleAction {
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
-                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
+                    let owner_pos = ctx
+                        .with_owner(*a, |ctx| ctx.get_var(VarName::position))
+                        .track()?;
+                    let target_pos = ctx
+                        .with_owner(*b, |ctx| ctx.get_var(VarName::position))
+                        .track()?;
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -258,8 +263,12 @@ impl BattleAction {
                     true
                 }
                 BattleAction::heal(a, b, x) => {
-                    let owner_pos = ctx.with_owner(*a, |ctx| ctx.get_var(VarName::position))?;
-                    let target_pos = ctx.with_owner(*b, |ctx| ctx.get_var(VarName::position))?;
+                    let owner_pos = ctx
+                        .with_owner(*a, |ctx| ctx.get_var(VarName::position))
+                        .track()?;
+                    let target_pos = ctx
+                        .with_owner(*b, |ctx| ctx.get_var(VarName::position))
+                        .track()?;
                     if let Some(curve) = animations().get("range_effect_vfx") {
                         ctx.with_layers(
                             [
@@ -288,10 +297,7 @@ impl BattleAction {
                                         HexColor::from("#00FF00".to_string()).into(),
                                     ),
                                 ],
-                                |ctx| {
-                                    ctx.debug_layers();
-                                    text.apply(ctx)
-                                },
+                                |ctx| text.apply(ctx),
                             )?;
                         }
                     }
@@ -616,7 +622,6 @@ impl BattleSimulation {
                     if stax <= 0 {
                         return Ok(vec![]);
                     }
-                    dbg!(&status);
                     let behavior = status
                         .description_load(ctx)
                         .track()?

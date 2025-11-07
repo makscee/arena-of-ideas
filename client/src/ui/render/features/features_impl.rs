@@ -2669,7 +2669,7 @@ impl FPreview for NHouse {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
             let color = ctx.color();
-            ui.vertical(|ui| {
+            ui.vertical_centered(|ui| {
                 if let Ok(ability) = self.ability_ref(ctx) {
                     ability
                         .ability_name
