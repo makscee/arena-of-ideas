@@ -141,7 +141,10 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
             (TextStyle::Small, FontId::new(10.0, FontFamily::Monospace)),
         ]
         .into();
-        style.debug.show_unaligned = false;
+        #[cfg(debug_assertions)]
+        {
+            style.debug.show_unaligned = false;
+        }
         style.animation_time = 0.1;
         style.spacing = Spacing {
             item_spacing: egui::vec2(8.0, 6.0),
