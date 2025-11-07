@@ -248,7 +248,7 @@ impl<S: ContextSource> Context<S> {
 
     pub fn owner_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(owner) = self.owner() {
-            self.get_var_inherited(owner, var)
+            self.get_var_inherited(owner, var).track()
         } else {
             Err(NodeError::custom("No owner in context"))
         }
@@ -256,7 +256,7 @@ impl<S: ContextSource> Context<S> {
 
     pub fn target_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(target) = self.target() {
-            self.get_var_inherited(target, var)
+            self.get_var_inherited(target, var).track()
         } else {
             Err(NodeError::custom("No target in context"))
         }
@@ -264,7 +264,7 @@ impl<S: ContextSource> Context<S> {
 
     pub fn caster_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(caster) = self.caster() {
-            self.get_var_inherited(caster, var)
+            self.get_var_inherited(caster, var).track()
         } else {
             Err(NodeError::custom("No caster in context"))
         }
@@ -272,7 +272,7 @@ impl<S: ContextSource> Context<S> {
 
     pub fn status_var(&self, var: VarName) -> NodeResult<VarValue> {
         if let Some(status) = self.status() {
-            self.get_var_inherited(status, var)
+            self.get_var_inherited(status, var).track()
         } else {
             Err(NodeError::custom("No status in context"))
         }
@@ -290,7 +290,7 @@ impl<S: ContextSource> Context<S> {
 
         // Try to get from owner
         if let Some(owner) = self.owner().or_else(|| self.status()) {
-            self.get_var_inherited(owner, var)
+            self.get_var_inherited(owner, var).track()
         } else {
             Err(NodeError::custom("Cannot get var without owner"))
         }

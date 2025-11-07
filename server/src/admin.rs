@@ -286,6 +286,7 @@ fn admin_upload_world(
         }
         .insert(ctx);
     }
+    init(ctx)?;
     Ok(())
 }
 

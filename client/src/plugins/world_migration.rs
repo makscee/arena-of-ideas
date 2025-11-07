@@ -4,6 +4,7 @@ use std::path::Path;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Display, AsRefStr)]
 enum OwnerFilter {
     Players,
+    OwnedByPlayers,
     Arena,
     Zero,
     Core,
@@ -13,6 +14,7 @@ impl OwnerFilter {
     fn owner_id(&self) -> u64 {
         match self {
             OwnerFilter::Players => ID_PLAYERS,
+            OwnerFilter::OwnedByPlayers => ID_PLAYERS,
             OwnerFilter::Arena => ID_ARENA,
             OwnerFilter::Zero => 0,
             OwnerFilter::Core => ID_CORE,
@@ -21,7 +23,7 @@ impl OwnerFilter {
 
     fn matches_owner(&self, owner_id: u64, _world: &World) -> bool {
         match self {
-            OwnerFilter::Players => cn()
+            OwnerFilter::OwnedByPlayers => cn()
                 .db
                 .nodes_world()
                 .iter()

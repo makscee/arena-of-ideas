@@ -1,5 +1,3 @@
-use spacetimedb::Table;
-
 use super::*;
 
 #[spacetimedb::table(public, name = global_settings)]

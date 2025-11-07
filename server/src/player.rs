@@ -11,17 +11,22 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let name = NPlayer::validate_name(ctx, name)?;
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-    let mut player = NPlayer::new(ctx.next_id(), 0, name);
-    let pid = player.id;
+    let mut player = NPlayer::new(ctx.next_id(), ID_PLAYERS, name);
     player
         .player_data
-        .set_loaded(NPlayerData::new(ctx.next_id(), pid, pass_hash, false, 0))
+        .set_loaded(NPlayerData::new(
+            ctx.next_id(),
+            ID_PLAYERS,
+            pass_hash,
+            false,
+            0,
+        ))
         .ok();
     player
         .identity
         .set_loaded(NPlayerIdentity::new(
             ctx.next_id(),
-            pid,
+            ID_PLAYERS,
             Some(ctx.rctx().sender.to_string()),
         ))
         .ok();
@@ -45,7 +50,7 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
         player
             .identity_set(NPlayerIdentity::new(
                 ctx.next_id(),
-                player.id,
+                ID_PLAYERS,
                 Some(ctx.rctx().sender.to_string()),
             ))
             .unwrap();

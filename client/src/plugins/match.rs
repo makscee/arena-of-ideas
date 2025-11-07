@@ -187,7 +187,7 @@ impl MatchPlugin {
                         cn().reducers.match_boss_battle().notify_op();
                     }
                     ui.add_space(20.0);
-                    if "[b [yellow Regular Battle]]"
+                    if "Regular Battle"
                         .cstr()
                         .to_button()
                         .enabled(!is_last_floor)
