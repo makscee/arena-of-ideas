@@ -70,8 +70,8 @@ impl StringUtils for String {
             return self;
         }
         let cut = self.len() - 3;
-        let mut start = 0 + cut / 2;
-        let mut end = self.len() - cut / 2;
+        let start = 0 + cut / 2;
+        let end = self.len() - cut / 2;
         self.drain(start..end).collect()
     }
 }

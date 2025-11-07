@@ -2,6 +2,7 @@ use std::f32::consts::PI;
 
 use mlua::Lua;
 use rand::seq::IndexedRandom;
+use rand_chacha::rand_core::SeedableRng;
 
 use super::*;
 

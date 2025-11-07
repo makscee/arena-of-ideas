@@ -17,6 +17,8 @@
 //! - Saving updates history for var fields automatically
 //! - Use `NodeStateHistory::get_at(t, var)` for time-based var retrieval in simulations
 
+use rand_chacha::rand_core::SeedableRng;
+
 use super::*;
 use crate::resources::context::{NodesLinkResource, NodesMapResource};
 
