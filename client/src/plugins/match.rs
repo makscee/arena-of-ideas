@@ -94,8 +94,8 @@ impl MatchPlugin {
                 for i in 0..slots.len() {
                     let slot = slots[i].clone();
                     let buy_txt = format!("Buy [b [yellow {}g]]", slot.price);
-                    if !slot.sold {
-                        ctx.with_owner(slot.node_id, |ctx| {
+                    ctx.with_owner(slot.node_id, |ctx| {
+                        let resp = if !slot.sold {
                             let resp = match slot.card_kind {
                                 CardKind::Unit => {
                                     let unit = ctx.load::<NUnit>(slot.node_id)?;
@@ -106,25 +106,35 @@ impl MatchPlugin {
                                     house.as_card().compose(ctx, ui)
                                 }
                             };
-                            let btn_rect = Rect::from_min_size(
-                                resp.rect.left_bottom(),
-                                egui::vec2(resp.rect.width(), LINE_HEIGHT),
-                            );
-                            ui.expand_to_include_rect(btn_rect);
-                            {
-                                let ui =
-                                    &mut ui.new_child(UiBuilder::new().max_rect(btn_rect).layout(
-                                        Layout::centered_and_justified(egui::Direction::TopDown),
-                                    ));
-                                if buy_txt.clone().button(ui).clicked() {
-                                    cn().reducers.match_shop_buy(i as u8).notify_error_op();
-                                }
-                            }
                             resp.dnd_set_drag_payload((i, slot.clone()));
-                            Ok(())
-                        })
-                        .ui(ui);
-                    }
+                            resp
+                        } else {
+                            let (_, resp) = ui.allocate_exact_size(CARD_SIZE, Sense::hover());
+                            resp
+                        };
+                        let btn_rect = Rect::from_min_size(
+                            resp.rect.left_bottom(),
+                            egui::vec2(resp.rect.width(), LINE_HEIGHT),
+                        );
+                        ui.expand_to_include_rect(btn_rect);
+                        {
+                            let ui =
+                                &mut ui.new_child(UiBuilder::new().max_rect(btn_rect).layout(
+                                    Layout::centered_and_justified(egui::Direction::TopDown),
+                                ));
+                            if buy_txt
+                                .clone()
+                                .to_button()
+                                .enabled(!slot.sold)
+                                .ui(ui)
+                                .clicked()
+                            {
+                                cn().reducers.match_shop_buy(i as u8).notify_error_op();
+                            }
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
                 }
             });
 

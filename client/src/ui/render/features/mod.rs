@@ -227,7 +227,7 @@ pub trait FPlaceholder {
     fn placeholder() -> Self;
 }
 
-const CARD_SIZE: egui::Vec2 = egui::vec2(180.0, 200.0);
+pub const CARD_SIZE: egui::Vec2 = egui::vec2(180.0, 200.0);
 pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
     fn render_card(&self, ctx: &ClientContext, ui: &mut Ui) -> Response
     where
