@@ -3,7 +3,7 @@ use ron::ser::PrettyConfig;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct NodeAssetsManager {
     /// All nodes organized by kind and ID
     pub nodes: HashMap<NodeKind, HashMap<u64, NodeAsset>>,

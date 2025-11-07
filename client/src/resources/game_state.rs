@@ -220,6 +220,9 @@ impl GameState {
             GameState::Battle => {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Battle(BattlePane::View).into());
             }
+            GameState::WorldDownload => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::WorldDownload.into());
+            }
             _ => {
                 tile_tree.tree = Tree::empty(TREE_ID);
             }
@@ -239,6 +242,7 @@ pub enum Pane {
     MatchOver,
     Leaderboard,
     Admin,
+    WorldDownload,
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
@@ -297,6 +301,7 @@ impl Pane {
                 BattlePane::TeamEditor(is_left) => TeamEditorPlugin::pane(is_left, world, ui),
             },
             Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world)?,
+            Pane::WorldDownload => world_download_ui_system(ui, world),
         };
         Ok(())
     }

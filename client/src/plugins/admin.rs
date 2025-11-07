@@ -45,7 +45,7 @@ impl AdminPlugin {
 
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {
-                format!("#[tw {id}]").cstr().label(ui);
+                id.label(ui);
                 if let Some(node) = cn().db.nodes_world().id().find(&id) {
                     ui.vertical(|ui| {
                         ui.label(node.data);
@@ -64,14 +64,50 @@ impl AdminPlugin {
             });
         }
         if "Inspect Nodes".cstr().button(ui).clicked() {
-            let all_nodes = cn().db.nodes_world().iter().collect_vec();
+            let mut all_nodes = cn().db.nodes_world().iter().collect_vec();
             Window::new("Nodes Inspector", move |ui, _| {
+                ui.horizontal(|ui| {
+                    format!("Total Nodes: {}", all_nodes.len()).label(ui);
+                    if "Refresh".cstr().button(ui).clicked() {
+                        all_nodes = cn().db.nodes_world().iter().collect_vec();
+                    }
+                });
                 all_nodes
                     .table()
                     .column(
                         "id",
-                        |_, ui, t, _| {
-                            t.id.label(ui);
+                        |ctx, ui, t, _| {
+                            ui.horizontal(|ui| {
+                                t.id.as_empty()
+                                    .with_menu()
+                                    .add_action("Inspect", |id, _| {
+                                        op(move |world| {
+                                            Window::new(
+                                                format!("Node Inspect {id}"),
+                                                move |ui, world| {
+                                                    show_node_with_children(id, ui, world);
+                                                },
+                                            )
+                                            .push(world);
+                                        });
+                                        None
+                                    })
+                                    .add_dangerous_action("Delete", |id, _| {
+                                        op(move |world| {
+                                            Confirmation::new("Delete Node?")
+                                                .cancel(|_| {})
+                                                .accept(move |world| {
+                                                    cn().reducers
+                                                        .admin_delete_node_recursive(id)
+                                                        .notify(world);
+                                                })
+                                                .push(world);
+                                        });
+                                        None
+                                    })
+                                    .compose_with_menu(ctx, ui);
+                                t.id.label(ui);
+                            });
                             Ok(())
                         },
                         |_, t| Ok(t.id.into()),

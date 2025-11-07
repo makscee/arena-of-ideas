@@ -89,7 +89,7 @@ impl Confirmation {
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
                     if self.cancel.is_some() {
-                        if Button::new(&self.cancel_name).red(ui).ui(ui).clicked() {
+                        if Button::new(&self.cancel_name).ui(ui).clicked() {
                             Self::close_current(world);
                             self.cancel.take().unwrap()(world);
                         }

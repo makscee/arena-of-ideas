@@ -546,7 +546,8 @@ impl TNode {
         ctx.db.node_links().parent().delete(id);
     }
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
-        let ids = id.collect_children_recursive(ctx);
+        let mut ids = id.collect_children_recursive(ctx);
+        ids.insert(id);
         for id in &ids {
             Self::delete_by_id(ctx, *id);
         }
