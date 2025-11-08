@@ -44,10 +44,11 @@ impl GameState {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Register.into());
             }
             GameState::Title => {
-                tile_tree.tree = Tree::new_horizontal(
-                    TREE_ID,
-                    [Pane::Admin, Pane::MainMenu, Pane::Leaderboard].into(),
-                );
+                let mut panes = [Pane::MainMenu, Pane::Leaderboard].to_vec();
+                if pd().client_settings.dev_mode {
+                    panes.insert(0, Pane::Admin);
+                }
+                tile_tree.tree = Tree::new_horizontal(TREE_ID, panes);
             }
             GameState::MatchOver => {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::MatchOver.into());
@@ -273,13 +274,63 @@ impl Pane {
                 ui.vertical_centered_justified(|ui| {
                     ui.add_space(ui.available_height() * 0.3);
                     ui.set_width(350.0.at_most(ui.available_width()));
-                    if "Open Match"
-                        .cstr_cs(high_contrast_text(), CstrStyle::Bold)
-                        .button(ui)
-                        .clicked()
-                    {
-                        GameState::Shop.set_next(world);
-                    }
+                    with_solid_source(|ctx| {
+                        match player(ctx)?.active_match_ref(ctx) {
+                            Ok(_) => {
+                                if "Abandon Game"
+                                    .cstr_cs(RED, CstrStyle::Bold)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    Confirmation::new("Abandon current run?")
+                                        .accept_name("[red Abandon]")
+                                        .accept(|world| {
+                                            cn().reducers.match_abandon().notify_error(world);
+                                        })
+                                        .push(world);
+                                }
+                                ui.add_space(20.0);
+                                ui.separator();
+                                ui.add_space(20.0);
+                                if "Continue"
+                                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    GameState::Shop.set_next(world);
+                                }
+                            }
+                            Err(_) => {
+                                if "New Game"
+                                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
+                                    .button(ui)
+                                    .clicked()
+                                {
+                                    cn().reducers.match_insert().notify_error_op();
+                                    static ON_MATCH_CALLBACK: Mutex<Option<MatchInsertCallbackId>> =
+                                        Mutex::new(None);
+                                    let callback_id = cn().reducers.on_match_insert(|e| {
+                                        if !e.check_identity() {
+                                            return;
+                                        }
+                                        e.event.on_success(|| {
+                                            debug!("event success");
+                                            if let Some(callback_id) =
+                                                ON_MATCH_CALLBACK.lock().take()
+                                            {
+                                                debug!("removed callback");
+                                                cn().reducers.remove_on_match_insert(callback_id);
+                                            }
+                                            GameState::Shop.set_next_op();
+                                        });
+                                    });
+                                    *ON_MATCH_CALLBACK.lock() = Some(callback_id);
+                                }
+                            }
+                        }
+                        Ok(())
+                    })
+                    .ui(ui);
                 });
             }
             Pane::Login => LoginPlugin::pane_login(ui, world),
@@ -365,7 +416,7 @@ impl GameState {
         world.resource_mut::<NextState<GameState>>().set(self);
     }
     pub fn set_next_op(self) {
-        OperationsPlugin::add(move |world| self.set_next(world));
+        op(move |world| self.set_next(world));
     }
     pub fn proceed(world: &mut World) {
         let to = *TARGET_STATE.lock();
@@ -381,14 +432,14 @@ impl GameState {
         to.set_next(world);
     }
     pub fn proceed_op() {
-        OperationsPlugin::add(Self::proceed);
+        op(Self::proceed);
     }
     pub fn proceed_to_target(self, world: &mut World) {
         self.set_target();
         Self::proceed(world);
     }
     pub fn proceed_to_target_op(self) {
-        OperationsPlugin::add(move |world| self.proceed_to_target(world))
+        op(move |world| self.proceed_to_target(world))
     }
     pub fn get_name(self) -> &'static str {
         self.to_string().to_case(Case::Title).leak()

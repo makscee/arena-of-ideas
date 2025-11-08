@@ -50,7 +50,7 @@ impl Notification {
         Toast::custom(self.text.widget(1.0, style), self.level)
     }
     pub fn push_op(self) {
-        OperationsPlugin::add(|w| self.push(w));
+        op(|w| self.push(w));
     }
     pub fn push(self, world: &mut World) {
         let text = self.text.to_colored();

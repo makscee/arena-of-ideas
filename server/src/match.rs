@@ -469,9 +469,18 @@ fn match_complete(ctx: &ReducerContext) -> Result<(), String> {
     if m.active {
         return Err("Match is still active".into());
     } else {
-        m.delete_recursive(ctx);
+        m.load_all(ctx)?.delete_recursive(ctx);
         Ok(())
     }
+}
+
+#[reducer]
+fn match_abandon(ctx: &ReducerContext) -> Result<(), String> {
+    let ctx = &mut ctx.as_context();
+    let mut player = ctx.player()?;
+    let m = player.active_match_load(ctx)?;
+    m.load_all(ctx)?.delete_recursive(ctx);
+    Ok(())
 }
 
 fn apply_slots_limit(ctx: &mut ServerContext, fusion: &mut NFusion) -> NodeResult<()> {

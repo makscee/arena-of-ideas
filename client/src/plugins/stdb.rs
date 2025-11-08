@@ -1,45 +1,41 @@
 use super::*;
 
-#[derive(Resource, Default)]
-pub struct UpdateQueue {
-    pending_updates: VecDeque<StdbUpdate>,
-    new_updates_since_retry: bool,
-}
+static UPDATE_QUEUE: once_cell::sync::Lazy<Mutex<VecDeque<StdbUpdate>>> =
+    once_cell::sync::Lazy::new(|| Mutex::new(VecDeque::new()));
 
 pub struct StdbPlugin;
 
 impl Plugin for StdbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UpdateQueue>();
-        app.add_systems(Update, Self::process_update_queue);
+        app.add_systems(PreUpdate, Self::process_update_queue);
     }
 }
 
 impl StdbPlugin {
-    fn process_update_queue(mut queue: ResMut<UpdateQueue>) {
-        if queue.pending_updates.is_empty() {
+    fn process_update_queue() {
+        let mut queue = UPDATE_QUEUE.lock();
+        if queue.is_empty() {
             return;
         }
         with_static_sources(|sources| {
             loop {
-                let len = queue.pending_updates.len();
+                let len = queue.len();
                 for _ in 0..len {
-                    let update = queue.pending_updates.pop_front().unwrap();
+                    let update = queue.pop_front().unwrap();
                     if sources.solid.handle_stdb_update(&update).is_err()
                         || sources.core.handle_stdb_update(&update).is_err()
                         || sources.top.handle_stdb_update(&update).is_err()
                         || sources.selected.handle_stdb_update(&update).is_err()
                     {
-                        queue.pending_updates.push_back(update);
+                        queue.push_back(update);
                         continue;
                     }
                 }
-                if queue.pending_updates.len() == len {
+                if queue.len() == len {
                     break;
                 }
             }
         });
-        queue.new_updates_since_retry = false;
     }
 }
 
@@ -131,12 +127,7 @@ fn subscribe_table_updates() {
 }
 
 fn queue_update(update: StdbUpdate) {
-    op(move |world| {
-        if let Some(mut queue) = world.get_resource_mut::<UpdateQueue>() {
-            queue.pending_updates.push_back(update);
-            queue.new_updates_since_retry = true;
-        }
-    });
+    UPDATE_QUEUE.lock().push_back(update);
 }
 
 pub fn subscribe_reducers() {
@@ -234,6 +225,44 @@ mod tests {
         let house = world.get::<NHouse>(entity).unwrap();
         assert_eq!(house.id, 1001);
         assert_eq!(house.house_name, "house name");
+    }
+
+    #[test]
+    fn test_node_create_link_delete() {
+        let mut solid_source = Sources::new_solid();
+        let player_node = NPlayer::new(1001, 1, "test player".into()).to_tnode();
+        let match_node = NMatch::new(1002, 1, 10, 1, 1, true, default(), default()).to_tnode();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(player_node))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(match_node.clone()))
+            .unwrap();
+        let link = TNodeLink {
+            id: 1,
+            parent: 1001,
+            child: 1002,
+            parent_kind: "NPlayer".into(),
+            child_kind: "NMatch".into(),
+            rating: 1,
+            solid: true,
+        };
+        solid_source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeDelete(match_node))
+            .unwrap();
+
+        let entity = solid_source.entity(1001).expect("Node entity should exist");
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NPlayer>(entity).is_some(),
+            "NPlayer component should exist"
+        );
+        let player = world.get::<NPlayer>(entity).unwrap();
+        assert_eq!(player.id, 1001);
+        assert_eq!(player.player_name, "test player");
     }
 
     #[test]

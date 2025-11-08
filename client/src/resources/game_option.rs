@@ -85,7 +85,7 @@ pub trait OptionResource: Resource + Sized + Debug {
         world.insert_resource(self);
     }
     fn save_op(self) {
-        OperationsPlugin::add(|world| {
+        op(|world| {
             self.save(world);
         });
     }

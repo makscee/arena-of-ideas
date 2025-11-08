@@ -88,6 +88,8 @@ impl<T> ErrorExt for Result<T, NodeError> {
 
 impl ErrorExt for NodeError {
     fn ui(self, ui: &mut Ui) {
-        self.cstr().label_w(ui);
+        "[red (e)]".cstr().button(ui).on_hover_ui(|ui| {
+            self.cstr().label(ui);
+        });
     }
 }

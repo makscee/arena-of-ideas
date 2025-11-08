@@ -39,7 +39,7 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
         }
     }
     fn on_success_op(&self, f: impl FnOnce(&mut World) + Send + Sync + 'static) {
-        self.on_success(move || OperationsPlugin::add(|w| f(w)));
+        self.on_success(move || op(|w| f(w)));
     }
     fn on_success_error(
         &self,
@@ -60,10 +60,7 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
         s: impl FnOnce(&mut World) + Send + Sync + 'static,
         e: impl FnOnce(&mut World) + Send + Sync + 'static,
     ) {
-        self.on_success_error(
-            move || OperationsPlugin::add(|w| s(w)),
-            move || OperationsPlugin::add(|w| e(w)),
-        );
+        self.on_success_error(move || op(|w| s(w)), move || op(|w| e(w)));
     }
     fn notify_error(&self) {
         self.on_success(|| {});

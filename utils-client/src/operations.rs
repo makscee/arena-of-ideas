@@ -23,17 +23,25 @@ impl Plugin for OperationsPlugin {
 }
 
 impl OperationsPlugin {
-    pub fn add(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
+    pub fn add(back: bool, operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
         let operation = Box::new(operation);
-        Self::add_boxed(operation)
+        Self::add_boxed(back, operation)
     }
-    pub fn add_boxed(operation: Box<impl FnOnce(&mut World) + Send + Sync + 'static>) {
-        OPERATIONS.get().unwrap().lock().queue.push(operation)
+    pub fn add_boxed(back: bool, operation: Box<impl FnOnce(&mut World) + Send + Sync + 'static>) {
+        let q = &mut OPERATIONS.get().unwrap().lock().queue;
+        if back {
+            q.push(operation);
+        } else {
+            q.insert(0, operation);
+        }
     }
 }
 
 pub fn op(f: impl FnOnce(&mut World) + 'static + Send + Sync) {
-    OperationsPlugin::add(f);
+    OperationsPlugin::add(true, f);
+}
+pub fn op_front(f: impl FnOnce(&mut World) + 'static + Send + Sync) {
+    OperationsPlugin::add(false, f);
 }
 
 fn update(world: &mut World) {

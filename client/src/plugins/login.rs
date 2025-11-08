@@ -40,7 +40,7 @@ impl LoginPlugin {
                 return;
             }
             e.event.on_success_error(LoginPlugin::complete, || {
-                OperationsPlugin::add(|world| {
+                op(|world| {
                     world.resource_mut::<LoginData>().login_requested = false;
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
@@ -51,7 +51,7 @@ impl LoginPlugin {
                 return;
             }
             e.event.on_success_error(LoginPlugin::complete, || {
-                OperationsPlugin::add(|world| {
+                op(|world| {
                     world.resource_mut::<LoginData>().login_requested = false;
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
@@ -71,7 +71,7 @@ impl LoginPlugin {
             .map(|n| n.to_node().unwrap())
     }
     fn on_subscribed() {
-        OperationsPlugin::add(|world| {
+        op(|world| {
             let identity = ConnectOption::get(world).identity;
             let Some(identity_node) = Self::find_identity_node(identity) else {
                 "Failed to find Player after login".notify_error(world);

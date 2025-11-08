@@ -23,7 +23,7 @@ pub fn is_connected() -> bool {
 static ON_CONNECT_OPERATIONS: OnceCell<Mutex<VecDeque<Operation>>> = OnceCell::new();
 pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
     if is_connected() {
-        OperationsPlugin::add(operation);
+        OperationsPlugin::add(true, operation);
     } else {
         ON_CONNECT_OPERATIONS
             .get_or_init(|| Mutex::new(default()))
@@ -44,7 +44,7 @@ impl ConnectPlugin {
             let token = token.to_owned();
             save_player_identity(identity);
             creds_store().save(token.clone()).unwrap();
-            OperationsPlugin::add(move |world| {
+            op(move |world| {
                 ConnectOption { identity, token }.save(world);
                 GameState::proceed(world);
             });
@@ -72,7 +72,7 @@ impl ConnectPlugin {
         CONNECTION.set(c).ok().unwrap();
         if let Some(ops) = ON_CONNECT_OPERATIONS.get() {
             for op in ops.lock().drain(..) {
-                OperationsPlugin::add(op);
+                OperationsPlugin::add(true, op);
             }
         }
     }

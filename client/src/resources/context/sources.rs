@@ -1230,10 +1230,27 @@ impl ContextSource for Sources<'_> {
         // Clear all links
         self.clear_links(node_id)?;
 
+        // Get node kind before removing from map
+        let kind = self.get_node_kind(node_id)?;
+
         // Remove from NodesMapResource and get entity
         if let Some(entity) = self.get_nodes_map_mut()?.remove(node_id) {
-            // Despawn entity
-            self.world_mut()?.despawn(entity);
+            // Check if there are other nodes on this entity
+            let other_nodes_exist = {
+                let node_map = self.world()?.get_resource::<NodesMapResource>();
+                node_map.map_or(false, |nm| !nm.get_node_ids(entity).is_empty())
+            };
+
+            if other_nodes_exist {
+                // Only remove the component for this specific node, don't despawn
+                let world = self.world_mut()?;
+                node_kind_match!(kind, {
+                    world.entity_mut(entity).remove::<NodeType>();
+                });
+            } else {
+                // No other nodes on this entity, despawn it
+                self.world_mut()?.despawn(entity);
+            }
         }
 
         Ok(())

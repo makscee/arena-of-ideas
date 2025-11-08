@@ -20,7 +20,7 @@ fn rm<'a>(world: &'a mut World) -> Mut<'a, TileData> {
 
 impl TilePlugin {
     pub fn op(f: impl Fn(&mut Tree<Pane>) + 'static + Sync + Send) {
-        OperationsPlugin::add(move |world| f(&mut rm(world).tree.tree));
+        op(move |world| f(&mut rm(world).tree.tree));
     }
     pub fn add_to_current(f: impl Fn(&mut Tree<Pane>) -> TileId + 'static + Sync + Send) {
         let id = cur_tile_id();
@@ -54,7 +54,7 @@ impl TilePlugin {
         })
     }
     pub fn request_tree_save(state: GameState) {
-        OperationsPlugin::add(move |world| {
+        op(move |world| {
             rm(world).save_requested = Some(state);
         });
     }
@@ -75,7 +75,7 @@ impl TilePlugin {
         }
     }
     pub fn set_active(pane: Pane) {
-        OperationsPlugin::add(move |world| {
+        op(move |world| {
             rm(world)
                 .tree
                 .tree

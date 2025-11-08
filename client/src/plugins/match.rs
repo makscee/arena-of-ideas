@@ -452,10 +452,11 @@ impl MatchPlugin {
                             ui.group(|ui| {
                                 team.render_compact(ctx, ui);
                             })
-                            .response
-                            .on_hover_ui(|ui| {
-                                team.render_hover(ctx, ui);
-                            });
+                            // .response
+                            // .on_hover_ui(|ui| {
+                            //     team.render_hover(ctx, ui);
+                            // })
+                            ;
                             Ok(())
                         },
                         |_, n| Ok(n.id.into()),

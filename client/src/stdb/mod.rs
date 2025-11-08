@@ -27,6 +27,7 @@ pub mod identity_disconnected_reducer;
 pub mod login_by_identity_reducer;
 pub mod login_reducer;
 pub mod logout_reducer;
+pub mod match_abandon_reducer;
 pub mod match_bench_unit_reducer;
 pub mod match_boss_battle_reducer;
 pub mod match_buy_fusion_slot_reducer;
@@ -99,6 +100,9 @@ pub use login_by_identity_reducer::{
 };
 pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use match_abandon_reducer::{
+    match_abandon, set_flags_for_match_abandon, MatchAbandonCallbackId,
+};
 pub use match_bench_unit_reducer::{
     match_bench_unit, set_flags_for_match_bench_unit, MatchBenchUnitCallbackId,
 };
@@ -196,6 +200,7 @@ pub enum Reducer {
     },
     LoginByIdentity,
     Logout,
+    MatchAbandon,
     MatchBenchUnit {
         unit_id: u64,
     },
@@ -267,6 +272,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
+            Reducer::MatchAbandon => "match_abandon",
             Reducer::MatchBenchUnit { .. } => "match_bench_unit",
             Reducer::MatchBossBattle => "match_boss_battle",
             Reducer::MatchBuyFusionSlot { .. } => "match_buy_fusion_slot",
@@ -353,6 +359,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 "logout",
                 &value.args,
             )?
+            .into()),
+            "match_abandon" => Ok(__sdk::parse_reducer_args::<
+                match_abandon_reducer::MatchAbandonArgs,
+            >("match_abandon", &value.args)?
             .into()),
             "match_bench_unit" => Ok(__sdk::parse_reducer_args::<
                 match_bench_unit_reducer::MatchBenchUnitArgs,

@@ -62,7 +62,7 @@ impl StringUtils for String {
         if len == 0 {
             return self;
         }
-        self.drain(..self.len().max(len)).collect()
+        self.drain(..self.len().min(len)).collect()
     }
     fn cut_end(mut self, len: usize) -> String {
         self.drain(self.len().saturating_sub(len)..).collect()
