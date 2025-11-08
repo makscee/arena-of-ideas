@@ -60,7 +60,7 @@ pub trait PersistentData:
         path
     }
     fn save(&self) {
-        let s = to_ron_string(self);
+        let s = to_ron_string_pretty(self);
         match std::fs::write(Self::path(), s) {
             Ok(_) => {
                 info!("Store {} successful", Self::path().to_string_lossy())

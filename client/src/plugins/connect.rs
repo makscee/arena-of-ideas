@@ -33,7 +33,7 @@ pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
 }
 
 fn creds_store() -> credentials::File {
-    credentials::File::new("aoi")
+    credentials::File::new("aoi_creds")
 }
 
 impl ConnectPlugin {

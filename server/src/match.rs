@@ -359,6 +359,8 @@ fn match_submit_battle_result(
                 if current_floor == last_floor {
                     m.set_state(MatchState::ChampionShop);
                     m.floor += 1;
+                    m.g += ctx.global_settings().match_g.initial;
+                    m.fill_shop_case(ctx, false)?;
                 } else {
                     m.active_set(false);
                 }
@@ -688,12 +690,13 @@ impl NMatch {
                 n
             })
             .collect_vec();
-        self.shop_offers = [ShopOffer {
-            buy_limit: None,
-            case: shop_case,
-        }]
-        .into();
-        self.set_dirty(true);
+        self.set_shop_offers(
+            [ShopOffer {
+                buy_limit: None,
+                case: shop_case,
+            }]
+            .into(),
+        );
         Ok(())
     }
 }

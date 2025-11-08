@@ -114,7 +114,7 @@ impl Default for ClientSettings {
                 ("prod", ("http://aoi.makscee.ru:3000", "aoi-prod")),
                 ("dev", ("http://aoi.makscee.ru:3000", "aoi-dev")),
             ]),
-            active_server: "dev",
+            active_server: "prod",
             dev_mode: false,
             auto_login: false,
             window_mode: default(),

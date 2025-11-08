@@ -12,7 +12,7 @@ use bevy_egui::egui::{
     self, Color32, Id, Order, Pos2, Response, Stroke, TextureId, Ui, epaint::PathShape, pos2,
 };
 use parking_lot::{Mutex, MutexGuard};
-use ron::ser::to_string;
+use ron::ser::{PrettyConfig, to_string, to_string_pretty};
 use schema::{VarName, VarValue};
 use serde::Serialize;
 
@@ -243,6 +243,9 @@ pub fn clipboard_set(text: impl ToString) {
 }
 pub fn to_ron_string<T: Serialize>(value: &T) -> String {
     to_string(value).unwrap()
+}
+pub fn to_ron_string_pretty<T: Serialize>(value: &T) -> String {
+    to_string_pretty(value, PrettyConfig::new().depth_limit(1)).unwrap()
 }
 
 pub trait F32toV2 {

@@ -261,15 +261,32 @@ impl LinkRatings {
                 }
                 schema::NodeRelation::OneToOne => {
                     // For one-to-one, store on both sides for symmetry
+                    // Keep sorted by rating (highest first) to support fallback
                     let parent_ratings = self.ratings.entry(parent_id).or_default();
                     let child_ratings_for_parent = parent_ratings.entry(child_kind).or_default();
-                    child_ratings_for_parent.clear();
-                    child_ratings_for_parent.push((child_id, rating));
+
+                    // Remove existing rating for this child if it exists
+                    child_ratings_for_parent.retain(|&(id, _)| id != child_id);
+
+                    // Keep sorted by rating (highest first)
+                    match child_ratings_for_parent.binary_search_by(|&(_, r)| rating.cmp(&r)) {
+                        Ok(pos) | Err(pos) => {
+                            child_ratings_for_parent.insert(pos, (child_id, rating))
+                        }
+                    }
 
                     let child_ratings = self.ratings.entry(child_id).or_default();
                     let parent_ratings_for_child = child_ratings.entry(parent_kind).or_default();
-                    parent_ratings_for_child.clear();
-                    parent_ratings_for_child.push((parent_id, rating));
+
+                    // Remove existing rating for this parent if it exists
+                    parent_ratings_for_child.retain(|&(id, _)| id != parent_id);
+
+                    // Keep sorted by rating (highest first)
+                    match parent_ratings_for_child.binary_search_by(|&(_, r)| rating.cmp(&r)) {
+                        Ok(pos) | Err(pos) => {
+                            parent_ratings_for_child.insert(pos, (parent_id, rating))
+                        }
+                    }
                 }
             }
         }
