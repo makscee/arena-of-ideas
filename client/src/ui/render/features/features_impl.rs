@@ -1400,8 +1400,15 @@ impl FPlaceholder for NStatusRepresentation {
 }
 
 impl FTitle for NTeam {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        "Team".cstr()
+    fn title(&self, ctx: &ClientContext) -> Cstr {
+        match self.fusions_ref(ctx) {
+            Ok(f) => f
+                .into_iter()
+                .filter(|f| f.trigger_unit_ref(ctx).is_ok())
+                .map(|f| f.title(ctx))
+                .join("[tw +]"),
+            Err(e) => e.cstr(),
+        }
     }
 }
 
@@ -1504,16 +1511,7 @@ impl FDisplay for NTeam {
 
 impl FCompactView for NTeam {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        ctx.exec_ref(|ctx| {
-            for fusion in self.fusions_ref(ctx)? {
-                if fusion.trigger_unit_ref(ctx).is_err() {
-                    continue;
-                }
-                fusion.title(ctx).label(ui);
-            }
-            Ok(())
-        })
-        .ui(ui);
+        self.title(ctx).label(ui);
     }
 
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
@@ -1672,24 +1670,29 @@ impl FTitle for NFusion {
                 let mut units = self
                     .units(ctx)?
                     .into_iter()
-                    .map(|u| u.title(ctx))
+                    .map(|u| {
+                        (
+                            u.name().to_string(),
+                            ctx.exec_ref(|ctx| {
+                                ctx.set_owner(u.id);
+                                Ok(ctx.color())
+                            })
+                            .unwrap(),
+                        )
+                    })
                     .collect_vec();
+                fn unit_str(unit: (String, Color32), len: usize) -> String {
+                    format!("[{} {}]", unit.1.to_hex(), unit.0.cut_start(len))
+                }
                 match units.len() {
-                    0 => Ok(String::new()),
-                    1 => Ok(units.remove(0)),
-                    2 => Ok(units.remove(0).cut_start() + &units.remove(0).cut_end()),
-                    _ => {
-                        let mut name = units.remove(0).cut_start();
-                        for unit in units.drain(..units.len() - 1) {
-                            name += &unit.cut_mid();
-                        }
-                        name += &units.remove(0).cut_end();
-                        Ok(name)
-                    }
+                    0 => Ok("[tw Empty]".into()),
+                    1 => Ok(unit_str(units.remove(0), 0)),
+                    2..=3 => Ok(units.into_iter().map(|name| unit_str(name, 3)).join("")),
+                    _ => Ok(units.into_iter().map(|name| unit_str(name, 2)).join("")),
                 }
             })
             .unwrap_or_default();
-        format!("[s #{}] {units}", self.index).cstr()
+        units
     }
 }
 
