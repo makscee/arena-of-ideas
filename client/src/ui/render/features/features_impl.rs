@@ -2060,6 +2060,12 @@ impl FTitle for NUnitRepresentation {
     }
 }
 
+impl FTitle for NRepresentation {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        "Representation".cstr()
+    }
+}
+
 impl FDescription for NUnitRepresentation {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         self.material.description_cstr(ctx)
@@ -2087,6 +2093,12 @@ impl FTag for NUnitRepresentation {
 }
 
 impl FDisplay for NUnitRepresentation {
+    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.material.display(ctx, ui)
+    }
+}
+
+impl FDisplay for NRepresentation {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         self.material.display(ctx, ui)
     }

@@ -195,6 +195,7 @@ impl std::fmt::Display for BattleAction {
 }
 impl BattleAction {
     pub fn apply(&self, ctx: &mut ClientContext) -> Vec<Self> {
+        *ctx.t_mut().unwrap() = ctx.battle().unwrap().duration;
         let mut add_actions = Vec::default();
         let result: NodeResult<bool> = (|| {
             let applied = match self {
@@ -205,11 +206,14 @@ impl BattleAction {
                             .with_target(*b)
                             .into(),
                     );
+                    add_actions.push(Self::wait(ANIMATION * 3.0));
                     let fusion_a = ctx.load::<NFusion>(*a).track()?;
                     let fusion_b = ctx.load::<NFusion>(*b).track()?;
+                    add_actions.extend(ctx.battle()?.slots_sync());
+                    add_actions.push(Self::wait(ANIMATION));
                     add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
                     add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
-                    add_actions.extend(ctx.battle()?.slots_sync());
+                    add_actions.push(Self::wait(ANIMATION * 2.0));
                     true
                 }
                 BattleAction::death(a) => {
@@ -222,15 +226,12 @@ impl BattleAction {
                             .with_var(VarName::position, position)
                             .into(),
                     );
+                    add_actions.push(Self::wait(ANIMATION));
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = ctx
-                        .with_owner(*a, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
-                    let target_pos = ctx
-                        .with_owner(*b, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
+                    let owner_pos = ctx.get_var_inherited(*a, VarName::position).track()?;
+                    let target_pos = ctx.get_var_inherited(*b, VarName::position).track()?;
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -261,7 +262,7 @@ impl BattleAction {
                             .with_var(VarName::color, HexColor::from("#FF0000".to_string()))
                             .into(),
                     );
-                    // *ctx.t_mut()? += ANIMATION;
+                    add_actions.push(Self::wait(ANIMATION));
                     true
                 }
                 BattleAction::heal(a, b, x) => {
@@ -303,7 +304,7 @@ impl BattleAction {
                             )?;
                         }
                     }
-                    ctx.battle_mut()?.duration += ANIMATION;
+                    add_actions.push(Self::wait(ANIMATION));
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
@@ -321,11 +322,12 @@ impl BattleAction {
                         VarName::visible,
                         true.into(),
                     )]);
+                    add_actions.push(Self::wait(ANIMATION));
                     true
                 }
                 BattleAction::apply_status(target, status, color) => {
                     BattleSimulation::apply_status(ctx, *target, status.clone(), *color).log();
-                    ctx.battle_mut()?.duration += ANIMATION;
+                    add_actions.push(Self::wait(ANIMATION));
                     true
                 }
                 BattleAction::wait(t) => {
@@ -717,8 +719,9 @@ impl BattleSimulation {
 fn process_actions(ctx: &mut ClientContext, actions: impl Into<VecDeque<BattleAction>>) {
     let mut actions: VecDeque<BattleAction> = actions.into();
     while let Some(a) = actions.pop_front() {
-        *ctx.t_mut().unwrap() = ctx.battle().unwrap().duration;
-        actions.extend(a.apply(ctx));
+        for a in a.apply(ctx).into_iter().rev() {
+            actions.push_front(a);
+        }
     }
 }
 
@@ -756,7 +759,6 @@ impl BattleSimulation {
                 position.into(),
             ));
         }
-        actions.push_back(BattleAction::wait(ANIMATION * 3.0));
         actions
     }
 }

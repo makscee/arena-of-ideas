@@ -223,3 +223,8 @@ pub struct NUnitBehavior {
 pub struct NUnitRepresentation {
     pub material: Material,
 }
+
+#[derive(Node)]
+pub struct NRepresentation {
+    pub material: Material,
+}

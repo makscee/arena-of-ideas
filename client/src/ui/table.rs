@@ -318,7 +318,6 @@ impl<'a, T> Table<'a, T> {
                                                     timestamp: current_time,
                                                 },
                                             );
-                                            debug!("updated {v}");
                                         });
                                         v
                                     }

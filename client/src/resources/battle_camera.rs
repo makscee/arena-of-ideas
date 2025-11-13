@@ -95,8 +95,9 @@ impl BattleCamera {
         ctx.exec_mut(|ctx| {
             *ctx.source_mut().t_mut().unwrap() = t;
             let world = ctx.world_mut()?;
+
             for entity in world
-                .query_filtered::<Entity, With<NUnitRepresentation>>()
+                .query_filtered::<Entity, With<NRepresentation>>()
                 .iter(world)
                 .collect_vec()
             {
@@ -110,7 +111,7 @@ impl BattleCamera {
                         return Ok(());
                     }
                     let rect = cam.rect_from_context(ctx).track()?;
-                    ctx.load::<NUnitRepresentation>(id)
+                    ctx.load::<NRepresentation>(id)
                         .track()?
                         .material
                         .paint(rect, ctx, ui);
@@ -145,16 +146,12 @@ impl BattleCamera {
             }
             let world = ctx.world_mut()?;
             for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
-                ctx.with_owner(fusion.id, |context| {
-                    if !context
-                        .get_var(VarName::visible)
-                        .get_bool()
-                        .unwrap_or_default()
-                    {
+                ctx.with_owner(fusion.id, |ctx| {
+                    if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
-                    let rect = cam.rect_from_context(context).track()?;
-                    fusion.paint(rect, context, ui)?;
+                    let rect = cam.rect_from_context(ctx).track()?;
+                    fusion.paint(rect, ctx, ui)?;
                     Ok(())
                 })
                 .notify_error_op();

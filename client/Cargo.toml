@@ -5,6 +5,7 @@ edition.workspace = true
 
 [features]
 dynamic_linking = ["bevy/dynamic_linking"]
+trace_tracy = ["bevy/trace_tracy"]
 
 [dependencies]
 utils = { path = "../utils" }

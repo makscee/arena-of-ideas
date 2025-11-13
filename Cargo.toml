@@ -21,10 +21,10 @@ edition.workspace = true
 
 [features]
 dynamic_linking = ["client/dynamic_linking"]
+trace_tracy = ["client/trace_tracy"]
 
 
 [workspace.dependencies]
-spacetimedb = "1.6.0"
 bevy = { version = "0.17", default-features = false, features = [
     "bevy_core_pipeline",
     "bevy_winit",
@@ -38,9 +38,10 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_log",
 ] }
-spacetimedb-sdk = "1.6.0"
-spacetimedb-sats = "1.6.0"
-spacetimedb-lib = "1.6.0"
+spacetimedb = "=1.6.0"
+spacetimedb-sdk = "=1.6.0"
+spacetimedb-sats = "=1.6.0"
+spacetimedb-lib = "=1.6.0"
 rand = "0.10.0-rc.1"
 rand_core = "0.10.0-rc-2"
 rand_chacha = "0.10.0-rc.1"

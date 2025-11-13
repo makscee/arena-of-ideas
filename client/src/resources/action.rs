@@ -150,6 +150,9 @@ impl ActionImpl for Action {
                         .take()
                         .with_state(NState::new(next_id(), player_id(), x));
                     let targets = ctx.collect_targets();
+                    if targets.is_empty() {
+                        return Err("No targets".into());
+                    }
                     for target in targets {
                         actions.push(BattleAction::apply_status(
                             target,
