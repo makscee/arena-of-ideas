@@ -225,7 +225,6 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
     apply_slots_limit(ctx, &mut fusion).track()?;
     fusion.save(ctx).track()?;
 
-    // Handle trigger selection when moving unit out of fusion
     if let Some(old_slot_id) = old_target_id {
         let old_slot = ctx.load::<NFusionSlot>(old_slot_id)?;
         let fusion_id = old_slot
@@ -234,7 +233,6 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
             .to_not_found()?;
         let mut old_fusion = ctx.load::<NFusion>(fusion_id)?.load_all(ctx)?.take();
         if old_fusion.trigger_unit.id() == Some(unit_id) {
-            // Find another unit in the fusion to be trigger, or set to 0 if empty
             let new_trigger = old_fusion
                 .slots()?
                 .iter()

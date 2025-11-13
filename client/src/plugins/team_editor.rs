@@ -25,6 +25,7 @@ pub struct TeamEditor {
         Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
     )>,
     action_handler: Option<Box<dyn FnMut(&ClientContext, &TeamAction) -> NodeResult<()>>>,
+    add_slot_text_fn: Option<Box<dyn Fn(&NFusion) -> String>>,
 }
 
 pub enum TeamAction {
@@ -76,6 +77,7 @@ impl TeamEditor {
             empty_slot_actions: vec![],
             filled_slot_actions: vec![],
             action_handler: None,
+            add_slot_text_fn: None,
         }
     }
 
@@ -102,6 +104,14 @@ impl TeamEditor {
         action: Box<dyn FnOnce(&mut NTeam, u64, u64, i32, &ClientContext, &mut Ui)>,
     ) -> Self {
         self.filled_slot_actions.push((name, action));
+        self
+    }
+
+    pub fn with_add_slot_text<F>(mut self, text_fn: F) -> Self
+    where
+        F: Fn(&NFusion) -> String + 'static,
+    {
+        self.add_slot_text_fn = Some(Box::new(text_fn));
         self
     }
 
@@ -330,7 +340,12 @@ impl TeamEditor {
                 self.render_unit_slot(ui, slot, fusion.id, team, ctx, actions);
             }
 
-            if ui.button("+ Add Slot").clicked() {
+            let add_slot_text = if let Some(ref text_fn) = self.add_slot_text_fn {
+                format!("+ {}", text_fn(fusion))
+            } else {
+                "+ Slot".to_string()
+            };
+            if add_slot_text.button(ui).clicked() {
                 actions.push(TeamAction::AddSlot {
                     fusion_id: fusion.id,
                 });

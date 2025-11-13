@@ -244,6 +244,11 @@ impl MatchPlugin {
                         cn().reducers.match_sell_unit(unit_id).notify_error_op();
                     }),
                 )
+                .with_add_slot_text(|fusion| {
+                    let slots_count = fusion.slots.get().map(|s| s.len()).unwrap_or(0);
+                    let price = global_settings().match_g.fusion_slot_mul * slots_count as i32;
+                    format!("Slot [b [yellow {}g]]", price)
+                })
                 .with_action_handler(move |ctx, action| {
                     match action {
                         TeamAction::MoveUnit { unit_id, target } => match target {
