@@ -17,9 +17,9 @@ The goal is to make a game that is created and managed by its players as much as
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/makscee)
 
 <!-- BEGIN YOUTUBE-CARDS -->
+[![finally released the game build, its my brthday, going all in next year fr](https://ytcards.demolab.com/?id=BcAYH-c158A&title=finally+released+the+game+build%2C+its+my+brthday%2C+going+all+in+next+year+fr&lang=en&timestamp=1762687792&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=2&width=250&border_radius=5 "finally released the game build, its my brthday, going all in next year fr")](https://www.youtube.com/watch?v=BcAYH-c158A)
 [![i am making an mmorpg now kinda](https://ytcards.demolab.com/?id=ByKLhU2C6Q4&title=i+am+making+an+mmorpg+now+kinda&lang=en&timestamp=1735754211&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=2&width=250&border_radius=5 "i am making an mmorpg now kinda")](https://www.youtube.com/watch?v=ByKLhU2C6Q4)
 [![remaking my game from scratch (again) in a month, here's why](https://ytcards.demolab.com/?id=7B4luJawg5M&title=remaking+my+game+from+scratch+%28again%29+in+a+month%2C+here%27s+why&lang=en&timestamp=1733155032&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=2&width=250&border_radius=5 "remaking my game from scratch (again) in a month, here's why")](https://www.youtube.com/watch?v=7B4luJawg5M)
-[![my game will get you addicted](https://ytcards.demolab.com/?id=8Csqoueqw-g&title=my+game+will+get+you+addicted&lang=en&timestamp=1730129485&background_color=%230d1117&title_color=%23ffffff&stats_color=%23dedede&max_title_lines=2&width=250&border_radius=5 "my game will get you addicted")](https://www.youtube.com/watch?v=8Csqoueqw-g)
 <!-- END YOUTUBE-CARDS -->
 
 # Play
