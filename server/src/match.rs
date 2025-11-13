@@ -191,14 +191,37 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
         .id
         .get_kind_parent(ctx.rctx(), NodeKind::NFusion)
         .to_not_found()?;
-    slot.with_unit_id(unit.id).save(ctx)?;
 
-    // Handle trigger selection when moving unit to fusion
     let mut fusion = ctx.load::<NFusion>(fusion)?;
-    if fusion.trigger_unit.id().is_none() {
+    let slots = fusion.slots_load(ctx)?;
+    let other_units_exist = slots
+        .iter_mut()
+        .any(|s| s.unit_load_id(ctx).is_ok_and(|id| id != unit_id));
+
+    let total_allocated: u8 = slots
+        .iter_mut()
+        .filter_map(|s| {
+            if s.unit_load_id(ctx).is_ok_and(|id| id != unit_id) {
+                Some(s.actions.length)
+            } else {
+                None
+            }
+        })
+        .sum();
+
+    let available = (fusion.actions_limit as u8).saturating_sub(total_allocated);
+    slot.unit = Ref::Id(unit.id);
+    slot.set_actions(UnitActionRange {
+        start: 0,
+        length: available,
+    });
+    slot.save(ctx)?;
+
+    if !other_units_exist {
         fusion.trigger_unit = Ref::Id(unit_id);
         fusion.set_dirty(true);
     }
+
     apply_slots_limit(ctx, &mut fusion).track()?;
     fusion.save(ctx).track()?;
 
@@ -484,6 +507,7 @@ fn match_abandon(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 fn apply_slots_limit(ctx: &mut ServerContext, fusion: &mut NFusion) -> NodeResult<()> {
+    fusion.set_dirty(true);
     let limit = fusion.actions_limit;
     let mut used: i32 = 0;
     for slot in fusion

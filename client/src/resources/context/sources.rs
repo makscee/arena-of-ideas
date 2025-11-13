@@ -635,7 +635,7 @@ impl<'a> Sources<'a> {
         node_id: u64,
         kind: NodeKind,
     ) -> NodeResult<Entity> {
-        if let Ok(existing_entity) = dbg!(self.entity(node_id)) {
+        if let Ok(existing_entity) = self.entity(node_id) {
             return Ok(existing_entity);
         }
         // Check if we have a component parent that already exists
