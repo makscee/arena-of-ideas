@@ -635,7 +635,7 @@ impl<'a> Sources<'a> {
         node_id: u64,
         kind: NodeKind,
     ) -> NodeResult<Entity> {
-        if let Ok(existing_entity) = self.entity(node_id) {
+        if let Ok(existing_entity) = dbg!(self.entity(node_id)) {
             return Ok(existing_entity);
         }
         // Check if we have a component parent that already exists
@@ -650,6 +650,10 @@ impl<'a> Sources<'a> {
         }
         // Check if we have component children that already exist
         for child_kind in kind.component_children() {
+            match NodeKind::get_relation(kind, child_kind).unwrap() {
+                NodeRelation::ManyToOne => continue,
+                NodeRelation::OneToOne | NodeRelation::OneToMany => {}
+            }
             if let Ok(children) = self.get_children_of_kind(node_id, child_kind) {
                 for child_id in children {
                     if let Ok(entity) = self.entity(child_id) {
