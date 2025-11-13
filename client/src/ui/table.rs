@@ -3,6 +3,14 @@ use bevy_egui::egui::{Popup, PopupAnchor, PopupCloseBehavior};
 use egui_extras::{Column, TableBuilder, TableRow};
 use std::cmp::Ordering;
 
+const CACHE_TTL_SECS: f64 = 2.0;
+
+#[derive(Clone)]
+struct CacheEntry {
+    value: VarValue,
+    timestamp: f64,
+}
+
 pub struct Table<'a, T> {
     row_getter: RowGetter<'a, T>,
     columns: Vec<TableColumn<'a, T>>,
@@ -276,24 +284,54 @@ impl<'a, T> Table<'a, T> {
             })
     }
 
-    fn show_row(&mut self, context: &ClientContext, state: &mut TableState, row: &mut TableRow) {
+    fn show_row(&mut self, ctx: &ClientContext, state: &mut TableState, row: &mut TableRow) {
         let i = *state.indices.get(row.index()).unwrap();
-        if let Some(data) = self.row_getter.get(context, i) {
-            for column in self.columns.iter_mut() {
+        if let Some(data) = self.row_getter.get(ctx, i) {
+            for (col_idx, column) in self.columns.iter_mut().enumerate() {
                 row.col(|ui| {
                     ui.push_id(i, |ui| {
                         let value = if let Some(value_fn) = &mut column.value {
-                            match value_fn(context, data) {
-                                Ok(v) => v,
-                                Err(e) => {
-                                    e.ui(ui);
-                                    default()
+                            let table_id = ui.id().with("table");
+                            let cache_id = table_id.with(col_idx).with(i);
+                            let current_time = ui.ctx().input(|r| r.time);
+
+                            let cached_value = ui.ctx().data(|d| {
+                                d.get_temp::<CacheEntry>(cache_id).and_then(|entry| {
+                                    if current_time - entry.timestamp < CACHE_TTL_SECS {
+                                        Some(entry.value.clone())
+                                    } else {
+                                        None
+                                    }
+                                })
+                            });
+
+                            if let Some(v) = cached_value {
+                                v
+                            } else {
+                                match value_fn(ctx, data) {
+                                    Ok(v) => {
+                                        ui.ctx().data_mut(|d| {
+                                            d.insert_temp(
+                                                cache_id,
+                                                CacheEntry {
+                                                    value: v.clone(),
+                                                    timestamp: current_time,
+                                                },
+                                            );
+                                            debug!("updated {v}");
+                                        });
+                                        v
+                                    }
+                                    Err(e) => {
+                                        e.ui(ui);
+                                        default()
+                                    }
                                 }
                             }
                         } else {
                             VarValue::default()
                         };
-                        (column.show)(context, ui, data, value).ui(ui);
+                        (column.show)(ctx, ui, data, value).ui(ui);
                     });
                 });
             }

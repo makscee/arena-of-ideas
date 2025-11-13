@@ -447,19 +447,11 @@ impl MatchPlugin {
                     )
                     .column(
                         "Team",
-                        |ctx, ui, node, _| {
-                            let team = node.team_ref(ctx)?;
-                            ui.group(|ui| {
-                                team.render_compact(ctx, ui);
-                            })
-                            // .response
-                            // .on_hover_ui(|ui| {
-                            //     team.render_hover(ctx, ui);
-                            // })
-                            ;
+                        |_, ui, _, team_str| {
+                            team_str.get_string()?.label(ui);
                             Ok(())
                         },
-                        |_, n| Ok(n.id.into()),
+                        |ctx, n| Ok(n.team_ref(ctx)?.title(ctx).into()),
                     )
                     .ui(ctx, ui);
             }

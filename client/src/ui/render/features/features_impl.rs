@@ -1406,7 +1406,7 @@ impl FTitle for NTeam {
                 .into_iter()
                 .filter(|f| f.trigger_unit_ref(ctx).is_ok())
                 .map(|f| f.title(ctx))
-                .join("[tw +]"),
+                .join(""),
             Err(_) => "[red error]".into(),
         }
     }
