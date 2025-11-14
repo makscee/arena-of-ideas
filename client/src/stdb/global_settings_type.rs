@@ -11,7 +11,7 @@ use super::match_settings_type::MatchSettings;
 pub struct GlobalSettings {
     pub always_zero: u32,
     pub team_slots: u8,
-    pub match_g: MatchSettings,
+    pub match_settings: MatchSettings,
 }
 
 impl __sdk::InModule for GlobalSettings {

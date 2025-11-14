@@ -39,16 +39,22 @@ impl TriggerImpl for Trigger {
                 let Ok(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;
+                let owner = ctx
+                    .load_or_first_parent_recursive_ref::<NFusion>(owner)
+                    .track()?;
                 if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
                     return Ok(true);
                 }
             }
             Event::IncomingDamage(_, target) => {
+                ctx.debug_layers();
                 let Ok(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;
+                let owner = ctx
+                    .load_or_first_parent_recursive_ref::<NFusion>(owner)
+                    .track()?;
+                dbg!(owner, target);
                 if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
                     return Ok(true);
                 }

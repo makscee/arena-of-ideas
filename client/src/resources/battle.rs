@@ -122,6 +122,7 @@ pub struct Corpse;
 pub enum BattleText {
     CurrentEvent,
     Round,
+    Fatigue,
 }
 
 #[derive(Clone, Debug)]
@@ -137,6 +138,7 @@ pub enum BattleAction {
     send_event(Event),
     vfx(Vec<ContextLayer>, String),
     wait(f32),
+    fatigue(i32),
 }
 impl Hash for BattleAction {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -156,6 +158,7 @@ impl Hash for BattleAction {
                 v.hash(state);
             }
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
+            BattleAction::fatigue(a) => a.hash(state),
             BattleAction::apply_status(a, status, _) => {
                 a.hash(state);
                 status.id.hash(state);
@@ -190,6 +193,7 @@ impl ToCstr for BattleAction {
             BattleAction::wait(t) => format!("~{t}"),
             BattleAction::vfx(_, vfx) => format!("vfx({vfx})"),
             BattleAction::send_event(e) => format!("event({e})"),
+            BattleAction::fatigue(pwr) => format!("fatigue({pwr})"),
         }
     }
 }
@@ -234,7 +238,9 @@ impl BattleAction {
                     true
                 }
                 BattleAction::damage(a, b, x) => {
-                    let owner_pos = ctx.get_var_inherited(*a, VarName::position).track()?;
+                    let owner_pos = ctx
+                        .get_var_inherited(*a, VarName::position)
+                        .unwrap_or_default();
                     let target_pos = ctx.get_var_inherited(*b, VarName::position).track()?;
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
@@ -332,6 +338,14 @@ impl BattleAction {
                     } else {
                         false
                     }
+                }
+                BattleAction::fatigue(pwr) => {
+                    let all_fusions = ctx.battle()?.all_fusions();
+                    for fusion_id in all_fusions {
+                        add_actions.push(Self::damage(0, fusion_id, *pwr));
+                    }
+                    add_actions.push(Self::wait(animation_time()));
+                    true
                 }
                 BattleAction::send_event(event) => {
                     BattleSimulation::send_event(ctx, *event)?;
@@ -575,6 +589,20 @@ impl BattleSimulation {
             let a = BattleAction::strike(sim.fusions_left[0], sim.fusions_right[0]);
             process_actions(ctx, vec![a]);
         }
+
+        let round = ctx.battle()?.rounds as i32;
+        let fatigue_start = global_settings().match_settings.fatigue_start_round as i32;
+
+        if round > fatigue_start {
+            let fatigue_action = BattleAction::fatigue(round - fatigue_start);
+            let sim = ctx.battle_mut()?;
+            sim.add_text(
+                BattleText::Fatigue,
+                format!("[tw Fatigue] [red [b {}]]", round - fatigue_start),
+            );
+            process_actions(ctx, vec![fatigue_action]);
+        }
+
         let mut actions = Vec::new();
         for (status, state) in ctx
             .world_mut()?
@@ -621,7 +649,7 @@ impl BattleSimulation {
         info!("{} {event}", "event:".dimmed().blue());
         let mut fusion_statuses: Vec<(u64, u64)> = default();
         let sim = ctx.battle_mut()?;
-        sim.add_text(BattleText::CurrentEvent, event.cstr());
+        sim.add_text(BattleText::CurrentEvent, format!("[b [yellow ⚡️ {event}]]"));
         for id in sim.all_fusions() {
             let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
             if !statuses.is_empty() {

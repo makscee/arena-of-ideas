@@ -404,6 +404,7 @@ pub trait ClientContextExt<'a> {
     ) -> NodeResult<Mut<'_, T>>;
     fn load_many_ref<T: ClientNode>(&self, ids: &[u64]) -> NodeResult<Vec<&T>>;
     fn load_children_ref<T: ClientNode>(&self, id: u64) -> NodeResult<Vec<&T>>;
+    fn load_or_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
     fn load_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
     fn load_first_parent_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T>;
     fn add_id_entity_link(
@@ -453,6 +454,13 @@ impl<'a> ClientContextExt<'a> for ClientContext<'a> {
     fn load_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T> {
         let id = self.first_parent_recursive(id, T::kind_s())?;
         self.load_ref(id)
+    }
+
+    fn load_or_first_parent_recursive_ref<T: ClientNode>(&self, id: u64) -> NodeResult<&T> {
+        self.load_ref::<T>(id).or_else(|_| {
+            let id = self.first_parent_recursive(id, T::kind_s())?;
+            self.load_ref(id)
+        })
     }
 
     fn add_id_entity_link(

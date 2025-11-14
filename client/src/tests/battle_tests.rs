@@ -30,6 +30,34 @@ fn test_simple_1v1_battle() {
 }
 
 #[test]
+fn test_fatigue_1v1_battle() {
+    let mut builder = TestBuilder::new();
+
+    let unit1 = builder.create_unit("Unit1", 0, 1);
+    let unit2 = builder.create_unit("Unit2", 0, 2);
+
+    let house1 = builder.create_simple_house("House1", vec![unit1]);
+    let house2 = builder.create_simple_house("House2", vec![unit2]);
+
+    let left_team = builder
+        .create_team()
+        .add_house(house1)
+        .add_fusion(FusionBuilder::single(0)); // Reference first unit in house
+
+    let right_team = builder
+        .create_team()
+        .add_house(house2)
+        .add_fusion(FusionBuilder::single(0)); // Reference first unit in house
+
+    let battle = builder.create_battle(left_team, right_team);
+    let result = battle.run();
+
+    result.assert_winner(TeamSide::Right);
+    result.assert_units_alive(TeamSide::Right, 1);
+    result.assert_units_alive(TeamSide::Left, 0);
+}
+
+#[test]
 fn test_equal_units_draw() {
     let mut builder = TestBuilder::new();
 

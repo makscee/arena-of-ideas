@@ -151,7 +151,7 @@ impl BattlePlugin {
 
         Self::render_playback_controls(ui, &mut data, main_rect)?;
         if !Self::render_end_screen(ui, &mut data, main_rect)? {
-            Self::render_battle_texts(ui, &data, main_rect);
+            Self::render_battle_texts(ui, &data, main_rect).ui(ui);
         }
 
         world.insert_resource(data);
@@ -170,6 +170,9 @@ impl BattlePlugin {
                 text.cstr().label(ui);
             }
             if let Some(text) = sim.get_text_at(BattleText::Round, t) {
+                text.cstr().label(ui);
+            }
+            if let Some(text) = sim.get_text_at(BattleText::Fatigue, t) {
                 text.cstr().label(ui);
             }
         });

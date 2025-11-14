@@ -81,10 +81,13 @@ impl MatchPlugin {
             let available_rect = ui.available_rect_before_wrap();
             ui.vertical_centered_justified(|ui| {
                 ui.set_width(200.0);
-                if format!("Reroll [b [yellow {}g]]", global_settings().match_g.reroll)
-                    .cstr()
-                    .button(ui)
-                    .clicked()
+                if format!(
+                    "Reroll [b [yellow {}g]]",
+                    global_settings().match_settings.reroll
+                )
+                .cstr()
+                .button(ui)
+                .clicked()
                 {
                     cn().reducers.match_shop_reroll().notify_op();
                 }
@@ -145,7 +148,7 @@ impl MatchPlugin {
                         Some(format!(
                             "sell {} [b [yellow +{}g]]",
                             unit.unit_name,
-                            global_settings().match_g.unit_sell
+                            global_settings().match_settings.unit_sell
                         ))
                     } else {
                         Some(format!("[red unit get error]"))
@@ -246,7 +249,8 @@ impl MatchPlugin {
                 )
                 .with_add_slot_text(|fusion| {
                     let slots_count = fusion.slots.get().map(|s| s.len()).unwrap_or(0);
-                    let price = global_settings().match_g.fusion_slot_mul * slots_count as i32;
+                    let price =
+                        global_settings().match_settings.fusion_slot_mul * slots_count as i32;
                     format!("Slot [b [yellow {}g]]", price)
                 })
                 .with_action_handler(move |ctx, action| {

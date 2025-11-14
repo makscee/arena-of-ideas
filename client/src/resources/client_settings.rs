@@ -46,6 +46,9 @@ pub struct ClientSettings {
 }
 
 pub fn animation_time() -> f32 {
+    if cfg!(test) {
+        return 0.0;
+    }
     pd().client_settings.animation_time
 }
 

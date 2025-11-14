@@ -5,7 +5,7 @@ pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
     pub team_slots: u8,
-    pub match_g: MatchSettings,
+    pub match_settings: MatchSettings,
 }
 
 impl Default for GlobalSettings {
@@ -13,7 +13,7 @@ impl Default for GlobalSettings {
         Self {
             always_zero: 0,
             team_slots: 5,
-            match_g: MatchSettings {
+            match_settings: MatchSettings {
                 unit_buy: 3,
                 unit_sell: 1,
                 house_buy: 3,
@@ -21,6 +21,7 @@ impl Default for GlobalSettings {
                 reroll: 1,
                 initial: 7,
                 house_chance: 30,
+                fatigue_start_round: 10,
             },
         }
     }
@@ -35,6 +36,7 @@ pub struct MatchSettings {
     pub reroll: i32,
     pub initial: i32,
     pub house_chance: i32,
+    pub fatigue_start_round: i32,
 }
 
 impl GlobalSettings {

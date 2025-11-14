@@ -14,6 +14,7 @@ pub struct MatchSettings {
     pub reroll: i32,
     pub initial: i32,
     pub house_chance: i32,
+    pub fatigue_start_round: i32,
 }
 
 impl __sdk::InModule for MatchSettings {

@@ -268,7 +268,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
         return Err("Unit not owned by player".to_string());
     }
     let m = player.active_match_load(ctx)?;
-    m.g_set(ctx.global_settings().match_g.unit_sell + m.g);
+    m.g_set(ctx.global_settings().match_settings.unit_sell + m.g);
     unit.delete_recursive(ctx);
     m.take().save(ctx)?;
     Ok(())
@@ -297,7 +297,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     let mut fusion = ctx.load::<NFusion>(fusion_id)?;
     fusion.actions_limit += 1;
     let slots = fusion.slots_load(ctx)?;
-    let price = ctx.global_settings().match_g.fusion_slot_mul * slots.len() as i32;
+    let price = ctx.global_settings().match_settings.fusion_slot_mul * slots.len() as i32;
     let fs = NFusionSlot::new(ctx.next_id(), pid, slots.len() as i32, default());
     fusion.slots_push(fs)?;
     fusion.save(ctx)?;
@@ -311,7 +311,7 @@ fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
     m.fill_shop_case(ctx, true)?;
-    m.buy(ctx, ctx.global_settings().match_g.reroll)?;
+    m.buy(ctx, ctx.global_settings().match_settings.reroll)?;
     player.save(ctx)?;
     Ok(())
 }
@@ -389,7 +389,7 @@ fn match_submit_battle_result(
                 if current_floor == last_floor {
                     m.set_state(MatchState::ChampionShop);
                     m.floor += 1;
-                    m.g += ctx.global_settings().match_g.initial;
+                    m.g += ctx.global_settings().match_settings.initial;
                     m.fill_shop_case(ctx, false)?;
                 } else {
                     m.active_set(false);
@@ -409,7 +409,7 @@ fn match_submit_battle_result(
                 }
 
                 m.state = MatchState::Shop;
-                m.g += ctx.global_settings().match_g.initial;
+                m.g += ctx.global_settings().match_settings.initial;
                 m.fill_shop_case(ctx, false)?;
             } else {
                 // Lost regular battle
@@ -420,7 +420,7 @@ fn match_submit_battle_result(
                 } else {
                     // Continue on same floor
                     m.state = MatchState::Shop;
-                    m.g += ctx.global_settings().match_g.initial;
+                    m.g += ctx.global_settings().match_settings.initial;
                     m.fill_shop_case(ctx, false)?;
                 }
             }
@@ -638,7 +638,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mut m = NMatch::new(
         ctx.next_id(),
         pid,
-        gs.match_g.initial,
+        gs.match_settings.initial,
         1,
         3,
         true,
@@ -687,9 +687,9 @@ impl NMatch {
     fn fill_shop_case(&mut self, ctx: &ServerContext, units: bool) -> NodeResult<()> {
         let gs = ctx.global_settings();
 
-        let unit_price = gs.match_g.unit_buy;
-        let house_price = gs.match_g.house_buy;
-        let house_chance = gs.match_g.house_chance;
+        let unit_price = gs.match_settings.unit_buy;
+        let house_price = gs.match_settings.house_buy;
+        let house_chance = gs.match_settings.house_chance;
 
         let owned_houses: HashSet<String> = HashSet::from_iter(
             self.team_load(ctx)

@@ -504,7 +504,7 @@ impl BattleTestCase {
             .exec_context(|ctx| BattleSimulation::start(ctx))
             .unwrap();
 
-        let max_iterations = 10; // Reduce iterations for focused testing
+        let max_iterations = 20;
         let mut iterations = 0;
 
         while iterations < max_iterations {

@@ -51,7 +51,7 @@ pub fn init_for_tests() {
         .set(GlobalSettings {
             always_zero: 0,
             team_slots: 5,
-            match_g: MatchSettings {
+            match_settings: MatchSettings {
                 unit_buy: 1,
                 unit_sell: 1,
                 house_buy: 3,
@@ -59,6 +59,7 @@ pub fn init_for_tests() {
                 reroll: 1,
                 initial: 5,
                 house_chance: 20,
+                fatigue_start_round: 10,
             },
         })
         .ok();
