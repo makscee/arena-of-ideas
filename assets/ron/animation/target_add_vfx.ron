@@ -1,0 +1,23 @@
+[
+    duration(f32(3.0)),
+    spawn(
+        (
+            [
+                color(fallback(var(color), color(HexColor("#ffffff")))),
+                alpha(sub(f32(2.0), mul(var(t), f32(2.0)))),
+                curve(thickness: f32(0.1), curvature: f32(-1.5)),
+            ],
+        ),
+    ),
+    spawn(
+        (
+            [
+                alpha(sub(f32(3.0), mul(var(t), f32(3.0)))),
+                hollow(f32(1.0)),
+                circle(f32(1.4)),
+                scale_mesh(sub(one, mul(f32(0.4),var(t)))),
+                translate(sub(var(extra_position), var(position))),
+            ],
+        ),
+    ),
+]

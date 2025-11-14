@@ -27,7 +27,7 @@ impl ExpressionImpl for Expression {
             Expression::pi => Ok(PI.into()),
             Expression::pi2 => Ok((PI * 2.0).into()),
             Expression::x => ctx.get_var(VarName::stax),
-            Expression::owner => Ok(ctx.owner().to_not_found()?.into()),
+            Expression::owner => Ok(ctx.owner()?.into()),
             Expression::target => Ok(ctx.target().to_not_found()?.into()),
             Expression::var(var) => ctx.get_var(*var).or_else(|_| {
                 if *var == VarName::index {
@@ -66,26 +66,22 @@ impl ExpressionImpl for Expression {
             Expression::gt => Ok(gt().play_head().into()),
             Expression::unit_size => Ok(UNIT_SIZE.into()),
             Expression::all_units => Ok(ctx.battle_mut()?.all_fusions().into()),
-            Expression::all_ally_units => Ok(ctx
-                .battle()?
-                .all_allies(ctx.owner().to_not_found()?)?
-                .clone()
-                .into()),
+            Expression::all_ally_units => {
+                Ok(ctx.battle()?.all_allies(ctx.owner()?)?.clone().into())
+            }
             Expression::all_other_ally_units => Ok(ctx
                 .battle()?
-                .all_allies(ctx.owner().to_not_found()?)?
+                .all_allies(ctx.owner()?)?
                 .into_iter()
                 .filter(|v| **v != ctx.owner().unwrap())
                 .copied()
                 .collect_vec()
                 .into()),
-            Expression::all_enemy_units => Ok(ctx
-                .battle()?
-                .all_enemies(ctx.owner().to_not_found()?)?
-                .clone()
-                .into()),
+            Expression::all_enemy_units => {
+                Ok(ctx.battle()?.all_enemies(ctx.owner()?)?.clone().into())
+            }
             Expression::adjacent_ally_units => {
-                let owner = ctx.owner().to_not_found()?;
+                let owner = ctx.owner()?;
                 let bs = ctx.battle()?;
                 Ok(bs
                     .offset_unit(owner, -1)
@@ -96,12 +92,12 @@ impl ExpressionImpl for Expression {
             }
             Expression::adjacent_front => ctx
                 .battle()?
-                .offset_unit(ctx.owner().to_not_found()?, -1)
+                .offset_unit(ctx.owner()?, -1)
                 .map(|e| e.into())
                 .to_custom_e("No front unit found"),
             Expression::adjacent_back => ctx
                 .battle()?
-                .offset_unit(ctx.owner().to_not_found()?, 1)
+                .offset_unit(ctx.owner()?, 1)
                 .map(|e| e.into())
                 .to_custom_e("No back unit found"),
             Expression::sin(x) => Ok(x.get_f32(ctx)?.sin().into()),

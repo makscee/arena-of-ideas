@@ -23,7 +23,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::Death(id) => {
-                let Some(owner) = ctx.owner() else {
+                let Ok(owner) = ctx.owner() else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::BeforeDeath) && owner == *id {
@@ -36,7 +36,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::OutgoingDamage(source, _) => {
-                let Some(owner) = ctx.owner() else {
+                let Ok(owner) = ctx.owner() else {
                     return Ok(false);
                 };
                 let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;
@@ -45,7 +45,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::IncomingDamage(_, target) => {
-                let Some(owner) = ctx.owner() else {
+                let Ok(owner) = ctx.owner() else {
                     return Ok(false);
                 };
                 let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;

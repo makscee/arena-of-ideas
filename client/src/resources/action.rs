@@ -52,15 +52,30 @@ impl ActionImpl for Action {
             Action::add_target(x) => match x.get_u64_list(ctx) {
                 Ok(ids) => {
                     for id in ids {
+                        let position = ctx.owner_var(VarName::position)?;
+                        actions.push(
+                            BattleAction::new_vfx("target_add_vfx")
+                                .with_var(VarName::position, position.clone())
+                                .with_var(
+                                    VarName::extra_position,
+                                    ctx.get_var_inherited(id, VarName::position)?,
+                                )
+                                .with_var(VarName::color, YELLOW)
+                                .into(),
+                        );
+                        actions.push(
+                            BattleAction::new_text("+ target", position)
+                                .with_var(VarName::color, YELLOW)
+                                .into(),
+                        );
+                        actions.push(BattleAction::wait(animation_time()));
                         ctx.add_target(id);
                     }
                 }
                 Err(e) => error!("add_target error: {e}"),
             },
             Action::deal_damage => {
-                let owner = ctx
-                    .owner()
-                    .ok_or_else(|| NodeError::custom("No owner in context"))?;
+                let owner = ctx.owner()?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     let targets = ctx.collect_targets();
@@ -78,9 +93,7 @@ impl ActionImpl for Action {
                 }
             }
             Action::heal_damage => {
-                let owner = ctx
-                    .owner()
-                    .ok_or_else(|| NodeError::custom("No owner in context"))?;
+                let owner = ctx.owner()?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
                     for target in ctx.collect_targets() {

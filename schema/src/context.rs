@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::*;
 
 /// Node trait for all node types
@@ -218,11 +220,15 @@ impl<S: ContextSource> Context<S> {
         )
     }
 
-    pub fn owner(&self) -> Option<u64> {
-        self.layers.iter().rev().find_map(|l| match l {
-            ContextLayer::Owner(id) => Some(*id),
-            _ => None,
-        })
+    pub fn owner(&self) -> NodeResult<u64> {
+        self.layers
+            .iter()
+            .rev()
+            .find_map(|l| match l {
+                ContextLayer::Owner(id) => Some(*id),
+                _ => None,
+            })
+            .ok_or_else(|| NodeError::custom("No owner in context"))
     }
 
     pub fn target(&self) -> Option<u64> {
@@ -247,11 +253,7 @@ impl<S: ContextSource> Context<S> {
     }
 
     pub fn owner_var(&self, var: VarName) -> NodeResult<VarValue> {
-        if let Some(owner) = self.owner() {
-            self.get_var_inherited(owner, var).track()
-        } else {
-            Err(NodeError::custom("No owner in context"))
-        }
+        self.get_var_inherited(self.owner()?, var).track()
     }
 
     pub fn target_var(&self, var: VarName) -> NodeResult<VarValue> {
@@ -289,7 +291,7 @@ impl<S: ContextSource> Context<S> {
         }
 
         // Try to get from owner
-        if let Some(owner) = self.owner() {
+        if let Ok(owner) = self.owner() {
             self.get_var_inherited(owner, var).track()
         } else {
             Err(NodeError::custom("Cannot get var without owner"))
@@ -553,6 +555,8 @@ impl<S: ContextSource> Context<S> {
                 ContextLayer::Var(var, value) => Some((*var, value.clone())),
                 _ => None,
             })
+            .rev()
+            .unique_by(|(var, _)| *var)
             .collect()
     }
 

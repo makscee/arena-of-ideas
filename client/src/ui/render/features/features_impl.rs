@@ -378,7 +378,7 @@ impl FEdit for Trigger {
 impl FTitle for Action {
     fn title(&self, ctx: &ClientContext) -> Cstr {
         fn x_text(ctx: &ClientContext, mut x: i32) -> NodeResult<String> {
-            let owner = ctx.owner().to_not_found()?;
+            let owner = ctx.owner()?;
             let house = ctx.load_first_parent_recursive_ref::<NHouse>(owner)?;
             let house_x = house.state_ref(ctx)?.stax;
             if house_x > 0 {

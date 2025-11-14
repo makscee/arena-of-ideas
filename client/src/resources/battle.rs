@@ -269,15 +269,12 @@ impl BattleAction {
                     let target_pos = ctx
                         .with_owner(*b, |ctx| ctx.get_var(VarName::position))
                         .track()?;
-                    if let Some(curve) = animations().get("range_effect_vfx") {
-                        ctx.with_layers(
-                            [
-                                ContextLayer::Var(VarName::position, owner_pos),
-                                ContextLayer::Var(VarName::extra_position, target_pos.clone()),
-                            ],
-                            |context| curve.apply(context),
-                        )?;
-                    }
+                    add_actions.push(
+                        Self::new_vfx("range_effect_vfx")
+                            .with_var(VarName::position, owner_pos)
+                            .with_var(VarName::extra_position, target_pos.clone())
+                            .into(),
+                    );
                     if *x > 0 {
                         if let Some(pleasure) = animations().get("pleasure_vfx") {
                             ctx.with_layer(
@@ -325,7 +322,7 @@ impl BattleAction {
                 }
                 BattleAction::vfx(layers, vfx) => {
                     if let Some(vfx) = animations().get(vfx) {
-                        ctx.with_layers(layers.clone(), |context| vfx.apply(context))?;
+                        ctx.with_layers(layers.clone(), |ctx| vfx.apply(ctx))?;
                         true
                     } else {
                         false
