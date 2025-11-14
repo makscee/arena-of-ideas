@@ -12,7 +12,6 @@ The goal is to make a game that is created and managed by its players as much as
 
 [![Discord](https://img.shields.io/discord/1034174161679044660.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC1)](https://discord.gg/AdjyRQKP)
 
-[![Twitch](https://img.shields.io/badge/Twitch-%239146FF.svg?style=for-the-badge&logo=Twitch&logoColor=white)](https://www.twitch.tv/makscee)
 [![YouTube](https://img.shields.io/badge/YouTube-%23FF0000.svg?style=for-the-badge&logo=YouTube&logoColor=white)](https://www.youtube.com/@makscee)
 [![Patreon](https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white)](https://patreon.com/makscee)
 
