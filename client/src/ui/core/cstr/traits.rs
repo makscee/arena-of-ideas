@@ -164,6 +164,11 @@ impl ToCstr for PainterAction {
             ),
             PainterAction::repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
             PainterAction::list(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
+            PainterAction::if_ok(expr, actions) => {
+                let actions_str = actions.into_iter().map(|a| a.cstr_expanded()).join(", ");
+                format!("{}, [{}]", expr.cstr_expanded(), actions_str)
+            }
+            PainterAction::exit => Default::default(),
             PainterAction::paint => Default::default(),
         };
         format!("{}({inner})", self.cstr())

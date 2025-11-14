@@ -451,6 +451,19 @@ impl FRecursive for PainterAction {
                     RecursiveField::indexed(i, RecursiveValue::PainterAction(action.as_ref()))
                 })
                 .collect(),
+
+            PainterAction::if_ok(expr, actions) => {
+                let mut fields = vec![RecursiveField::named(
+                    "condition",
+                    RecursiveValue::Expr(expr.as_ref()),
+                )];
+                fields.extend(actions.iter().enumerate().map(|(i, action)| {
+                    RecursiveField::indexed(i, RecursiveValue::PainterAction(action.as_ref()))
+                }));
+                fields
+            }
+
+            PainterAction::exit => vec![],
         }
     }
 
@@ -556,6 +569,19 @@ impl FRecursive for PainterAction {
                     RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(action.as_mut()))
                 })
                 .collect(),
+
+            PainterAction::if_ok(expr, actions) => {
+                let mut fields = vec![RecursiveFieldMut::named(
+                    "condition",
+                    RecursiveValueMut::Expr(expr.as_mut()),
+                )];
+                fields.extend(actions.iter_mut().enumerate().map(|(i, action)| {
+                    RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(action.as_mut()))
+                }));
+                fields
+            }
+
+            PainterAction::exit => vec![],
         }
     }
 }

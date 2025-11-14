@@ -54,6 +54,7 @@ pub enum VarName {
     stax,
     online,
     active,
+    no_stats,
 }
 
 impl VarName {

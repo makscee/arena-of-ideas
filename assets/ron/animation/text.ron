@@ -6,7 +6,7 @@
                 color(var(color)),
                 alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
                 text(var(text)),
-                translate(vec2_ee(zero, sub(zero, mul(var(t), f32(1.5))))),
+                translate(vec2_ee(zero, sub(f32(-0.5), mul(var(t), f32(0.9))))),
             ],
         ),
     ),

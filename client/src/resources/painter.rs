@@ -44,14 +44,14 @@ fn new_tesselator(feathering: f32, ctx: &egui::Context) -> Tessellator {
 }
 
 pub trait Paint {
-    fn paint(&self, context: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()>;
+    fn paint(&self, context: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool>;
 }
 
 impl Paint for PainterAction {
-    fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
+    fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool> {
         let r = p.rect;
         let up = r.width().min(r.height()) * 0.5;
-        ctx.exec_ref(|ctx| {
+        ctx.exec_ref(|ctx| -> NodeResult<bool> {
             match self {
                 PainterAction::circle(x) => {
                     let radius = x.get_f32(ctx)? * up;
@@ -60,7 +60,7 @@ impl Paint for PainterAction {
                     } else {
                         CircleShape::filled(default(), radius, p.color)
                     };
-                    p.tesselator.tessellate_circle(shape, &mut p.mesh)
+                    p.tesselator.tessellate_circle(shape, &mut p.mesh);
                 }
                 PainterAction::rectangle(x) => {
                     let size = x.get_vec2(ctx)? * 2.0;
@@ -177,7 +177,7 @@ impl Paint for PainterAction {
                 }
                 PainterAction::paint => {
                     if p.mesh.is_empty() {
-                        return Ok(());
+                        return Ok(false);
                     }
                     p.mesh.translate(r.center().to_vec2());
                     ui.painter().add(mem::take(&mut p.mesh));
@@ -187,8 +187,20 @@ impl Paint for PainterAction {
                         a.paint(ctx, p, ui)?;
                     }
                 }
+                PainterAction::if_ok(expr, actions) => {
+                    if expr.get_value(ctx).is_ok() {
+                        for a in actions {
+                            if a.paint(ctx, p, ui)? {
+                                return Ok(true);
+                            }
+                        }
+                    }
+                }
+                PainterAction::exit => {
+                    return Ok(true);
+                }
             };
-            Ok(())
+            Ok(false)
         })
     }
 }

@@ -2,6 +2,8 @@ use crate::prelude::*;
 use crate::ui::{DndArea, MatRect, RangeSelector};
 use bevy_egui::egui::{DragAndDrop, Frame, Response, Sense};
 
+const SIZE: egui::Vec2 = egui::Vec2::splat(70.0);
+
 #[derive(Debug, Clone)]
 pub struct DraggedUnit {
     pub unit_id: u64,
@@ -801,16 +803,16 @@ impl TeamEditor {
         if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0))
+                    MatRect::new(SIZE)
                         .add_mat(&rep.material, unit.id)
                         .unit_rep_with_default(unit.id)
                         .active(is_inspected)
                         .ui(ui, ctx)
                 } else {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
+                    MatRect::new(SIZE).ui(ui, ctx)
                 }
             } else {
-                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
+                MatRect::new(SIZE).ui(ui, ctx)
             }
         } else {
             ui.label(format!("Unit #{}", unit_id))
@@ -821,15 +823,15 @@ impl TeamEditor {
         if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
             if let Ok(desc) = unit.description_ref(ctx) {
                 if let Ok(rep) = desc.representation_ref(ctx) {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0))
+                    MatRect::new(SIZE)
                         .add_mat(&rep.material, unit.id)
                         .unit_rep_with_default(unit.id)
                         .ui(ui, ctx);
                 } else {
-                    MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx);
+                    MatRect::new(SIZE).ui(ui, ctx);
                 }
             } else {
-                MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx);
+                MatRect::new(SIZE).ui(ui, ctx);
             }
         } else {
             ui.label(format!("Unit #{}", unit_id));
@@ -837,7 +839,7 @@ impl TeamEditor {
     }
 
     fn render_empty_slot(ui: &mut Ui, ctx: &ClientContext) -> Response {
-        MatRect::new(egui::Vec2::new(60.0, 60.0)).ui(ui, ctx)
+        MatRect::new(SIZE).ui(ui, ctx)
     }
 
     fn draw_drag_visual(&self, ui: &mut Ui) {

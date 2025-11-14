@@ -24,6 +24,8 @@ pub enum PainterAction {
     feathering(Box<Expression>),
     repeat(Box<Expression>, Box<PainterAction>),
     list(Vec<Box<PainterAction>>),
+    if_ok(Box<Expression>, Vec<Box<PainterAction>>),
+    exit,
 }
 
 impl Default for PainterAction {

@@ -240,12 +240,16 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                 .layout(Layout::top_down(Align::Center)),
         );
         ui.set_clip_rect(rect);
+        let color = ctx.color();
         Frame::new()
             .corner_radius(ROUNDING)
-            .stroke(ctx.color().stroke())
+            .stroke(color.stroke())
             .show(ui, |ui| {
                 self.title(ctx).cstr_s(CstrStyle::Heading2).label(ui);
-                ui.separator();
+                ui.scope(|ui| {
+                    ui.visuals_mut().widgets.noninteractive.bg_stroke.color = color;
+                    ui.separator();
+                });
 
                 // Preview in remaining space
                 let available_rect = ui
@@ -253,10 +257,15 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                     .shrink2(egui::vec2(5.0, 0.0));
                 if available_rect.height() > 10.0 {
                     let ui = &mut ui.new_child(UiBuilder::new().max_rect(available_rect));
-                    self.preview(ctx, ui, available_rect);
+                    let _ = ctx.exec_ref(|ctx| {
+                        ctx.set_var_layer(VarName::no_stats, true.into());
+                        self.preview(ctx, ui, available_rect);
+                        Ok(())
+                    });
                 }
                 let stats = self.stats(ctx);
                 if !stats.is_empty() {
+                    ui.add_space(5.0);
                     ui.horizontal_wrapped(|ui| {
                         for (var, var_value) in self.stats(ctx) {
                             TagWidget::new_var_value(var, var_value).ui(ui);
@@ -281,6 +290,23 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                             });
                     }
                 });
+                if let Ok(house_name) = ctx.get_var(VarName::house_name).get_string() {
+                    let rect = Rect::from_center_size(
+                        available_rect.center_top(),
+                        egui::vec2(available_rect.width() - 10.0, LINE_HEIGHT * 0.5),
+                    )
+                    .translate(egui::vec2(0.0, -10.0));
+                    let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
+                    Frame::new()
+                        .fill(colorix().subtle_background())
+                        .stroke(color.stroke())
+                        .corner_radius(20)
+                        .show(ui, |ui| {
+                            ui.vertical_centered(|ui| {
+                                house_name.cstr_cs(color, CstrStyle::Small).label(ui);
+                            })
+                        });
+                }
             });
 
         response

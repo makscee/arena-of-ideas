@@ -617,7 +617,26 @@ impl FStats for NUnit {
             stats.push((VarName::hp, hp));
         }
         if let Ok(stax) = ctx.get_var_inherited(self.id, VarName::stax) {
-            stats.push((VarName::stax, stax));
+            if let Ok(house_state) = ctx
+                .load_first_parent_ref::<NHouse>(self.id)
+                .and_then(|h| h.state_ref(ctx))
+            {
+                let house_x = house_state.stax;
+                let unit_x = stax.get_i32().unwrap();
+                let color = if unit_x > house_x {
+                    "red"
+                } else if unit_x < house_x {
+                    "green"
+                } else {
+                    "yellow"
+                };
+                stats.push((
+                    VarName::stax,
+                    format!("{}/[{color} {}]", unit_x, house_x).into(),
+                ));
+            } else {
+                stats.push((VarName::stax, stax));
+            }
         }
         let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
         {
