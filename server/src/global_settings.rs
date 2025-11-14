@@ -5,7 +5,7 @@ pub struct GlobalSettings {
     #[unique]
     always_zero: u32,
     pub team_slots: u8,
-    pub match_g: MatchG,
+    pub match_g: MatchSettings,
 }
 
 impl Default for GlobalSettings {
@@ -13,26 +13,28 @@ impl Default for GlobalSettings {
         Self {
             always_zero: 0,
             team_slots: 5,
-            match_g: MatchG {
+            match_g: MatchSettings {
                 unit_buy: 3,
                 unit_sell: 1,
                 house_buy: 3,
                 fusion_slot_mul: 1,
                 reroll: 1,
                 initial: 7,
+                house_chance: 30,
             },
         }
     }
 }
 
 #[derive(SpacetimeType)]
-pub struct MatchG {
+pub struct MatchSettings {
     pub unit_buy: i32,
     pub unit_sell: i32,
     pub house_buy: i32,
     pub fusion_slot_mul: i32,
     pub reroll: i32,
     pub initial: i32,
+    pub house_chance: i32,
 }
 
 impl GlobalSettings {

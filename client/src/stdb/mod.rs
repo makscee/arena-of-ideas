@@ -34,10 +34,10 @@ pub mod match_buy_fusion_slot_reducer;
 pub mod match_change_action_range_reducer;
 pub mod match_change_trigger_reducer;
 pub mod match_complete_reducer;
-pub mod match_g_type;
 pub mod match_insert_reducer;
 pub mod match_move_unit_reducer;
 pub mod match_sell_unit_reducer;
+pub mod match_settings_type;
 pub mod match_shop_buy_reducer;
 pub mod match_shop_reroll_reducer;
 pub mod match_stack_unit_reducer;
@@ -122,7 +122,6 @@ pub use match_change_trigger_reducer::{
 pub use match_complete_reducer::{
     match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
 };
-pub use match_g_type::MatchG;
 pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
 pub use match_move_unit_reducer::{
     match_move_unit, set_flags_for_match_move_unit, MatchMoveUnitCallbackId,
@@ -130,6 +129,7 @@ pub use match_move_unit_reducer::{
 pub use match_sell_unit_reducer::{
     match_sell_unit, set_flags_for_match_sell_unit, MatchSellUnitCallbackId,
 };
+pub use match_settings_type::MatchSettings;
 pub use match_shop_buy_reducer::{
     match_shop_buy, set_flags_for_match_shop_buy, MatchShopBuyCallbackId,
 };

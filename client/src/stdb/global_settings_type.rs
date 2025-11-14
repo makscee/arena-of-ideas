@@ -4,14 +4,14 @@
 #![allow(unused, clippy::all)]
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
-use super::match_g_type::MatchG;
+use super::match_settings_type::MatchSettings;
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub struct GlobalSettings {
     pub always_zero: u32,
     pub team_slots: u8,
-    pub match_g: MatchG,
+    pub match_g: MatchSettings,
 }
 
 impl __sdk::InModule for GlobalSettings {

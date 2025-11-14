@@ -6,15 +6,16 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct MatchG {
+pub struct MatchSettings {
     pub unit_buy: i32,
     pub unit_sell: i32,
     pub house_buy: i32,
     pub fusion_slot_mul: i32,
     pub reroll: i32,
     pub initial: i32,
+    pub house_chance: i32,
 }
 
-impl __sdk::InModule for MatchG {
+impl __sdk::InModule for MatchSettings {
     type Module = super::RemoteModule;
 }

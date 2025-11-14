@@ -51,13 +51,14 @@ pub fn init_for_tests() {
         .set(GlobalSettings {
             always_zero: 0,
             team_slots: 5,
-            match_g: MatchG {
+            match_g: MatchSettings {
                 unit_buy: 1,
                 unit_sell: 1,
                 house_buy: 3,
                 fusion_slot_mul: 1,
                 reroll: 1,
                 initial: 5,
+                house_chance: 20,
             },
         })
         .ok();

@@ -3,7 +3,7 @@
 
 #![allow(unused, clippy::all)]
 use super::global_settings_type::GlobalSettings;
-use super::match_g_type::MatchG;
+use super::match_settings_type::MatchSettings;
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 /// Table handle for the table `global_settings`.

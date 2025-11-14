@@ -1,5 +1,5 @@
 use schema::MatchState;
-use spacetimedb::rand::seq::SliceRandom;
+use spacetimedb::rand::{Rng, seq::SliceRandom};
 
 use super::*;
 
@@ -689,6 +689,8 @@ impl NMatch {
 
         let unit_price = gs.match_g.unit_buy;
         let house_price = gs.match_g.house_buy;
+        let house_chance = gs.match_g.house_chance;
+
         let owned_houses: HashSet<String> = HashSet::from_iter(
             self.team_load(ctx)
                 .track()?
@@ -707,10 +709,31 @@ impl NMatch {
                     .unwrap_or_default()
             })
             .collect_vec();
+
+        let has_units = units && !units_from_owned_houses.is_empty();
+        let has_houses = !all_house_ids.is_empty();
+
         let shop_case = (0..4)
             .map(|_| {
-                let n = if units && !units_from_owned_houses.is_empty() || all_house_ids.is_empty()
-                {
+                if !has_units {
+                    if has_houses {
+                        ShopSlot {
+                            card_kind: CardKind::House,
+                            node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: house_price,
+                            buy_text: None,
+                        }
+                    } else {
+                        ShopSlot {
+                            card_kind: CardKind::Unit,
+                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: unit_price,
+                            buy_text: None,
+                        }
+                    }
+                } else if !has_houses {
                     ShopSlot {
                         card_kind: CardKind::Unit,
                         node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
@@ -719,15 +742,25 @@ impl NMatch {
                         buy_text: None,
                     }
                 } else {
-                    ShopSlot {
-                        card_kind: CardKind::House,
-                        node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
-                        sold: false,
-                        price: house_price,
-                        buy_text: None,
+                    let show_house = ctx.rng().gen_bool(house_chance as f64 / 100.0);
+                    if show_house {
+                        ShopSlot {
+                            card_kind: CardKind::House,
+                            node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: house_price,
+                            buy_text: None,
+                        }
+                    } else {
+                        ShopSlot {
+                            card_kind: CardKind::Unit,
+                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                            sold: false,
+                            price: unit_price,
+                            buy_text: None,
+                        }
                     }
-                };
-                n
+                }
             })
             .collect_vec();
         self.set_shop_offers(
