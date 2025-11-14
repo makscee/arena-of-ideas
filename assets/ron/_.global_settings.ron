@@ -2,5 +2,5 @@
 (
     always_zero: 0,
     team_slots: 5,
-    match_g: (unit_buy: 3, unit_sell: 1, house_buy: 5, reroll: 1, initial: 10, fusion_slot_mul: 1),
+    match_g: (unit_buy: 3, unit_sell: 1, house_buy: 5, reroll: 1, initial: 10, fusion_slot_mul: 2),
 )

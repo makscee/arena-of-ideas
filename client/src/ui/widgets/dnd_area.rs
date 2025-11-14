@@ -28,9 +28,9 @@ impl<T: Any + Send + Sync> DndArea<T> {
         self.text = Some(text.to_string());
         self
     }
-    pub fn text_fn(mut self, ui: &mut Ui, text: impl FnOnce(&T) -> String) -> Self {
+    pub fn text_fn(mut self, ui: &mut Ui, text: impl FnOnce(&T) -> Option<String>) -> Self {
         if let Some(payload) = DragAndDrop::payload::<T>(ui.ctx()) {
-            self.text = Some(text(&payload));
+            self.text = text(&payload);
             self
         } else {
             self
@@ -39,6 +39,7 @@ impl<T: Any + Send + Sync> DndArea<T> {
     pub fn ui(self, ui: &mut Ui) -> Option<Arc<T>> {
         if !DragAndDrop::has_any_payload(ui.ctx())
             || !DragAndDrop::has_payload_of_type::<T>(ui.ctx())
+            || self.text.is_none()
         {
             // to keep auto_ids order since ui.new_child() increments it by 1
             ui.skip_ahead_auto_ids(1);

@@ -626,12 +626,12 @@ impl TeamEditor {
                     let current_unit = TeamEditor::find_unit_in_team(team, unit_id);
                     if let (Some(dragged_unit), Some(current_unit)) = (dragged_unit, current_unit) {
                         if dragged_unit.unit_name == current_unit.unit_name {
-                            return "Stack\nunits".to_string();
+                            return Some("Stack\nunits".to_string());
                         }
                     }
-                    "Swap\nunits".to_string()
+                    Some("Swap\nunits".to_string())
                 } else {
-                    "Same\nunit".to_string()
+                    Some("Same\nunit".to_string())
                 }
             })
             .ui(ui)
@@ -682,7 +682,7 @@ impl TeamEditor {
         ui: &mut Ui,
         fusion_id: u64,
         slot_index: i32,
-        _team: &NTeam,
+        team: &NTeam,
         ctx: &ClientContext,
         actions: &mut Vec<TeamAction>,
     ) {
@@ -690,16 +690,29 @@ impl TeamEditor {
 
         if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(response.rect)
             .id(format!("empty_slot_{}_{}", fusion_id, slot_index))
-            .text_fn(ui, |_| "Place\nunit".to_string())
+            .text_fn(ui, |dragged| {
+                let dragged_unit = TeamEditor::find_unit_in_team(team, dragged.unit_id);
+                if let Some(unit) = dragged_unit {
+                    if TeamEditor::has_duplicate_name_in_fusion(team, fusion_id, &unit.unit_name) {
+                        return None;
+                    }
+                }
+                Some("Place\nunit".to_string())
+            })
             .ui(ui)
         {
-            actions.push(TeamAction::MoveUnit {
-                unit_id: dropped_unit.unit_id,
-                target: UnitTarget::Slot {
-                    fusion_id,
-                    slot_index,
-                },
-            });
+            let dragged_unit = TeamEditor::find_unit_in_team(team, dropped_unit.unit_id);
+            if let Some(unit) = dragged_unit {
+                if !TeamEditor::has_duplicate_name_in_fusion(team, fusion_id, &unit.unit_name) {
+                    actions.push(TeamAction::MoveUnit {
+                        unit_id: dropped_unit.unit_id,
+                        target: UnitTarget::Slot {
+                            fusion_id,
+                            slot_index,
+                        },
+                    });
+                }
+            }
         }
 
         response.bar_menu(|ui| {
@@ -749,9 +762,9 @@ impl TeamEditor {
                 .id("bench_drop")
                 .text_fn(ui, |dragged| {
                     if let Some(unit) = TeamEditor::find_unit_in_team(team, dragged.unit_id) {
-                        format!("Bench {}", unit.unit_name)
+                        Some(format!("Bench {}", unit.unit_name))
                     } else {
-                        "Bench Unit".to_string()
+                        Some("Bench Unit".to_string())
                     }
                 })
                 .ui(ui)
@@ -875,6 +888,24 @@ impl TeamEditor {
             .line_segment([arrow_side1, pointer_pos], stroke);
         ui.painter()
             .line_segment([arrow_side2, pointer_pos], stroke);
+    }
+
+    fn has_duplicate_name_in_fusion(team: &NTeam, fusion_id: u64, unit_name: &str) -> bool {
+        if let Ok(fusions) = team.fusions.get() {
+            if let Some(fusion) = fusions.iter().find(|f| f.id == fusion_id) {
+                if let Ok(slots) = fusion.slots.get() {
+                    return slots.iter().any(|s| {
+                        if let Ref::Id(unit_id) = s.unit {
+                            if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
+                                return unit.unit_name == unit_name;
+                            }
+                        }
+                        false
+                    });
+                }
+            }
+        }
+        false
     }
 
     fn get_unlinked_units<'a>(&self, team: &'a NTeam) -> Vec<&'a NUnit> {

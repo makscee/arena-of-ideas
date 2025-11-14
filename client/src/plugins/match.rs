@@ -142,13 +142,13 @@ impl MatchPlugin {
             if let Some(payload) = DndArea::<DraggedUnit>::new(available_rect)
                 .text_fn(ui, |dragged_unit| {
                     if let Ok(unit) = ctx.load::<NUnit>(dragged_unit.unit_id) {
-                        format!(
+                        Some(format!(
                             "sell {} [b [yellow +{}g]]",
                             unit.unit_name,
                             global_settings().match_g.unit_sell
-                        )
+                        ))
                     } else {
-                        format!("[red unit get error]")
+                        Some(format!("[red unit get error]"))
                     }
                 })
                 .ui(ui)
@@ -309,7 +309,7 @@ impl MatchPlugin {
             let _changed_team = team_editor.edit(&team, ctx, ui);
 
             if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
-                .text_fn(ui, |slot| format!("buy [yellow -{}g]", slot.1.price))
+                .text_fn(ui, |slot| Some(format!("buy [yellow -{}g]", slot.1.price)))
                 .ui(ui)
             {
                 cn().reducers.match_shop_buy(card.0 as u8).notify_error_op();

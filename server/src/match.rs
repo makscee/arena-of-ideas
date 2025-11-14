@@ -194,6 +194,15 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, target_id: u64) -> Result
 
     let mut fusion = ctx.load::<NFusion>(fusion)?;
     let slots = fusion.slots_load(ctx)?;
+
+    for slot in slots.iter_mut() {
+        if let Ok(slot_unit) = slot.unit_load(ctx) {
+            if slot_unit.unit_name == unit.unit_name && slot_unit.id != unit_id {
+                return Err("Cannot place duplicate units in the same fusion".into());
+            }
+        }
+    }
+
     let other_units_exist = slots
         .iter_mut()
         .any(|s| s.unit_load_id(ctx).is_ok_and(|id| id != unit_id));
