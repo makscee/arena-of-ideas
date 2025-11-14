@@ -45,13 +45,10 @@ impl Battle {
         let simulation = BattleSimulation {
             world,
             battle: self.clone(),
-            fusions_left: Vec::new(),
-            fusions_right: Vec::new(),
             team_left,
             team_right,
-            duration: 0.0,
-            log: BattleLog::default(),
             rng,
+            ..default()
         };
 
         // Initialize the battle simulation
@@ -105,12 +102,14 @@ pub struct BattleSimulation {
     pub world: World,
     pub battle: Battle,
     pub duration: f32,
+    pub rounds: usize,
     pub fusions_left: Vec<u64>,
     pub fusions_right: Vec<u64>,
     pub team_left: u64,
     pub team_right: u64,
     pub log: BattleLog,
     pub rng: ChaCha8Rng,
+    pub battle_texts: HashMap<BattleText, Vec<(f32, String)>>,
 }
 #[derive(Default, Debug, Clone)]
 pub struct BattleLog {
@@ -119,6 +118,12 @@ pub struct BattleLog {
 
 #[derive(BevyComponent)]
 pub struct Corpse;
+#[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
+pub enum BattleText {
+    CurrentEvent,
+    Round,
+}
+
 #[derive(Clone, Debug)]
 #[allow(non_camel_case_types)]
 pub enum BattleAction {
@@ -421,6 +426,8 @@ impl Default for BattleSimulation {
             team_right: 0,
             log: BattleLog::default(),
             rng: ChaCha8Rng::seed_from_u64(0),
+            battle_texts: HashMap::new(),
+            rounds: 0,
         }
     }
 }
@@ -555,7 +562,14 @@ impl BattleSimulation {
             }
         }
 
-        ctx.battle_mut()?.duration += animation_time();
+        let sim = ctx.battle_mut()?;
+        sim.duration += animation_time();
+        sim.rounds += 1;
+        sim.add_text(
+            BattleText::Round,
+            format!("[tw Round] [yellow [b {}]]", sim.rounds),
+        );
+
         let sim = ctx.battle()?;
         if !sim.fusions_left.is_empty() && !sim.fusions_right.is_empty() {
             let a = BattleAction::strike(sim.fusions_left[0], sim.fusions_right[0]);
@@ -588,10 +602,26 @@ impl BattleSimulation {
         BattleSimulation::send_event(ctx, Event::TurnEnd)?;
         Ok(())
     }
+    pub fn add_text(&mut self, text_type: BattleText, text: String) {
+        self.battle_texts
+            .entry(text_type)
+            .or_insert_with(Vec::new)
+            .push((self.duration, text));
+    }
+    pub fn get_text_at(&self, text_type: BattleText, t: f32) -> Option<&str> {
+        self.battle_texts.get(&text_type).and_then(|entries| {
+            entries
+                .iter()
+                .rev()
+                .find(|(timestamp, _)| *timestamp <= t)
+                .map(|(_, text)| text.as_str())
+        })
+    }
     pub fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
         info!("{} {event}", "event:".dimmed().blue());
         let mut fusion_statuses: Vec<(u64, u64)> = default();
-        let sim = ctx.battle()?;
+        let sim = ctx.battle_mut()?;
+        sim.add_text(BattleText::CurrentEvent, event.cstr());
         for id in sim.all_fusions() {
             let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
             if !statuses.is_empty() {

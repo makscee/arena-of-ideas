@@ -150,9 +150,29 @@ impl BattlePlugin {
             .log();
 
         Self::render_playback_controls(ui, &mut data, main_rect)?;
-        Self::render_end_screen(ui, &mut data, main_rect)?;
+        if !Self::render_end_screen(ui, &mut data, main_rect)? {
+            Self::render_battle_texts(ui, &data, main_rect);
+        }
 
         world.insert_resource(data);
+        Ok(())
+    }
+
+    fn render_battle_texts(ui: &mut Ui, data: &BattleData, rect: Rect) -> NodeResult<()> {
+        let sim = data.source.battle()?;
+        let t = data.source.t().unwrap();
+        let ui = &mut ui.new_child(UiBuilder::new().max_rect(Rect::from_center_size(
+            rect.center_top(),
+            egui::vec2(200.0, 0.0),
+        )));
+        ui.vertical_centered(|ui| {
+            if let Some(text) = sim.get_text_at(BattleText::CurrentEvent, t) {
+                text.cstr().label(ui);
+            }
+            if let Some(text) = sim.get_text_at(BattleText::Round, t) {
+                text.cstr().label(ui);
+            }
+        });
         Ok(())
     }
 
@@ -269,7 +289,7 @@ impl BattlePlugin {
         });
     }
 
-    fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<()> {
+    fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<bool> {
         let (duration, ended, result) = data.source.exec_context_ref(|ctx| {
             let sim = ctx.battle().unwrap();
             (sim.duration, sim.ended(), sim.fusions_right.is_empty())
@@ -309,7 +329,9 @@ impl BattlePlugin {
                     });
                 })
             });
+            Ok(true)
+        } else {
+            Ok(false)
         }
-        Ok(())
     }
 }
