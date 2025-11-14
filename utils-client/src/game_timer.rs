@@ -2,8 +2,6 @@ use once_cell::sync::OnceCell;
 
 use super::*;
 
-pub const ANIMATION: f32 = 0.4;
-pub const TURN: f32 = 0.5;
 pub static GAME_TIMER: OnceCell<Mutex<GameTimer>> = OnceCell::new();
 
 #[derive(Debug)]

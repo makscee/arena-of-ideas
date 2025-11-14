@@ -119,13 +119,8 @@ impl ActionImpl for Action {
                         },
                     )?;
                     let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
-                    actions.push(
-                        BattleAction::new_vfx("text")
-                            .with_var(VarName::text, text)
-                            .with_var(VarName::color, high_contrast_text())
-                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
-                            .into(),
-                    );
+                    let position = ctx.get_var(VarName::position).track()?;
+                    actions.push(BattleAction::new_text(text, position).into());
                 } else {
                     return Err("Ability not found".into());
                 }
@@ -153,21 +148,32 @@ impl ActionImpl for Action {
                     if targets.is_empty() {
                         return Err("No targets".into());
                     }
+                    let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
+                    actions.push(
+                        BattleAction::new_text(
+                            text,
+                            ctx.get_var(VarName::position).get_vec2().track()?,
+                        )
+                        .into(),
+                    );
                     for target in targets {
                         actions.push(BattleAction::apply_status(
                             target,
                             status.clone().remap_ids(),
                             color,
                         ));
-                    }
-                    let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
-                    actions.push(
-                        BattleAction::new_vfx("text")
-                            .with_var(VarName::text, text)
-                            .with_var(VarName::color, high_contrast_text())
-                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
+                        let position = ctx
+                            .get_var_inherited(target, VarName::position)
+                            .get_vec2()?;
+                        actions.push(
+                            BattleAction::new_text(
+                                format!("gain [b x{x}] [{} {name}]", color.to_hex()),
+                                position,
+                            )
                             .into(),
-                    );
+                        );
+                        actions.push(BattleAction::wait(animation_time()));
+                    }
                 } else {
                     return Err("Status not found".into());
                 }
@@ -179,8 +185,8 @@ impl ActionImpl for Action {
             Action::change_status_stax(x) => {
                 let stack_change = x.get_i32(ctx)?;
                 if let Some(status_id) = ctx.status() {
-                    let mut status = ctx.load::<NStatusMagic>(status_id)?;
-                    let current_stax = status.state_load(ctx)?.stax;
+                    let mut status = ctx.load::<NStatusMagic>(status_id).track()?;
+                    let current_stax = status.state_load(ctx).track()?.stax;
                     let name = status.name();
                     let color = ctx.color();
                     let new_stax = current_stax + stack_change;
@@ -196,14 +202,9 @@ impl ActionImpl for Action {
                         format!("{}", stack_change)
                     };
                     let text = format!("[b {}x] [{} {name}]", stack_text, color.to_hex());
-                    actions.push(
-                        BattleAction::new_vfx("text")
-                            .with_var(VarName::text, text)
-                            .with_var(VarName::color, color)
-                            .with_var(VarName::position, ctx.get_var(VarName::position).track()?)
-                            .into(),
-                    );
-                    actions.push(BattleAction::wait(ANIMATION));
+                    let position = ctx.get_var(VarName::position).track()?;
+                    actions.push(BattleAction::new_text(text, position).into());
+                    actions.push(BattleAction::wait(animation_time()));
                 } else {
                     return Err(NodeError::custom(
                         "No status in context for change_status_stax",

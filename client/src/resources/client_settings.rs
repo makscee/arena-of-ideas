@@ -45,6 +45,10 @@ pub struct ClientSettings {
     pub theme: Colorix,
 }
 
+pub fn animation_time() -> f32 {
+    pd().client_settings.animation_time
+}
+
 pub fn show_settings_confirmation(world: &mut World) {
     Confirmation::new("Settings")
         .content(|ui, _world| {

@@ -41,11 +41,11 @@ impl TagWidget {
         }
     }
     #[must_use]
-    pub fn new_name_value(name: impl ToString, color: Color32, value: Cstr) -> Self {
+    pub fn new_name_value(name: impl ToString, color: Color32, value: impl ToString) -> Self {
         Self {
             name: name.to_string(),
             color,
-            value: Some(value),
+            value: Some(value.to_string()),
             text_galley: None,
             number_galley: None,
         }

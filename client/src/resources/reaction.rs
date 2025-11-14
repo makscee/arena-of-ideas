@@ -13,7 +13,7 @@ impl BehaviorImpl for Vec<Reaction> {
                         return Some(actions);
                     }
                 }
-                Err(e) => error!("trigger fire err: {e}"),
+                Err(e) => error!("trigger {trigger} fire err: {e}"),
             }
         }
         None

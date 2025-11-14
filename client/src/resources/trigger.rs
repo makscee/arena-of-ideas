@@ -39,7 +39,7 @@ impl TriggerImpl for Trigger {
                 let Some(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx.load::<NFusion>(owner)?;
+                let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;
                 if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
                     return Ok(true);
                 }
@@ -48,7 +48,7 @@ impl TriggerImpl for Trigger {
                 let Some(owner) = ctx.owner() else {
                     return Ok(false);
                 };
-                let owner = ctx.load::<NFusion>(owner)?;
+                let owner = ctx.load_first_parent_ref::<NFusion>(owner).track()?;
                 if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
                     return Ok(true);
                 }

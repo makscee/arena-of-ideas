@@ -104,15 +104,21 @@ impl<T: FRecursive + FDisplay> FDisplayRecursive for T {}
 
 pub trait FTitleRecursive: FRecursive + FTitle {
     fn title_recursive(&self, ctx: &ClientContext) -> Cstr {
-        let mut c = self.title(ctx);
+        let mut inner = Vec::new();
         for field in self.get_inner_fields() {
             recursive_value_match!(field.value, v, {
-                c += "[tw (]";
-                c.push_str(&v.title_recursive(ctx));
-                c += "[tw )]";
+                inner.push(v.title_recursive(ctx));
             });
         }
-        c
+        if inner.is_empty() {
+            self.title(ctx)
+        } else {
+            format!(
+                "{}[tw (]{}[tw )]",
+                self.title(ctx),
+                inner.into_iter().join("[tw ,]")
+            )
+        }
     }
 }
 impl<T: FRecursive + FTitle> FTitleRecursive for T {}

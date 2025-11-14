@@ -206,27 +206,26 @@ impl BattleAction {
                             .with_target(*b)
                             .into(),
                     );
-                    add_actions.push(Self::wait(ANIMATION * 3.0));
+                    add_actions.push(Self::wait(animation_time() * 3.0));
                     let fusion_a = ctx.load::<NFusion>(*a).track()?;
                     let fusion_b = ctx.load::<NFusion>(*b).track()?;
                     add_actions.extend(ctx.battle()?.slots_sync());
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.push(Self::wait(animation_time()));
                     add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
                     add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
-                    add_actions.push(Self::wait(ANIMATION * 2.0));
+                    add_actions.push(Self::wait(animation_time() * 2.0));
                     true
                 }
                 BattleAction::death(a) => {
                     let position = ctx
                         .with_owner(*a, |context| context.get_var(VarName::position))
                         .track()?;
-                    add_actions.extend(BattleSimulation::die(ctx, *a)?);
                     add_actions.push(
                         Self::new_vfx("death_vfx")
                             .with_var(VarName::position, position)
                             .into(),
                     );
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.extend(BattleSimulation::die(ctx, *a)?);
                     true
                 }
                 BattleAction::damage(a, b, x) => {
@@ -256,13 +255,11 @@ impl BattleAction {
                         );
                     }
                     add_actions.push(
-                        Self::new_vfx("text")
-                            .with_var(VarName::position, target_pos)
-                            .with_var(VarName::text, (-x).to_string())
-                            .with_var(VarName::color, HexColor::from("#FF0000".to_string()))
+                        Self::new_text(format!("[b [red -{x}]]"), target_pos)
+                            .with_var(VarName::scale, 2.0)
                             .into(),
                     );
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.push(Self::wait(animation_time()));
                     true
                 }
                 BattleAction::heal(a, b, x) => {
@@ -290,21 +287,13 @@ impl BattleAction {
                         }
                         let dmg = ctx.load::<NFusion>(*b).track()?.dmg - *x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.at_least(0).into()));
-                        if let Some(text) = animations().get("text") {
-                            ctx.with_layers(
-                                [
-                                    ContextLayer::Var(VarName::position, target_pos),
-                                    ContextLayer::Var(VarName::text, format!("+{}", x).into()),
-                                    ContextLayer::Var(
-                                        VarName::color,
-                                        HexColor::from("#00FF00".to_string()).into(),
-                                    ),
-                                ],
-                                |ctx| text.apply(ctx),
-                            )?;
-                        }
+                        add_actions.push(
+                            Self::new_text(format!("[b [green +{}]]", x), target_pos)
+                                .with_var(VarName::scale, 1.5)
+                                .into(),
+                        );
                     }
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.push(Self::wait(animation_time()));
                     true
                 }
                 BattleAction::var_set(id, var, value) => {
@@ -322,12 +311,12 @@ impl BattleAction {
                         VarName::visible,
                         true.into(),
                     )]);
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.push(Self::wait(animation_time()));
                     true
                 }
                 BattleAction::apply_status(target, status, color) => {
                     BattleSimulation::apply_status(ctx, *target, status.clone(), *color).log();
-                    add_actions.push(Self::wait(ANIMATION));
+                    add_actions.push(Self::wait(animation_time()));
                     true
                 }
                 BattleAction::wait(t) => {
@@ -371,6 +360,13 @@ impl BattleAction {
             name: name.to_string(),
             layers: Vec::new(),
         }
+    }
+    pub fn new_text(text: impl ToString, position: impl Into<VarValue>) -> VfxBuilder {
+        BattleAction::new_vfx("text")
+            .with_var(VarName::text, text.to_string())
+            .with_var(VarName::position, position)
+            .with_var(VarName::color, colorix().high_contrast_text())
+            .with_var(VarName::scale, 0.7)
     }
 }
 
@@ -562,7 +558,7 @@ impl BattleSimulation {
             }
         }
 
-        ctx.battle_mut()?.duration += TURN;
+        ctx.battle_mut()?.duration += animation_time();
         let sim = ctx.battle()?;
         if !sim.fusions_left.is_empty() && !sim.fusions_right.is_empty() {
             let a = BattleAction::strike(sim.fusions_left[0], sim.fusions_right[0]);
@@ -701,14 +697,14 @@ impl BattleSimulation {
         }
         if died {
             if sim.ended() {
-                sim.duration += 1.0;
+                sim.duration += 2.0;
             }
 
             let mut actions = [BattleAction::var_set(id, VarName::visible, false.into())].to_vec();
             for child in ctx.children_recursive(id)? {
                 actions.push(BattleAction::var_set(child, VarName::visible, false.into()));
             }
-            actions.push(BattleAction::wait(ANIMATION));
+            actions.push(BattleAction::wait(animation_time()));
             Ok(actions)
         } else {
             Ok(default())

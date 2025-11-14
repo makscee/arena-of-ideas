@@ -55,6 +55,7 @@ pub enum VarName {
     online,
     active,
     no_stats,
+    scale,
 }
 
 impl VarName {

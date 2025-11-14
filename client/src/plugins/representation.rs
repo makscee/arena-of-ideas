@@ -19,7 +19,7 @@ impl RepresentationPlugin {
                 break;
             }
         }
-        PainterAction::paint.paint(ctx, &mut p, ui).track();
+        PainterAction::paint.paint(ctx, &mut p, ui).track()?;
         Ok(())
     }
 }
@@ -40,6 +40,9 @@ impl MaterialPaint for Material {
                         "[red [b (e)]]".cstr().button(ui).on_hover_ui(|ui| {
                             ui.vertical(|ui| {
                                 e.ui(ui);
+                                for a in &self.0 {
+                                    a.title_recursive(ctx).label(ui);
+                                }
                                 for l in ctx.layers() {
                                     format!("{l:?}").label(ui);
                                 }

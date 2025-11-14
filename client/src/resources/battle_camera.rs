@@ -95,32 +95,6 @@ impl BattleCamera {
         ctx.exec_mut(|ctx| {
             *ctx.source_mut().t_mut().unwrap() = t;
             let world = ctx.world_mut()?;
-
-            for entity in world
-                .query_filtered::<Entity, With<NRepresentation>>()
-                .iter(world)
-                .collect_vec()
-            {
-                let ids = entity.ids(&ctx)?;
-                let id = ids
-                    .into_iter()
-                    .next()
-                    .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
-                ctx.with_owner(id, |ctx| {
-                    if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
-                        return Ok(());
-                    }
-                    let rect = cam.rect_from_context(ctx).track()?;
-                    ctx.load::<NRepresentation>(id)
-                        .track()?
-                        .material
-                        .paint(rect, ctx, ui);
-                    Ok(())
-                })
-                .track()
-                .notify_error_op();
-            }
-            let world = ctx.world_mut()?;
             for entity in world
                 .query_filtered::<Entity, (With<NStatusRepresentation>, Without<NHouse>)>()
                 .iter(world)
@@ -144,6 +118,7 @@ impl BattleCamera {
                 })
                 .notify_error_op();
             }
+
             let world = ctx.world_mut()?;
             for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
                 ctx.with_owner(fusion.id, |ctx| {
@@ -152,8 +127,35 @@ impl BattleCamera {
                     }
                     let rect = cam.rect_from_context(ctx).track()?;
                     fusion.paint(rect, ctx, ui)?;
+                    fusion.show_status_tags(rect, ctx, ui).ui(ui);
                     Ok(())
                 })
+                .ui(ui);
+            }
+
+            let world = ctx.world_mut()?;
+            for entity in world
+                .query_filtered::<Entity, With<NRepresentation>>()
+                .iter(world)
+                .collect_vec()
+            {
+                let ids = entity.ids(&ctx)?;
+                let id = ids
+                    .into_iter()
+                    .next()
+                    .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
+                ctx.with_owner(id, |ctx| {
+                    if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
+                        return Ok(());
+                    }
+                    let rect = cam.rect_from_context(ctx).track()?;
+                    ctx.load::<NRepresentation>(id)
+                        .track()?
+                        .material
+                        .paint(rect, ctx, ui);
+                    Ok(())
+                })
+                .track()
                 .notify_error_op();
             }
             Ok(())
