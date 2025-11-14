@@ -45,27 +45,22 @@ pub struct ClientSettings {
     pub theme: Colorix,
 }
 
-#[macro_export]
-macro_rules! settings_editor {
-    ($settings:expr, $ui:expr) => {
-        $settings.generate_settings_ui($ui);
-
-        $ui.separator();
-        $ui.columns(2, |ui| {
-            ui[0].vertical_centered_justified(|ui| {
-                if ui.button("Save").clicked() {
-                    pd_save_settings();
-                    ui.close_kind(UiKind::Menu);
-                }
-            });
-            ui[1].vertical_centered_justified(|ui| {
-                if ui.button("Discard").clicked() {
-                    pd_discard_settings();
-                    ui.close_kind(UiKind::Menu);
-                }
-            });
-        });
-    };
+pub fn show_settings_confirmation(world: &mut World) {
+    Confirmation::new("Settings")
+        .content(|ui, _world| {
+            let mut settings_mut = pd().client_settings.clone();
+            settings_mut.generate_settings_ui(ui);
+            false
+        })
+        .accept_name("Save")
+        .accept(|_world| {
+            pd_save_settings();
+        })
+        .cancel_name("Discard")
+        .cancel(|_world| {
+            pd_discard_settings();
+        })
+        .push(world);
 }
 
 fn get_server_options() -> Vec<&'static str> {

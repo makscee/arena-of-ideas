@@ -44,8 +44,10 @@ impl TopBar {
                     ui.close_kind(UiKind::Menu);
                 }
 
-                let mut settings = pd().client_settings.clone();
-                crate::settings_editor!(settings, ui);
+                if "edit settings".cstr().button(ui).clicked() {
+                    show_settings_confirmation(world);
+                    ui.close_kind(UiKind::Menu);
+                }
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 if let Some(fps) = world

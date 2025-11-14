@@ -47,6 +47,10 @@ pub fn pd_discard_settings() {
     pd_mut(|data| {
         data.client_settings = data.saved_client_settings.clone();
         data.client_state = data.saved_client_state.clone();
+
+        op(|world| {
+            pd().client_settings.clone().apply(world);
+        });
     });
 }
 
