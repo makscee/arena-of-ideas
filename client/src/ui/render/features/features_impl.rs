@@ -1865,7 +1865,8 @@ impl FDescription for NUnitDescription {
     fn description_expanded_cstr(&self, ctx: &ClientContext) -> Cstr {
         let mut description = String::new();
         let _ = ctx.exec_ref(|ctx| {
-            let house = ctx.load_first_parent_recursive_ref::<NHouse>(self.id)?;
+            let house =
+                ctx.load_first_parent_recursive_ref::<NHouse>(ctx.owner().unwrap_or(self.id))?;
             match self.magic_type {
                 MagicType::Ability => {
                     let ability = house.ability_ref(ctx)?;

@@ -139,20 +139,23 @@ impl ExplorerPanes {
         })
     }
 
-    fn pane_component<T: ClientNode + FDisplay + FDescription>(
+    fn pane_component<T: ClientNode + FDisplay + FDescription, P: ClientNode>(
         ui: &mut Ui,
         ctx: &mut ClientContext,
-        parent: u64,
+        owner: u64,
+        parent: P,
+        filter: Option<fn(&T, &P) -> bool>,
     ) -> NodeResult<()> {
         let kind = T::kind_s();
         Self::show_add_new(ui, kind);
         let mut current_id = None;
+        let parent_id = parent.id();
         ctx.exec_mut(|ctx| {
             let child = ctx
-                .get_children_of_kind(parent, kind)?
+                .get_children_of_kind(parent_id, kind)?
                 .into_iter()
                 .next()
-                .to_custom_err_fn(|| format!("Child {kind} of {parent} not found"))?;
+                .to_custom_err_fn(|| format!("Child {kind} of {parent_id} not found"))?;
             let node = ctx.load::<T>(child)?;
             format!("[s [tw {}]]", node.id()).label(ui);
             current_id = Some(node.id());
@@ -163,12 +166,19 @@ impl ExplorerPanes {
         ctx.world_mut()?
             .query::<&T>()
             .iter(ctx.world()?)
+            .filter(|n| {
+                if let Some(filter) = filter {
+                    filter(*n, &parent)
+                } else {
+                    true
+                }
+            })
             .collect_vec()
             .as_list(|node, ctx, ui| {
                 let is_current = current_id == Some(node.id());
                 let text = ctx
                     .exec_ref(|ctx| {
-                        ctx.set_owner(node.id());
+                        ctx.set_owner(owner);
                         Ok(node.description_cstr(ctx))
                     })
                     .unwrap();
@@ -182,7 +192,7 @@ impl ExplorerPanes {
             .with_hover(move |node, _, ui| {
                 if "Select".cstr().button(ui).clicked() {
                     cn().reducers
-                        .content_select_link(parent, node.id())
+                        .content_select_link(parent_id, node.id())
                         .notify_error_op();
                 }
             })
@@ -194,8 +204,8 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx.load::<NUnit>(unit_id)?.id;
-                    Self::pane_component::<NUnitDescription>(ui, ctx, parent)
+                    let parent = ctx.load::<NUnit>(unit_id)?;
+                    Self::pane_component::<NUnitDescription, _>(ui, ctx, unit_id, parent, None)
                 })
             } else {
                 Ok(())
@@ -217,8 +227,16 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.id;
-                    Self::pane_component::<NUnitBehavior>(ui, ctx, parent)
+                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
+                    Self::pane_component::<NUnitBehavior, _>(
+                        ui,
+                        ctx,
+                        unit_id,
+                        parent,
+                        Some(|n, p| {
+                            n.magic_type == p.magic_type && n.reaction.trigger == p.trigger
+                        }),
+                    )
                 })
             } else {
                 Ok(())
@@ -230,8 +248,8 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx.load::<NUnit>(unit_id)?.id;
-                    Self::pane_component::<NUnitStats>(ui, ctx, parent)
+                    let parent = ctx.load::<NUnit>(unit_id)?;
+                    Self::pane_component::<NUnitStats, _>(ui, ctx, unit_id, parent, None)
                 })
             } else {
                 Ok(())
@@ -319,8 +337,8 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.id;
-                    Self::pane_component::<NUnitRepresentation>(ui, ctx, parent)
+                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
+                    Self::pane_component::<NUnitRepresentation, _>(ui, ctx, unit_id, parent, None)
                 })
             } else {
                 Ok(())
@@ -331,9 +349,15 @@ impl ExplorerPanes {
     pub fn pane_house_color(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                state
-                    .view_mode
-                    .exec_ctx(|ctx| Self::pane_component::<NHouseColor>(ui, ctx, house_id))
+                state.view_mode.exec_ctx(|ctx| {
+                    Self::pane_component::<NHouseColor, _>(
+                        ui,
+                        ctx,
+                        house_id,
+                        ctx.load::<NHouseColor>(house_id)?,
+                        None,
+                    )
+                })
             } else {
                 Ok(())
             }
@@ -344,7 +368,13 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(ability_id) = state.inspected_ability {
                 state.view_mode.exec_ctx(|ctx| {
-                    Self::pane_component::<NAbilityDescription>(ui, ctx, ability_id)
+                    Self::pane_component::<NAbilityDescription, _>(
+                        ui,
+                        ctx,
+                        ability_id,
+                        ctx.load::<NAbilityMagic>(ability_id)?,
+                        None,
+                    )
                 })
             } else {
                 Ok(())
@@ -359,8 +389,8 @@ impl ExplorerPanes {
                     let parent = ctx
                         .load::<NAbilityMagic>(ability_id)?
                         .description_ref(ctx)?
-                        .id;
-                    Self::pane_component::<NAbilityEffect>(ui, ctx, parent)
+                        .clone();
+                    Self::pane_component::<NAbilityEffect, _>(ui, ctx, ability_id, parent, None)
                 })
             } else {
                 Ok(())
@@ -371,9 +401,15 @@ impl ExplorerPanes {
     pub fn pane_status_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(status_id) = state.inspected_status {
-                state
-                    .view_mode
-                    .exec_ctx(|ctx| Self::pane_component::<NStatusDescription>(ui, ctx, status_id))
+                state.view_mode.exec_ctx(|ctx| {
+                    Self::pane_component::<NStatusDescription, _>(
+                        ui,
+                        ctx,
+                        status_id,
+                        ctx.load::<NStatusMagic>(status_id)?,
+                        None,
+                    )
+                })
             } else {
                 Ok(())
             }
@@ -387,8 +423,8 @@ impl ExplorerPanes {
                     let parent = ctx
                         .load::<NStatusMagic>(status_id)?
                         .description_ref(ctx)?
-                        .id;
-                    Self::pane_component::<NStatusBehavior>(ui, ctx, parent)
+                        .clone();
+                    Self::pane_component::<NStatusBehavior, _>(ui, ctx, status_id, parent, None)
                 })
             } else {
                 Ok(())
@@ -400,7 +436,13 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(status_id) = state.inspected_status {
                 state.view_mode.exec_ctx(|ctx| {
-                    Self::pane_component::<NStatusRepresentation>(ui, ctx, status_id)
+                    Self::pane_component::<NStatusRepresentation, _>(
+                        ui,
+                        ctx,
+                        status_id,
+                        ctx.load::<NStatusMagic>(status_id)?,
+                        None,
+                    )
                 })
             } else {
                 Ok(())

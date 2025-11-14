@@ -19,8 +19,8 @@ impl StdbPlugin {
         }
         with_static_sources(|sources| {
             loop {
-                let len = queue.len();
-                for _ in 0..len {
+                let mut changed = false;
+                for _ in 0..queue.len() {
                     let update = queue.pop_front().unwrap();
                     if sources.solid.handle_stdb_update(&update).is_err()
                         || sources.core.handle_stdb_update(&update).is_err()
@@ -30,8 +30,10 @@ impl StdbPlugin {
                         queue.push_back(update);
                         continue;
                     }
+                    changed = true;
                 }
-                if queue.len() == len {
+                if !changed {
+                    debug!("db events queue left: {}", queue.len());
                     break;
                 }
             }
