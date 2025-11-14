@@ -1,7 +1,9 @@
 
 # Arena of Ideas
 
-Innovative minimalistic pvp focused auto battler made using
+Innovative minimalistic pvp focused auto battler with unique system for content creation and management.
+
+Made with:
 - [Rust](https://www.rust-lang.org/)
 - [Bevy](https://bevyengine.org/)
 - [SpacetimeDB](https://spacetimedb.com/)
