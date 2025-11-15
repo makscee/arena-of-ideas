@@ -602,7 +602,7 @@ impl TeamEditor {
             });
         }
 
-        response.bar_menu(|ui| {
+        response.show_menu(ui, |ui| {
             for (i, (name, _)) in self.filled_slot_actions.iter().enumerate() {
                 if ui.button(name).clicked() {
                     let (_, action) = self.filled_slot_actions.remove(i);
@@ -715,7 +715,7 @@ impl TeamEditor {
             }
         }
 
-        response.bar_menu(|ui| {
+        response.show_menu(ui, |ui| {
             for (i, (name, _)) in self.empty_slot_actions.iter().enumerate() {
                 if ui.button(name).clicked() {
                     let (_, action) = self.empty_slot_actions.remove(i);

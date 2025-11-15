@@ -196,7 +196,7 @@ impl BattleCamera {
             } else {
                 team_right_id
             };
-            response.bar_menu(|ui| {
+            response.show_menu(ui, |ui| {
                 for (action_name, action_fn) in slot_actions {
                     if ui.button(action_name).clicked() {
                         if let Ok(team_entity) = ctx.entity(team_id) {

@@ -128,20 +128,20 @@ pub trait RenderList<T> {
     /// Create a list composer with a closure that creates composers for each element
     fn as_list<'a, F>(&'a self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 
     /// Create a mutable list composer with a closure that can mutate each element
     fn as_mutable_list<'a, F>(&'a mut self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a;
 }
 
 impl<T> RenderList<T> for Vec<T> {
     fn as_list<'a, F>(&'a self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new(self, f)
@@ -149,7 +149,7 @@ impl<T> RenderList<T> for Vec<T> {
 
     fn as_mutable_list<'a, F>(&'a mut self, f: F) -> ListComposer<'a, T>
     where
-        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
         T: 'a,
     {
         ListComposer::new_mut(self, f)

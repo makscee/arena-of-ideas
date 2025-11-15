@@ -341,11 +341,11 @@ impl<'a, T: FTag> Composer<T> for TagComposer<'a, T> {
 pub enum ListData<'a, T> {
     Immutable {
         data: &'a Vec<T>,
-        element_fn: Box<dyn Fn(&T, &ClientContext, &mut Ui) -> Response + 'a>,
+        element_fn: Box<dyn FnMut(&T, &ClientContext, &mut Ui) -> Response + 'a>,
     },
     Mutable {
         data: &'a mut Vec<T>,
-        element_fn: Box<dyn Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a>,
+        element_fn: Box<dyn FnMut(&mut T, &ClientContext, &mut Ui) -> Response + 'a>,
         default_factory: Option<Box<dyn Fn() -> T + 'a>>,
     },
 }
@@ -384,7 +384,7 @@ pub struct ListComposer<'a, T> {
 impl<'a, T> ListComposer<'a, T> {
     pub fn new<F>(data: &'a Vec<T>, element_fn: F) -> Self
     where
-        F: Fn(&T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&T, &ClientContext, &mut Ui) -> Response + 'a,
     {
         Self {
             list_data: ListData::Immutable {
@@ -401,7 +401,7 @@ impl<'a, T> ListComposer<'a, T> {
 
     pub fn new_mut<F>(data: &'a mut Vec<T>, element_fn: F) -> Self
     where
-        F: Fn(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
+        F: FnMut(&mut T, &ClientContext, &mut Ui) -> Response + 'a,
     {
         Self {
             list_data: ListData::Mutable {

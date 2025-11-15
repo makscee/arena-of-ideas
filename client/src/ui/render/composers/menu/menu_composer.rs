@@ -18,6 +18,10 @@ pub enum MenuItem<'a, T: Clone> {
         Box<dyn FnOnce(T, &ClientContext) -> Option<MenuAction<T>> + 'a>,
     ),
     Submenu(String, Vec<MenuItem<'a, T>>),
+    SubmenuClosure(
+        String,
+        Box<dyn Fn(&mut Ui, &T, &ClientContext) -> Option<MenuAction<T>> + 'a>,
+    ),
     Separator,
 }
 
@@ -110,6 +114,24 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
         self
     }
 
+    pub fn add_submenu<F>(mut self, name: impl ToString, f: F) -> Self
+    where
+        F: Fn(&mut Ui, &T, &ClientContext) -> Option<MenuAction<T>> + 'a,
+    {
+        self.actions
+            .push(MenuItem::SubmenuClosure(name.to_string(), Box::new(f)));
+        self
+    }
+
+    pub fn add_dangerous_submenu<F>(mut self, name: impl ToString, f: F) -> Self
+    where
+        F: Fn(&mut Ui, &T, &ClientContext) -> Option<MenuAction<T>> + 'a,
+    {
+        self.dangerous_actions
+            .push(MenuItem::SubmenuClosure(name.to_string(), Box::new(f)));
+        self
+    }
+
     pub fn add_copy(self) -> Self
     where
         T: StringData,
@@ -183,7 +205,7 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
         let dangerous_actions = std::mem::take(&mut self.dangerous_actions);
 
         let mut result = None;
-        circle_response.bar_menu(|ui| {
+        circle_response.show_menu(ui, |ui| {
             ui.set_min_width(120.0);
 
             // Normal actions
@@ -244,6 +266,11 @@ impl<'a, T: Clone, C: Composer<T>> MenuComposer<'a, T, C> {
                     }
                     None
                 });
+            }
+            MenuItem::SubmenuClosure(name, closure) => {
+                if let Some(inner) = ui.menu_button(&name, |ui| closure(ui, data, ctx)).inner {
+                    return inner;
+                }
             }
             MenuItem::Separator => {
                 ui.separator();

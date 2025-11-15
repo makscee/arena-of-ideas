@@ -15,3 +15,13 @@ pub fn debug_rect(rect: Rect, ctx: &egui::Context) {
 pub fn debug_available_rect(ui: &mut Ui) {
     debug_rect(ui.available_rect_before_wrap(), ui.ctx());
 }
+
+pub trait RectDebug {
+    fn debug_rect(&self, ui: &mut Ui);
+}
+
+impl RectDebug for Rect {
+    fn debug_rect(&self, ui: &mut Ui) {
+        debug_rect(*self, ui.ctx());
+    }
+}

@@ -262,10 +262,41 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
                         });
                         None
                     })
+                    .add_submenu("⭐️ Load From Core", |ui, _, _| {
+                        match with_core_source(|ctx| {
+                            let mut selected = None;
+
+                            let nodes = ctx
+                                .world_mut()?
+                                .query::<&T>()
+                                .iter(ctx.world()?)
+                                .collect_vec();
+                            for n in nodes {
+                                if n.title(ctx).button(ui).clicked() {
+                                    selected = Some(n.id());
+                                    ui.close_kind(egui::UiKind::Menu);
+                                }
+                            }
+                            if let Some(selected) = selected {
+                                return Ok(Some(ctx.load::<T>(selected)?));
+                            }
+                            Ok(None)
+                        }) {
+                            Ok(n) => {
+                                if let Some(n) = n {
+                                    return Some(MenuAction::Paste(n));
+                                }
+                            }
+                            Err(e) => e.log(),
+                        }
+                        None
+                    })
                     .compose_with_menu(&EMPTY_CONTEXT, ui);
                 if let Some(action) = menu_resp.action {
                     if let MenuAction::Paste(pasted) = action {
+                        let id = field_node.id();
                         *field_node = pasted.remap_ids();
+                        field_node.set_id(id);
                         changed = true;
                     }
                 }

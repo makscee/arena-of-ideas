@@ -7,6 +7,7 @@ pub mod utils;
 
 use super::*;
 
+use bevy_egui::egui::{InnerResponse, Popup, UiKind, UiStackInfo, containers::menu::MenuConfig};
 pub use colorix::*;
 pub use cstr::*;
 pub use descriptions::*;
@@ -26,18 +27,19 @@ impl ToCustomColor for Color32 {
 }
 
 pub trait ResponseExt {
-    fn bar_menu(&self, add_contents: impl FnOnce(&mut Ui));
+    fn show_menu(&self, ui: &mut Ui, content: impl FnOnce(&mut Ui));
 }
 
 impl ResponseExt for Response {
-    fn bar_menu(&self, add_contents: impl FnOnce(&mut Ui)) {
-        let bar_id = self.id;
-        let mut bar_state = egui::menu::BarState::load(&self.ctx, bar_id);
-        bar_state.bar_menu(self, |ui| {
-            ui.ctx().set_frame_flag(*BAR_OPEN_FLAG_KEY);
-            add_contents(ui);
-        });
-        bar_state.store(&self.ctx, bar_id);
+    fn show_menu(&self, ui: &mut Ui, content: impl FnOnce(&mut Ui)) {
+        let config = MenuConfig::find(ui);
+        Popup::menu(self)
+            .close_behavior(config.close_behavior)
+            .style(config.style.clone())
+            .info(
+                UiStackInfo::new(UiKind::Menu).with_tag_value(MenuConfig::MENU_CONFIG_TAG, config),
+            )
+            .show(content);
     }
 }
 
