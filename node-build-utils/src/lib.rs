@@ -1291,13 +1291,13 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
 
     let load_components_method = if component_fields.is_empty() {
         quote! {
-            pub fn load_components(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+            fn load_components(&mut self, _ctx: &#context_ident) -> NodeResult<&mut Self> {
                 Ok(self)
             }
         }
     } else {
         quote! {
-            pub fn load_components(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+            fn load_components(&mut self, ctx: &#context_ident) -> NodeResult<&mut Self> {
                 #(#component_field_loads)*
                 Ok(self)
             }
@@ -1348,13 +1348,13 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
     let load_all_method =
         if component_fields.is_empty() && owned_fields.is_empty() && ref_fields.is_empty() {
             quote! {
-                pub fn load_all(&mut self, _ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                fn load_all(&mut self, _ctx: &#context_ident) -> NodeResult<&mut Self> {
                     Ok(self)
                 }
             }
         } else {
             quote! {
-                pub fn load_all(&mut self, ctx: &#context_ident) -> Result<&mut Self, NodeError> {
+                fn load_all(&mut self, ctx: &#context_ident) -> NodeResult<&mut Self> {
                     #(#all_field_loads)*
                     Ok(self)
                 }

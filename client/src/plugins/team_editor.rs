@@ -139,7 +139,7 @@ impl TeamEditor {
         let mut mode_change = None;
 
         // Reserve fixed height for bench at bottom
-        let bench_height = 70.0;
+        let bench_height = SIZE.y + 10.0;
         let available_rect = ui.available_rect_before_wrap();
         let fusions_rect = egui::Rect::from_min_size(
             available_rect.min,

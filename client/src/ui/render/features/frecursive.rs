@@ -109,7 +109,9 @@ impl NodeLinkRender for Ui {
     {
         let mut need_remove = false;
         let changed = if let Ok(loaded) = link.get_mut() {
+            let mut changed = false;
             self.horizontal(|ui| {
+                changed |= render_node_menu(ui, loaded);
                 if format!(
                     "{field_name}: [tw {}] {}",
                     loaded.kind(),
@@ -129,7 +131,7 @@ impl NodeLinkRender for Ui {
                     need_remove = true;
                 }
             });
-            false
+            changed
         } else {
             if self.button(format!("➕ Add {}", field_name)).clicked() {
                 let mut new_node = T::default();
@@ -159,7 +161,7 @@ impl NodeLinkRender for Ui {
         self.vertical(|ui| {
             ui.label(format!("{}:", field_name));
             if let Ok(items) = link.get_mut() {
-                let mut to_remove: Option<usize> = None;
+                let mut to_remove: Option<u64> = None;
                 for (index, item) in items
                     .iter_mut()
                     .sorted_by_key(|i| {
@@ -171,6 +173,7 @@ impl NodeLinkRender for Ui {
                     .enumerate()
                 {
                     ui.horizontal(|ui| {
+                        changed |= render_node_menu(ui, item);
                         if format!(
                             "{field_name} #{index}: [tw {}] {}",
                             item.kind(),
@@ -187,12 +190,12 @@ impl NodeLinkRender for Ui {
                             .on_hover_text("Delete Node")
                             .clicked()
                         {
-                            to_remove = Some(index);
+                            to_remove = Some(item.id());
                         }
                     });
                 }
-                if let Some(index) = to_remove {
-                    items.remove(index);
+                if let Some(id) = to_remove {
+                    items.retain(|i| i.id() != id);
                     changed = true;
                 }
                 if ui.button(format!("➕ Push to {}", field_name)).clicked() {
@@ -218,6 +221,69 @@ impl NodeLinkRender for Ui {
     }
 }
 
+fn render_node_menu<T: FRecursiveNodeEdit>(ui: &mut Ui, node: &mut T) -> bool {
+    let mut changed = false;
+    let menu_resp = node
+        .as_empty_mut()
+        .with_menu()
+        .add_copy()
+        .add_paste()
+        .add_action("Copy Full", |d, _| {
+            clipboard_set(d.pack().to_string());
+            Some(MenuAction::Copy)
+        })
+        .add_action("Paste Full", |_, _| {
+            let pack = PackedNodes::from_string(&clipboard_get()?).ok()?;
+            let unpack = T::unpack(&pack);
+            Some(MenuAction::Paste(unpack.ok()?))
+        })
+        .add_action("📦 Open Publish Window", |d, _| {
+            op(|world| {
+                d.open_publish_window(world);
+            });
+            None
+        })
+        .add_submenu("⭐️ Load From Core", |ui, _, _| {
+            match with_core_source(|ctx| {
+                let mut selected = None;
+
+                let nodes = ctx
+                    .world_mut()?
+                    .query::<&T>()
+                    .iter(ctx.world()?)
+                    .collect_vec();
+                for n in nodes {
+                    if n.title(ctx).button(ui).clicked() {
+                        selected = Some(n.id());
+                        ui.close_kind(egui::UiKind::Menu);
+                    }
+                }
+                if let Some(selected) = selected {
+                    return Ok(Some(ctx.load::<T>(selected)?.load_all(ctx)?.take()));
+                }
+                Ok(None)
+            }) {
+                Ok(n) => {
+                    if let Some(n) = n {
+                        return Some(MenuAction::Paste(n));
+                    }
+                }
+                Err(e) => e.log(),
+            }
+            None
+        })
+        .compose_with_menu(&EMPTY_CONTEXT, ui);
+    if let Some(action) = menu_resp.action {
+        if let MenuAction::Paste(pasted) = action {
+            let id = node.id();
+            *node = pasted.remap_ids();
+            node.set_id(id);
+            changed = true;
+        }
+    }
+    changed
+}
+
 /// Main composition function that handles recursive rendering with breadcrumbs
 pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
     ui: &mut Ui,
@@ -241,65 +307,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
         let mut changed = false;
         ui.group(|ui| {
             ui.horizontal(|ui| {
-                let menu_resp = field_node
-                    .as_title_mut()
-                    .as_button()
-                    .with_menu()
-                    .add_copy()
-                    .add_paste()
-                    .add_action("Copy Full", |d, _| {
-                        clipboard_set(d.pack().to_string());
-                        Some(MenuAction::Copy)
-                    })
-                    .add_action("Paste Full", |_, _| {
-                        let pack = PackedNodes::from_string(&clipboard_get()?).ok()?;
-                        let unpack = T::unpack(&pack);
-                        Some(MenuAction::Paste(unpack.ok()?))
-                    })
-                    .add_action("📦 Open Publish Window", |d, _| {
-                        op(|world| {
-                            d.open_publish_window(world);
-                        });
-                        None
-                    })
-                    .add_submenu("⭐️ Load From Core", |ui, _, _| {
-                        match with_core_source(|ctx| {
-                            let mut selected = None;
-
-                            let nodes = ctx
-                                .world_mut()?
-                                .query::<&T>()
-                                .iter(ctx.world()?)
-                                .collect_vec();
-                            for n in nodes {
-                                if n.title(ctx).button(ui).clicked() {
-                                    selected = Some(n.id());
-                                    ui.close_kind(egui::UiKind::Menu);
-                                }
-                            }
-                            if let Some(selected) = selected {
-                                return Ok(Some(ctx.load::<T>(selected)?));
-                            }
-                            Ok(None)
-                        }) {
-                            Ok(n) => {
-                                if let Some(n) = n {
-                                    return Some(MenuAction::Paste(n));
-                                }
-                            }
-                            Err(e) => e.log(),
-                        }
-                        None
-                    })
-                    .compose_with_menu(&EMPTY_CONTEXT, ui);
-                if let Some(action) = menu_resp.action {
-                    if let MenuAction::Paste(pasted) = action {
-                        let id = field_node.id();
-                        *field_node = pasted.remap_ids();
-                        field_node.set_id(id);
-                        changed = true;
-                    }
-                }
+                changed |= render_node_menu(ui, field_node);
                 ui.separator();
                 format!("[s #[tw {}]]", field_node.id()).label(ui);
                 ui.separator();

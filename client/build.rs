@@ -73,10 +73,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         // Generate link loading methods
         let link_methods = generate_link_methods(node, "ClientContext");
 
-        let load_components_method = generate_load_functions(node, "ClientContext");
-
-        // Save method is now provided by Node trait implementation
-
         // All nodes are Components in client
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
@@ -107,8 +103,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
 
                 #link_methods
-
-                #load_components_method
             }
 
             #client_node_impl
@@ -256,6 +250,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         });
 
     let save_method = generate_save_impl(node, "ClientContext");
+    let load_methods = generate_load_functions(node, "ClientContext");
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
@@ -280,6 +275,8 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             }
 
             #save_method
+
+            #load_methods
         }
     }
 }

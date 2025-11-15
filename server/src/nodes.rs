@@ -7,6 +7,8 @@ include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
 #[allow(unused)]
 pub trait ServerNode: Sized + schema::Node {
     fn save(self, ctx: &mut ServerContext) -> NodeResult<()>;
+    fn load_components(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
+    fn load_all(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
     fn load(source: &ServerSource, id: u64) -> NodeResult<Self> {
         let kind = Self::kind_s().to_string();
         let node: TNode = source

@@ -10,6 +10,8 @@ pub trait ClientNode:
 {
     fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()>;
     fn save(self, ctx: &mut ClientContext) -> NodeResult<()>;
+    fn load_components(&mut self, ctx: &ClientContext) -> NodeResult<&mut Self>;
+    fn load_all(&mut self, ctx: &ClientContext) -> NodeResult<&mut Self>;
     fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
         ctx.entity(self.id())
     }

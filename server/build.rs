@@ -74,8 +74,6 @@ fn generate_server_nodes(
         // Generate link loading methods
         let link_methods = generate_link_methods(node, "ServerContext");
 
-        let load_methods = generate_load_functions(node, "ServerContext");
-
         // Generate collect methods
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
@@ -107,7 +105,6 @@ fn generate_server_nodes(
                 #with_methods
 
                 #link_methods
-                #load_methods
                 #collect_owned_ids_method
                 #collect_owned_links_method
             }
@@ -158,12 +155,15 @@ fn generate_server_node_impl(
 ) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
     let save_method = generate_save_impl(node, "ServerContext");
+    let load_methods = generate_load_functions(node, "ServerContext");
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
         impl ServerNode for #struct_name {
             #save_method
+
+            #load_methods
         }
     }
 }
