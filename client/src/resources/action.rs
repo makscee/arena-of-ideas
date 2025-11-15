@@ -171,6 +171,7 @@ impl ActionImpl for Action {
                     );
                     for target in targets {
                         actions.push(BattleAction::apply_status(
+                            caster,
                             target,
                             status.clone().remap_ids(),
                             color,

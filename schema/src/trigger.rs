@@ -25,6 +25,7 @@ pub enum Trigger {
     DamageTaken,
     DamageDealt,
     StatusApplied,
+    StatusGained,
     ChangeStat(VarName),
     ChangeOutgoingDamage,
     ChangeIncomingDamage,

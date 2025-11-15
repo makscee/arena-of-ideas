@@ -191,6 +191,7 @@ impl ToCstr for Trigger {
             | Trigger::DamageTaken
             | Trigger::DamageDealt
             | Trigger::StatusApplied
+            | Trigger::StatusGained
             | Trigger::ChangeOutgoingDamage
             | Trigger::ChangeIncomingDamage
             | Trigger::AllyDeath => {}

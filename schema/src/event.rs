@@ -20,11 +20,10 @@ pub enum Event {
     TurnEnd,
     BeforeStrike(u64, u64),
     AfterStrike(u64, u64),
-    ApplyStatus(u64, u64, u64),
+    StatusApplied(u64, u64, u64),
     UpdateStat(VarName),
     Death(u64),
     OutgoingDamage(u64, u64),
     IncomingDamage(u64, u64),
-    DamageTaken(u64, u64),
-    DamageDealt(u64, u64),
+    DamageDealt(u64, u64, i32),
 }

@@ -134,7 +134,7 @@ pub enum BattleAction {
     heal(u64, u64, i32),
     death(u64),
     spawn(u64),
-    apply_status(u64, NStatusMagic, Color32),
+    apply_status(u64, u64, NStatusMagic, Color32),
     send_event(Event),
     vfx(Vec<ContextLayer>, String),
     wait(f32),
@@ -159,8 +159,9 @@ impl Hash for BattleAction {
             }
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
             BattleAction::fatigue(a) => a.hash(state),
-            BattleAction::apply_status(a, status, _) => {
-                a.hash(state);
+            BattleAction::apply_status(caster, target, status, _) => {
+                caster.hash(state);
+                target.hash(state);
                 status.id.hash(state);
                 // Note: stax are in state component, using status_name for hash consistency
                 status.status_name.hash(state);
@@ -182,9 +183,9 @@ impl ToCstr for BattleAction {
             BattleAction::death(a) => format!("x{a}"),
             BattleAction::var_set(a, var, value) => format!("{a}>${var}>{value}"),
             BattleAction::spawn(a) => format!("*{a}"),
-            BattleAction::apply_status(a, status, color) => {
+            BattleAction::apply_status(caster, target, status, color) => {
                 format!(
-                    "+[{} {}]>{a}({})",
+                    "{caster} +[{} {}]>{target}({})",
                     color.to_hex(),
                     status.status_name,
                     status.state().unwrap().stax
@@ -209,6 +210,7 @@ impl BattleAction {
         let result: NodeResult<bool> = (|| {
             let applied = match self {
                 BattleAction::strike(a, b) => {
+                    BattleSimulation::send_event(ctx, Event::BeforeStrike(*a, *b))?;
                     add_actions.push(
                         Self::new_vfx("strike")
                             .with_owner(*a)
@@ -223,6 +225,7 @@ impl BattleAction {
                     add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
                     add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
                     add_actions.push(Self::wait(animation_time() * 2.0));
+                    BattleSimulation::send_event(ctx, Event::AfterStrike(*a, *b))?;
                     true
                 }
                 BattleAction::death(a) => {
@@ -257,6 +260,7 @@ impl BattleAction {
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
+                        BattleSimulation::send_event(ctx, Event::DamageDealt(*a, *b, x))?;
                         let dmg = ctx.load::<NFusion>(*b).track()?.dmg_ctx_get(ctx) + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         add_actions.push(
@@ -322,8 +326,9 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
-                BattleAction::apply_status(target, status, color) => {
-                    BattleSimulation::apply_status(ctx, *target, status.clone(), *color).log();
+                BattleAction::apply_status(caster, target, status, color) => {
+                    BattleSimulation::apply_status(ctx, *caster, *target, status.clone(), *color)
+                        .log();
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
@@ -698,6 +703,7 @@ impl BattleSimulation {
     }
     pub fn apply_status(
         ctx: &mut ClientContext,
+        caster: u64,
         target: u64,
         status: NStatusMagic,
         color: Color32,
@@ -716,6 +722,10 @@ impl BattleSimulation {
                         let new_stax = state.stax + status.state_ref(ctx)?.stax;
                         state.set_var(VarName::stax, new_stax.into())?;
                         state.save(ctx)?;
+                        BattleSimulation::send_event(
+                            ctx,
+                            Event::StatusApplied(caster, target, child_status.id),
+                        )?;
                         return Ok(());
                     }
                 }
@@ -734,6 +744,7 @@ impl BattleSimulation {
         state.insert(t, 0.0, VarName::visible, true.into());
         state.insert(t, 0.0, VarName::color, color.into());
         state.insert(t, 0.0, VarName::index, new_index.into());
+        BattleSimulation::send_event(ctx, Event::StatusApplied(caster, target, new_status_id))?;
         Ok(())
     }
 

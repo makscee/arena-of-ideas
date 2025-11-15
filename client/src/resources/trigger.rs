@@ -77,27 +77,25 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
             }
-            Event::DamageTaken(_, target) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
-                    return Ok(false);
-                };
-                if matches!(self, Trigger::DamageTaken) && owner.id == *target {
-                    return Ok(true);
-                }
-            }
-            Event::DamageDealt(source, _) => {
+            Event::DamageDealt(source, target, _) => {
                 let Some(owner) = get_owner_fusion(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::DamageDealt) && owner.id == *source {
                     return Ok(true);
                 }
+                if matches!(self, Trigger::DamageTaken) && owner.id == *target {
+                    return Ok(true);
+                }
             }
-            Event::ApplyStatus(_, target, _) => {
+            Event::StatusApplied(caster, target, _) => {
                 let Some(owner) = get_owner_fusion(ctx)? else {
                     return Ok(false);
                 };
-                if matches!(self, Trigger::StatusApplied) && owner.id == *target {
+                if matches!(self, Trigger::StatusGained) && owner.id == *target {
+                    return Ok(true);
+                }
+                if matches!(self, Trigger::StatusApplied) && owner.id == *caster {
                     return Ok(true);
                 }
             }

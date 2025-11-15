@@ -49,6 +49,7 @@ impl EnumColor for Trigger {
             | Trigger::AfterStrike
             | Trigger::DamageTaken
             | Trigger::DamageDealt
+            | Trigger::StatusGained
             | Trigger::StatusApplied => YELLOW,
             Trigger::ChangeStat(var) => var.color(),
         }
