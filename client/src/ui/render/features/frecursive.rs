@@ -110,9 +110,13 @@ impl NodeLinkRender for Ui {
         let mut need_remove = false;
         let changed = if let Ok(loaded) = link.get_mut() {
             self.horizontal(|ui| {
-                if format!("{field_name}: [tw {}]", loaded.kind())
-                    .button(ui)
-                    .clicked()
+                if format!(
+                    "{field_name}: [tw {}] {}",
+                    loaded.kind(),
+                    loaded.title(&EMPTY_CONTEXT)
+                )
+                .button(ui)
+                .clicked()
                 {
                     ui.set_inspected_node(loaded.id());
                 }
@@ -136,6 +140,7 @@ impl NodeLinkRender for Ui {
             }
             false
         };
+        self.separator();
         if need_remove {
             *link = SingleLink::none();
             true
@@ -151,7 +156,6 @@ impl NodeLinkRender for Ui {
     {
         let mut changed = false;
 
-        self.separator();
         self.vertical(|ui| {
             ui.label(format!("{}:", field_name));
             if let Ok(items) = link.get_mut() {
@@ -167,9 +171,13 @@ impl NodeLinkRender for Ui {
                     .enumerate()
                 {
                     ui.horizontal(|ui| {
-                        if format!("{field_name} #{index}: [tw {}]", item.kind())
-                            .button(ui)
-                            .clicked()
+                        if format!(
+                            "{field_name} #{index}: [tw {}] {}",
+                            item.kind(),
+                            item.title(&EMPTY_CONTEXT)
+                        )
+                        .button(ui)
+                        .clicked()
                         {
                             ui.set_inspected_node(item.id());
                         }
@@ -204,6 +212,7 @@ impl NodeLinkRender for Ui {
                 }
             }
         });
+        self.separator();
 
         changed
     }
@@ -267,6 +276,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
             });
         });
         changed |= field_node.edit(ui).changed();
+        ui.separator();
         changed |= field_node.render_linked_fields(ui, breadcrumb_path);
 
         changed
