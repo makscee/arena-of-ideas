@@ -354,7 +354,7 @@ impl ExplorerPanes {
                         ui,
                         ctx,
                         house_id,
-                        ctx.load::<NHouseColor>(house_id)?,
+                        ctx.load::<NHouse>(house_id)?,
                         None,
                     )
                 })

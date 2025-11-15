@@ -44,7 +44,9 @@ pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(
         .resizable([false, false])
         .show(ctx, |ui| {
             ui.set_max_height(ui.ctx().content_rect().height() * 0.9);
-            add_contents(ui);
+            ScrollArea::vertical().show(ui, |ui| {
+                add_contents(ui);
+            });
         });
 }
 pub fn popup(

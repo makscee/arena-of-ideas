@@ -753,9 +753,11 @@ impl TeamEditor {
             ui.separator();
 
             ui.horizontal(|ui| {
-                for unit in unlinked_units {
-                    self.handle_bench_unit_interactions(ui, unit.id, team, ctx, actions);
-                }
+                ScrollArea::horizontal().show(ui, |ui| {
+                    for unit in unlinked_units {
+                        self.handle_bench_unit_interactions(ui, unit.id, team, ctx, actions);
+                    }
+                });
             });
 
             if let Some(dropped_unit) = DndArea::<DraggedUnit>::new(rect)

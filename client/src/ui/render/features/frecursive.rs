@@ -253,7 +253,20 @@ fn render_node_menu<T: FRecursiveNodeEdit>(ui: &mut Ui, node: &mut T) -> bool {
                     .iter(ctx.world()?)
                     .collect_vec();
                 for n in nodes {
-                    if n.title(ctx).button(ui).clicked() {
+                    if ui
+                        .menu_button(n.title(ctx).widget(1.0, ui.style()), |ui| {
+                            if let Ok(kind) = n.kind().to_named() {
+                                named_node_kind_match!(kind, {
+                                    ctx.load::<NamedNodeType>(n.id())
+                                        .unwrap()
+                                        .as_card()
+                                        .compose(ctx, ui);
+                                });
+                            }
+                        })
+                        .response
+                        .clicked()
+                    {
                         selected = Some(n.id());
                         ui.close_kind(egui::UiKind::Menu);
                     }

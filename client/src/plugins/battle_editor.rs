@@ -134,16 +134,15 @@ impl BattleEditorPlugin {
     }
 
     pub fn handle_space_input(
-        input: Res<ButtonInput<KeyCode>>,
-        state: Res<State<GameState>>,
         battle_data: Option<ResMut<BattleData>>,
         editor_state: Option<ResMut<BattleEditorState>>,
+        ctx: EguiContexts,
     ) {
-        if state.get() != &GameState::Editor {
+        let ctx = ctx.ctx().unwrap();
+        if ctx.wants_keyboard_input() {
             return;
         }
-
-        if input.just_pressed(KeyCode::Space) {
+        if ctx.input(|i| i.key_pressed(Key::Space)) {
             if let (Some(mut battle_data), Some(mut editor_state)) = (battle_data, editor_state) {
                 battle_data.playing = !battle_data.playing;
                 editor_state.was_playing = battle_data.playing;
