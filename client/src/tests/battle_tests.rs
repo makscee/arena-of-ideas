@@ -100,10 +100,10 @@ fn test_battle_with_abilities() {
     TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_ability(1200)
+        .add_ability()
         .add_ability_action(Action::set_value(Box::new(Expression::i32(3))))
         .add_ability_action(Action::deal_damage)
-        .add_unit(1300, 1, 2)
+        .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::BattleStart,
             vec![
@@ -125,7 +125,7 @@ fn test_battle_with_status_effects() {
     TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status(1200)
+        .add_status()
         .add_status_reaction(
             Trigger::TurnEnd,
             vec![
@@ -136,7 +136,7 @@ fn test_battle_with_status_effects() {
                 Action::deal_damage,
             ],
         )
-        .add_unit(1300, 0, 3)
+        .add_unit(1200, 0, 3)
         .add_reaction(
             Trigger::BattleStart,
             vec![
@@ -190,12 +190,12 @@ fn test_change_stats_status() {
     TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status(1200)
+        .add_status()
         .add_status_reaction(
             Trigger::ChangeStat(VarName::hp),
             vec![Action::add_value(Box::new(Expression::i32(10)))],
         )
-        .add_unit(1300, 1, 1)
+        .add_unit(1200, 1, 1)
         .add_reaction(
             Trigger::BattleStart,
             vec![
@@ -301,8 +301,8 @@ fn test_status_applied_trigger() {
     TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status(1200)
-        .add_unit(1300, 1, 2)
+        .add_status()
+        .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::StatusGained,
             [
@@ -311,7 +311,7 @@ fn test_status_applied_trigger() {
                 Action::heal_damage,
             ],
         )
-        .add_unit(1400, 0, 1)
+        .add_unit(1300, 0, 1)
         .add_reaction(
             Trigger::TurnEnd,
             [
@@ -331,13 +331,13 @@ fn test_combined_triggers() {
     TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_ability(1200)
+        .add_ability()
         .add_ability_action(Action::add_target(
             Expression::random_unit(Expression::all_enemy_units.into()).into(),
         ))
         .add_ability_action(Action::set_value(Box::new(Expression::i32(2))))
         .add_ability_action(Action::deal_damage)
-        .add_status(1300)
+        .add_status()
         .add_status_reaction(
             Trigger::TurnEnd,
             vec![
@@ -346,7 +346,7 @@ fn test_combined_triggers() {
                 Action::heal_damage,
             ],
         )
-        .add_unit(1400, 1, 2)
+        .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::BattleStart,
             vec![
@@ -354,7 +354,7 @@ fn test_combined_triggers() {
                 Action::apply_status,
             ],
         )
-        .add_unit(1500, 1, 1)
+        .add_unit(1300, 1, 1)
         .add_reaction(
             Trigger::BattleStart,
             vec![

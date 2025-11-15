@@ -3,16 +3,14 @@ use std::sync::OnceLock;
 use super::*;
 
 pub struct TestBuilder {
-    battle_builder: BattleBuilder,
+    teams: Vec<TeamBuilder>,
 }
 
 impl TestBuilder {
     pub fn new() -> Self {
         Self::init_test_resources();
         Self::init_test_logging();
-        Self {
-            battle_builder: BattleBuilder::new(),
-        }
+        Self { teams: vec![] }
     }
 
     fn init_test_resources() {
@@ -56,41 +54,63 @@ impl TestBuilder {
 
     pub fn add_team(mut self, id: u64) -> Self {
         assert_eq!(id % 100, 0, "Team ID must be divisible by 100");
-        self.battle_builder = self.battle_builder.add_team(id);
+        self.teams.push(TeamBuilder::new(id));
         self
     }
 
     pub fn add_house(mut self, id: u64) -> Self {
         assert_eq!(id % 100, 0, "House ID must be divisible by 100");
-        self.battle_builder = self.battle_builder.add_house(id);
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add house without a team");
+        team.add_house(id);
         self
     }
 
     pub fn add_unit(mut self, id: u64, pwr: i32, hp: i32) -> Self {
         assert_eq!(id % 100, 0, "Unit ID must be divisible by 100");
-        self.battle_builder = self.battle_builder.add_unit(id, pwr, hp);
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add unit without a team");
+        team.add_unit(id, pwr, hp);
         self
     }
 
     pub fn add_reaction(mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
-        self.battle_builder = self.battle_builder.add_reaction(trigger, actions);
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add reaction without a team");
+        team.add_reaction(trigger, actions);
         self
     }
 
-    pub fn add_ability(mut self, id: u64) -> Self {
-        assert_eq!(id % 100, 0, "Ability ID must be divisible by 100");
-        self.battle_builder = self.battle_builder.add_ability(id);
+    pub fn add_ability(mut self) -> Self {
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add ability without a team");
+        team.add_ability();
         self
     }
 
     pub fn add_ability_action(mut self, action: Action) -> Self {
-        self.battle_builder = self.battle_builder.add_ability_action(action);
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add ability action without a team");
+        team.add_ability_action(action);
         self
     }
 
-    pub fn add_status(mut self, id: u64) -> Self {
-        assert_eq!(id % 100, 0, "Status ID must be divisible by 100");
-        self.battle_builder = self.battle_builder.add_status(id);
+    pub fn add_status(mut self) -> Self {
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add status without a team");
+        team.add_status();
         self
     }
 
@@ -99,111 +119,30 @@ impl TestBuilder {
         trigger: Trigger,
         actions: impl Into<Vec<Action>>,
     ) -> Self {
-        self.battle_builder = self.battle_builder.add_status_reaction(trigger, actions);
+        let team = self
+            .teams
+            .last_mut()
+            .expect("Cannot add status reaction without a team");
+        team.add_status_reaction(trigger, actions);
         self
     }
 
     pub fn run_battle(self) -> BattleTestResult {
-        self.battle_builder.run_battle()
-    }
-}
-
-struct BattleBuilder {
-    teams: Vec<TeamBuilder>,
-}
-
-impl BattleBuilder {
-    fn new() -> Self {
-        Self { teams: vec![] }
-    }
-
-    fn add_team(mut self, id: u64) -> Self {
-        self.teams.push(TeamBuilder::new(id));
-        self
-    }
-
-    fn add_house(mut self, id: u64) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_house(id);
-        }
-        self
-    }
-
-    fn add_unit(mut self, id: u64, pwr: i32, hp: i32) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_unit(id, pwr, hp);
-        }
-        self
-    }
-
-    fn add_reaction(mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_reaction(trigger, actions);
-        }
-        self
-    }
-
-    fn add_ability(mut self, id: u64) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_ability(id);
-        }
-        self
-    }
-
-    fn add_ability_action(mut self, action: Action) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_ability_action(action);
-        }
-        self
-    }
-
-    fn add_status(mut self, id: u64) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_status(id);
-        }
-        self
-    }
-
-    fn add_status_reaction(mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
-        if let Some(team) = self.teams.last_mut() {
-            team.add_status_reaction(trigger, actions);
-        }
-        self
-    }
-
-    fn run_battle(self) -> BattleTestResult {
         assert_eq!(self.teams.len(), 2, "Battle requires exactly 2 teams");
 
-        let mut id_generator = IdGenerator::new();
         let mut teams_built = vec![];
-
         for team_builder in self.teams {
-            teams_built.push(team_builder.build(&mut id_generator));
+            teams_built.push(team_builder.build());
         }
 
         let battle = Battle {
-            id: id_generator.next(),
+            id: 10000,
             left: teams_built[0].clone(),
             right: teams_built[1].clone(),
         };
+        dbg!(&battle);
 
         BattleTestCase { battle }.run()
-    }
-}
-
-struct IdGenerator {
-    next_id: u64,
-}
-
-impl IdGenerator {
-    fn new() -> Self {
-        Self { next_id: 10000 }
-    }
-
-    fn next(&mut self) -> u64 {
-        let id = self.next_id;
-        self.next_id += 1;
-        id
     }
 }
 
@@ -222,67 +161,68 @@ impl TeamBuilder {
     }
 
     fn add_unit(&mut self, id: u64, pwr: i32, hp: i32) {
-        if let Some(house) = self.houses.last_mut() {
-            house.add_unit(id, pwr, hp);
-        }
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add unit without a house");
+        house.add_unit(id, pwr, hp);
     }
 
     fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        if let Some(house) = self.houses.last_mut() {
-            if let Some(unit) = house.units.last_mut() {
-                unit.reaction = Some(Reaction {
-                    trigger,
-                    actions: actions.into(),
-                });
-            }
-        }
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add reaction without a house");
+        house.add_reaction(trigger, actions);
     }
 
-    fn add_ability(&mut self, id: u64) {
-        if let Some(house) = self.houses.last_mut() {
-            house.ability = Some(AbilityBuilder::new(id));
-        }
+    fn add_ability(&mut self) {
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add ability without a house");
+        house.add_ability();
     }
 
     fn add_ability_action(&mut self, action: Action) {
-        if let Some(house) = self.houses.last_mut() {
-            if let Some(ability) = &mut house.ability {
-                ability.actions.push(action);
-            }
-        }
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add ability action without a house");
+        house.add_ability_action(action);
     }
 
-    fn add_status(&mut self, id: u64) {
-        if let Some(house) = self.houses.last_mut() {
-            house.status = Some(StatusBuilder::new(id));
-        }
+    fn add_status(&mut self) {
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add status without a house");
+        house.add_status();
     }
 
     fn add_status_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        if let Some(house) = self.houses.last_mut() {
-            if let Some(status) = &mut house.status {
-                status.reactions.push(Reaction {
-                    trigger,
-                    actions: actions.into(),
-                });
-            }
-        }
+        let house = self
+            .houses
+            .last_mut()
+            .expect("Cannot add status reaction without a house");
+        house.add_status_reaction(trigger, actions);
     }
 
-    fn build(self, id_gen: &mut IdGenerator) -> NTeam {
+    fn build(self) -> NTeam {
         let mut built_houses = vec![];
         let mut all_units = vec![];
 
         for house_builder in self.houses {
-            let (house, units) = house_builder.build(id_gen);
+            let (house, units) = house_builder.build();
             all_units.extend(units);
             built_houses.push(house);
         }
 
         let mut fusions = vec![];
+        let id_offset = self.id * 10000;
         for (index, unit) in all_units.iter().enumerate() {
-            let fusion_id = id_gen.next();
-            let slot_id = id_gen.next();
+            let fusion_id = id_offset + 2000 + (index as u64);
+            let slot_id = id_offset + 3000 + (index as u64);
 
             let mut slot = NFusionSlot::default();
             slot.set_id(slot_id);
@@ -333,17 +273,55 @@ impl HouseBuilder {
         self.units.push(UnitBuilder::new(id, pwr, hp));
     }
 
-    fn build(self, id_gen: &mut IdGenerator) -> (NHouse, Vec<NUnit>) {
-        let color_id = id_gen.next();
+    fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+        let unit = self
+            .units
+            .last_mut()
+            .expect("Cannot add reaction without a unit");
+        unit.reaction = Some(Reaction {
+            trigger,
+            actions: actions.into(),
+        });
+    }
 
+    fn add_ability(&mut self) {
+        self.ability = Some(AbilityBuilder::new(self.id + 10));
+    }
+
+    fn add_ability_action(&mut self, action: Action) {
+        let ability = self
+            .ability
+            .as_mut()
+            .expect("Cannot add ability action without an ability");
+        ability.actions.push(action);
+    }
+
+    fn add_status(&mut self) {
+        self.status = Some(StatusBuilder::new(self.id + 20));
+    }
+
+    fn add_status_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+        let status = self
+            .status
+            .as_mut()
+            .expect("Cannot add status reaction without a status");
+        status.reactions.push(Reaction {
+            trigger,
+            actions: actions.into(),
+        });
+    }
+
+    fn build(self) -> (NHouse, Vec<NUnit>) {
+        let mut built_units = vec![];
+
+        for unit_builder in self.units {
+            built_units.push(unit_builder.build());
+        }
+
+        let color_id = 40000 + self.id;
         let mut color = NHouseColor::default();
         color.set_id(color_id);
         color.color = HexColor("#FF0000".to_string());
-
-        let mut built_units = vec![];
-        for unit_builder in self.units {
-            built_units.push(unit_builder.build(id_gen));
-        }
 
         let mut house = NHouse::default();
         house.set_id(self.id);
@@ -351,12 +329,12 @@ impl HouseBuilder {
         house.color = Component::new_loaded(color);
         house.units = OwnedMultiple::new_loaded(built_units.clone());
 
-        if let Some(ability) = self.ability {
-            house.ability = Component::new_loaded(ability.build(id_gen));
+        if let Some(ability_builder) = self.ability {
+            house.ability = Component::new_loaded(ability_builder.build());
         }
 
-        if let Some(status) = self.status {
-            house.status = Component::new_loaded(status.build(id_gen));
+        if let Some(status_builder) = self.status {
+            house.status = Component::new_loaded(status_builder.build());
         }
 
         (house, built_units)
@@ -380,33 +358,28 @@ impl UnitBuilder {
         }
     }
 
-    fn build(self, _id_gen: &mut IdGenerator) -> NUnit {
-        let stats_id = self.id + 1;
-        let desc_id = self.id + 2;
-        let state_id = self.id + 3;
-
+    fn build(self) -> NUnit {
         let mut stats = NUnitStats::default();
-        stats.set_id(stats_id);
+        stats.set_id(self.id + 1);
         stats.pwr = self.pwr;
         stats.hp = self.hp;
 
         let mut desc = NUnitDescription::default();
-        desc.set_id(desc_id);
+        desc.set_id(self.id + 2);
         desc.description = format!("Unit {}", self.id);
         desc.trigger = Trigger::BattleStart;
         desc.magic_type = MagicType::Ability;
 
         if let Some(reaction) = self.reaction {
-            let behavior_id = self.id + 4;
-            let mut unit_behavior = NUnitBehavior::default();
-            unit_behavior.set_id(behavior_id);
-            unit_behavior.reaction = reaction;
-            unit_behavior.magic_type = MagicType::Ability;
-            desc.behavior = Component::new_loaded(unit_behavior);
+            let mut behavior = NUnitBehavior::default();
+            behavior.set_id(self.id + 3);
+            behavior.reaction = reaction;
+            behavior.magic_type = MagicType::Ability;
+            desc.behavior = Component::new_loaded(behavior);
         }
 
         let mut state = NState::default();
-        state.set_id(state_id);
+        state.set_id(self.id + 4);
         state.stax = 1;
 
         let mut unit = NUnit::default();
@@ -433,7 +406,7 @@ impl AbilityBuilder {
         }
     }
 
-    fn build(self, _id_gen: &mut IdGenerator) -> NAbilityMagic {
+    fn build(self) -> NAbilityMagic {
         let desc_id = self.id + 1;
         let effect_id = self.id + 2;
 
@@ -468,7 +441,7 @@ impl StatusBuilder {
         }
     }
 
-    fn build(self, _id_gen: &mut IdGenerator) -> NStatusMagic {
+    fn build(self) -> NStatusMagic {
         let desc_id = self.id + 1;
         let behavior_id = self.id + 2;
         let rep_id = self.id + 3;
@@ -486,11 +459,16 @@ impl StatusBuilder {
         representation.set_id(rep_id);
         representation.material = Material::default();
 
+        let mut state = NState::default();
+        state.set_id(self.id + 4);
+        state.stax = 1;
+
         let mut status = NStatusMagic::default();
         status.set_id(self.id);
         status.status_name = format!("Status {}", self.id);
         status.description = Component::new_loaded(desc);
         status.representation = Component::new_loaded(representation);
+        status.state = Component::new_loaded(state);
 
         status
     }
@@ -630,28 +608,4 @@ impl BattleTestResult {
         );
         self
     }
-}
-
-pub fn new_unit(id: u64, pwr: i32, hp: i32) -> (u64, i32, i32) {
-    (id, pwr, hp)
-}
-
-pub fn deal_3_dmg() -> (u64, Vec<Action>) {
-    (
-        1200,
-        vec![
-            Action::set_value(Box::new(Expression::i32(3))),
-            Action::deal_damage,
-        ],
-    )
-}
-
-pub fn heal_1() -> (u64, Vec<Action>) {
-    (
-        1200,
-        vec![
-            Action::set_value(Box::new(Expression::i32(1))),
-            Action::heal_damage,
-        ],
-    )
 }
