@@ -4,6 +4,16 @@ pub trait TriggerImpl {
     fn fire(&self, event: &Event, context: &ClientContext) -> NodeResult<bool>;
 }
 
+fn get_owner_fusion<'a>(ctx: &'a ClientContext) -> NodeResult<Option<&'a NFusion>> {
+    let Ok(owner) = ctx.owner() else {
+        return Ok(None);
+    };
+    let owner = ctx
+        .load_or_first_parent_recursive_ref::<NFusion>(owner)
+        .track()?;
+    Ok(Some(owner))
+}
+
 impl TriggerImpl for Trigger {
     fn fire(&self, event: &Event, ctx: &ClientContext) -> NodeResult<bool> {
         match event {
@@ -23,39 +33,71 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::Death(id) => {
-                let Ok(owner) = ctx.owner() else {
+                let Some(owner) = get_owner_fusion(ctx)? else {
                     return Ok(false);
                 };
-                if matches!(self, Trigger::BeforeDeath) && owner == *id {
+                if matches!(self, Trigger::BeforeDeath) && owner.id == *id {
                     return Ok(true);
                 }
                 if matches!(self, Trigger::AllyDeath)
-                    && ctx.battle()?.all_allies(owner)?.contains(id)
+                    && ctx.battle()?.all_allies(owner.id)?.contains(id)
                 {
                     return Ok(true);
                 }
             }
             Event::OutgoingDamage(source, _) => {
-                let Ok(owner) = ctx.owner() else {
+                let Some(owner) = get_owner_fusion(ctx)? else {
                     return Ok(false);
                 };
-                let owner = ctx
-                    .load_or_first_parent_recursive_ref::<NFusion>(owner)
-                    .track()?;
                 if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
                     return Ok(true);
                 }
             }
             Event::IncomingDamage(_, target) => {
-                ctx.debug_layers();
-                let Ok(owner) = ctx.owner() else {
+                let Some(owner) = get_owner_fusion(ctx)? else {
                     return Ok(false);
                 };
-                let owner = ctx
-                    .load_or_first_parent_recursive_ref::<NFusion>(owner)
-                    .track()?;
-                dbg!(owner, target);
                 if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
+                    return Ok(true);
+                }
+            }
+            Event::BeforeStrike(source, _) => {
+                let Some(owner) = get_owner_fusion(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::BeforeStrike) && owner.id == *source {
+                    return Ok(true);
+                }
+            }
+            Event::AfterStrike(source, _) => {
+                let Some(owner) = get_owner_fusion(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::AfterStrike) && owner.id == *source {
+                    return Ok(true);
+                }
+            }
+            Event::DamageTaken(_, target) => {
+                let Some(owner) = get_owner_fusion(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::DamageTaken) && owner.id == *target {
+                    return Ok(true);
+                }
+            }
+            Event::DamageDealt(source, _) => {
+                let Some(owner) = get_owner_fusion(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::DamageDealt) && owner.id == *source {
+                    return Ok(true);
+                }
+            }
+            Event::ApplyStatus(_, target, _) => {
+                let Some(owner) = get_owner_fusion(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::StatusApplied) && owner.id == *target {
                     return Ok(true);
                 }
             }

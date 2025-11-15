@@ -186,6 +186,11 @@ impl ToCstr for Trigger {
             Trigger::BattleStart
             | Trigger::TurnEnd
             | Trigger::BeforeDeath
+            | Trigger::BeforeStrike
+            | Trigger::AfterStrike
+            | Trigger::DamageTaken
+            | Trigger::DamageDealt
+            | Trigger::StatusApplied
             | Trigger::ChangeOutgoingDamage
             | Trigger::ChangeIncomingDamage
             | Trigger::AllyDeath => {}
