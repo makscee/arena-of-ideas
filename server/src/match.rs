@@ -329,7 +329,7 @@ fn match_submit_battle_result(
     let m = player.active_match_load(ctx)?;
     let current_floor = m.floor;
 
-    let battles = m.battles_load(ctx)?;
+    let mut battles = m.battles_load(ctx)?;
     battles.sort_by_key(|b| b.id);
     let battle = battles.last_mut().unwrap();
     debug!("Submit result: flr={current_floor} result={result} {battle:?}");
@@ -341,9 +341,12 @@ fn match_submit_battle_result(
     }
     battle.set_result(Some(result));
     battle.set_hash(hash);
+    battle.id.add_parent(ctx.rctx(), ID_ARENA)?;
+    battle.take().save(ctx)?;
 
     let current_state = m.state;
 
+    let mut arena = ctx.load::<NArena>(ID_ARENA)?;
     match current_state {
         MatchState::ChampionBattle => {
             if result {
@@ -358,7 +361,6 @@ fn match_submit_battle_result(
                 let mut new_floor_pool = NFloorPool::new(ctx.next_id(), ID_ARENA, current_floor);
                 new_floor_pool.teams_push(new_boss_team.clone().remap_ids(ctx))?;
 
-                let mut arena = ctx.load::<NArena>(ID_ARENA)?;
                 arena.floor_pools_load(ctx)?;
                 arena.floor_bosses_load(ctx)?;
                 arena.set_last_floor(current_floor);
@@ -376,7 +378,6 @@ fn match_submit_battle_result(
 
                 // Create new boss team
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
-                let mut arena = ctx.load::<NArena>(ID_ARENA)?;
                 let last_floor = arena.last_floor;
                 let mut boss = arena
                     .floor_bosses_load(ctx)?

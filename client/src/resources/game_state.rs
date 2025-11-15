@@ -44,11 +44,17 @@ impl GameState {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Register.into());
             }
             GameState::Title => {
-                let mut panes = [Pane::MainMenu, Pane::Leaderboard].to_vec();
+                let mut tiles = Tiles::default();
+                let leaderboard = tiles.insert_pane(Pane::Leaderboard);
+                let history = tiles.insert_pane(Pane::BattleHistory);
+                let main_menu = tiles.insert_pane(Pane::MainMenu);
+                let tabs = tiles.insert_tab_tile([leaderboard, history].into());
+                let mut horizontal = [main_menu, tabs].to_vec();
                 if pd().client_settings.dev_mode {
-                    panes.insert(0, Pane::Admin);
+                    horizontal.insert(0, tiles.insert_pane(Pane::Admin));
                 }
-                tile_tree.tree = Tree::new_horizontal(TREE_ID, panes);
+                let root = tiles.insert_horizontal_tile(horizontal);
+                tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
             GameState::MatchOver => {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::MatchOver.into());
@@ -230,6 +236,7 @@ pub enum Pane {
     Explorer(ExplorerPane),
     MatchOver,
     Leaderboard,
+    BattleHistory,
     Admin,
     WorldDownload,
 }
@@ -326,6 +333,7 @@ impl Pane {
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
             Pane::Leaderboard => MatchPlugin::pane_leaderboard(ui, world)?,
+            Pane::BattleHistory => MatchPlugin::pane_battle_history(ui, world)?,
             Pane::MatchOver => MatchPlugin::pane_match_over(ui, world)?,
             Pane::Shop(pane) => match pane {
                 ShopPane::Shop => MatchPlugin::pane_shop(ui, world)?,

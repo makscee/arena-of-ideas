@@ -1209,8 +1209,8 @@ impl ContextSource for Sources<'_> {
     }
 
     fn add_link(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
-        let parent_kind = self.get_node_kind(parent_id)?;
-        let child_kind = self.get_node_kind(child_id)?;
+        let parent_kind = self.get_node_kind(parent_id).track()?;
+        let child_kind = self.get_node_kind(child_id).track()?;
         self.get_links_data_mut()?
             .add_link(parent_id, child_id, parent_kind, child_kind);
         Ok(())
@@ -1235,7 +1235,7 @@ impl ContextSource for Sources<'_> {
         self.clear_links(node_id)?;
 
         // Get node kind before removing from map
-        let kind = self.get_node_kind(node_id)?;
+        let kind = self.get_node_kind(node_id);
 
         // Remove from NodesMapResource and get entity
         if let Some(entity) = self.get_nodes_map_mut()?.remove(node_id) {
@@ -1248,6 +1248,7 @@ impl ContextSource for Sources<'_> {
             if other_nodes_exist {
                 // Only remove the component for this specific node, don't despawn
                 let world = self.world_mut()?;
+                let kind = kind?;
                 node_kind_match!(kind, {
                     world.entity_mut(entity).remove::<NodeType>();
                 });

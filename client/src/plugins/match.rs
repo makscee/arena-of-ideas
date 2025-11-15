@@ -325,9 +325,9 @@ impl MatchPlugin {
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
+            let mut m = player.active_match_ref(ctx)?.clone();
             let won_last = m
-                .battles_ref(ctx)?
+                .battles_load(ctx)?
                 .iter()
                 .sorted_by_key(|b| b.id)
                 .last()
@@ -461,6 +461,114 @@ impl MatchPlugin {
                             Ok(())
                         },
                         |ctx, n| Ok(n.team_ref(ctx)?.title(ctx).into()),
+                    )
+                    .ui(ctx, ui);
+            }
+            Ok(())
+        })
+    }
+
+    pub fn pane_battle_history(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
+        with_solid_source(|ctx| {
+            let arena = ctx.load::<NArena>(ID_ARENA)?;
+
+            let battles = arena
+                .battles_ref(ctx)?
+                .into_iter()
+                .sorted_by_key(|b| std::cmp::Reverse(b.ts))
+                .collect_vec();
+
+            ui.vertical_centered_justified(|ui| {
+                "Battle History".cstr_s(CstrStyle::Heading2).label(ui);
+            });
+
+            if battles.is_empty() {
+                ui.vertical_centered(|ui| {
+                    "No battles recorded yet".cstr().label(ui);
+                });
+            } else {
+                Table::from_data(&battles)
+                    .column(
+                        "Time",
+                        |_ctx, ui, _, value| {
+                            let ts = value.get_u64()?;
+                            let date = chrono::DateTime::from_timestamp_micros(ts as i64)
+                                .unwrap_or_default();
+                            format!("{}", date.format("%Y-%m-%d %H:%M"))
+                                .cstr()
+                                .label(ui);
+                            Ok(())
+                        },
+                        |_, b| Ok(b.ts.into()),
+                    )
+                    .column(
+                        "Left Team",
+                        |ctx, ui, _, value| {
+                            let team_id = value.get_u64()?;
+                            if let Ok(team) = ctx.load::<NTeam>(team_id) {
+                                team.title(ctx).cstr_cs(CYAN, CstrStyle::Normal).label(ui);
+                            } else {
+                                "Unknown".cstr().label(ui);
+                            }
+                            Ok(())
+                        },
+                        |_, b| Ok(b.team_left.into()),
+                    )
+                    .column(
+                        "Right Team",
+                        |ctx, ui, _, value| {
+                            let team_id = value.get_u64()?;
+                            if let Ok(team) = ctx.load::<NTeam>(team_id) {
+                                team.title(ctx).cstr_cs(YELLOW, CstrStyle::Normal).label(ui);
+                            } else {
+                                "Unknown".cstr().label(ui);
+                            }
+                            Ok(())
+                        },
+                        |_, b| Ok(b.team_right.into()),
+                    )
+                    .column(
+                        "Result",
+                        |_ctx, ui, b, _| {
+                            match b.result {
+                                Some(won) => {
+                                    if won {
+                                        "Left Won".cstr_cs(GREEN, CstrStyle::Bold).label(ui);
+                                    } else {
+                                        "Right Won".cstr_cs(RED, CstrStyle::Bold).label(ui);
+                                    }
+                                }
+                                None => {
+                                    "Pending".cstr_cs(GRAY, CstrStyle::Normal).label(ui);
+                                }
+                            }
+                            Ok(())
+                        },
+                        |_, b| Ok(b.result.unwrap_or_default().into()),
+                    )
+                    .column(
+                        "Actions",
+                        |ctx, ui, b, _| {
+                            if b.result.is_some() && ui.button("Replay").clicked() {
+                                // Load battle for replay viewing
+                                let mut left_team = ctx.load::<NTeam>(b.team_left)?;
+                                left_team.load_all(ctx)?;
+                                let mut right_team = ctx.load::<NTeam>(b.team_right)?;
+                                right_team.load_all(ctx)?;
+
+                                // Set up battle state for replay using BattlePlugin::load_teams
+                                use crate::plugins::battle::BattlePlugin;
+                                BattlePlugin::load_teams(
+                                    b.id,
+                                    left_team.take(),
+                                    right_team.take(),
+                                    world,
+                                );
+                                GameState::Battle.set_next(world);
+                            }
+                            Ok(())
+                        },
+                        |_, _| Ok(0.into()),
                     )
                     .ui(ctx, ui);
             }

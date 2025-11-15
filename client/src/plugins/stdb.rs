@@ -2,6 +2,15 @@ use super::*;
 
 static UPDATE_QUEUE: once_cell::sync::Lazy<Mutex<VecDeque<StdbUpdate>>> =
     once_cell::sync::Lazy::new(|| Mutex::new(VecDeque::new()));
+static NEED_UPDATE: Mutex<bool> = Mutex::new(false);
+
+fn set_need_update(value: bool) {
+    *NEED_UPDATE.lock() = value;
+}
+
+fn is_need_update() -> bool {
+    *NEED_UPDATE.lock()
+}
 
 pub struct StdbPlugin;
 
@@ -13,6 +22,10 @@ impl Plugin for StdbPlugin {
 
 impl StdbPlugin {
     fn process_update_queue() {
+        if !is_need_update() {
+            return;
+        }
+        set_need_update(false);
         let mut queue = UPDATE_QUEUE.lock();
         if queue.is_empty() {
             return;
@@ -34,6 +47,7 @@ impl StdbPlugin {
                 }
                 if !changed {
                     debug!("db events queue left: {}", queue.len());
+                    dbg!(&queue);
                     break;
                 }
             }
@@ -130,6 +144,7 @@ fn subscribe_table_updates() {
 
 fn queue_update(update: StdbUpdate) {
     UPDATE_QUEUE.lock().push_back(update);
+    set_need_update(true);
 }
 
 pub fn subscribe_reducers() {

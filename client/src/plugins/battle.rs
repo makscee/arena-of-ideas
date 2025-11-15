@@ -44,10 +44,10 @@ impl BattlePlugin {
     fn on_enter(world: &mut World) {
         // Load the latest battle from the current match
         let result = with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
             if m.state.is_battle() {
                 if let Some(last) = m
-                    .battles_ref(ctx)?
+                    .battles_load(ctx)?
                     .into_iter()
                     .sorted_by_key(|b| b.id)
                     .last()
