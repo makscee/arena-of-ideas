@@ -29,6 +29,8 @@ impl ExpressionImpl for Expression {
             Expression::x => ctx.get_var(VarName::stax),
             Expression::owner => Ok(ctx.owner()?.into()),
             Expression::target => Ok(ctx.target().to_not_found()?.into()),
+            Expression::attacker => Ok(ctx.attacker().to_not_found()?.into()),
+            Expression::caster => Ok(ctx.caster().to_not_found()?.into()),
             Expression::var(var) => ctx.get_var(*var).or_else(|_| {
                 if *var == VarName::index {
                     Ok(1.into())

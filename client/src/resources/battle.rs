@@ -652,54 +652,60 @@ impl BattleSimulation {
     }
     pub fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
         info!("{} {event}", "event:".dimmed().blue());
-        let mut fusion_statuses: Vec<(u64, u64)> = default();
-        let sim = ctx.battle_mut()?;
-        sim.add_text(BattleText::CurrentEvent, format!("[b [yellow ⚡️ {event}]]"));
-        for id in sim.all_fusions() {
-            let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
-            if !statuses.is_empty() {
-                fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
+        ctx.exec_mut(|ctx| {
+            match &event {
+                Event::DamageDealt(attacker, _, _) => ctx.set_attacker(*attacker),
+                _ => {}
             }
-            ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
-                match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
+            let mut fusion_statuses: Vec<(u64, u64)> = default();
+            let sim = ctx.battle_mut()?;
+            sim.add_text(BattleText::CurrentEvent, format!("[b [yellow ⚡️ {event}]]"));
+            for id in sim.all_fusions() {
+                let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
+                if !statuses.is_empty() {
+                    fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
+                }
+                ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
+                    match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
+                        Ok(actions) => process_actions(ctx, actions),
+                        Err(e) => error!("NFusion event {event} failed: {e}"),
+                    };
+                    Ok(())
+                })
+                .log();
+            }
+            for (fusion_id, status_id) in fusion_statuses {
+                match ctx.with_layers(
+                    [
+                        ContextLayer::Owner(fusion_id),
+                        ContextLayer::Status(status_id),
+                    ],
+                    |ctx| {
+                        // Only trigger status reactions if stax > 0
+                        let mut status = ctx.load::<NStatusMagic>(status_id)?;
+                        let stax = status.state_ref(ctx)?.stax;
+                        if stax <= 0 {
+                            return Ok(vec![]);
+                        }
+                        let behavior = status
+                            .description_load(ctx)
+                            .track()?
+                            .behavior_load(ctx)
+                            .track()?;
+                        let actions = behavior.reactions.react(&event, ctx);
+                        if let Some(actions) = actions {
+                            actions.clone().process(ctx)
+                        } else {
+                            Ok(default())
+                        }
+                    },
+                ) {
                     Ok(actions) => process_actions(ctx, actions),
-                    Err(e) => error!("NFusion event {event} failed: {e}"),
-                };
-                Ok(())
-            })
-            .log();
-        }
-        for (fusion_id, status_id) in fusion_statuses {
-            match ctx.with_layers(
-                [
-                    ContextLayer::Owner(fusion_id),
-                    ContextLayer::Status(status_id),
-                ],
-                |ctx| {
-                    // Only trigger status reactions if stax > 0
-                    let mut status = ctx.load::<NStatusMagic>(status_id)?;
-                    let stax = status.state_ref(ctx)?.stax;
-                    if stax <= 0 {
-                        return Ok(vec![]);
-                    }
-                    let behavior = status
-                        .description_load(ctx)
-                        .track()?
-                        .behavior_load(ctx)
-                        .track()?;
-                    let actions = behavior.reactions.react(&event, ctx);
-                    if let Some(actions) = actions {
-                        actions.clone().process(ctx)
-                    } else {
-                        Ok(default())
-                    }
-                },
-            ) {
-                Ok(actions) => process_actions(ctx, actions),
-                Err(e) => e.log(),
+                    Err(e) => e.log(),
+                }
             }
-        }
-        Ok(())
+            Ok(())
+        })
     }
     pub fn apply_status(
         ctx: &mut ClientContext,

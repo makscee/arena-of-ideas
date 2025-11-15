@@ -2267,6 +2267,12 @@ impl FEdit for CardKind {
 // ============================================================================
 
 // Implement for Vec<T> where appropriate
+impl<T: FTitle> FTitle for Vec<T> {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        format!("List ({})", self.len()).cstr()
+    }
+}
+
 impl<T: FDisplay> FDisplay for Vec<T> {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = format!("List ({})", self.len()).label(ui);
@@ -2282,6 +2288,33 @@ impl<T: FEdit + Default> FEdit for Vec<T> {
         ui.vertical(|ui| {
             self.as_mutable_list(|a, _, ui| a.edit(ui))
                 .editable(|| T::default())
+                .compose(&EMPTY_CONTEXT, ui)
+        })
+        .inner
+    }
+}
+
+impl FTitle for Vec<Box<PainterAction>> {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        format!("List ({})", self.len()).cstr()
+    }
+}
+
+impl FDisplay for Vec<Box<PainterAction>> {
+    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        let mut response = format!("List ({})", self.len()).label(ui);
+        for item in self {
+            response |= item.display(ctx, ui);
+        }
+        response
+    }
+}
+
+impl FEdit for Vec<Box<PainterAction>> {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        ui.vertical(|ui| {
+            self.as_mutable_list(|a, _, ui| a.edit(ui))
+                .editable(|| Box::new(PainterAction::default()))
                 .compose(&EMPTY_CONTEXT, ui)
         })
         .inner

@@ -11,6 +11,7 @@ impl Tier for Action {
             Action::set_value(..)
             | Action::add_value(..)
             | Action::subtract_value(..)
+            | Action::set_target(..)
             | Action::add_target(..)
             | Action::deal_damage
             | Action::heal_damage

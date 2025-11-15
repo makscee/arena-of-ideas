@@ -30,6 +30,7 @@ impl EnumColor for Action {
             Action::set_value(..)
             | Action::add_value(..)
             | Action::subtract_value(..)
+            | Action::set_target(..)
             | Action::add_target(..) => CYAN,
             Action::repeat(..) => PURPLE,
         }
@@ -64,6 +65,8 @@ impl EnumColor for Expression {
             | Expression::gt
             | Expression::owner
             | Expression::target
+            | Expression::attacker
+            | Expression::caster
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2

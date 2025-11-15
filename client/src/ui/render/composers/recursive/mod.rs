@@ -105,7 +105,7 @@ where
                             show_field_names,
                             context,
                             ui,
-                            |context, ui| composer_fn(context, ui, field.value),
+                            |context, ui| composer_fn(context, ui, field.value.clone()),
                         );
 
                         ui.vertical(|ui| {
@@ -132,7 +132,7 @@ where
                             show_field_names,
                             context,
                             ui,
-                            |context, ui| composer_fn(context, ui, field.value),
+                            |context, ui| composer_fn(context, ui, field.value.clone()),
                         );
 
                         for inner_field in inner_fields {
@@ -157,7 +157,7 @@ where
                             show_field_names,
                             context,
                             ui,
-                            |context, ui| composer_fn(context, ui, field.value),
+                            |context, ui| composer_fn(context, ui, field.value.clone()),
                         );
 
                         for inner_field in inner_fields {
@@ -197,7 +197,7 @@ where
                                         {
                                             ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                                         }
-                                        composer_fn(context, ui, field.value)
+                                        composer_fn(context, ui, field.value.clone())
                                     })
                                     .inner
                                 },
@@ -225,7 +225,7 @@ where
                                 show_field_names,
                                 context,
                                 ui,
-                                |context, ui| composer_fn(context, ui, field.value),
+                                |context, ui| composer_fn(context, ui, field.value.clone()),
                             )
                         }
                     })

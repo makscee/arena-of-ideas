@@ -11,6 +11,7 @@ pub enum Action {
     add_value(Box<Expression>),
     subtract_value(Box<Expression>),
     add_target(Box<Expression>),
+    set_target(Box<Expression>),
     deal_damage,
     heal_damage,
     use_ability,

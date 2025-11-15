@@ -12,6 +12,8 @@ impl FRecursive for Expression {
             | Expression::gt
             | Expression::owner
             | Expression::target
+            | Expression::attacker
+            | Expression::caster
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
@@ -141,6 +143,8 @@ impl FRecursive for Expression {
             | Expression::gt
             | Expression::owner
             | Expression::target
+            | Expression::attacker
+            | Expression::caster
             | Expression::unit_size
             | Expression::pi
             | Expression::pi2
@@ -288,6 +292,7 @@ impl FRecursive for Action {
             | Action::add_value(expr)
             | Action::subtract_value(expr)
             | Action::add_target(expr)
+            | Action::set_target(expr)
             | Action::set_status(expr)
             | Action::change_status_stax(expr) => {
                 vec![RecursiveField::named(
@@ -332,6 +337,7 @@ impl FRecursive for Action {
             | Action::set_value(expr)
             | Action::add_value(expr)
             | Action::subtract_value(expr)
+            | Action::set_target(expr)
             | Action::add_target(expr)
             | Action::set_status(expr)
             | Action::change_status_stax(expr) => {
@@ -444,24 +450,15 @@ impl FRecursive for PainterAction {
                 RecursiveField::named("action", RecursiveValue::PainterAction(action.as_ref())),
             ],
 
-            PainterAction::list(actions) => actions
-                .iter()
-                .enumerate()
-                .map(|(i, action)| {
-                    RecursiveField::indexed(i, RecursiveValue::PainterAction(action.as_ref()))
-                })
-                .collect(),
+            PainterAction::list(actions) => vec![RecursiveField::named(
+                "items",
+                RecursiveValue::PainterActionList(actions),
+            )],
 
-            PainterAction::if_ok(expr, actions) => {
-                let mut fields = vec![RecursiveField::named(
-                    "condition",
-                    RecursiveValue::Expr(expr.as_ref()),
-                )];
-                fields.extend(actions.iter().enumerate().map(|(i, action)| {
-                    RecursiveField::indexed(i, RecursiveValue::PainterAction(action.as_ref()))
-                }));
-                fields
-            }
+            PainterAction::if_ok(expr, actions) => vec![
+                RecursiveField::named("condition", RecursiveValue::Expr(expr.as_ref())),
+                RecursiveField::named("then", RecursiveValue::PainterActionList(actions)),
+            ],
 
             PainterAction::exit => vec![],
         }
@@ -562,23 +559,18 @@ impl FRecursive for PainterAction {
                 ),
             ],
 
-            PainterAction::list(actions) => actions
-                .iter_mut()
-                .enumerate()
-                .map(|(i, action)| {
-                    RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(action.as_mut()))
-                })
-                .collect(),
+            PainterAction::list(actions) => {
+                vec![RecursiveFieldMut::named(
+                    "items",
+                    RecursiveValueMut::PainterActionList(actions),
+                )]
+            }
 
             PainterAction::if_ok(expr, actions) => {
-                let mut fields = vec![RecursiveFieldMut::named(
-                    "condition",
-                    RecursiveValueMut::Expr(expr.as_mut()),
-                )];
-                fields.extend(actions.iter_mut().enumerate().map(|(i, action)| {
-                    RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(action.as_mut()))
-                }));
-                fields
+                vec![
+                    RecursiveFieldMut::named("condition", RecursiveValueMut::Expr(expr.as_mut())),
+                    RecursiveFieldMut::named("then", RecursiveValueMut::PainterActionList(actions)),
+                ]
             }
 
             PainterAction::exit => vec![],
@@ -773,5 +765,32 @@ impl FRecursive for Option<Expression> {
             Some(expr) => RecursiveValueMut::Expr(expr),
             None => panic!("Cannot convert None to RecursiveValueMut"),
         }
+    }
+}
+impl FRecursive for Vec<Box<PainterAction>> {
+    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
+        self.iter()
+            .enumerate()
+            .map(|(i, item)| {
+                RecursiveField::indexed(i, RecursiveValue::PainterAction(item.as_ref()))
+            })
+            .collect()
+    }
+
+    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
+        self.iter_mut()
+            .enumerate()
+            .map(|(i, item)| {
+                RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(item.as_mut()))
+            })
+            .collect()
+    }
+
+    fn to_recursive_value(&self) -> RecursiveValue<'_> {
+        RecursiveValue::PainterActionList(self)
+    }
+
+    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
+        RecursiveValueMut::PainterActionList(self)
     }
 }

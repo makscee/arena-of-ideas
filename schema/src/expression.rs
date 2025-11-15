@@ -14,6 +14,8 @@ pub enum Expression {
     gt,
     owner,
     target,
+    caster,
+    attacker,
     unit_size,
     pi,
     pi2,
@@ -102,6 +104,8 @@ impl std::hash::Hash for Expression {
             | Expression::adjacent_back
             | Expression::adjacent_front
             | Expression::owner
+            | Expression::attacker
+            | Expression::caster
             | Expression::target => {}
             Expression::var(v)
             | Expression::target_var(v)

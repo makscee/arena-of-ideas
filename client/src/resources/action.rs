@@ -51,26 +51,21 @@ impl ActionImpl for Action {
             }
             Action::add_target(x) => match x.get_u64_list(ctx) {
                 Ok(ids) => {
-                    for id in ids {
-                        let position = ctx.owner_var(VarName::position)?;
-                        actions.push(
-                            BattleAction::new_vfx("target_add_vfx")
-                                .with_var(VarName::position, position.clone())
-                                .with_var(
-                                    VarName::extra_position,
-                                    ctx.get_var_inherited(id, VarName::position)?,
-                                )
-                                .with_var(VarName::color, YELLOW)
-                                .into(),
-                        );
-                        actions.push(
-                            BattleAction::new_text("+ target", position)
-                                .with_var(VarName::color, YELLOW)
-                                .into(),
-                        );
-                        actions.push(BattleAction::wait(animation_time()));
-                        ctx.add_target(id);
+                    let position = ctx.owner_var(VarName::position)?;
+                    for id in &ids {
+                        add_target_vfx(ctx, &mut actions, &position, id)?;
                     }
+                    ctx.add_targets(ids);
+                }
+                Err(e) => error!("add_target error: {e}"),
+            },
+            Action::set_target(x) => match x.get_u64_list(ctx) {
+                Ok(ids) => {
+                    let position = ctx.owner_var(VarName::position)?;
+                    for id in &ids {
+                        add_target_vfx(ctx, &mut actions, &position, id)?;
+                    }
+                    ctx.set_targets(ids);
                 }
                 Err(e) => error!("add_target error: {e}"),
             },
@@ -78,7 +73,7 @@ impl ActionImpl for Action {
                 let owner = ctx.owner()?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
-                    let targets = ctx.collect_targets();
+                    let targets = ctx.get_targets();
                     if targets.is_empty() {
                         error!("No targets found for deal_damage");
                     } else {
@@ -96,7 +91,7 @@ impl ActionImpl for Action {
                 let owner = ctx.owner()?;
                 let value = ctx.get_var(VarName::value).get_i32()?;
                 if value > 0 {
-                    for target in ctx.collect_targets() {
+                    for target in ctx.get_targets() {
                         actions.push(BattleAction::heal(owner, target, value));
                     }
                 }
@@ -157,7 +152,7 @@ impl ActionImpl for Action {
                         .load_components(ctx)?
                         .take()
                         .with_state(NState::new(next_id(), player_id(), x));
-                    let targets = ctx.collect_targets();
+                    let targets = ctx.get_targets();
                     if targets.is_empty() {
                         return Err("No targets".into());
                     }
@@ -235,4 +230,29 @@ impl ActionImpl for Action {
         };
         Ok(actions)
     }
+}
+
+fn add_target_vfx(
+    ctx: &mut Context<Sources<'_>>,
+    actions: &mut Vec<BattleAction>,
+    position: &VarValue,
+    id: &u64,
+) -> Result<(), NodeError> {
+    actions.push(
+        BattleAction::new_vfx("target_add_vfx")
+            .with_var(VarName::position, position.clone())
+            .with_var(
+                VarName::extra_position,
+                ctx.get_var_inherited(*id, VarName::position)?,
+            )
+            .with_var(VarName::color, YELLOW)
+            .into(),
+    );
+    actions.push(
+        BattleAction::new_text("+ target", position.clone())
+            .with_var(VarName::color, YELLOW)
+            .into(),
+    );
+    actions.push(BattleAction::wait(animation_time()));
+    Ok(())
 }

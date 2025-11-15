@@ -115,8 +115,10 @@ pub trait ContextSource {
 pub enum ContextLayer {
     Owner(u64),
     Target(u64),
+    Targets(Vec<u64>),
     Caster(u64),
     Status(u64),
+    Attacker(u64),
     Var(VarName, VarValue),
 }
 
@@ -245,6 +247,13 @@ impl<S: ContextSource> Context<S> {
         })
     }
 
+    pub fn attacker(&self) -> Option<u64> {
+        self.layers.iter().rev().find_map(|l| match l {
+            ContextLayer::Attacker(id) => Some(*id),
+            _ => None,
+        })
+    }
+
     pub fn status(&self) -> Option<u64> {
         self.layers.iter().rev().find_map(|l| match l {
             ContextLayer::Status(id) => Some(*id),
@@ -317,18 +326,29 @@ impl<S: ContextSource> Context<S> {
         Err(NodeError::var_not_found(var))
     }
 
-    pub fn add_target(&mut self, target: u64) {
-        self.layers.push(ContextLayer::Target(target));
+    pub fn add_targets(&mut self, targets: Vec<u64>) {
+        let mut current_targets = self.get_targets();
+        current_targets.extend(targets);
+        self.set_targets(current_targets);
     }
 
-    pub fn collect_targets(&self) -> Vec<u64> {
-        self.layers
-            .iter()
-            .filter_map(|l| match l {
-                ContextLayer::Target(id) => Some(*id),
-                _ => None,
-            })
-            .collect()
+    pub fn set_targets(&mut self, targets: Vec<u64>) {
+        self.layers.push(ContextLayer::Targets(targets));
+    }
+
+    pub fn get_targets(&self) -> Vec<u64> {
+        for l in self.layers().iter().rev() {
+            match l {
+                ContextLayer::Target(id) => {
+                    return vec![*id];
+                }
+                ContextLayer::Targets(ids) => {
+                    return ids.clone();
+                }
+                _ => {}
+            }
+        }
+        default()
     }
 
     pub fn set_owner(&mut self, owner: u64) {
@@ -337,6 +357,10 @@ impl<S: ContextSource> Context<S> {
 
     pub fn set_caster(&mut self, caster: u64) {
         self.layers.push(ContextLayer::Caster(caster));
+    }
+
+    pub fn set_attacker(&mut self, attacker: u64) {
+        self.layers.push(ContextLayer::Attacker(attacker));
     }
 
     pub fn set_status(&mut self, status: u64) {
