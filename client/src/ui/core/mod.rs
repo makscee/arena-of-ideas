@@ -7,7 +7,7 @@ pub mod utils;
 
 use super::*;
 
-use bevy_egui::egui::{InnerResponse, Popup, UiKind, UiStackInfo, containers::menu::MenuConfig};
+use bevy_egui::egui::{Popup, UiKind, UiStackInfo, containers::menu::MenuConfig};
 pub use colorix::*;
 pub use cstr::*;
 pub use descriptions::*;
