@@ -193,7 +193,13 @@ where
                                 ui,
                                 |context, ui| {
                                     ui.horizontal(|ui| {
-                                        if ui.button(if expanded { "▼" } else { "▶" }).clicked()
+                                        if ui
+                                            .button(if expanded {
+                                                TRIANGLE_DOWN.to_string()
+                                            } else {
+                                                TRIANGLE_RIGHT.to_string()
+                                            })
+                                            .clicked()
                                         {
                                             ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                                         }
@@ -421,7 +427,13 @@ where
                             ui,
                             |context, ui| {
                                 ui.horizontal(|ui| {
-                                    if ui.button(if expanded { "🔽" } else { "▶️" }).clicked()
+                                    if ui
+                                        .button(if expanded {
+                                            TRIANGLE_DOWN.to_string()
+                                        } else {
+                                            TRIANGLE_RIGHT.to_string()
+                                        })
+                                        .clicked()
                                     {
                                         ui.ctx().data_mut(|w| w.insert_temp(id, !expanded));
                                     }

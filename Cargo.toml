@@ -89,6 +89,7 @@ color-hex = "0.2.0"
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.76"
 mlua = { version = "0.11.4", features = ["lua54", "vendored"] }
+epaint_default_fonts = "0.33.2"
 
 [dependencies]
 client = { path = "client" }

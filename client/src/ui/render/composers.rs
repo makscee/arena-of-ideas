@@ -587,13 +587,14 @@ impl<'a, T> Composer<Vec<T>> for ListComposer<'a, T> {
                                 indices_to_remove.push(actual_idx);
                             }
 
-                            if display_idx > 0 && ui.small_button("🔼").clicked() {
+                            if display_idx > 0 && ui.small_button(TRIANGLE_UP.to_string()).clicked()
+                            {
                                 let prev_actual_idx = filtered_indices[display_idx - 1];
                                 swap_operations.push((actual_idx, prev_actual_idx));
                             }
 
                             if display_idx < filtered_indices.len() - 1
-                                && ui.small_button("🔽").clicked()
+                                && ui.small_button(TRIANGLE_DOWN.to_string()).clicked()
                             {
                                 let next_actual_idx = filtered_indices[display_idx + 1];
                                 swap_operations.push((actual_idx, next_actual_idx));

@@ -24,6 +24,10 @@ pub const GRAY: Color32 = hex_color_noa!("#616161");
 pub const MISSING_COLOR: Color32 = hex_color_noa!("#FF00FF");
 pub const TRANSPARENT: Color32 = Color32::TRANSPARENT;
 pub const CREDITS_SYM: char = '¤';
+pub const TRIANGLE_DOWN: char = '⏷';
+pub const TRIANGLE_RIGHT: char = '⏵';
+pub const TRIANGLE_LEFT: char = '⏴';
+pub const TRIANGLE_UP: char = '⏶';
 
 pub const SHADOW: Shadow = Shadow {
     offset: [8, 8],

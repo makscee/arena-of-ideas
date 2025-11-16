@@ -8,6 +8,7 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
+        "⏵".cstr().label(ui);
         let id = "exp_test".into();
         let mut e = ui.ctx().data_mut(|w| {
             w.get_persisted_mut_or::<Expression>(

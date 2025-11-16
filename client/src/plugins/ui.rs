@@ -94,7 +94,45 @@ fn setup_ui(mut ctx: Query<&mut EguiContext>) {
         .into(),
     ));
     ctx.add_font(FontInsert::new(
-        "emoji",
+        "emoji_icon",
+        FontData::from_static(epaint_default_fonts::EMOJI_ICON),
+        [
+            InsertFontFamily {
+                family: FontFamily::Monospace,
+                priority: FontPriority::Lowest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Proportional,
+                priority: FontPriority::Lowest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Name("bold".into()),
+                priority: FontPriority::Lowest,
+            },
+        ]
+        .into(),
+    ));
+    // ctx.add_font(FontInsert::new(
+    //     "emoji_regular",
+    //     FontData::from_static(epaint_default_fonts::NOTO_EMOJI_REGULAR),
+    //     [
+    //         InsertFontFamily {
+    //             family: FontFamily::Monospace,
+    //             priority: FontPriority::Lowest,
+    //         },
+    //         InsertFontFamily {
+    //             family: FontFamily::Proportional,
+    //             priority: FontPriority::Lowest,
+    //         },
+    //         InsertFontFamily {
+    //             family: FontFamily::Name("bold".into()),
+    //             priority: FontPriority::Lowest,
+    //         },
+    //     ]
+    //     .into(),
+    // ));
+    ctx.add_font(FontInsert::new(
+        "emoji_noto",
         FontData::from_static(include_bytes!(
             "../../../assets/fonts/NotoEmoji-VariableFont_wght.ttf"
         )),
