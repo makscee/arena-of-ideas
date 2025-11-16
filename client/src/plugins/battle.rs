@@ -207,6 +207,7 @@ impl BattlePlugin {
         Self::render_playback_controls(ui, &mut data, main_rect)?;
         if !Self::render_end_screen(ui, &mut data, main_rect, world)? {
             Self::render_battle_texts(ui, &data, main_rect).ui(ui);
+            Self::render_player_names(ui, &data, main_rect).ui(ui);
         }
 
         world.insert_resource(data);
@@ -232,6 +233,42 @@ impl BattlePlugin {
             }
         });
         Ok(())
+    }
+
+    fn render_player_names(ui: &mut Ui, data: &BattleData, rect: Rect) -> NodeResult<()> {
+        let sim = data.source.battle()?;
+        let left = sim.battle.left.owner;
+        let right = sim.battle.right.owner;
+        const SIZE: egui::Vec2 = egui::vec2(150.0, LINE_HEIGHT);
+        with_solid_source(|ctx| {
+            if let Ok(player) = ctx.load::<NPlayer>(left) {
+                let ui = &mut ui.new_child(
+                    UiBuilder::new()
+                        .max_rect(Rect::from_min_max(rect.left_top(), rect.left_top() + SIZE)),
+                );
+                ui.vertical_centered(|ui| {
+                    player.player_name.cstr().label(ui);
+                    format!("[s [tw {}]]", player.id())
+                        .as_label(ui.style())
+                        .selectable(true)
+                        .ui(ui);
+                });
+            }
+            if let Ok(player) = ctx.load::<NPlayer>(right) {
+                let ui = &mut ui.new_child(UiBuilder::new().max_rect(Rect::from_min_max(
+                    rect.right_top() + SIZE * egui::vec2(-1.0, 1.0),
+                    rect.right_top(),
+                )));
+                ui.vertical_centered(|ui| {
+                    player.player_name.cstr().label(ui);
+                    format!("[s [tw {}]]", player.id())
+                        .as_label(ui.style())
+                        .selectable(true)
+                        .ui(ui);
+                });
+            }
+            Ok(())
+        })
     }
 
     fn render_playback_controls(
