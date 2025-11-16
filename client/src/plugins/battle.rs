@@ -224,7 +224,7 @@ impl BattlePlugin {
             if let Some(text) = sim.get_text_at(BattleText::CurrentEvent, t) {
                 text.cstr().label(ui);
             }
-            if let Some(text) = sim.get_text_at(BattleText::Round, t) {
+            if let Some(text) = sim.get_text_at(BattleText::Turn, t) {
                 text.cstr().label(ui);
             }
             if let Some(text) = sim.get_text_at(BattleText::Fatigue, t) {

@@ -59,7 +59,7 @@ pub fn init_for_tests() {
                 reroll: 1,
                 initial: 5,
                 house_chance: 20,
-                fatigue_start_round: 10,
+                fatigue_start_turn: 10,
             },
         })
         .ok();

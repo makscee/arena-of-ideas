@@ -102,7 +102,7 @@ pub struct BattleSimulation {
     pub world: World,
     pub battle: Battle,
     pub duration: f32,
-    pub rounds: usize,
+    pub turns: usize,
     pub fusions_left: Vec<u64>,
     pub fusions_right: Vec<u64>,
     pub team_left: u64,
@@ -122,7 +122,7 @@ pub struct Corpse;
 #[derive(Clone, Debug, Copy, Hash, Eq, PartialEq)]
 pub enum BattleText {
     CurrentEvent,
-    Round,
+    Turn,
     Fatigue,
 }
 
@@ -447,7 +447,7 @@ impl Default for BattleSimulation {
             log: BattleLog::default(),
             rng: ChaCha8Rng::seed_from_u64(0),
             battle_texts: HashMap::new(),
-            rounds: 0,
+            turns: 0,
             fired: HashSet::new(),
         }
     }
@@ -588,10 +588,10 @@ impl BattleSimulation {
 
         let sim = ctx.battle_mut()?;
         sim.duration += animation_time();
-        sim.rounds += 1;
+        sim.turns += 1;
         sim.add_text(
-            BattleText::Round,
-            format!("[tw Round] [yellow [b {}]]", sim.rounds),
+            BattleText::Turn,
+            format!("[tw Turn] [yellow [b {}]]", sim.turns),
         );
 
         let sim = ctx.battle()?;
@@ -600,15 +600,15 @@ impl BattleSimulation {
             process_actions(ctx, vec![a]);
         }
 
-        let round = ctx.battle()?.rounds as i32;
-        let fatigue_start = global_settings().match_settings.fatigue_start_round as i32;
+        let turn = ctx.battle()?.turns as i32;
+        let fatigue_start = global_settings().match_settings.fatigue_start_turn as i32;
 
-        if round > fatigue_start {
-            let fatigue_action = BattleAction::fatigue(round - fatigue_start);
+        if turn > fatigue_start {
+            let fatigue_action = BattleAction::fatigue(turn - fatigue_start);
             let sim = ctx.battle_mut()?;
             sim.add_text(
                 BattleText::Fatigue,
-                format!("[tw Fatigue] [red [b {}]]", round - fatigue_start),
+                format!("[tw Fatigue] [red [b {}]]", turn - fatigue_start),
             );
             process_actions(ctx, vec![fatigue_action]);
         }

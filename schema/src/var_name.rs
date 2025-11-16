@@ -50,7 +50,6 @@ pub enum VarName {
     price,
     unit,
     floor,
-    round,
     stax,
     online,
     active,

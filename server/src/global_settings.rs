@@ -21,7 +21,7 @@ impl Default for GlobalSettings {
                 reroll: 1,
                 initial: 7,
                 house_chance: 30,
-                fatigue_start_round: 10,
+                fatigue_start_turn: 10,
             },
         }
     }
@@ -36,7 +36,7 @@ pub struct MatchSettings {
     pub reroll: i32,
     pub initial: i32,
     pub house_chance: i32,
-    pub fatigue_start_round: i32,
+    pub fatigue_start_turn: i32,
 }
 
 impl GlobalSettings {
