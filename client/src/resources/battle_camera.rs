@@ -22,6 +22,17 @@ impl Default for BattleCamera {
 impl BattleCamera {
     fn update(&mut self, ui: &mut Ui) {
         self.rect = ui.available_rect_before_wrap();
+
+        let ctx = ui.ctx();
+        if ctx.wants_keyboard_input() {
+            return;
+        }
+        if ctx.input(|i| i.key_pressed(Key::Space)) {
+            op(|world| {
+                let mut bd = world.resource_mut::<BattleData>();
+                bd.playing = !bd.playing;
+            });
+        }
     }
     fn u(&self) -> f32 {
         self.rect.width() / self.zoom

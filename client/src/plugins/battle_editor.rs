@@ -6,11 +6,7 @@ pub struct TeamEditorPlugin;
 
 impl Plugin for BattleEditorPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state)
-            .add_systems(
-                Update,
-                Self::handle_space_input.run_if(in_state(GameState::Editor)),
-            );
+        app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state);
     }
 }
 
@@ -131,23 +127,6 @@ impl BattleEditorPlugin {
             was_playing: true,
         });
         Self::save_changes_and_reload(world);
-    }
-
-    pub fn handle_space_input(
-        battle_data: Option<ResMut<BattleData>>,
-        editor_state: Option<ResMut<BattleEditorState>>,
-        ctx: EguiContexts,
-    ) {
-        let ctx = ctx.ctx().unwrap();
-        if ctx.wants_keyboard_input() {
-            return;
-        }
-        if ctx.input(|i| i.key_pressed(Key::Space)) {
-            if let (Some(mut battle_data), Some(mut editor_state)) = (battle_data, editor_state) {
-                battle_data.playing = !battle_data.playing;
-                editor_state.was_playing = battle_data.playing;
-            }
-        }
     }
 
     pub fn save_changes_and_reload(world: &mut World) {

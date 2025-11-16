@@ -4,7 +4,10 @@ pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Battle), Self::on_enter);
+        app.add_systems(OnEnter(GameState::Battle), Self::on_enter)
+            .add_systems(OnExit(GameState::Battle), |world: &mut World| {
+                world.remove_resource::<BattleData>();
+            });
     }
 }
 
@@ -17,13 +20,13 @@ pub struct BattleData {
     pub playing: bool,
     pub on_done: Option<fn(u64, bool, u64)>,
     pub slot_actions: Vec<(String, fn(i32, Entity, &mut ClientContext))>,
+    pub is_replay: bool,
 }
 
 impl BattleData {
     fn load(battle: Battle) -> Self {
         let mut source = battle.clone().to_source();
 
-        // Start the simulation
         source
             .exec_context(|ctx| BattleSimulation::start(ctx))
             .unwrap();
@@ -36,47 +39,78 @@ impl BattleData {
             playback_speed: 1.0,
             on_done: None,
             slot_actions: Vec::new(),
+            is_replay: false,
+        }
+    }
+
+    fn load_replay(battle: Battle) -> Self {
+        let mut source = battle.clone().to_source();
+
+        source
+            .exec_context(|ctx| BattleSimulation::start(ctx))
+            .unwrap();
+
+        Self {
+            battle,
+            source,
+            t: 0.0,
+            playing: true,
+            playback_speed: 1.0,
+            on_done: None,
+            slot_actions: Vec::new(),
+            is_replay: true,
         }
     }
 }
 
 impl BattlePlugin {
     fn on_enter(world: &mut World) {
-        // Load the latest battle from the current match
+        if world.contains_resource::<BattleData>() {
+            return;
+        }
+
         let result = with_solid_source(|ctx| {
-            let mut m = player(ctx)?.active_match_ref(ctx)?.clone();
-            if m.state.is_battle() {
-                if let Some(last) = m
-                    .battles_load(ctx)?
-                    .into_iter()
-                    .sorted_by_key(|b| b.id)
-                    .last()
-                {
-                    if last.result.is_none() {
-                        let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
-                            team.load_all(ctx)?.take()
+            let player_result = player(ctx);
+
+            match player_result {
+                Ok(p) => {
+                    let mut m_clone = p.active_match_ref(ctx)?.clone();
+                    if m_clone.state.is_battle() {
+                        if let Some(last) = m_clone
+                            .battles_load(ctx)?
+                            .into_iter()
+                            .sorted_by_key(|b| b.id)
+                            .last()
+                        {
+                            if last.result.is_none() {
+                                let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
+                                    team.load_all(ctx)?.take()
+                                } else {
+                                    NTeam::default().with_id(next_id())
+                                };
+                                let right = if let Ok(mut team) = ctx.load::<NTeam>(last.team_right)
+                                {
+                                    team.load_all(ctx)?.take()
+                                } else {
+                                    NTeam::default().with_id(next_id())
+                                };
+                                Ok(Some((last.id, Some((left, right)), false)))
+                            } else {
+                                Ok(None)
+                            }
                         } else {
-                            NTeam::default().with_id(next_id())
-                        };
-                        let right = if let Ok(mut team) = ctx.load::<NTeam>(last.team_right) {
-                            team.load_all(ctx)?.take()
-                        } else {
-                            NTeam::default().with_id(next_id())
-                        };
-                        Ok(Some((last.id, Some((left, right)))))
+                            Ok(None)
+                        }
                     } else {
                         Ok(None)
                     }
-                } else {
-                    Ok(None)
                 }
-            } else {
-                Ok(None)
+                Err(_) => Ok(None),
             }
         });
 
         match result {
-            Ok(Some((id, teams))) => {
+            Ok(Some((id, teams, _is_active_battle))) => {
                 if let Some((left, right)) = teams {
                     Self::load_teams(id, left, right, world);
                     Self::on_done_callback(
@@ -121,11 +155,33 @@ impl BattlePlugin {
         }
         world.insert_resource(BattleData::load(Battle { left, right, id }));
     }
+
+    pub fn load_replay(mut left: NTeam, mut right: NTeam, world: &mut World) {
+        let slots = global_settings().team_slots as usize;
+        for team in [&mut left, &mut right] {
+            if !team.fusions.is_loaded() {
+                team.fusions_set(default()).unwrap();
+            }
+            while team.fusions.get().unwrap().len() < slots {
+                let mut fusion = NFusion::default().with_id(next_id());
+                fusion.index = team.fusions.get().unwrap().len() as i32;
+                fusion.owner = team.owner;
+                let mut slot = NFusionSlot::default().with_id(next_id());
+                slot.owner = team.owner;
+                fusion.slots.set_loaded([slot].into()).ok();
+                team.fusions.get_mut().unwrap().push(fusion);
+            }
+        }
+        let id = next_id();
+        world.insert_resource(BattleData::load_replay(Battle { left, right, id }));
+    }
+
     pub fn on_done_callback(f: fn(u64, bool, u64), world: &mut World) {
         if let Some(mut r) = world.get_resource_mut::<BattleData>() {
             r.on_done = Some(f);
         }
     }
+
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         let mut data = world
             .remove_resource::<BattleData>()
@@ -134,7 +190,6 @@ impl BattlePlugin {
         let t = data.t;
         let main_rect = ui.available_rect_before_wrap();
 
-        // Show battle camera with slot actions
         data.source
             .exec_context(|ctx| {
                 BattleCamera::show_with_actions(
@@ -150,7 +205,7 @@ impl BattlePlugin {
             .log();
 
         Self::render_playback_controls(ui, &mut data, main_rect)?;
-        if !Self::render_end_screen(ui, &mut data, main_rect)? {
+        if !Self::render_end_screen(ui, &mut data, main_rect, world)? {
             Self::render_battle_texts(ui, &data, main_rect).ui(ui);
         }
 
@@ -184,7 +239,6 @@ impl BattlePlugin {
         data: &mut BattleData,
         main_rect: Rect,
     ) -> NodeResult<()> {
-        // Create overlay for controls at the bottom
         let overlay_height = 80.0;
         let slider_height = 20.0;
 
@@ -223,22 +277,18 @@ impl BattlePlugin {
 
     fn render_controls(ui: &mut Ui, data: &mut BattleData) {
         ui.horizontal(|ui| {
-            // Reset button
             if ui.button("⏮").clicked() {
                 data.t = 0.0;
             }
 
-            // Step back
             if ui.button("⏪").clicked() {
                 data.t = (data.t - 1.0).max(0.0);
             }
 
-            // Play/Pause button
             if ui.button(if data.playing { "⏸" } else { "▶" }).clicked() {
                 data.playing = !data.playing;
             }
 
-            // Step forward
             if ui.button("⏩").clicked() {
                 let duration = data
                     .source
@@ -246,7 +296,6 @@ impl BattlePlugin {
                 data.t = (data.t + 1.0).min(duration);
             }
 
-            // Jump to end
             if ui.button("⏭").clicked() {
                 let duration = data
                     .source
@@ -256,7 +305,6 @@ impl BattlePlugin {
 
             ui.separator();
 
-            // Speed controls
             ui.label("Speed:");
 
             ui.add(
@@ -265,7 +313,6 @@ impl BattlePlugin {
                     .range(0.1..=8.0),
             );
 
-            // Speed preset buttons
             let speeds = [1.0, 2.0, 4.0];
             for &speed in &speeds {
                 let is_active = (data.playback_speed - speed).abs() < 0.01;
@@ -279,7 +326,6 @@ impl BattlePlugin {
 
             ui.separator();
 
-            // Duration slider
             let duration = data
                 .source
                 .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
@@ -292,7 +338,12 @@ impl BattlePlugin {
         });
     }
 
-    fn render_end_screen(ui: &mut Ui, data: &mut BattleData, main_rect: Rect) -> NodeResult<bool> {
+    fn render_end_screen(
+        ui: &mut Ui,
+        data: &mut BattleData,
+        main_rect: Rect,
+        world: &mut World,
+    ) -> NodeResult<bool> {
         let (duration, ended, result) = data.source.exec_context_ref(|ctx| {
             let sim = ctx.battle().unwrap();
             (sim.duration, sim.ended(), sim.fusions_right.is_empty())
@@ -318,7 +369,9 @@ impl BattlePlugin {
                     ui[1].vertical_centered_justified(|ui| {
                         ui.set_max_width(200.0);
                         if "Complete".cstr().button(ui).clicked() {
-                            if let Some(on_done) = data.on_done.take() {
+                            if data.is_replay {
+                                GameState::Title.set_next(world);
+                            } else if let Some(on_done) = data.on_done.take() {
                                 let hash = data.source.exec_context_ref(|ctx| {
                                     let mut h = DefaultHasher::new();
                                     for a in &ctx.battle().unwrap().log.actions {

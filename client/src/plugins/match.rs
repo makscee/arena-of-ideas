@@ -550,16 +550,13 @@ impl MatchPlugin {
                         "Actions",
                         |ctx, ui, b, _| {
                             if b.result.is_some() && ui.button("Replay").clicked() {
-                                // Load battle for replay viewing
                                 let mut left_team = ctx.load::<NTeam>(b.team_left)?;
                                 left_team.load_all(ctx)?;
                                 let mut right_team = ctx.load::<NTeam>(b.team_right)?;
                                 right_team.load_all(ctx)?;
 
-                                // Set up battle state for replay using BattlePlugin::load_teams
                                 use crate::plugins::battle::BattlePlugin;
-                                BattlePlugin::load_teams(
-                                    b.id,
+                                BattlePlugin::load_replay(
                                     left_team.take(),
                                     right_team.take(),
                                     world,

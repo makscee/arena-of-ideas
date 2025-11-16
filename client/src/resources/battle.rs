@@ -110,6 +110,7 @@ pub struct BattleSimulation {
     pub log: BattleLog,
     pub rng: ChaCha8Rng,
     pub battle_texts: HashMap<BattleText, Vec<(f32, String)>>,
+    pub fired: HashSet<u64>,
 }
 #[derive(Default, Debug, Clone)]
 pub struct BattleLog {
@@ -447,6 +448,7 @@ impl Default for BattleSimulation {
             rng: ChaCha8Rng::seed_from_u64(0),
             battle_texts: HashMap::new(),
             rounds: 0,
+            fired: HashSet::new(),
         }
     }
 }
@@ -545,6 +547,9 @@ impl BattleSimulation {
         if ctx.battle()?.ended() {
             return Ok(());
         }
+
+        let sim = ctx.battle_mut()?;
+        sim.fired.clear();
 
         let sim = ctx.battle()?;
         let ids = sim
@@ -658,16 +663,29 @@ impl BattleSimulation {
                 _ => {}
             }
             let mut fusion_statuses: Vec<(u64, u64)> = default();
-            let sim = ctx.battle_mut()?;
-            sim.add_text(BattleText::CurrentEvent, format!("[b [yellow ⚡️ {event}]]"));
-            for id in sim.all_fusions() {
+            let fusion_ids = {
+                let sim = ctx.battle_mut()?;
+                sim.add_text(BattleText::CurrentEvent, format!("[b [yellow ⚡️ {event}]]"));
+                sim.all_fusions()
+            };
+
+            for id in fusion_ids {
+                let should_skip = ctx.battle()?.fired.contains(&id);
+                if should_skip {
+                    continue;
+                }
                 let statuses = ctx.collect_kind_children(id, NodeKind::NStatusMagic)?;
                 if !statuses.is_empty() {
                     fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
                 }
                 ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
                     match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
-                        Ok(actions) => process_actions(ctx, actions),
+                        Ok(actions) => {
+                            if !actions.is_empty() {
+                                ctx.battle_mut()?.fired.insert(id);
+                                process_actions(ctx, actions);
+                            }
+                        }
                         Err(e) => error!("NFusion event {event} failed: {e}"),
                     };
                     Ok(())
@@ -675,13 +693,16 @@ impl BattleSimulation {
                 .log();
             }
             for (fusion_id, status_id) in fusion_statuses {
+                let should_skip = ctx.battle()?.fired.contains(&status_id);
+                if should_skip {
+                    continue;
+                }
                 match ctx.with_layers(
                     [
                         ContextLayer::Owner(fusion_id),
                         ContextLayer::Status(status_id),
                     ],
                     |ctx| {
-                        // Only trigger status reactions if stax > 0
                         let mut status = ctx.load::<NStatusMagic>(status_id)?;
                         let stax = status.state_ref(ctx)?.stax;
                         if stax <= 0 {
@@ -700,7 +721,12 @@ impl BattleSimulation {
                         }
                     },
                 ) {
-                    Ok(actions) => process_actions(ctx, actions),
+                    Ok(actions) => {
+                        if !actions.is_empty() {
+                            ctx.battle_mut()?.fired.insert(status_id);
+                            process_actions(ctx, actions);
+                        }
+                    }
                     Err(e) => e.log(),
                 }
             }
