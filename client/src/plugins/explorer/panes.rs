@@ -177,6 +177,7 @@ impl ExplorerPanes {
                     true
                 }
             })
+            .unique_by(|n| n.id())
             .collect_vec()
             .as_list(|node, ctx, ui| {
                 let is_current = current_id == Some(node.id());
