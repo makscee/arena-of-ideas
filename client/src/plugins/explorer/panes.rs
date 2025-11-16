@@ -67,6 +67,10 @@ impl ExplorerPanes {
     where
         T: ClientNode + FCard,
     {
+        format!("[s [tw {}]]", node.id())
+            .as_label(ui.style())
+            .selectable(true)
+            .ui(ui);
         node.as_card().compose(ctx, ui);
         Ok(())
     }

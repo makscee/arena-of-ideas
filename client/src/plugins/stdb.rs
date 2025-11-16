@@ -225,6 +225,8 @@ pub fn subscribe_reducers() {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::atomic::AtomicU64;
+
     use super::*;
 
     #[test]
@@ -949,6 +951,98 @@ mod tests {
             world.get::<NHouseColor>(house_entity).is_some(),
             "Color should exist on merged entity"
         );
+    }
+
+    fn link(source: &mut Sources, parent: &TNode, child: &TNode) {
+        static LINK_ID: AtomicU64 = AtomicU64::new(1);
+        let id = LINK_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let link = TNodeLink {
+            id,
+            parent: parent.id,
+            child: child.id,
+            parent_kind: parent.kind.clone(),
+            child_kind: child.kind.clone(),
+            rating: 0,
+            solid: true,
+        };
+        source
+            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
+            .unwrap();
+    }
+
+    #[test]
+    fn test_many_to_one_cloning() {
+        let source = &mut Sources::new_solid();
+        let unit1 = NUnit::new(1001, 0, "test1".into()).to_tnode();
+        let unit2 = NUnit::new(1002, 0, "test2".into()).to_tnode();
+        let unit3 = NUnit::new(1003, 0, "test3".into()).to_tnode();
+        let unit4 = NUnit::new(1004, 0, "test4".into()).to_tnode();
+        let description = NUnitDescription::default().with_id(2000).to_tnode();
+        let stats1 = NUnitStats::new(3001, 0, 1, 1).to_tnode();
+        let stats2 = NUnitStats::new(3002, 0, 2, 2).to_tnode();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit1.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit2.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit3.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit4.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(description.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(stats1.clone()))
+            .unwrap();
+        source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(stats2.clone()))
+            .unwrap();
+        link(source, &unit1, &description);
+        link(source, &unit2, &description);
+        link(source, &unit3, &description);
+        link(source, &unit4, &description);
+        link(source, &unit1, &stats1);
+        link(source, &unit2, &stats1);
+        link(source, &unit3, &stats2);
+        link(source, &unit4, &stats2);
+        source.exec_context(|ctx| {
+            assert_eq!(
+                ctx.get_var_inherited(unit1.id, VarName::hp).unwrap(),
+                VarValue::i32(1)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit1.id, VarName::pwr).unwrap(),
+                VarValue::i32(1)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit2.id, VarName::hp).unwrap(),
+                VarValue::i32(1)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit2.id, VarName::pwr).unwrap(),
+                VarValue::i32(1)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit3.id, VarName::hp).unwrap(),
+                VarValue::i32(2)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit3.id, VarName::pwr).unwrap(),
+                VarValue::i32(2)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit4.id, VarName::hp).unwrap(),
+                VarValue::i32(2)
+            );
+            assert_eq!(
+                ctx.get_var_inherited(unit4.id, VarName::pwr).unwrap(),
+                VarValue::i32(2)
+            );
+        });
     }
 
     #[test]

@@ -246,15 +246,14 @@ impl<'a> Sources<'a> {
 
     fn get_var_from_node(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         let entity = self.entity(node_id).track()?;
-        let map = self.get_nodes_map()?;
-        let kind = map
-            .get_node_ids(entity)
+        let kind = self
+            .get_node_kind(node_id)
+            .track()?
+            .with_other_components()
             .into_iter()
-            .filter_map(|id| map.get_kind(id))
-            .find(|kind| kind.var_names().contains(&var));
-        let Some(kind) = kind else {
-            return Err(NodeError::var_not_found(var)).track();
-        };
+            .find(|k| k.var_names().contains(&var))
+            .to_not_found()
+            .track()?;
         let world = self.world().track()?;
 
         node_kind_match!(kind, {

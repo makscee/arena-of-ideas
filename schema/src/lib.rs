@@ -77,6 +77,11 @@ impl NodeKind {
             Err(format!("NodeKind is not named").into())
         }
     }
+    pub fn with_other_components(self) -> HashSet<NodeKind> {
+        let mut set = self.other_components();
+        set.insert(self);
+        set
+    }
 }
 
 pub trait StringData: Sized {
