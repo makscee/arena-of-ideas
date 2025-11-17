@@ -47,7 +47,7 @@ impl StdbPlugin {
                 }
                 if !changed {
                     debug!("db events queue left: {}", queue.len());
-                    dbg!(&queue);
+                    // dbg!(&queue);
                     break;
                 }
             }

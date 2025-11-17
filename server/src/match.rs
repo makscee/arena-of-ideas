@@ -302,6 +302,7 @@ fn match_buy_fusion_slot(ctx: &ReducerContext, fusion_id: u64) -> Result<(), Str
     fusion.slots_push(fs)?;
     fusion.save(ctx)?;
     m.buy(ctx, price)?;
+    m.take().save(ctx)?;
     Ok(())
 }
 
