@@ -250,7 +250,19 @@ mod tests {
     fn test_node_create_link_delete() {
         let mut solid_source = Sources::new_solid();
         let player_node = NPlayer::new(1001, 1, "test player".into()).to_tnode();
-        let match_node = NMatch::new(1002, 1, 10, 1, 1, true, default(), default()).to_tnode();
+        let match_node = NMatch::new(
+            1002,
+            1,
+            10,
+            1,
+            1,
+            true,
+            default(),
+            default(),
+            default(),
+            default(),
+        )
+        .to_tnode();
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(player_node))
             .unwrap();

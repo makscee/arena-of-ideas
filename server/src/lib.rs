@@ -1,4 +1,5 @@
 mod admin;
+mod battle_table;
 mod content;
 mod context;
 mod daily_updater;

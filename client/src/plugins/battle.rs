@@ -76,25 +76,26 @@ impl BattlePlugin {
                 Ok(p) => {
                     let mut m_clone = p.active_match_ref(ctx)?.clone();
                     if m_clone.state.is_battle() {
-                        if let Some(last) = m_clone
-                            .battles_load(ctx)?
-                            .into_iter()
-                            .sorted_by_key(|b| b.id)
-                            .last()
-                        {
-                            if last.result.is_none() {
-                                let left = if let Ok(mut team) = ctx.load::<NTeam>(last.team_left) {
-                                    team.load_all(ctx)?.take()
-                                } else {
-                                    NTeam::default().with_id(next_id())
-                                };
-                                let right = if let Ok(mut team) = ctx.load::<NTeam>(last.team_right)
+                        if let Some(battle_id) = m_clone.pending_battle {
+                            if let Some(battle) = cn().db.battle().id().find(&battle_id) {
+                                // Deserialize teams from packed strings
+                                let left = if let Ok(packed) =
+                                    PackedNodes::from_string(&battle.left_team)
                                 {
-                                    team.load_all(ctx)?.take()
+                                    NTeam::unpack(&packed)
+                                        .unwrap_or_else(|_| NTeam::default().with_id(next_id()))
                                 } else {
                                     NTeam::default().with_id(next_id())
                                 };
-                                Ok(Some((last.id, Some((left, right)), false)))
+                                let right = if let Ok(packed) =
+                                    PackedNodes::from_string(&battle.right_team)
+                                {
+                                    NTeam::unpack(&packed)
+                                        .unwrap_or_else(|_| NTeam::default().with_id(next_id()))
+                                } else {
+                                    NTeam::default().with_id(next_id())
+                                };
+                                Ok(Some((battle.id, Some((left, right)), false)))
                             } else {
                                 Ok(None)
                             }

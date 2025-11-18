@@ -325,15 +325,17 @@ impl MatchPlugin {
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let mut m = player.active_match_ref(ctx)?.clone();
-            let won_last = m
-                .battles_load(ctx)?
-                .iter()
-                .sorted_by_key(|b| b.id)
-                .last()
-                .to_not_found()?
-                .result
-                == Some(true);
+            let m = player.active_match_ref(ctx)?.clone();
+            let won_last = if let Some(last_battle_id) = m.battle_history.last() {
+                cn().db
+                    .battle()
+                    .id()
+                    .find(last_battle_id)
+                    .map(|b| b.result == Some(true))
+                    .unwrap_or(false)
+            } else {
+                false
+            };
             let arena = ctx.load::<NArena>(ID_ARENA)?;
             let last_floor = arena.last_floor;
 
@@ -470,12 +472,11 @@ impl MatchPlugin {
 
     pub fn pane_battle_history(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let arena = ctx.load::<NArena>(ID_ARENA)?;
-
-            let battles = arena
-                .battles_ref(ctx)?
-                .into_iter()
-                .sorted_by_key(|b| std::cmp::Reverse(b.ts))
+            let battles = cn()
+                .db
+                .battle()
+                .iter()
+                .sorted_by_key(|b| std::cmp::Reverse(b.id))
                 .collect_vec();
 
             ui.vertical_centered_justified(|ui| {
@@ -494,7 +495,7 @@ impl MatchPlugin {
                             let ts = value.get_u64()?;
                             let date = chrono::DateTime::from_timestamp_micros(ts as i64)
                                 .unwrap_or_default();
-                            format!("{}", date.format("%Y-%m-%d %H:%M"))
+                            format!("[s [tw {}]]", date.format("%Y-%m-%d %H:%M"))
                                 .cstr()
                                 .label(ui);
                             Ok(())
@@ -503,29 +504,19 @@ impl MatchPlugin {
                     )
                     .column(
                         "Left Team",
-                        |ctx, ui, _, value| {
-                            let team_id = value.get_u64()?;
-                            if let Ok(team) = ctx.load::<NTeam>(team_id) {
-                                team.title(ctx).cstr_cs(CYAN, CstrStyle::Normal).label(ui);
-                            } else {
-                                "Unknown".cstr().label(ui);
-                            }
+                        |_, ui, _, value| {
+                            value.to_string().label(ui);
                             Ok(())
                         },
-                        |_, b| Ok(b.team_left.into()),
+                        |_, b| Ok(b.left_team_name.clone().into()),
                     )
                     .column(
                         "Right Team",
-                        |ctx, ui, _, value| {
-                            let team_id = value.get_u64()?;
-                            if let Ok(team) = ctx.load::<NTeam>(team_id) {
-                                team.title(ctx).cstr_cs(YELLOW, CstrStyle::Normal).label(ui);
-                            } else {
-                                "Unknown".cstr().label(ui);
-                            }
+                        |_, ui, _, value| {
+                            value.to_string().label(ui);
                             Ok(())
                         },
-                        |_, b| Ok(b.team_right.into()),
+                        |_, b| Ok(b.right_team_name.clone().into()),
                     )
                     .column(
                         "Result",
@@ -548,19 +539,15 @@ impl MatchPlugin {
                     )
                     .column(
                         "Actions",
-                        |ctx, ui, b, _| {
+                        |_, ui, b, _| {
                             if b.result.is_some() && ui.button("Replay").clicked() {
-                                let mut left_team = ctx.load::<NTeam>(b.team_left)?;
-                                left_team.load_all(ctx)?;
-                                let mut right_team = ctx.load::<NTeam>(b.team_right)?;
-                                right_team.load_all(ctx)?;
+                                let left_team =
+                                    NTeam::unpack(&PackedNodes::from_string(&b.left_team)?)?;
+                                let right_team =
+                                    NTeam::unpack(&PackedNodes::from_string(&b.right_team)?)?;
 
                                 use crate::plugins::battle::BattlePlugin;
-                                BattlePlugin::load_replay(
-                                    left_team.take(),
-                                    right_team.take(),
-                                    world,
-                                );
+                                BattlePlugin::load_replay(left_team, right_team, world);
                                 GameState::Battle.set_next(world);
                             }
                             Ok(())

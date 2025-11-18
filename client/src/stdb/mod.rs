@@ -11,6 +11,7 @@ pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
 pub mod admin_sync_link_ratings_reducer;
 pub mod admin_upload_world_reducer;
+pub mod battle_table;
 pub mod content_deselect_link_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_rotation_reducer;
@@ -48,6 +49,7 @@ pub mod nodes_world_table;
 pub mod player_link_selections_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
+pub mod t_battle_type;
 pub mod t_node_link_type;
 pub mod t_node_type;
 pub mod t_player_link_selection_type;
@@ -68,6 +70,7 @@ pub use admin_sync_link_ratings_reducer::{
 pub use admin_upload_world_reducer::{
     admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
 };
+pub use battle_table::*;
 pub use content_deselect_link_reducer::{
     content_deselect_link, set_flags_for_content_deselect_link, ContentDeselectLinkCallbackId,
 };
@@ -151,6 +154,7 @@ pub use nodes_world_table::*;
 pub use player_link_selections_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
+pub use t_battle_type::TBattle;
 pub use t_node_link_type::TNodeLink;
 pub use t_node_type::TNode;
 pub use t_player_link_selection_type::TPlayerLinkSelection;
@@ -453,6 +457,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct DbUpdate {
+    battle: __sdk::TableUpdate<TBattle>,
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
@@ -467,6 +472,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
         let mut db_update = DbUpdate::default();
         for table_update in raw.tables {
             match &table_update.table_name[..] {
+                "battle" => db_update
+                    .battle
+                    .append(battle_table::parse_table_update(table_update)?),
                 "daily_update_timer" => db_update
                     .daily_update_timer
                     .append(daily_update_timer_table::parse_table_update(table_update)?),
@@ -511,6 +519,9 @@ impl __sdk::DbUpdate for DbUpdate {
     ) -> AppliedDiff<'_> {
         let mut diff = AppliedDiff::default();
 
+        diff.battle = cache
+            .apply_diff_to_table::<TBattle>("battle", &self.battle)
+            .with_updates_by_pk(|row| &row.id);
         diff.daily_update_timer = cache
             .apply_diff_to_table::<DailyUpdateTimer>("daily_update_timer", &self.daily_update_timer)
             .with_updates_by_pk(|row| &row.scheduled_id);
@@ -539,6 +550,7 @@ impl __sdk::DbUpdate for DbUpdate {
 #[allow(non_snake_case)]
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
+    battle: __sdk::TableAppliedDiff<'r, TBattle>,
     daily_update_timer: __sdk::TableAppliedDiff<'r, DailyUpdateTimer>,
     global_data: __sdk::TableAppliedDiff<'r, GlobalData>,
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
@@ -557,6 +569,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         event: &EventContext,
         callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
+        callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -1165,6 +1178,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
     type SubscriptionHandle = SubscriptionHandle;
 
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
+        battle_table::register_table(client_cache);
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);

@@ -6,7 +6,6 @@ pub struct NArena {
     pub last_floor: i32,
     pub floor_pools: OwnedMultiple<NFloorPool>,
     pub floor_bosses: OwnedMultiple<NFloorBoss>,
-    pub battles: OwnedMultiple<NBattle>,
 }
 
 #[derive(Node)]
@@ -132,15 +131,6 @@ pub struct NTeam {
 }
 
 #[derive(Node)]
-pub struct NBattle {
-    pub team_left: u64,
-    pub team_right: u64,
-    pub ts: u64,
-    pub hash: u64,
-    pub result: Option<bool>,
-}
-
-#[derive(Node)]
 pub struct NMatch {
     #[var]
     pub g: i32,
@@ -153,7 +143,8 @@ pub struct NMatch {
     pub state: MatchState,
     pub shop_offers: Vec<ShopOffer>,
     pub team: Owned<NTeam>,
-    pub battles: RefMultiple<NBattle>,
+    pub battle_history: Vec<u64>,
+    pub pending_battle: Option<u64>,
 }
 
 #[derive(Node)]

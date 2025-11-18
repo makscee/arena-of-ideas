@@ -32,8 +32,8 @@ impl ToString for PackedNodes {
 }
 
 impl PackedNodes {
-    pub fn from_string(s: &str) -> SpannedResult<Self> {
-        ron::from_str(s)
+    pub fn from_string(s: &str) -> NodeResult<Self> {
+        ron::from_str(s).map_err(|e| NodeError::custom(e.to_string()))
     }
     pub fn kind(&self) -> &String {
         &self.nodes.get(&self.root).unwrap().kind

@@ -66,20 +66,15 @@ fn create_battle(
     player_id: u64,
     player_team_id: u64,
     enemy_team_id: u64,
-) -> Result<NBattle, String> {
-    let battle = NBattle::new(
-        ctx.next_id(),
-        player_id,
-        player_team_id,
-        enemy_team_id,
-        ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64,
-        default(),
-        None,
-    )
-    .insert(ctx);
-    ctx.add_link(m.id, battle.id)?;
+) -> NodeResult<u64> {
+    let left_team = ctx.load::<NTeam>(player_team_id)?;
+    let right_team = ctx.load::<NTeam>(enemy_team_id).unwrap_or_default();
 
-    Ok(battle)
+    let battle_id =
+        crate::battle_table::TBattle::create(ctx, player_id, &left_team, &right_team, default())?;
+
+    m.pending_battle = Some(battle_id);
+    Ok(battle_id)
 }
 
 #[reducer]
@@ -322,7 +317,7 @@ fn match_submit_battle_result(
     ctx: &ReducerContext,
     id: u64,
     result: bool,
-    hash: u64,
+    _hash: u64,
 ) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
@@ -330,20 +325,20 @@ fn match_submit_battle_result(
     let m = player.active_match_load(ctx)?;
     let current_floor = m.floor;
 
-    let mut battles = m.battles_load(ctx)?;
-    battles.sort_by_key(|b| b.id);
-    let battle = battles.last_mut().unwrap();
-    debug!("Submit result: flr={current_floor} result={result} {battle:?}");
-    if battle.id != id {
+    let Some(battle_id) = m.pending_battle else {
+        return Err("No pending battle found".to_string());
+    };
+    debug!("Submit result: flr={current_floor} result={result} battle_id={battle_id}");
+    if battle_id != id {
         return Err("Wrong Battle id".into());
     }
-    if battle.result.is_some() {
-        return Err("Battle result already submitted".into());
-    }
-    battle.set_result(Some(result));
-    battle.set_hash(hash);
-    battle.id.add_parent(ctx.rctx(), ID_ARENA)?;
-    battle.take().save(ctx)?;
+
+    // Update battle result in TBattle table
+    crate::battle_table::TBattle::update_result(ctx.rctx(), battle_id, result)?;
+
+    // Move pending battle to history
+    m.battle_history.push(battle_id);
+    m.pending_battle = None;
 
     let current_state = m.state;
 
@@ -471,25 +466,25 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let mut player = ctx.player().track()?;
     let pid = player.id;
-    let m = player.active_match_load(ctx)?;
+    let m = player.active_match_load(ctx).track()?;
     let floor = m.floor;
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
     if m.floor > last_floor {
         m.set_state(MatchState::ChampionBattle);
-        let player_team_id = m.team_load(ctx)?.id;
+        let player_team_id = m.team_load(ctx).track()?.id;
         let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
-        create_battle(ctx, m, pid, player_team_id, enemy_team_id)?;
+        create_battle(ctx, m, pid, player_team_id, enemy_team_id).track()?;
     } else {
         m.set_state(MatchState::BossBattle);
         let player_team = m.team_load(ctx)?.load_all(ctx)?;
-        let pool_id = ensure_floor_pool(ctx, floor)?;
+        let pool_id = ensure_floor_pool(ctx, floor).track()?;
         let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
         let enemy_team_id = get_floor_boss_team_id(ctx, floor).unwrap_or(0);
-        create_battle(ctx, m, pid, pool_team_id, enemy_team_id)?;
+        create_battle(ctx, m, pid, pool_team_id, enemy_team_id).track()?;
     }
-    m.take().save(ctx)?;
+    m.take().save(ctx).track()?;
     Ok(())
 }
 
@@ -646,6 +641,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         true,
         MatchState::Shop,
         default(),
+        vec![], // battle_history
+        None,   // pending_battle
     );
     let mut team = NTeam::new(ctx.next_id(), pid);
     for i in 0..gs.team_slots as i32 {

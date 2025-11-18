@@ -1549,62 +1549,6 @@ impl FCompactView for NTeam {
     }
 }
 
-impl FTitle for NBattle {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        format!("Battle #{}", self.hash).cstr()
-    }
-}
-
-impl FDescription for NBattle {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        if let Some(result) = self.result {
-            if result {
-                "Victory".cstr_c(Color32::from_rgb(0, 255, 0))
-            } else {
-                "Defeat".cstr_c(Color32::from_rgb(255, 0, 0))
-            }
-        } else {
-            "In Progress".cstr_c(Color32::from_rgb(255, 255, 0))
-        }
-    }
-}
-
-impl FStats for NBattle {
-    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![]
-    }
-}
-
-impl FDisplay for NBattle {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.title(ctx).label(ui)
-    }
-}
-
-impl FTag for NBattle {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        "Battle".cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        self.result.map(|r| {
-            if r {
-                "✓".cstr_c(Color32::from_rgb(0, 255, 0))
-            } else {
-                "✗".cstr_c(Color32::from_rgb(255, 0, 0))
-            }
-        })
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        match self.result {
-            Some(true) => Color32::from_rgb(0, 255, 0),
-            Some(false) => Color32::from_rgb(255, 0, 0),
-            None => Color32::from_rgb(255, 255, 0),
-        }
-    }
-}
-
 impl FTitle for NMatch {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("Match F{}", self.floor).cstr()
@@ -1682,9 +1626,19 @@ impl FDisplay for NMatch {
 
 impl FPlaceholder for NMatch {
     fn placeholder() -> Self {
-        NMatch::new(next_id(), 0, 0, 1, 3, false, MatchState::Shop, vec![])
-            .with_team(NTeam::placeholder())
-            .with_battles(default())
+        NMatch::new(
+            next_id(),
+            0,
+            0,
+            1,
+            3,
+            false,
+            MatchState::Shop,
+            vec![],
+            vec![],
+            None,
+        )
+        .with_team(NTeam::placeholder())
     }
 }
 
@@ -2184,18 +2138,11 @@ impl FPlaceholder for NStatusBehavior {
     }
 }
 
-impl FPlaceholder for NBattle {
-    fn placeholder() -> Self {
-        NBattle::new(next_id(), 0, 0, 0, 0, 0, None)
-    }
-}
-
 impl FPlaceholder for NFusionSlot {
     fn placeholder() -> Self {
         NFusionSlot::new(next_id(), 0, 0, default())
     }
 }
-
 impl FEdit for ShopOffer {
     fn edit(&mut self, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {

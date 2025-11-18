@@ -55,8 +55,11 @@ impl Battle {
         let mut source = Sources::Battle(simulation, 0.0);
         source
             .exec_context(|ctx| {
-                let battle = ctx.battle()?.battle.clone();
+                let mut battle = ctx.battle()?.battle.clone();
                 battle.left.spawn(ctx, Some(left_entity)).track()?;
+                if battle.right.id == 0 {
+                    battle.right = battle.right.remap_ids();
+                }
                 battle.right.spawn(ctx, Some(right_entity)).track()?;
                 Ok(())
             })
