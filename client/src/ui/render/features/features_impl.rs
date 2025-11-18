@@ -2441,7 +2441,7 @@ impl FEdit for Colorix {
 
             response
         })
-        .response
+        .inner
     }
 }
 

@@ -4,6 +4,52 @@ use proc_macros::Settings;
 
 use super::*;
 
+#[derive(
+    Default,
+    Serialize,
+    Deserialize,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    EnumString,
+    EnumIter,
+    Display,
+    AsRefStr,
+)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    #[default]
+    Info,
+    Debug,
+    Trace,
+}
+
+impl From<LogLevel> for bevy::log::Level {
+    fn from(level: LogLevel) -> Self {
+        match level {
+            LogLevel::Error => bevy::log::Level::ERROR,
+            LogLevel::Warn => bevy::log::Level::WARN,
+            LogLevel::Info => bevy::log::Level::INFO,
+            LogLevel::Debug => bevy::log::Level::DEBUG,
+            LogLevel::Trace => bevy::log::Level::TRACE,
+        }
+    }
+}
+
+impl ToCstr for LogLevel {
+    fn cstr(&self) -> Cstr {
+        match self {
+            LogLevel::Error => "Error".cstr_c(RED),
+            LogLevel::Warn => "Warn".cstr_c(ORANGE),
+            LogLevel::Info => "Info".cstr_c(YELLOW),
+            LogLevel::Debug => "Debug".cstr_c(CYAN),
+            LogLevel::Trace => "Trace".cstr_c(GRAY),
+        }
+    }
+}
+
 /// Settings configuration using attribute-based UI generation.
 ///
 /// Supported attributes:
@@ -40,6 +86,9 @@ pub struct ClientSettings {
 
     #[setting(checkbox(true), "Show Debug Info")]
     pub show_debug_info: bool,
+
+    #[setting(enum, "Log Level")]
+    pub log_level: LogLevel,
 
     #[setting(edit, "Theme")]
     pub theme: Colorix,
@@ -127,6 +176,7 @@ impl Default for ClientSettings {
             volume_music: 0.5,
             volume_fx: 1.0,
             show_debug_info: true,
+            log_level: LogLevel::Info,
             theme: Colorix::new(GRAY, true),
         }
     }
@@ -167,7 +217,10 @@ pub fn is_dev_mode() -> bool {
 }
 
 impl ClientSettings {
-    pub fn apply(self, world: &mut World) {
+    pub fn apply(mut self, world: &mut World) {
+        self.theme.generate_palettes();
+        self.theme.apply(egui_ctx(world));
+        self.theme.clone().save();
         if let Some(mut window) = world
             .query::<&mut bevy::window::Window>()
             .iter_mut(world)

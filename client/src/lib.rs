@@ -71,8 +71,8 @@ pub fn run() {
     GameState::set_target(target);
     let default_plugins = DefaultPlugins
         .set(bevy::log::LogPlugin {
-            level: bevy::log::Level::DEBUG,
-            filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
+            level: pd().client_settings.log_level.into(),
+            // filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
             fmt_layer: fmt_layer,
             ..default()
         })
