@@ -72,54 +72,10 @@ fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Res
     let node_id = ctx.next_id();
 
     let tnode = match named_kind {
-        NamedNodeKind::NUnit => {
-            let unit = NUnit {
-                id: node_id,
-                owner: ID_INCUBATOR,
-                unit_name: name,
-                description: Component::none(),
-                stats: Component::none(),
-                state: Component::none(),
-                is_dirty: false,
-            };
-            unit.to_tnode()
-        }
-        NamedNodeKind::NHouse => {
-            let house = NHouse {
-                id: node_id,
-                owner: ID_INCUBATOR,
-                house_name: name,
-                color: Component::none(),
-                ability: Component::none(),
-                status: Component::none(),
-                state: Component::none(),
-                units: OwnedMultiple::none(),
-                is_dirty: false,
-            };
-            house.to_tnode()
-        }
-        NamedNodeKind::NAbilityMagic => {
-            let ability = NAbilityMagic {
-                id: node_id,
-                owner: ID_INCUBATOR,
-                ability_name: name,
-                description: Component::none(),
-                is_dirty: false,
-            };
-            ability.to_tnode()
-        }
-        NamedNodeKind::NStatusMagic => {
-            let status = NStatusMagic {
-                id: node_id,
-                owner: ID_INCUBATOR,
-                status_name: name,
-                description: Component::none(),
-                representation: Component::none(),
-                state: Component::none(),
-                is_dirty: false,
-            };
-            status.to_tnode()
-        }
+        NamedNodeKind::NUnit => NUnit::new(node_id, ID_INCUBATOR, name).to_tnode(),
+        NamedNodeKind::NHouse => NHouse::new(node_id, ID_INCUBATOR, name).to_tnode(),
+        NamedNodeKind::NAbilityMagic => NAbilityMagic::new(node_id, ID_INCUBATOR, name).to_tnode(),
+        NamedNodeKind::NStatusMagic => NStatusMagic::new(node_id, ID_INCUBATOR, name).to_tnode(),
     };
 
     tnode.insert(ctx.rctx());

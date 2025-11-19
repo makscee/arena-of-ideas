@@ -53,7 +53,6 @@ impl EventImpl for Event {
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
                         if let Some(actions) = status
-                            .description_ref(ctx)?
                             .behavior_ref(ctx)?
                             .reactions
                             .react(self, ctx)

@@ -368,13 +368,6 @@ impl UnitBuilder {
         desc.set_id(self.id + 2);
         desc.description = format!("Unit {}", self.id);
 
-        if let Some(reaction) = self.reaction {
-            let mut behavior = NUnitBehavior::default();
-            behavior.set_id(self.id + 3);
-            behavior.reaction = reaction;
-            desc.behavior = Component::new_loaded(behavior);
-        }
-
         let mut state = NState::default();
         state.set_id(self.id + 4);
         state.stax = 1;
@@ -385,6 +378,12 @@ impl UnitBuilder {
         unit.stats = Component::new_loaded(stats);
         unit.description = Component::new_loaded(desc);
         unit.state = Component::new_loaded(state);
+        if let Some(reaction) = self.reaction {
+            let mut behavior = NUnitBehavior::default();
+            behavior.set_id(self.id + 3);
+            behavior.reaction = reaction;
+            unit.behavior = Component::new_loaded(behavior);
+        }
 
         unit
     }
@@ -414,10 +413,10 @@ impl AbilityBuilder {
         let mut desc = NAbilityDescription::default();
         desc.set_id(desc_id);
         desc.description = "Ability".to_string();
-        desc.effect = Component::new_loaded(effect);
 
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
+        ability.effect = Component::new_loaded(effect);
         ability.ability_name = format!("Ability {}", self.id);
         ability.description = Component::new_loaded(desc);
 
@@ -450,7 +449,6 @@ impl StatusBuilder {
         let mut desc = NStatusDescription::default();
         desc.set_id(desc_id);
         desc.description = "Status".to_string();
-        desc.behavior = Component::new_loaded(behavior);
 
         let mut representation = NStatusRepresentation::default();
         representation.set_id(rep_id);
@@ -462,6 +460,7 @@ impl StatusBuilder {
 
         let mut status = NStatusMagic::default();
         status.set_id(self.id);
+        status.behavior = Component::new_loaded(behavior);
         status.status_name = format!("Status {}", self.id);
         status.description = Component::new_loaded(desc);
         status.representation = Component::new_loaded(representation);

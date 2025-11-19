@@ -444,7 +444,6 @@ impl TeamEditor {
             ui.style_mut().override_text_style = Some(TextStyle::Small);
             if let Some(id) = fusion.trigger_unit.id() {
                 ctx.load::<NUnit>(id)?
-                    .description_ref(ctx)?
                     .behavior_ref(ctx)?
                     .reaction
                     .trigger
@@ -455,28 +454,25 @@ impl TeamEditor {
                 for slot in slots {
                     if let Some(unit_id) = slot.unit.id() {
                         if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
-                            if let Ok(unit_desc) = unit.description_ref(ctx) {
-                                if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
-                                    let actions = &unit_behavior.reaction.actions;
-                                    let range = &slot.actions;
-                                    ctx.exec_ref(|ctx| {
-                                        ctx.with_owner(unit.id, |ctx| {
-                                            for i in range.start
-                                                ..(range.start + range.length)
-                                                    .min(actions.len() as u8)
-                                            {
-                                                showed += 1;
-                                                if let Some(action) = actions.get(i as usize) {
-                                                    ui.horizontal(|ui| {
-                                                        action.display_recursive(ctx, ui);
-                                                    });
-                                                }
+                            if let Ok(unit_behavior) = unit.behavior_ref(ctx) {
+                                let actions = &unit_behavior.reaction.actions;
+                                let range = &slot.actions;
+                                ctx.exec_ref(|ctx| {
+                                    ctx.with_owner(unit.id, |ctx| {
+                                        for i in range.start
+                                            ..(range.start + range.length).min(actions.len() as u8)
+                                        {
+                                            showed += 1;
+                                            if let Some(action) = actions.get(i as usize) {
+                                                ui.horizontal(|ui| {
+                                                    action.display_recursive(ctx, ui);
+                                                });
                                             }
-                                            Ok(())
-                                        })
+                                        }
+                                        Ok(())
                                     })
-                                    .ui(ui);
-                                }
+                                })
+                                .ui(ui);
                             }
                         }
                     }
@@ -503,46 +499,44 @@ impl TeamEditor {
                     if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
                         ui.label(&unit.unit_name);
 
-                        if let Ok(unit_desc) = unit.description_ref(ctx) {
-                            if let Ok(unit_behavior) = unit_desc.behavior_ref(ctx) {
-                                let total_actions = unit_behavior.reaction.actions.len() as u8;
+                        if let Ok(unit_behavior) = unit.behavior_ref(ctx) {
+                            let total_actions = unit_behavior.reaction.actions.len() as u8;
 
-                                if total_actions > 0 {
-                                    let range_selector = RangeSelector::new(total_actions)
-                                        .range(slot.actions.start, slot.actions.length)
-                                        .id(egui::Id::new(slot.id).with("range_edit"))
-                                        .border_thickness(3.0)
-                                        .drag_threshold(10.0);
+                            if total_actions > 0 {
+                                let range_selector = RangeSelector::new(total_actions)
+                                    .range(slot.actions.start, slot.actions.length)
+                                    .id(egui::Id::new(slot.id).with("range_edit"))
+                                    .border_thickness(3.0)
+                                    .drag_threshold(10.0);
 
-                                    let (_, range_change) = range_selector.ui(
-                                        ui,
-                                        ctx,
-                                        |ui, _, action_index, is_in_range| {
-                                            if let Some(action) =
-                                                unit_behavior.reaction.actions.get(action_index)
-                                            {
-                                                let title = action.title(ctx);
-                                                if is_in_range {
-                                                    title.label_w(ui);
-                                                } else {
-                                                    title
-                                                        .cstr()
-                                                        .get_text()
-                                                        .cstr_c(ui.visuals().weak_text_color())
-                                                        .label_w(ui);
-                                                }
+                                let (_, range_change) = range_selector.ui(
+                                    ui,
+                                    ctx,
+                                    |ui, _, action_index, is_in_range| {
+                                        if let Some(action) =
+                                            unit_behavior.reaction.actions.get(action_index)
+                                        {
+                                            let title = action.title(ctx);
+                                            if is_in_range {
+                                                title.label_w(ui);
+                                            } else {
+                                                title
+                                                    .cstr()
+                                                    .get_text()
+                                                    .cstr_c(ui.visuals().weak_text_color())
+                                                    .label_w(ui);
                                             }
-                                            Ok(())
-                                        },
-                                    );
+                                        }
+                                        Ok(())
+                                    },
+                                );
 
-                                    if let Some((new_start, new_length)) = range_change {
-                                        actions.push(TeamAction::ChangeActionRange {
-                                            slot_id: slot.id,
-                                            start: new_start as i32,
-                                            length: new_length as i32,
-                                        });
-                                    }
+                                if let Some((new_start, new_length)) = range_change {
+                                    actions.push(TeamAction::ChangeActionRange {
+                                        slot_id: slot.id,
+                                        start: new_start as i32,
+                                        length: new_length as i32,
+                                    });
                                 }
                             }
                         }
@@ -816,16 +810,12 @@ impl TeamEditor {
             .inspected_node_for_parent(team.id)
             .is_some_and(|id| id == unit_id);
         if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
-            if let Ok(desc) = unit.description_ref(ctx) {
-                if let Ok(rep) = desc.representation_ref(ctx) {
-                    MatRect::new(SIZE)
-                        .add_mat(&rep.material, unit.id)
-                        .unit_rep_with_default(unit.id)
-                        .active(is_inspected)
-                        .ui(ui, ctx)
-                } else {
-                    MatRect::new(SIZE).ui(ui, ctx)
-                }
+            if let Ok(rep) = unit.representation_ref(ctx) {
+                MatRect::new(SIZE)
+                    .add_mat(&rep.material, unit.id)
+                    .unit_rep_with_default(unit.id)
+                    .active(is_inspected)
+                    .ui(ui, ctx)
             } else {
                 MatRect::new(SIZE).ui(ui, ctx)
             }
@@ -836,15 +826,11 @@ impl TeamEditor {
 
     fn render_unit_display(&self, ui: &mut Ui, unit_id: u64, team: &NTeam, ctx: &ClientContext) {
         if let Some(unit) = TeamEditor::find_unit_in_team(team, unit_id) {
-            if let Ok(desc) = unit.description_ref(ctx) {
-                if let Ok(rep) = desc.representation_ref(ctx) {
-                    MatRect::new(SIZE)
-                        .add_mat(&rep.material, unit.id)
-                        .unit_rep_with_default(unit.id)
-                        .ui(ui, ctx);
-                } else {
-                    MatRect::new(SIZE).ui(ui, ctx);
-                }
+            if let Ok(rep) = unit.representation_ref(ctx) {
+                MatRect::new(SIZE)
+                    .add_mat(&rep.material, unit.id)
+                    .unit_rep_with_default(unit.id)
+                    .ui(ui, ctx);
             } else {
                 MatRect::new(SIZE).ui(ui, ctx);
             }
@@ -947,11 +933,7 @@ impl TeamEditor {
             for slot in slots {
                 if let Some(unit_id) = slot.unit.id() {
                     if let Some(unit) = Self::find_unit_in_team(team, unit_id) {
-                        if let Ok(trigger) = unit
-                            .description()
-                            .and_then(|d| d.behavior())
-                            .map(|b| b.reaction.trigger)
-                        {
+                        if let Ok(trigger) = unit.behavior().map(|b| b.reaction.trigger) {
                             triggers.push((unit_id, trigger.cstr()))
                         }
                     }

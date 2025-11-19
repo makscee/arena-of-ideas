@@ -711,11 +711,7 @@ impl BattleSimulation {
                         if stax <= 0 {
                             return Ok(vec![]);
                         }
-                        let behavior = status
-                            .description_load(ctx)
-                            .track()?
-                            .behavior_load(ctx)
-                            .track()?;
+                        let behavior = status.behavior_load(ctx).track()?;
                         let actions = behavior.reactions.react(&event, ctx);
                         if let Some(actions) = actions {
                             actions.clone().process(ctx)

@@ -637,8 +637,7 @@ impl FStats for NUnit {
                 stats.push((VarName::stax, stax));
             }
         }
-        let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
-        {
+        let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
             behavior.reaction.tier()
         } else {
             0
@@ -662,8 +661,7 @@ impl FTag for NUnit {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        let tier = if let Ok(behavior) = self.description_ref(ctx).and_then(|d| d.behavior_ref(ctx))
-        {
+        let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
             behavior.reaction.tier()
         } else {
             0
@@ -724,6 +722,8 @@ impl FPlaceholder for NUnit {
         NUnit::new(next_id(), player_id(), "New Unit".to_string())
             .with_description(NUnitDescription::placeholder())
             .with_stats(NUnitStats::placeholder())
+            .with_representation(NUnitRepresentation::placeholder())
+            .with_behavior(NUnitBehavior::placeholder())
     }
 }
 
@@ -853,6 +853,7 @@ impl FPlaceholder for NAbilityMagic {
     fn placeholder() -> Self {
         NAbilityMagic::new(next_id(), player_id(), "New Ability".to_string())
             .with_description(NAbilityDescription::placeholder())
+            .with_effect(NAbilityEffect::placeholder())
     }
 }
 
@@ -918,6 +919,7 @@ impl FPlaceholder for NStatusMagic {
     fn placeholder() -> Self {
         NStatusMagic::new(next_id(), player_id(), "New Status".to_string())
             .with_description(NStatusDescription::placeholder())
+            .with_behavior(NStatusBehavior::placeholder())
             .with_representation(NStatusRepresentation::placeholder())
             .with_state(NState::new(next_id(), player_id(), 1))
     }
@@ -1248,7 +1250,6 @@ impl FTitle for NAbilityDescription {
 impl FPlaceholder for NAbilityDescription {
     fn placeholder() -> Self {
         NAbilityDescription::new(next_id(), player_id(), "Default description".to_string())
-            .with_effect(NAbilityEffect::placeholder())
     }
 }
 
@@ -1318,7 +1319,6 @@ impl FPlaceholder for NStatusDescription {
             player_id(),
             "Default status description".to_string(),
         )
-        .with_behavior(NStatusBehavior::placeholder())
     }
 }
 
@@ -2239,8 +2239,6 @@ impl FPlaceholder for NUnitStats {
 impl FPlaceholder for NUnitDescription {
     fn placeholder() -> Self {
         NUnitDescription::new(next_id(), 0, "Placeholder Description".to_string())
-            .with_representation(NUnitRepresentation::placeholder())
-            .with_behavior(NUnitBehavior::placeholder())
     }
 }
 
@@ -2595,10 +2593,7 @@ impl FPreview for NUnit {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ctx.exec_ref(|ctx| {
             MatRect::new(rect.size())
-                .add_mat(
-                    &self.description_ref(ctx)?.representation_ref(ctx)?.material,
-                    self.id,
-                )
+                .add_mat(&self.representation_ref(ctx)?.material, self.id)
                 .unit_rep_with_default(self.id)
                 .corners(false)
                 .enabled(false)

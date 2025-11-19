@@ -63,16 +63,14 @@ impl NFusion {
 
         for slot in slots {
             if let Ok(unit) = slot.unit_ref(ctx) {
-                if let Ok(desc) = unit.description_ref(ctx) {
-                    if let Ok(unit_behavior) = desc.behavior_ref(ctx) {
-                        let reaction = &unit_behavior.reaction;
-                        let start = slot.actions.start as usize;
-                        let end = (slot.actions.start + slot.actions.length) as usize;
+                if let Ok(unit_behavior) = unit.behavior_ref(ctx) {
+                    let reaction = &unit_behavior.reaction;
+                    let start = slot.actions.start as usize;
+                    let end = (slot.actions.start + slot.actions.length) as usize;
 
-                        for i in start..end.min(reaction.actions.len()) {
-                            if let Some(action) = reaction.actions.get(i).cloned() {
-                                all_actions.push((unit.id, action));
-                            }
+                    for i in start..end.min(reaction.actions.len()) {
+                        if let Some(action) = reaction.actions.get(i).cloned() {
+                            all_actions.push((unit.id, action));
                         }
                     }
                 }
@@ -84,8 +82,7 @@ impl NFusion {
 
     fn get_behavior<'a>(ctx: &'a ClientContext, unit: u64) -> Result<&'a NUnitBehavior, NodeError> {
         let unit = ctx.load_ref::<NUnit>(unit).track()?;
-        let desc = unit.description_ref(ctx).track()?;
-        desc.behavior_ref(ctx)
+        unit.behavior_ref(ctx)
     }
 
     pub fn get_trigger<'a>(ctx: &'a ClientContext, unit_id: u64) -> Result<&'a Trigger, NodeError> {
@@ -130,16 +127,14 @@ impl NFusion {
     pub fn paint(&self, rect: Rect, ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
         let units = self.units(ctx)?;
         for unit in units {
-            if let Ok(desc) = unit.description_ref(ctx) {
-                if let Ok(rep) = desc.representation_ref(ctx) {
-                    ctx.exec_ref(|ctx| {
-                        ctx.with_owner(unit.id, |ctx| {
-                            rep.material.paint(rect, ctx, ui);
-                            Ok(())
-                        })
+            if let Ok(rep) = unit.representation_ref(ctx) {
+                ctx.exec_ref(|ctx| {
+                    ctx.with_owner(unit.id, |ctx| {
+                        rep.material.paint(rect, ctx, ui);
+                        Ok(())
                     })
-                    .ui(ui);
-                }
+                })
+                .ui(ui);
             }
         }
         for rep in ctx.load_children_ref::<NUnitRepresentation>(self.id)? {

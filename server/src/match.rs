@@ -520,7 +520,7 @@ fn apply_slots_limit(ctx: &mut ServerContext, fusion: &mut NFusion) -> NodeResul
         .sorted_by_key(|s| s.index)
     {
         if let Ok(mut unit) = slot.unit_load(ctx) {
-            let b = unit.description_load(ctx)?.behavior_load(ctx)?;
+            let b = unit.behavior_load(ctx)?;
             let actions = b.reaction.actions.len();
             slot.actions.start = slot.actions.start.min(actions as u8);
             slot.actions.length = slot

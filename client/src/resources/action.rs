@@ -110,12 +110,7 @@ impl ActionImpl for Action {
                 let color = house.color_ref(ctx)?.color.c32();
                 if let Ok(ability) = house.ability_ref(ctx) {
                     let name = ability.ability_name.clone();
-                    let effect = ability
-                        .description_ref(ctx)
-                        .track()?
-                        .effect_ref(ctx)?
-                        .actions
-                        .clone();
+                    let effect = ability.effect_ref(ctx)?.actions.clone();
                     ctx.with_layers(
                         [
                             ContextLayer::Var(VarName::stax, x.into()),

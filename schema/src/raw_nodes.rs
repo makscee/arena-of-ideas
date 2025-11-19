@@ -71,6 +71,7 @@ pub struct NAbilityMagic {
     #[var]
     pub ability_name: String,
     pub description: Component<NAbilityDescription>,
+    pub effect: Component<NAbilityEffect>,
 }
 
 #[derive(Node)]
@@ -78,7 +79,6 @@ pub struct NAbilityMagic {
 pub struct NAbilityDescription {
     #[var]
     pub description: String,
-    pub effect: Component<NAbilityEffect>,
 }
 
 #[derive(Node)]
@@ -94,6 +94,7 @@ pub struct NStatusMagic {
     #[var]
     pub status_name: String,
     pub description: Component<NStatusDescription>,
+    pub behavior: Component<NStatusBehavior>,
     pub representation: Component<NStatusRepresentation>,
     pub state: Component<NState>,
 }
@@ -103,7 +104,6 @@ pub struct NStatusMagic {
 pub struct NStatusDescription {
     #[var]
     pub description: String,
-    pub behavior: Component<NStatusBehavior>,
 }
 
 #[derive(Node)]
@@ -176,9 +176,9 @@ pub struct NFusionSlot {
 pub struct NUnit {
     #[var]
     pub unit_name: String,
-    #[many_to_one]
     pub description: Component<NUnitDescription>,
-    #[many_to_one]
+    pub representation: Component<NUnitRepresentation>,
+    pub behavior: Component<NUnitBehavior>,
     pub stats: Component<NUnitStats>,
     pub state: Component<NState>,
 }
@@ -188,8 +188,6 @@ pub struct NUnit {
 pub struct NUnitDescription {
     #[var]
     pub description: String,
-    pub representation: Component<NUnitRepresentation>,
-    pub behavior: Component<NUnitBehavior>,
 }
 
 #[derive(Node)]
