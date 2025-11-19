@@ -43,27 +43,22 @@ impl ExplorerPlugin {
         match &pane {
             ExplorerPane::UnitsList => ExplorerPanes::pane_units_list(ui, world)?,
             ExplorerPane::HousesList => ExplorerPanes::pane_houses_list(ui, world)?,
-            ExplorerPane::AbilitiesList => ExplorerPanes::pane_abilities_list(ui, world)?,
-            ExplorerPane::StatusesList => ExplorerPanes::pane_statuses_list(ui, world)?,
-
-            ExplorerPane::HouseAbilitiesList => {
-                ExplorerPanes::pane_house_abilities_list(ui, world)?
-            }
-            ExplorerPane::HouseStatusesList => ExplorerPanes::pane_house_statuses_list(ui, world)?,
-
-            ExplorerPane::UnitParentList => ExplorerPanes::pane_unit_parent_list(ui, world)?,
-            ExplorerPane::AbilityParentList => ExplorerPanes::pane_ability_parent_list(ui, world)?,
-            ExplorerPane::StatusParentList => ExplorerPanes::pane_status_parent_list(ui, world)?,
 
             ExplorerPane::UnitCard => ExplorerPanes::pane_unit_card(ui, world)?,
             ExplorerPane::HouseCard => ExplorerPanes::pane_house_card(ui, world)?,
 
             ExplorerPane::UnitDescription => ExplorerPanes::pane_unit_description(ui, world)?,
             ExplorerPane::UnitBehavior => ExplorerPanes::pane_unit_behavior(ui, world)?,
-            ExplorerPane::UnitStats => ExplorerPanes::pane_unit_stats(ui, world)?,
             ExplorerPane::UnitRepresentation => ExplorerPanes::pane_unit_representation(ui, world)?,
+            ExplorerPane::UnitStats => ExplorerPanes::pane_unit_stats(ui, world)?,
 
             ExplorerPane::HouseColor => ExplorerPanes::pane_house_color(ui, world)?,
+            ExplorerPane::AbilityMagic => ExplorerPanes::pane_ability_magic(ui, world)?,
+            ExplorerPane::AbilityDescription => ExplorerPanes::pane_ability_description(ui, world)?,
+            ExplorerPane::AbilityEffect => ExplorerPanes::pane_ability_effect(ui, world)?,
+            ExplorerPane::StatusMagic => ExplorerPanes::pane_status_magic(ui, world)?,
+            ExplorerPane::StatusDescription => ExplorerPanes::pane_status_description(ui, world)?,
+            ExplorerPane::StatusBehavior => ExplorerPanes::pane_status_behavior(ui, world)?,
         }
 
         Ok(())
@@ -74,22 +69,22 @@ impl ExplorerPlugin {
 pub enum ExplorerPane {
     UnitsList,
     HousesList,
-    AbilitiesList,
-    StatusesList,
-
-    HouseAbilitiesList,
-    HouseStatusesList,
-
-    UnitParentList,
-    AbilityParentList,
-    StatusParentList,
 
     UnitCard,
     HouseCard,
+
+    // Unit component panes
     UnitDescription,
     UnitBehavior,
-    UnitStats,
     UnitRepresentation,
+    UnitStats,
 
+    // House component panes
     HouseColor,
+    AbilityMagic,
+    AbilityDescription,
+    AbilityEffect,
+    StatusMagic,
+    StatusDescription,
+    StatusBehavior,
 }

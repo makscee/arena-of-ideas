@@ -46,6 +46,13 @@ pub struct TCreators {
     pub player_id: u64,
 }
 
+#[spacetimedb::table(name = creation_phases, public)]
+pub struct TCreationPhases {
+    #[primary_key]
+    pub node_id: u64,
+    pub fixed_kinds: Vec<String>,
+}
+
 #[table(public, name = node_links,
     index(name = parent_child, btree(columns = [parent, child])),
     index(name = parent_child_kind, btree(columns = [parent, child_kind])),
@@ -87,25 +94,41 @@ impl TVotes {
         ctx.db.votes().player_id().update(votes);
     }
 
-    pub fn upvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
-        // Check if player has already voted on this node
-        if ctx
-            .db
-            .votes_history()
-            .iter()
-            .any(|h| h.player_id == player_id && h.node_id == node_id)
+    fn vote_node(
+        ctx: &ReducerContext,
+        player_id: u64,
+        node_id: u64,
+        is_upvote: bool,
+    ) -> NodeResult<()> {
+        if false
+            && ctx
+                .db
+                .votes_history()
+                .iter()
+                .any(|h| h.player_id == player_id && h.node_id == node_id)
         {
             return Err("Already voted on this node".into());
         }
 
         // Check if player has votes available
         let mut votes = Self::get_or_create(ctx, player_id);
-        if votes.upvotes <= 0 {
-            return Err("No upvotes available".into());
+        let available_votes = if is_upvote {
+            votes.upvotes
+        } else {
+            votes.downvotes
+        };
+
+        if available_votes <= 0 {
+            let vote_type = if is_upvote { "upvotes" } else { "downvotes" };
+            return Err(format!("No {} available", vote_type).into());
         }
 
         // Deduct vote from player
-        votes.upvotes -= 1;
+        if is_upvote {
+            votes.upvotes -= 1;
+        } else {
+            votes.downvotes -= 1;
+        }
         ctx.db.votes().player_id().update(votes);
 
         // Record vote in history
@@ -113,56 +136,25 @@ impl TVotes {
             id: 0,
             player_id,
             node_id,
-            is_upvote: true,
+            is_upvote,
             timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
         });
 
         // Update node rating
         if let Some(mut node) = ctx.db.nodes_world().id().find(node_id) {
-            node.rating += 1;
+            node.rating += if is_upvote { 1 } else { -1 };
             ctx.db.nodes_world().id().update(node);
         }
 
         Ok(())
     }
 
+    pub fn upvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
+        Self::vote_node(ctx, player_id, node_id, true)
+    }
+
     pub fn downvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
-        // Check if player has already voted on this node
-        if ctx
-            .db
-            .votes_history()
-            .iter()
-            .any(|h| h.player_id == player_id && h.node_id == node_id)
-        {
-            return Err("Already voted on this node".into());
-        }
-
-        // Check if player has votes available
-        let mut votes = Self::get_or_create(ctx, player_id);
-        if votes.downvotes <= 0 {
-            return Err("No downvotes available".into());
-        }
-
-        // Deduct vote from player
-        votes.downvotes -= 1;
-        ctx.db.votes().player_id().update(votes);
-
-        // Record vote in history
-        ctx.db.votes_history().insert(TVotesHistory {
-            id: 0,
-            player_id,
-            node_id,
-            is_upvote: false,
-            timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
-        });
-
-        // Update node rating
-        if let Some(mut node) = ctx.db.nodes_world().id().find(node_id) {
-            node.rating -= 1;
-            ctx.db.nodes_world().id().update(node);
-        }
-
-        Ok(())
+        Self::vote_node(ctx, player_id, node_id, false)
     }
 }
 

@@ -803,17 +803,19 @@ impl FTitle for NAbilityMagic {
         let color = ctx
             .get_var(VarName::color)
             .get_color()
-            .unwrap_or(MISSING_COLOR);
+            .unwrap_or(colorix().high_contrast_text());
+        dbg!(&self.ability_name, color);
         self.ability_name.cstr_c(color)
     }
 }
 
 impl FDescription for NAbilityMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        let name = self.name().cstr_c(ctx.color());
         if let Ok(description) = self.description_ref(ctx) {
-            description.description.clone()
+            format!("{name}: {}", description.description)
         } else {
-            String::new()
+            name
         }
     }
 }
@@ -876,10 +878,11 @@ impl FTitle for NStatusMagic {
 
 impl FDescription for NStatusMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        let name = self.name().cstr_c(ctx.color());
         if let Ok(description) = self.description_ref(ctx) {
-            description.description.clone()
+            format!("{name}: {}", description.description)
         } else {
-            String::new()
+            name
         }
     }
 }

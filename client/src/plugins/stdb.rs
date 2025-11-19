@@ -191,6 +191,18 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_content_upvote_node(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_content_downvote_node(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
 }
 
 #[cfg(test)]
