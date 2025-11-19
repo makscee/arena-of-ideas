@@ -648,16 +648,8 @@ mod tests {
     fn test_chain_linked_components_merge() {
         let mut solid_source = Sources::new_solid();
         let unit_node = NUnit::new(1001, 0, "test unit".into()).to_tnode();
-        let desc_node = NUnitDescription::new(
-            1002,
-            0,
-            "description".into(),
-            MagicType::Ability,
-            Trigger::default(),
-        )
-        .to_tnode();
-        let behavior_node =
-            NUnitBehavior::new(1003, 0, Reaction::default(), MagicType::Ability).to_tnode();
+        let desc_node = NUnitDescription::new(1002, 0, "description".into()).to_tnode();
+        let behavior_node = NUnitBehavior::new(1003, 0, Reaction::default()).to_tnode();
         let repr_node = NUnitRepresentation::new(1004, 0, Material::default()).to_tnode();
 
         // Insert all nodes

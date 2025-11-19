@@ -17,40 +17,38 @@ impl ExplorerPanes {
         Self::show_add_new(ui, kind.to_kind());
 
         world.resource_scope::<ExplorerState, _>(|_, mut state| {
-            with_core_source(|ctx| {
+            with_solid_source(|ctx| {
                 let mut node_list = named_node_kind_match!(kind, {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
                         .iter(ctx.world()?)
-                        .map(|(_, n)| (n.id, n.name().to_owned()))
+                        .map(|(_, n)| (n.id, n.name().to_owned(), n.rating()))
                         .collect_vec()
                 });
-                node_list.sort_by_key(|(id, _)| *id);
+                node_list.sort_by_key(|(_, _, rating)| *rating);
                 // Get inspected item
                 let inspected_id = match kind {
                     NamedNodeKind::NUnit => state.inspected_unit,
                     NamedNodeKind::NHouse => state.inspected_house,
-                    NamedNodeKind::NAbilityMagic => None,
-                    NamedNodeKind::NStatusMagic => None,
+                    _ => unreachable!(),
                 };
 
                 // Render the list
                 node_list
-                    .as_list(|(id, name), _ctx, ui| {
+                    .as_list(|(id, name, rating), _ctx, ui| {
                         let color = if inspected_id == Some(*id) {
                             YELLOW
                         } else {
                             colorix().high_contrast_text()
                         };
-                        name.cstr_c(color).label(ui)
+                        format!("[b [yellow {}]] [{} {}]", rating, color.to_hex(), name).label(ui)
                     })
-                    .with_hover(|(id, _name), _ctx, ui| {
+                    .with_hover(|(id, _name, _rating), _ctx, ui| {
                         if ui.button("Inspect").clicked() {
                             let action = match kind {
                                 NamedNodeKind::NUnit => ExplorerAction::InspectUnit(*id),
                                 NamedNodeKind::NHouse => ExplorerAction::InspectHouse(*id),
-                                NamedNodeKind::NAbilityMagic => return,
-                                NamedNodeKind::NStatusMagic => return,
+                                _ => unreachable!(),
                             };
 
                             state.pending_actions.push(action);
@@ -196,15 +194,7 @@ impl ExplorerPanes {
             if let Some(unit_id) = state.inspected_unit {
                 with_core_source(|ctx| {
                     let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
-                    Self::pane_component::<NUnitBehavior, _>(
-                        ui,
-                        ctx,
-                        unit_id,
-                        parent,
-                        Some(|n, p| {
-                            n.magic_type == p.magic_type && n.reaction.trigger == p.trigger
-                        }),
-                    )
+                    Self::pane_component::<NUnitBehavior, _>(ui, ctx, unit_id, parent, None)
                 })
             } else {
                 Ok(())

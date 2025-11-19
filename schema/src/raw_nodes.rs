@@ -188,8 +188,6 @@ pub struct NUnit {
 pub struct NUnitDescription {
     #[var]
     pub description: String,
-    pub magic_type: MagicType,
-    pub trigger: Trigger,
     pub representation: Component<NUnitRepresentation>,
     pub behavior: Component<NUnitBehavior>,
 }
@@ -207,7 +205,6 @@ pub struct NUnitStats {
 #[content]
 pub struct NUnitBehavior {
     pub reaction: Reaction,
-    pub magic_type: MagicType,
 }
 
 #[derive(Node)]

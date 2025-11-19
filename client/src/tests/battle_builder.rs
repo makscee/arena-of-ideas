@@ -367,14 +367,11 @@ impl UnitBuilder {
         let mut desc = NUnitDescription::default();
         desc.set_id(self.id + 2);
         desc.description = format!("Unit {}", self.id);
-        desc.trigger = Trigger::BattleStart;
-        desc.magic_type = MagicType::Ability;
 
         if let Some(reaction) = self.reaction {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
             behavior.reaction = reaction;
-            behavior.magic_type = MagicType::Ability;
             desc.behavior = Component::new_loaded(behavior);
         }
 

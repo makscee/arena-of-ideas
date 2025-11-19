@@ -213,13 +213,6 @@ impl FEdit for MatchState {
     }
 }
 
-impl FEdit for MagicType {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
-        let (_old_value, response) = Selector::ui_enum(self, ui);
-        response
-    }
-}
-
 // ============================================================================
 // Game Types Implementations
 // ============================================================================
@@ -1827,24 +1820,6 @@ impl FDescription for NUnitDescription {
         let _ = ctx.exec_ref(|ctx| {
             let house =
                 ctx.load_first_parent_recursive_ref::<NHouse>(ctx.owner().unwrap_or(self.id))?;
-            match self.magic_type {
-                MagicType::Ability => {
-                    let ability = house.ability_ref(ctx)?;
-                    description = format!(
-                        "{}: {}\n\n",
-                        ability.title(ctx),
-                        ability.description_cstr(ctx)
-                    );
-                }
-                MagicType::Status => {
-                    let status = house.status_ref(ctx)?;
-                    description = format!(
-                        "{}: {}\n\n",
-                        status.title(ctx),
-                        status.description_cstr(ctx)
-                    );
-                }
-            }
             Ok(())
         });
         description + &self.description_cstr(ctx)
@@ -1860,34 +1835,9 @@ impl FStats for NUnitDescription {
     }
 }
 
-impl FTag for NUnitDescription {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        self.magic_type.cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(self.trigger.cstr())
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        self.magic_type.color()
-    }
-}
-
 impl FDisplay for NUnitDescription {
     fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.vertical(|ui| {
-            let mut response = self.description.cstr().label_w(ui);
-            ui.horizontal_wrapped(|ui| {
-                ui.label("Type:");
-                response |= self.magic_type.cstr_c(self.magic_type.color()).label(ui);
-                ui.separator();
-                ui.label("Trigger:");
-                response |= self.trigger.cstr().label(ui);
-            });
-            response
-        })
-        .inner
+        self.description.cstr().label_w(ui)
     }
 }
 
@@ -1992,7 +1942,12 @@ impl FDisplay for NState {
 
 impl FTitle for NUnitBehavior {
     fn title(&self, _: &ClientContext) -> Cstr {
-        self.magic_type.cstr()
+        format!(
+            "[tw {}]|[yellow {}]: ({})",
+            self.kind(),
+            self.reaction.trigger,
+            self.reaction.actions.len()
+        )
     }
 }
 
@@ -2008,23 +1963,9 @@ impl FStats for NUnitBehavior {
     }
 }
 
-impl FTag for NUnitBehavior {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        self.magic_type.cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("T{}", self.reaction.tier()).cstr())
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        self.magic_type.color()
-    }
-}
-
 impl FInfo for NUnitBehavior {
     fn info(&self, _ctx: &ClientContext) -> Cstr {
-        format!("{} {}", self.magic_type.cstr(), self.reaction.cstr())
+        self.reaction.cstr()
     }
 }
 
@@ -2279,7 +2220,6 @@ impl FPlaceholder for NUnitBehavior {
                     Expression::string("debug action".into()).into(),
                 )],
             },
-            MagicType::Ability,
         )
     }
 }
@@ -2298,15 +2238,9 @@ impl FPlaceholder for NUnitStats {
 
 impl FPlaceholder for NUnitDescription {
     fn placeholder() -> Self {
-        NUnitDescription::new(
-            next_id(),
-            0,
-            "Placeholder Description".to_string(),
-            MagicType::Ability,
-            Trigger::BattleStart,
-        )
-        .with_representation(NUnitRepresentation::placeholder())
-        .with_behavior(NUnitBehavior::placeholder())
+        NUnitDescription::new(next_id(), 0, "Placeholder Description".to_string())
+            .with_representation(NUnitRepresentation::placeholder())
+            .with_behavior(NUnitBehavior::placeholder())
     }
 }
 
@@ -2484,8 +2418,6 @@ impl FCompactView for NUnitDescription {
         ui.vertical(|ui| {
             ui.set_max_width(200.0);
             self.description.cstr().label_w(ui);
-            self.trigger.cstr().label(ui);
-            self.magic_type.cstr().label(ui);
         });
     }
 
@@ -2495,7 +2427,6 @@ impl FCompactView for NUnitDescription {
             ui.separator();
             ui.horizontal(|ui| {
                 ui.label("Type:");
-                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
             });
             ui.separator();
             self.description.cstr().label_w(ui);
@@ -2509,13 +2440,9 @@ impl FCompactView for NUnitBehavior {
         let tier = self.reaction.tier();
 
         ui.horizontal(|ui| {
-            format!("{} actions", actions_count)
-                .cstr_c(self.magic_type.color())
-                .label(ui);
+            format!("{} actions", actions_count).cstr().label(ui);
             ui.add_space(4.0);
-            format!("T{} [{}]", tier, self.magic_type.as_ref())
-                .cstr()
-                .label(ui);
+            format!("T{}", tier).cstr().label(ui);
         });
     }
 
@@ -2525,7 +2452,6 @@ impl FCompactView for NUnitBehavior {
             ui.separator();
             ui.horizontal(|ui| {
                 ui.label("Type:");
-                self.magic_type.cstr_c(self.magic_type.color()).label(ui);
             });
             ui.horizontal(|ui| {
                 ui.label("Trigger:");

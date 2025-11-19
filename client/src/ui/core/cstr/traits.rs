@@ -200,12 +200,6 @@ impl ToCstr for Trigger {
     }
 }
 
-impl ToCstr for MagicType {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(self.color())
-    }
-}
-
 impl ToCstr for Action {
     fn cstr(&self) -> Cstr {
         self.as_ref().to_owned().cstr_c(self.color())
