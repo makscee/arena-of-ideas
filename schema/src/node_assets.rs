@@ -30,42 +30,19 @@ impl NodeAssetExt for NodeAsset {
     }
 }
 
-pub type LinkAsset = (u64, u64, String, String, i32, u8);
+pub type LinkAsset = (u64, u64, String, String);
 
 pub trait LinkAssetExt {
-    fn new(
-        parent_id: u64,
-        child_id: u64,
-        parent_kind: String,
-        child_kind: String,
-        rating: i32,
-        solid: bool,
-    ) -> Self;
+    fn new(parent_id: u64, child_id: u64, parent_kind: String, child_kind: String) -> Self;
     fn parent_id(&self) -> u64;
     fn child_id(&self) -> u64;
     fn parent_kind(&self) -> &String;
     fn child_kind(&self) -> &String;
-    fn rating(&self) -> i32;
-    fn set_rating(&mut self, rating: i32);
 }
 
 impl LinkAssetExt for LinkAsset {
-    fn new(
-        parent_id: u64,
-        child_id: u64,
-        parent_kind: String,
-        child_kind: String,
-        rating: i32,
-        solid: bool,
-    ) -> Self {
-        (
-            parent_id,
-            child_id,
-            parent_kind,
-            child_kind,
-            rating,
-            solid as u8,
-        )
+    fn new(parent_id: u64, child_id: u64, parent_kind: String, child_kind: String) -> Self {
+        (parent_id, child_id, parent_kind, child_kind)
     }
 
     fn parent_id(&self) -> u64 {
@@ -82,13 +59,5 @@ impl LinkAssetExt for LinkAsset {
 
     fn child_kind(&self) -> &String {
         &self.3
-    }
-
-    fn rating(&self) -> i32 {
-        self.4
-    }
-
-    fn set_rating(&mut self, rating: i32) {
-        self.4 = rating;
     }
 }

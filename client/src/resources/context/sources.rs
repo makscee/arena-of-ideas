@@ -2,8 +2,6 @@ use super::*;
 
 /// Static sources for mirroring stdb state
 pub struct StaticSources {
-    pub top: Sources<'static>,
-    pub selected: Sources<'static>,
     pub solid: Sources<'static>,
     pub core: Sources<'static>,
 }
@@ -11,8 +9,6 @@ pub struct StaticSources {
 impl StaticSources {
     pub fn new() -> Self {
         Self {
-            top: Sources::new_top(),
-            selected: Sources::new_selected(),
             solid: Sources::new_solid(),
             core: Sources::new_core(),
         }
@@ -53,32 +49,6 @@ where
     })
 }
 
-pub fn with_top_source<R, F>(f: F) -> NodeResult<R>
-where
-    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
-{
-    with_static_sources(|sources| {
-        let taken = std::mem::replace(&mut sources.top, Sources::None);
-        let mut context = taken.as_context();
-        let result = f(&mut context);
-        sources.top = context.into_source();
-        result
-    })
-}
-
-pub fn with_selected_source<R, F>(f: F) -> NodeResult<R>
-where
-    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
-{
-    with_static_sources(|sources| {
-        let taken = std::mem::replace(&mut sources.selected, Sources::None);
-        let mut context = taken.as_context();
-        let result = f(&mut context);
-        sources.selected = context.into_source();
-        result
-    })
-}
-
 pub fn with_core_source<R, F>(f: F) -> NodeResult<R>
 where
     F: FnOnce(&mut ClientContext) -> NodeResult<R>,
@@ -111,8 +81,6 @@ pub trait ClientSource {
 pub enum Sources<'a> {
     Solid(World),
     Core(World),
-    Top(World),
-    Selected(World),
     Battle(BattleSimulation, f32),
     SourceRef(&'a Sources<'a>),
     #[default]
@@ -130,21 +98,6 @@ impl<'a> Sources<'a> {
         let mut world = World::new();
         Self::init_world(&mut world);
         Sources::Core(world)
-    }
-
-    pub fn new_top() -> Self {
-        let mut world = World::new();
-        Self::init_world(&mut world);
-        world.init_resource::<LinkRatings>();
-        world.init_resource::<LinksMapResource>();
-        Sources::Top(world)
-    }
-
-    pub fn new_selected() -> Self {
-        let mut world = World::new();
-        Self::init_world(&mut world);
-        world.init_resource::<LinksMapResource>();
-        Sources::Selected(world)
     }
 
     pub fn as_context(self) -> ClientContext<'a> {
@@ -196,10 +149,7 @@ impl<'a> Sources<'a> {
 
     pub fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(world)
-            | Sources::Core(world)
-            | Sources::Top(world)
-            | Sources::Selected(world) => Ok(world),
+            Sources::Solid(world) | Sources::Core(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(s) => s.world(),
             Sources::None => Err(NodeError::custom("No world in empty source")),
@@ -208,10 +158,7 @@ impl<'a> Sources<'a> {
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(world)
-            | Sources::Core(world)
-            | Sources::Top(world)
-            | Sources::Selected(world) => Ok(world),
+            Sources::Solid(world) | Sources::Core(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom(
                 "Cannot get mutable world from source ref",
@@ -326,15 +273,6 @@ impl<'a> Sources<'a> {
                     self.handle_link_delete(link)?;
                 }
             }
-            StdbUpdate::PlayerLinkSelectionInsert(selection) => {
-                self.handle_player_selection_insert(selection)?;
-            }
-            StdbUpdate::PlayerLinkSelectionUpdate { old, new } => {
-                self.handle_player_selection_update(old, new)?;
-            }
-            StdbUpdate::PlayerLinkSelectionDelete(selection) => {
-                self.handle_player_selection_delete(selection)?;
-            }
         }
         Ok(())
     }
@@ -343,7 +281,6 @@ impl<'a> Sources<'a> {
         match self {
             Sources::Solid(_) => true,
             Sources::Core(_) => node.owner == ID_CORE,
-            Sources::Top(_) | Sources::Selected(_) => node.owner == ID_CORE || node.owner == 0,
             Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => true,
         }
     }
@@ -363,14 +300,8 @@ impl<'a> Sources<'a> {
             owners.contains(&parent_owner) && owners.contains(&child_owner)
         }
         match self {
-            Sources::Solid(_) => link.solid,
-            Sources::Core(_) => {
-                if !link.solid {
-                    return false;
-                }
-                check_owner(link, vec![ID_CORE])
-            }
-            Sources::Top(_) | Sources::Selected(_) => check_owner(link, vec![ID_CORE, 0]),
+            Sources::Solid(_) => true,
+            Sources::Core(_) => check_owner(link, vec![ID_CORE]),
             Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => false,
         }
     }
@@ -447,13 +378,7 @@ impl<'a> Sources<'a> {
                     link.child_kind.to_kind(),
                 );
             }
-            Sources::Top(_) => {
-                self.handle_top_link_insert(link)?;
-            }
-            Sources::Selected(..)
-            | Sources::Battle(..)
-            | Sources::SourceRef(..)
-            | Sources::None => {}
+            Sources::Battle(..) | Sources::SourceRef(..) | Sources::None => {}
         }
 
         Ok(())
@@ -474,9 +399,6 @@ impl<'a> Sources<'a> {
             Sources::Solid(_) | Sources::Core(_) => {
                 self.remove_link(link.parent, link.child)?;
             }
-            Sources::Top(_) => {
-                self.handle_top_link_delete(link)?;
-            }
             _ => {}
         }
         Ok(())
@@ -490,23 +412,13 @@ impl<'a> Sources<'a> {
         }
         match self {
             Sources::Solid(_) | Sources::Core(_) => {
-                if old.solid && !new.solid {
-                    self.remove_link(old.parent, old.child)?;
-                } else if !old.solid && new.solid {
-                    self.add_link(new.parent, new.child)?;
-                }
+                self.add_link(new.parent, new.child)?;
             }
-            Sources::Top(_) => {
-                self.handle_top_link_update(old, new)?;
-            }
-            Sources::Selected(..)
-            | Sources::Battle(..)
-            | Sources::SourceRef(..)
-            | Sources::None => {}
+            Sources::Battle(..) | Sources::SourceRef(..) | Sources::None => {}
         }
 
-        // Handle component links when they become solid
-        if !old.solid && new.solid && Self::is_component_link(new) {
+        // Handle component links when they are added
+        if Self::is_component_link(new) {
             // Handle this as a new link insertion for component merging
             if self.entity(new.parent).is_ok() && self.entity(new.child).is_ok() {
                 let parent_kind = new.parent_kind.to_kind();
@@ -562,79 +474,6 @@ impl<'a> Sources<'a> {
             }
         }
 
-        Ok(())
-    }
-
-    fn handle_player_selection_insert(
-        &mut self,
-        selection: &TPlayerLinkSelection,
-    ) -> NodeResult<()> {
-        match self {
-            Sources::Selected(_) => {
-                if selection.player_id == player_id() {
-                    let world = self.world()?;
-                    let link = world
-                        .get_resource::<LinksMapResource>()
-                        .and_then(|links| links.get(selection.link_id))
-                        .cloned()
-                        .ok_or_else(|| {
-                            NodeError::custom(format!("Link#{} not found", selection.link_id))
-                        })?;
-                    self.add_link(link.parent, link.child)?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn handle_player_selection_update(
-        &mut self,
-        old: &TPlayerLinkSelection,
-        new: &TPlayerLinkSelection,
-    ) -> NodeResult<()> {
-        match self {
-            Sources::Selected(_) => {
-                if new.player_id == player_id() {
-                    let world = self.world()?;
-                    let links_map = world
-                        .get_resource::<LinksMapResource>()
-                        .ok_or_else(|| NodeError::custom("LinksMapResource not found"))?;
-                    let old_link = links_map
-                        .get(old.link_id)
-                        .cloned()
-                        .ok_or_else(|| NodeError::custom("Old link not found"))?;
-                    let new_link = links_map
-                        .get(new.link_id)
-                        .cloned()
-                        .ok_or_else(|| NodeError::custom("New link not found"))?;
-                    self.remove_link(old_link.parent, old_link.child)?;
-                    self.add_link(new_link.parent, new_link.child)?;
-                }
-            }
-            _ => {}
-        }
-        Ok(())
-    }
-
-    fn handle_player_selection_delete(
-        &mut self,
-        selection: &TPlayerLinkSelection,
-    ) -> NodeResult<()> {
-        match self {
-            Sources::Selected(_) => {
-                if selection.player_id == player_id() {
-                    let world = self.world()?;
-                    let link = world
-                        .get_resource::<LinksMapResource>()
-                        .and_then(|links| links.get(selection.link_id))
-                        .cloned()
-                        .ok_or_else(|| NodeError::custom("Link not found"))?;
-                    self.remove_link(link.parent, link.child)?;
-                }
-            }
-            _ => {}
-        }
         Ok(())
     }
 
@@ -903,192 +742,6 @@ impl<'a> Sources<'a> {
         });
         Ok(())
     }
-
-    fn handle_top_link_insert(&mut self, link: &TNodeLink) -> NodeResult<()> {
-        use schema::NodeKind;
-
-        let parent_kind = link.parent_kind.to_kind();
-        let child_kind = link.child_kind.to_kind();
-        let world = self.world_mut()?;
-        let mut ratings = world.resource_mut::<LinkRatings>();
-
-        ratings.add_rating(
-            link.parent,
-            link.child,
-            parent_kind,
-            child_kind,
-            link.rating,
-        );
-
-        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
-            match relation {
-                schema::NodeRelation::OneToMany => {
-                    // For one-to-many (e.g., NHouse -> NUnit), we need to update the top parent for this child
-                    if let Some(top_parent) = ratings.get_top_parent(link.child, parent_kind) {
-                        // Remove old parent links for this child
-                        if let Ok(old_parents) = self.get_parents_of_kind(link.child, parent_kind) {
-                            for old_parent in old_parents {
-                                self.remove_link(old_parent, link.child)?;
-                            }
-                        }
-                        // Add link to top parent
-                        self.add_link(top_parent, link.child)?;
-                    }
-                }
-                schema::NodeRelation::ManyToOne => {
-                    // For many-to-one (e.g., NUnit -> NUnitDescription), we need to update the top child for this parent
-                    if let Some(top_child) = ratings.get_top_child(link.parent, child_kind) {
-                        if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind)
-                        {
-                            for old_child in old_children {
-                                self.remove_link(link.parent, old_child)?;
-                            }
-                        }
-                        self.add_link(link.parent, top_child)?;
-                    }
-                }
-                schema::NodeRelation::OneToOne => {
-                    // For one-to-one, update top child for parent
-                    if let Some(top_child) = ratings.get_top_child(link.parent, child_kind) {
-                        if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind)
-                        {
-                            for old_child in old_children {
-                                self.remove_link(link.parent, old_child)?;
-                            }
-                        }
-                        self.add_link(link.parent, top_child)?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn handle_top_link_update(&mut self, old: &TNodeLink, new: &TNodeLink) -> NodeResult<()> {
-        use schema::NodeKind;
-
-        let parent_kind = new.parent_kind.to_kind();
-        let child_kind = new.child_kind.to_kind();
-
-        let world = self.world_mut()?;
-        let mut links_map = world.resource_mut::<LinksMapResource>();
-        if old.id != new.id {
-            links_map.remove(old.id);
-        }
-        links_map.insert(new.clone());
-        let mut ratings = world.resource_mut::<LinkRatings>();
-
-        let old_parent_kind = old.parent_kind.to_kind();
-        let old_child_kind = old.child_kind.to_kind();
-        ratings.remove_rating(old.parent, old.child, old_parent_kind, old_child_kind);
-        ratings.add_rating(new.parent, new.child, parent_kind, child_kind, new.rating);
-
-        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
-            match relation {
-                schema::NodeRelation::OneToMany => {
-                    // For one-to-many (e.g., NHouse -> NUnit), we need to update the top parent for this child
-                    if let Some(top_parent) = ratings.get_top_parent(new.child, parent_kind) {
-                        // Remove old parent links for this child
-                        if let Ok(old_parents) = self.get_parents_of_kind(new.child, parent_kind) {
-                            for old_parent in old_parents {
-                                self.remove_link(old_parent, new.child)?;
-                            }
-                        }
-                        // Add link to top parent
-                        self.add_link(top_parent, new.child)?;
-                    }
-                }
-                schema::NodeRelation::ManyToOne => {
-                    // For many-to-one (e.g., NUnit -> NUnitDescription), we need to update the top child for this parent
-                    if let Some(top_child) = ratings.get_top_child(new.parent, child_kind) {
-                        if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind)
-                        {
-                            for old_child in old_children {
-                                self.remove_link(new.parent, old_child)?;
-                            }
-                        }
-                        self.add_link(new.parent, top_child)?;
-                    }
-                }
-                schema::NodeRelation::OneToOne => {
-                    // For one-to-one, update top child for parent
-                    if let Some(top_child) = ratings.get_top_child(new.parent, child_kind) {
-                        if let Ok(old_children) = self.get_children_of_kind(new.parent, child_kind)
-                        {
-                            for old_child in old_children {
-                                self.remove_link(new.parent, old_child)?;
-                            }
-                        }
-                        self.add_link(new.parent, top_child)?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn handle_top_link_delete(&mut self, link: &TNodeLink) -> NodeResult<()> {
-        use schema::NodeKind;
-
-        let parent_kind = link.parent_kind.to_kind();
-        let child_kind = link.child_kind.to_kind();
-
-        // Update ratings and get new top after removal
-        let (top_child_after_removal, top_parent_after_removal) = {
-            let world = self.world_mut()?;
-            let mut links_map = world.resource_mut::<LinksMapResource>();
-            links_map.remove(link.id);
-            let mut ratings = world.resource_mut::<LinkRatings>();
-            ratings.remove_rating(link.parent, link.child, parent_kind, child_kind);
-            (
-                ratings.get_top_child(link.parent, child_kind),
-                ratings.get_top_parent(link.child, parent_kind),
-            )
-        };
-
-        if let Some(relation) = NodeKind::get_relation(parent_kind, child_kind) {
-            match relation {
-                schema::NodeRelation::OneToMany => {
-                    // For one-to-many (e.g., NHouse -> NUnit), update the top parent for this child
-                    if let Ok(old_parents) = self.get_parents_of_kind(link.child, parent_kind) {
-                        for old_parent in old_parents {
-                            self.remove_link(old_parent, link.child)?;
-                        }
-                    }
-                    // Add link to new top parent if any
-                    if let Some(top_parent) = top_parent_after_removal {
-                        self.add_link(top_parent, link.child)?;
-                    }
-                }
-                schema::NodeRelation::ManyToOne => {
-                    // For many-to-one (e.g., NUnit -> NUnitDescription), update the top child for this parent
-                    if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
-                        for old_child in old_children {
-                            self.remove_link(link.parent, old_child)?;
-                        }
-                    }
-                    // Add link to new top child if any
-                    if let Some(top_child) = top_child_after_removal {
-                        self.add_link(link.parent, top_child)?;
-                    }
-                }
-                schema::NodeRelation::OneToOne => {
-                    // For one-to-one, update top child for parent
-                    if let Ok(old_children) = self.get_children_of_kind(link.parent, child_kind) {
-                        for old_child in old_children {
-                            self.remove_link(link.parent, old_child)?;
-                        }
-                    }
-                    // Add link to new top child if any
-                    if let Some(top_child) = top_child_after_removal {
-                        self.add_link(link.parent, top_child)?;
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
 }
 
 impl ClientSource for Sources<'_> {
@@ -1109,7 +762,7 @@ impl ClientSource for Sources<'_> {
 
     fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Core(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world available")),
@@ -1118,7 +771,7 @@ impl ClientSource for Sources<'_> {
 
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(w) | Sources::Core(w) | Sources::Top(w) | Sources::Selected(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
             Sources::None => Err(NodeError::custom("No world available")),
@@ -1187,23 +840,11 @@ impl ClientSource for Sources<'_> {
 #[derive(Debug)]
 pub enum StdbUpdate {
     NodeInsert(TNode),
-    NodeUpdate {
-        old: TNode,
-        new: TNode,
-    },
+    NodeUpdate { old: TNode, new: TNode },
     NodeDelete(TNode),
     LinkInsert(TNodeLink),
-    LinkUpdate {
-        old: TNodeLink,
-        new: TNodeLink,
-    },
+    LinkUpdate { old: TNodeLink, new: TNodeLink },
     LinkDelete(TNodeLink),
-    PlayerLinkSelectionInsert(TPlayerLinkSelection),
-    PlayerLinkSelectionUpdate {
-        old: TPlayerLinkSelection,
-        new: TPlayerLinkSelection,
-    },
-    PlayerLinkSelectionDelete(TPlayerLinkSelection),
 }
 
 impl ContextSource for Sources<'_> {

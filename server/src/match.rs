@@ -673,7 +673,7 @@ impl NMatch {
         Ok(())
     }
     fn unlink_unit(&mut self, ctx: &ServerContext, unit_id: u64) -> Option<u64> {
-        let links = TNodeLink::parents_of_kind(ctx.rctx(), unit_id, NodeKind::NFusionSlot, true);
+        let links = TNodeLink::parents_of_kind(ctx.rctx(), unit_id, NodeKind::NFusionSlot);
         if links.len() > 1 {
             error!("Unit#{} linked to {} slots", unit_id, links.len());
         }

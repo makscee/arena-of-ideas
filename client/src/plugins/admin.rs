@@ -151,11 +151,13 @@ impl AdminPlugin {
             "notify test".notify(world);
             "notify error test".notify_error(world);
         }
-        if "Rotate Content".cstr().button(ui).clicked() {
-            cn().reducers.on_content_rotation(|c| {
-                c.event.notify_error();
-            });
-            cn().reducers.content_rotation().unwrap();
+        if "Check Phase Completion".cstr().button(ui).clicked() {
+            cn().reducers
+                .content_check_phase_completion()
+                .notify_error_op();
+        }
+        if "Add 10 Votes".cstr().button(ui).clicked() {
+            cn().reducers.admin_add_votes(10).notify_error_op();
         }
         if "Download Node Assets".cstr().button(ui).clicked() {
             match download_world_assets_to_path(&get_world_assets_path()) {

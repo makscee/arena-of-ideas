@@ -7,16 +7,17 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_add_gold_reducer;
+pub mod admin_add_votes_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
-pub mod admin_sync_link_ratings_reducer;
 pub mod admin_upload_world_reducer;
 pub mod battle_table;
-pub mod content_deselect_link_reducer;
+pub mod content_check_phase_completion_reducer;
+pub mod content_downvote_node_reducer;
 pub mod content_publish_node_reducer;
-pub mod content_rotation_reducer;
-pub mod content_select_link_reducer;
-pub mod content_vote_node_reducer;
+pub mod content_suggest_node_reducer;
+pub mod content_upvote_node_reducer;
+pub mod creators_table;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
 pub mod daily_update_timer_type;
@@ -46,16 +47,22 @@ pub mod match_start_battle_reducer;
 pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
 pub mod nodes_world_table;
-pub mod player_link_selections_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
 pub mod t_battle_type;
+pub mod t_creators_type;
 pub mod t_node_link_type;
 pub mod t_node_type;
-pub mod t_player_link_selection_type;
+pub mod t_votes_history_type;
+pub mod t_votes_type;
+pub mod votes_history_table;
+pub mod votes_table;
 
 pub use admin_add_gold_reducer::{
     admin_add_gold, set_flags_for_admin_add_gold, AdminAddGoldCallbackId,
+};
+pub use admin_add_votes_reducer::{
+    admin_add_votes, set_flags_for_admin_add_votes, AdminAddVotesCallbackId,
 };
 pub use admin_daily_update_reducer::{
     admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
@@ -64,28 +71,27 @@ pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
 };
-pub use admin_sync_link_ratings_reducer::{
-    admin_sync_link_ratings, set_flags_for_admin_sync_link_ratings, AdminSyncLinkRatingsCallbackId,
-};
 pub use admin_upload_world_reducer::{
     admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
 };
 pub use battle_table::*;
-pub use content_deselect_link_reducer::{
-    content_deselect_link, set_flags_for_content_deselect_link, ContentDeselectLinkCallbackId,
+pub use content_check_phase_completion_reducer::{
+    content_check_phase_completion, set_flags_for_content_check_phase_completion,
+    ContentCheckPhaseCompletionCallbackId,
+};
+pub use content_downvote_node_reducer::{
+    content_downvote_node, set_flags_for_content_downvote_node, ContentDownvoteNodeCallbackId,
 };
 pub use content_publish_node_reducer::{
     content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
 };
-pub use content_rotation_reducer::{
-    content_rotation, set_flags_for_content_rotation, ContentRotationCallbackId,
+pub use content_suggest_node_reducer::{
+    content_suggest_node, set_flags_for_content_suggest_node, ContentSuggestNodeCallbackId,
 };
-pub use content_select_link_reducer::{
-    content_select_link, set_flags_for_content_select_link, ContentSelectLinkCallbackId,
+pub use content_upvote_node_reducer::{
+    content_upvote_node, set_flags_for_content_upvote_node, ContentUpvoteNodeCallbackId,
 };
-pub use content_vote_node_reducer::{
-    content_vote_node, set_flags_for_content_vote_node, ContentVoteNodeCallbackId,
-};
+pub use creators_table::*;
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
 };
@@ -151,13 +157,16 @@ pub use match_submit_battle_result_reducer::{
 };
 pub use node_links_table::*;
 pub use nodes_world_table::*;
-pub use player_link_selections_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use t_battle_type::TBattle;
+pub use t_creators_type::TCreators;
 pub use t_node_link_type::TNodeLink;
 pub use t_node_type::TNode;
-pub use t_player_link_selection_type::TPlayerLinkSelection;
+pub use t_votes_history_type::TVotesHistory;
+pub use t_votes_type::TVotes;
+pub use votes_history_table::*;
+pub use votes_table::*;
 
 #[derive(Clone, PartialEq, Debug)]
 
@@ -168,31 +177,31 @@ pub use t_player_link_selection_type::TPlayerLinkSelection;
 
 pub enum Reducer {
     AdminAddGold,
+    AdminAddVotes {
+        amount: i32,
+    },
     AdminDailyUpdate,
     AdminDeleteNodeRecursive {
         id: u64,
     },
-    AdminSyncLinkRatings,
     AdminUploadWorld {
         global_settings: GlobalSettings,
         nodes: Vec<String>,
         links: Vec<String>,
     },
-    ContentDeselectLink {
-        parent_id: u64,
-        child_id: u64,
+    ContentCheckPhaseCompletion,
+    ContentDownvoteNode {
+        node_id: u64,
     },
     ContentPublishNode {
         pack: String,
     },
-    ContentRotation,
-    ContentSelectLink {
-        parent_id: u64,
-        child_id: u64,
+    ContentSuggestNode {
+        kind: String,
+        name: String,
     },
-    ContentVoteNode {
-        id: u64,
-        vote: bool,
+    ContentUpvoteNode {
+        node_id: u64,
     },
     DailyUpdateReducer {
         timer: DailyUpdateTimer,
@@ -262,15 +271,15 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::AdminAddGold => "admin_add_gold",
+            Reducer::AdminAddVotes { .. } => "admin_add_votes",
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
-            Reducer::AdminSyncLinkRatings => "admin_sync_link_ratings",
             Reducer::AdminUploadWorld { .. } => "admin_upload_world",
-            Reducer::ContentDeselectLink { .. } => "content_deselect_link",
+            Reducer::ContentCheckPhaseCompletion => "content_check_phase_completion",
+            Reducer::ContentDownvoteNode { .. } => "content_downvote_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
-            Reducer::ContentRotation => "content_rotation",
-            Reducer::ContentSelectLink { .. } => "content_select_link",
-            Reducer::ContentVoteNode { .. } => "content_vote_node",
+            Reducer::ContentSuggestNode { .. } => "content_suggest_node",
+            Reducer::ContentUpvoteNode { .. } => "content_upvote_node",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
             Reducer::Login { .. } => "login",
@@ -304,6 +313,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_add_gold_reducer::AdminAddGoldArgs,
             >("admin_add_gold", &value.args)?
             .into()),
+            "admin_add_votes" => Ok(__sdk::parse_reducer_args::<
+                admin_add_votes_reducer::AdminAddVotesArgs,
+            >("admin_add_votes", &value.args)?
+            .into()),
             "admin_daily_update" => Ok(__sdk::parse_reducer_args::<
                 admin_daily_update_reducer::AdminDailyUpdateArgs,
             >("admin_daily_update", &value.args)?
@@ -314,33 +327,31 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
-            "admin_sync_link_ratings" => Ok(__sdk::parse_reducer_args::<
-                admin_sync_link_ratings_reducer::AdminSyncLinkRatingsArgs,
-            >("admin_sync_link_ratings", &value.args)?
-            .into()),
             "admin_upload_world" => Ok(__sdk::parse_reducer_args::<
                 admin_upload_world_reducer::AdminUploadWorldArgs,
             >("admin_upload_world", &value.args)?
             .into()),
-            "content_deselect_link" => Ok(__sdk::parse_reducer_args::<
-                content_deselect_link_reducer::ContentDeselectLinkArgs,
-            >("content_deselect_link", &value.args)?
+            "content_check_phase_completion" => {
+                Ok(__sdk::parse_reducer_args::<
+                    content_check_phase_completion_reducer::ContentCheckPhaseCompletionArgs,
+                >("content_check_phase_completion", &value.args)?
+                .into())
+            }
+            "content_downvote_node" => Ok(__sdk::parse_reducer_args::<
+                content_downvote_node_reducer::ContentDownvoteNodeArgs,
+            >("content_downvote_node", &value.args)?
             .into()),
             "content_publish_node" => Ok(__sdk::parse_reducer_args::<
                 content_publish_node_reducer::ContentPublishNodeArgs,
             >("content_publish_node", &value.args)?
             .into()),
-            "content_rotation" => Ok(__sdk::parse_reducer_args::<
-                content_rotation_reducer::ContentRotationArgs,
-            >("content_rotation", &value.args)?
+            "content_suggest_node" => Ok(__sdk::parse_reducer_args::<
+                content_suggest_node_reducer::ContentSuggestNodeArgs,
+            >("content_suggest_node", &value.args)?
             .into()),
-            "content_select_link" => Ok(__sdk::parse_reducer_args::<
-                content_select_link_reducer::ContentSelectLinkArgs,
-            >("content_select_link", &value.args)?
-            .into()),
-            "content_vote_node" => Ok(__sdk::parse_reducer_args::<
-                content_vote_node_reducer::ContentVoteNodeArgs,
-            >("content_vote_node", &value.args)?
+            "content_upvote_node" => Ok(__sdk::parse_reducer_args::<
+                content_upvote_node_reducer::ContentUpvoteNodeArgs,
+            >("content_upvote_node", &value.args)?
             .into()),
             "daily_update_reducer" => Ok(__sdk::parse_reducer_args::<
                 daily_update_reducer_reducer::DailyUpdateReducerArgs,
@@ -458,12 +469,14 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[doc(hidden)]
 pub struct DbUpdate {
     battle: __sdk::TableUpdate<TBattle>,
+    creators: __sdk::TableUpdate<TCreators>,
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
     global_settings: __sdk::TableUpdate<GlobalSettings>,
     node_links: __sdk::TableUpdate<TNodeLink>,
     nodes_world: __sdk::TableUpdate<TNode>,
-    player_link_selections: __sdk::TableUpdate<TPlayerLinkSelection>,
+    votes: __sdk::TableUpdate<TVotes>,
+    votes_history: __sdk::TableUpdate<TVotesHistory>,
 }
 
 impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
@@ -475,6 +488,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "battle" => db_update
                     .battle
                     .append(battle_table::parse_table_update(table_update)?),
+                "creators" => db_update
+                    .creators
+                    .append(creators_table::parse_table_update(table_update)?),
                 "daily_update_timer" => db_update
                     .daily_update_timer
                     .append(daily_update_timer_table::parse_table_update(table_update)?),
@@ -490,9 +506,12 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "nodes_world" => db_update
                     .nodes_world
                     .append(nodes_world_table::parse_table_update(table_update)?),
-                "player_link_selections" => db_update.player_link_selections.append(
-                    player_link_selections_table::parse_table_update(table_update)?,
-                ),
+                "votes" => db_update
+                    .votes
+                    .append(votes_table::parse_table_update(table_update)?),
+                "votes_history" => db_update
+                    .votes_history
+                    .append(votes_history_table::parse_table_update(table_update)?),
 
                 unknown => {
                     return Err(__sdk::InternalError::unknown_name(
@@ -522,6 +541,9 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.battle = cache
             .apply_diff_to_table::<TBattle>("battle", &self.battle)
             .with_updates_by_pk(|row| &row.id);
+        diff.creators = cache
+            .apply_diff_to_table::<TCreators>("creators", &self.creators)
+            .with_updates_by_pk(|row| &row.node_id);
         diff.daily_update_timer = cache
             .apply_diff_to_table::<DailyUpdateTimer>("daily_update_timer", &self.daily_update_timer)
             .with_updates_by_pk(|row| &row.scheduled_id);
@@ -535,11 +557,11 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.nodes_world = cache
             .apply_diff_to_table::<TNode>("nodes_world", &self.nodes_world)
             .with_updates_by_pk(|row| &row.id);
-        diff.player_link_selections = cache
-            .apply_diff_to_table::<TPlayerLinkSelection>(
-                "player_link_selections",
-                &self.player_link_selections,
-            )
+        diff.votes = cache
+            .apply_diff_to_table::<TVotes>("votes", &self.votes)
+            .with_updates_by_pk(|row| &row.player_id);
+        diff.votes_history = cache
+            .apply_diff_to_table::<TVotesHistory>("votes_history", &self.votes_history)
             .with_updates_by_pk(|row| &row.id);
 
         diff
@@ -551,12 +573,14 @@ impl __sdk::DbUpdate for DbUpdate {
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
     battle: __sdk::TableAppliedDiff<'r, TBattle>,
+    creators: __sdk::TableAppliedDiff<'r, TCreators>,
     daily_update_timer: __sdk::TableAppliedDiff<'r, DailyUpdateTimer>,
     global_data: __sdk::TableAppliedDiff<'r, GlobalData>,
     global_settings: __sdk::TableAppliedDiff<'r, GlobalSettings>,
     node_links: __sdk::TableAppliedDiff<'r, TNodeLink>,
     nodes_world: __sdk::TableAppliedDiff<'r, TNode>,
-    player_link_selections: __sdk::TableAppliedDiff<'r, TPlayerLinkSelection>,
+    votes: __sdk::TableAppliedDiff<'r, TVotes>,
+    votes_history: __sdk::TableAppliedDiff<'r, TVotesHistory>,
 }
 
 impl __sdk::InModule for AppliedDiff<'_> {
@@ -570,6 +594,7 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
         callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
+        callbacks.invoke_table_row_callbacks::<TCreators>("creators", &self.creators, event);
         callbacks.invoke_table_row_callbacks::<DailyUpdateTimer>(
             "daily_update_timer",
             &self.daily_update_timer,
@@ -583,9 +608,10 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         );
         callbacks.invoke_table_row_callbacks::<TNodeLink>("node_links", &self.node_links, event);
         callbacks.invoke_table_row_callbacks::<TNode>("nodes_world", &self.nodes_world, event);
-        callbacks.invoke_table_row_callbacks::<TPlayerLinkSelection>(
-            "player_link_selections",
-            &self.player_link_selections,
+        callbacks.invoke_table_row_callbacks::<TVotes>("votes", &self.votes, event);
+        callbacks.invoke_table_row_callbacks::<TVotesHistory>(
+            "votes_history",
+            &self.votes_history,
             event,
         );
     }
@@ -1179,11 +1205,13 @@ impl __sdk::SpacetimeModule for RemoteModule {
 
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
         battle_table::register_table(client_cache);
+        creators_table::register_table(client_cache);
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);
         global_settings_table::register_table(client_cache);
         node_links_table::register_table(client_cache);
         nodes_world_table::register_table(client_cache);
-        player_link_selections_table::register_table(client_cache);
+        votes_table::register_table(client_cache);
+        votes_history_table::register_table(client_cache);
     }
 }

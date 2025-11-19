@@ -12,6 +12,7 @@ mod player;
 
 use std::str::FromStr;
 
+pub use admin::*;
 pub use context::*;
 use global_data::*;
 use global_settings::GlobalSettings;

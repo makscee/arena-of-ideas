@@ -1,6 +1,5 @@
-use std::collections::VecDeque;
-
 use super::*;
+use std::collections::{HashSet, VecDeque};
 
 #[table(public, name = nodes_world,
     index(name = kind_owner, btree(columns = [kind, owner])),
@@ -18,27 +17,39 @@ pub struct TNode {
     pub rating: i32,
 }
 
-#[table(public, name = player_link_selections)]
-#[derive(Clone, Debug)]
-pub struct TPlayerLinkSelection {
+#[spacetimedb::table(name = votes, public)]
+pub struct TVotes {
+    #[primary_key]
+    pub player_id: u64,
+    pub upvotes: i32,
+    pub downvotes: i32,
+}
+
+#[spacetimedb::table(name = votes_history, public)]
+pub struct TVotesHistory {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
     #[index(btree)]
     pub player_id: u64,
     #[index(btree)]
-    pub parent_id: u64,
+    pub node_id: u64,
+    pub is_upvote: bool,
+    pub timestamp: u64,
+}
+
+#[spacetimedb::table(name = creators, public)]
+pub struct TCreators {
+    #[primary_key]
+    pub node_id: u64,
     #[index(btree)]
-    pub child_id: u64,
-    #[index(btree)]
-    pub link_id: u64,
+    pub player_id: u64,
 }
 
 #[table(public, name = node_links,
-    index(name = parent_child, btree(columns = [parent, child, solid])),
-    index(name = parent_child_kind, btree(columns = [parent, child_kind, solid])),
-    index(name = child_parent_kind, btree(columns = [child, parent_kind, solid])),
-)]
+    index(name = parent_child, btree(columns = [parent, child])),
+    index(name = parent_child_kind, btree(columns = [parent, child_kind])),
+    index(name = child_parent_kind, btree(columns = [child, parent_kind])))]
 #[derive(Debug)]
 pub struct TNodeLink {
     #[primary_key]
@@ -52,17 +63,120 @@ pub struct TNodeLink {
     pub parent_kind: String,
     #[index(btree)]
     pub child_kind: String,
-    pub rating: i32,
-    pub solid: bool,
 }
 
-pub trait TopLink {
-    fn top(&self) -> Option<&TNodeLink>;
+impl TVotes {
+    pub fn get_or_create(ctx: &ReducerContext, player_id: u64) -> Self {
+        ctx.db
+            .votes()
+            .player_id()
+            .find(player_id)
+            .unwrap_or_else(|| {
+                ctx.db.votes().insert(Self {
+                    player_id,
+                    upvotes: 0,
+                    downvotes: 0,
+                })
+            })
+    }
+
+    pub fn add_votes(ctx: &ReducerContext, player_id: u64, amount: i32) {
+        let mut votes = Self::get_or_create(ctx, player_id);
+        votes.upvotes += amount;
+        votes.downvotes += amount;
+        ctx.db.votes().player_id().update(votes);
+    }
+
+    pub fn upvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
+        // Check if player has already voted on this node
+        if ctx
+            .db
+            .votes_history()
+            .iter()
+            .any(|h| h.player_id == player_id && h.node_id == node_id)
+        {
+            return Err("Already voted on this node".into());
+        }
+
+        // Check if player has votes available
+        let mut votes = Self::get_or_create(ctx, player_id);
+        if votes.upvotes <= 0 {
+            return Err("No upvotes available".into());
+        }
+
+        // Deduct vote from player
+        votes.upvotes -= 1;
+        ctx.db.votes().player_id().update(votes);
+
+        // Record vote in history
+        ctx.db.votes_history().insert(TVotesHistory {
+            id: 0,
+            player_id,
+            node_id,
+            is_upvote: true,
+            timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
+        });
+
+        // Update node rating
+        if let Some(mut node) = ctx.db.nodes_world().id().find(node_id) {
+            node.rating += 1;
+            ctx.db.nodes_world().id().update(node);
+        }
+
+        Ok(())
+    }
+
+    pub fn downvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
+        // Check if player has already voted on this node
+        if ctx
+            .db
+            .votes_history()
+            .iter()
+            .any(|h| h.player_id == player_id && h.node_id == node_id)
+        {
+            return Err("Already voted on this node".into());
+        }
+
+        // Check if player has votes available
+        let mut votes = Self::get_or_create(ctx, player_id);
+        if votes.downvotes <= 0 {
+            return Err("No downvotes available".into());
+        }
+
+        // Deduct vote from player
+        votes.downvotes -= 1;
+        ctx.db.votes().player_id().update(votes);
+
+        // Record vote in history
+        ctx.db.votes_history().insert(TVotesHistory {
+            id: 0,
+            player_id,
+            node_id,
+            is_upvote: false,
+            timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
+        });
+
+        // Update node rating
+        if let Some(mut node) = ctx.db.nodes_world().id().find(node_id) {
+            node.rating -= 1;
+            ctx.db.nodes_world().id().update(node);
+        }
+
+        Ok(())
+    }
 }
 
-impl TopLink for Vec<TNodeLink> {
-    fn top(&self) -> Option<&TNodeLink> {
-        self.into_iter().sorted_by_key(|l| -l.rating).next()
+impl TCreators {
+    pub fn record_creation(ctx: &ReducerContext, player_id: u64, node_id: u64) {
+        ctx.db.creators().insert(Self { player_id, node_id });
+    }
+
+    pub fn get_creator(ctx: &ReducerContext, node_id: u64) -> Option<u64> {
+        ctx.db
+            .creators()
+            .node_id()
+            .find(node_id)
+            .map(|c| c.player_id)
     }
 }
 
@@ -73,7 +187,6 @@ impl TNodeLink {
         child: u64,
         parent_kind: String,
         child_kind: String,
-        solid: bool,
     ) -> NodeResult<Self> {
         if let Some(link) = ctx
             .db
@@ -90,80 +203,49 @@ impl TNodeLink {
             parent,
             child_kind,
             parent_kind,
-            rating: 0,
-            solid,
         }))
     }
-    pub fn add(
-        ctx: &ReducerContext,
-        child: &TNode,
-        parent: &TNode,
-        solid: bool,
-    ) -> NodeResult<Self> {
+
+    pub fn add(ctx: &ReducerContext, child: &TNode, parent: &TNode) -> NodeResult<Self> {
         Self::add_by_id(
             ctx,
             parent.id,
             child.id,
             parent.kind.clone(),
             child.kind.clone(),
-            solid,
         )
     }
-    pub fn solidify(ctx: &ReducerContext, parent: u64, child: u64) -> NodeResult<()> {
-        let mut link = ctx
-            .db
-            .node_links()
-            .parent_child()
-            .filter((&parent, &child))
-            .exactly_one()
-            .map_err(|e| e.to_string())?;
-        if link.solid {
-            return Err(format!("Link {link:?} is already solid").into());
-        }
-        link.solid = true;
-        ctx.db.node_links().id().update(link);
-        Ok(())
-    }
+
     pub fn parents(ctx: &ReducerContext, id: u64) -> Vec<Self> {
         ctx.db.node_links().child().filter(id).collect()
     }
+
     pub fn children(ctx: &ReducerContext, id: u64) -> Vec<Self> {
         ctx.db.node_links().parent().filter(id).collect()
     }
-    pub fn parents_of_kind(
-        ctx: &ReducerContext,
-        id: u64,
-        kind: NodeKind,
-        solid: bool,
-    ) -> Vec<Self> {
+
+    pub fn parents_of_kind(ctx: &ReducerContext, id: u64, kind: NodeKind) -> Vec<Self> {
         ctx.db
             .node_links()
             .child_parent_kind()
-            .filter((&id, &kind.to_string(), &solid))
+            .filter((&id, &kind.to_string()))
             .collect()
     }
-    pub fn children_of_kind(
-        ctx: &ReducerContext,
-        id: u64,
-        kind: NodeKind,
-        solid: bool,
-    ) -> Vec<Self> {
+
+    pub fn children_of_kind(ctx: &ReducerContext, id: u64, kind: NodeKind) -> Vec<Self> {
         ctx.db
             .node_links()
             .parent_child_kind()
-            .filter((&id, &kind.to_string(), &solid))
+            .filter((&id, &kind.to_string()))
             .collect()
     }
+
     pub fn update(self, ctx: &ReducerContext) {
         ctx.db.node_links().id().update(self);
     }
+
     pub fn insert(self, ctx: &ReducerContext) {
         ctx.db.node_links().insert(self);
-    }
-
-    pub fn sync_rating_with_selections(mut self, ctx: &ReducerContext) {
-        self.rating = TPlayerLinkSelection::count_selections_for_link(ctx, self.id);
-        self.update(ctx);
     }
 }
 
@@ -187,83 +269,91 @@ pub trait NodeIdExt {
     fn collect_children_recursive(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn collect_parents(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64>;
-    fn top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
-    fn top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
-    fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
-    fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool;
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
 }
+
 impl NodeIdExt for u64 {
     fn load_node<T: Node>(self, ctx: &ReducerContext) -> NodeResult<T> {
         self.load_tnode(ctx)
-            .to_custom_e_s_fn(|| format!("Node#{self} not found"))?
-            .to_node()
+            .ok_or("Node not found".into())
+            .and_then(|t| t.to_node())
     }
+
     fn load_tnode(self, ctx: &ReducerContext) -> Option<TNode> {
         ctx.db.nodes_world().id().find(self)
     }
+
     fn load_tnode_err(self, ctx: &ReducerContext) -> NodeResult<TNode> {
-        self.load_tnode(ctx).to_not_found()
+        self.load_tnode(ctx).ok_or("Node not found".into())
     }
+
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind> {
         ctx.db.nodes_world().id().find(self).map(|v| v.kind())
     }
+
     fn add_parent(self, ctx: &ReducerContext, parent: u64) -> NodeResult<()> {
-        let child =
-            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link child {self} not found"))?;
-        let parent = TNode::load(ctx, parent)
-            .to_custom_e_s_fn(|| format!("Link parent {parent} not found"))?;
-        TNodeLink::add(ctx, &child, &parent, true)?;
+        let child = TNode::load(ctx, self).ok_or("Link child not found")?;
+        let parent = TNode::load(ctx, parent).ok_or("Link parent not found")?;
+        TNodeLink::add(ctx, &child, &parent)?;
         Ok(())
     }
+
     fn add_child(self, ctx: &ReducerContext, child: u64) -> NodeResult<()> {
-        let parent =
-            TNode::load(ctx, self).to_custom_e_s_fn(|| format!("Link parent#{self} not found"))?;
-        let child =
-            TNode::load(ctx, child).to_custom_e_s_fn(|| format!("Link child#{child} not found"))?;
-        TNodeLink::add(ctx, &child, &parent, true)?;
+        let parent = TNode::load(ctx, self).ok_or("Link parent not found")?;
+        let child = TNode::load(ctx, child).ok_or("Link child not found")?;
+        TNodeLink::add(ctx, &child, &parent)?;
         Ok(())
     }
+
     fn remove_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
-        let l = ctx
+        let links: Vec<_> = ctx
             .db
             .node_links()
             .parent_child()
             .filter((id, self))
-            .next()
-            .to_custom_e_s_fn(|| {
-                format!("Failed to remove parent#{id} of #{self}: link not found")
-            })?;
-        ctx.db.node_links().id().delete(l.id);
+            .collect();
+        for l in links {
+            ctx.db.node_links().id().delete(l.id);
+        }
         Ok(())
     }
+
     fn remove_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
-        let l = ctx
+        let links: Vec<_> = ctx
             .db
             .node_links()
             .parent_child()
             .filter((self, id))
-            .next()
-            .to_custom_err_fn(|| format!("Failed to remove child#{id} of #{self}: link not found"))
-            .track()?;
-        ctx.db.node_links().id().delete(l.id);
+            .collect();
+        for l in links {
+            ctx.db.node_links().id().delete(l.id);
+        }
         Ok(())
     }
+
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        TNodeLink::parents_of_kind(ctx, self, kind, true)
-            .top()
-            .map(|l| l.parent)
+        // Get parent with highest rating
+        TNodeLink::parents_of_kind(ctx, self, kind)
+            .into_iter()
+            .filter_map(|l| ctx.db.nodes_world().id().find(l.parent))
+            .max_by_key(|n| n.rating)
+            .map(|n| n.id)
     }
+
     fn get_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        TNodeLink::children_of_kind(ctx, self, kind, true)
-            .top()
-            .map(|l| l.child)
+        // Get child with highest rating
+        TNodeLink::children_of_kind(ctx, self, kind)
+            .into_iter()
+            .filter_map(|l| ctx.db.nodes_world().id().find(l.child))
+            .max_by_key(|n| n.rating)
+            .map(|n| n.id)
     }
+
     fn find_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        let mut checked: HashSet<u64> = default();
+        let mut checked: HashSet<u64> = HashSet::new();
         let mut q = VecDeque::from([self]);
-        let kind = kind.as_ref();
+        let kind = kind.to_string();
         while let Some(id) = q.pop_front() {
             for link in TNodeLink::parents(ctx, id) {
                 if !checked.insert(link.parent) {
@@ -277,10 +367,11 @@ impl NodeIdExt for u64 {
         }
         None
     }
+
     fn find_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        let mut checked: HashSet<u64> = default();
+        let mut checked: HashSet<u64> = HashSet::new();
         let mut q = VecDeque::from([self]);
-        let kind = kind.as_ref();
+        let kind = kind.to_string();
         while let Some(id) = q.pop_front() {
             for link in TNodeLink::children(ctx, id) {
                 if !checked.insert(link.child) {
@@ -294,26 +385,31 @@ impl NodeIdExt for u64 {
         }
         None
     }
+
     fn collect_kind_parents(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64> {
-        TNodeLink::parents_of_kind(ctx, self, kind, true)
+        TNodeLink::parents_of_kind(ctx, self, kind)
             .into_iter()
             .map(|l| l.parent)
             .collect()
     }
+
     fn collect_kind_children(self, ctx: &ReducerContext, kind: NodeKind) -> Vec<u64> {
-        TNodeLink::children_of_kind(ctx, self, kind, true)
+        TNodeLink::children_of_kind(ctx, self, kind)
             .into_iter()
             .map(|l| l.child)
             .collect()
     }
+
     fn collect_parents(self, ctx: &ReducerContext) -> HashSet<u64> {
         HashSet::from_iter(TNodeLink::parents(ctx, self).into_iter().map(|l| l.parent))
     }
+
     fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64> {
         HashSet::from_iter(TNodeLink::children(ctx, self).into_iter().map(|l| l.child))
     }
+
     fn collect_parents_recursive(self, ctx: &ReducerContext) -> HashSet<u64> {
-        let mut result: HashSet<u64> = default();
+        let mut result: HashSet<u64> = HashSet::new();
         let mut q: VecDeque<u64> = VecDeque::from([self]);
         while let Some(id) = q.pop_front() {
             for l in TNodeLink::parents(ctx, id) {
@@ -324,8 +420,9 @@ impl NodeIdExt for u64 {
         }
         result
     }
+
     fn collect_children_recursive(self, ctx: &ReducerContext) -> HashSet<u64> {
-        let mut result: HashSet<u64> = default();
+        let mut result: HashSet<u64> = HashSet::new();
         let mut q: VecDeque<u64> = VecDeque::from([self]);
         while let Some(id) = q.pop_front() {
             for l in TNodeLink::children(ctx, id) {
@@ -336,200 +433,23 @@ impl NodeIdExt for u64 {
         }
         result
     }
-    fn top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        TNodeLink::parents_of_kind(ctx, self, kind, false)
-            .top()
-            .map(|l| l.parent)
-    }
-    fn top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        TNodeLink::children_of_kind(ctx, self, kind, false)
-            .top()
-            .map(|l| l.child)
-    }
-    fn mutual_top_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        let child = TNodeLink::children_of_kind(ctx, self, kind, false)
-            .top()?
-            .child;
-        let parent = TNodeLink::parents_of_kind(ctx, child, self.kind(ctx)?, false)
-            .top()?
-            .parent;
-        if parent == self { Some(child) } else { None }
-    }
-    fn mutual_top_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {
-        let parent = TNodeLink::parents_of_kind(ctx, self, kind, false)
-            .top()?
-            .parent;
-        let child = TNodeLink::children_of_kind(ctx, parent, self.kind(ctx)?, false)
-            .top()?
-            .child;
-        if child == self { Some(parent) } else { None }
-    }
+
     fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool {
         ctx.db
             .node_links()
             .parent_child()
             .filter((id, self))
-            .any(|l| l.solid)
+            .next()
+            .is_some()
     }
+
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool {
         ctx.db
             .node_links()
             .parent_child()
             .filter((self, id))
-            .any(|l| l.solid)
-    }
-}
-
-impl TPlayerLinkSelection {
-    pub fn count_selections_for_link(ctx: &ReducerContext, link_id: u64) -> i32 {
-        ctx.db
-            .player_link_selections()
-            .link_id()
-            .filter(link_id)
-            .count() as i32
-    }
-
-    fn deselect_by_selection(
-        ctx: &ReducerContext,
-        selection: &TPlayerLinkSelection,
-    ) -> NodeResult<()> {
-        // Decrease rating of the link
-        if let Some(mut link) = ctx.db.node_links().id().find(selection.link_id) {
-            link.rating -= 1;
-            link.update(ctx);
-        }
-        ctx.db.player_link_selections().id().delete(selection.id);
-        Ok(())
-    }
-
-    pub fn select_link(
-        ctx: &ReducerContext,
-        player_id: u64,
-        parent_id: u64,
-        child_id: u64,
-    ) -> NodeResult<()> {
-        if ctx
-            .db
-            .player_link_selections()
-            .player_id()
-            .filter(&player_id)
-            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
             .next()
             .is_some()
-        {
-            // Selection already exists, do nothing
-            return Ok(());
-        }
-        // Find the link between parent and child
-        let link = if let Some(link) = ctx
-            .db
-            .node_links()
-            .parent_child()
-            .filter((&parent_id, &child_id))
-            .next()
-        {
-            link
-        } else {
-            let child = child_id.load_tnode_err(ctx)?;
-            let parent = parent_id.load_tnode_err(ctx)?;
-            TNodeLink::add(ctx, &child, &parent, false)?
-        };
-
-        let parent_kind: NodeKind = link.parent_kind.parse().unwrap_or(NodeKind::None);
-        let child_kind: NodeKind = link.child_kind.parse().unwrap_or(NodeKind::None);
-        let relation = NodeKind::get_relation(parent_kind, child_kind);
-        let is_one_to_many = matches!(relation, Some(NodeRelation::OneToMany));
-        let is_many_to_one = matches!(relation, Some(NodeRelation::ManyToOne));
-        if !is_many_to_one {
-            let existing_parent_selections: Vec<_> = ctx
-                .db
-                .player_link_selections()
-                .player_id()
-                .filter(&player_id)
-                .filter(|s| s.child_id == child_id)
-                .collect();
-
-            for existing in existing_parent_selections {
-                if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
-                    // Only remove if the parent kind matches the one we're selecting
-                    if existing_link.parent_kind == link.parent_kind {
-                        Self::deselect_by_selection(ctx, &existing)?;
-                    }
-                }
-            }
-        }
-        if !is_one_to_many {
-            // For single links, also clear any existing child selections of the same kind for this parent
-            let existing_child_selections: Vec<_> = ctx
-                .db
-                .player_link_selections()
-                .player_id()
-                .filter(&player_id)
-                .filter(|s| s.parent_id == parent_id)
-                .collect();
-
-            for existing in existing_child_selections {
-                if let Some(existing_link) = ctx.db.node_links().id().find(existing.link_id) {
-                    // Only remove if the child kind matches and it's a single link
-                    let existing_parent_kind: NodeKind =
-                        existing_link.parent_kind.parse().unwrap_or(NodeKind::None);
-                    let existing_child_kind: NodeKind =
-                        existing_link.child_kind.parse().unwrap_or(NodeKind::None);
-                    if existing_link.child_kind == link.child_kind
-                        && !NodeKind::is_one_to_many(existing_parent_kind, existing_child_kind)
-                    {
-                        Self::deselect_by_selection(ctx, &existing)?;
-                    }
-                }
-            }
-        }
-
-        // Add new selection
-        ctx.db
-            .player_link_selections()
-            .insert(TPlayerLinkSelection {
-                id: 0,
-                player_id,
-                parent_id,
-                child_id,
-                link_id: link.id,
-            });
-
-        // Increase rating of newly selected link
-        let mut link = ctx.db.node_links().id().find(link.id).unwrap_or_else(|| {
-            TNodeLink::add(
-                ctx,
-                &child_id.load_tnode(ctx).unwrap(),
-                &parent_id.load_tnode(ctx).unwrap(),
-                false,
-            )
-            .unwrap()
-        });
-        link.rating += 1;
-        link.update(ctx);
-
-        Ok(())
-    }
-
-    pub fn deselect_link(
-        ctx: &ReducerContext,
-        player_id: u64,
-        parent_id: u64,
-        child_id: u64,
-    ) -> NodeResult<()> {
-        if let Some(selection) = ctx
-            .db
-            .player_link_selections()
-            .player_id()
-            .filter(&player_id)
-            .filter(|s| s.parent_id == parent_id && s.child_id == child_id)
-            .next()
-        {
-            Self::deselect_by_selection(ctx, &selection)?;
-            Ok(())
-        } else {
-            Err("No selection found to remove".into())
-        }
     }
 }
 
@@ -537,14 +457,17 @@ impl TNode {
     pub fn kind(&self) -> NodeKind {
         NodeKind::from_str(&self.kind).unwrap()
     }
+
     pub fn load(ctx: &ReducerContext, id: u64) -> Option<Self> {
         ctx.db.nodes_world().id().find(id)
     }
+
     pub fn delete_by_id(ctx: &ReducerContext, id: u64) {
         ctx.db.nodes_world().id().delete(id);
         ctx.db.node_links().child().delete(id);
         ctx.db.node_links().parent().delete(id);
     }
+
     pub fn delete_by_id_recursive(ctx: &ReducerContext, id: u64) {
         let mut ids = id.collect_children_recursive(ctx);
         ids.insert(id);
@@ -552,6 +475,7 @@ impl TNode {
             Self::delete_by_id(ctx, *id);
         }
     }
+
     pub fn to_node<T: Node>(&self) -> NodeResult<T> {
         let mut d = T::default();
         d.inject_data(&self.data)?;
@@ -559,6 +483,7 @@ impl TNode {
         d.set_owner(self.owner);
         Ok(d)
     }
+
     pub fn new(id: u64, owner: u64, kind: NodeKind, data: String) -> Self {
         Self {
             id,
@@ -568,12 +493,15 @@ impl TNode {
             rating: 0,
         }
     }
+
     pub fn insert(self, ctx: &ReducerContext) {
         ctx.db.nodes_world().insert(self);
     }
+
     pub fn update(self, ctx: &ReducerContext) {
         ctx.db.nodes_world().id().update(self);
     }
+
     pub fn collect_kind_owner(ctx: &ReducerContext, kind: NodeKind, owner: u64) -> Vec<Self> {
         ctx.db
             .nodes_world()

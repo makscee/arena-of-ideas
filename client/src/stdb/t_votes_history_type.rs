@@ -6,14 +6,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
-pub struct TNodeLink {
+pub struct TVotesHistory {
     pub id: u64,
-    pub parent: u64,
-    pub child: u64,
-    pub parent_kind: String,
-    pub child_kind: String,
+    pub player_id: u64,
+    pub node_id: u64,
+    pub is_upvote: bool,
+    pub timestamp: u64,
 }
 
-impl __sdk::InModule for TNodeLink {
+impl __sdk::InModule for TVotesHistory {
     type Module = super::RemoteModule;
 }

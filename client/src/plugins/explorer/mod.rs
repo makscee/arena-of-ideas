@@ -32,18 +32,6 @@ impl ExplorerPlugin {
                     let mut state = world.resource_mut::<ExplorerState>();
                     state.inspected_house = Some(id);
                 }
-                ExplorerAction::InspectAbility(id) => {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_ability = Some(id);
-                }
-                ExplorerAction::InspectStatus(id) => {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state.inspected_status = Some(id);
-                }
-                ExplorerAction::SwitchViewMode(mode) => {
-                    let mut state = world.resource_mut::<ExplorerState>();
-                    state.view_mode = mode;
-                }
                 _ => {}
             }
         }
@@ -58,7 +46,6 @@ impl ExplorerPlugin {
             ExplorerPane::AbilitiesList => ExplorerPanes::pane_abilities_list(ui, world)?,
             ExplorerPane::StatusesList => ExplorerPanes::pane_statuses_list(ui, world)?,
 
-            ExplorerPane::HouseUnitsList => ExplorerPanes::pane_house_units_list(ui, world)?,
             ExplorerPane::HouseAbilitiesList => {
                 ExplorerPanes::pane_house_abilities_list(ui, world)?
             }
@@ -70,8 +57,6 @@ impl ExplorerPlugin {
 
             ExplorerPane::UnitCard => ExplorerPanes::pane_unit_card(ui, world)?,
             ExplorerPane::HouseCard => ExplorerPanes::pane_house_card(ui, world)?,
-            ExplorerPane::AbilityCard => ExplorerPanes::pane_ability_card(ui, world)?,
-            ExplorerPane::StatusCard => ExplorerPanes::pane_status_card(ui, world)?,
 
             ExplorerPane::UnitDescription => ExplorerPanes::pane_unit_description(ui, world)?,
             ExplorerPane::UnitBehavior => ExplorerPanes::pane_unit_behavior(ui, world)?,
@@ -79,15 +64,6 @@ impl ExplorerPlugin {
             ExplorerPane::UnitRepresentation => ExplorerPanes::pane_unit_representation(ui, world)?,
 
             ExplorerPane::HouseColor => ExplorerPanes::pane_house_color(ui, world)?,
-
-            ExplorerPane::AbilityDescription => ExplorerPanes::pane_ability_description(ui, world)?,
-            ExplorerPane::AbilityEffect => ExplorerPanes::pane_ability_effect(ui, world)?,
-
-            ExplorerPane::StatusDescription => ExplorerPanes::pane_status_description(ui, world)?,
-            ExplorerPane::StatusBehavior => ExplorerPanes::pane_status_behavior(ui, world)?,
-            ExplorerPane::StatusRepresentation => {
-                ExplorerPanes::pane_status_representation(ui, world)?
-            }
         }
 
         Ok(())
@@ -101,7 +77,6 @@ pub enum ExplorerPane {
     AbilitiesList,
     StatusesList,
 
-    HouseUnitsList,
     HouseAbilitiesList,
     HouseStatusesList,
 
@@ -111,20 +86,10 @@ pub enum ExplorerPane {
 
     UnitCard,
     HouseCard,
-    AbilityCard,
-    StatusCard,
-
     UnitDescription,
     UnitBehavior,
     UnitStats,
     UnitRepresentation,
 
     HouseColor,
-
-    AbilityDescription,
-    AbilityEffect,
-
-    StatusDescription,
-    StatusBehavior,
-    StatusRepresentation,
 }

@@ -38,6 +38,14 @@ pub trait ClientNode:
             rating: 0,
         }
     }
+    fn rating(&self) -> i32 {
+        cn().db
+            .nodes_world()
+            .id()
+            .find(&self.id())
+            .map(|n| n.rating)
+            .unwrap_or(0)
+    }
 }
 
 pub trait NodeExt: ClientNode {

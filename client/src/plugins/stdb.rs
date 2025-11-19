@@ -37,8 +37,6 @@ impl StdbPlugin {
                     let update = queue.pop_front().unwrap();
                     if sources.solid.handle_stdb_update(&update).is_err()
                         || sources.core.handle_stdb_update(&update).is_err()
-                        || sources.top.handle_stdb_update(&update).is_err()
-                        || sources.selected.handle_stdb_update(&update).is_err()
                     {
                         queue.push_back(update);
                         continue;
@@ -124,22 +122,6 @@ fn subscribe_table_updates() {
         debug!("delete link {link:?}");
         queue_update(StdbUpdate::LinkDelete(link.clone()));
     });
-
-    db.player_link_selections().on_insert(|_, link| {
-        debug!("insert player selection link {link:?}");
-        queue_update(StdbUpdate::PlayerLinkSelectionInsert(link.clone()));
-    });
-    db.player_link_selections().on_update(|_, old, new| {
-        debug!("update player selection link {new:?}");
-        queue_update(StdbUpdate::PlayerLinkSelectionUpdate {
-            old: old.clone(),
-            new: new.clone(),
-        });
-    });
-    db.player_link_selections().on_delete(|_, link| {
-        debug!("delete link {link:?}");
-        queue_update(StdbUpdate::PlayerLinkSelectionDelete(link.clone()));
-    });
 }
 
 fn queue_update(update: StdbUpdate) {
@@ -209,18 +191,6 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
-    cn().reducers.on_content_rotation(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_content_select_link(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
 }
 
 #[cfg(test)]
@@ -275,8 +245,6 @@ mod tests {
             child: 1002,
             parent_kind: "NPlayer".into(),
             child_kind: "NMatch".into(),
-            rating: 1,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link.clone()))
@@ -307,8 +275,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -342,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_component_entity_merging_nonsolid() {
-        let mut top_source = Sources::new_top();
+        let mut top_source = Sources::new_core();
         let house_node = NHouse::new(1001, 0, default()).to_tnode();
         let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         let link = TNodeLink {
@@ -351,8 +317,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: false,
         };
         top_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
@@ -367,7 +331,7 @@ mod tests {
         let color_entity = top_source.entity(1002).expect("Color entity should exist");
         assert_eq!(
             house_entity, color_entity,
-            "House and Color should be on same entities in Top source"
+            "House and Color should be on same entities in Core source"
         );
         let world = top_source.world().expect("World should be accessible");
         assert!(
@@ -388,326 +352,6 @@ mod tests {
     }
 
     #[test]
-    fn test_top_source_ratings_and_merging() {
-        let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node1))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node2))
-            .unwrap();
-
-        let link1 = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 5,
-            solid: false,
-        };
-        let link2 = TNodeLink {
-            id: 2,
-            parent: 1001,
-            child: 1003,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 10, // Higher rating
-            solid: false,
-        };
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link1))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link2))
-            .unwrap();
-        let house_entity = top_source.entity(1001).unwrap();
-        let color1_entity = top_source.entity(1002).unwrap();
-        let color2_entity = top_source.entity(1003).unwrap();
-
-        assert_ne!(
-            house_entity, color1_entity,
-            "First color should get extracted from house"
-        );
-        assert_eq!(
-            house_entity, color2_entity,
-            "Second color should be merged with house"
-        );
-
-        let world = top_source.world().unwrap();
-        assert!(
-            world.get::<NHouse>(house_entity).is_some(),
-            "House should exist on merged entity"
-        );
-        assert!(
-            world.get::<NHouseColor>(house_entity).is_some(),
-            "Color should exist on merged entity"
-        );
-        let children = top_source
-            .get_children_of_kind(1001, NodeKind::NHouseColor)
-            .unwrap();
-        assert_eq!(
-            children.len(),
-            1,
-            "Should only have one linked child (top-rated)"
-        );
-        assert!(
-            children.contains(&1003),
-            "Should contain higher rated child"
-        );
-        assert!(
-            !children.contains(&1002),
-            "Should not contain lower rated child"
-        );
-    }
-
-    #[test]
-    fn test_selected_source_player_selection() {
-        set_player_id_for_test(999);
-        let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
-            .unwrap();
-
-        let link = TNodeLink {
-            id: 5001,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-            rating: 0,
-            solid: true,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
-            .unwrap();
-
-        let selection = TPlayerLinkSelection {
-            id: 1,
-            player_id: 999,
-            parent_id: 1001,
-            child_id: 1002,
-            link_id: 5001,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(selection))
-            .unwrap();
-        let unit_entity = selected_source.entity(1002).unwrap();
-        let world = selected_source.world().unwrap();
-        assert!(
-            world.get::<NUnit>(unit_entity).is_some(),
-            "Unit should exist in world"
-        );
-        let children = selected_source
-            .get_children_of_kind(1001, NodeKind::NUnit)
-            .unwrap();
-        assert!(
-            children.contains(&1002),
-            "Selected source should contain player's selection"
-        );
-    }
-
-    #[test]
-    fn test_selected_source_player_selection_update() {
-        set_player_id_for_test(999);
-        let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let unit_node1 = NUnit::new(1002, 0, default()).to_tnode();
-        let unit_node2 = NUnit::new(1003, 0, default()).to_tnode();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node1))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node2))
-            .unwrap();
-
-        let link1 = TNodeLink {
-            id: 5002,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-            rating: 0,
-            solid: true,
-        };
-        let link2 = TNodeLink {
-            id: 5003,
-            parent: 1001,
-            child: 1003,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-            rating: 0,
-            solid: true,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link1))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link2))
-            .unwrap();
-
-        let old_selection = TPlayerLinkSelection {
-            id: 1,
-            player_id: 999,
-            parent_id: 1001,
-            child_id: 1002,
-            link_id: 5002,
-        };
-        let new_selection = TPlayerLinkSelection {
-            id: 1,
-            player_id: 999,
-            parent_id: 1001,
-            child_id: 1003,
-            link_id: 5003,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
-                old_selection.clone(),
-            ))
-            .unwrap();
-        let unit1_entity = selected_source.entity(1002).unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionUpdate {
-                old: old_selection,
-                new: new_selection,
-            })
-            .unwrap();
-        let unit2_entity = selected_source.entity(1003).unwrap();
-        let world = selected_source.world().unwrap();
-        assert!(
-            world.get::<NUnit>(unit1_entity).is_some(),
-            "Old unit should still exist"
-        );
-        assert!(
-            world.get::<NUnit>(unit2_entity).is_some(),
-            "New unit should exist"
-        );
-        let children = selected_source
-            .get_children_of_kind(1001, NodeKind::NUnit)
-            .unwrap();
-        assert!(children.contains(&1003), "Should contain new selection");
-        assert!(
-            !children.contains(&1002),
-            "Should not contain old selection"
-        );
-    }
-
-    #[test]
-    fn test_selected_source_ignores_other_players() {
-        set_player_id_for_test(999);
-        let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
-            .unwrap();
-
-        let link = TNodeLink {
-            id: 5004,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-            rating: 0,
-            solid: false,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
-            .unwrap();
-
-        let other_player_selection = TPlayerLinkSelection {
-            id: 1,
-            player_id: 1000,
-            parent_id: 1001,
-            child_id: 1002,
-            link_id: 5004,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(
-                other_player_selection,
-            ))
-            .unwrap();
-
-        let children = selected_source
-            .get_children_of_kind(1001, NodeKind::NUnit)
-            .unwrap_or_default();
-        assert!(
-            !children.contains(&1002),
-            "Selected source should ignore other player's selections"
-        );
-    }
-
-    #[test]
-    fn test_top_source_link_deletion_and_rating_update() {
-        let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node1))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node2))
-            .unwrap();
-        let link1 = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 5,
-            solid: false,
-        };
-        let link2 = TNodeLink {
-            id: 2,
-            parent: 1001,
-            child: 1003,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 10,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link1))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link2.clone()))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkDelete(link2))
-            .unwrap();
-        let children = top_source
-            .get_children_of_kind(1001, NodeKind::NHouseColor)
-            .unwrap_or_default();
-        assert!(
-            children.contains(&1002),
-            "Should fall back to lower rated child after deletion"
-        );
-        assert!(!children.contains(&1003), "Should not contain deleted link");
-    }
-
-    #[test]
     fn test_link_processing() {
         let mut solid_source = Sources::new_solid();
         let house_node = NHouse::new(1001, 0, default()).to_tnode();
@@ -724,8 +368,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link.clone()))
@@ -794,8 +436,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
@@ -807,8 +447,6 @@ mod tests {
             child: 1003,
             parent_kind: "NHouse".to_string(),
             child_kind: "NAbilityMagic".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(ability_link))
@@ -848,8 +486,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: true,
         };
 
         solid_source
@@ -894,8 +530,6 @@ mod tests {
             child: 1002,
             parent_kind: "NHouse".to_string(),
             child_kind: "NUnit".to_string(),
-            rating: 0,
-            solid: true,
         };
 
         solid_source
@@ -920,51 +554,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_top_source_component_merging() {
-        let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
-            .unwrap();
-
-        // Component link should cause merging even in Top source
-        let component_link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 5,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link))
-            .unwrap();
-
-        let house_entity = top_source.entity(1001).unwrap();
-        let color_entity = top_source.entity(1002).unwrap();
-        assert_eq!(
-            house_entity, color_entity,
-            "Component link should merge entities in Top source"
-        );
-
-        let world = top_source.world().unwrap();
-        assert!(
-            world.get::<NHouse>(house_entity).is_some(),
-            "House should exist on merged entity"
-        );
-        assert!(
-            world.get::<NHouseColor>(house_entity).is_some(),
-            "Color should exist on merged entity"
-        );
-    }
-
     fn link(source: &mut Sources, parent: &TNode, child: &TNode) {
         static LINK_ID: AtomicU64 = AtomicU64::new(1);
         let id = LINK_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -974,8 +563,6 @@ mod tests {
             child: child.id,
             parent_kind: parent.kind.clone(),
             child_kind: child.kind.clone(),
-            rating: 0,
-            solid: true,
         };
         source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
@@ -1093,8 +680,6 @@ mod tests {
             child: 1003,
             parent_kind: "NUnitDescription".to_string(),
             child_kind: "NUnitBehavior".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
@@ -1106,8 +691,6 @@ mod tests {
             child: 1004,
             parent_kind: "NUnitDescription".to_string(),
             child_kind: "NUnitRepresentation".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
@@ -1118,8 +701,6 @@ mod tests {
             child: 1002,
             parent_kind: "NUnit".to_string(),
             child_kind: "NUnitDescription".to_string(),
-            rating: 0,
-            solid: true,
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link))
@@ -1149,256 +730,5 @@ mod tests {
         assert!(world.get::<NUnitDescription>(unit_entity).is_some());
         assert!(world.get::<NUnitBehavior>(unit_entity).is_some());
         assert!(world.get::<NUnitRepresentation>(unit_entity).is_some());
-    }
-
-    #[test]
-    fn test_top_source_component_merge_replace() {
-        let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let color_node1 = NHouseColor::new(1002, 0, default()).to_tnode();
-        let color_node2 = NHouseColor::new(1003, 0, default()).to_tnode();
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node1))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node2))
-            .unwrap();
-
-        let component_link1 = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 1,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link1))
-            .unwrap();
-
-        let component_link2 = TNodeLink {
-            id: 2,
-            parent: 1001,
-            child: 1003,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 2,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link2))
-            .unwrap();
-
-        let house_entity = top_source.entity(1001).unwrap();
-        let color_entity1 = top_source.entity(1002).unwrap();
-        let color_entity2 = top_source.entity(1003).unwrap();
-
-        let world = top_source.world_mut().unwrap();
-
-        assert_ne!(
-            house_entity, color_entity1,
-            "Initial color should be moved to its own entity"
-        );
-        assert_eq!(
-            house_entity, color_entity2,
-            "Second color should get merged with house"
-        );
-
-        assert!(
-            world.get::<NHouse>(house_entity).is_some(),
-            "House should exist on merged entity"
-        );
-        assert!(
-            world.get::<NHouseColor>(house_entity).is_some(),
-            "Color should exist on merged entity"
-        );
-        assert!(
-            world.get::<NHouseColor>(color_entity1).is_some(),
-            "Color should exist on separate entity"
-        );
-    }
-
-    #[test]
-    fn test_top_source_component_remerging() {
-        let mut top_source = Sources::new_top();
-        let house1_node = NHouse::new(1001, 0, "house 1".into()).to_tnode();
-        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
-        let house2_node = NHouse::new(2001, 0, "house 2".into()).to_tnode();
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house1_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house2_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
-            .unwrap();
-
-        let component_link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 5,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link))
-            .unwrap();
-        let component_link = TNodeLink {
-            id: 2,
-            parent: 2001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 6,
-            solid: false,
-        };
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link))
-            .unwrap();
-
-        let house_entity1 = top_source.entity(1001).unwrap();
-        let house_entity2 = top_source.entity(2001).unwrap();
-        let color_entity = top_source.entity(1002).unwrap();
-
-        let world = top_source.world_mut().unwrap();
-        let houses = world.query::<&NHouse>().iter(world).len();
-
-        assert_eq!(houses, 2, "There should be 2 houses");
-        assert_eq!(
-            world.get::<NHouse>(house_entity1).unwrap().name(),
-            "house 1",
-            "House1 name does not match"
-        );
-        assert_eq!(
-            world.get::<NHouse>(house_entity2).unwrap().name(),
-            "house 2",
-            "House2 name does not match"
-        );
-        assert!(
-            world.get::<NHouseColor>(color_entity).is_some(),
-            "Color should exist on merged entity"
-        );
-
-        assert_eq!(
-            house_entity2, color_entity,
-            "House2 and Color should be on same entity"
-        );
-        assert_ne!(
-            house_entity1, color_entity,
-            "House1 and Color should not be on same entity"
-        );
-    }
-
-    #[test]
-    fn test_top_source_owned_link_no_merging() {
-        let mut top_source = Sources::new_top();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let unit_node = NUnit::new(1002, 0, default()).to_tnode();
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        top_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
-            .unwrap();
-
-        // Owned link should NOT cause merging in Top source
-        let owned_link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-            rating: 5,
-            solid: false,
-        };
-
-        top_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(owned_link))
-            .unwrap();
-
-        let house_entity = top_source.entity(1001).unwrap();
-        let unit_entity = top_source.entity(1002).unwrap();
-        assert_ne!(
-            house_entity, unit_entity,
-            "Owned link should NOT merge entities in Top source"
-        );
-
-        let world = top_source.world().unwrap();
-        assert!(
-            world.get::<NHouse>(house_entity).is_some(),
-            "House should exist on original entity"
-        );
-        assert!(
-            world.get::<NUnit>(unit_entity).is_some(),
-            "Unit should exist on original entity"
-        );
-    }
-
-    #[test]
-    fn test_selected_source_component_merging() {
-        set_player_id_for_test(999);
-        let mut selected_source = Sources::new_selected();
-        let house_node = NHouse::new(1001, 0, default()).to_tnode();
-        let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
-
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
-            .unwrap();
-        selected_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
-            .unwrap();
-
-        // Component link should cause merging in Selected source too
-        let component_link = TNodeLink {
-            id: 6001,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-            rating: 0,
-            solid: true,
-        };
-
-        selected_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link))
-            .unwrap();
-
-        let selection = TPlayerLinkSelection {
-            id: 1,
-            player_id: 999,
-            parent_id: 1001,
-            child_id: 1002,
-            link_id: 6001,
-        };
-        selected_source
-            .handle_stdb_update(&StdbUpdate::PlayerLinkSelectionInsert(selection))
-            .unwrap();
-
-        let house_entity = selected_source.entity(1001).unwrap();
-        let color_entity = selected_source.entity(1002).unwrap();
-        assert_eq!(
-            house_entity, color_entity,
-            "Component link should merge entities in Selected source"
-        );
-
-        let world = selected_source.world().unwrap();
-        assert!(
-            world.get::<NHouse>(house_entity).is_some(),
-            "House should exist on merged entity"
-        );
-        assert!(
-            world.get::<NHouseColor>(house_entity).is_some(),
-            "Color should exist on merged entity"
-        );
     }
 }

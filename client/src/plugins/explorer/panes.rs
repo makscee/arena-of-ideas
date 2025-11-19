@@ -17,7 +17,7 @@ impl ExplorerPanes {
         Self::show_add_new(ui, kind.to_kind());
 
         world.resource_scope::<ExplorerState, _>(|_, mut state| {
-            state.view_mode.exec_ctx(|ctx| {
+            with_core_source(|ctx| {
                 let mut node_list = named_node_kind_match!(kind, {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
@@ -30,8 +30,8 @@ impl ExplorerPanes {
                 let inspected_id = match kind {
                     NamedNodeKind::NUnit => state.inspected_unit,
                     NamedNodeKind::NHouse => state.inspected_house,
-                    NamedNodeKind::NAbilityMagic => state.inspected_ability,
-                    NamedNodeKind::NStatusMagic => state.inspected_status,
+                    NamedNodeKind::NAbilityMagic => None,
+                    NamedNodeKind::NStatusMagic => None,
                 };
 
                 // Render the list
@@ -49,8 +49,8 @@ impl ExplorerPanes {
                             let action = match kind {
                                 NamedNodeKind::NUnit => ExplorerAction::InspectUnit(*id),
                                 NamedNodeKind::NHouse => ExplorerAction::InspectHouse(*id),
-                                NamedNodeKind::NAbilityMagic => ExplorerAction::InspectAbility(*id),
-                                NamedNodeKind::NStatusMagic => ExplorerAction::InspectStatus(*id),
+                                NamedNodeKind::NAbilityMagic => return,
+                                NamedNodeKind::NStatusMagic => return,
                             };
 
                             state.pending_actions.push(action);
@@ -75,28 +75,6 @@ impl ExplorerPanes {
         Ok(())
     }
 
-    pub fn render_view_mode_switch(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            ui.horizontal(|ui| {
-                for mode in [ViewMode::Core, ViewMode::Top, ViewMode::Selected] {
-                    let is_current = state.view_mode == mode;
-                    let color = if is_current {
-                        YELLOW
-                    } else {
-                        colorix().high_contrast_text()
-                    };
-
-                    if mode.name().cstr_c(color).button(ui).clicked() {
-                        state
-                            .pending_actions
-                            .push(ExplorerAction::SwitchViewMode(mode));
-                    }
-                }
-            });
-            Ok(())
-        })
-    }
-
     pub fn pane_units_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         Self::render_node_list(ui, world, NamedNodeKind::NUnit)
     }
@@ -113,34 +91,14 @@ impl ExplorerPanes {
         Self::render_node_list(ui, world, NamedNodeKind::NStatusMagic)
     }
 
-    pub fn pane_house_units_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(house_id) = state.inspected_house {
-                Self::render_house_selection_list::<NUnit>(ui, &mut state, house_id, true)
-            } else {
-                Ok(())
-            }
-        })
+    pub fn pane_house_abilities_list(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
+        ui.label("House abilities will be shown here");
+        Ok(())
     }
 
-    pub fn pane_house_abilities_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(house_id) = state.inspected_house {
-                Self::render_house_selection_list::<NAbilityMagic>(ui, &mut state, house_id, false)
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_house_statuses_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(house_id) = state.inspected_house {
-                Self::render_house_selection_list::<NStatusMagic>(ui, &mut state, house_id, false)
-            } else {
-                Ok(())
-            }
-        })
+    pub fn pane_house_statuses_list(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
+        ui.label("House statuses will be shown here");
+        Ok(())
     }
 
     fn pane_component<T: ClientNode + FDisplay + FDescription, P: ClientNode>(
@@ -196,9 +154,19 @@ impl ExplorerPanes {
             })
             .with_hover(move |node, _, ui| {
                 if "Select".cstr().button(ui).clicked() {
-                    cn().reducers
-                        .content_select_link(parent_id, node.id())
-                        .notify_error_op();
+                    ui.horizontal(|ui| {
+                        if "⬆".cstr().button(ui).clicked() {
+                            cn().reducers
+                                .content_upvote_node(node.id())
+                                .notify_error_op();
+                        }
+                        if "⬇".cstr().button(ui).clicked() {
+                            cn().reducers
+                                .content_downvote_node(node.id())
+                                .notify_error_op();
+                        }
+                        ui.label(format!("Rating: {}", node.rating()));
+                    });
                 }
             })
             .compose(ctx, ui);
@@ -208,7 +176,7 @@ impl ExplorerPanes {
     pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     let parent = ctx.load::<NUnit>(unit_id)?;
                     Self::pane_component::<NUnitDescription, _>(ui, ctx, unit_id, parent, None)
                 })
@@ -218,20 +186,15 @@ impl ExplorerPanes {
         })
     }
 
-    pub fn pane_unit_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(unit_id) = state.inspected_unit {
-                Self::render_house_parent_list(ui, &mut state, unit_id)
-            } else {
-                Ok(())
-            }
-        })
+    pub fn pane_unit_parent_list(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
+        ui.label("Unit parent house will be shown here");
+        Ok(())
     }
 
     pub fn pane_unit_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
                     Self::pane_component::<NUnitBehavior, _>(
                         ui,
@@ -252,7 +215,7 @@ impl ExplorerPanes {
     pub fn pane_unit_stats(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     let parent = ctx.load::<NUnit>(unit_id)?;
                     Self::pane_component::<NUnitStats, _>(ui, ctx, unit_id, parent, None)
                 })
@@ -262,32 +225,20 @@ impl ExplorerPanes {
         })
     }
 
-    pub fn pane_ability_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(ability_id) = state.inspected_ability {
-                Self::render_house_parent_list(ui, &mut state, ability_id)
-            } else {
-                Ok(())
-            }
-        })
+    pub fn pane_ability_parent_list(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
+        ui.label("Ability parent house will be shown here");
+        Ok(())
     }
 
-    pub fn pane_status_parent_list(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, mut state| {
-            if let Some(status_id) = state.inspected_status {
-                Self::render_house_parent_list(ui, &mut state, status_id)
-            } else {
-                Ok(())
-            }
-        })
+    pub fn pane_status_parent_list(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
+        ui.label("Status parent house will be shown here");
+        Ok(())
     }
 
     pub fn pane_unit_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        Self::render_view_mode_switch(ui, world)?;
-
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NUnit>(unit_id)?, ctx, ui)
                 })
             } else {
@@ -297,40 +248,10 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        Self::render_view_mode_switch(ui, world)?;
-
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NHouse>(house_id)?, ctx, ui)
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_ability_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        Self::render_view_mode_switch(ui, world)?;
-
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(ability_id) = state.inspected_ability {
-                state.view_mode.exec_ctx(|ctx| {
-                    Self::render_node_card(ctx.load_ref::<NAbilityMagic>(ability_id)?, ctx, ui)
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_status_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        Self::render_view_mode_switch(ui, world)?;
-
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(status_id) = state.inspected_status {
-                state.view_mode.exec_ctx(|ctx| {
-                    Self::render_node_card(ctx.load_ref::<NStatusMagic>(status_id)?, ctx, ui)
                 })
             } else {
                 Ok(())
@@ -341,7 +262,7 @@ impl ExplorerPanes {
     pub fn pane_unit_representation(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
                     Self::pane_component::<NUnitRepresentation, _>(ui, ctx, unit_id, parent, None)
                 })
@@ -354,7 +275,7 @@ impl ExplorerPanes {
     pub fn pane_house_color(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                state.view_mode.exec_ctx(|ctx| {
+                with_core_source(|ctx| {
                     Self::pane_component::<NHouseColor, _>(
                         ui,
                         ctx,
@@ -366,184 +287,6 @@ impl ExplorerPanes {
             } else {
                 Ok(())
             }
-        })
-    }
-
-    pub fn pane_ability_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(ability_id) = state.inspected_ability {
-                state.view_mode.exec_ctx(|ctx| {
-                    Self::pane_component::<NAbilityDescription, _>(
-                        ui,
-                        ctx,
-                        ability_id,
-                        ctx.load::<NAbilityMagic>(ability_id)?,
-                        None,
-                    )
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_ability_effect(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(ability_id) = state.inspected_ability {
-                state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx
-                        .load::<NAbilityMagic>(ability_id)?
-                        .description_ref(ctx)?
-                        .clone();
-                    Self::pane_component::<NAbilityEffect, _>(ui, ctx, ability_id, parent, None)
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_status_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(status_id) = state.inspected_status {
-                state.view_mode.exec_ctx(|ctx| {
-                    Self::pane_component::<NStatusDescription, _>(
-                        ui,
-                        ctx,
-                        status_id,
-                        ctx.load::<NStatusMagic>(status_id)?,
-                        None,
-                    )
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_status_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(status_id) = state.inspected_status {
-                state.view_mode.exec_ctx(|ctx| {
-                    let parent = ctx
-                        .load::<NStatusMagic>(status_id)?
-                        .description_ref(ctx)?
-                        .clone();
-                    Self::pane_component::<NStatusBehavior, _>(ui, ctx, status_id, parent, None)
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    pub fn pane_status_representation(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
-            if let Some(status_id) = state.inspected_status {
-                state.view_mode.exec_ctx(|ctx| {
-                    Self::pane_component::<NStatusRepresentation, _>(
-                        ui,
-                        ctx,
-                        status_id,
-                        ctx.load::<NStatusMagic>(status_id)?,
-                        None,
-                    )
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
-    fn render_house_parent_list(
-        ui: &mut Ui,
-        state: &mut ExplorerState,
-        node_id: u64,
-    ) -> NodeResult<()> {
-        let kind = NodeKind::NHouse;
-        Self::show_add_new(ui, kind);
-        state.view_mode.exec_ctx(|ctx| {
-            let current_parent = ctx.get_parents_of_kind(node_id, kind)?.into_iter().next();
-
-            let mut all_nodes = Vec::new();
-            for house in ctx.world_mut()?.query::<&NHouse>().iter(ctx.world()?) {
-                all_nodes.push((house.id, house.name().to_string()));
-            }
-
-            all_nodes.sort_by_key(|(id, _)| *id);
-
-            all_nodes
-                .as_list(|(id, name), _ctx, ui| {
-                    let is_current = current_parent == Some(*id);
-                    let text = if is_current {
-                        format!("* {}", name)
-                    } else {
-                        name.clone()
-                    };
-                    text.cstr().label(ui)
-                })
-                .with_hover(move |(id, _name), _, ui| {
-                    if "Select".cstr().button(ui).clicked() {
-                        cn().reducers
-                            .content_select_link(*id, node_id)
-                            .notify_error_op();
-                    }
-                })
-                .compose(ctx, ui);
-
-            Ok(())
-        })
-    }
-
-    fn render_house_selection_list<T>(
-        ui: &mut Ui,
-        state: &mut ExplorerState,
-        house_id: u64,
-        multiple_selection: bool,
-    ) -> NodeResult<()>
-    where
-        T: ClientNode + NamedNode,
-    {
-        Self::show_add_new(ui, T::kind_s());
-        state.view_mode.exec_ctx(|ctx| {
-            let current_children = if multiple_selection {
-                ctx.get_children_of_kind(house_id, T::named_kind().to_kind())?
-                    .into_iter()
-                    .collect::<HashSet<_>>()
-            } else {
-                ctx.get_children_of_kind(house_id, T::named_kind().to_kind())?
-                    .into_iter()
-                    .take(1)
-                    .collect::<HashSet<_>>()
-            };
-
-            let mut all_nodes = Vec::new();
-            for node in ctx.world_mut()?.query::<&T>().iter(ctx.world()?) {
-                all_nodes.push((node.id(), node.name().to_string()));
-            }
-
-            all_nodes.sort_by_key(|(id, _)| *id);
-
-            all_nodes
-                .as_list(|(id, name), _ctx, ui| {
-                    let is_current = current_children.contains(id);
-                    let text = if is_current {
-                        format!("* {}", name)
-                    } else {
-                        name.clone()
-                    };
-                    text.cstr().label(ui)
-                })
-                .with_hover(move |(node_id, _name), _, ui| {
-                    if "Select".cstr().button(ui).clicked() {
-                        cn().reducers
-                            .content_select_link(house_id, *node_id)
-                            .notify_error_op();
-                    }
-                })
-                .compose(ctx, ui);
-
-            Ok(())
         })
     }
 }

@@ -134,10 +134,7 @@ impl GameState {
                     tiles.insert_vertical_tile([house_color, house_abilities_list].into());
                 let house_statuses_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseStatusesList));
-                let house_units_list =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseUnitsList));
-                let units_statuses =
-                    tiles.insert_vertical_tile([house_units_list, house_statuses_list].into());
+                let units_statuses = tiles.insert_vertical_tile([house_statuses_list].into());
 
                 let houses_content = tiles.insert_horizontal_tile(
                     [houses_left_column, colors_abilities, units_statuses].into(),
@@ -146,46 +143,20 @@ impl GameState {
 
                 // Create Abilities tab layout
                 let abilities_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilitiesList));
-                let ability_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityCard));
-                let abilities_left_column =
-                    tiles.insert_vertical_tile([abilities_list, ability_card].into());
-
-                let ability_description =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityDescription));
-                let ability_effect = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityEffect));
-                let abilities_middle =
-                    tiles.insert_vertical_tile([ability_description, ability_effect].into());
-
                 let ability_parent_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityParentList));
 
-                let abilities_content = tiles.insert_horizontal_tile(
-                    [abilities_left_column, abilities_middle, ability_parent_list].into(),
-                );
+                let abilities_content =
+                    tiles.insert_horizontal_tile([abilities_list, ability_parent_list].into());
                 let abilities_tab = abilities_content.with_name(tile_tree, "Abilities");
 
                 // Create Statuses tab layout
                 let statuses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusesList));
-                let status_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusCard));
-                let statuses_left_column =
-                    tiles.insert_vertical_tile([statuses_list, status_card].into());
-
-                let status_description =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusDescription));
-                let status_behavior =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusBehavior));
-                let status_representation =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusRepresentation));
-                let statuses_middle = tiles.insert_vertical_tile(
-                    [status_description, status_behavior, status_representation].into(),
-                );
-
                 let status_parent_list =
                     tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusParentList));
 
-                let statuses_content = tiles.insert_horizontal_tile(
-                    [statuses_left_column, statuses_middle, status_parent_list].into(),
-                );
+                let statuses_content =
+                    tiles.insert_horizontal_tile([statuses_list, status_parent_list].into());
                 let statuses_tab = statuses_content.with_name(tile_tree, "Statuses");
 
                 // Main tabs

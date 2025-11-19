@@ -369,14 +369,7 @@ fn apply_filters(state: &mut WorldDownloadState) {
             let child_in_filter = filtered_node_set.contains(&(child_kind, link.1));
 
             if parent_in_filter && child_in_filter {
-                filtered.add_link(
-                    link.0,
-                    link.1,
-                    link.2.clone(),
-                    link.3.clone(),
-                    link.4,
-                    link.5 != 0,
-                );
+                filtered.add_link(link.0, link.1, link.2.clone(), link.3.clone());
             }
         }
 
@@ -445,14 +438,7 @@ fn save_filtered_assets(manager: &NodeAssetsManager) -> Result<usize, String> {
         .into_iter()
         .sorted_by_key(|l| format!("{}_{}", l.0, l.1))
     {
-        final_manager.add_link(
-            link.0,
-            link.1,
-            link.2.clone(),
-            link.3.clone(),
-            link.4,
-            link.5 != 0,
-        );
+        final_manager.add_link(link.0, link.1, link.2.clone(), link.3.clone());
     }
 
     let total_count = final_manager

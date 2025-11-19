@@ -52,10 +52,8 @@ impl NodeAssetsManager {
         child_id: u64,
         parent_kind: String,
         child_kind: String,
-        rating: i32,
-        solid: bool,
     ) {
-        let link = LinkAsset::new(parent_id, child_id, parent_kind, child_kind, rating, solid);
+        let link = LinkAsset::new(parent_id, child_id, parent_kind, child_kind);
         self.links.push(link);
     }
 
@@ -66,8 +64,6 @@ impl NodeAssetsManager {
             link.child,
             link.parent_kind.clone(),
             link.child_kind.clone(),
-            link.rating,
-            link.solid,
         );
     }
 
@@ -259,16 +255,6 @@ impl NodeAssetsManager {
         } else {
             false
         }
-    }
-
-    pub fn update_link_rating(&mut self, parent_id: u64, child_id: u64, new_rating: i32) -> bool {
-        for link in &mut self.links {
-            if link.0 == parent_id && link.1 == child_id {
-                link.4 = new_rating;
-                return true;
-            }
-        }
-        false
     }
 
     pub fn get_nodes_by_owner(&self, owner_id: u64) -> HashMap<NodeKind, HashMap<u64, &NodeAsset>> {

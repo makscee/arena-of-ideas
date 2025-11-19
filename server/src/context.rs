@@ -208,14 +208,6 @@ pub trait ServerContextExt {
     where
         T: Node + DeserializeOwned;
 
-    fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
-    where
-        T: Node + DeserializeOwned;
-
-    fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
-    where
-        T: Node + DeserializeOwned;
-
     fn rctx(&self) -> &ReducerContext;
     fn rng(&self) -> &StdbRng;
 }
@@ -242,30 +234,6 @@ impl<'a> ServerContextExt for ServerContext<'a> {
         let kind = T::kind_s();
         let ids = self.get_children_of_kind(from_id, kind)?;
         self.load_many(&ids)
-    }
-
-    fn load_top_child<T>(&self, from_id: u64) -> NodeResult<Option<T>>
-    where
-        T: Node + DeserializeOwned,
-    {
-        let kind = T::kind_s();
-        if let Some(id) = from_id.top_child(self.source().ctx, kind) {
-            Ok(Some(self.load::<T>(id)?))
-        } else {
-            Ok(None)
-        }
-    }
-
-    fn load_top_parent<T>(&self, id: u64) -> NodeResult<Option<T>>
-    where
-        T: Node + DeserializeOwned,
-    {
-        let kind = T::kind_s();
-        if let Some(id) = id.top_parent(self.source().ctx, kind) {
-            Ok(Some(self.load::<T>(id)?))
-        } else {
-            Ok(None)
-        }
     }
 
     fn rctx(&self) -> &ReducerContext {
