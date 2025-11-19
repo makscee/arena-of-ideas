@@ -1,8 +1,13 @@
 use super::*;
 
 #[reducer]
-fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String> {
+fn content_publish_node(
+    ctx: &ReducerContext,
+    pack: String,
+    parent: Option<u64>,
+) -> Result<(), String> {
     let ctx = ctx.as_context();
+    info!("Publish node {pack} {parent:?}");
     let player = ctx.player()?;
     let mut pack = ron::from_str::<PackedNodes>(&pack).map_err(|e| e.to_string())?;
     let mut next_id = ctx.next_id();
@@ -44,7 +49,10 @@ fn content_publish_node(ctx: &ReducerContext, pack: String) -> Result<(), String
         if let Some(id) = remap.get(&child) {
             child = *id;
         }
-        TNodeLink::add_by_id(ctx.rctx(), parent, child, parent_kind, child_kind)?;
+        TNodeLink::add_by_id(ctx.rctx(), parent, child, parent_kind, child_kind).track()?;
+    }
+    if let Some(parent) = parent {
+        pack.root.add_parent(ctx.rctx(), parent).track()?;
     }
     Ok(())
 }
@@ -87,6 +95,7 @@ fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Res
 
 #[reducer]
 fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
+    info!("\n===\nPhase check start");
     let threshold = 5i32;
 
     // Check all incubator nodes to see if any have reached the threshold
@@ -97,6 +106,7 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
         .filter(ID_INCUBATOR)
         .filter(|n| n.rating >= threshold)
         .collect();
+    info!("Nodes over threshold: {}", incubator_nodes.len());
 
     for node in incubator_nodes {
         let kind = node.kind();
@@ -109,7 +119,11 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
             | NodeKind::NUnitStats
             | NodeKind::NHouseColor
             | NodeKind::NAbilityMagic
-            | NodeKind::NStatusMagic => {
+            | NodeKind::NAbilityDescription
+            | NodeKind::NAbilityEffect
+            | NodeKind::NStatusMagic
+            | NodeKind::NStatusDescription
+            | NodeKind::NStatusBehavior => {
                 // Fix this component (keep it, delete alternatives)
                 if let Some(parent_link) = ctx.db.node_links().child().filter(node.id).next() {
                     // Delete all other suggestions for the same parent and component type
@@ -129,58 +143,60 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
                             }
                         }
                     }
+                    let parent_id = parent_link.parent;
+                    let mut cp = ctx
+                        .db
+                        .creation_phases()
+                        .node_id()
+                        .find(parent_id)
+                        .unwrap_or_else(|| {
+                            let cp = TCreationPhases {
+                                node_id: parent_id,
+                                fixed_kinds: default(),
+                            };
+                            ctx.db.creation_phases().insert(cp)
+                        });
+                    let kind = parent_link.child_kind;
+                    if !cp.fixed_kinds.contains(&kind) {
+                        cp.fixed_kinds.push(kind);
+                        ctx.db.creation_phases().node_id().update(cp);
+                    }
                 }
             }
             NodeKind::NUnit | NodeKind::NHouse => {
                 // Check if unit/house is complete and can enter the game
                 let is_complete = match kind {
                     NodeKind::NUnit => {
-                        let has_description = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NUnitDescription)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        let has_representation = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NUnitRepresentation)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        let has_behavior = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NUnitBehavior)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        let has_stats = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NUnitStats)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        has_description && has_representation && has_behavior && has_stats
+                        let fixed = node.id.fixed_kinds(ctx);
+                        let check = fixed.contains(&NodeKind::NUnitDescription)
+                            && fixed.contains(&NodeKind::NUnitBehavior)
+                            && fixed.contains(&NodeKind::NUnitRepresentation)
+                            && fixed.contains(&NodeKind::NUnitStats);
+                        info!(
+                            "Check unit = {check}: {} {} {}",
+                            node.id,
+                            node.data,
+                            fixed.iter().join(", ")
+                        );
+                        check
                     }
                     NodeKind::NHouse => {
-                        let has_color = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NHouseColor)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        let has_ability = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NAbilityMagic)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        let has_status = node
-                            .id
-                            .get_kind_child(ctx, NodeKind::NStatusMagic)
-                            .and_then(|id| ctx.db.nodes_world().id().find(id))
-                            .map(|n| n.rating >= threshold)
-                            .unwrap_or(false);
-                        has_color && (has_ability || has_status)
+                        let fixed = node.id.fixed_kinds(ctx);
+                        let has_ability = fixed.contains(&NodeKind::NAbilityMagic)
+                            && fixed.contains(&NodeKind::NAbilityDescription)
+                            && fixed.contains(&NodeKind::NAbilityEffect);
+                        let has_status = fixed.contains(&NodeKind::NStatusMagic)
+                            && fixed.contains(&NodeKind::NStatusDescription)
+                            && fixed.contains(&NodeKind::NStatusBehavior);
+                        let check =
+                            fixed.contains(&NodeKind::NHouseColor) && (has_ability || has_status);
+                        info!(
+                            "Check unit = {check}: {} {} {}",
+                            node.id,
+                            node.data,
+                            fixed.iter().join(", ")
+                        );
+                        check
                     }
                     _ => false,
                 };
@@ -192,7 +208,7 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
                     node_mut.update(ctx);
 
                     // Also update all child components
-                    for child_id in node.id.collect_children(ctx) {
+                    for child_id in node.id.collect_children_recursive(ctx) {
                         if let Some(mut child_node) = ctx.db.nodes_world().id().find(child_id) {
                             if child_node.owner == ID_INCUBATOR {
                                 child_node.owner = ID_CORE;

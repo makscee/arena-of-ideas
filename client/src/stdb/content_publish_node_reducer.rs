@@ -8,11 +8,15 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct ContentPublishNodeArgs {
     pub pack: String,
+    pub parent: Option<u64>,
 }
 
 impl From<ContentPublishNodeArgs> for super::Reducer {
     fn from(args: ContentPublishNodeArgs) -> Self {
-        Self::ContentPublishNode { pack: args.pack }
+        Self::ContentPublishNode {
+            pack: args.pack,
+            parent: args.parent,
+        }
     }
 }
 
@@ -32,7 +36,7 @@ pub trait content_publish_node {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_content_publish_node`] callbacks.
-    fn content_publish_node(&self, pack: String) -> __sdk::Result<()>;
+    fn content_publish_node(&self, pack: String, parent: Option<u64>) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `content_publish_node`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -42,7 +46,7 @@ pub trait content_publish_node {
     /// to cancel the callback.
     fn on_content_publish_node(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &Option<u64>) + Send + 'static,
     ) -> ContentPublishNodeCallbackId;
     /// Cancel a callback previously registered by [`Self::on_content_publish_node`],
     /// causing it not to run in the future.
@@ -50,13 +54,15 @@ pub trait content_publish_node {
 }
 
 impl content_publish_node for super::RemoteReducers {
-    fn content_publish_node(&self, pack: String) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("content_publish_node", ContentPublishNodeArgs { pack })
+    fn content_publish_node(&self, pack: String, parent: Option<u64>) -> __sdk::Result<()> {
+        self.imp.call_reducer(
+            "content_publish_node",
+            ContentPublishNodeArgs { pack, parent },
+        )
     }
     fn on_content_publish_node(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &Option<u64>) + Send + 'static,
     ) -> ContentPublishNodeCallbackId {
         ContentPublishNodeCallbackId(self.imp.on_reducer(
             "content_publish_node",
@@ -64,7 +70,7 @@ impl content_publish_node for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::ContentPublishNode { pack },
+                            reducer: super::Reducer::ContentPublishNode { pack, parent },
                             ..
                         },
                     ..
@@ -72,7 +78,7 @@ impl content_publish_node for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, pack)
+                callback(ctx, pack, parent)
             }),
         ))
     }

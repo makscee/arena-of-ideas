@@ -191,6 +191,12 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_content_check_phase_completion(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_content_upvote_node(|e, _| {
         if !e.check_identity() {
             return;
@@ -198,6 +204,12 @@ pub fn subscribe_reducers() {
         e.event.notify_error();
     });
     cn().reducers.on_content_downvote_node(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_content_publish_node(|e, _, _| {
         if !e.check_identity() {
             return;
         }

@@ -804,7 +804,6 @@ impl FTitle for NAbilityMagic {
             .get_var(VarName::color)
             .get_color()
             .unwrap_or(colorix().high_contrast_text());
-        dbg!(&self.ability_name, color);
         self.ability_name.cstr_c(color)
     }
 }

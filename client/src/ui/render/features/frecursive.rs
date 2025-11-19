@@ -239,7 +239,7 @@ fn render_node_menu<T: FRecursiveNodeEdit>(ui: &mut Ui, node: &mut T) -> bool {
         })
         .add_action("📦 Open Publish Window", |d, _| {
             op(|world| {
-                d.open_publish_window(world);
+                d.open_publish_window(world, None);
             });
             None
         })

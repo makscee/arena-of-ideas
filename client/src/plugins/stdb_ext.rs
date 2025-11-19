@@ -79,6 +79,7 @@ pub trait NodeIdExt {
     fn kind_db(self) -> Result<NodeKind, NodeError>;
     fn label(self, ui: &mut Ui) -> Response;
     fn node_rating(self) -> Option<i32>;
+    fn fixed_kinds(self) -> HashSet<NodeKind>;
 }
 
 impl NodeIdExt for u64 {
@@ -98,17 +99,29 @@ impl NodeIdExt for u64 {
             .kind())
     }
     fn label(self, ui: &mut Ui) -> Response {
-        let resp = format!("[s [tw #]{}]", self % 100000)
+        let id = self;
+        let resp = format!("[s [tw #]{}]", id % 100000)
             .label(ui)
             .on_hover_ui(|ui| {
-                format!("[tw #]{self}").label(ui);
+                format!("[tw #]{id}").label(ui);
             });
         if resp.clicked() {
-            clipboard_set(self);
+            clipboard_set(id);
         }
         resp
     }
     fn node_rating(self) -> Option<i32> {
         cn().db.nodes_world().id().find(&self).map(|n| n.rating)
+    }
+    fn fixed_kinds(self) -> HashSet<NodeKind> {
+        let id: u64 = self;
+        let kinds = cn()
+            .db
+            .creation_phases()
+            .node_id()
+            .find(&id)
+            .map(|cp| cp.fixed_kinds)
+            .unwrap_or_default();
+        HashSet::from_iter(kinds.into_iter().map(|k| k.to_kind()))
     }
 }

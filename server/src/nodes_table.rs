@@ -263,6 +263,7 @@ pub trait NodeIdExt {
     fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool;
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
+    fn fixed_kinds(self, ctx: &ReducerContext) -> HashSet<NodeKind>;
 }
 
 impl NodeIdExt for u64 {
@@ -442,6 +443,19 @@ impl NodeIdExt for u64 {
             .filter((self, id))
             .next()
             .is_some()
+    }
+
+    fn fixed_kinds(self, ctx: &ReducerContext) -> HashSet<NodeKind> {
+        HashSet::from_iter(
+            ctx.db
+                .creation_phases()
+                .node_id()
+                .find(self)
+                .map(|cp| cp.fixed_kinds)
+                .unwrap_or_default()
+                .into_iter()
+                .map(|k| k.to_kind()),
+        )
     }
 }
 

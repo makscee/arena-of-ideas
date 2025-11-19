@@ -112,5 +112,6 @@ impl PackedNodes {
             }
             l
         }));
+        self.root = *remap.get(&self.root).unwrap();
     }
 }

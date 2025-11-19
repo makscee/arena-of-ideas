@@ -3,18 +3,18 @@ use super::*;
 pub struct ExplorerPanes;
 
 impl ExplorerPanes {
-    fn show_add_new(ui: &mut Ui, kind: NodeKind) {
+    fn show_add_new(ui: &mut Ui, kind: NodeKind, parent: Option<u64>) {
         node_kind_match!(
             kind,
             if "➕ Add new".cstr().button(ui).clicked() {
-                op(|world| {
-                    NodeType::default().open_publish_window(world);
+                op(move |world| {
+                    NodeType::default().open_publish_window(world, parent);
                 });
             }
         );
     }
     pub fn render_node_list(ui: &mut Ui, world: &mut World, kind: NamedNodeKind) -> NodeResult<()> {
-        Self::show_add_new(ui, kind.to_kind());
+        Self::show_add_new(ui, kind.to_kind(), None);
 
         world.resource_scope::<ExplorerState, _>(|_, mut state| {
             with_solid_source(|ctx| {
@@ -59,6 +59,7 @@ impl ExplorerPanes {
 
                             state.pending_actions.push(action);
                         }
+                        render_vote_btns(*id, ui);
                     })
                     .compose(ctx, ui);
 
@@ -87,50 +88,51 @@ impl ExplorerPanes {
         Self::render_node_list(ui, world, NamedNodeKind::NHouse)
     }
 
-    fn pane_component<T: ClientNode + FDisplay + FDescription, P: ClientNode>(
+    fn pane_component<T: ClientNode + FDisplay + FDescription + FTitle>(
         ui: &mut Ui,
         ctx: &mut ClientContext,
-        owner: u64,
-        parent: P,
-        filter: Option<fn(&T, &P) -> bool>,
+        parent: u64,
     ) -> NodeResult<()> {
         let kind = T::kind_s();
-        Self::show_add_new(ui, kind);
-        ctx.world_mut()?
-            .query::<&T>()
-            .iter(ctx.world()?)
-            .filter(|n| {
-                if let Some(filter) = filter {
-                    filter(*n, &parent)
-                } else {
-                    true
-                }
-            })
-            .unique_by(|n| n.id())
+        if !Self::check_fixed(ui, parent, ContentNodeKind::try_from(kind).unwrap()) {
+            return Ok(());
+        }
+        ui.vertical_centered_justified(|ui| {
+            format!("[tw [h2 {}]]", kind.cstr()).label_w(ui);
+        });
+        ui.separator();
+        if parent.fixed_kinds().contains(&kind) {
+            let id = ctx.first_child(parent, kind)?;
+            return ui
+                .vertical_centered_justified(|ui| -> NodeResult<()> {
+                    ctx.load::<T>(id)?
+                        .description_cstr(ctx)
+                        .cstr_s(CstrStyle::Heading)
+                        .label_w(ui);
+                    Ok(())
+                })
+                .inner;
+        }
+        Self::show_add_new(ui, kind, Some(parent));
+        ctx.collect_kind_children(parent, kind)?
+            .into_iter()
+            .filter_map(|id| ctx.load::<T>(id).ok())
             .sorted_by_key(|n| -n.rating())
             .collect_vec()
             .as_list(|node, ctx, ui| {
+                if node.kind() == NodeKind::NUnitRepresentation {
+                    node.display(ctx, ui);
+                }
                 let text = ctx
                     .exec_ref(|ctx| {
-                        ctx.set_owner(owner);
+                        ctx.set_owner(parent);
                         Ok(node.description_cstr(ctx))
                     })
                     .unwrap();
                 format!("[b {}] {text}", node.rating().cstr_expanded()).label_w(ui)
             })
             .with_hover(move |node, _, ui| {
-                ui.horizontal(|ui| {
-                    if "[red ⬇]".cstr().button(ui).clicked() {
-                        cn().reducers
-                            .content_downvote_node(node.id())
-                            .notify_error_op();
-                    }
-                    if "[green ⬆]".cstr().button(ui).clicked() {
-                        cn().reducers
-                            .content_upvote_node(node.id())
-                            .notify_error_op();
-                    }
-                });
+                render_vote_btns(node.id(), ui);
             })
             .compose(ctx, ui);
         Ok(())
@@ -139,23 +141,7 @@ impl ExplorerPanes {
     pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| {
-                    // Check if NUnitDescription is fixed in creation phases
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&unit_id) {
-                        if phases.fixed_kinds.contains(&"NUnitDescription".to_string()) {
-                            // If fixed, display the single node
-                            if let Some(desc) =
-                                ctx.load_children_ref::<NUnitDescription>(unit_id)?.first()
-                            {
-                                desc.display(ctx, ui);
-                            }
-                            return Ok(());
-                        }
-                    }
-                    // If not fixed, show list and add button
-                    let parent = ctx.load::<NUnit>(unit_id)?;
-                    Self::pane_component::<NUnitDescription, _>(ui, ctx, unit_id, parent, None)
-                })
+                with_solid_source(|ctx| Self::pane_component::<NUnitDescription>(ui, ctx, unit_id))
             } else {
                 Ok(())
             }
@@ -165,31 +151,7 @@ impl ExplorerPanes {
     pub fn pane_unit_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| {
-                    // Check if NUnitDescription is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&unit_id) {
-                        if !phases.fixed_kinds.contains(&"NUnitDescription".to_string()) {
-                            ui.label("NUnitDescription must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NUnitBehavior is fixed
-                        if phases.fixed_kinds.contains(&"NUnitBehavior".to_string()) {
-                            ctx.load_children_ref::<NUnitBehavior>(unit_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                    } else {
-                        ui.label("NUnitDescription must be fixed first");
-                        return Ok(());
-                    }
-
-                    // If description is fixed but behavior is not, show list for voting
-                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
-                    Self::pane_component::<NUnitBehavior, _>(ui, ctx, unit_id, parent, None)
-                })
+                with_solid_source(|ctx| Self::pane_component::<NUnitBehavior>(ui, ctx, unit_id))
             } else {
                 Ok(())
             }
@@ -199,31 +161,7 @@ impl ExplorerPanes {
     pub fn pane_unit_stats(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| {
-                    // Check if NUnitDescription is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&unit_id) {
-                        if !phases.fixed_kinds.contains(&"NUnitDescription".to_string()) {
-                            ui.label("NUnitDescription must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NUnitStats is fixed
-                        if phases.fixed_kinds.contains(&"NUnitStats".to_string()) {
-                            ctx.load_children_ref::<NUnitStats>(unit_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                    } else {
-                        ui.label("NUnitDescription must be fixed first");
-                        return Ok(());
-                    }
-
-                    // If description is fixed but stats is not, show list for voting
-                    let parent = ctx.load::<NUnit>(unit_id)?;
-                    Self::pane_component::<NUnitStats, _>(ui, ctx, unit_id, parent, None)
-                })
+                with_solid_source(|ctx| Self::pane_component::<NUnitStats>(ui, ctx, unit_id))
             } else {
                 Ok(())
             }
@@ -258,32 +196,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_solid_source(|ctx| {
-                    // Check if NUnitDescription is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&unit_id) {
-                        if !phases.fixed_kinds.contains(&"NUnitDescription".to_string()) {
-                            ui.label("NUnitDescription must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NUnitRepresentation is fixed
-                        if phases
-                            .fixed_kinds
-                            .contains(&"NUnitRepresentation".to_string())
-                        {
-                            ctx.load_children_ref::<NUnitRepresentation>(unit_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                    } else {
-                        ui.label("NUnitDescription must be fixed first");
-                        return Ok(());
-                    }
-
-                    // If description is fixed but representation is not, show list for voting
-                    let parent = ctx.load::<NUnit>(unit_id)?.description_ref(ctx)?.clone();
-                    Self::pane_component::<NUnitRepresentation, _>(ui, ctx, unit_id, parent, None)
+                    Self::pane_component::<NUnitRepresentation>(ui, ctx, unit_id)
                 })
             } else {
                 Ok(())
@@ -294,15 +207,7 @@ impl ExplorerPanes {
     pub fn pane_house_color(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
-                    Self::pane_component::<NHouseColor, _>(
-                        ui,
-                        ctx,
-                        house_id,
-                        ctx.load::<NHouse>(house_id)?,
-                        None,
-                    )
-                })
+                with_solid_source(|ctx| Self::pane_component::<NHouseColor>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -312,22 +217,7 @@ impl ExplorerPanes {
     pub fn pane_ability_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
-                    // AbilityMagic has no prerequisites
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if phases.fixed_kinds.contains(&"NAbilityMagic".to_string()) {
-                            ctx.load_children_ref::<NAbilityMagic>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                    }
-
-                    // Show list for voting and adding new
-                    let parent = ctx.load::<NHouse>(house_id)?;
-                    Self::pane_component::<NAbilityMagic, _>(ui, ctx, house_id, parent, None)
-                })
+                with_solid_source(|ctx| Self::pane_component::<NAbilityMagic>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -338,33 +228,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_solid_source(|ctx| {
-                    // Check if NAbilityMagic is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if !phases.fixed_kinds.contains(&"NAbilityMagic".to_string()) {
-                            ui.label("NAbilityMagic must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NAbilityDescription is fixed
-                        if phases
-                            .fixed_kinds
-                            .contains(&"NAbilityDescription".to_string())
-                        {
-                            ctx.load_children_ref::<NAbilityDescription>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        } else {
-                            let parent = ctx.load::<NHouse>(house_id)?;
-                            return Self::pane_component::<NAbilityDescription, _>(
-                                ui, ctx, house_id, parent, None,
-                            );
-                        }
-                    } else {
-                        ui.label("NAbilityMagic must be fixed first");
-                        return Ok(());
-                    }
+                    Self::pane_component::<NAbilityDescription>(ui, ctx, house_id)
                 })
             } else {
                 Ok(())
@@ -375,32 +239,7 @@ impl ExplorerPanes {
     pub fn pane_ability_effect(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
-                    // Check if NAbilityDescription is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if !phases
-                            .fixed_kinds
-                            .contains(&"NAbilityDescription".to_string())
-                        {
-                            ui.label("NAbilityDescription must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NAbilityEffect is fixed
-                        if phases.fixed_kinds.contains(&"NAbilityEffect".to_string()) {
-                            ctx.load_children_ref::<NAbilityEffect>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                        let parent = ctx.load::<NHouse>(house_id)?;
-                        Self::pane_component::<NAbilityEffect, _>(ui, ctx, house_id, parent, None)
-                    } else {
-                        ui.label("NAbilityDescription must be fixed first");
-                        return Ok(());
-                    }
-                })
+                with_solid_source(|ctx| Self::pane_component::<NAbilityEffect>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -410,22 +249,7 @@ impl ExplorerPanes {
     pub fn pane_status_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
-                    // StatusMagic has no prerequisites
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if phases.fixed_kinds.contains(&"NStatusMagic".to_string()) {
-                            ctx.load_children_ref::<NStatusMagic>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                    }
-
-                    // Show list for voting and adding new
-                    let parent = ctx.load::<NHouse>(house_id)?;
-                    Self::pane_component::<NStatusMagic, _>(ui, ctx, house_id, parent, None)
-                })
+                with_solid_source(|ctx| Self::pane_component::<NStatusMagic>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -436,33 +260,7 @@ impl ExplorerPanes {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_solid_source(|ctx| {
-                    // Check if NStatusMagic is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if !phases.fixed_kinds.contains(&"NStatusMagic".to_string()) {
-                            ui.label("NStatusMagic must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NStatusDescription is fixed
-                        if phases
-                            .fixed_kinds
-                            .contains(&"NStatusDescription".to_string())
-                        {
-                            ctx.load_children_ref::<NStatusDescription>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-
-                        let parent = ctx.load::<NHouse>(house_id)?;
-                        Self::pane_component::<NStatusDescription, _>(
-                            ui, ctx, house_id, parent, None,
-                        )
-                    } else {
-                        ui.label("NStatusMagic must be fixed first");
-                        return Ok(());
-                    }
+                    Self::pane_component::<NStatusDescription>(ui, ctx, house_id)
                 })
             } else {
                 Ok(())
@@ -473,35 +271,47 @@ impl ExplorerPanes {
     pub fn pane_status_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
-                    // Check if NStatusDescription is fixed first
-                    if let Some(phases) = cn().db.creation_phases().node_id().find(&house_id) {
-                        if !phases
-                            .fixed_kinds
-                            .contains(&"NStatusDescription".to_string())
-                        {
-                            ui.label("NStatusDescription must be fixed first");
-                            return Ok(());
-                        }
-
-                        // Check if NStatusBehavior is fixed
-                        if phases.fixed_kinds.contains(&"NStatusBehavior".to_string()) {
-                            ctx.load_children_ref::<NStatusBehavior>(house_id)?
-                                .first()
-                                .unwrap()
-                                .display(ctx, ui);
-                            return Ok(());
-                        }
-                        let parent = ctx.load::<NHouse>(house_id)?;
-                        Self::pane_component::<NStatusBehavior, _>(ui, ctx, house_id, parent, None)
-                    } else {
-                        ui.label("NStatusDescription must be fixed first");
-                        return Ok(());
-                    }
-                })
+                with_solid_source(|ctx| Self::pane_component::<NStatusBehavior>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
         })
     }
+
+    fn check_fixed(ui: &mut Ui, parent_id: u64, kind: ContentNodeKind) -> bool {
+        let kind = match kind {
+            ContentNodeKind::NHouse
+            | ContentNodeKind::NUnit
+            | ContentNodeKind::NAbilityMagic
+            | ContentNodeKind::NHouseColor
+            | ContentNodeKind::NUnitDescription
+            | ContentNodeKind::NStatusMagic => return true,
+            ContentNodeKind::NAbilityDescription => NodeKind::NAbilityMagic,
+            ContentNodeKind::NAbilityEffect => NodeKind::NAbilityDescription,
+            ContentNodeKind::NStatusDescription => NodeKind::NStatusMagic,
+            ContentNodeKind::NStatusBehavior | ContentNodeKind::NStatusRepresentation => {
+                NodeKind::NStatusDescription
+            }
+            ContentNodeKind::NUnitStats
+            | ContentNodeKind::NUnitBehavior
+            | ContentNodeKind::NUnitRepresentation => NodeKind::NUnitDescription,
+        };
+        if !parent_id.fixed_kinds().contains(&kind) {
+            format!("[b {}] [tw should be fixed first]", kind.cstr()).label_w(ui);
+            false
+        } else {
+            true
+        }
+    }
+}
+
+fn render_vote_btns(id: u64, ui: &mut Ui) {
+    ui.horizontal(|ui| {
+        if "[red ⬇]".cstr().button(ui).clicked() {
+            cn().reducers.content_downvote_node(id).notify_error_op();
+        }
+        if "[green ⬆]".cstr().button(ui).clicked() {
+            cn().reducers.content_upvote_node(id).notify_error_op();
+        }
+    });
 }

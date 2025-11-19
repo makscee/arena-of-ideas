@@ -1,7 +1,7 @@
 use super::*;
 
 pub trait NodePublish {
-    fn open_publish_window(self, world: &mut World)
+    fn open_publish_window(self, world: &mut World, parent: Option<u64>)
     where
         Self: FRecursiveNodeEdit + Node + Clone + 'static;
 }
@@ -10,7 +10,7 @@ impl<T> NodePublish for T
 where
     T: FRecursiveNodeEdit + Node + Clone + 'static,
 {
-    fn open_publish_window(self, world: &mut World) {
+    fn open_publish_window(self, world: &mut World, parent: Option<u64>) {
         const WINDOW_ID: &str = "publish_node";
         if WindowPlugin::is_open(WINDOW_ID, world) {
             return;
@@ -38,7 +38,7 @@ where
                         let pack_string = packed.to_string();
 
                         cn().reducers
-                            .content_publish_node(pack_string)
+                            .content_publish_node(pack_string, parent)
                             .notify_error_op();
                         WindowPlugin::close_current(world);
                     }

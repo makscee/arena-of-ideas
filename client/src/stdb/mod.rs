@@ -199,6 +199,7 @@ pub enum Reducer {
     },
     ContentPublishNode {
         pack: String,
+        parent: Option<u64>,
     },
     ContentSuggestNode {
         kind: String,
