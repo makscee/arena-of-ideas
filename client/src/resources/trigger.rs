@@ -4,12 +4,12 @@ pub trait TriggerImpl {
     fn fire(&self, event: &Event, context: &ClientContext) -> NodeResult<bool>;
 }
 
-fn get_owner_fusion<'a>(ctx: &'a ClientContext) -> NodeResult<Option<&'a NFusion>> {
+fn get_owner_unit<'a>(ctx: &'a ClientContext) -> NodeResult<Option<&'a NUnit>> {
     let Ok(owner) = ctx.owner() else {
         return Ok(None);
     };
     let owner = ctx
-        .load_or_first_parent_recursive_ref::<NFusion>(owner)
+        .load_or_first_parent_recursive_ref::<NUnit>(owner)
         .track()?;
     Ok(Some(owner))
 }
@@ -33,7 +33,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::Death(id) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::BeforeDeath) && owner.id == *id {
@@ -46,7 +46,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::OutgoingDamage(source, _) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
@@ -54,7 +54,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::IncomingDamage(_, target) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
@@ -62,7 +62,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::BeforeStrike(source, _) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::BeforeStrike) && owner.id == *source {
@@ -70,7 +70,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::AfterStrike(source, _) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::AfterStrike) && owner.id == *source {
@@ -78,7 +78,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::DamageDealt(source, target, _) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::DamageDealt) && owner.id == *source {
@@ -89,7 +89,7 @@ impl TriggerImpl for Trigger {
                 }
             }
             Event::StatusApplied(caster, target, _) => {
-                let Some(owner) = get_owner_fusion(ctx)? else {
+                let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };
                 if matches!(self, Trigger::StatusGained) && owner.id == *target {

@@ -1,16 +1,18 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct UnitActionRange {
-    pub start: u8,
-    pub length: u8,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, AsRefStr)]
+pub enum FusionType {
+    StickFront,
+    StickBack,
+    PushBack,
 }
 
-impl Default for UnitActionRange {
-    fn default() -> Self {
-        Self {
-            start: 0,
-            length: u8::MAX,
+impl FusionType {
+    pub fn description(&self) -> &str {
+        match self {
+            FusionType::StickFront => "Take source trigger with combined actions",
+            FusionType::StickBack => "Take target trigger with combined actions",
+            FusionType::PushBack => "Keep both triggers and reactions",
         }
     }
 }

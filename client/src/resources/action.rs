@@ -96,90 +96,82 @@ impl ActionImpl for Action {
                     }
                 }
             }
-            Action::use_ability => {
+            Action::use_ability(ability_id) => {
                 let caster = ctx.caster().to_not_found().track()?;
-                let house = ctx
-                    .load_first_parent_recursive_ref::<NHouse>(caster)
-                    .track()?;
+                let ability = ctx.load::<NAbilityMagic>(*ability_id)?;
                 let x = ctx
-                    .load::<NState>(caster)
+                    .load::<NUnitState>(caster)
                     .unwrap_or_default()
                     .stax
-                    .at_most(house.state_ref(ctx).cloned().unwrap_or_default().stax)
                     .at_least(1);
-                let color = house.color_ref(ctx)?.color.c32();
-                if let Ok(ability) = house.ability_ref(ctx) {
-                    let name = ability.ability_name.clone();
-                    let effect = ability.effect_ref(ctx)?.actions.clone();
-                    ctx.with_layers(
-                        [
-                            ContextLayer::Var(VarName::stax, x.into()),
-                            ContextLayer::Var(VarName::value, x.into()),
-                        ],
-                        |ctx| {
-                            actions.extend(effect.process(ctx).track()?);
-                            Ok(())
-                        },
-                    )?;
-                    let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
-                    let position = ctx.get_var(VarName::position).track()?;
-                    actions.push(BattleAction::new_text(text, position).into());
-                } else {
-                    return Err("Ability not found".into());
-                }
+                let color = ctx
+                    .get_var_inherited(caster, VarName::color)
+                    .get_color()
+                    .unwrap_or(Color32::WHITE);
+                let name = ability.ability_name.clone();
+                let effect = ability.effect_ref(ctx)?.actions.clone();
+                ctx.with_layers(
+                    [
+                        ContextLayer::Var(VarName::stax, x.into()),
+                        ContextLayer::Var(VarName::value, x.into()),
+                    ],
+                    |ctx| {
+                        actions.extend(effect.process(ctx).track()?);
+                        Ok(())
+                    },
+                )?;
+                let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
+                let position = ctx.get_var(VarName::position).track()?;
+                actions.push(BattleAction::new_text(text, position).into());
             }
-            Action::apply_status => {
+            Action::apply_status(status_id) => {
                 let caster = ctx.caster().to_not_found().track()?;
-                let house = ctx
-                    .load_first_parent_recursive_ref::<NHouse>(caster)
-                    .track()?;
+                let status = ctx.load::<NStatusMagic>(*status_id)?;
                 let x = ctx
-                    .load::<NState>(caster)
+                    .load::<NUnitState>(caster)
                     .unwrap_or_default()
                     .stax
-                    .at_most(house.state_ref(ctx).cloned().unwrap_or_default().stax)
                     .at_least(1);
-                let color = house.color_ref(ctx)?.color.c32();
-                if let Ok(status) = house.status_ref(ctx) {
-                    let name = status.status_name.clone();
-                    let status = status
-                        .clone()
-                        .load_components(ctx)?
-                        .take()
-                        .with_state(NState::new(next_id(), player_id(), x));
-                    let targets = ctx.get_targets();
-                    if targets.is_empty() {
-                        return Err("No targets".into());
-                    }
-                    let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
+                let color = ctx
+                    .get_var_inherited(caster, VarName::color)
+                    .get_color()
+                    .unwrap_or(Color32::WHITE);
+                let name = status.status_name.clone();
+                let status = status
+                    .clone()
+                    .load_components(ctx)?
+                    .take()
+                    .with_state(NState::new(next_id(), player_id(), x));
+                let targets = ctx.get_targets();
+                if targets.is_empty() {
+                    return Err("No targets".into());
+                }
+                let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
+                actions.push(
+                    BattleAction::new_text(
+                        text,
+                        ctx.get_var(VarName::position).get_vec2().track()?,
+                    )
+                    .into(),
+                );
+                for target in targets {
+                    actions.push(BattleAction::apply_status(
+                        caster,
+                        target,
+                        status.clone().remap_ids(),
+                        color,
+                    ));
+                    let position = ctx
+                        .get_var_inherited(target, VarName::position)
+                        .get_vec2()?;
                     actions.push(
                         BattleAction::new_text(
-                            text,
-                            ctx.get_var(VarName::position).get_vec2().track()?,
+                            format!("gain [b x{x}] [{} {name}]", color.to_hex()),
+                            position,
                         )
                         .into(),
                     );
-                    for target in targets {
-                        actions.push(BattleAction::apply_status(
-                            caster,
-                            target,
-                            status.clone().remap_ids(),
-                            color,
-                        ));
-                        let position = ctx
-                            .get_var_inherited(target, VarName::position)
-                            .get_vec2()?;
-                        actions.push(
-                            BattleAction::new_text(
-                                format!("gain [b x{x}] [{} {name}]", color.to_hex()),
-                                position,
-                            )
-                            .into(),
-                        );
-                        actions.push(BattleAction::wait(animation_time()));
-                    }
-                } else {
-                    return Err("Status not found".into());
+                    actions.push(BattleAction::wait(animation_time()));
                 }
             }
             Action::set_status(x) => {

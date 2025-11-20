@@ -131,14 +131,22 @@ impl BattleCamera {
             }
 
             let world = ctx.world_mut()?;
-            for fusion in world.query::<&NFusion>().iter(world).cloned().collect_vec() {
-                ctx.with_owner(fusion.id, |ctx| {
+            for slot in world
+                .query::<&NTeamSlot>()
+                .iter(world)
+                .cloned()
+                .collect_vec()
+            {
+                let Ok(unit) = slot.unit_ref(ctx).cloned() else {
+                    continue;
+                };
+                ctx.with_owner(unit.id, |ctx| {
                     if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                         return Ok(());
                     }
                     let rect = cam.rect_from_context(ctx).track()?;
-                    fusion.paint(rect, ctx, ui)?;
-                    fusion.show_status_tags(rect, ctx, ui).ui(ui);
+                    unit.representation_ref(ctx)?.material.paint(rect, ctx, ui);
+                    unit.show_status_tags(rect, ctx, ui).ui(ui);
                     Ok(())
                 })
                 .ui(ui);

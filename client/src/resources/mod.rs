@@ -7,7 +7,6 @@ mod client_state;
 pub mod context;
 mod event;
 mod expression;
-mod fusion;
 mod game_assets;
 mod game_option;
 mod game_state;

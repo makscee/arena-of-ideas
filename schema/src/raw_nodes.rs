@@ -125,9 +125,19 @@ pub struct NState {
 }
 
 #[derive(Node)]
+pub struct NUnitState {
+    #[var]
+    pub stax: i32,
+    #[var]
+    pub dmg: i32,
+    pub houses: Vec<u64>,
+}
+
+#[derive(Node)]
 pub struct NTeam {
     pub houses: OwnedMultiple<NHouse>,
-    pub fusions: OwnedMultiple<NFusion>,
+    pub slots: OwnedMultiple<NTeamSlot>,
+    pub benched: OwnedMultiple<NUnit>,
 }
 
 #[derive(Node)]
@@ -145,29 +155,14 @@ pub struct NMatch {
     pub team: Owned<NTeam>,
     pub battle_history: Vec<u64>,
     pub pending_battle: Option<u64>,
+    pub fusion: Option<(u64, u64, Vec<PackedNodes>)>,
 }
 
 #[derive(Node)]
-pub struct NFusion {
-    pub slots: OwnedMultiple<NFusionSlot>,
-    pub trigger_unit: Ref<NUnit>,
+pub struct NTeamSlot {
     #[var]
     pub index: i32,
-    #[var]
-    pub pwr: i32,
-    #[var]
-    pub hp: i32,
-    #[var]
-    pub dmg: i32,
-    pub actions_limit: i32,
-}
-
-#[derive(Node)]
-pub struct NFusionSlot {
-    #[var]
-    pub index: i32,
-    pub actions: UnitActionRange,
-    pub unit: Ref<NUnit>,
+    pub unit: Owned<NUnit>,
 }
 
 #[derive(Node)]
@@ -180,7 +175,7 @@ pub struct NUnit {
     pub representation: Component<NUnitRepresentation>,
     pub behavior: Component<NUnitBehavior>,
     pub stats: Component<NUnitStats>,
-    pub state: Component<NState>,
+    pub state: Component<NUnitState>,
 }
 
 #[derive(Node)]
@@ -202,7 +197,7 @@ pub struct NUnitStats {
 #[derive(Node)]
 #[content]
 pub struct NUnitBehavior {
-    pub reaction: Reaction,
+    pub reactions: Vec<Reaction>,
 }
 
 #[derive(Node)]

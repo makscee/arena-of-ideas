@@ -96,6 +96,18 @@ impl TestBuilder {
         self
     }
 
+    pub fn get_ability_id(&self) -> u64 {
+        let team = self
+            .teams
+            .last()
+            .expect("Cannot get ability without a team");
+        let house = team
+            .houses
+            .last()
+            .expect("Cannot get ability without a house");
+        house.ability.as_ref().map(|a| a.id).expect("No ability")
+    }
+
     pub fn add_ability_action(mut self, action: Action) -> Self {
         let team = self
             .teams
@@ -112,6 +124,15 @@ impl TestBuilder {
             .expect("Cannot add status without a team");
         team.add_status();
         self
+    }
+
+    pub fn get_status_id(&self) -> u64 {
+        let team = self.teams.last().expect("Cannot get status without a team");
+        let house = team
+            .houses
+            .last()
+            .expect("Cannot get status without a house");
+        house.status.as_ref().map(|s| s.id).expect("No status")
     }
 
     pub fn add_status_reaction(
@@ -211,52 +232,31 @@ impl TeamBuilder {
     fn build(self) -> NTeam {
         let mut built_houses = vec![];
         let mut all_units = vec![];
-
         for house_builder in self.houses {
             let (house, units) = house_builder.build();
             all_units.extend(units);
             built_houses.push(house);
         }
-
-        let mut fusions = vec![];
+        let mut slots = vec![];
         let id_offset = self.id * 10000;
         for (index, unit) in all_units.iter().enumerate() {
-            let fusion_id = id_offset + 2000 + (index as u64);
             let slot_id = id_offset + 3000 + (index as u64);
-
-            let mut slot = NFusionSlot::default();
-            slot.set_id(slot_id);
-            slot.index = 0;
-            slot.actions = UnitActionRange {
-                start: 0,
-                length: 255,
-            };
-            slot.unit = Ref::new_id(unit.id);
-
-            let mut fusion = NFusion::default();
-            fusion.set_id(fusion_id);
-            fusion.index = index as i32;
-            fusion.trigger_unit = Ref::Id(unit.id);
-            fusion.actions_limit = 3;
-            fusion.slots = OwnedMultiple::new_loaded(vec![slot]);
-
-            fusions.push(fusion);
+            let slot = NTeamSlot::new(slot_id, 0, index as i32).with_unit(unit.clone());
+            slots.push(slot);
         }
-
         let mut team = NTeam::default();
         team.set_id(self.id);
         team.houses = OwnedMultiple::new_loaded(built_houses);
-        team.fusions = OwnedMultiple::new_loaded(fusions);
-
+        team.slots = OwnedMultiple::new_loaded(slots);
         team
     }
 }
 
-struct HouseBuilder {
-    id: u64,
+pub struct HouseBuilder {
+    pub id: u64,
     units: Vec<UnitBuilder>,
-    ability: Option<AbilityBuilder>,
-    status: Option<StatusBuilder>,
+    pub ability: Option<AbilityBuilder>,
+    pub status: Option<StatusBuilder>,
 }
 
 impl HouseBuilder {
@@ -284,8 +284,10 @@ impl HouseBuilder {
         });
     }
 
-    fn add_ability(&mut self) {
-        self.ability = Some(AbilityBuilder::new(self.id + 10));
+    fn add_ability(&mut self) -> u64 {
+        let id = self.id + 10;
+        self.ability = Some(AbilityBuilder::new(id));
+        id
     }
 
     fn add_ability_action(&mut self, action: Action) {
@@ -296,8 +298,10 @@ impl HouseBuilder {
         ability.actions.push(action);
     }
 
-    fn add_status(&mut self) {
-        self.status = Some(StatusBuilder::new(self.id + 20));
+    fn add_status(&mut self) -> u64 {
+        let id = self.id + 20;
+        self.status = Some(StatusBuilder::new(id));
+        id
     }
 
     fn add_status_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
@@ -368,9 +372,10 @@ impl UnitBuilder {
         desc.set_id(self.id + 2);
         desc.description = format!("Unit {}", self.id);
 
-        let mut state = NState::default();
-        state.set_id(self.id + 4);
+        let mut state = NUnitState::default();
+        state.set_id(self.id + 3);
         state.stax = 1;
+        state.houses = vec![];
 
         let mut unit = NUnit::default();
         unit.set_id(self.id);
@@ -381,7 +386,7 @@ impl UnitBuilder {
         if let Some(reaction) = self.reaction {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
-            behavior.reaction = reaction;
+            behavior.reactions = vec![reaction];
             unit.behavior = Component::new_loaded(behavior);
         }
 

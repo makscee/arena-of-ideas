@@ -8,14 +8,14 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct MatchMoveUnitArgs {
     pub unit_id: u64,
-    pub target_id: u64,
+    pub slot_index: i32,
 }
 
 impl From<MatchMoveUnitArgs> for super::Reducer {
     fn from(args: MatchMoveUnitArgs) -> Self {
         Self::MatchMoveUnit {
             unit_id: args.unit_id,
-            target_id: args.target_id,
+            slot_index: args.slot_index,
         }
     }
 }
@@ -36,7 +36,7 @@ pub trait match_move_unit {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_move_unit`] callbacks.
-    fn match_move_unit(&self, unit_id: u64, target_id: u64) -> __sdk::Result<()>;
+    fn match_move_unit(&self, unit_id: u64, slot_index: i32) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_move_unit`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +46,7 @@ pub trait match_move_unit {
     /// to cancel the callback.
     fn on_match_move_unit(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &u64, &u64) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &u64, &i32) + Send + 'static,
     ) -> MatchMoveUnitCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_move_unit`],
     /// causing it not to run in the future.
@@ -54,13 +54,18 @@ pub trait match_move_unit {
 }
 
 impl match_move_unit for super::RemoteReducers {
-    fn match_move_unit(&self, unit_id: u64, target_id: u64) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("match_move_unit", MatchMoveUnitArgs { unit_id, target_id })
+    fn match_move_unit(&self, unit_id: u64, slot_index: i32) -> __sdk::Result<()> {
+        self.imp.call_reducer(
+            "match_move_unit",
+            MatchMoveUnitArgs {
+                unit_id,
+                slot_index,
+            },
+        )
     }
     fn on_match_move_unit(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &u64) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &u64, &i32) + Send + 'static,
     ) -> MatchMoveUnitCallbackId {
         MatchMoveUnitCallbackId(self.imp.on_reducer(
             "match_move_unit",
@@ -68,7 +73,11 @@ impl match_move_unit for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchMoveUnit { unit_id, target_id },
+                            reducer:
+                                super::Reducer::MatchMoveUnit {
+                                    unit_id,
+                                    slot_index,
+                                },
                             ..
                         },
                     ..
@@ -76,7 +85,7 @@ impl match_move_unit for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, unit_id, target_id)
+                callback(ctx, unit_id, slot_index)
             }),
         ))
     }

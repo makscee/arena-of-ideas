@@ -141,17 +141,14 @@ impl BattlePlugin {
     pub fn load_teams(id: u64, mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
-            if !team.fusions.is_loaded() {
-                team.fusions_set(default()).unwrap();
+            if !team.slots.is_loaded() {
+                team.slots_set(default()).unwrap();
             }
-            while team.fusions.get().unwrap().len() < slots {
-                let mut fusion = NFusion::default().with_id(next_id());
-                fusion.index = team.fusions.get().unwrap().len() as i32;
-                fusion.owner = team.owner;
-                let mut slot = NFusionSlot::default().with_id(next_id());
+            while team.slots.get().unwrap().len() < slots {
+                let mut slot = NTeamSlot::default().with_id(next_id());
+                slot.index = team.slots.get().unwrap().len() as i32;
                 slot.owner = team.owner;
-                fusion.slots.set_loaded([slot].into()).ok();
-                team.fusions.get_mut().unwrap().push(fusion);
+                team.slots.get_mut().unwrap().push(slot);
             }
         }
         world.insert_resource(BattleData::load(Battle { left, right, id }));
@@ -160,17 +157,14 @@ impl BattlePlugin {
     pub fn load_replay(mut left: NTeam, mut right: NTeam, world: &mut World) {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
-            if !team.fusions.is_loaded() {
-                team.fusions_set(default()).unwrap();
+            if !team.slots.is_loaded() {
+                team.slots_set(default()).unwrap();
             }
-            while team.fusions.get().unwrap().len() < slots {
-                let mut fusion = NFusion::default().with_id(next_id());
-                fusion.index = team.fusions.get().unwrap().len() as i32;
-                fusion.owner = team.owner;
-                let mut slot = NFusionSlot::default().with_id(next_id());
+            while team.slots.get().unwrap().len() < slots {
+                let mut slot = NTeamSlot::default().with_id(next_id());
+                slot.index = team.slots.get().unwrap().len() as i32;
                 slot.owner = team.owner;
-                fusion.slots.set_loaded([slot].into()).ok();
-                team.fusions.get_mut().unwrap().push(fusion);
+                team.slots.get_mut().unwrap().push(slot);
             }
         }
         let id = next_id();

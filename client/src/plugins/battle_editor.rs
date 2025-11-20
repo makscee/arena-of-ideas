@@ -62,7 +62,6 @@ impl TeamEditorPlugin {
                                 "Inspect Unit".to_string(),
                                 Box::new(
                                     |team: &mut NTeam,
-                                     _fusion_id: u64,
                                      unit_id: u64,
                                      _slot_index: i32,
                                      _ctx: &ClientContext,
@@ -73,7 +72,7 @@ impl TeamEditorPlugin {
                                 ),
                             );
 
-                        Ok(editor.edit(current_team, ctx, ui))
+                        editor.edit(current_team, ctx, ui)
                     })
             {
                 changed_team = result;
@@ -81,9 +80,6 @@ impl TeamEditorPlugin {
         }
 
         if let Some(mut new_team) = changed_team {
-            // Fix team integrity after any changes
-            new_team.fix_integrity().notify_error_op();
-
             let mut state = world.resource_mut::<BattleEditorState>();
             if is_left {
                 state.left_team = new_team;
@@ -141,8 +137,6 @@ impl BattleEditorPlugin {
             .unwrap_or(true);
 
         let mut state = world.resource_mut::<BattleEditorState>();
-        state.left_team.fix_integrity().unwrap();
-        state.right_team.fix_integrity().unwrap();
         pd_mut(|pd| {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)

@@ -33,9 +33,8 @@ pub mod logout_reducer;
 pub mod match_abandon_reducer;
 pub mod match_bench_unit_reducer;
 pub mod match_boss_battle_reducer;
-pub mod match_buy_fusion_slot_reducer;
-pub mod match_change_action_range_reducer;
-pub mod match_change_trigger_reducer;
+pub mod match_cancel_fusion_reducer;
+pub mod match_choose_fusion_reducer;
 pub mod match_complete_reducer;
 pub mod match_insert_reducer;
 pub mod match_move_unit_reducer;
@@ -45,6 +44,7 @@ pub mod match_shop_buy_reducer;
 pub mod match_shop_reroll_reducer;
 pub mod match_stack_unit_reducer;
 pub mod match_start_battle_reducer;
+pub mod match_start_fusion_reducer;
 pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
 pub mod nodes_world_table;
@@ -121,15 +121,11 @@ pub use match_bench_unit_reducer::{
 pub use match_boss_battle_reducer::{
     match_boss_battle, set_flags_for_match_boss_battle, MatchBossBattleCallbackId,
 };
-pub use match_buy_fusion_slot_reducer::{
-    match_buy_fusion_slot, set_flags_for_match_buy_fusion_slot, MatchBuyFusionSlotCallbackId,
+pub use match_cancel_fusion_reducer::{
+    match_cancel_fusion, set_flags_for_match_cancel_fusion, MatchCancelFusionCallbackId,
 };
-pub use match_change_action_range_reducer::{
-    match_change_action_range, set_flags_for_match_change_action_range,
-    MatchChangeActionRangeCallbackId,
-};
-pub use match_change_trigger_reducer::{
-    match_change_trigger, set_flags_for_match_change_trigger, MatchChangeTriggerCallbackId,
+pub use match_choose_fusion_reducer::{
+    match_choose_fusion, set_flags_for_match_choose_fusion, MatchChooseFusionCallbackId,
 };
 pub use match_complete_reducer::{
     match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
@@ -153,6 +149,9 @@ pub use match_stack_unit_reducer::{
 };
 pub use match_start_battle_reducer::{
     match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
+};
+pub use match_start_fusion_reducer::{
+    match_start_fusion, set_flags_for_match_start_fusion, MatchStartFusionCallbackId,
 };
 pub use match_submit_battle_result_reducer::{
     match_submit_battle_result, set_flags_for_match_submit_battle_result,
@@ -223,23 +222,15 @@ pub enum Reducer {
         unit_id: u64,
     },
     MatchBossBattle,
-    MatchBuyFusionSlot {
-        fusion_id: u64,
-    },
-    MatchChangeActionRange {
-        slot_id: u64,
-        start: u8,
-        length: u8,
-    },
-    MatchChangeTrigger {
-        fusion_id: u64,
-        trigger_unit: u64,
+    MatchCancelFusion,
+    MatchChooseFusion {
+        fusion_index: i32,
     },
     MatchComplete,
     MatchInsert,
     MatchMoveUnit {
         unit_id: u64,
-        target_id: u64,
+        slot_index: i32,
     },
     MatchSellUnit {
         unit_id: u64,
@@ -253,6 +244,10 @@ pub enum Reducer {
         target_unit_id: u64,
     },
     MatchStartBattle,
+    MatchStartFusion {
+        source_id: u64,
+        target_id: u64,
+    },
     MatchSubmitBattleResult {
         id: u64,
         result: bool,
@@ -293,9 +288,8 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchAbandon => "match_abandon",
             Reducer::MatchBenchUnit { .. } => "match_bench_unit",
             Reducer::MatchBossBattle => "match_boss_battle",
-            Reducer::MatchBuyFusionSlot { .. } => "match_buy_fusion_slot",
-            Reducer::MatchChangeActionRange { .. } => "match_change_action_range",
-            Reducer::MatchChangeTrigger { .. } => "match_change_trigger",
+            Reducer::MatchCancelFusion => "match_cancel_fusion",
+            Reducer::MatchChooseFusion { .. } => "match_choose_fusion",
             Reducer::MatchComplete => "match_complete",
             Reducer::MatchInsert => "match_insert",
             Reducer::MatchMoveUnit { .. } => "match_move_unit",
@@ -304,6 +298,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchShopReroll => "match_shop_reroll",
             Reducer::MatchStackUnit { .. } => "match_stack_unit",
             Reducer::MatchStartBattle => "match_start_battle",
+            Reducer::MatchStartFusion { .. } => "match_start_fusion",
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
             Reducer::SetPassword { .. } => "set_password",
@@ -392,19 +387,13 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 match_boss_battle_reducer::MatchBossBattleArgs,
             >("match_boss_battle", &value.args)?
             .into()),
-            "match_buy_fusion_slot" => Ok(__sdk::parse_reducer_args::<
-                match_buy_fusion_slot_reducer::MatchBuyFusionSlotArgs,
-            >("match_buy_fusion_slot", &value.args)?
+            "match_cancel_fusion" => Ok(__sdk::parse_reducer_args::<
+                match_cancel_fusion_reducer::MatchCancelFusionArgs,
+            >("match_cancel_fusion", &value.args)?
             .into()),
-            "match_change_action_range" => {
-                Ok(__sdk::parse_reducer_args::<
-                    match_change_action_range_reducer::MatchChangeActionRangeArgs,
-                >("match_change_action_range", &value.args)?
-                .into())
-            }
-            "match_change_trigger" => Ok(__sdk::parse_reducer_args::<
-                match_change_trigger_reducer::MatchChangeTriggerArgs,
-            >("match_change_trigger", &value.args)?
+            "match_choose_fusion" => Ok(__sdk::parse_reducer_args::<
+                match_choose_fusion_reducer::MatchChooseFusionArgs,
+            >("match_choose_fusion", &value.args)?
             .into()),
             "match_complete" => Ok(__sdk::parse_reducer_args::<
                 match_complete_reducer::MatchCompleteArgs,
@@ -440,6 +429,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "match_start_battle" => Ok(__sdk::parse_reducer_args::<
                 match_start_battle_reducer::MatchStartBattleArgs,
             >("match_start_battle", &value.args)?
+            .into()),
+            "match_start_fusion" => Ok(__sdk::parse_reducer_args::<
+                match_start_fusion_reducer::MatchStartFusionArgs,
+            >("match_start_fusion", &value.args)?
             .into()),
             "match_submit_battle_result" => {
                 Ok(__sdk::parse_reducer_args::<

@@ -104,25 +104,6 @@ impl NodeKindOnSpawn for NodeKind {
         emut.insert((Transform::default(), Visibility::default()));
 
         match self {
-            NodeKind::NFusion => {
-                if ctx
-                    .get_children_of_kind(id, NodeKind::NUnitRepresentation)?
-                    .is_empty()
-                {
-                    let world = ctx.world_mut()?;
-                    let rep_entity = world.spawn_empty().id();
-                    let rep_id = next_id();
-                    unit_rep()
-                        .clone()
-                        .with_id(rep_id)
-                        .spawn(ctx, Some(rep_entity))?;
-                    ctx.add_link(id, rep_id)?;
-                }
-
-                let mut fusion = ctx.load::<NFusion>(id).track()?.clone();
-                fusion.recalculate_stats(ctx)?;
-                fusion.save(ctx)?;
-            }
             NodeKind::NStatusMagic => {
                 if ctx
                     .get_children_of_kind(id, NodeKind::NStatusRepresentation)?
@@ -147,5 +128,49 @@ impl NHouse {
         self.color_ref(ctx)
             .map(|c| c.color.c32())
             .unwrap_or_else(|_| colorix().low_contrast_text())
+    }
+}
+
+impl NUnit {
+    pub fn show_status_tags(
+        &self,
+        rect: Rect,
+        ctx: &mut ClientContext,
+        ui: &mut Ui,
+    ) -> NodeResult<()> {
+        let ui = &mut ui.new_child(
+            UiBuilder::new()
+                .max_rect(
+                    Rect::from_center_size(rect.center_bottom(), egui::vec2(rect.width(), 0.0))
+                        .translate(egui::vec2(0.0, 15.0)),
+                )
+                .layout(Layout::left_to_right(Align::Center).with_main_wrap(true)),
+        );
+        for status in ctx.load_children_ref::<NStatusMagic>(self.id)? {
+            if !ctx
+                .get_var_inherited(status.id, VarName::visible)
+                .get_bool()?
+            {
+                continue;
+            }
+            let color = ctx
+                .get_var_inherited(status.id, VarName::color)
+                .get_color()?;
+            let x = ctx.get_var_inherited(status.id, VarName::stax).get_i32()?;
+            if x > 0 {
+                TagWidget::new_name_value(status.name().to_string().cut_start(2), color, x)
+                    .ui(ui)
+                    .on_hover_ui(|ui| {
+                        ctx.exec_ref(|ctx| {
+                            ctx.with_owner(status.id, |ctx| {
+                                status.render_card(ctx, ui);
+                                Ok(())
+                            })
+                        })
+                        .ui(ui);
+                    });
+            }
+        }
+        Ok(())
     }
 }

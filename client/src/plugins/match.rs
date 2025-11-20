@@ -75,6 +75,11 @@ impl MatchPlugin {
                 return Ok(());
             }
 
+            if let Some((source_id, target_id, variants)) = &m.fusion {
+                Self::show_fusion_window(ctx, ui, *source_id, *target_id, variants.clone())?;
+                return Ok(());
+            }
+
             let m = m.clone();
 
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
@@ -322,6 +327,56 @@ impl MatchPlugin {
             Ok(())
         })
     }
+
+    fn show_fusion_window(
+        ctx: &mut ClientContext,
+        ui: &mut Ui,
+        source_id: u64,
+        target_id: u64,
+        variants: Vec<PackedNodes>,
+    ) -> NodeResult<()> {
+        ui.vertical_centered_justified(|ui| {
+            "Unit Fusion".cstr_s(CstrStyle::Heading2).label(ui);
+            "Select one of three fusion variants:".cstr().label(ui);
+            ui.separator();
+
+            ui.horizontal_wrapped(|ui| {
+                for (idx, packed) in variants.iter().enumerate() {
+                    let mut merged_unit: NUnit = NUnit::unpack(packed)?;
+                    let fusion_names = match idx {
+                        0 => ("Front", "Combines source actions first"),
+                        1 => ("Back", "Combines target actions first"),
+                        2 => ("Split", "Keeps separate triggers"),
+                        _ => ("Unknown", ""),
+                    };
+
+                    ui.vertical(|ui| {
+                        format!("[b {}]", fusion_names.0).cstr().label(ui);
+                        fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
+
+                        ctx.with_owner(merged_unit.id, |ctx| {
+                            merged_unit.as_card().compose(ctx, ui)
+                        })?;
+
+                        if format!("Select [b {}]", fusion_names.0)
+                            .cstr()
+                            .button(ui)
+                            .clicked()
+                        {
+                            cn().reducers.match_choose_fusion(idx as i32).notify_op();
+                        }
+                    });
+                }
+            });
+
+            ui.separator();
+            if "Cancel Fusion".cstr().button(ui).clicked() {
+                cn().reducers.match_cancel_fusion().notify_op();
+            }
+        });
+        Ok(())
+    }
+
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;

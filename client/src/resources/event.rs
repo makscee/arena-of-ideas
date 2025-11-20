@@ -23,11 +23,12 @@ impl EventImpl for Event {
                 ContextLayer::Var(VarName::value, value.clone()),
             ],
             |ctx| {
-                if let Ok(actions) = ctx
-                    .load::<NFusion>(owner)
-                    .and_then(|f| f.react_actions(self, ctx))
+                if let Some(actions) = ctx
+                    .load::<NUnitBehavior>(owner)
+                    .ok()
+                    .and_then(|ub| ub.reactions.react_actions(self, ctx).cloned())
                 {
-                    for (_, action) in actions {
+                    for action in actions {
                         match action.process(ctx) {
                             Ok(actions) => {
                                 battle_actions.extend(actions);
@@ -55,7 +56,7 @@ impl EventImpl for Event {
                         if let Some(actions) = status
                             .behavior_ref(ctx)?
                             .reactions
-                            .react(self, ctx)
+                            .react_actions(self, ctx)
                             .cloned()
                         {
                             match actions.process(ctx) {

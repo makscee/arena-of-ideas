@@ -22,16 +22,15 @@ impl EnumColor for Action {
             Action::noop => low_contrast_text(),
             Action::deal_damage => RED,
             Action::heal_damage => GREEN,
-            Action::use_ability => ORANGE,
-            Action::apply_status => PURPLE,
+            Action::use_ability(_) => ORANGE,
+            Action::apply_status(_) => PURPLE,
             Action::set_status(..) => PURPLE,
             Action::change_status_stax(..) => ORANGE,
             Action::debug(..) => high_contrast_text(),
-            Action::set_value(..)
-            | Action::add_value(..)
-            | Action::subtract_value(..)
-            | Action::set_target(..)
-            | Action::add_target(..) => CYAN,
+            Action::set_value(..) | Action::add_value(..) | Action::subtract_value(..) => {
+                VarName::value.color()
+            }
+            Action::add_target(..) | Action::set_target(..) => BLUE,
             Action::repeat(..) => PURPLE,
         }
     }

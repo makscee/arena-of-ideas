@@ -184,20 +184,6 @@ impl FEdit for HexColor {
     }
 }
 
-// UnitActionRange
-impl FEdit for UnitActionRange {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
-        ui.horizontal(|ui| {
-            ui.label("Start:");
-            let response = ui.add(DragValue::new(&mut self.start));
-            ui.separator();
-            ui.label("Length:");
-            response.union(ui.add(DragValue::new(&mut self.length)))
-        })
-        .inner
-    }
-}
-
 impl FEdit for MatchState {
     fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
         let response = ui.label("MatchState");
@@ -386,7 +372,7 @@ impl FTitle for Action {
             Ok(format!(" [{} x{x}]", VarName::stax.color().to_hex()))
         }
         match self {
-            Action::use_ability => {
+            Action::use_ability(_) => {
                 let mut r = self.cstr();
                 if let Ok(ability) = ctx.get_var(VarName::ability_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
@@ -399,7 +385,7 @@ impl FTitle for Action {
                 }
                 r
             }
-            Action::apply_status => {
+            Action::apply_status(_) => {
                 let mut r = self.cstr();
                 if let Ok(status) = ctx.get_var(VarName::status_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
@@ -638,7 +624,7 @@ impl FStats for NUnit {
             }
         }
         let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
-            behavior.reaction.tier()
+            behavior.reactions.first().map(|r| r.tier()).unwrap_or(0)
         } else {
             0
         };
@@ -662,7 +648,7 @@ impl FTag for NUnit {
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
         let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
-            behavior.reaction.tier()
+            behavior.reactions.first().map(|r| r.tier()).unwrap_or(0)
         } else {
             0
         };
@@ -1421,11 +1407,10 @@ impl FPlaceholder for NStatusRepresentation {
 
 impl FTitle for NTeam {
     fn title(&self, ctx: &ClientContext) -> Cstr {
-        match self.fusions_ref(ctx) {
+        match self.slots_ref(ctx) {
             Ok(f) => f
                 .into_iter()
-                .filter(|f| f.trigger_unit_ref(ctx).is_ok())
-                .map(|f| f.title(ctx))
+                .filter_map(|f| Some(f.unit_ref(ctx).ok()?.title(ctx)))
                 .join("[tw +]"),
             Err(_) => "[red error]".into(),
         }
@@ -1439,12 +1424,7 @@ impl FDescription for NTeam {
             .iter()
             .map(|h: &NHouse| h.description_cstr(ctx))
             .join(", ");
-        let fusions = self
-            .fusions
-            .iter()
-            .map(|f: &NFusion| f.description_cstr(ctx))
-            .join(", ");
-        format!("{} houses, {} fusions", houses, fusions).cstr()
+        format!("{} houses", houses).cstr()
     }
 }
 
@@ -1475,28 +1455,16 @@ impl FPlaceholder for NTeam {
     fn placeholder() -> Self {
         let house = NHouse::placeholder();
         let unit_id = house.units().unwrap()[0].id;
-        let fusion = NFusion::placeholder().with_slots(
-            [NFusionSlot::new(
-                next_id(),
-                player_id(),
-                0,
-                UnitActionRange {
-                    start: 0,
-                    length: 1,
-                },
-            )
-            .with_unit_id(unit_id)]
-            .into(),
-        );
+        let slot = NTeamSlot::new(next_id(), player_id(), 0).with_unit_id(unit_id);
         NTeam::new(next_id(), player_id())
             .with_houses([house].into())
-            .with_fusions(
+            .with_slots(
                 [
-                    fusion,
-                    NFusion::new(next_id(), player_id(), 1, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 2, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 3, 0, 0, 0, 0),
-                    NFusion::new(next_id(), player_id(), 4, 0, 0, 0, 0),
+                    slot,
+                    NTeamSlot::new(next_id(), player_id(), 1),
+                    NTeamSlot::new(next_id(), player_id(), 2),
+                    NTeamSlot::new(next_id(), player_id(), 3),
+                    NTeamSlot::new(next_id(), player_id(), 4),
                 ]
                 .into(),
             )
@@ -1515,32 +1483,8 @@ impl FDisplay for NTeam {
                     });
                 }
             }
-            if let Ok(fusions) = self.fusions_ref(ctx) {
-                ui.label(format!("Fusions ({})", fusions.len()));
-                for fusion in fusions {
-                    ui.horizontal(|ui| {
-                        ui.label("  •");
-                        format!("Fusion #{}", fusion.index).cstr().label(ui);
-                    });
-                }
-            }
         })
         .response
-    }
-}
-
-impl FCompactView for NTeam {
-    fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        self.title(ctx).label(ui);
-    }
-
-    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
-        match self.clone().load_all(ctx) {
-            Ok(team) => {
-                TeamEditor::new().edit(team, ctx, ui);
-            }
-            Err(e) => e.ui(ui),
-        }
     }
 }
 
@@ -1632,90 +1576,19 @@ impl FPlaceholder for NMatch {
             vec![],
             vec![],
             None,
+            None,
         )
         .with_team(NTeam::placeholder())
     }
 }
 
-impl FTitle for NFusion {
-    fn title(&self, ctx: &ClientContext) -> Cstr {
-        let units = ctx
-            .exec_ref(|ctx| {
-                let mut units = self
-                    .units(ctx)?
-                    .into_iter()
-                    .map(|u| {
-                        (
-                            u.name().to_string(),
-                            ctx.exec_ref(|ctx| {
-                                ctx.set_owner(u.id);
-                                Ok(ctx.color())
-                            })
-                            .unwrap(),
-                        )
-                    })
-                    .collect_vec();
-                fn unit_str(unit: (String, Color32), len: usize) -> String {
-                    format!("[{} {}]", unit.1.to_hex(), unit.0.cut_start(len))
-                }
-                match units.len() {
-                    0 => Ok("[tw Empty]".into()),
-                    1 => Ok(unit_str(units.remove(0), 0)),
-                    2..=3 => Ok(units.into_iter().map(|name| unit_str(name, 3)).join("")),
-                    _ => Ok(units.into_iter().map(|name| unit_str(name, 2)).join("")),
-                }
-            })
-            .unwrap_or_default();
-        units
-    }
-}
-
-impl FDescription for NFusion {
-    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        "Fusion Slots".cstr()
-    }
-}
-
-impl FStats for NFusion {
-    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![
-            (VarName::pwr, VarValue::i32(self.pwr)),
-            (VarName::hp, VarValue::i32(self.hp)),
-            (VarName::dmg, VarValue::i32(self.dmg)),
-        ]
-    }
-}
-
-impl FTag for NFusion {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        format!("Fusion #{}", self.index).cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{}/{}/{}", self.pwr, self.hp, self.dmg).cstr())
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        Color32::from_rgb(128, 0, 128)
-    }
-}
-
-impl FCopy for NFusion {}
-impl FPaste for NFusion {}
-
-impl FPlaceholder for NFusion {
-    fn placeholder() -> Self {
-        NFusion::new(next_id(), 0, 0, 0, 0, 0, 1).with_slots([NFusionSlot::placeholder()].into())
-    }
-}
-
-impl FTitle for NFusionSlot {
+impl FTitle for NTeamSlot {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("Slot #{}", self.index).cstr()
     }
 }
 
-impl FDescription for NFusionSlot {
+impl FDescription for NTeamSlot {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         if let Ok(unit) = self.unit_ref(ctx) {
             unit.unit_name.cstr()
@@ -1725,13 +1598,13 @@ impl FDescription for NFusionSlot {
     }
 }
 
-impl FStats for NFusionSlot {
+impl FStats for NTeamSlot {
     fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
         vec![]
     }
 }
 
-impl FTag for NFusionSlot {
+impl FTag for NTeamSlot {
     fn tag_name(&self, _: &ClientContext) -> Cstr {
         format!("Slot #{}", self.index).cstr()
     }
@@ -1749,51 +1622,7 @@ impl FTag for NFusionSlot {
     }
 }
 
-impl FDisplay for NFusion {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.vertical(|ui| {
-            // Display fusion stats
-            let mut response = ui
-                .horizontal(|ui| {
-                    ui.label("Power:");
-                    let mut response = self.pwr.cstr_c(Color32::LIGHT_BLUE).label(ui);
-                    ui.add_space(8.0);
-                    ui.label("HP:");
-                    response |= self.hp.cstr_c(Color32::LIGHT_GREEN).label(ui);
-                    ui.add_space(8.0);
-                    ui.label("DMG:");
-                    response |= self.dmg.cstr_c(Color32::LIGHT_RED).label(ui);
-                    response
-                })
-                .inner;
-
-            ui.horizontal(|ui| {
-                ui.label("Actions Limit:");
-                response |= self
-                    .actions_limit
-                    .to_string()
-                    .cstr_c(Color32::YELLOW)
-                    .label(ui);
-                ui.add_space(8.0);
-                ui.label("Index:");
-                response |= self.index.to_string().cstr_c(Color32::GRAY).label(ui);
-            });
-
-            // Display slots
-            if let Ok(slots) = self.slots_ref(ctx) {
-                ui.separator();
-                ui.label("Slots:");
-                for slot in slots {
-                    response |= slot.display(ctx, ui);
-                }
-            }
-            response
-        })
-        .inner
-    }
-}
-
-impl FDisplay for NFusionSlot {
+impl FDisplay for NTeamSlot {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             format!("Slot #{}", self.index)
@@ -1900,7 +1729,7 @@ impl FDisplay for NUnitStats {
 
 impl FTitle for NState {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!("[tw Unit State] {}x", self.stax).cstr()
+        format!("[tw State] {}x", self.stax).cstr()
     }
 }
 
@@ -1912,25 +1741,44 @@ impl FDescription for NState {
 
 impl FStats for NState {
     fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![(VarName::stax, VarValue::i32(self.stax))]
-    }
-}
-
-impl FTag for NState {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        "State".cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{}x", self.stax).cstr())
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        Color32::from_rgb(255, 255, 0)
+        vec![(VarName::stax, self.stax.into())]
     }
 }
 
 impl FDisplay for NState {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+        ui.horizontal(|ui| {
+            ui.label("stax:");
+            format!("{}", self.stax)
+                .cstr_c(Color32::from_rgb(255, 255, 0))
+                .label(ui);
+        })
+        .response
+    }
+}
+
+impl FTitle for NUnitState {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        format!("[tw State] {}x", self.stax).cstr()
+    }
+}
+
+impl FDescription for NUnitState {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        format!("{} stax", self.stax).cstr()
+    }
+}
+
+impl FStats for NUnitState {
+    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
+        vec![
+            (VarName::stax, self.stax.into()),
+            (VarName::dmg, self.dmg.into()),
+        ]
+    }
+}
+
+impl FDisplay for NUnitState {
     fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.horizontal(|ui| {
             ui.label("stax:");
@@ -1947,15 +1795,24 @@ impl FTitle for NUnitBehavior {
         format!(
             "[tw {}]|[yellow {}]: ({})",
             self.kind(),
-            self.reaction.trigger,
-            self.reaction.actions.len()
+            self.reactions
+                .first()
+                .map(|r| r.trigger.to_string())
+                .unwrap_or_default(),
+            self.reactions
+                .iter()
+                .map(|r| r.actions.len())
+                .sum::<usize>()
         )
     }
 }
 
 impl FDescription for NUnitBehavior {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.reaction.description_cstr(ctx)
+        self.reactions
+            .first()
+            .map(|r| r.description_cstr(ctx))
+            .unwrap_or_default()
     }
 }
 
@@ -1967,7 +1824,11 @@ impl FStats for NUnitBehavior {
 
 impl FInfo for NUnitBehavior {
     fn info(&self, _ctx: &ClientContext) -> Cstr {
-        self.reaction.cstr()
+        self.reactions
+            .iter()
+            .map(|r| r.cstr())
+            .collect::<Vec<_>>()
+            .join(" | ")
     }
 }
 
@@ -2081,9 +1942,9 @@ impl FPlaceholder for NStatusBehavior {
     }
 }
 
-impl FPlaceholder for NFusionSlot {
+impl FPlaceholder for NTeamSlot {
     fn placeholder() -> Self {
-        NFusionSlot::new(next_id(), 0, 0, default())
+        NTeamSlot::new(next_id(), 0, 0)
     }
 }
 impl FEdit for ShopOffer {
@@ -2216,12 +2077,13 @@ impl FPlaceholder for NUnitBehavior {
         NUnitBehavior::new(
             next_id(),
             0,
-            Reaction {
+            [Reaction {
                 trigger: Trigger::BattleStart,
                 actions: vec![Action::debug(
                     Expression::string("debug action".into()).into(),
                 )],
-            },
+            }]
+            .into(),
         )
     }
 }
@@ -2436,8 +2298,8 @@ impl FCompactView for NUnitDescription {
 
 impl FCompactView for NUnitBehavior {
     fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        let actions_count = self.reaction.actions.len();
-        let tier = self.reaction.tier();
+        let actions_count: usize = self.reactions.iter().map(|r| r.actions.len()).sum();
+        let tier = self.reactions.first().map(|r| r.tier()).unwrap_or(0);
 
         ui.horizontal(|ui| {
             format!("{} actions", actions_count).cstr().label(ui);
@@ -2446,7 +2308,7 @@ impl FCompactView for NUnitBehavior {
         });
     }
 
-    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
+    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Behavior");
             ui.separator();
@@ -2454,25 +2316,41 @@ impl FCompactView for NUnitBehavior {
                 ui.label("Type:");
             });
             ui.horizontal(|ui| {
-                ui.label("Trigger:");
-                self.reaction.trigger.cstr().label(ui);
+                ui.label("Triggers:");
+                for (i, reaction) in self.reactions.iter().enumerate() {
+                    if i > 0 {
+                        ui.label(", ");
+                    }
+                    reaction.trigger.cstr().label(ui);
+                }
             });
             ui.horizontal(|ui| {
                 ui.label("Tier:");
-                format!("{}", self.reaction.tier())
-                    .cstr_c(VarName::tier.color())
-                    .label(ui);
+                let tier = self.reactions.first().map(|r| r.tier()).unwrap_or(0);
+                format!("{}", tier).cstr_c(VarName::tier.color()).label(ui);
             });
             ui.separator();
-            ui.label(format!("Actions ({})", self.reaction.actions.len()));
-            for (i, action) in self.reaction.actions.iter().take(3).enumerate() {
-                ui.horizontal(|ui| {
-                    ui.label(format!("{}.", i + 1));
-                    action.cstr().label(ui);
-                });
+            let total_actions: usize = self.reactions.iter().map(|r| r.actions.len()).sum();
+            ui.label(format!("Actions ({})", total_actions));
+            let mut shown = 0;
+            for reaction in &self.reactions {
+                for action in reaction.actions.iter() {
+                    if shown >= 3 {
+                        break;
+                    }
+                    ui.horizontal(|ui| {
+                        ui.label(format!("{}.", shown + 1));
+                        action.cstr().label(ui);
+                        action.title(ctx).label(ui);
+                    });
+                    shown += 1;
+                }
+                if shown >= 3 {
+                    break;
+                }
             }
-            if self.reaction.actions.len() > 3 {
-                ui.label(format!("... and {} more", self.reaction.actions.len() - 3));
+            if total_actions > 3 {
+                ui.label(format!("... and {} more", total_actions - 3));
             }
         });
     }
@@ -2654,5 +2532,11 @@ impl FPreview for NStatusMagic {
                 ui.label(RichText::new(&self.status_name).strong().color(ctx.color()));
             });
         });
+    }
+}
+
+impl FEdit for Option<(u64, u64, Vec<PackedNodes>)> {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        "fusions".cstr().label(ui)
     }
 }

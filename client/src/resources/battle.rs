@@ -65,7 +65,7 @@ impl Battle {
             })
             .log();
 
-        let (fusions_left, fusions_right) = source.exec_context_ref(|ctx| {
+        let (units_left, units_right) = source.exec_context_ref(|ctx| {
             let left_ids = ids_by_slot_from_context(left_entity, ctx);
             let right_ids = ids_by_slot_from_context(right_entity, ctx);
             (left_ids, right_ids)
@@ -74,8 +74,8 @@ impl Battle {
         source
             .exec_context(|ctx| {
                 let sim = ctx.battle_mut()?;
-                sim.fusions_left = fusions_left;
-                sim.fusions_right = fusions_right;
+                sim.fusions_left = units_left;
+                sim.fusions_right = units_right;
                 Ok(())
             })
             .log();
@@ -87,18 +87,19 @@ impl Battle {
 fn ids_by_slot_from_context(parent: Entity, ctx: &ClientContext) -> Vec<u64> {
     let ids = parent.ids(ctx).unwrap_or_default();
     let id = ids.into_iter().next().unwrap_or(0);
-    ctx.load_children_ref::<NFusion>(id)
-        .unwrap_or_default()
-        .into_iter()
-        .sorted_by_key(|s| s.index)
-        .filter_map(|n| {
-            if ctx.first_child_recursive(n.id, NodeKind::NUnit).is_ok() {
-                Some(n.id)
-            } else {
-                None
-            }
-        })
-        .collect_vec()
+    if let Ok(team) = ctx.load::<NTeam>(id) {
+        if let Ok(slots) = team.slots_ref(ctx) {
+            slots
+                .into_iter()
+                .sorted_by_key(|s| s.index)
+                .filter_map(|slot| Some(slot.unit_ref(ctx).ok()?.id))
+                .collect_vec()
+        } else {
+            vec![]
+        }
+    } else {
+        vec![]
+    }
 }
 #[derive(Debug)]
 pub struct BattleSimulation {
@@ -222,12 +223,14 @@ impl BattleAction {
                             .into(),
                     );
                     add_actions.push(Self::wait(animation_time() * 3.0));
-                    let fusion_a = ctx.load::<NFusion>(*a).track()?;
-                    let fusion_b = ctx.load::<NFusion>(*b).track()?;
+                    let mut unit_a = ctx.load::<NUnit>(*a).track()?;
+                    let mut unit_b = ctx.load::<NUnit>(*b).track()?;
+                    let pwr_a = unit_a.stats_load(ctx).track()?.pwr;
+                    let pwr_b = unit_b.stats_load(ctx).track()?.pwr;
                     add_actions.extend(ctx.battle()?.slots_sync());
                     add_actions.push(Self::wait(animation_time()));
-                    add_actions.push(Self::damage(*a, *b, fusion_a.pwr_ctx_get(ctx)));
-                    add_actions.push(Self::damage(*b, *a, fusion_b.pwr_ctx_get(ctx)));
+                    add_actions.push(Self::damage(*a, *b, pwr_a));
+                    add_actions.push(Self::damage(*b, *a, pwr_b));
                     add_actions.push(Self::wait(animation_time() * 2.0));
                     BattleSimulation::send_event(ctx, Event::AfterStrike(*a, *b))?;
                     true
@@ -265,7 +268,7 @@ impl BattleAction {
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
                         BattleSimulation::send_event(ctx, Event::DamageDealt(*a, *b, x))?;
-                        let dmg = ctx.load::<NFusion>(*b).track()?.dmg_ctx_get(ctx) + x;
+                        let dmg = ctx.load::<NUnit>(*b).track()?.state_load(ctx).track()?.dmg + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         add_actions.push(
                             Self::new_vfx("pain_vfx")
@@ -301,7 +304,7 @@ impl BattleAction {
                                 |context| pleasure.apply(context),
                             )?;
                         }
-                        let dmg = ctx.load::<NFusion>(*b).track()?.dmg - *x;
+                        let dmg = ctx.load::<NUnit>(*b).track()?.state_load(ctx).track()?.dmg - *x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.at_least(0).into()));
                         add_actions.push(
                             Self::new_text(format!("[b [green +{}]]", x), target_pos)
@@ -682,7 +685,14 @@ impl BattleSimulation {
                     fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
                 }
                 ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
-                    match ctx.load::<NFusion>(id).track()?.clone().react(&event, ctx) {
+                    match ctx
+                        .load::<NUnit>(id)
+                        .track()?
+                        .clone()
+                        .behavior_load(ctx)?
+                        .reactions
+                        .react_battle_actions(&event, ctx)
+                    {
                         Ok(actions) => {
                             if !actions.is_empty() {
                                 ctx.battle_mut()?.fired.insert(id);
@@ -712,7 +722,7 @@ impl BattleSimulation {
                             return Ok(vec![]);
                         }
                         let behavior = status.behavior_load(ctx).track()?;
-                        let actions = behavior.reactions.react(&event, ctx);
+                        let actions = behavior.reactions.react_actions(&event, ctx);
                         if let Some(actions) = actions {
                             actions.clone().process(ctx)
                         } else {
@@ -824,9 +834,8 @@ impl BattleSimulation {
         *ctx.t_mut().unwrap() = ctx.battle()?.duration;
         let sim = ctx.battle()?;
         for id in sim.all_fusions() {
-            let fusion = ctx.load::<NFusion>(id).track()?;
-            let hp = fusion.hp_ctx_get(ctx);
-            let dmg = fusion.dmg_ctx_get(ctx);
+            let hp = ctx.get_var_inherited(id, VarName::hp).get_i32()?;
+            let dmg = ctx.get_var_inherited(id, VarName::dmg).get_i32()?;
             if hp <= dmg {
                 actions.push_back(BattleAction::send_event(Event::Death(id)));
                 actions.push_back(BattleAction::death(id));
