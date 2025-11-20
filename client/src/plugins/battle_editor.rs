@@ -36,50 +36,38 @@ impl TeamEditorPlugin {
                         let editor = TeamEditor::new()
                             .empty_slot_action(
                                 "Add Placeholder Unit".to_string(),
-                                Box::new(
-                                    |team: &mut NTeam,
-                                     fusion_id: u64,
-                                     slot_index: i32,
-                                     _ctx: &ClientContext,
-                                     _ui: &mut Ui| {
-                                        let unit = NUnit::placeholder();
-                                        let unit_id = unit.id;
-                                        team.houses
-                                            .get_mut()
-                                            .unwrap()
-                                            .first_mut()
-                                            .unwrap()
-                                            .units_push(unit)
-                                            .unwrap();
-                                        let slot =
-                                            team.fusion_slot_mut(fusion_id, slot_index).unwrap();
-                                        slot.unit = Ref::new_id(unit_id);
-                                        slot.set_dirty(true);
-                                    },
-                                ),
+                                |team, slot_index, _ctx, _ui| {
+                                    let unit = NUnit::placeholder();
+                                    let unit_id = unit.id;
+                                    if let Ok(houses) = team.houses.get_mut() {
+                                        if let Some(house) = houses.first_mut() {
+                                            house.units_push(unit).ok();
+                                        }
+                                    }
+                                    if let Ok(slots) = team.slots.get_mut() {
+                                        if let Some(slot) =
+                                            slots.iter_mut().find(|s| s.index == slot_index)
+                                        {
+                                            slot.unit = Owned::new_id(unit_id);
+                                        }
+                                    }
+                                },
                             )
                             .filled_slot_action(
                                 "Inspect Unit".to_string(),
-                                Box::new(
-                                    |team: &mut NTeam,
-                                     unit_id: u64,
-                                     _slot_index: i32,
-                                     _ctx: &ClientContext,
-                                     ui: &mut Ui| {
-                                        // Set inspected node using InspectedNodeExt
-                                        ui.set_inspected_node_for_parent(team.id, unit_id);
-                                    },
-                                ),
+                                |team, unit_id, _slot_index, _ctx, ui| {
+                                    ui.set_inspected_node_for_parent(team.id, unit_id);
+                                },
                             );
 
-                        editor.edit(current_team, ctx, ui)
+                        Ok(editor.edit(current_team, ctx, ui))
                     })
             {
                 changed_team = result;
             }
         }
 
-        if let Some(mut new_team) = changed_team {
+        if let Some(new_team) = changed_team {
             let mut state = world.resource_mut::<BattleEditorState>();
             if is_left {
                 state.left_team = new_team;
@@ -136,7 +124,7 @@ impl BattleEditorPlugin {
             })
             .unwrap_or(true);
 
-        let mut state = world.resource_mut::<BattleEditorState>();
+        let state = world.resource_mut::<BattleEditorState>();
         pd_mut(|pd| {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)

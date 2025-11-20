@@ -248,64 +248,41 @@ impl MatchPlugin {
             let team_editor = TeamEditor::new()
                 .filled_slot_action(
                     "Sell Unit".to_string(),
-                    Box::new(|_team, _fusion_id, unit_id, _slot_index, _ctx, _ui| {
+                    |_team, unit_id, _slot_index, _ctx, _ui| {
                         cn().reducers.match_sell_unit(unit_id).notify_error_op();
-                    }),
+                    },
                 )
-                .with_add_slot_text(|fusion| {
-                    let slots_count = fusion.slots.get().map(|s| s.len()).unwrap_or(0);
-                    let price =
-                        global_settings().match_settings.fusion_slot_mul * slots_count as i32;
-                    format!("Slot [b [yellow {}g]]", price)
-                })
-                .with_action_handler(move |ctx, action| {
-                    match action {
-                        TeamAction::MoveUnit { unit_id, target } => match target {
-                            UnitTarget::Slot {
-                                fusion_id,
-                                slot_index,
-                            } => {
-                                let slot_id = ctx
-                                    .load::<NFusion>(*fusion_id)?
-                                    .slots_ref(ctx)?
-                                    .into_iter()
-                                    .find(|s| s.index == *slot_index)
-                                    .to_not_found()?
-                                    .id;
-                                cn().reducers
-                                    .match_move_unit(*unit_id, slot_id)
-                                    .notify_error_op();
-                            }
-                            UnitTarget::Bench => {
-                                cn().reducers.match_bench_unit(*unit_id).notify_error_op();
-                            }
-                        },
-                        TeamAction::AddSlot { fusion_id } => {
-                            cn().reducers
-                                .match_buy_fusion_slot(*fusion_id)
-                                .notify_error_op();
+                .with_drag_over_handler(|_source_id, _target_id, ctx| {
+                    // Check if units can be fused
+                    if let (Ok(source), Ok(target)) =
+                        (ctx.load::<NUnit>(_source_id), ctx.load::<NUnit>(_target_id))
+                    {
+                        // If same unit name, stack them
+                        if source.unit_name == target.unit_name {
+                            return DragOverResult::Stack;
                         }
-                        TeamAction::BenchUnit { unit_id } => {
+                        // Otherwise, could check for fusion possibilities here
+                        // For now just allow swap
+                    }
+                    DragOverResult::Swap
+                })
+                .with_action_handler(|_ctx: &ClientContext, action| {
+                    match action {
+                        TeamAction::MoveToBench { unit_id } => {
                             cn().reducers.match_bench_unit(*unit_id).notify_error_op();
                         }
-                        TeamAction::ChangeActionRange {
-                            slot_id,
-                            start,
-                            length,
+                        TeamAction::MoveToEmptySlot {
+                            unit_id,
+                            slot_index: _,
                         } => {
-                            cn().reducers
-                                .match_change_action_range(*slot_id, *start as u8, *length as u8)
-                                .notify_error_op();
+                            // For now, just bench and un-bench
+                            cn().reducers.match_bench_unit(*unit_id).notify_error_op();
                         }
-                        TeamAction::ChangeTrigger { fusion_id, trigger } => {
-                            cn().reducers
-                                .match_change_trigger(*fusion_id, *trigger)
-                                .notify_error_op();
-                        }
-                        TeamAction::StackUnit {
+                        TeamAction::MoveOverUnit {
                             unit_id,
                             target_unit_id,
                         } => {
+                            // Try stacking (fusion will be handled by server)
                             cn().reducers
                                 .match_stack_unit(*unit_id, *target_unit_id)
                                 .notify_error_op();
@@ -342,30 +319,34 @@ impl MatchPlugin {
 
             ui.horizontal_wrapped(|ui| {
                 for (idx, packed) in variants.iter().enumerate() {
-                    let mut merged_unit: NUnit = NUnit::unpack(packed)?;
-                    let fusion_names = match idx {
-                        0 => ("Front", "Combines source actions first"),
-                        1 => ("Back", "Combines target actions first"),
-                        2 => ("Split", "Keeps separate triggers"),
-                        _ => ("Unknown", ""),
-                    };
+                    let merged_unit_result = NUnit::unpack(packed);
+                    if let Ok(mut merged_unit) = merged_unit_result {
+                        let fusion_names = match idx {
+                            0 => ("Front", "Combines source actions first"),
+                            1 => ("Back", "Combines target actions first"),
+                            2 => ("Split", "Keeps separate triggers"),
+                            _ => ("Unknown", ""),
+                        };
 
-                    ui.vertical(|ui| {
-                        format!("[b {}]", fusion_names.0).cstr().label(ui);
-                        fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
+                        ui.vertical(|ui| {
+                            format!("[b {}]", fusion_names.0).cstr().label(ui);
+                            fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
 
-                        ctx.with_owner(merged_unit.id, |ctx| {
-                            merged_unit.as_card().compose(ctx, ui)
-                        })?;
+                            ctx.with_owner(merged_unit.id, |ctx| {
+                                merged_unit.as_card().compose(ctx, ui);
+                                Ok(())
+                            })
+                            .ok();
 
-                        if format!("Select [b {}]", fusion_names.0)
-                            .cstr()
-                            .button(ui)
-                            .clicked()
-                        {
-                            cn().reducers.match_choose_fusion(idx as i32).notify_op();
-                        }
-                    });
+                            if format!("Select [b {}]", fusion_names.0)
+                                .cstr()
+                                .button(ui)
+                                .clicked()
+                            {
+                                cn().reducers.match_choose_fusion(idx as i32).notify_op();
+                            }
+                        });
+                    }
                 }
             });
 
