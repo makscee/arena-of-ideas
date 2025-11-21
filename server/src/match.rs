@@ -115,7 +115,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .find(|h| h.house_name == house_name)
                 .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
             let mut unit = unit.remap_ids(ctx).with_owner(pid);
-            unit.state_set(NUnitState::new(ctx.next_id(), pid, 1, 0, vec![]))?;
+            unit.state_set(NUnitState::new(ctx.next_id(), pid, 1, 0))?;
             let unit_id = unit.id;
             unit.save(ctx)?;
             unit_id.add_parent(ctx.rctx(), house.id)?;
@@ -497,7 +497,7 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     }
 
     let source_state_stax = source.state_load(ctx)?.stax;
-    let source_state_houses = source.state_load(ctx)?.houses.clone();
+    let source_state_houses = source.house_ids(ctx);
     let source_action_count: usize = source
         .behavior_load(ctx)?
         .reactions
@@ -506,7 +506,7 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
         .sum();
 
     let target_state_stax = target.state_load(ctx)?.stax;
-    let target_state_houses = target.state_load(ctx)?.houses.clone();
+    let target_state_houses = target.house_ids(ctx);
     let target_action_count: usize = target
         .behavior_load(ctx)?
         .reactions
@@ -631,14 +631,12 @@ fn create_fused_unit(
     source: &mut NUnit,
     target: &mut NUnit,
     fusion_type: i32,
-) -> Result<NUnit, String> {
+) -> NodeResult<NUnit> {
     let source_name = source.unit_name.clone();
     let target_name = target.unit_name.clone();
-    let source_id_for_house = source.id;
-    let target_id_for_house = target.id;
 
     let source_state_stax = source.state_load(ctx)?.stax;
-    let source_state_houses = source.state_load(ctx)?.houses.clone();
+    let source_state_houses = source.house_ids(ctx);
     let source_reactions = source.behavior_load(ctx)?.reactions.clone();
     let source_desc = {
         let desc = source.description_load(ctx)?;
@@ -654,7 +652,6 @@ fn create_fused_unit(
     };
 
     let target_state_stax = target.state_load(ctx)?.stax;
-    let target_state_houses = target.state_load(ctx)?.houses.clone();
     let target_reactions = target.behavior_load(ctx)?.reactions.clone();
     let target_desc = {
         let desc = target.description_load(ctx)?;
@@ -752,24 +749,11 @@ fn create_fused_unit(
     new_stats.save(ctx)?;
     new_unit.stats = Component::new_id(stats_id);
 
-    // Merge state
-    let mut merged_houses = source_state_houses.clone();
-    if merged_houses.is_empty() {
-        merged_houses.push(source_id_for_house);
-    }
-    if target_state_houses.is_empty() {
-        merged_houses.push(target_id_for_house);
-    } else {
-        merged_houses.extend(target_state_houses.clone());
+    for parent in source_state_houses {
+        target.id.add_parent(ctx.rctx(), parent)?;
     }
 
-    let new_state = NUnitState::new(
-        ctx.next_id(),
-        pid,
-        source_state_stax + target_state_stax,
-        0,
-        merged_houses,
-    );
+    let new_state = NUnitState::new(ctx.next_id(), pid, source_state_stax + target_state_stax, 0);
     let state_id = new_state.id;
     new_state.save(ctx)?;
     new_unit.state = Component::new_id(state_id);
@@ -777,8 +761,7 @@ fn create_fused_unit(
     let result_id = new_unit.id;
     new_unit.save(ctx)?;
 
-    let mut loaded = ctx.load::<NUnit>(result_id)?;
-    Ok(loaded)
+    ctx.load::<NUnit>(result_id)
 }
 
 #[reducer]

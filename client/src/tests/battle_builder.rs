@@ -331,7 +331,7 @@ impl HouseBuilder {
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
         house.color = Component::new_loaded(color);
-        house.units = OwnedMultiple::new_loaded(built_units.clone());
+        house.units = RefMultiple::Ids(built_units.iter().map(|u| u.id).collect());
 
         if let Some(ability_builder) = self.ability {
             house.ability = Component::new_loaded(ability_builder.build());
@@ -375,7 +375,6 @@ impl UnitBuilder {
         let mut state = NUnitState::default();
         state.set_id(self.id + 3);
         state.stax = 1;
-        state.houses = vec![];
 
         let mut unit = NUnit::default();
         unit.set_id(self.id);

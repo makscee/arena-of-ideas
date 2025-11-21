@@ -777,19 +777,8 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder() -> Self {
-        let house_id = next_id();
-        NHouse::new(house_id, player_id(), "Placeholder House".to_string())
+        NHouse::new(next_id(), player_id(), "Placeholder House".to_string())
             .with_color(NHouseColor::placeholder())
-            .with_units(
-                [NUnit::placeholder().with_state(NUnitState::new(
-                    next_id(),
-                    player_id(),
-                    1,
-                    0,
-                    [house_id].into(),
-                ))]
-                .into(),
-            )
     }
 }
 
@@ -1463,9 +1452,9 @@ impl FPaste for NTeam {}
 
 impl FPlaceholder for NTeam {
     fn placeholder() -> Self {
-        let house = NHouse::placeholder();
-        let unit_id = house.units().unwrap()[0].id;
-        let slot = NTeamSlot::new(next_id(), player_id(), 0).with_unit_id(unit_id);
+        let unit = NUnit::placeholder().with_state(NUnitState::new(next_id(), player_id(), 1, 0));
+        let house = NHouse::placeholder().with_units_id([unit.id].into());
+        let slot = NTeamSlot::new(next_id(), player_id(), 0).with_unit(unit);
         NTeam::new(next_id(), player_id())
             .with_houses([house].into())
             .with_slots(

@@ -167,10 +167,8 @@ impl TeamEditor {
         actions: &mut Vec<TeamAction>,
     ) {
         ui.horizontal(|ui| {
-            if let Ok(slots) = team.slots() {
-                for slot in slots {
-                    self.render_slot(ui, slot, team, ctx, actions);
-                }
+            for slot in team.slots().unwrap().iter().sorted_by_key(|s| s.index) {
+                self.render_slot(ui, slot, team, ctx, actions);
             }
         });
     }
@@ -420,21 +418,20 @@ impl NTeam {
     }
 
     fn move_unit_to_bench(&mut self, unit_id: u64) -> NodeResult<()> {
-        if let Some(slot) = self.find_slot_with_unit_mut(unit_id)? {
-            slot.unit = Owned::none();
-        }
+        let unit = self.find_and_unlink_unit(unit_id)?;
+        self.benched_push(unit)?;
         Ok(())
     }
 
     fn move_unit_to_slot(&mut self, unit_id: u64, slot_index: i32) -> NodeResult<()> {
-        self.remove_unit_from_anywhere(unit_id)?;
-
-        if let Ok(slots) = self.slots.get_mut() {
-            if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index) {
-                slot.unit = Owned::new_id(unit_id);
-            }
-        }
-
+        let unit = self.find_and_unlink_unit(unit_id)?;
+        let slot = self
+            .slots
+            .get_mut()?
+            .iter_mut()
+            .find(|s| s.index == slot_index)
+            .to_not_found()?;
+        slot.unit = Owned::new_loaded(unit);
         Ok(())
     }
 
@@ -506,15 +503,19 @@ impl NTeam {
         Err(NodeError::custom("Unit not found"))
     }
 
-    fn remove_unit_from_anywhere(&mut self, unit_id: u64) -> NodeResult<()> {
+    fn find_and_unlink_unit(&mut self, unit_id: u64) -> NodeResult<NUnit> {
         if let Some(slot) = self.find_slot_with_unit_mut(unit_id)? {
-            slot.unit = Owned::none();
+            if let Owned::Loaded(unit) = slot.unit.take() {
+                return Ok(unit);
+            }
         }
 
         if let Ok(benched) = self.benched.get_mut() {
-            benched.retain(|u| u.id != unit_id);
+            if let Some(unit_pos) = benched.iter().position(|u| u.id == unit_id) {
+                return Ok(benched.remove(unit_pos));
+            }
         }
 
-        Ok(())
+        Err(NodeError::not_found(unit_id))
     }
 }

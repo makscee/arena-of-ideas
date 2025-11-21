@@ -44,12 +44,13 @@ impl TeamEditorPlugin {
                                                 if let Some(slot) =
                                                     slots.iter_mut().find(|s| s.index == slot_index)
                                                 {
+                                                    house.units =
+                                                        RefMultiple::Ids([unit.id].into());
                                                     unit.state_set(NUnitState::new(
                                                         next_id(),
                                                         unit.owner,
                                                         1,
                                                         0,
-                                                        [house.id].into(),
                                                     ))
                                                     .unwrap();
                                                     slot.unit = Owned::Loaded(unit);

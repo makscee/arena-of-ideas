@@ -1463,6 +1463,22 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     _ => {}
                 }
             },
+
+            LinkType::RefMultiple => quote! {
+                match &self.#field_name {
+                    RefMultiple::Ids(ids) => {
+                        for &id in ids {
+                            packed.link_parent_child(
+                                self.id,
+                                id,
+                                stringify!(#struct_name).to_string(),
+                                stringify!(#target_type).to_string()
+                            );
+                        }
+                    }
+                    _ => {}
+                }
+            },
             _ => quote! {},
         })
     });

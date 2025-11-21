@@ -54,7 +54,7 @@ pub struct NHouse {
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
     pub state: Component<NState>,
-    pub units: OwnedMultiple<NUnit>,
+    pub units: RefMultiple<NUnit>,
 }
 
 #[derive(Node)]
@@ -130,14 +130,13 @@ pub struct NUnitState {
     pub stax: i32,
     #[var]
     pub dmg: i32,
-    pub houses: Vec<u64>,
 }
 
 #[derive(Node)]
 pub struct NTeam {
-    pub houses: OwnedMultiple<NHouse>,
     pub slots: OwnedMultiple<NTeamSlot>,
     pub benched: OwnedMultiple<NUnit>,
+    pub houses: OwnedMultiple<NHouse>,
 }
 
 #[derive(Node)]
