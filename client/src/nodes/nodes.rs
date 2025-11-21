@@ -76,6 +76,7 @@ pub trait NodeKindOnSpawn {
 
 impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
+        debug!("on spawn {self} {id} ");
         let entity = ctx.entity(id).track()?;
         let vars = node_kind_match!(self, ctx.load::<NodeType>(id).track()?.get_vars());
 
@@ -104,6 +105,20 @@ impl NodeKindOnSpawn for NodeKind {
         emut.insert((Transform::default(), Visibility::default()));
 
         match self {
+            NodeKind::NUnit => {
+                let unit = ctx.load::<NUnit>(id)?;
+                if let Ok(mut rep) = unit.representation_ref(ctx).cloned() {
+                    rep.material.0.append(&mut unit_rep().material.0.clone());
+                    rep.spawn(ctx, Some(entity))?;
+                } else {
+                    let rep_id = next_id();
+                    unit_rep()
+                        .clone()
+                        .with_id(rep_id)
+                        .spawn(ctx, Some(entity))?;
+                    ctx.add_link(id, rep_id)?;
+                }
+            }
             NodeKind::NStatusMagic => {
                 if ctx
                     .get_children_of_kind(id, NodeKind::NStatusRepresentation)?

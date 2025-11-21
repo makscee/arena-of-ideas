@@ -378,7 +378,7 @@ impl BattlePlugin {
     ) -> NodeResult<bool> {
         let (duration, ended, result) = data.source.exec_context_ref(|ctx| {
             let sim = ctx.battle().unwrap();
-            (sim.duration, sim.ended(), sim.fusions_right.is_empty())
+            (sim.duration, sim.ended(), sim.units_right.is_empty())
         });
 
         if data.t >= duration && ended {

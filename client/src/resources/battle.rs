@@ -74,8 +74,8 @@ impl Battle {
         source
             .exec_context(|ctx| {
                 let sim = ctx.battle_mut()?;
-                sim.fusions_left = units_left;
-                sim.fusions_right = units_right;
+                sim.units_left = units_left;
+                sim.units_right = units_right;
                 Ok(())
             })
             .log();
@@ -107,8 +107,8 @@ pub struct BattleSimulation {
     pub battle: Battle,
     pub duration: f32,
     pub turns: usize,
-    pub fusions_left: Vec<u64>,
-    pub fusions_right: Vec<u64>,
+    pub units_left: Vec<u64>,
+    pub units_right: Vec<u64>,
     pub team_left: u64,
     pub team_right: u64,
     pub log: BattleLog,
@@ -446,8 +446,8 @@ impl Default for BattleSimulation {
                 right: NTeam::default(),
             },
             duration: 0.0,
-            fusions_left: Vec::new(),
-            fusions_right: Vec::new(),
+            units_left: Vec::new(),
+            units_right: Vec::new(),
             team_left: 0,
             team_right: 0,
             log: BattleLog::default(),
@@ -461,25 +461,25 @@ impl Default for BattleSimulation {
 
 impl BattleSimulation {
     pub fn left_units(&self) -> &Vec<u64> {
-        &self.fusions_left
+        &self.units_left
     }
 
     pub fn right_units(&self) -> &Vec<u64> {
-        &self.fusions_right
+        &self.units_right
     }
 
     pub fn all_fusions(&self) -> Vec<u64> {
-        let mut units = self.fusions_left.clone();
-        units.append(&mut self.fusions_right.clone());
+        let mut units = self.units_left.clone();
+        units.append(&mut self.units_right.clone());
         units
     }
 
     pub fn all_allies(&self, id: u64) -> NodeResult<&Vec<u64>> {
-        let left = &self.fusions_left;
+        let left = &self.units_left;
         if left.contains(&id) {
             return Ok(left);
         } else {
-            let right = &self.fusions_right;
+            let right = &self.units_right;
             if right.contains(&id) {
                 return Ok(right);
             }
@@ -490,8 +490,8 @@ impl BattleSimulation {
     }
 
     pub fn all_enemies(&self, id: u64) -> Result<&Vec<u64>, NodeError> {
-        let left = &self.fusions_left;
-        let right = &self.fusions_right;
+        let left = &self.units_left;
+        let right = &self.units_right;
         if left.contains(&id) {
             return Ok(right);
         } else if right.contains(&id) {
@@ -515,14 +515,14 @@ impl BattleSimulation {
     }
 
     pub fn ended(&self) -> bool {
-        self.fusions_left.is_empty() || self.fusions_right.is_empty()
+        self.units_left.is_empty() || self.units_right.is_empty()
     }
     pub fn start(ctx: &mut ClientContext) -> NodeResult<()> {
         let spawn_actions = {
             let sim = ctx.battle()?;
-            sim.fusions_left
+            sim.units_left
                 .iter()
-                .zip_longest(sim.fusions_right.iter())
+                .zip_longest(sim.units_right.iter())
                 .flat_map(|e| match e {
                     EitherOrBoth::Both(a, b) => {
                         vec![BattleAction::spawn(*a), BattleAction::spawn(*b)]
@@ -559,9 +559,9 @@ impl BattleSimulation {
 
         let sim = ctx.battle()?;
         let ids = sim
-            .fusions_left
+            .units_left
             .iter()
-            .chain(sim.fusions_right.iter())
+            .chain(sim.units_right.iter())
             .copied()
             .collect_vec();
         for id in ids {
@@ -601,8 +601,8 @@ impl BattleSimulation {
         );
 
         let sim = ctx.battle()?;
-        if !sim.fusions_left.is_empty() && !sim.fusions_right.is_empty() {
-            let a = BattleAction::strike(sim.fusions_left[0], sim.fusions_right[0]);
+        if !sim.units_left.is_empty() && !sim.units_right.is_empty() {
+            let a = BattleAction::strike(sim.units_left[0], sim.units_right[0]);
             process_actions(ctx, vec![a]);
         }
 
@@ -794,12 +794,12 @@ impl BattleSimulation {
         ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;
         let sim = ctx.battle_mut()?;
-        if let Some(p) = sim.fusions_left.iter().position(|u| *u == id) {
-            sim.fusions_left.remove(p);
+        if let Some(p) = sim.units_left.iter().position(|u| *u == id) {
+            sim.units_left.remove(p);
             died = true;
         }
-        if let Some(p) = sim.fusions_right.iter().position(|u| *u == id) {
-            sim.fusions_right.remove(p);
+        if let Some(p) = sim.units_right.iter().position(|u| *u == id) {
+            sim.units_right.remove(p);
             died = true;
         }
         if died {
@@ -834,8 +834,8 @@ impl BattleSimulation {
         *ctx.t_mut().unwrap() = ctx.battle()?.duration;
         let sim = ctx.battle()?;
         for id in sim.all_fusions() {
-            let hp = ctx.get_var_inherited(id, VarName::hp).get_i32()?;
-            let dmg = ctx.get_var_inherited(id, VarName::dmg).get_i32()?;
+            let hp = ctx.get_var_inherited(id, VarName::hp).get_i32().track()?;
+            let dmg = ctx.get_var_inherited(id, VarName::dmg).get_i32().track()?;
             if hp <= dmg {
                 actions.push_back(BattleAction::send_event(Event::Death(id)));
                 actions.push_back(BattleAction::death(id));
@@ -846,11 +846,11 @@ impl BattleSimulation {
     pub fn slots_sync(&self) -> VecDeque<BattleAction> {
         let mut actions = VecDeque::default();
         for (i, (e, side)) in self
-            .fusions_left
+            .units_left
             .iter()
             .map(|e| (e, true))
             .enumerate()
-            .chain(self.fusions_right.iter().map(|e| (e, false)).enumerate())
+            .chain(self.units_right.iter().map(|e| (e, false)).enumerate())
         {
             actions.push_back(BattleAction::var_set(*e, VarName::slot, i.into()));
             actions.push_back(BattleAction::var_set(*e, VarName::side, side.into()));

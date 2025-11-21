@@ -37,18 +37,24 @@ impl TeamEditorPlugin {
                             .empty_slot_action(
                                 "Add Placeholder Unit".to_string(),
                                 |team, slot_index, _ctx, _ui| {
-                                    let unit = NUnit::placeholder();
-                                    let unit_id = unit.id;
+                                    let mut unit = NUnit::placeholder();
                                     if let Ok(houses) = team.houses.get_mut() {
                                         if let Some(house) = houses.first_mut() {
-                                            house.units_push(unit).ok();
-                                        }
-                                    }
-                                    if let Ok(slots) = team.slots.get_mut() {
-                                        if let Some(slot) =
-                                            slots.iter_mut().find(|s| s.index == slot_index)
-                                        {
-                                            slot.unit = Owned::new_id(unit_id);
+                                            if let Ok(slots) = team.slots.get_mut() {
+                                                if let Some(slot) =
+                                                    slots.iter_mut().find(|s| s.index == slot_index)
+                                                {
+                                                    unit.state_set(NUnitState::new(
+                                                        next_id(),
+                                                        unit.owner,
+                                                        1,
+                                                        0,
+                                                        [house.id].into(),
+                                                    ))
+                                                    .unwrap();
+                                                    slot.unit = Owned::Loaded(unit);
+                                                }
+                                            }
                                         }
                                     }
                                 },

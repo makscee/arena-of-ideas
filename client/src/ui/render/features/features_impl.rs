@@ -777,9 +777,19 @@ impl FPaste for NHouse {}
 
 impl FPlaceholder for NHouse {
     fn placeholder() -> Self {
-        NHouse::new(next_id(), player_id(), "New House".to_string())
+        let house_id = next_id();
+        NHouse::new(house_id, player_id(), "Placeholder House".to_string())
             .with_color(NHouseColor::placeholder())
-            .with_units([NUnit::placeholder()].into())
+            .with_units(
+                [NUnit::placeholder().with_state(NUnitState::new(
+                    next_id(),
+                    player_id(),
+                    1,
+                    0,
+                    [house_id].into(),
+                ))]
+                .into(),
+            )
     }
 }
 

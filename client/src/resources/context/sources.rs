@@ -875,11 +875,16 @@ impl ContextSource for Sources<'_> {
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         // Update the node itself
         let kind = self.get_node_kind(node_id)?;
-        node_kind_match!(kind, {
-            let _ = self
-                .load_mut::<NodeType>(node_id)?
-                .set_var(var, value.clone());
-        });
+        for kind in kind.with_other_components() {
+            node_kind_match!(kind, {
+                if self
+                    .load_mut::<NodeType>(node_id)
+                    .is_ok_and(|mut n| n.set_var(var, value.clone()).is_ok())
+                {
+                    break;
+                }
+            });
+        }
         // Call var_updated for history tracking
         self.var_updated(node_id, var, value);
         Ok(())
