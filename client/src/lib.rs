@@ -17,6 +17,8 @@ use clap::{Parser, ValueEnum, command};
 use include_dir::include_dir;
 pub use prelude::*;
 
+use crate::plugins::stdb_auth::StdbAuthPlugin;
+
 #[derive(Parser, Debug, Default, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
@@ -125,6 +127,7 @@ pub fn run() {
             AdminPlugin,
             WorldMigrationPlugin,
             StdbPlugin,
+            StdbAuthPlugin,
             NotificationsPlugin,
         ))
         .init_state::<GameState>();
