@@ -96,15 +96,7 @@ pub trait OptionResource: Resource + Sized + Debug {
 
 impl OptionResource for ConnectOption {
     fn fulfill(world: &mut World) {
-        if let Some(login_data) = world.get_resource::<LoginData>() {
-            if login_data.id_token.is_some() {
-                GameState::Connect.set_next(world);
-            } else {
-                warn!("Cannot connect: No id_token available. Please login first.");
-            }
-        } else {
-            warn!("Cannot connect: LoginData resource not found.");
-        }
+        GameState::Connect.set_next(world);
     }
 }
 

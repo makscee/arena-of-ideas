@@ -10,8 +10,8 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
-    Connect,
     Login,
+    Connect,
     Shop,
     Battle,
     MatchOver,
@@ -181,8 +181,8 @@ impl GameState {
 
 #[derive(PartialEq, Eq, Clone, Hash, AsRefStr, Serialize, Deserialize, Debug, Display, Copy)]
 pub enum Pane {
-    Connect,
     Login,
+    Connect,
     MainMenu,
     Battle(BattlePane),
     Shop(ShopPane),

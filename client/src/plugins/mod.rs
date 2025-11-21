@@ -11,6 +11,7 @@ mod node_state;
 mod persistent_data;
 mod representation;
 mod stdb;
+pub mod stdb_auth;
 mod stdb_ext;
 mod tile;
 mod ui;
