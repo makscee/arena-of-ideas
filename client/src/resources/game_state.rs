@@ -12,7 +12,6 @@ pub enum GameState {
     Title,
     Connect,
     Login,
-    Register,
     Shop,
     Battle,
     MatchOver,
@@ -39,9 +38,6 @@ impl GameState {
             }
             GameState::Login => {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Login.into());
-            }
-            GameState::Register => {
-                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Register.into());
             }
             GameState::Title => {
                 let mut tiles = Tiles::default();
@@ -187,7 +183,6 @@ impl GameState {
 pub enum Pane {
     Connect,
     Login,
-    Register,
     MainMenu,
     Battle(BattlePane),
     Shop(ShopPane),
@@ -291,7 +286,6 @@ impl Pane {
                 });
             }
             Pane::Login => LoginPlugin::pane_login(ui, world),
-            Pane::Register => LoginPlugin::pane_register(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
             Pane::Leaderboard => MatchPlugin::pane_leaderboard(ui, world)?,
