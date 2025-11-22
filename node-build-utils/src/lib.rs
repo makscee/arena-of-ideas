@@ -506,7 +506,7 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
                 Some(quote! {
                     if let Ok(mut child) = self.#field_name.take_loaded() {
                         let child_id = child.id();
-                        child.save(ctx)?;
+                        child.save(ctx).track()?;
                         self.#field_name.set_id(child_id)?;
                     }
                 })
@@ -518,7 +518,7 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
                         let mut child_ids = Vec::new();
                         for mut child in children {
                             let child_id = child.id();
-                            child.save(ctx)?;
+                            child.save(ctx).track()?;
                             child_ids.push(child_id);
                         }
                         self.#field_name.set_ids(child_ids)?;
@@ -632,7 +632,7 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
                                 }
                             }
                             for &id in ids {
-                                ctx.add_link(self.id, id)?;
+                                ctx.add_link(self.id, id).track()?;
                             }
                         }
                         OwnedMultiple::Loaded(_) => {
@@ -661,7 +661,7 @@ pub fn generate_save_impl(node: &NodeInfo, context_type: &str) -> proc_macro2::T
                             }
                             // Add new links
                             for &id in ids {
-                                ctx.add_link(self.id, id)?;
+                                ctx.add_link(self.id, id).track()?;
                             }
                         }
                         RefMultiple::_Phantom(_) => {}

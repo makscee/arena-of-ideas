@@ -155,6 +155,7 @@ pub struct NMatch {
     pub battle_history: Vec<u64>,
     pub pending_battle: Option<u64>,
     pub fusion: Option<(u64, u64, Vec<PackedNodes>)>,
+    pub shop_pool: OwnedMultiple<NUnit>,
 }
 
 #[derive(Node)]

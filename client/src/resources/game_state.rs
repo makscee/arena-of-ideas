@@ -124,9 +124,8 @@ impl GameState {
                 // Create Houses tab layout
                 let houses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::HousesList));
                 let house_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseCard));
-                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseColor));
                 let houses_left_column =
-                    tiles.insert_vertical_tile([houses_list, house_card, house_color].into());
+                    tiles.insert_vertical_tile([houses_list, house_card].into());
 
                 // Create 2 rows for abilities and statuses
                 let ability_magic = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityMagic));
@@ -148,12 +147,19 @@ impl GameState {
 
                 let right_content =
                     tiles.insert_vertical_tile([abilities_row, statuses_row].into());
+                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseColor));
 
-                let houses_content =
-                    tiles.insert_horizontal_tile([houses_left_column, right_content].into());
+                let houses_content = tiles.insert_horizontal_tile(
+                    [houses_left_column, right_content, house_color].into(),
+                );
                 if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
                     if let Container::Linear(h) = h {
                         h.shares.set_share(right_content, 3.0);
+                    }
+                }
+                if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
+                    if let Container::Linear(h) = h {
+                        h.shares.set_share(house_color, 0.6);
                     }
                 }
 

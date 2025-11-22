@@ -1,5 +1,8 @@
+use std::mem;
+
 use schema::MatchState;
 use spacetimedb::rand::{Rng, seq::SliceRandom};
+use strum::IntoEnumIterator;
 
 use super::*;
 
@@ -98,58 +101,65 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let price = slot.price;
     let node_id = slot.node_id;
     let card_kind = slot.card_kind;
+    m.pay(ctx, price).track()?;
+    let mid = m.id;
+    let team_id = m.team()?.id;
+    m.take().save(ctx).track()?;
+    let _ = m;
     match card_kind {
         CardKind::Unit => {
-            let unit = NUnit::load(ctx.source(), node_id)?
-                .load_components(ctx)?
-                .take();
-            let house_id = unit
-                .id
-                .get_kind_parent(ctx.rctx(), NodeKind::NHouse)
-                .to_not_found()?;
-            let house_name = ctx.load::<NHouse>(house_id)?.house_name;
-            let house = m
-                .team()?
-                .houses()?
-                .iter()
-                .find(|h| h.house_name == house_name)
-                .to_custom_e_s_fn(|| format!("House {house_name} not found"))?;
-            let mut unit = unit.remap_ids(ctx).with_owner(pid);
-            unit.state_set(NUnitState::new(ctx.next_id(), pid, 1, 0))?;
-            let unit_id = unit.id;
-            unit.save(ctx)?;
-            unit_id.add_parent(ctx.rctx(), house.id)?;
+            let mut team_unit = ctx.load::<NUnit>(node_id)?.load_components(ctx)?.take();
+            let house_id = team_unit.house_ids(ctx)[0];
+            team_unit =
+                team_unit
+                    .remap_ids(ctx)
+                    .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
+            let id = team_unit.id;
+            team_unit.save(ctx)?;
+            id.add_parent(ctx.rctx(), team_id)?;
+            id.add_parent(ctx.rctx(), house_id)?;
         }
         CardKind::House => {
             let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
-            let team_houses = m.team()?.houses()?.clone();
-            if let Some(existing_house) = team_houses
-                .iter()
+            let house_to_use = if let Some(existing_house) = ctx
+                .load::<NTeam>(team_id)?
+                .houses_load(ctx)?
+                .iter_mut()
                 .find(|h| h.house_name == house.house_name)
             {
-                // Stack existing house
-                let existing_house_id = existing_house.id;
-                let mut existing_house = ctx.load::<NHouse>(existing_house_id)?;
-                let existing_house_state = existing_house.state_load(ctx)?;
-                existing_house_state.stax_set(existing_house_state.stax + 1);
-                existing_house_state.clone().save(ctx)?;
+                let stax = existing_house.state()?.stax;
+                existing_house.state_load(ctx)?.stax_set(stax + 1);
+                existing_house.id
             } else {
-                // Add new house with initial state
-                let house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
+                let new_house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
                     ctx.next_id(),
                     pid,
                     1,
                 ));
-                m.team_mut()?.houses_push(house)?;
+                let new_house_id = new_house.id;
+                new_house.save(ctx)?;
+                team_id.add_child(ctx.rctx(), new_house_id)?;
+                new_house_id
+            };
+            let all_core_units = NUnit::collect_owner(ctx, ID_CORE);
+            for _ in 0..5 {
+                if let Some(mut unit) = all_core_units.choose(&mut ctx.rng()).cloned() {
+                    let new_unit = unit
+                        .load_components(ctx)?
+                        .take()
+                        .remap_ids(ctx)
+                        .with_owner(pid);
+                    let new_unit_id = new_unit.id;
+                    new_unit.save(ctx)?;
+                    new_unit_id.add_parent(ctx.rctx(), house_to_use)?;
+                    new_unit_id.add_parent(ctx.rctx(), mid)?;
+                }
             }
         }
     }
-    m.buy(ctx, price).track()?;
-    let mid = m.id;
-    m.take().save(ctx).track()?;
     if card_kind == CardKind::House {
         let mut m = ctx.load::<NMatch>(mid)?;
-        m.fill_shop_case(ctx, true).track()?;
+        m.fill_shop_case(ctx).track()?;
         m.save(ctx).track()?;
     }
     Ok(())
@@ -166,30 +176,19 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
         return Err("Unit not owned by player".into());
     }
 
-    let mut m = player.active_match_load(ctx)?;
-    let mut team = m.team_load(ctx)?;
-
-    // Find and clear existing slot if unit is already placed
-    let mut slots = team.slots_load(ctx)?;
-    for slot in slots.iter_mut() {
-        if slot.unit_load_id(ctx).ok() == Some(unit_id) {
-            slot.unit = Owned::None;
-            slot.clone().save(ctx)?;
-            break;
-        }
-    }
-
-    // Place unit in new slot
-    let mut slots = team.slots_load(ctx)?;
-    if let Some(mut target_slot) = slots.iter_mut().find(|s| s.index == slot_index) {
-        target_slot.unit = Owned::new_id(unit_id);
-        target_slot.clone().save(ctx)?;
+    let m = player.active_match_load(ctx)?;
+    m.unlink_unit(ctx, unit_id)?;
+    if let Some(target_slot) = m
+        .team_load(ctx)?
+        .slots_load(ctx)?
+        .iter_mut()
+        .find(|s| s.index == slot_index)
+    {
+        target_slot.id.add_child(ctx.rctx(), unit_id)?;
     } else {
         return Err("Slot not found".into());
     }
 
-    team.clone().save(ctx)?;
-    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -218,34 +217,20 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     if unit.owner != pid {
         return Err("Unit not owned by player".to_string());
     }
-    let mut m = player.active_match_load(ctx)?;
-    let mut team = m.team_load(ctx)?;
-
-    // Remove unit from slots and add to bench
-    let mut slots = team.slots_load(ctx)?;
-    for slot in slots.iter_mut() {
-        if slot.unit_load_id(ctx).ok() == Some(unit_id) {
-            slot.unit = Owned::None;
-            slot.clone().save(ctx)?;
-            break;
-        }
-    }
-
-    team.benched_push(unit)?;
-    team.clone().save(ctx)?;
-    m.take().save(ctx)?;
+    let m = player.active_match_load(ctx)?;
+    m.unlink_unit(ctx, unit_id)?;
+    let team = m.team_load(ctx)?;
+    team.id.add_child(ctx.rctx(), unit.id)?;
     Ok(())
 }
-
-// match_buy_fusion_slot removed - no longer needed with new fusion system
 
 #[reducer]
 fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let m = player.active_match_load(ctx)?;
-    m.fill_shop_case(ctx, true)?;
-    m.buy(ctx, ctx.global_settings().match_settings.reroll)?;
+    m.fill_shop_case(ctx)?;
+    m.pay(ctx, ctx.global_settings().match_settings.reroll)?;
     player.save(ctx)?;
     Ok(())
 }
@@ -325,7 +310,7 @@ fn match_submit_battle_result(
                     m.set_state(MatchState::ChampionShop);
                     m.floor += 1;
                     m.g += ctx.global_settings().match_settings.initial;
-                    m.fill_shop_case(ctx, false)?;
+                    m.fill_shop_case(ctx)?;
                 } else {
                     m.active_set(false);
                 }
@@ -345,7 +330,7 @@ fn match_submit_battle_result(
 
                 m.state = MatchState::Shop;
                 m.g += ctx.global_settings().match_settings.initial;
-                m.fill_shop_case(ctx, false)?;
+                m.fill_shop_case(ctx)?;
             } else {
                 // Lost regular battle
                 m.lives -= 1;
@@ -356,7 +341,7 @@ fn match_submit_battle_result(
                     // Continue on same floor
                     m.state = MatchState::Shop;
                     m.g += ctx.global_settings().match_settings.initial;
-                    m.fill_shop_case(ctx, false)?;
+                    m.fill_shop_case(ctx)?;
                 }
             }
         }
@@ -448,10 +433,6 @@ fn match_abandon(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-// apply_slots_limit removed - no longer needed with new fusion system
-
-// match_change_action_range and match_change_trigger removed - no longer needed with new fusion system
-
 #[reducer]
 fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
@@ -464,10 +445,11 @@ fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> 
     if unit.owner != pid || target_unit.owner != pid {
         return Err("Units not owned by player".into());
     }
-
     if unit.unit_name != target_unit.unit_name {
         return Err("Units must have same name to stack".into());
     }
+    NUnit::check_stackable(ctx, &mut unit, &mut target_unit)?;
+
     let stax = unit.state_load(ctx)?.stax;
     unit.delete_recursive(ctx);
 
@@ -493,64 +475,16 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     let mut target = ctx.load::<NUnit>(target_id)?.load_components(ctx)?.take();
 
     if source.owner != pid || target.owner != pid {
-        return Err("Units not owned by player".into());
+        return Err("Unit not owned by player".into());
     }
+    source.check_fusible(ctx)?;
+    target.check_fusible(ctx)?;
 
-    let source_state_stax = source.state_load(ctx)?.stax;
-    let source_state_houses = source.house_ids(ctx);
-    let source_action_count: usize = source
-        .behavior_load(ctx)?
-        .reactions
-        .iter()
-        .map(|r| r.actions.len())
-        .sum();
-
-    let target_state_stax = target.state_load(ctx)?.stax;
-    let target_state_houses = target.house_ids(ctx);
-    let target_action_count: usize = target
-        .behavior_load(ctx)?
-        .reactions
-        .iter()
-        .map(|r| r.actions.len())
-        .sum();
-
-    let source_can_fuse = if source_state_houses.is_empty() {
-        source_state_stax >= 2
-    } else {
-        source_state_stax >= source_action_count as i32
-    };
-
-    let target_can_fuse = if target_state_houses.is_empty() {
-        target_state_stax >= 2
-    } else {
-        target_state_stax >= target_action_count as i32
-    };
-
-    if !source_can_fuse || !target_can_fuse {
-        return Err("Units do not meet fusion requirements".into());
-    }
-
-    let source_house = if source_state_houses.is_empty() {
-        source.id
-    } else {
-        *source_state_houses.first().unwrap()
-    };
-
-    let target_house = if target_state_houses.is_empty() {
-        target.id
-    } else {
-        *target_state_houses.first().unwrap()
-    };
-
-    if source_house == target_house {
-        return Err("Units must be from different houses".into());
-    }
-
-    let mut m = player.active_match_load(ctx)?;
+    let m = player.active_match_load(ctx)?;
 
     let mut packed_variants = Vec::new();
-    for fusion_type in [0i32, 1i32, 2i32].iter() {
-        let merged_unit = create_fused_unit(ctx, pid, &mut source, &mut target, *fusion_type)?;
+    for fusion_type in FusionType::iter() {
+        let merged_unit = create_fused_unit(ctx, &mut source, &mut target, fusion_type)?;
         let packed = merged_unit.pack();
         packed_variants.push(packed);
     }
@@ -566,7 +500,7 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
     let mut player = ctx.player()?;
     let pid = player.id;
 
-    let mut m = player.active_match_load(ctx)?;
+    let m = player.active_match_load(ctx)?;
 
     if let Some((source_id, target_id, ref variants)) = m.fusion {
         let fusion_idx = fusion_index as usize;
@@ -578,10 +512,9 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
         let mut merged_unit: NUnit = NUnit::unpack(packed)?;
         merged_unit = merged_unit.remap_ids(ctx).with_owner(pid);
         let merged_unit_id = merged_unit.id;
-        merged_unit.clone().save(ctx)?;
+        merged_unit.save(ctx)?;
 
-        let mut team = m.team_load(ctx)?;
-
+        let team = m.team_load(ctx)?;
         // Delete source and target units
         if let Ok(source) = ctx.load::<NUnit>(source_id) {
             source.delete_recursive(ctx);
@@ -594,23 +527,21 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
         let slots = team.slots_load(ctx)?;
         for slot in slots {
             if let Ok(slot_unit_id) = slot.unit_load_id(ctx) {
-                let mut s = slot.clone();
                 if slot_unit_id == target_id {
-                    s.unit = Owned::new_id(merged_unit_id);
+                    slot.unit = Owned::new_id(merged_unit_id);
+                    slot.set_dirty(true);
                 } else if slot_unit_id == source_id {
-                    s.unit = Owned::None;
+                    slot.unit = Owned::None;
+                    slot.set_dirty(true);
                 }
-                s.clone().save(ctx)?;
             }
         }
-
-        team.clone().save(ctx)?;
     } else {
         return Err("No fusion in progress".into());
     }
-
     m.fusion = None;
-    m.clone().save(ctx)?;
+    m.set_dirty(true);
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -619,149 +550,96 @@ fn match_cancel_fusion(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
 
-    let mut m = player.active_match_load(ctx)?;
+    let m = player.active_match_load(ctx)?;
     m.fusion = None;
-    m.clone().save(ctx)?;
+    m.set_dirty(true);
+    m.take().save(ctx)?;
     Ok(())
 }
 
 fn create_fused_unit(
     ctx: &mut ServerContext,
-    pid: u64,
     source: &mut NUnit,
     target: &mut NUnit,
-    fusion_type: i32,
+    fusion_type: FusionType,
 ) -> NodeResult<NUnit> {
+    let mut new_unit = target.clone();
+    let (desc_a, desc_b) = (
+        &mut target.description()?.description.clone(),
+        &mut source.description()?.description.clone(),
+    );
+
     let source_name = source.unit_name.clone();
     let target_name = target.unit_name.clone();
-
-    let source_state_stax = source.state_load(ctx)?.stax;
-    let source_state_houses = source.house_ids(ctx);
-    let source_reactions = source.behavior_load(ctx)?.reactions.clone();
-    let source_desc = {
-        let desc = source.description_load(ctx)?;
-        desc.clone()
-    };
-    let source_rep = {
-        let rep = source.representation_load(ctx)?;
-        rep.clone()
-    };
-    let source_stats = {
-        let stats = source.stats_load(ctx)?;
-        stats.clone()
-    };
-
-    let target_state_stax = target.state_load(ctx)?.stax;
-    let target_reactions = target.behavior_load(ctx)?.reactions.clone();
-    let target_desc = {
-        let desc = target.description_load(ctx)?;
-        desc.clone()
-    };
-    let target_rep = {
-        let rep = target.representation_load(ctx)?;
-        rep.clone()
-    };
-    let target_stats = {
-        let stats = target.stats_load(ctx)?;
-        stats.clone()
-    };
-
-    let mut new_unit = NUnit::new(ctx.next_id(), pid, String::new());
-
-    // Merge names
     let source_half = source_name.len() / 2;
     let target_half = target_name.len() / 2;
-    new_unit.unit_name_set(format!(
-        "{}{}",
-        &source_name[..source_half],
-        &target_name[target_name.len() - target_half..]
-    ));
-
-    // Merge descriptions
-    let new_desc = NUnitDescription::new(
-        ctx.next_id(),
-        pid,
-        format!("{} {}", source_desc.description, target_desc.description),
+    let (name_a, name_b) = (
+        &mut (&target_name[target.name().len() - target_half..]).to_owned(),
+        &mut (&source_name[..source_half]).to_owned(),
     );
-    let desc_id = new_desc.id;
-    new_desc.save(ctx)?;
-    new_unit.description = Component::new_id(desc_id);
-
-    // Merge behaviors based on fusion type
-    let mut new_reactions = Vec::new();
 
     match fusion_type {
-        0 => {
-            // StickFront
-            if let Some(source_reaction) = source_reactions.first() {
-                let mut combined_actions = source_reaction.actions.clone();
-                for reaction in &target_reactions {
-                    combined_actions.extend(reaction.actions.clone());
-                }
-                new_reactions.push(Reaction {
-                    trigger: source_reaction.trigger.clone(),
-                    actions: combined_actions,
-                });
-            }
+        FusionType::StickFront => {
+            mem::swap(desc_a, desc_b);
+            mem::swap(name_a, name_b);
         }
-        1 => {
-            // StickBack
-            if let Some(target_reaction) = target_reactions.first() {
-                let mut combined_actions = target_reaction.actions.clone();
-                for reaction in &source_reactions {
-                    combined_actions.extend(reaction.actions.clone());
-                }
-                new_reactions.push(Reaction {
-                    trigger: target_reaction.trigger.clone(),
-                    actions: combined_actions,
-                });
-            }
+        FusionType::StickBack | FusionType::PushBack => {}
+    }
+    new_unit.unit_name = format!("{name_a}{name_b}");
+    new_unit.description_load(ctx)?.description = format!("{desc_a}\n{desc_b}");
+    let reactions = &mut new_unit.behavior_load(ctx)?.reactions;
+    match fusion_type {
+        FusionType::StickFront => {
+            *reactions = source.behavior()?.reactions.clone();
+            reactions.last_mut().unwrap().actions.extend(
+                target
+                    .behavior()?
+                    .reactions
+                    .first()
+                    .unwrap()
+                    .actions
+                    .clone()
+                    .into_iter(),
+            );
+            reactions.extend(target.behavior()?.reactions[1..].iter().cloned());
         }
-        2 => {
-            // PushBack
-            new_reactions.extend(source_reactions.clone());
-            new_reactions.extend(target_reactions.clone());
+        FusionType::StickBack => {
+            reactions.last_mut().unwrap().actions.extend(
+                source
+                    .behavior()?
+                    .reactions
+                    .first()
+                    .unwrap()
+                    .actions
+                    .clone()
+                    .into_iter(),
+            );
+            reactions.extend(source.behavior()?.reactions[1..].iter().cloned());
         }
-        _ => return Err("Invalid fusion type".into()),
+        FusionType::PushBack => {
+            reactions.extend(source.behavior()?.reactions.clone().into_iter());
+        }
     }
 
-    let new_behavior = NUnitBehavior::new(ctx.next_id(), pid, new_reactions);
-    let behavior_id = new_behavior.id;
-    new_behavior.save(ctx)?;
-    new_unit.behavior = Component::new_id(behavior_id);
+    let actions = &mut new_unit.representation_load(ctx)?.material.0;
+    match fusion_type {
+        FusionType::StickFront => {
+            *actions = source.representation()?.material.0.clone();
+            actions.extend(target.representation()?.material.0.clone().into_iter());
+        }
+        FusionType::StickBack | FusionType::PushBack => {
+            actions.extend(source.representation()?.material.0.clone().into_iter());
+        }
+    }
+    new_unit.stats_load(ctx)?.hp += source.stats()?.hp;
+    new_unit.stats_load(ctx)?.pwr += source.stats()?.pwr;
 
-    // Merge representations
-    let mut merged_material = source_rep.material.clone();
-    merged_material.0.extend(target_rep.material.0.clone());
-    let new_rep = NUnitRepresentation::new(ctx.next_id(), pid, merged_material);
-    let rep_id = new_rep.id;
-    new_rep.save(ctx)?;
-    new_unit.representation = Component::new_id(rep_id);
-
-    // Merge stats
-    let new_stats = NUnitStats::new(
-        ctx.next_id(),
-        pid,
-        source_stats.pwr + target_stats.pwr,
-        source_stats.hp + target_stats.hp,
-    );
-    let stats_id = new_stats.id;
-    new_stats.save(ctx)?;
-    new_unit.stats = Component::new_id(stats_id);
-
-    for parent in source_state_houses {
-        target.id.add_parent(ctx.rctx(), parent)?;
+    for parent in source.house_ids(ctx) {
+        new_unit.id.add_parent(ctx.rctx(), parent)?;
     }
 
-    let new_state = NUnitState::new(ctx.next_id(), pid, source_state_stax + target_state_stax, 0);
-    let state_id = new_state.id;
-    new_state.save(ctx)?;
-    new_unit.state = Component::new_id(state_id);
-
-    let result_id = new_unit.id;
-    new_unit.save(ctx)?;
-
-    ctx.load::<NUnit>(result_id)
+    new_unit.state_load(ctx)?.stax += source.state()?.stax;
+    Ok(new_unit)
 }
 
 #[reducer]
@@ -795,14 +673,14 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     let mid = m.id;
     m.save(ctx)?;
     let mut m = ctx.load::<NMatch>(mid).track()?;
-    m.fill_shop_case(ctx, false).track()?;
+    m.fill_shop_case(ctx).track()?;
     player.active_match_set(m)?;
     player.save(ctx).track()?;
     Ok(())
 }
 
 impl NMatch {
-    fn buy(&mut self, _ctx: &ServerContext, price: i32) -> NodeResult<()> {
+    fn pay(&mut self, _ctx: &ServerContext, price: i32) -> NodeResult<()> {
         if self.g < price {
             return Err(NodeError::custom(format!(
                 "Can't afford: price = {price} match g = {}",
@@ -813,81 +691,37 @@ impl NMatch {
         Ok(())
     }
     // unlink_unit removed - no longer needed with new fusion system
-    fn fill_shop_case(&mut self, ctx: &ServerContext, units: bool) -> NodeResult<()> {
+    fn fill_shop_case(&mut self, ctx: &ServerContext) -> NodeResult<()> {
         let gs = ctx.global_settings();
 
         let unit_price = gs.match_settings.unit_buy;
         let house_price = gs.match_settings.house_buy;
         let house_chance = gs.match_settings.house_chance;
 
-        let owned_houses: HashSet<String> = HashSet::from_iter(
-            self.team_load(ctx)
-                .track()?
-                .houses_load(ctx)
-                .track()
-                .map(|h| h.into_iter().map(|h| h.house_name.clone()).collect_vec())
-                .unwrap_or_default(),
-        );
         let all_houses = NHouse::collect_owner(ctx, ID_CORE);
         let all_house_ids = all_houses.iter().map(|h| h.id).collect_vec();
-        let units_from_owned_houses = all_houses
-            .into_iter()
-            .filter(|h| owned_houses.contains(&h.house_name))
-            .flat_map(|h| {
-                ctx.get_children_of_kind(h.id, NodeKind::NUnit)
-                    .unwrap_or_default()
-            })
-            .collect_vec();
 
-        let has_units = units && !units_from_owned_houses.is_empty();
-        let has_houses = !all_house_ids.is_empty();
+        let shop_pool_units = self.shop_pool_load(ctx).track()?;
+        let has_units = !shop_pool_units.is_empty();
 
         let shop_case = (0..4)
             .map(|_| {
-                if !has_units {
-                    if has_houses {
-                        ShopSlot {
-                            card_kind: CardKind::House,
-                            node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: house_price,
-                            buy_text: None,
-                        }
-                    } else {
-                        ShopSlot {
-                            card_kind: CardKind::Unit,
-                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: unit_price,
-                            buy_text: None,
-                        }
-                    }
-                } else if !has_houses {
+                let show_house = !has_units || ctx.rng().gen_bool(house_chance as f64 / 100.0);
+                if show_house {
                     ShopSlot {
-                        card_kind: CardKind::Unit,
-                        node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
+                        card_kind: CardKind::House,
+                        node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
                         sold: false,
-                        price: unit_price,
+                        price: house_price,
                         buy_text: None,
                     }
                 } else {
-                    let show_house = ctx.rng().gen_bool(house_chance as f64 / 100.0);
-                    if show_house {
-                        ShopSlot {
-                            card_kind: CardKind::House,
-                            node_id: *all_house_ids.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: house_price,
-                            buy_text: None,
-                        }
-                    } else {
-                        ShopSlot {
-                            card_kind: CardKind::Unit,
-                            node_id: *units_from_owned_houses.choose(&mut ctx.rng()).unwrap(),
-                            sold: false,
-                            price: unit_price,
-                            buy_text: None,
-                        }
+                    ShopSlot {
+                        card_kind: CardKind::Unit,
+                        node_id: shop_pool_units.choose(&mut ctx.rng()).unwrap().id,
+                        sold: false,
+                        price: unit_price,
+                        buy_text: None,
                     }
                 }
             })
@@ -900,5 +734,60 @@ impl NMatch {
             .into(),
         );
         Ok(())
+    }
+}
+
+impl NMatch {
+    fn unlink_unit(&mut self, ctx: &mut ServerContext, unit_id: u64) -> NodeResult<Option<u64>> {
+        self.team_load(ctx)?.id.remove_child(ctx.rctx(), unit_id);
+        if let Some(id) = unit_id.get_kind_parent(ctx.rctx(), NodeKind::NTeamSlot) {
+            ctx.remove_link(id, unit_id)?;
+            return Ok(Some(id));
+        }
+        Ok(None)
+    }
+}
+
+impl NUnit {
+    fn check_fusible(&mut self, ctx: &ServerContext) -> NodeResult<()> {
+        if self.house_ids(ctx).len() == 1 {
+            if self.state_load(ctx)?.stax >= 2 {
+                return Err(NodeError::custom(format!(
+                    "Unit {} needs 2+ stax to be stackable",
+                    self.id
+                )));
+            }
+        } else {
+            let actions = self
+                .behavior_load(ctx)?
+                .reactions
+                .iter()
+                .map(|r| r.actions.len() as i32)
+                .sum::<i32>();
+            let stax = self.state_load(ctx)?.stax;
+            if actions > stax {
+                return Err(NodeError::custom(format!(
+                    "Unit {} needs {} stax to be stackable",
+                    self.id,
+                    actions - stax
+                )));
+            }
+        }
+        Ok(())
+    }
+    fn check_stackable(ctx: &ServerContext, a: &mut NUnit, b: &mut NUnit) -> NodeResult<()> {
+        let a_houses = a.house_ids(ctx);
+        let b_houses = b.house_ids(ctx);
+        debug!("{a_houses:?} {b_houses:?}");
+        if a_houses.len() == 1 && b_houses.contains(&a_houses[0])
+            || b_houses.len() == 1 && a_houses.contains(&b_houses[0])
+        {
+            return Ok(());
+        } else {
+            Err(NodeError::custom(format!(
+                "Units {} and {} cannot be stacked",
+                a.id, b.id
+            )))
+        }
     }
 }

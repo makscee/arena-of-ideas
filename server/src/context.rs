@@ -135,7 +135,8 @@ impl<'a> ContextSource for ServerSource<'a> {
     }
 
     fn remove_link(&mut self, parent_id: u64, child_id: u64) -> NodeResult<()> {
-        parent_id.remove_child(&self.ctx, child_id).track()
+        parent_id.remove_child(&self.ctx, child_id);
+        Ok(())
     }
 
     fn clear_links(&mut self, node_id: u64) -> NodeResult<()> {

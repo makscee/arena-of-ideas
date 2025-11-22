@@ -67,7 +67,6 @@ impl Confirmation {
             if let Some(content) = &mut self.content {
                 ui.vertical(|ui| {
                     let r = rm(world).close_requested;
-                    dbg!(&r);
                     (content)(ui, world, r);
                 });
             }
@@ -80,7 +79,6 @@ impl Confirmation {
                 });
                 ui[1].vertical_centered_justified(|ui| {
                     if Button::new(&self.accept_name).ui(ui).clicked() {
-                        debug!("Accept pressed");
                         Self::close_current(true);
                     }
                 });

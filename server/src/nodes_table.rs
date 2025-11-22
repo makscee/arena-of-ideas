@@ -249,8 +249,8 @@ pub trait NodeIdExt {
     fn kind(self, ctx: &ReducerContext) -> Option<NodeKind>;
     fn add_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
     fn add_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
-    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
-    fn remove_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()>;
+    fn remove_parent(self, ctx: &ReducerContext, id: u64);
+    fn remove_child(self, ctx: &ReducerContext, id: u64);
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn get_kind_child(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
     fn find_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64>;
@@ -299,7 +299,7 @@ impl NodeIdExt for u64 {
         Ok(())
     }
 
-    fn remove_parent(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
+    fn remove_parent(self, ctx: &ReducerContext, id: u64) {
         let links: Vec<_> = ctx
             .db
             .node_links()
@@ -309,10 +309,9 @@ impl NodeIdExt for u64 {
         for l in links {
             ctx.db.node_links().id().delete(l.id);
         }
-        Ok(())
     }
 
-    fn remove_child(self, ctx: &ReducerContext, id: u64) -> NodeResult<()> {
+    fn remove_child(self, ctx: &ReducerContext, id: u64) {
         let links: Vec<_> = ctx
             .db
             .node_links()
@@ -322,7 +321,6 @@ impl NodeIdExt for u64 {
         for l in links {
             ctx.db.node_links().id().delete(l.id);
         }
-        Ok(())
     }
 
     fn get_kind_parent(self, ctx: &ReducerContext, kind: NodeKind) -> Option<u64> {

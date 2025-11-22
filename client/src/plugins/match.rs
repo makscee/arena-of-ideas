@@ -273,16 +273,17 @@ impl MatchPlugin {
                         }
                         TeamAction::MoveToEmptySlot {
                             unit_id,
-                            slot_index: _,
+                            slot_index,
                         } => {
                             // For now, just bench and un-bench
-                            cn().reducers.match_bench_unit(*unit_id).notify_error_op();
+                            cn().reducers
+                                .match_move_unit(*unit_id, *slot_index)
+                                .notify_error_op();
                         }
                         TeamAction::MoveOverUnit {
                             unit_id,
                             target_unit_id,
                         } => {
-                            // Try stacking (fusion will be handled by server)
                             cn().reducers
                                 .match_stack_unit(*unit_id, *target_unit_id)
                                 .notify_error_op();

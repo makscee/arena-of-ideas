@@ -191,7 +191,7 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
                         let check =
                             fixed.contains(&NodeKind::NHouseColor) && (has_ability || has_status);
                         info!(
-                            "Check unit = {check}: {} {} {}",
+                            "Check house = {check}: {} {} {}",
                             node.id,
                             node.data,
                             fixed.iter().join(", ")
