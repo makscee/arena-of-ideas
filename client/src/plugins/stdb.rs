@@ -122,6 +122,23 @@ fn subscribe_table_updates() {
         debug!("delete link {link:?}");
         queue_update(StdbUpdate::LinkDelete(link.clone()));
     });
+    db.votes().on_update(|_, old, new| {
+        if old.player_id == player_id() {
+            if old.upvotes != new.upvotes {
+                format!(
+                    "[green ⬆️] Upvotes {}",
+                    (new.upvotes - old.upvotes).cstr_expanded()
+                )
+                .notify_op();
+            } else if old.downvotes != new.downvotes {
+                format!(
+                    "[red ⬇️] Downvotes {}",
+                    (new.downvotes - old.downvotes).cstr_expanded()
+                )
+                .notify_op();
+            }
+        }
+    });
 }
 
 fn queue_update(update: StdbUpdate) {
