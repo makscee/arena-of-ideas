@@ -9,11 +9,9 @@ impl Plugin for ConfirmationPlugin {
 
 pub struct Confirmation {
     text: Cstr,
-    accept: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     accept_name: String,
-    cancel: Option<Box<dyn FnOnce(&mut World) + Send + Sync>>,
     cancel_name: String,
-    content: Option<Box<dyn Fn(&mut Ui, &mut World) -> bool + Send + Sync>>,
+    content: Option<Box<dyn FnMut(&mut Ui, &mut World, Option<bool>) + Send + Sync>>,
     fullscreen: bool,
 }
 
@@ -21,7 +19,7 @@ pub struct Confirmation {
 struct ConfirmationResource {
     stack: Vec<Confirmation>,
     new: Vec<Confirmation>,
-    close_requested: bool,
+    close_requested: Option<bool>,
 }
 fn rm<'a>(world: &'a mut World) -> Mut<'a, ConfirmationResource> {
     world.resource_mut::<ConfirmationResource>()
@@ -32,23 +30,11 @@ impl Confirmation {
     pub fn new(text: &str) -> Self {
         Self {
             text: text.cstr_s(CstrStyle::Heading2),
-            accept: None,
             accept_name: "Accept".into(),
-            cancel: None,
             cancel_name: "Cancel".into(),
             content: None,
             fullscreen: false,
         }
-    }
-    #[must_use]
-    pub fn accept(mut self, action: impl FnOnce(&mut World) + Send + Sync + 'static) -> Self {
-        self.accept = Some(Box::new(action));
-        self
-    }
-    #[must_use]
-    pub fn cancel(mut self, action: impl FnOnce(&mut World) + Send + Sync + 'static) -> Self {
-        self.cancel = Some(Box::new(action));
-        self
     }
     #[must_use]
     pub fn accept_name(mut self, name: impl Into<String>) -> Self {
@@ -63,7 +49,7 @@ impl Confirmation {
     #[must_use]
     pub fn content(
         mut self,
-        content: impl Fn(&mut Ui, &mut World) -> bool + Send + Sync + 'static,
+        content: impl FnMut(&mut Ui, &mut World, Option<bool>) + Send + Sync + 'static,
     ) -> Self {
         self.content = Some(Box::new(content));
         self
@@ -78,40 +64,37 @@ impl Confirmation {
             ui.vertical_centered_justified(|ui| {
                 self.text.as_label(ui.style()).wrap().ui(ui);
             });
-            if let Some(content) = &self.content {
+            if let Some(content) = &mut self.content {
                 ui.vertical(|ui| {
-                    if (content)(ui, world) {
-                        Self::close_current(world);
-                    }
+                    let r = rm(world).close_requested;
+                    dbg!(&r);
+                    (content)(ui, world, r);
                 });
             }
             space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
                     if Button::new(&self.cancel_name).ui(ui).clicked() {
-                        Self::close_current(world);
-                        if let Some(action) = self.cancel.take() {
-                            action(world);
-                        }
+                        Self::close_current(false);
                     }
                 });
                 ui[1].vertical_centered_justified(|ui| {
-                    if self.accept.is_some() {
-                        if Button::new(&self.accept_name).ui(ui).clicked() {
-                            Self::close_current(world);
-                            self.accept.take().unwrap()(world);
-                        }
+                    if Button::new(&self.accept_name).ui(ui).clicked() {
+                        debug!("Accept pressed");
+                        Self::close_current(true);
                     }
                 });
-            })
+            });
         })
     }
 
     pub fn push(self, world: &mut World) {
         rm(world).new.push(self);
     }
-    pub fn close_current(world: &mut World) {
-        rm(world).close_requested = true;
+    pub fn close_current(accepted: bool) {
+        op(move |world| {
+            rm(world).close_requested = Some(accepted);
+        });
     }
     pub fn pop(world: &mut World) -> Option<Self> {
         rm(world).stack.pop()
@@ -119,11 +102,8 @@ impl Confirmation {
     pub fn show_current(ctx: &egui::Context, world: &mut World) {
         if let Some(mut c) = rm(world).stack.pop() {
             c.ui(ctx, world);
-            let esc = c.cancel.is_some() && just_pressed(KeyCode::Escape, world);
             let mut r = rm(world);
-            if r.close_requested || esc {
-                r.close_requested = false;
-            } else {
+            if !r.close_requested.take().is_some() {
                 r.stack.push(c);
             }
         }

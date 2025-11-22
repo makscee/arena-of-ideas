@@ -52,10 +52,12 @@ impl AdminPlugin {
                         ui.label(node.data);
                         if "[red delete node]".cstr().button(ui).clicked() {
                             Confirmation::new("Delete Node?")
-                                .cancel(|_| {})
-                                .accept(move |world| {
-                                    cn().reducers.admin_delete_node_recursive(id).notify(world);
+                                .content(move |_ui, world, button_pressed| {
+                                    if let Some(true) = button_pressed {
+                                        cn().reducers.admin_delete_node_recursive(id).notify(world);
+                                    }
                                 })
+                                .accept_name("Delete")
                                 .push(world);
                         }
                     });
@@ -96,12 +98,14 @@ impl AdminPlugin {
                                     .add_dangerous_action("Delete", |id, _| {
                                         op(move |world| {
                                             Confirmation::new("Delete Node?")
-                                                .cancel(|_| {})
-                                                .accept(move |world| {
-                                                    cn().reducers
-                                                        .admin_delete_node_recursive(id)
-                                                        .notify(world);
+                                                .content(move |_ui, world, button_pressed| {
+                                                    if let Some(true) = button_pressed {
+                                                        cn().reducers
+                                                            .admin_delete_node_recursive(id)
+                                                            .notify(world);
+                                                    }
                                                 })
+                                                .accept_name("Delete")
                                                 .push(world);
                                         });
                                         None

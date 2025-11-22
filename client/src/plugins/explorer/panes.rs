@@ -105,9 +105,13 @@ impl ExplorerPanes {
             let id = ctx.first_child(parent, kind)?;
             return ui
                 .vertical_centered_justified(|ui| -> NodeResult<()> {
-                    ctx.load::<T>(id)?
-                        .description_cstr(ctx)
-                        .cstr_s(CstrStyle::Heading)
+                    let node = ctx.load::<T>(id)?;
+                    if node.kind() == NodeKind::NUnitRepresentation {
+                        node.display(ctx, ui);
+                        ui.separator();
+                    }
+                    node.description_cstr(ctx)
+                        .cstr_s(CstrStyle::Bold)
                         .label_w(ui);
                     Ok(())
                 })

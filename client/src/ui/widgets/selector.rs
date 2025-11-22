@@ -5,6 +5,37 @@ use egui::ComboBox;
 pub struct Selector;
 
 impl Selector {
+    fn fuzzy_match(text: &str, pattern: &str) -> Option<usize> {
+        let text_lower = text.to_lowercase();
+
+        if pattern.is_empty() {
+            return Some(0);
+        }
+
+        let mut pattern_chars = pattern.chars().peekable();
+        let mut score = 0;
+        let mut last_match_pos = 0;
+
+        for (pos, c) in text_lower.chars().enumerate() {
+            if Some(c) == pattern_chars.peek().copied() {
+                pattern_chars.next();
+                let gap = if last_match_pos == 0 {
+                    pos
+                } else {
+                    pos - last_match_pos
+                };
+                score += if gap == 1 { 10 } else { 5 };
+                last_match_pos = pos;
+            }
+        }
+
+        if pattern_chars.peek().is_none() {
+            Some(score)
+        } else {
+            None
+        }
+    }
+
     pub fn ui_enum<E: ToCstr + AsRef<str> + IntoEnumIterator + Clone + PartialEq>(
         value: &mut E,
         ui: &mut Ui,
@@ -43,17 +74,21 @@ impl Selector {
                 });
                 lookup.label(ui);
                 let variants = E::iter()
-                    .sorted_by(|a, _| {
-                        if a.as_ref().to_lowercase().contains(&lookup) {
-                            Ordering::Less
-                        } else {
-                            Ordering::Greater
+                    .sorted_by(|a, b| {
+                        let a_match = Self::fuzzy_match(a.as_ref(), &lookup);
+                        let b_match = Self::fuzzy_match(b.as_ref(), &lookup);
+                        match (a_match, b_match) {
+                            (Some(a_score), Some(b_score)) => b_score.cmp(&a_score),
+                            (Some(_), None) => Ordering::Less,
+                            (None, Some(_)) => Ordering::Greater,
+                            (None, None) => Ordering::Equal,
                         }
                     })
                     .collect_vec();
                 for e in variants {
-                    let grayed_out =
-                        !lookup.is_empty() && !e.as_ref().to_lowercase().contains(&lookup);
+                    let is_match =
+                        lookup.is_empty() || Self::fuzzy_match(e.as_ref(), &lookup).is_some();
+                    let grayed_out = !lookup.is_empty() && !is_match;
                     let text = if grayed_out {
                         e.as_ref().cstr_c(ui.visuals().weak_text_color())
                     } else {

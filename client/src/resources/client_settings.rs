@@ -103,19 +103,17 @@ pub fn animation_time() -> f32 {
 
 pub fn show_settings_confirmation(world: &mut World) {
     Confirmation::new("Settings")
-        .content(|ui, _world| {
+        .content(|ui, _world, button_pressed| {
             let mut settings_mut = pd().client_settings.clone();
             settings_mut.generate_settings_ui(ui);
-            false
+            if let Some(true) = button_pressed {
+                pd_save_settings();
+            } else if let Some(false) = button_pressed {
+                pd_discard_settings();
+            }
         })
         .accept_name("Save")
-        .accept(|_world| {
-            pd_save_settings();
-        })
         .cancel_name("Discard")
-        .cancel(|_world| {
-            pd_discard_settings();
-        })
         .push(world);
 }
 

@@ -249,8 +249,10 @@ impl Pane {
                                 {
                                     Confirmation::new("Abandon current run?")
                                         .accept_name("[red Abandon]")
-                                        .accept(|world| {
-                                            cn().reducers.match_abandon().notify_error(world);
+                                        .content(|_ui, world, button_pressed| {
+                                            if let Some(true) = button_pressed {
+                                                cn().reducers.match_abandon().notify_error(world);
+                                            }
                                         })
                                         .push(world);
                                 }
