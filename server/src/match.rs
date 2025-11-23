@@ -445,10 +445,13 @@ fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> 
     if unit.owner != pid || target_unit.owner != pid {
         return Err("Units not owned by player".into());
     }
-    if unit.unit_name != target_unit.unit_name {
-        return Err("Units must have same name to stack".into());
+    if !unit.check_stackable(&mut target_unit, ctx)? {
+        return Err(NodeError::custom(format!(
+            "Units {} and {} cannot be stacked",
+            unit.id, target_unit.id
+        ))
+        .into());
     }
-    NUnit::check_stackable(ctx, &mut unit, &mut target_unit)?;
 
     let stax = unit.state_load(ctx)?.stax;
     unit.delete_recursive(ctx);
@@ -477,19 +480,34 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     if source.owner != pid || target.owner != pid {
         return Err("Unit not owned by player".into());
     }
-    source.check_fusible(ctx)?;
-    target.check_fusible(ctx)?;
+    if !source.check_fusible(ctx)? {
+        return Err(NodeError::custom(format!("Unit {} is not fusible", source.id)).into());
+    }
+    if !target.check_fusible(ctx)? {
+        return Err(NodeError::custom(format!("Unit {} is not fusible", target.id)).into());
+    }
+    if !source.check_fusible_with(&mut target, ctx)? {
+        return Err(NodeError::custom(format!(
+            "Units {} and {} cannot be fused together",
+            source.id, target.id
+        ))
+        .into());
+    }
 
     let m = player.active_match_load(ctx)?;
 
     let mut packed_variants = Vec::new();
     for fusion_type in FusionType::iter() {
-        let merged_unit = create_fused_unit(ctx, &mut source, &mut target, fusion_type)?;
-        let packed = merged_unit.pack();
-        packed_variants.push(packed);
+        packed_variants.push(create_fused_unit(
+            ctx,
+            &mut source,
+            &mut target,
+            fusion_type,
+        )?);
     }
 
     m.fusion = Some((source_id, target_id, packed_variants));
+    m.set_dirty(true);
     m.take().save(ctx)?;
     Ok(())
 }
@@ -498,50 +516,35 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
 fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
-    let pid = player.id;
-
     let m = player.active_match_load(ctx)?;
-
-    if let Some((source_id, target_id, ref variants)) = m.fusion {
-        let fusion_idx = fusion_index as usize;
-        if fusion_idx >= variants.len() {
-            return Err("Invalid fusion type index".into());
-        }
-
-        let packed = &variants[fusion_idx];
-        let mut merged_unit: NUnit = NUnit::unpack(packed)?;
-        merged_unit = merged_unit.remap_ids(ctx).with_owner(pid);
-        let merged_unit_id = merged_unit.id;
-        merged_unit.save(ctx)?;
-
-        let team = m.team_load(ctx)?;
-        // Delete source and target units
-        if let Ok(source) = ctx.load::<NUnit>(source_id) {
-            source.delete_recursive(ctx);
-        }
-        if let Ok(target) = ctx.load::<NUnit>(target_id) {
-            target.delete_recursive(ctx);
-        }
-
-        // Replace target unit with merged unit in slots, remove source from slots
-        let slots = team.slots_load(ctx)?;
-        for slot in slots {
-            if let Ok(slot_unit_id) = slot.unit_load_id(ctx) {
-                if slot_unit_id == target_id {
-                    slot.unit = Owned::new_id(merged_unit_id);
-                    slot.set_dirty(true);
-                } else if slot_unit_id == source_id {
-                    slot.unit = Owned::None;
-                    slot.set_dirty(true);
-                }
-            }
-        }
-    } else {
+    let Some((source_id, target_id, ref variants)) = m.fusion.take() else {
         return Err("No fusion in progress".into());
-    }
-    m.fusion = None;
+    };
     m.set_dirty(true);
     m.take().save(ctx)?;
+    let fusion_idx = fusion_index as usize;
+    if fusion_idx >= variants.len() {
+        return Err("Invalid fusion type index".into());
+    }
+    let houses = target_id
+        .collect_kind_parents(ctx.rctx(), NodeKind::NHouse)
+        .into_iter()
+        .chain(source_id.collect_kind_parents(ctx.rctx(), NodeKind::NHouse))
+        .collect_vec();
+    let slot = target_id
+        .find_kind_parent(ctx.rctx(), NodeKind::NTeamSlot)
+        .to_not_found()?;
+    TNode::delete_by_id_recursive(ctx.rctx(), target_id);
+    TNode::delete_by_id_recursive(ctx.rctx(), source_id);
+
+    let packed = &variants[fusion_idx];
+    let merged_unit = NUnit::unpack(packed)?.remap_ids(ctx).with_owner(player.id);
+    let unit_id = merged_unit.id;
+    merged_unit.clone().save(ctx)?;
+    for house in houses {
+        house.add_child(ctx.rctx(), unit_id).track()?;
+    }
+    slot.add_child(ctx.rctx(), unit_id).track()?;
     Ok(())
 }
 
@@ -562,29 +565,29 @@ fn create_fused_unit(
     source: &mut NUnit,
     target: &mut NUnit,
     fusion_type: FusionType,
-) -> NodeResult<NUnit> {
+) -> NodeResult<PackedNodes> {
     let mut new_unit = target.clone();
     let (desc_a, desc_b) = (
         &mut target.description()?.description.clone(),
         &mut source.description()?.description.clone(),
     );
 
-    let source_name = source.unit_name.clone();
-    let target_name = target.unit_name.clone();
-    let source_half = source_name.len() / 2;
-    let target_half = target_name.len() / 2;
-    let (name_a, name_b) = (
-        &mut (&target_name[target.name().len() - target_half..]).to_owned(),
-        &mut (&source_name[..source_half]).to_owned(),
-    );
-
+    let mut front_name = target.unit_name.clone();
+    let mut back_name = source.unit_name.clone();
     match fusion_type {
         FusionType::StickFront => {
             mem::swap(desc_a, desc_b);
-            mem::swap(name_a, name_b);
+            mem::swap(&mut front_name, &mut back_name);
         }
         FusionType::StickBack | FusionType::PushBack => {}
     }
+    let front_half = front_name.len() / 2;
+    let back_half = back_name.len() / 2;
+    let (name_a, name_b) = (
+        &mut (&front_name[..front_half]).to_owned(),
+        &mut (&back_name[back_name.len() - back_half..]).to_owned(),
+    );
+
     new_unit.unit_name = format!("{name_a}{name_b}");
     new_unit.description_load(ctx)?.description = format!("{desc_a}\n{desc_b}");
     let reactions = &mut new_unit.behavior_load(ctx)?.reactions;
@@ -625,21 +628,18 @@ fn create_fused_unit(
     match fusion_type {
         FusionType::StickFront => {
             *actions = source.representation()?.material.0.clone();
+            actions.push(PainterAction::paint);
             actions.extend(target.representation()?.material.0.clone().into_iter());
         }
         FusionType::StickBack | FusionType::PushBack => {
+            actions.push(PainterAction::paint);
             actions.extend(source.representation()?.material.0.clone().into_iter());
         }
     }
     new_unit.stats_load(ctx)?.hp += source.stats()?.hp;
     new_unit.stats_load(ctx)?.pwr += source.stats()?.pwr;
-
-    for parent in ctx.collect_kind_parents(source.id, NodeKind::NHouse)? {
-        new_unit.id.add_parent(ctx.rctx(), parent)?;
-    }
-
     new_unit.state_load(ctx)?.stax += source.state()?.stax;
-    Ok(new_unit)
+    Ok(new_unit.pack())
 }
 
 #[reducer]
@@ -745,49 +745,5 @@ impl NMatch {
             return Ok(Some(id));
         }
         Ok(None)
-    }
-}
-
-impl NUnit {
-    fn check_fusible(&mut self, ctx: &ServerContext) -> NodeResult<()> {
-        if ctx.collect_kind_parents(self.id, NodeKind::NHouse)?.len() == 1 {
-            if self.state_load(ctx)?.stax >= 2 {
-                return Err(NodeError::custom(format!(
-                    "Unit {} needs 2+ stax to be stackable",
-                    self.id
-                )));
-            }
-        } else {
-            let actions = self
-                .behavior_load(ctx)?
-                .reactions
-                .iter()
-                .map(|r| r.actions.len() as i32)
-                .sum::<i32>();
-            let stax = self.state_load(ctx)?.stax;
-            if actions > stax {
-                return Err(NodeError::custom(format!(
-                    "Unit {} needs {} stax to be stackable",
-                    self.id,
-                    actions - stax
-                )));
-            }
-        }
-        Ok(())
-    }
-    fn check_stackable(ctx: &ServerContext, a: &mut NUnit, b: &mut NUnit) -> NodeResult<()> {
-        let a_houses = ctx.collect_kind_parents(a.id, NodeKind::NHouse)?;
-        let b_houses = ctx.collect_kind_parents(b.id, NodeKind::NHouse)?;
-        debug!("{a_houses:?} {b_houses:?}");
-        if a_houses.len() == 1 && b_houses.contains(&a_houses[0])
-            || b_houses.len() == 1 && a_houses.contains(&b_houses[0])
-        {
-            return Ok(());
-        } else {
-            Err(NodeError::custom(format!(
-                "Units {} and {} cannot be stacked",
-                a.id, b.id
-            )))
-        }
     }
 }

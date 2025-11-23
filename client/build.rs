@@ -151,6 +151,8 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         .filter(|node| node.is_named)
         .map(|node| generate_named_node_impl(node));
 
+    let unit_check_functions = generate_unit_check_functions("ClientContext");
+
     quote! {
         #(#node_structs)*
 
@@ -174,6 +176,8 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         #named_node_kind_match_macro
 
         #(#named_node_impls)*
+
+        #unit_check_functions
     }
 }
 

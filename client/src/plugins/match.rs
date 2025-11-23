@@ -75,8 +75,8 @@ impl MatchPlugin {
                 return Ok(());
             }
 
-            if let Some((source_id, target_id, variants)) = &m.fusion {
-                Self::show_fusion_window(ctx, ui, *source_id, *target_id, variants.clone())?;
+            if let Some((_, _, variants)) = &m.fusion {
+                Self::show_fusion_window(ctx, ui, variants.clone())?;
                 return Ok(());
             }
 
@@ -253,20 +253,18 @@ impl MatchPlugin {
                     },
                 )
                 .with_drag_over_handler(|_source_id, _target_id, ctx| {
-                    // Check if units can be fused
-                    if let (Ok(source), Ok(target)) =
+                    if let (Ok(mut source), Ok(mut target)) =
                         (ctx.load::<NUnit>(_source_id), ctx.load::<NUnit>(_target_id))
                     {
-                        // If same unit name, stack them
-                        if source.unit_name == target.unit_name {
+                        if source.check_stackable(&mut target, ctx).unwrap_or(false) {
                             return DragOverResult::Stack;
+                        } else if source.check_fusible_with(&mut target, ctx).unwrap_or(false) {
+                            return DragOverResult::Fuse;
                         }
-                        // Otherwise, could check for fusion possibilities here
-                        // For now just allow swap
                     }
                     DragOverResult::Swap
                 })
-                .with_action_handler(|_ctx: &ClientContext, action| {
+                .with_action_handler(|ctx, action| {
                     match action {
                         TeamAction::MoveToBench { unit_id } => {
                             cn().reducers.match_bench_unit(*unit_id).notify_error_op();
@@ -284,9 +282,30 @@ impl MatchPlugin {
                             unit_id,
                             target_unit_id,
                         } => {
-                            cn().reducers
-                                .match_stack_unit(*unit_id, *target_unit_id)
-                                .notify_error_op();
+                            // Determine the action based on the drag result
+                            if let (Ok(mut source), Ok(mut target)) = (
+                                ctx.load::<NUnit>(*unit_id),
+                                ctx.load::<NUnit>(*target_unit_id),
+                            ) {
+                                if source.check_stackable(&mut target, ctx).unwrap_or(false) {
+                                    debug!("Call stack reducer");
+                                    cn().reducers
+                                        .match_stack_unit(*unit_id, *target_unit_id)
+                                        .notify_error_op();
+                                } else if source
+                                    .check_fusible_with(&mut target, ctx)
+                                    .unwrap_or(false)
+                                {
+                                    debug!("Call fuse reducer");
+                                    cn().reducers
+                                        .match_start_fusion(*unit_id, *target_unit_id)
+                                        .notify_error_op();
+                                } else {
+                                    todo!("call swap reducer");
+                                }
+                            } else {
+                                "Failed to load unit".notify_error_op();
+                            }
                         }
                         _ => {}
                     };
@@ -309,54 +328,53 @@ impl MatchPlugin {
     fn show_fusion_window(
         ctx: &mut ClientContext,
         ui: &mut Ui,
-        source_id: u64,
-        target_id: u64,
         variants: Vec<PackedNodes>,
     ) -> NodeResult<()> {
-        ui.vertical_centered_justified(|ui| {
+        ui.vertical_centered_justified(|ui| -> NodeResult<()> {
             "Unit Fusion".cstr_s(CstrStyle::Heading2).label(ui);
             "Select one of three fusion variants:".cstr().label(ui);
             ui.separator();
 
-            ui.horizontal_wrapped(|ui| {
+            ui.horizontal_wrapped(|ui| -> NodeResult<()> {
                 for (idx, packed) in variants.iter().enumerate() {
-                    let merged_unit_result = NUnit::unpack(packed);
-                    if let Ok(mut merged_unit) = merged_unit_result {
-                        let fusion_names = match idx {
-                            0 => ("Front", "Combines source actions first"),
-                            1 => ("Back", "Combines target actions first"),
-                            2 => ("Split", "Keeps separate triggers"),
-                            _ => ("Unknown", ""),
-                        };
+                    let merged_unit = NUnit::unpack(packed)?;
+                    let fusion_names = match idx {
+                        0 => ("Front", "Combines source actions first"),
+                        1 => ("Back", "Combines target actions first"),
+                        2 => ("Split", "Keeps separate triggers"),
+                        _ => ("Unknown", ""),
+                    };
 
-                        ui.vertical(|ui| {
-                            format!("[b {}]", fusion_names.0).cstr().label(ui);
-                            fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
+                    ui.vertical(|ui| {
+                        format!("[b {}]", fusion_names.0).cstr().label(ui);
+                        fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
 
-                            ctx.with_owner(merged_unit.id, |ctx| {
-                                merged_unit.as_card().compose(ctx, ui);
-                                Ok(())
-                            })
-                            .ok();
+                        ctx.with_owner(merged_unit.id, |ctx| {
+                            merged_unit.as_card().compose(ctx, ui);
+                            Ok(())
+                        })
+                        .ok();
 
-                            if format!("Select [b {}]", fusion_names.0)
-                                .cstr()
-                                .button(ui)
-                                .clicked()
-                            {
-                                cn().reducers.match_choose_fusion(idx as i32).notify_op();
-                            }
-                        });
-                    }
+                        if format!("Select [b {}]", fusion_names.0)
+                            .cstr()
+                            .button(ui)
+                            .clicked()
+                        {
+                            cn().reducers.match_choose_fusion(idx as i32).notify_op();
+                        }
+                    });
                 }
-            });
+                Ok(())
+            })
+            .inner?;
 
             ui.separator();
             if "Cancel Fusion".cstr().button(ui).clicked() {
                 cn().reducers.match_cancel_fusion().notify_op();
             }
-        });
-        Ok(())
+            Ok(())
+        })
+        .inner
     }
 
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {

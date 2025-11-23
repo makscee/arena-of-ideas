@@ -134,6 +134,8 @@ fn generate_server_nodes(
         .map(|node| generate_named_node_impl(node));
 
     // Generate module
+    let unit_check_functions = generate_unit_check_functions("ServerContext");
+
     quote! {
         #(#node_structs)*
 
@@ -146,6 +148,8 @@ fn generate_server_nodes(
         #named_node_kind_match_macro
 
         #(#named_node_impls)*
+
+        #unit_check_functions
     }
 }
 

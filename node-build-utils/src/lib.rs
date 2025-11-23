@@ -2194,3 +2194,56 @@ pub fn generate_named_node_kind_match_macro(nodes: &[NodeInfo]) -> TokenStream {
         }
     }
 }
+
+pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenStream {
+    let context_ident = format_ident!("{}", context_type);
+
+    quote! {
+        impl NUnit {
+            pub fn check_fusible(&mut self, ctx: &#context_ident) -> NodeResult<bool> {
+                let houses = ctx.collect_kind_parents(self.id, NodeKind::NHouse)?;
+
+                if houses.len() == 1 {
+                    // Unit with one house needs at least 2 stax to be fusible
+                    let state = self.state_load(ctx)?;
+                    Ok(state.stax >= 2)
+                } else {
+                    // Multi-house unit needs total actions >= stax to be fusible
+                    let state = self.state_load(ctx)?;
+                    let stax = state.stax;
+                    let actions = self
+                        .behavior_load(ctx)?
+                        .reactions
+                        .iter()
+                        .map(|r| r.actions.len() as i32)
+                        .sum::<i32>();
+                    Ok(actions >= stax)
+                }
+            }
+
+            pub fn check_stackable(&mut self, other: &mut NUnit, ctx: &#context_ident) -> NodeResult<bool> {
+                let self_houses = ctx.collect_kind_parents(self.id, NodeKind::NHouse)?;
+                let other_houses = ctx.collect_kind_parents(other.id, NodeKind::NHouse)?;
+                if self_houses.len() == 1 && other_houses.len() == 1 {
+                    return Ok(self.name() == other.name() && self_houses[0] == other_houses[0]);
+                }
+                Ok(self_houses.iter().all(|h| other_houses.contains(h)) ||other_houses.iter().all(|h| self_houses.contains(h)))
+            }
+
+            pub fn check_fusible_with(&mut self, other: &mut NUnit, ctx: &#context_ident) -> NodeResult<bool> {
+                let self_houses = ctx.collect_kind_parents(self.id, NodeKind::NHouse)?;
+                let other_houses = ctx.collect_kind_parents(other.id, NodeKind::NHouse)?;
+
+                // Units can be fused if all of their houses are different
+                for house in &self_houses {
+                    if other_houses.contains(house) {
+                        return Ok(false);
+                    }
+                }
+
+                // Both units must also be fusible on their own
+                Ok(self.check_fusible(ctx)? && other.check_fusible(ctx)?)
+            }
+        }
+    }
+}

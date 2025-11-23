@@ -191,6 +191,24 @@ pub fn subscribe_reducers() {
         }
         e.event.notify_error();
     });
+    cn().reducers.on_match_start_fusion(|e, _, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_cancel_fusion(|e| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
+    cn().reducers.on_match_choose_fusion(|e, _| {
+        if !e.check_identity() {
+            return;
+        }
+        e.event.notify_error();
+    });
     cn().reducers.on_match_boss_battle(|e| {
         if !e.check_identity() {
             return;
