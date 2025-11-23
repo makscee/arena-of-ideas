@@ -47,23 +47,21 @@ impl Input {
         self
     }
     pub fn ui_string(self, value: &mut String, ui: &mut Ui) -> Response {
-        let width = if self.desired_width == f32::INFINITY {
-            ui.min_rect().width() - 10.0
-        } else {
-            self.desired_width
-        };
         ui.horizontal(|ui| {
             if !self.name.is_empty() {
                 self.name.label(ui);
             }
             let mut te = TextEdit::singleline(value)
-                .desired_width(width)
+                // .desired_width(width)
                 .password(self.password);
             if let Some(color) = self.override_color {
                 te = te.text_color(color);
                 if Rgba::from(color).intensity() < 0.05 {
                     te = te.background_color(high_contrast_text());
                 }
+            }
+            if self.desired_width != f32::INFINITY {
+                te = te.desired_width(self.desired_width);
             }
             if let Some(id) = self.id {
                 te = te.id(id);

@@ -2,8 +2,6 @@ use crate::prelude::*;
 
 pub struct BattleEditorPlugin;
 
-pub struct TeamEditorPlugin;
-
 impl Plugin for BattleEditorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(GameState::Editor), Self::load_from_client_state);
@@ -17,8 +15,77 @@ pub struct BattleEditorState {
     pub was_playing: bool,
 }
 
-impl TeamEditorPlugin {
-    pub fn pane(is_left: bool, world: &mut World, ui: &mut Ui) {
+impl BattleEditorPlugin {
+    pub fn pane_team_editor(is_left: bool, world: &mut World, ui: &mut Ui) {
+        ui.horizontal(|ui| {
+            let saved_teams = pd().client_state.saved_teams.clone();
+
+            for (name, left, right) in saved_teams.iter() {
+                ui.menu_button(name, |ui| {
+                    if ui.button("Load").clicked() {
+                        let mut state = world.resource_mut::<BattleEditorState>();
+                        let left_team = match NTeam::unpack(left) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                e.cstr().notify_error(world);
+                                return;
+                            }
+                        };
+                        let right_team = match NTeam::unpack(right) {
+                            Ok(v) => v,
+                            Err(e) => {
+                                e.cstr().notify_error(world);
+                                return;
+                            }
+                        };
+                        state.left_team = left_team;
+                        state.right_team = right_team;
+                        BattleEditorPlugin::save_changes_and_reload(world);
+                    }
+                    if ui.button("Update").clicked() {
+                        let state = world.resource_mut::<BattleEditorState>();
+                        pd_mut(|pd| {
+                            pd.client_state.save_team(
+                                name.clone(),
+                                &state.left_team,
+                                &state.right_team,
+                            );
+                        });
+                    }
+                    if "[red Delete]".cstr().button(ui).clicked() {
+                        pd_mut(|pd| {
+                            pd.client_state.delete_team(name);
+                        });
+                    }
+                });
+            }
+
+            if ui.button("+ Add").clicked() {
+                let mut name = "name".to_owned();
+                let confirmation = Confirmation::new("Save Team")
+                    .accept_name("Save")
+                    .cancel_name("Cancel")
+                    .content(move |ui, world, result| {
+                        Input::new("Team Name").ui_string(&mut name, ui);
+                        ui.label("test");
+                        if result == Some(true) {
+                            if !name.is_empty() {
+                                let state = world.resource::<BattleEditorState>();
+                                let name = name.clone();
+                                pd_mut(|pd| {
+                                    pd.client_state.save_team(
+                                        name,
+                                        &state.left_team,
+                                        &state.right_team,
+                                    );
+                                });
+                            }
+                        }
+                    });
+                confirmation.push(world);
+            }
+        });
+
         let mut changed_team = None;
         let needs_reload = false;
         if let Some(battle_data) = world.get_resource::<BattleData>() {
@@ -44,8 +111,11 @@ impl TeamEditorPlugin {
                                                 if let Some(slot) =
                                                     slots.iter_mut().find(|s| s.index == slot_index)
                                                 {
-                                                    house.units =
-                                                        RefMultiple::Ids([unit.id].into());
+                                                    if let RefMultiple::Ids(units) =
+                                                        &mut house.units
+                                                    {
+                                                        units.push(unit.id);
+                                                    }
                                                     unit.state_set(NUnitState::new(
                                                         next_id(),
                                                         unit.owner,
@@ -87,24 +157,6 @@ impl TeamEditorPlugin {
         }
     }
 
-    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
-        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
-            let needs_reload = if left {
-                state.left_team.render_recursive_edit(ui)
-            } else {
-                state.right_team.render_recursive_edit(ui)
-            };
-
-            if needs_reload {
-                BattleEditorPlugin::save_changes_and_reload(world);
-            }
-        } else {
-            "[red [b BattleEditoState] not found]".cstr().label(ui);
-        }
-    }
-}
-
-impl BattleEditorPlugin {
     pub fn load_from_client_state(world: &mut World) {
         let (left_team, right_team) =
             if let Some((left, right)) = pd().client_state.get_battle_test_teams() {
@@ -120,6 +172,21 @@ impl BattleEditorPlugin {
         Self::save_changes_and_reload(world);
     }
 
+    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
+        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
+            let needs_reload = if left {
+                state.left_team.render_recursive_edit(ui)
+            } else {
+                state.right_team.render_recursive_edit(ui)
+            };
+
+            if needs_reload {
+                BattleEditorPlugin::save_changes_and_reload(world);
+            }
+        } else {
+            "[red [b BattleEditoState] not found]".cstr().label(ui);
+        }
+    }
     pub fn save_changes_and_reload(world: &mut World) {
         let was_playing = world
             .get_resource::<BattleData>()
