@@ -17,7 +17,7 @@ impl ExplorerPanes {
         Self::show_add_new(ui, kind.to_kind(), None);
 
         world.resource_scope::<ExplorerState, _>(|_, mut state| {
-            with_solid_source(|ctx| {
+            with_incubator_source(|ctx| {
                 let mut node_list = named_node_kind_match!(kind, {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
@@ -137,6 +137,37 @@ impl ExplorerPanes {
             })
             .with_hover(move |node, _, ui| {
                 render_vote_btns(node.id(), ui);
+                if cn()
+                    .db
+                    .creators()
+                    .node_id()
+                    .find(&node.id())
+                    .is_some_and(|n| n.player_id == player_id())
+                    && "[red Delete]".cstr().button(ui).clicked()
+                {
+                    let node_id = node.id();
+                    op(move |world| {
+                        Confirmation::new("Are you sure you want to delete?")
+                            .accept_name("[red Delete]")
+                            .cancel_name("Cancel")
+                            .content(move |ui, world, button_pressed| {
+                                with_incubator_source(|ctx| {
+                                    ui.vertical_centered(|ui| -> NodeResult<()> {
+                                        ctx.load::<T>(node_id)?.display(ctx, ui);
+                                        Ok(())
+                                    })
+                                    .inner
+                                })
+                                .ui(ui);
+                                if let Some(true) = button_pressed {
+                                    cn().reducers
+                                        .content_delete_node(node_id)
+                                        .notify_error(world);
+                                }
+                            })
+                            .push(world);
+                    });
+                }
             })
             .compose(ctx, ui);
         Ok(())
@@ -145,7 +176,9 @@ impl ExplorerPanes {
     pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| Self::pane_component::<NUnitDescription>(ui, ctx, unit_id))
+                with_incubator_source(|ctx| {
+                    Self::pane_component::<NUnitDescription>(ui, ctx, unit_id)
+                })
             } else {
                 Ok(())
             }
@@ -155,7 +188,7 @@ impl ExplorerPanes {
     pub fn pane_unit_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| Self::pane_component::<NUnitBehavior>(ui, ctx, unit_id))
+                with_incubator_source(|ctx| Self::pane_component::<NUnitBehavior>(ui, ctx, unit_id))
             } else {
                 Ok(())
             }
@@ -165,7 +198,7 @@ impl ExplorerPanes {
     pub fn pane_unit_stats(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| Self::pane_component::<NUnitStats>(ui, ctx, unit_id))
+                with_incubator_source(|ctx| Self::pane_component::<NUnitStats>(ui, ctx, unit_id))
             } else {
                 Ok(())
             }
@@ -175,7 +208,7 @@ impl ExplorerPanes {
     pub fn pane_unit_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| {
+                with_incubator_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NUnit>(unit_id)?, ctx, ui)
                 })
             } else {
@@ -187,7 +220,7 @@ impl ExplorerPanes {
     pub fn pane_house_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
+                with_incubator_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NHouse>(house_id)?, ctx, ui)
                 })
             } else {
@@ -199,7 +232,7 @@ impl ExplorerPanes {
     pub fn pane_unit_representation(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
-                with_solid_source(|ctx| {
+                with_incubator_source(|ctx| {
                     Self::pane_component::<NUnitRepresentation>(ui, ctx, unit_id)
                 })
             } else {
@@ -211,7 +244,7 @@ impl ExplorerPanes {
     pub fn pane_house_color(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| Self::pane_component::<NHouseColor>(ui, ctx, house_id))
+                with_incubator_source(|ctx| Self::pane_component::<NHouseColor>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -221,7 +254,9 @@ impl ExplorerPanes {
     pub fn pane_ability_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| Self::pane_component::<NAbilityMagic>(ui, ctx, house_id))
+                with_incubator_source(|ctx| {
+                    Self::pane_component::<NAbilityMagic>(ui, ctx, house_id)
+                })
             } else {
                 Ok(())
             }
@@ -231,7 +266,7 @@ impl ExplorerPanes {
     pub fn pane_ability_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
+                with_incubator_source(|ctx| {
                     Self::pane_component::<NAbilityDescription>(ui, ctx, house_id)
                 })
             } else {
@@ -243,7 +278,9 @@ impl ExplorerPanes {
     pub fn pane_ability_effect(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| Self::pane_component::<NAbilityEffect>(ui, ctx, house_id))
+                with_incubator_source(|ctx| {
+                    Self::pane_component::<NAbilityEffect>(ui, ctx, house_id)
+                })
             } else {
                 Ok(())
             }
@@ -253,7 +290,7 @@ impl ExplorerPanes {
     pub fn pane_status_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| Self::pane_component::<NStatusMagic>(ui, ctx, house_id))
+                with_incubator_source(|ctx| Self::pane_component::<NStatusMagic>(ui, ctx, house_id))
             } else {
                 Ok(())
             }
@@ -263,7 +300,7 @@ impl ExplorerPanes {
     pub fn pane_status_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| {
+                with_incubator_source(|ctx| {
                     Self::pane_component::<NStatusDescription>(ui, ctx, house_id)
                 })
             } else {
@@ -275,7 +312,9 @@ impl ExplorerPanes {
     pub fn pane_status_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<ExplorerState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
-                with_solid_source(|ctx| Self::pane_component::<NStatusBehavior>(ui, ctx, house_id))
+                with_incubator_source(|ctx| {
+                    Self::pane_component::<NStatusBehavior>(ui, ctx, house_id)
+                })
             } else {
                 Ok(())
             }

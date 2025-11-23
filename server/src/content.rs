@@ -70,6 +70,24 @@ fn content_downvote_node(ctx: &ReducerContext, node_id: u64) -> Result<(), Strin
 }
 
 #[reducer]
+fn content_delete_node(ctx: &ReducerContext, node_id: u64) -> Result<(), String> {
+    let ctx = ctx.as_context();
+    let player = ctx.player()?;
+
+    if let Some(creator) = ctx.rctx().db.creators().node_id().find(node_id) {
+        if creator.player_id != player.id {
+            return Err("You can only delete nodes you created".to_string());
+        }
+    } else {
+        return Err("Node creator not found".to_string());
+    }
+
+    TNode::delete_by_id_recursive(ctx.rctx(), node_id);
+
+    Ok(())
+}
+
+#[reducer]
 fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Result<(), String> {
     let ctx = ctx.as_context();
     let player = ctx.player()?;

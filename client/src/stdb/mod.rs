@@ -13,6 +13,7 @@ pub mod admin_delete_node_recursive_reducer;
 pub mod admin_upload_world_reducer;
 pub mod battle_table;
 pub mod content_check_phase_completion_reducer;
+pub mod content_delete_node_reducer;
 pub mod content_downvote_node_reducer;
 pub mod content_publish_node_reducer;
 pub mod content_suggest_node_reducer;
@@ -80,6 +81,9 @@ pub use battle_table::*;
 pub use content_check_phase_completion_reducer::{
     content_check_phase_completion, set_flags_for_content_check_phase_completion,
     ContentCheckPhaseCompletionCallbackId,
+};
+pub use content_delete_node_reducer::{
+    content_delete_node, set_flags_for_content_delete_node, ContentDeleteNodeCallbackId,
 };
 pub use content_downvote_node_reducer::{
     content_downvote_node, set_flags_for_content_downvote_node, ContentDownvoteNodeCallbackId,
@@ -193,6 +197,9 @@ pub enum Reducer {
         links: Vec<String>,
     },
     ContentCheckPhaseCompletion,
+    ContentDeleteNode {
+        node_id: u64,
+    },
     ContentDownvoteNode {
         node_id: u64,
     },
@@ -276,6 +283,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
             Reducer::AdminUploadWorld { .. } => "admin_upload_world",
             Reducer::ContentCheckPhaseCompletion => "content_check_phase_completion",
+            Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentDownvoteNode { .. } => "content_downvote_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
             Reducer::ContentSuggestNode { .. } => "content_suggest_node",
@@ -337,6 +345,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("content_check_phase_completion", &value.args)?
                 .into())
             }
+            "content_delete_node" => Ok(__sdk::parse_reducer_args::<
+                content_delete_node_reducer::ContentDeleteNodeArgs,
+            >("content_delete_node", &value.args)?
+            .into()),
             "content_downvote_node" => Ok(__sdk::parse_reducer_args::<
                 content_downvote_node_reducer::ContentDownvoteNodeArgs,
             >("content_downvote_node", &value.args)?

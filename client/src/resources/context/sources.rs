@@ -1,9 +1,19 @@
 use super::*;
-
 /// Static sources for mirroring stdb state
 pub struct StaticSources {
     pub solid: Sources<'static>,
     pub core: Sources<'static>,
+    pub incubator: Sources<'static>,
+}
+
+impl StaticSources {
+    pub fn iter(&self) -> impl Iterator<Item = &Sources<'static>> {
+        [&self.solid, &self.core, &self.incubator].into_iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Sources<'static>> {
+        [&mut self.solid, &mut self.core, &mut self.incubator].into_iter()
+    }
 }
 
 impl StaticSources {
@@ -11,6 +21,7 @@ impl StaticSources {
         Self {
             solid: Sources::new_solid(),
             core: Sources::new_core(),
+            incubator: Sources::new_incubator(),
         }
     }
 }
@@ -62,6 +73,19 @@ where
     })
 }
 
+pub fn with_incubator_source<R, F>(f: F) -> NodeResult<R>
+where
+    F: FnOnce(&mut ClientContext) -> NodeResult<R>,
+{
+    with_static_sources(|sources| {
+        let taken = std::mem::replace(&mut sources.incubator, Sources::None);
+        let mut context = taken.as_context();
+        let result = f(&mut context);
+        sources.incubator = context.into_source();
+        result
+    })
+}
+
 pub trait ClientSource {
     fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()>;
     fn world(&self) -> NodeResult<&World>;
@@ -81,6 +105,7 @@ pub trait ClientSource {
 pub enum Sources<'a> {
     Solid(World),
     Core(World),
+    Incubator(World),
     Battle(BattleSimulation, f32),
     SourceRef(&'a Sources<'a>),
     #[default]
@@ -98,6 +123,12 @@ impl<'a> Sources<'a> {
         let mut world = World::new();
         Self::init_world(&mut world);
         Sources::Core(world)
+    }
+
+    pub fn new_incubator() -> Self {
+        let mut world = World::new();
+        Self::init_world(&mut world);
+        Sources::Incubator(world)
     }
 
     pub fn as_context(self) -> ClientContext<'a> {
@@ -149,7 +180,7 @@ impl<'a> Sources<'a> {
 
     pub fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(world) | Sources::Core(world) => Ok(world),
+            Sources::Solid(world) | Sources::Core(world) | Sources::Incubator(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(s) => s.world(),
             Sources::None => Err(NodeError::custom("No world in empty source")),
@@ -158,7 +189,7 @@ impl<'a> Sources<'a> {
 
     pub fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(world) | Sources::Core(world) => Ok(world),
+            Sources::Solid(world) | Sources::Core(world) | Sources::Incubator(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom(
                 "Cannot get mutable world from source ref",
@@ -281,6 +312,7 @@ impl<'a> Sources<'a> {
         match self {
             Sources::Solid(_) => true,
             Sources::Core(_) => node.owner == ID_CORE,
+            Sources::Incubator(_) => node.owner == ID_CORE || node.owner == ID_INCUBATOR,
             Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => true,
         }
     }
@@ -302,6 +334,7 @@ impl<'a> Sources<'a> {
         match self {
             Sources::Solid(_) => true,
             Sources::Core(_) => check_owner(link, vec![ID_CORE]),
+            Sources::Incubator(_) => check_owner(link, vec![ID_INCUBATOR, ID_CORE]),
             Sources::Battle(..) | Sources::None | Sources::SourceRef(..) => false,
         }
     }
@@ -370,7 +403,7 @@ impl<'a> Sources<'a> {
         }
 
         match self {
-            Sources::Solid(_) | Sources::Core(_) => {
+            Sources::Solid(_) | Sources::Core(_) | Sources::Incubator(_) => {
                 self.get_links_data_mut()?.add_link(
                     link.parent,
                     link.child,
@@ -396,7 +429,7 @@ impl<'a> Sources<'a> {
         }
 
         match self {
-            Sources::Solid(_) | Sources::Core(_) => {
+            Sources::Solid(_) | Sources::Core(_) | Sources::Incubator(_) => {
                 self.remove_link(link.parent, link.child)?;
             }
             _ => {}
@@ -411,7 +444,7 @@ impl<'a> Sources<'a> {
             links_map.insert(new.clone());
         }
         match self {
-            Sources::Solid(_) | Sources::Core(_) => {
+            Sources::Solid(_) | Sources::Core(_) | Sources::Incubator(_) => {
                 self.add_link(new.parent, new.child)?;
             }
             Sources::Battle(..) | Sources::SourceRef(..) | Sources::None => {}
@@ -762,7 +795,7 @@ impl ClientSource for Sources<'_> {
 
     fn world(&self) -> NodeResult<&World> {
         match self {
-            Sources::Solid(w) | Sources::Core(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) | Sources::Incubator(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
             Sources::None => Err(NodeError::custom("No world available")),
@@ -771,7 +804,7 @@ impl ClientSource for Sources<'_> {
 
     fn world_mut(&mut self) -> NodeResult<&mut World> {
         match self {
-            Sources::Solid(w) | Sources::Core(w) => Ok(w),
+            Sources::Solid(w) | Sources::Core(w) | Sources::Incubator(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
             Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
             Sources::None => Err(NodeError::custom("No world available")),

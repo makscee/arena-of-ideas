@@ -35,8 +35,9 @@ impl StdbPlugin {
                 let mut changed = false;
                 for _ in 0..queue.len() {
                     let update = queue.pop_front().unwrap();
-                    if sources.solid.handle_stdb_update(&update).is_err()
-                        || sources.core.handle_stdb_update(&update).is_err()
+                    if sources
+                        .iter_mut()
+                        .any(|s| s.handle_stdb_update(&update).is_err())
                     {
                         queue.push_back(update);
                         continue;
