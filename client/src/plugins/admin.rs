@@ -8,41 +8,40 @@ impl Plugin for AdminPlugin {
 
 impl AdminPlugin {
     pub fn pane(ui: &mut Ui, world: &mut World) {
-        "⏵".cstr().label(ui);
-        let id = "exp_test".into();
-        let mut e = ui.ctx().data_mut(|w| {
-            w.get_persisted_mut_or::<Expression>(
-                id,
-                Expression::r#if(
-                    Box::new(Expression::greater_then(
-                        Box::new(Expression::var(VarName::hp)),
-                        Box::new(Expression::i32(0)),
-                    )),
-                    Box::new(Expression::sum(
-                        Box::new(Expression::var(VarName::pwr)),
-                        Box::new(Expression::i32(10)),
-                    )),
-                    Box::new(Expression::zero),
-                ),
-            )
-            .clone()
-        });
+        // let id = "exp_test".into();
+        // let mut e = ui.ctx().data_mut(|w| {
+        //     w.get_persisted_mut_or::<Expression>(
+        //         id,
+        //         Expression::r#if(
+        //             Box::new(Expression::greater_then(
+        //                 Box::new(Expression::var(VarName::hp)),
+        //                 Box::new(Expression::i32(0)),
+        //             )),
+        //             Box::new(Expression::sum(
+        //                 Box::new(Expression::var(VarName::pwr)),
+        //                 Box::new(Expression::i32(10)),
+        //             )),
+        //             Box::new(Expression::zero),
+        //         ),
+        //     )
+        //     .clone()
+        // });
 
-        with_solid_source(|context| {
-            let mut changed = false;
-            e.as_recursive_mut(|_context, ui, value| {
-                let response = call_on_recursive_value_mut!(value, edit, ui);
-                changed |= response.changed();
-                response
-            })
-            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(context, ui);
-            if changed {
-                ui.ctx().data_mut(|w| w.insert_persisted(id, e));
-            }
-            Ok(())
-        })
-        .ui(ui);
+        // with_solid_source(|context| {
+        //     let mut changed = false;
+        //     e.as_recursive_mut(|_context, ui, value| {
+        //         let response = call_on_recursive_value_mut!(value, edit, ui);
+        //         changed |= response.changed();
+        //         response
+        //     })
+        //     .with_layout(RecursiveLayout::Tree { indent: 0.0 })
+        //     .compose(context, ui);
+        //     if changed {
+        //         ui.ctx().data_mut(|w| w.insert_persisted(id, e));
+        //     }
+        //     Ok(())
+        // })
+        // .ui(ui);
 
         fn show_node_with_children(id: u64, ui: &mut Ui, world: &mut World) {
             ui.horizontal(|ui| {
@@ -154,6 +153,9 @@ impl AdminPlugin {
         if "Notification Test".cstr().button(ui).clicked() {
             "notify test".notify(world);
             "notify error test".notify_error(world);
+        }
+        if "Reset Core".cstr().button(ui).clicked() {
+            cn().reducers.content_reset_core().notify_error_op();
         }
         if "Check Phase Completion".cstr().button(ui).clicked() {
             cn().reducers

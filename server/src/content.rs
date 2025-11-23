@@ -1,3 +1,5 @@
+use crate::global_settings::VOTES_THRESHOLD;
+
 use super::*;
 
 #[reducer]
@@ -112,9 +114,19 @@ fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Res
 }
 
 #[reducer]
+fn content_reset_core(ctx: &ReducerContext) -> Result<(), String> {
+    info!("Resetting core...");
+    ctx.is_admin()?;
+    for mut node in ctx.db.nodes_world().owner().filter(ID_CORE) {
+        node.owner = ID_INCUBATOR;
+        ctx.db.nodes_world().id().update(node);
+    }
+    Ok(())
+}
+
+#[reducer]
 fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
     info!("\n===\nPhase check start");
-    let threshold = 5i32;
 
     // Check all incubator nodes to see if any have reached the threshold
     let incubator_nodes: Vec<_> = ctx
@@ -122,7 +134,7 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
         .nodes_world()
         .owner()
         .filter(ID_INCUBATOR)
-        .filter(|n| n.rating >= threshold)
+        .filter(|n| n.rating >= VOTES_THRESHOLD)
         .collect();
     info!("Nodes over threshold: {}", incubator_nodes.len());
 
@@ -143,7 +155,14 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
             | NodeKind::NStatusDescription
             | NodeKind::NStatusBehavior => {
                 // Fix this component (keep it, delete alternatives)
-                if let Some(parent_link) = ctx.db.node_links().child().filter(node.id).next() {
+                let parent_kind = kind.component_parent().unwrap();
+                if let Some(parent_link) = ctx
+                    .db
+                    .node_links()
+                    .child_parent_kind()
+                    .filter((node.id, &parent_kind.to_string()))
+                    .next()
+                {
                     // Delete all other suggestions for the same parent and component type
                     let other_links: Vec<_> = ctx
                         .db
@@ -161,15 +180,19 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
                             }
                         }
                     }
-                    let parent_id = parent_link.parent;
+                    let base = {
+                        let ctx = &ctx.as_context();
+                        ctx.first_parent_recursive(node.id, NodeKind::NHouse)
+                            .or_else(|_| ctx.first_parent_recursive(node.id, NodeKind::NUnit))?
+                    };
                     let mut cp = ctx
                         .db
                         .creation_phases()
                         .node_id()
-                        .find(parent_id)
+                        .find(base)
                         .unwrap_or_else(|| {
                             let cp = TCreationPhases {
-                                node_id: parent_id,
+                                node_id: base,
                                 fixed_kinds: default(),
                             };
                             ctx.db.creation_phases().insert(cp)
@@ -241,13 +264,12 @@ fn content_check_phase_completion(ctx: &ReducerContext) -> Result<(), String> {
     }
 
     // Clean up nodes with very negative ratings
-    let delete_threshold = -5i32;
     let nodes_to_delete: Vec<_> = ctx
         .db
         .nodes_world()
         .owner()
         .filter(ID_INCUBATOR)
-        .filter(|n| n.rating <= delete_threshold)
+        .filter(|n| n.rating <= -VOTES_THRESHOLD)
         .map(|n| n.id)
         .collect();
 

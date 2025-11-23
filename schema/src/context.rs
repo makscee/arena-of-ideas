@@ -449,7 +449,7 @@ impl<S: ContextSource> Context<S> {
         self.get_children_of_kind(id, kind)?
             .into_iter()
             .next()
-            .ok_or_else(|| NodeError::custom(format!("No child of kind {:?}", kind)))
+            .ok_or_else(|| NodeError::custom(format!("No child of kind {:?} for {}", kind, id)))
     }
 
     pub fn first_child_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {

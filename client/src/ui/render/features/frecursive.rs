@@ -272,7 +272,7 @@ fn render_node_menu<T: FRecursiveNodeEdit>(ui: &mut Ui, node: &mut T) -> bool {
                     }
                 }
                 if let Some(selected) = selected {
-                    return Ok(Some(ctx.load::<T>(selected)?.load_all(ctx)?.take()));
+                    return Ok(Some(dbg!(ctx.load::<T>(selected)?.load_all(ctx)?.take())));
                 }
                 Ok(None)
             }) {

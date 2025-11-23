@@ -16,6 +16,7 @@ pub mod content_check_phase_completion_reducer;
 pub mod content_delete_node_reducer;
 pub mod content_downvote_node_reducer;
 pub mod content_publish_node_reducer;
+pub mod content_reset_core_reducer;
 pub mod content_suggest_node_reducer;
 pub mod content_upvote_node_reducer;
 pub mod creation_phases_table;
@@ -90,6 +91,9 @@ pub use content_downvote_node_reducer::{
 };
 pub use content_publish_node_reducer::{
     content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
+};
+pub use content_reset_core_reducer::{
+    content_reset_core, set_flags_for_content_reset_core, ContentResetCoreCallbackId,
 };
 pub use content_suggest_node_reducer::{
     content_suggest_node, set_flags_for_content_suggest_node, ContentSuggestNodeCallbackId,
@@ -207,6 +211,7 @@ pub enum Reducer {
         pack: String,
         parent: Option<u64>,
     },
+    ContentResetCore,
     ContentSuggestNode {
         kind: String,
         name: String,
@@ -286,6 +291,7 @@ impl __sdk::Reducer for Reducer {
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentDownvoteNode { .. } => "content_downvote_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
+            Reducer::ContentResetCore => "content_reset_core",
             Reducer::ContentSuggestNode { .. } => "content_suggest_node",
             Reducer::ContentUpvoteNode { .. } => "content_upvote_node",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
@@ -356,6 +362,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "content_publish_node" => Ok(__sdk::parse_reducer_args::<
                 content_publish_node_reducer::ContentPublishNodeArgs,
             >("content_publish_node", &value.args)?
+            .into()),
+            "content_reset_core" => Ok(__sdk::parse_reducer_args::<
+                content_reset_core_reducer::ContentResetCoreArgs,
+            >("content_reset_core", &value.args)?
             .into()),
             "content_suggest_node" => Ok(__sdk::parse_reducer_args::<
                 content_suggest_node_reducer::ContentSuggestNodeArgs,

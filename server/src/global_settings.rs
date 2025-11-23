@@ -1,5 +1,7 @@
 use super::*;
 
+pub const VOTES_THRESHOLD: i32 = 5;
+
 #[spacetimedb::table(public, name = global_settings)]
 pub struct GlobalSettings {
     #[unique]
