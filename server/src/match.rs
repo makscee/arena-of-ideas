@@ -109,7 +109,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     match card_kind {
         CardKind::Unit => {
             let mut team_unit = ctx.load::<NUnit>(node_id)?.load_components(ctx)?.take();
-            let house_id = team_unit.house_ids(ctx)[0];
+            let house_id = ctx.collect_kind_parents(team_unit.id, NodeKind::NHouse)?[0];
             team_unit =
                 team_unit
                     .remap_ids(ctx)
@@ -634,7 +634,7 @@ fn create_fused_unit(
     new_unit.stats_load(ctx)?.hp += source.stats()?.hp;
     new_unit.stats_load(ctx)?.pwr += source.stats()?.pwr;
 
-    for parent in source.house_ids(ctx) {
+    for parent in ctx.collect_kind_parents(source.id, NodeKind::NHouse)? {
         new_unit.id.add_parent(ctx.rctx(), parent)?;
     }
 
@@ -750,7 +750,7 @@ impl NMatch {
 
 impl NUnit {
     fn check_fusible(&mut self, ctx: &ServerContext) -> NodeResult<()> {
-        if self.house_ids(ctx).len() == 1 {
+        if ctx.collect_kind_parents(self.id, NodeKind::NHouse)?.len() == 1 {
             if self.state_load(ctx)?.stax >= 2 {
                 return Err(NodeError::custom(format!(
                     "Unit {} needs 2+ stax to be stackable",
@@ -776,8 +776,8 @@ impl NUnit {
         Ok(())
     }
     fn check_stackable(ctx: &ServerContext, a: &mut NUnit, b: &mut NUnit) -> NodeResult<()> {
-        let a_houses = a.house_ids(ctx);
-        let b_houses = b.house_ids(ctx);
+        let a_houses = ctx.collect_kind_parents(a.id, NodeKind::NHouse)?;
+        let b_houses = ctx.collect_kind_parents(b.id, NodeKind::NHouse)?;
         debug!("{a_houses:?} {b_houses:?}");
         if a_houses.len() == 1 && b_houses.contains(&a_houses[0])
             || b_houses.len() == 1 && a_houses.contains(&b_houses[0])

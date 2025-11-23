@@ -113,9 +113,3 @@ pub trait ServerNode: Sized + schema::Node {
         self
     }
 }
-
-impl NUnit {
-    pub fn house_ids(&self, ctx: &ServerContext) -> Vec<u64> {
-        self.id.collect_kind_parents(ctx.rctx(), NodeKind::NHouse)
-    }
-}
