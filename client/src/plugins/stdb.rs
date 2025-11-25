@@ -1,3 +1,5 @@
+use crate::login;
+
 use super::*;
 
 static UPDATE_QUEUE: once_cell::sync::Lazy<Mutex<VecDeque<StdbUpdate>>> =
@@ -147,104 +149,140 @@ fn queue_update(update: StdbUpdate) {
     set_need_update(true);
 }
 
+fn default_callback(e: &ReducerEventContext) {
+    if !e.check_identity() {
+        return;
+    }
+    e.event.notify_error();
+}
+
 pub fn subscribe_reducers() {
-    cn().reducers.on_match_insert(|e| {
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
-        if !e.check_identity() {
-            return;
+    for r in reducer_registry::AllReducers::iter() {
+        subscribe_reducer(r);
+    }
+}
+
+fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
+    use reducer_registry::AllReducers;
+
+    let r = &cn().reducers;
+    match reducer {
+        AllReducers::AdminAddGold => {
+            r.on_admin_add_gold(|e| default_callback(e));
         }
-        e.event.on_success(|| {
-            op(|world| {
-                GameState::Shop.set_next(world);
+        AllReducers::AdminAddVotes => {
+            r.on_admin_add_votes(|e, _| default_callback(e));
+        }
+        AllReducers::AdminDailyUpdate => {
+            r.on_admin_daily_update(|e| default_callback(e));
+        }
+        AllReducers::AdminDeleteNodeRecursive => {
+            r.on_admin_delete_node_recursive(|e, _| default_callback(e));
+        }
+        AllReducers::AdminUploadWorld => {
+            r.on_admin_upload_world(|e, _, _, _| default_callback(e));
+        }
+        AllReducers::ContentCheckPhaseCompletion => {
+            r.on_content_check_phase_completion(|e| default_callback(e));
+        }
+        AllReducers::ContentDeleteNode => {
+            r.on_content_delete_node(|e, _| default_callback(e));
+        }
+        AllReducers::ContentDownvoteNode => {
+            r.on_content_downvote_node(|e, _| default_callback(e));
+        }
+        AllReducers::ContentPublishNode => {
+            r.on_content_publish_node(|e, _, _| default_callback(e));
+        }
+        AllReducers::ContentResetCore => {
+            r.on_content_reset_core(|e| default_callback(e));
+        }
+        AllReducers::ContentSuggestNode => {
+            r.on_content_suggest_node(|e, _, _| default_callback(e));
+        }
+        AllReducers::ContentUpvoteNode => {
+            r.on_content_upvote_node(|e, _| default_callback(e));
+        }
+        AllReducers::DailyUpdateReducer => {
+            r.on_daily_update_reducer(|e, _| default_callback(e));
+        }
+        AllReducers::IdentityDisconnected => {
+            r.on_identity_disconnected(|e| default_callback(e));
+        }
+        AllReducers::Login => {
+            r.on_login(|e, _, _| default_callback(e));
+        }
+        AllReducers::LoginByIdentity => {
+            r.on_login_by_identity(|e| default_callback(e));
+        }
+        AllReducers::Logout => {
+            r.on_logout(|e| default_callback(e));
+        }
+        AllReducers::MatchAbandon => {
+            r.on_match_abandon(|e| default_callback(e));
+        }
+        AllReducers::MatchBenchUnit => {
+            r.on_match_bench_unit(|e, _| default_callback(e));
+        }
+        AllReducers::MatchBossBattle => {
+            r.on_match_boss_battle(|e| default_callback(e));
+        }
+        AllReducers::MatchCancelFusion => {
+            r.on_match_cancel_fusion(|e| default_callback(e));
+        }
+        AllReducers::MatchChooseFusion => {
+            r.on_match_choose_fusion(|e, _| default_callback(e));
+        }
+        AllReducers::MatchComplete => {
+            r.on_match_complete(|e| default_callback(e));
+        }
+        AllReducers::MatchInsert => {
+            r.on_match_insert(|e| default_callback(e));
+        }
+        AllReducers::MatchMoveUnit => {
+            r.on_match_move_unit(|e, _, _| default_callback(e));
+        }
+        AllReducers::MatchSellUnit => {
+            r.on_match_sell_unit(|e, _| default_callback(e));
+        }
+        AllReducers::MatchShopBuy => {
+            r.on_match_shop_buy(|e, _| default_callback(e));
+        }
+        AllReducers::MatchShopReroll => {
+            r.on_match_shop_reroll(|e| default_callback(e));
+        }
+        AllReducers::MatchStackUnit => {
+            r.on_match_stack_unit(|e, _, _| default_callback(e));
+        }
+        AllReducers::MatchStartBattle => {
+            r.on_match_start_battle(|e| default_callback(e));
+        }
+        AllReducers::MatchStartFusion => {
+            r.on_match_start_fusion(|e, _, _| default_callback(e));
+        }
+        AllReducers::Register => {
+            r.on_register(|e, _, _| default_callback(e));
+        }
+        AllReducers::SetPassword => {
+            r.on_set_password(|e, _, _| default_callback(e));
+        }
+        AllReducers::MatchSubmitBattleResult => {
+            cn().reducers.on_match_submit_battle_result(|e, _, _, _| {
+                if !e.check_identity() {
+                    return;
+                }
+                e.event.on_success(|| {
+                    op(|world| {
+                        GameState::Shop.set_next(world);
+                    });
+                });
             });
-        });
-    });
-    cn().reducers.on_match_shop_buy(|e, _| {
-        if !e.check_identity() {
-            return;
         }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_shop_reroll(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_move_unit(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_bench_unit(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_start_battle(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_start_fusion(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_cancel_fusion(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_choose_fusion(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_match_boss_battle(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_admin_upload_world(|e, _, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_content_check_phase_completion(|e| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_content_upvote_node(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_content_downvote_node(|e, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
-    cn().reducers.on_content_publish_node(|e, _, _| {
-        if !e.check_identity() {
-            return;
-        }
-        e.event.notify_error();
-    });
+    }
+}
+
+mod reducer_registry {
+    include!(concat!(env!("OUT_DIR"), "/generated_reducers.rs"));
 }
 
 #[cfg(test)]
@@ -324,22 +362,13 @@ mod tests {
         let mut solid_source = Sources::new_solid();
         let house_node = NHouse::new(1001, 0, default()).to_tnode();
         let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
-        let link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-        };
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node.clone()))
             .unwrap();
-        solid_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
-            .unwrap();
+        link(&mut solid_source, &house_node, &color_node);
         let house_entity = solid_source
             .entity(1001)
             .expect("House entity should exist");
@@ -367,17 +396,19 @@ mod tests {
         let house_node = NHouse::new(1001, 0, default()).to_tnode();
         let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node.clone()))
             .unwrap();
+        static LINK_ID_TEMP: AtomicU64 = AtomicU64::new(100);
+        let id = LINK_ID_TEMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
+            id,
+            parent: house_node.id,
+            child: color_node.id,
+            parent_kind: house_node.kind.clone(),
+            child_kind: color_node.kind.clone(),
         };
         solid_source
             .handle_stdb_update(&StdbUpdate::LinkInsert(link.clone()))
@@ -429,10 +460,10 @@ mod tests {
         let house_node = NHouse::new(1001, 0, default()).to_tnode();
         let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node.clone()))
             .unwrap();
         let house_entity = solid_source.entity(1001).unwrap();
         let color_entity = solid_source.entity(1002).unwrap();
@@ -440,30 +471,12 @@ mod tests {
             house_entity, color_entity,
             "Should start on different entities"
         );
-        let link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-        };
-        solid_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(link))
-            .unwrap();
+        link(&mut solid_source, &house_node, &color_node);
         let ability_node = NAbilityMagic::new(1003, 0, default()).to_tnode();
-        let ability_link = TNodeLink {
-            id: 2,
-            parent: 1001,
-            child: 1003,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NAbilityMagic".to_string(),
-        };
         solid_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(ability_link))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(ability_node.clone()))
             .unwrap();
-        solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(ability_node))
-            .unwrap();
+        link(&mut solid_source, &house_node, &ability_node);
         let final_house_entity = solid_source.entity(1001).unwrap();
         let final_color_entity = solid_source.entity(1002).unwrap();
         let final_ability_entity = solid_source.entity(1003).unwrap();
@@ -483,24 +496,13 @@ mod tests {
         let color_node = NHouseColor::new(1002, 0, default()).to_tnode();
 
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_node.clone()))
             .unwrap();
 
-        // Component link should cause merging
-        let component_link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NHouseColor".to_string(),
-        };
-
-        solid_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(component_link))
-            .unwrap();
+        link(&mut solid_source, &house_node, &color_node);
 
         let house_entity = solid_source.entity(1001).unwrap();
         let color_entity = solid_source.entity(1002).unwrap();
@@ -527,24 +529,13 @@ mod tests {
         let unit_node = NUnit::new(1002, 0, default()).to_tnode();
 
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
             .unwrap();
         solid_source
-            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node))
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node.clone()))
             .unwrap();
 
-        // Owned link should NOT cause merging
-        let owned_link = TNodeLink {
-            id: 1,
-            parent: 1001,
-            child: 1002,
-            parent_kind: "NHouse".to_string(),
-            child_kind: "NUnit".to_string(),
-        };
-
-        solid_source
-            .handle_stdb_update(&StdbUpdate::LinkInsert(owned_link))
-            .unwrap();
+        link(&mut solid_source, &house_node, &unit_node);
 
         let house_entity = solid_source.entity(1001).unwrap();
         let unit_entity = solid_source.entity(1002).unwrap();

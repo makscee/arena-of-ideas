@@ -1,5 +1,6 @@
 use node_build_utils::*;
 
+use convert_case::{Case, Casing};
 use quote::format_ident;
 use quote::quote;
 use std::collections::HashMap;
@@ -10,9 +11,11 @@ use std::path::Path;
 fn main() {
     println!("cargo:rerun-if-changed=../schema/src/raw_nodes.rs");
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src/stdb");
 
     let out_dir = env::var_os("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("client_nodes.rs");
+    let reducers_path = Path::new(&out_dir).join("generated_reducers.rs");
 
     // Read the raw nodes file from schema
     let input =
@@ -37,6 +40,10 @@ fn main() {
     // Format and write
     let formatted_code = format_code(&final_code);
     fs::write(&dest_path, formatted_code).expect("Failed to write generated code");
+
+    // Generate reducer registry
+    let reducers_code = generate_reducer_registry();
+    fs::write(&reducers_path, reducers_code).expect("Failed to write generated reducers");
 }
 
 fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
@@ -482,4 +489,45 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             }
         }
     }
+}
+
+fn generate_reducer_registry() -> String {
+    let stdb_dir = "src/stdb";
+    let mut reducer_names = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(stdb_dir) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    if let Some(filename) = entry.file_name().into_string().ok() {
+                        if filename.ends_with("_reducer.rs") {
+                            let name = filename.trim_end_matches("_reducer.rs").to_string();
+                            reducer_names.push(name);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    reducer_names.sort();
+
+    let variants = reducer_names.iter().map(|name| {
+        let variant_ident = format_ident!("{}", name.to_case(Case::Pascal));
+        quote! { #variant_ident }
+    });
+
+    let generated = quote! {
+        use strum_macros::EnumIter;
+        use strum::IntoEnumIterator;
+
+        /// Auto-generated enum of all reducers from stdb/*_reducer.rs files
+        /// Updated by build.rs - do not edit manually
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+        pub enum AllReducers {
+            #(#variants),*
+        }
+    };
+
+    generated.to_string()
 }

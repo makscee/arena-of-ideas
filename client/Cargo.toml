@@ -74,3 +74,4 @@ node-build-utils = { path = "../node-build-utils" }
 syn = { workspace = true }
 quote = "1.0"
 proc-macro2 = "1.0"
+convert_case = { workspace = true }
