@@ -87,64 +87,26 @@ impl TestBuilder {
         self
     }
 
-    pub fn add_ability(mut self) -> Self {
+    pub fn add_ability(mut self, id: u64, actions: Vec<Action>) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add ability without a team");
-        team.add_ability();
+        team.add_ability(id, actions);
         self
     }
 
-    pub fn get_ability_id(&self) -> u64 {
-        let team = self
-            .teams
-            .last()
-            .expect("Cannot get ability without a team");
-        let house = team
-            .houses
-            .last()
-            .expect("Cannot get ability without a house");
-        house.ability.as_ref().map(|a| a.id).expect("No ability")
-    }
-
-    pub fn add_ability_action(mut self, action: Action) -> Self {
-        let team = self
-            .teams
-            .last_mut()
-            .expect("Cannot add ability action without a team");
-        team.add_ability_action(action);
-        self
-    }
-
-    pub fn add_status(mut self) -> Self {
-        let team = self
-            .teams
-            .last_mut()
-            .expect("Cannot add status without a team");
-        team.add_status();
-        self
-    }
-
-    pub fn get_status_id(&self) -> u64 {
-        let team = self.teams.last().expect("Cannot get status without a team");
-        let house = team
-            .houses
-            .last()
-            .expect("Cannot get status without a house");
-        house.status.as_ref().map(|s| s.id).expect("No status")
-    }
-
-    pub fn add_status_reaction(
+    pub fn add_status(
         mut self,
+        id: u64,
         trigger: Trigger,
         actions: impl Into<Vec<Action>>,
     ) -> Self {
         let team = self
             .teams
             .last_mut()
-            .expect("Cannot add status reaction without a team");
-        team.add_status_reaction(trigger, actions);
+            .expect("Cannot add status without a team");
+        team.add_status(id, trigger, actions);
         self
     }
 
@@ -197,36 +159,20 @@ impl TeamBuilder {
         house.add_reaction(trigger, actions);
     }
 
-    fn add_ability(&mut self) {
+    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add ability without a house");
-        house.add_ability();
+        house.add_ability(id, actions);
     }
 
-    fn add_ability_action(&mut self, action: Action) {
-        let house = self
-            .houses
-            .last_mut()
-            .expect("Cannot add ability action without a house");
-        house.add_ability_action(action);
-    }
-
-    fn add_status(&mut self) {
+    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add status without a house");
-        house.add_status();
-    }
-
-    fn add_status_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        let house = self
-            .houses
-            .last_mut()
-            .expect("Cannot add status reaction without a house");
-        house.add_status_reaction(trigger, actions);
+        house.add_status(id, trigger, actions);
     }
 
     fn build(self) -> NTeam {
@@ -255,8 +201,8 @@ impl TeamBuilder {
 pub struct HouseBuilder {
     pub id: u64,
     units: Vec<UnitBuilder>,
-    pub ability: Option<AbilityBuilder>,
-    pub status: Option<StatusBuilder>,
+    ability: Option<AbilityBuilder>,
+    status: Option<StatusBuilder>,
 }
 
 impl HouseBuilder {
@@ -284,35 +230,12 @@ impl HouseBuilder {
         });
     }
 
-    fn add_ability(&mut self) -> u64 {
-        let id = self.id + 10;
-        self.ability = Some(AbilityBuilder::new(id));
-        id
+    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
+        self.ability = Some(AbilityBuilder::new(id, actions));
     }
 
-    fn add_ability_action(&mut self, action: Action) {
-        let ability = self
-            .ability
-            .as_mut()
-            .expect("Cannot add ability action without an ability");
-        ability.actions.push(action);
-    }
-
-    fn add_status(&mut self) -> u64 {
-        let id = self.id + 20;
-        self.status = Some(StatusBuilder::new(id));
-        id
-    }
-
-    fn add_status_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        let status = self
-            .status
-            .as_mut()
-            .expect("Cannot add status reaction without a status");
-        status.reactions.push(Reaction {
-            trigger,
-            actions: actions.into(),
-        });
+    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+        self.status = Some(StatusBuilder::new(id, trigger, actions));
     }
 
     fn build(self) -> (NHouse, Vec<NUnit>) {
@@ -399,11 +322,8 @@ struct AbilityBuilder {
 }
 
 impl AbilityBuilder {
-    fn new(id: u64) -> Self {
-        Self {
-            id,
-            actions: vec![],
-        }
+    fn new(id: u64, actions: Vec<Action>) -> Self {
+        Self { id, actions }
     }
 
     fn build(self) -> NAbilityMagic {
@@ -434,10 +354,13 @@ struct StatusBuilder {
 }
 
 impl StatusBuilder {
-    fn new(id: u64) -> Self {
+    fn new(id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
         Self {
             id,
-            reactions: vec![],
+            reactions: vec![Reaction {
+                trigger,
+                actions: actions.into(),
+            }],
         }
     }
 

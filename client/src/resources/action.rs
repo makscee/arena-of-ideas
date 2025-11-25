@@ -97,17 +97,14 @@ impl ActionImpl for Action {
                 }
             }
             Action::use_ability(ability_id) => {
-                let caster = ctx.caster().to_not_found().track()?;
+                let owner = ctx.owner()?;
                 let ability = ctx.load::<NAbilityMagic>(*ability_id)?;
                 let x = ctx
-                    .load::<NUnitState>(caster)
+                    .load::<NUnitState>(owner)
                     .unwrap_or_default()
                     .stax
                     .at_least(1);
-                let color = ctx
-                    .get_var_inherited(caster, VarName::color)
-                    .get_color()
-                    .unwrap_or(Color32::WHITE);
+                let color = ctx.color();
                 let name = ability.ability_name.clone();
                 let effect = ability.effect_ref(ctx)?.actions.clone();
                 ctx.with_layers(
@@ -125,17 +122,14 @@ impl ActionImpl for Action {
                 actions.push(BattleAction::new_text(text, position).into());
             }
             Action::apply_status(status_id) => {
-                let caster = ctx.caster().to_not_found().track()?;
+                let owner = ctx.owner()?;
                 let status = ctx.load::<NStatusMagic>(*status_id)?;
                 let x = ctx
-                    .load::<NUnitState>(caster)
+                    .load::<NUnitState>(owner)
                     .unwrap_or_default()
                     .stax
                     .at_least(1);
-                let color = ctx
-                    .get_var_inherited(caster, VarName::color)
-                    .get_color()
-                    .unwrap_or(Color32::WHITE);
+                let color = ctx.color();
                 let name = status.status_name.clone();
                 let status = status
                     .clone()
@@ -156,7 +150,7 @@ impl ActionImpl for Action {
                 );
                 for target in targets {
                     actions.push(BattleAction::apply_status(
-                        caster,
+                        owner,
                         target,
                         status.clone().remap_ids(),
                         color,

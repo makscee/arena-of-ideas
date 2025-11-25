@@ -97,14 +97,16 @@ fn test_healer_unit() {
 
 #[test]
 fn test_battle_with_abilities() {
-    let mut builder = TestBuilder::new()
+    TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_ability()
-        .add_ability_action(Action::set_value(Box::new(Expression::i32(3))))
-        .add_ability_action(Action::deal_damage);
-    let ability_id = builder.get_ability_id();
-    builder
+        .add_ability(
+            1110,
+            vec![
+                Action::set_value(Box::new(Expression::i32(3))),
+                Action::deal_damage,
+            ],
+        )
         .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::BattleStart,
@@ -112,7 +114,7 @@ fn test_battle_with_abilities() {
                 Action::add_target(
                     Expression::random_unit(Expression::all_enemy_units.into()).into(),
                 ),
-                Action::use_ability(ability_id),
+                Action::use_ability(1110),
             ],
         )
         .add_team(2000)
@@ -124,11 +126,11 @@ fn test_battle_with_abilities() {
 
 #[test]
 fn test_battle_with_status_effects() {
-    let mut builder = TestBuilder::new()
+    TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status()
-        .add_status_reaction(
+        .add_status(
+            1120,
             Trigger::TurnEnd,
             vec![
                 Action::add_target(
@@ -137,20 +139,18 @@ fn test_battle_with_status_effects() {
                 Action::set_value(Box::new(Expression::i32(3))),
                 Action::deal_damage,
             ],
-        );
-    let status_id = builder.get_status_id();
-    builder
+        )
         .add_unit(1200, 0, 3)
         .add_reaction(
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(status_id),
+                Action::apply_status(1120),
             ],
         )
         .add_team(2000)
         .add_house(2100)
-        .add_unit(2200, 1, 2)
+        .add_unit(2200, 1, 3)
         .run_battle()
         .assert_winner(TeamSide::Left);
 }
@@ -191,22 +191,20 @@ fn test_change_in_dmg_trigger() {
 
 #[test]
 fn test_change_stats_status() {
-    let mut builder = TestBuilder::new()
+    TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status()
-        .add_status_reaction(
+        .add_status(
+            1120,
             Trigger::ChangeStat(VarName::hp),
             vec![Action::add_value(Box::new(Expression::i32(10)))],
-        );
-    let status_id = builder.get_status_id();
-    builder
+        )
         .add_unit(1200, 1, 1)
         .add_reaction(
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(status_id),
+                Action::apply_status(1120),
             ],
         )
         .add_team(2000)
@@ -304,12 +302,10 @@ fn test_damage_dealt_trigger() {
 
 #[test]
 fn test_status_applied_trigger() {
-    let mut builder = TestBuilder::new()
+    TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_status();
-    let status_id = builder.get_status_id();
-    builder
+        .add_status(1120, Trigger::BattleStart, vec![])
         .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::StatusGained,
@@ -324,7 +320,7 @@ fn test_status_applied_trigger() {
             Trigger::TurnEnd,
             [
                 Action::add_target(Expression::adjacent_front.into()),
-                Action::apply_status(status_id),
+                Action::apply_status(1120),
             ],
         )
         .add_team(2000)
@@ -336,33 +332,34 @@ fn test_status_applied_trigger() {
 
 #[test]
 fn test_combined_triggers() {
-    let mut builder = TestBuilder::new()
+    TestBuilder::new()
         .add_team(1000)
         .add_house(1100)
-        .add_ability()
-        .add_ability_action(Action::add_target(
-            Expression::random_unit(Expression::all_enemy_units.into()).into(),
-        ))
-        .add_ability_action(Action::set_value(Box::new(Expression::i32(2))))
-        .add_ability_action(Action::deal_damage)
-        .add_status()
-        .add_status_reaction(
+        .add_ability(
+            1110,
+            vec![
+                Action::add_target(
+                    Expression::random_unit(Expression::all_enemy_units.into()).into(),
+                ),
+                Action::set_value(Box::new(Expression::i32(2))),
+                Action::deal_damage,
+            ],
+        )
+        .add_status(
+            1120,
             Trigger::TurnEnd,
             vec![
                 Action::add_target(Expression::owner.into()),
                 Action::add_value(Box::new(Expression::i32(1))),
                 Action::heal_damage,
             ],
-        );
-    let status_id = builder.get_status_id();
-    let ability_id = builder.get_ability_id();
-    builder
+        )
         .add_unit(1200, 1, 2)
         .add_reaction(
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(status_id),
+                Action::apply_status(1120),
             ],
         )
         .add_unit(1300, 1, 1)
@@ -372,7 +369,7 @@ fn test_combined_triggers() {
                 Action::add_target(
                     Expression::random_unit(Expression::all_enemy_units.into()).into(),
                 ),
-                Action::use_ability(ability_id),
+                Action::use_ability(1110),
             ],
         )
         .add_team(2000)

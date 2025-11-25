@@ -565,10 +565,7 @@ impl BattleSimulation {
             .copied()
             .collect_vec();
         for id in ids {
-            let vars = node_kind_match!(
-                ctx.get_kind(id)?,
-                ctx.load::<NodeType>(id).track()?.get_vars()
-            );
+            let vars = ctx.load::<NUnitStats>(id).track()?.get_vars();
             let mut actions = Vec::new();
             for (var, value) in vars {
                 let (value, new_actions) = Event::UpdateStat(var).update_value(ctx, value, id);
