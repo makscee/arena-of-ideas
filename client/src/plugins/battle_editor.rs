@@ -8,7 +8,7 @@ impl Plugin for BattleEditorPlugin {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct BattleEditorState {
     pub left_team: NTeam,
     pub right_team: NTeam,
@@ -16,22 +16,201 @@ pub struct BattleEditorState {
 }
 
 impl BattleEditorPlugin {
-    pub fn pane_team_editor(is_left: bool, world: &mut World, ui: &mut Ui) {
+    pub fn pane_view(ui: &mut Ui, world: &mut World) {
+        world.resource_scope(|world, mut battle_data: Mut<BattleData>| {
+            BattleCamera::builder()
+                .filled_slot_action(
+                    "Inspect Unit".to_string(),
+                    |team_id, unit_id, _slot, _ctx, ui| {
+                        ui.set_inspected_node_for_parent(team_id, unit_id);
+                    },
+                )
+                .filled_slot_action(
+                    "Delete Unit".to_string(),
+                    |team_id, unit_id, slot_index, _ctx, _ui| {
+                        op(move |world| {
+                            let mut state = world.resource_mut::<BattleEditorState>();
+                            let team = if team_id == state.left_team.id {
+                                &mut state.left_team
+                            } else {
+                                &mut state.right_team
+                            };
+
+                            // Remove from slot
+                            if let Ok(slots) = team.slots.get_mut() {
+                                if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
+                                {
+                                    slot.unit = Owned::default();
+                                }
+                            }
+
+                            // Remove from houses
+                            if let Ok(houses) = team.houses.get_mut() {
+                                for house in houses {
+                                    if let RefMultiple::Ids(units) = &mut house.units {
+                                        units.retain(|&id| id != unit_id);
+                                    }
+                                }
+                            }
+
+                            BattleEditorPlugin::save_changes_and_reload(world);
+                        })
+                    },
+                )
+                .empty_slot_action(
+                    "Add Placeholder Unit".to_string(),
+                    |team_id, slot_index, _ctx, _ui| {
+                        op(move |world| {
+                            let mut state = world.resource_mut::<BattleEditorState>();
+                            let team = if team_id == state.left_team.id {
+                                &mut state.left_team
+                            } else {
+                                &mut state.right_team
+                            };
+
+                            let mut unit = NUnit::placeholder();
+                            unit.state_set(NUnitState::new(next_id(), player_id(), 1, 0))
+                                .unwrap();
+
+                            // Add to first house or create one
+                            if let Ok(houses) = team.houses.get_mut() {
+                                if houses.is_empty() {
+                                    let mut house = NHouse::placeholder();
+                                    house.units = RefMultiple::Ids(vec![unit.id]);
+                                    houses.push(house);
+                                } else if let Some(house) = houses.first_mut() {
+                                    if let RefMultiple::Ids(units) = &mut house.units {
+                                        units.push(unit.id);
+                                    }
+                                }
+                            }
+
+                            // Add to slot
+                            if let Ok(slots) = team.slots.get_mut() {
+                                if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
+                                {
+                                    slot.unit = Owned::Loaded(unit);
+                                } else {
+                                    let mut new_slot =
+                                        NTeamSlot::new(next_id(), team.id, slot_index);
+                                    new_slot.unit = Owned::Loaded(unit);
+                                    slots.push(new_slot);
+                                }
+                            }
+
+                            BattleEditorPlugin::save_changes_and_reload(world);
+                        })
+                    },
+                )
+                .on_hover_filled(|unit_id, ctx, ui| {
+                    if let Ok(unit) = ctx.load::<NUnit>(unit_id) {
+                        unit.as_card().compose(ctx, ui);
+                    }
+                })
+                .on_drag_drop(
+                    |dragged_unit_id, from_slot, _target_unit_id, to_slot, _ctx| {
+                        if from_slot == to_slot {
+                            return false;
+                        }
+                        op(move |world| {
+                            let mut state = world.resource_mut::<BattleEditorState>();
+                            // Determine which team(s) are involved
+                            let left_has_from = state.left_team.slots.iter().any(|s| {
+                                if s.index == from_slot {
+                                    match &s.unit {
+                                        Owned::Loaded(u) => u.id == dragged_unit_id,
+                                        Owned::Id(id) => *id == dragged_unit_id,
+                                        _ => false,
+                                    }
+                                } else {
+                                    false
+                                }
+                            });
+                            let left_has_to =
+                                state.left_team.slots.iter().any(|s| s.index == to_slot);
+
+                            // Perform swap within the appropriate team
+                            let team = if left_has_from || left_has_to {
+                                &mut state.left_team
+                            } else {
+                                &mut state.right_team
+                            };
+
+                            if let Ok(slots) = team.slots.get_mut() {
+                                let from_unit = slots
+                                    .iter()
+                                    .find(|s| s.index == from_slot)
+                                    .and_then(|s| match &s.unit {
+                                        Owned::Loaded(unit) => Some(unit.clone()),
+                                        _ => None,
+                                    });
+                                let to_unit = slots.iter().find(|s| s.index == to_slot).and_then(
+                                    |s| match &s.unit {
+                                        Owned::Loaded(unit) => Some(unit.clone()),
+                                        _ => None,
+                                    },
+                                );
+
+                                // Swap units
+                                if let Some(from_slot_mut) =
+                                    slots.iter_mut().find(|s| s.index == from_slot)
+                                {
+                                    if let Some(to_unit) = to_unit {
+                                        from_slot_mut.unit = Owned::Loaded(to_unit);
+                                    } else {
+                                        from_slot_mut.unit = Owned::default();
+                                    }
+                                }
+
+                                if let Some(from_unit) = from_unit {
+                                    if let Some(to_slot_mut) =
+                                        slots.iter_mut().find(|s| s.index == to_slot)
+                                    {
+                                        to_slot_mut.unit = Owned::Loaded(from_unit);
+                                    } else {
+                                        // Create new slot if it doesn't exist
+                                        let mut new_slot =
+                                            NTeamSlot::new(next_id(), team.id, to_slot);
+                                        new_slot.unit = Owned::Loaded(from_unit);
+                                        slots.push(new_slot);
+                                    }
+                                }
+                            }
+
+                            BattleEditorPlugin::save_changes_and_reload(world);
+                        });
+                        true
+                    },
+                )
+                .on_battle_end(|ui, result| {
+                    ui.vertical_centered_justified(|ui| {
+                        if result {
+                            "Victory".cstr_cs(GREEN, CstrStyle::Heading).label(ui);
+                        } else {
+                            "Defeat".cstr_cs(RED, CstrStyle::Heading).label(ui);
+                        }
+                    });
+                })
+                .show(&mut battle_data, ui);
+        });
+    }
+
+    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
         ui.horizontal(|ui| {
             let saved_teams = pd().client_state.saved_teams.clone();
 
-            for (name, left, right) in saved_teams.iter() {
+            for (name, left_data, right_data) in saved_teams.iter() {
                 ui.menu_button(name, |ui| {
                     if ui.button("Load").clicked() {
                         let mut state = world.resource_mut::<BattleEditorState>();
-                        let left_team = match NTeam::unpack(left) {
+                        let left_team = match NTeam::unpack(left_data) {
                             Ok(v) => v,
                             Err(e) => {
                                 e.cstr().notify_error(world);
                                 return;
                             }
                         };
-                        let right_team = match NTeam::unpack(right) {
+                        let right_team = match NTeam::unpack(right_data) {
                             Ok(v) => v,
                             Err(e) => {
                                 e.cstr().notify_error(world);
@@ -67,7 +246,6 @@ impl BattleEditorPlugin {
                     .cancel_name("Cancel")
                     .content(move |ui, world, result| {
                         Input::new("Team Name").ui_string(&mut name, ui);
-                        ui.label("test");
                         if result == Some(true) {
                             if !name.is_empty() {
                                 let state = world.resource::<BattleEditorState>();
@@ -86,74 +264,18 @@ impl BattleEditorPlugin {
             }
         });
 
-        let mut changed_team = None;
-        let needs_reload = false;
-        if let Some(battle_data) = world.get_resource::<BattleData>() {
-            let state = world.resource::<BattleEditorState>();
-            let current_team = if is_left {
-                &state.left_team
+        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
+            let needs_reload = if left {
+                state.left_team.render_recursive_edit(ui)
             } else {
-                &state.right_team
+                state.right_team.render_recursive_edit(ui)
             };
 
-            if let Ok(result) =
-                battle_data
-                    .source
-                    .exec_context_ref(|ctx| -> NodeResult<Option<NTeam>> {
-                        let editor = TeamEditor::new()
-                            .empty_slot_action(
-                                "Add Placeholder Unit".to_string(),
-                                |team, slot_index, _ctx, _ui| {
-                                    let mut unit = NUnit::placeholder();
-                                    if let Ok(houses) = team.houses.get_mut() {
-                                        if let Some(house) = houses.first_mut() {
-                                            if let Ok(slots) = team.slots.get_mut() {
-                                                if let Some(slot) =
-                                                    slots.iter_mut().find(|s| s.index == slot_index)
-                                                {
-                                                    if let RefMultiple::Ids(units) =
-                                                        &mut house.units
-                                                    {
-                                                        units.push(unit.id);
-                                                    }
-                                                    unit.state_set(NUnitState::new(
-                                                        next_id(),
-                                                        unit.owner,
-                                                        1,
-                                                        0,
-                                                    ))
-                                                    .unwrap();
-                                                    slot.unit = Owned::Loaded(unit);
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                            )
-                            .filled_slot_action(
-                                "Inspect Unit".to_string(),
-                                |team, unit_id, _slot_index, _ctx, ui| {
-                                    ui.set_inspected_node_for_parent(team.id, unit_id);
-                                },
-                            );
-
-                        Ok(editor.edit(current_team, ctx, ui))
-                    })
-            {
-                changed_team = result;
+            if needs_reload {
+                BattleEditorPlugin::save_changes_and_reload(world);
             }
-        }
-
-        if let Some(new_team) = changed_team {
-            let mut state = world.resource_mut::<BattleEditorState>();
-            if is_left {
-                state.left_team = new_team;
-            } else {
-                state.right_team = new_team;
-            }
-            BattleEditorPlugin::save_changes_and_reload(world);
-        } else if needs_reload {
-            BattleEditorPlugin::save_changes_and_reload(world);
+        } else {
+            "[red [b BattleEditorState] not found]".cstr().label(ui);
         }
     }
 
@@ -172,21 +294,6 @@ impl BattleEditorPlugin {
         Self::save_changes_and_reload(world);
     }
 
-    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
-        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
-            let needs_reload = if left {
-                state.left_team.render_recursive_edit(ui)
-            } else {
-                state.right_team.render_recursive_edit(ui)
-            };
-
-            if needs_reload {
-                BattleEditorPlugin::save_changes_and_reload(world);
-            }
-        } else {
-            "[red [b BattleEditoState] not found]".cstr().label(ui);
-        }
-    }
     pub fn save_changes_and_reload(world: &mut World) {
         let was_playing = world
             .get_resource::<BattleData>()

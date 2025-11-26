@@ -106,13 +106,6 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
                 BattlePane::View => "Battle View".into(),
                 BattlePane::EditLeftGraph => "Left Team".into(),
                 BattlePane::EditRightGraph => "Right Team".into(),
-                BattlePane::TeamEditor(is_left) => {
-                    if *is_left {
-                        "Left Team Editor".into()
-                    } else {
-                        "Right Team Editor".into()
-                    }
-                }
             },
             Pane::Shop(pane) => pane.as_ref().into(),
             _ => view.as_ref().into(),

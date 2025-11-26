@@ -63,23 +63,13 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
 
-                // Left team tab with editor and graph
-                let left_team_editor =
-                    tiles.insert_pane(Pane::Battle(BattlePane::TeamEditor(true)));
+                // Left team graph
                 let left_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
-                let left_team_content =
-                    tiles.insert_horizontal_tile([left_team_editor, left_team_graph].into());
-                let left_team_tab = left_team_content.with_name(tile_tree, "Left Team");
 
-                // Right team tab with editor and graph
-                let right_team_editor =
-                    tiles.insert_pane(Pane::Battle(BattlePane::TeamEditor(false)));
+                // Right team graph
                 let right_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
-                let right_team_content =
-                    tiles.insert_horizontal_tile([right_team_editor, right_team_graph].into());
-                let right_team_tab = right_team_content.with_name(tile_tree, "Right Team");
 
-                let team_tabs = tiles.insert_tab_tile([left_team_tab, right_team_tab].into());
+                let team_tabs = tiles.insert_tab_tile([left_team_graph, right_team_graph].into());
                 let root = tiles.insert_vertical_tile([view, team_tabs].into());
                 if let Tile::Container(h) = tiles.get_mut(root).unwrap() {
                     if let Container::Linear(h) = h {
@@ -222,7 +212,6 @@ pub enum BattlePane {
     View,
     EditLeftGraph,
     EditRightGraph,
-    TeamEditor(bool), // true for left, false for right
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ShopPane {
@@ -286,8 +275,10 @@ impl Pane {
                                         if !e.check_identity() {
                                             return;
                                         }
-                                        e.event.on_success(|| {
-                                            debug!("event success");
+                                        if matches!(
+                                            e.event.status,
+                                            spacetimedb_sdk::Status::Committed
+                                        ) {
                                             if let Some(callback_id) =
                                                 ON_MATCH_CALLBACK.lock().take()
                                             {
@@ -295,7 +286,7 @@ impl Pane {
                                                 cn().reducers.remove_on_match_insert(callback_id);
                                             }
                                             GameState::Shop.set_next_op();
-                                        });
+                                        }
                                     });
                                     *ON_MATCH_CALLBACK.lock() = Some(callback_id);
                                 }
@@ -320,12 +311,9 @@ impl Pane {
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },
             Pane::Battle(pane) => match pane {
-                BattlePane::View => BattlePlugin::pane_view(ui, world)?,
+                BattlePane::View => BattleEditorPlugin::pane_view(ui, world),
                 BattlePane::EditLeftGraph => BattleEditorPlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattleEditorPlugin::pane_edit_graph(false, ui, world),
-                BattlePane::TeamEditor(is_left) => {
-                    BattleEditorPlugin::pane_team_editor(is_left, world, ui)
-                }
             },
             Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world)?,
             Pane::WorldDownload => world_download_ui_system(ui, world),

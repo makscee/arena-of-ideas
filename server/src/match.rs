@@ -85,7 +85,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
-    let m = player.active_match_load(ctx)?.load_all(ctx)?;
+    let m = player.active_match_load(ctx)?;
     let offer = m
         .shop_offers
         .last_mut()
@@ -103,32 +103,44 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let card_kind = slot.card_kind;
     m.pay(ctx, price).track()?;
     let mid = m.id;
-    let team_id = m.team()?.id;
     m.take().save(ctx).track()?;
-    let _ = m;
+    let mut m = ctx.load::<NMatch>(mid)?;
+
     match card_kind {
         CardKind::Unit => {
-            let mut team_unit = ctx.load::<NUnit>(node_id)?.load_components(ctx)?.take();
+            let mut team_unit = ctx
+                .load::<NUnit>(node_id)
+                .track()?
+                .load_components(ctx)
+                .track()?
+                .take();
             let house_id = ctx.collect_kind_parents(team_unit.id, NodeKind::NHouse)?[0];
             team_unit =
                 team_unit
                     .remap_ids(ctx)
                     .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
             let id = team_unit.id;
-            team_unit.save(ctx)?;
-            id.add_parent(ctx.rctx(), team_id)?;
+            team_unit.save(ctx).track()?;
+            id.add_parent(ctx.rctx(), mid)?;
             id.add_parent(ctx.rctx(), house_id)?;
         }
         CardKind::House => {
-            let house = ctx.load::<NHouse>(node_id)?.load_components(ctx)?.take();
-            let house_to_use = if let Some(existing_house) = ctx
-                .load::<NTeam>(team_id)?
-                .houses_load(ctx)?
+            let house = ctx
+                .load::<NHouse>(node_id)
+                .track()?
+                .load_components(ctx)
+                .track()?
+                .take();
+            let house_to_use = if let Some(existing_house) = m
+                .shop_pool_load(ctx)
+                .track()?
+                .houses_load(ctx)
+                .track()?
                 .iter_mut()
                 .find(|h| h.house_name == house.house_name)
             {
-                let stax = existing_house.state()?.stax;
-                existing_house.state_load(ctx)?.stax_set(stax + 1);
+                let stax = existing_house.state().track()?.stax;
+                existing_house.state_load(ctx).track()?.stax_set(stax + 1);
                 existing_house.id
             } else {
                 let new_house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
@@ -137,20 +149,25 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                     1,
                 ));
                 let new_house_id = new_house.id;
-                new_house.save(ctx)?;
-                team_id.add_child(ctx.rctx(), new_house_id)?;
+                new_house.save(ctx).track()?;
+                m.shop_pool_load(ctx)
+                    .track()?
+                    .id
+                    .add_child(ctx.rctx(), new_house_id)
+                    .track()?;
                 new_house_id
             };
             let all_core_units = NUnit::collect_owner(ctx, ID_CORE);
             for _ in 0..5 {
                 if let Some(mut unit) = all_core_units.choose(&mut ctx.rng()).cloned() {
                     let new_unit = unit
-                        .load_components(ctx)?
+                        .load_components(ctx)
+                        .track()?
                         .take()
                         .remap_ids(ctx)
                         .with_owner(pid);
                     let new_unit_id = new_unit.id;
-                    new_unit.save(ctx)?;
+                    new_unit.save(ctx).track()?;
                     new_unit_id.add_parent(ctx.rctx(), house_to_use)?;
                     new_unit_id.add_parent(ctx.rctx(), mid)?;
                 }
@@ -158,7 +175,7 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
         }
     }
     if card_kind == CardKind::House {
-        let mut m = ctx.load::<NMatch>(mid)?;
+        let mut m = ctx.load::<NMatch>(mid).track()?;
         m.fill_shop_case(ctx).track()?;
         m.save(ctx).track()?;
     }
@@ -170,25 +187,26 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
     let pid = player.id;
-
     let unit = ctx.load::<NUnit>(unit_id)?;
     if unit.owner != pid {
-        return Err("Unit not owned by player".into());
+        return Err("Unit not owned by player".to_string());
     }
-
     let m = player.active_match_load(ctx)?;
+
     m.unlink_unit(ctx, unit_id)?;
+
+    // Find or create the target slot
     if let Some(target_slot) = m
-        .team_load(ctx)?
         .slots_load(ctx)?
         .iter_mut()
-        .find(|s| s.index == slot_index)
+        .find(|x| x.index == slot_index)
     {
-        target_slot.id.add_child(ctx.rctx(), unit_id)?;
+        target_slot.unit_set(unit)?;
     } else {
-        return Err("Slot not found".into());
+        return Err("Invalid slot index".to_string());
     }
 
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -219,8 +237,8 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     }
     let m = player.active_match_load(ctx)?;
     m.unlink_unit(ctx, unit_id)?;
-    let team = m.team_load(ctx)?;
-    team.id.add_child(ctx.rctx(), unit.id)?;
+    m.bench_push(unit)?;
+    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -270,8 +288,7 @@ fn match_submit_battle_result(
         MatchState::ChampionBattle => {
             if result {
                 // Won champion battle - create new floor with boss and pool
-                let player_team_id = m.team_load(ctx)?.id;
-                let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
+                let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
 
                 // Create new boss team for the new floor
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
@@ -292,8 +309,7 @@ fn match_submit_battle_result(
         MatchState::BossBattle => {
             if result {
                 // Won against boss - replace boss with player's team
-                let player_team_id = m.team_load(ctx)?.id;
-                let player_team = ctx.load::<NTeam>(player_team_id)?.load_all(ctx)?.take();
+                let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
 
                 // Create new boss team
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
@@ -371,7 +387,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     }
 
     m.set_state(MatchState::RegularBattle);
-    let player_team = m.team_load(ctx)?.load_all(ctx)?;
+    let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
     let pool_id = ensure_floor_pool(ctx, floor)?;
     let pool_teams = get_floor_pool_teams(ctx, pool_id);
     let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
@@ -396,12 +412,14 @@ fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
     if m.floor > last_floor {
         m.set_state(MatchState::ChampionBattle);
-        let player_team_id = m.team_load(ctx).track()?.id;
+        let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
+        let pool_id = ensure_floor_pool(ctx, floor).track()?;
+        let player_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
         let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
         create_battle(ctx, m, pid, player_team_id, enemy_team_id).track()?;
     } else {
         m.set_state(MatchState::BossBattle);
-        let player_team = m.team_load(ctx)?.load_all(ctx)?;
+        let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
         let pool_id = ensure_floor_pool(ctx, floor).track()?;
         let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
         let enemy_team_id = get_floor_boss_team_id(ctx, floor).unwrap_or(0);
@@ -651,7 +669,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     for mut m in NMatch::collect_owner(ctx, player.id) {
         m.load_all(ctx)?.delete_recursive(ctx);
     }
-    let mut m = NMatch::new(
+    let m = NMatch::new(
         ctx.next_id(),
         pid,
         gs.match_settings.initial,
@@ -663,13 +681,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         vec![], // battle_history
         None,   // pending_battle
         None,   // fusion
-    );
-    let mut team = NTeam::new(ctx.next_id(), pid);
-    for i in 0..gs.team_slots as i32 {
-        let slot = NTeamSlot::new(ctx.next_id(), pid, i);
-        team.slots_push(slot)?;
-    }
-    m.team_set(team)?;
+    )
+    .with_shop_pool(NShopPool::new(ctx.next_id(), pid));
     let mid = m.id;
     m.save(ctx)?;
     let mut m = ctx.load::<NMatch>(mid).track()?;
@@ -690,6 +703,38 @@ impl NMatch {
         self.g_set(self.g - price);
         Ok(())
     }
+
+    fn build_team(&mut self, ctx: &mut ServerContext) -> NodeResult<NTeam> {
+        self.load_all(ctx)?;
+        let mut team = NTeam::new(ctx.next_id(), self.owner);
+
+        // Copy slots
+        for slot in self.slots.iter() {
+            team.slots_push(slot.clone())?;
+        }
+
+        // Copy houses but remove any references to bench or shop_pool units
+        for mut house in self
+            .shop_pool_load(ctx)?
+            .houses
+            .iter()
+            .cloned()
+            .collect_vec()
+        {
+            if let RefMultiple::Ids(unit_ids) = &mut house.units {
+                // Keep only units that are in slots
+                let slot_unit_ids: Vec<u64> = self
+                    .slots
+                    .iter()
+                    .filter_map(|s| s.unit().ok().map(|u| u.id))
+                    .collect();
+                unit_ids.retain(|id| slot_unit_ids.contains(id));
+            }
+            team.houses_push(house)?;
+        }
+
+        Ok(team.remap_ids(ctx))
+    }
     // unlink_unit removed - no longer needed with new fusion system
     fn fill_shop_case(&mut self, ctx: &ServerContext) -> NodeResult<()> {
         let gs = ctx.global_settings();
@@ -701,7 +746,7 @@ impl NMatch {
         let all_houses = NHouse::collect_owner(ctx, ID_CORE);
         let all_house_ids = all_houses.iter().map(|h| h.id).collect_vec();
 
-        let shop_pool_units = self.shop_pool_load(ctx).track()?;
+        let shop_pool_units = self.shop_pool_load(ctx).track()?.units_load(ctx)?;
         let has_units = !shop_pool_units.is_empty();
 
         let shop_case = (0..4)
@@ -739,7 +784,7 @@ impl NMatch {
 
 impl NMatch {
     fn unlink_unit(&mut self, ctx: &mut ServerContext, unit_id: u64) -> NodeResult<Option<u64>> {
-        self.team_load(ctx)?.id.remove_child(ctx.rctx(), unit_id);
+        self.id.remove_child(ctx.rctx(), unit_id);
         if let Some(id) = unit_id.get_kind_parent(ctx.rctx(), NodeKind::NTeamSlot) {
             ctx.remove_link(id, unit_id)?;
             return Ok(Some(id));

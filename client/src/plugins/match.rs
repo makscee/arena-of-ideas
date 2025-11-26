@@ -1,5 +1,5 @@
 use bevy::input::common_conditions::input_just_pressed;
-use bevy_egui::egui::Grid;
+use bevy_egui::egui::{Grid, UiKind};
 
 use super::*;
 
@@ -223,11 +223,10 @@ impl MatchPlugin {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
-            let team = m.team_ref(ctx)?;
             let (_, card) =
                 ui.dnd_drop_zone::<(usize, CardKind), NodeResult<()>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
-                    for house in team.houses_ref(ctx)? {
+                    for house in m.shop_pool()?.houses.iter() {
                         house.as_card().compose(ctx, ui);
                     }
                     Ok(())
@@ -242,78 +241,130 @@ impl MatchPlugin {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
             let m = player.active_match_ref(ctx)?;
-            let team = m.team_ref(ctx)?.clone().load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
-            let team_editor = TeamEditor::new()
-                .filled_slot_action(
-                    "Sell Unit".to_string(),
-                    |_team, unit_id, _slot_index, _ctx, _ui| {
-                        cn().reducers.match_sell_unit(unit_id).notify_error_op();
-                    },
-                )
-                .with_drag_over_handler(|_source_id, _target_id, ctx| {
-                    if let (Ok(mut source), Ok(mut target)) =
-                        (ctx.load::<NUnit>(_source_id), ctx.load::<NUnit>(_target_id))
-                    {
-                        if source.check_stackable(&mut target, ctx).unwrap_or(false) {
-                            return DragOverResult::Stack;
-                        } else if source.check_fusible_with(&mut target, ctx).unwrap_or(false) {
-                            return DragOverResult::Fuse;
-                        }
-                    }
-                    DragOverResult::Swap
-                })
-                .with_action_handler(|ctx, action| {
-                    match action {
-                        TeamAction::MoveToBench { unit_id } => {
-                            cn().reducers.match_bench_unit(*unit_id).notify_error_op();
-                        }
-                        TeamAction::MoveToEmptySlot {
-                            unit_id,
-                            slot_index,
-                        } => {
-                            // For now, just bench and un-bench
-                            cn().reducers
-                                .match_move_unit(*unit_id, *slot_index)
-                                .notify_error_op();
-                        }
-                        TeamAction::MoveOverUnit {
-                            unit_id,
-                            target_unit_id,
-                        } => {
-                            // Determine the action based on the drag result
-                            if let (Ok(mut source), Ok(mut target)) = (
-                                ctx.load::<NUnit>(*unit_id),
-                                ctx.load::<NUnit>(*target_unit_id),
-                            ) {
-                                if source.check_stackable(&mut target, ctx).unwrap_or(false) {
-                                    debug!("Call stack reducer");
-                                    cn().reducers
-                                        .match_stack_unit(*unit_id, *target_unit_id)
-                                        .notify_error_op();
-                                } else if source
-                                    .check_fusible_with(&mut target, ctx)
-                                    .unwrap_or(false)
-                                {
-                                    debug!("Call fuse reducer");
-                                    cn().reducers
-                                        .match_start_fusion(*unit_id, *target_unit_id)
-                                        .notify_error_op();
-                                } else {
-                                    todo!("call swap reducer");
+            // Display slots
+            let slot_count = global_settings().team_slots;
+            ui.horizontal(|ui| {
+                for slot_index in 1..=slot_count {
+                    let slot = m
+                        .slots
+                        .iter()
+                        .find(|s| s.index == slot_index as i32)
+                        .cloned();
+
+                    ui.vertical(|ui| {
+                        if let Some(slot) = &slot {
+                            if let Ok(unit) = slot.unit_ref(ctx) {
+                                // Filled slot - show unit with MatRect
+                                let response = MatRect::new(egui::vec2(70.0, 100.0))
+                                    .unit_rep_with_default(unit.id)
+                                    .ui(ui, ctx);
+
+                                if response.hovered() {
+                                    unit.as_card().compose(ctx, ui);
                                 }
-                            } else {
-                                "Failed to load unit".notify_error_op();
+
+                                // Set drag payload
+                                response.dnd_set_drag_payload(DraggedUnit {
+                                    unit_id: unit.id,
+                                    from_location: UnitLocation::Slot {
+                                        index: slot_index as i32,
+                                    },
+                                });
+
+                                // Context menu for filled slots
+                                response.context_menu(|ui| {
+                                    if ui.button("Sell Unit").clicked() {
+                                        cn().reducers.match_sell_unit(unit.id).notify_error_op();
+                                        ui.close_kind(UiKind::Menu);
+                                    }
+                                    if ui.button("Move to Bench").clicked() {
+                                        cn().reducers.match_bench_unit(unit.id).notify_error_op();
+                                        ui.close_kind(UiKind::Menu);
+                                    }
+                                });
+
+                                // Handle drop on this slot
+                                let slot_rect = response.rect;
+                                if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
+                                    .text_fn(ui, |_| Some(format!("Stack/Fuse")))
+                                    .ui(ui)
+                                {
+                                    if dragged.unit_id != unit.id {
+                                        // Check for stack or fuse
+                                        if let Ok(mut source) = ctx.load::<NUnit>(dragged.unit_id) {
+                                            let mut target = unit.clone();
+                                            if source
+                                                .check_stackable(&mut target, ctx)
+                                                .unwrap_or(false)
+                                            {
+                                                cn().reducers
+                                                    .match_stack_unit(dragged.unit_id, unit.id)
+                                                    .notify_error_op();
+                                            } else if source
+                                                .check_fusible_with(&mut target, ctx)
+                                                .unwrap_or(false)
+                                            {
+                                                cn().reducers
+                                                    .match_start_fusion(dragged.unit_id, unit.id)
+                                                    .notify_error_op();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Empty slot
+                            let response = MatRect::new(egui::vec2(70.0, 100.0))
+                                .enabled(false)
+                                .ui(ui, ctx);
+
+                            // Handle drop on empty slot
+                            let slot_rect = response.rect;
+                            if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
+                                .text_fn(ui, |_| Some(format!("Place here")))
+                                .ui(ui)
+                            {
+                                cn().reducers
+                                    .match_move_unit(dragged.unit_id, slot_index as i32)
+                                    .notify_error_op();
                             }
                         }
-                        _ => {}
-                    };
-                    Ok(())
-                });
+                    });
+                }
+            });
 
-            let _changed_team = team_editor.edit(&team, ctx, ui);
+            // Display bench
+            ui.separator();
+            ui.label("Bench:");
+            ui.horizontal(|ui| {
+                for unit in m.bench.iter() {
+                    let response = MatRect::new(egui::vec2(60.0, 80.0))
+                        .unit_rep_with_default(unit.id)
+                        .ui(ui, ctx);
 
+                    if response.hovered() {
+                        unit.as_card().compose(ctx, ui);
+                    }
+
+                    // Set drag payload
+                    response.dnd_set_drag_payload(DraggedUnit {
+                        unit_id: unit.id,
+                        from_location: UnitLocation::Bench,
+                    });
+
+                    // Context menu for bench units
+                    response.context_menu(|ui| {
+                        if ui.button("Sell Unit").clicked() {
+                            cn().reducers.match_sell_unit(unit.id).notify_error_op();
+                            ui.close_kind(UiKind::Menu);
+                        }
+                    });
+                }
+            });
+
+            // Handle shop card drops
             if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
                 .text_fn(ui, |slot| Some(format!("buy [yellow -{}g]", slot.1.price)))
                 .ui(ui)

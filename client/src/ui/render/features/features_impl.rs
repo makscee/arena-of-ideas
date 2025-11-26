@@ -1577,7 +1577,6 @@ impl FPlaceholder for NMatch {
             None,
             None,
         )
-        .with_team(NTeam::placeholder())
     }
 }
 
@@ -1638,6 +1637,18 @@ impl FDisplay for NTeamSlot {
     }
 }
 
+impl FDisplay for NShopPool {
+    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.title(ctx).label(ui)
+    }
+}
+
+impl FTitle for NShopPool {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        "Shop Pool".cstr()
+    }
+}
+
 impl FTitle for NUnitDescription {
     fn title(&self, _: &ClientContext) -> Cstr {
         self.description.cstr()
@@ -1645,15 +1656,6 @@ impl FTitle for NUnitDescription {
 }
 
 impl FDescription for NUnitDescription {
-    fn description_expanded_cstr(&self, ctx: &ClientContext) -> Cstr {
-        let mut description = String::new();
-        let _ = ctx.exec_ref(|ctx| {
-            let house =
-                ctx.load_first_parent_recursive_ref::<NHouse>(ctx.owner().unwrap_or(self.id))?;
-            Ok(())
-        });
-        description + &self.description_cstr(ctx)
-    }
     fn description_cstr(&self, _: &ClientContext) -> Cstr {
         self.description.cstr()
     }

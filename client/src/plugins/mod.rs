@@ -12,7 +12,6 @@ mod persistent_data;
 mod representation;
 mod stdb;
 mod stdb_ext;
-mod team_editor;
 mod tile;
 mod ui;
 mod world_migration;
@@ -32,7 +31,18 @@ pub use persistent_data::*;
 pub use representation::*;
 pub use stdb::*;
 pub use stdb_ext::*;
-pub use team_editor::*;
 pub use tile::*;
 pub use ui::*;
 pub use world_migration::*;
+
+#[derive(Clone, Debug)]
+pub struct DraggedUnit {
+    pub unit_id: u64,
+    pub from_location: UnitLocation,
+}
+
+#[derive(Clone, Debug)]
+pub enum UnitLocation {
+    Bench,
+    Slot { index: i32 },
+}

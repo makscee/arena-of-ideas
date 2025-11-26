@@ -135,7 +135,6 @@ pub struct NUnitState {
 #[derive(Node)]
 pub struct NTeam {
     pub slots: OwnedMultiple<NTeamSlot>,
-    pub benched: OwnedMultiple<NUnit>,
     pub houses: OwnedMultiple<NHouse>,
 }
 
@@ -151,11 +150,19 @@ pub struct NMatch {
     pub active: bool,
     pub state: MatchState,
     pub shop_offers: Vec<ShopOffer>,
-    pub team: Owned<NTeam>,
     pub battle_history: Vec<u64>,
     pub pending_battle: Option<u64>,
     pub fusion: Option<(u64, u64, Vec<PackedNodes>)>,
-    pub shop_pool: OwnedMultiple<NUnit>,
+
+    pub shop_pool: Owned<NShopPool>,
+    pub slots: OwnedMultiple<NTeamSlot>,
+    pub bench: OwnedMultiple<NUnit>,
+}
+
+#[derive(Node)]
+pub struct NShopPool {
+    pub houses: OwnedMultiple<NHouse>,
+    pub units: OwnedMultiple<NUnit>,
 }
 
 #[derive(Node)]
