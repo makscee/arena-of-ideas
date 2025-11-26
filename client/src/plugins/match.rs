@@ -240,7 +240,7 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?.clone().load_all(ctx)?.take();
+            let mut m = player.active_match_ref(ctx)?.clone().load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
             // Display slots
@@ -249,61 +249,99 @@ impl MatchPlugin {
                 for slot_index in 0..slot_count {
                     let slot = m
                         .slots
-                        .iter()
+                        .get_mut()?
+                        .iter_mut()
                         .find(|s| s.index == slot_index as i32)
                         .unwrap();
 
-                    if let Ok(unit) = slot.unit_ref(ctx) {
+                    if let Ok(slot_unit) = slot.unit.get_mut() {
                         // Filled slot - show unit with MatRect
                         let response = MatRect::new(egui::vec2(100.0, 100.0))
-                            .add_mat(&unit.representation()?.material, unit.id)
-                            .unit_rep_with_default(unit.id)
+                            .add_mat(&slot_unit.representation()?.material, slot_unit.id)
+                            .unit_rep_with_default(slot_unit.id)
                             .ui(ui, ctx)
                             .on_hover_ui(|ui| {
-                                unit.as_card().compose(ctx, ui);
+                                (&*slot_unit).as_card().compose(ctx, ui);
                             });
 
                         // Set drag payload
                         response.dnd_set_drag_payload(DraggedUnit {
-                            unit_id: unit.id,
+                            unit_id: slot_unit.id,
                             from_location: UnitLocation::Slot {
                                 index: slot_index as i32,
                             },
                         });
 
                         // Context menu for filled slots
-                        response.context_menu(|ui| {
+                        response.show_menu(ui, |ui| {
                             if ui.button("Sell Unit").clicked() {
-                                cn().reducers.match_sell_unit(unit.id).notify_error_op();
+                                cn().reducers
+                                    .match_sell_unit(slot_unit.id)
+                                    .notify_error_op();
                                 ui.close_kind(UiKind::Menu);
                             }
                             if ui.button("Move to Bench").clicked() {
-                                cn().reducers.match_bench_unit(unit.id).notify_error_op();
+                                cn().reducers
+                                    .match_bench_unit(slot_unit.id)
+                                    .notify_error_op();
                                 ui.close_kind(UiKind::Menu);
                             }
                         });
 
+                        #[derive(AsRefStr)]
+                        enum FuseStackSwap {
+                            Fuse,
+                            Stack,
+                            Swap,
+                        }
+                        fn drag_stack_swap(
+                            ctx: &ClientContext,
+                            source: &mut NUnit,
+                            target: &mut NUnit,
+                        ) -> NodeResult<FuseStackSwap> {
+                            if source.check_stackable(target, ctx)? {
+                                Ok(FuseStackSwap::Stack)
+                            } else if source.check_fusible_with(target, ctx)? {
+                                Ok(FuseStackSwap::Fuse)
+                            } else {
+                                Ok(FuseStackSwap::Swap)
+                            }
+                        }
                         // Handle drop on this slot
                         let slot_rect = response.rect;
                         if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
-                            .text_fn(ui, |_| Some(format!("Stack/Fuse")))
+                            .text_fn(ui, |du| {
+                                if du.unit_id == slot_unit.id {
+                                    return None;
+                                }
+                                Some(
+                                    drag_stack_swap(
+                                        ctx,
+                                        &mut ctx.load::<NUnit>(du.unit_id).unwrap(),
+                                        slot_unit,
+                                    )
+                                    .unwrap()
+                                    .as_ref()
+                                    .to_string(),
+                                )
+                            })
                             .ui(ui)
                         {
-                            if dragged.unit_id != unit.id {
-                                // Check for stack or fuse
+                            if dragged.unit_id != slot_unit.id {
                                 if let Ok(mut source) = ctx.load::<NUnit>(dragged.unit_id) {
-                                    let mut target = unit.clone();
-                                    if source.check_stackable(&mut target, ctx).unwrap_or(false) {
-                                        cn().reducers
-                                            .match_stack_unit(dragged.unit_id, unit.id)
-                                            .notify_error_op();
-                                    } else if source
-                                        .check_fusible_with(&mut target, ctx)
-                                        .unwrap_or(false)
-                                    {
-                                        cn().reducers
-                                            .match_start_fusion(dragged.unit_id, unit.id)
-                                            .notify_error_op();
+                                    match drag_stack_swap(ctx, &mut source, slot_unit).unwrap() {
+                                        FuseStackSwap::Fuse => cn()
+                                            .reducers
+                                            .match_start_fusion(dragged.unit_id, slot_unit.id)
+                                            .notify_error_op(),
+                                        FuseStackSwap::Stack => cn()
+                                            .reducers
+                                            .match_stack_unit(dragged.unit_id, slot_unit.id)
+                                            .notify_error_op(),
+                                        FuseStackSwap::Swap => cn()
+                                            .reducers
+                                            .match_move_unit(dragged.unit_id, slot.index)
+                                            .notify_error_op(),
                                     }
                                 }
                             }
@@ -321,7 +359,9 @@ impl MatchPlugin {
                     }
                 }
                 Ok(())
-            });
+            })
+            .inner
+            .ui(ui);
             ui.separator();
             if let Some(dragged) = DndArea::<DraggedUnit>::new(ui.available_rect_before_wrap())
                 .text_fn(ui, |du| {

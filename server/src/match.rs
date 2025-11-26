@@ -194,6 +194,7 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
         return Err("Unit not owned by player".to_string());
     }
     let m = player.active_match_load(ctx)?;
+    let mid = m.id;
     let prev_slot = m.unlink_unit(ctx, unit_id)?;
     if let Some(target_slot) = m
         .slots_load(ctx)?
@@ -204,6 +205,8 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
             target_slot.id.remove_child(ctx.rctx(), unit_in_target);
             if let Some(prev_slot) = prev_slot {
                 unit_in_target.add_parent(ctx.rctx(), prev_slot)?;
+            } else {
+                unit_in_target.add_parent(ctx.rctx(), mid)?;
             }
         }
         target_slot.id.add_child(ctx.rctx(), unit_id)?;
