@@ -169,7 +169,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                     let new_unit_id = new_unit.id;
                     new_unit.save(ctx).track()?;
                     new_unit_id.add_parent(ctx.rctx(), house_to_use)?;
-                    new_unit_id.add_parent(ctx.rctx(), mid)?;
+                    new_unit_id.add_parent(ctx.rctx(), m.shop_pool()?.id)?;
+                } else {
+                    return Err("No core units available".to_string());
                 }
             }
         }
@@ -192,21 +194,22 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
         return Err("Unit not owned by player".to_string());
     }
     let m = player.active_match_load(ctx)?;
-
-    m.unlink_unit(ctx, unit_id)?;
-
-    // Find or create the target slot
+    let prev_slot = m.unlink_unit(ctx, unit_id)?;
     if let Some(target_slot) = m
         .slots_load(ctx)?
         .iter_mut()
         .find(|x| x.index == slot_index)
     {
-        target_slot.unit_set(unit)?;
+        if let Ok(unit_in_target) = target_slot.unit_load_id(ctx) {
+            target_slot.id.remove_child(ctx.rctx(), unit_in_target);
+            if let Some(prev_slot) = prev_slot {
+                unit_in_target.add_parent(ctx.rctx(), prev_slot)?;
+            }
+        }
+        target_slot.id.add_child(ctx.rctx(), unit_id)?;
     } else {
         return Err("Invalid slot index".to_string());
     }
-
-    m.take().save(ctx)?;
     Ok(())
 }
 
@@ -237,8 +240,7 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     }
     let m = player.active_match_load(ctx)?;
     m.unlink_unit(ctx, unit_id)?;
-    m.bench_push(unit)?;
-    m.take().save(ctx)?;
+    m.id.add_child(ctx.rctx(), unit_id)?;
     Ok(())
 }
 
@@ -669,6 +671,10 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     for mut m in NMatch::collect_owner(ctx, player.id) {
         m.load_all(ctx)?.delete_recursive(ctx);
     }
+    let mut team_slots = Vec::new();
+    for i in 0..gs.team_slots {
+        team_slots.push(NTeamSlot::new(ctx.next_id(), pid, i as i32));
+    }
     let m = NMatch::new(
         ctx.next_id(),
         pid,
@@ -682,7 +688,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         None,   // pending_battle
         None,   // fusion
     )
-    .with_shop_pool(NShopPool::new(ctx.next_id(), pid));
+    .with_shop_pool(NShopPool::new(ctx.next_id(), pid))
+    .with_slots(team_slots);
     let mid = m.id;
     m.save(ctx)?;
     let mut m = ctx.load::<NMatch>(mid).track()?;
@@ -735,7 +742,7 @@ impl NMatch {
 
         Ok(team.remap_ids(ctx))
     }
-    // unlink_unit removed - no longer needed with new fusion system
+
     fn fill_shop_case(&mut self, ctx: &ServerContext) -> NodeResult<()> {
         let gs = ctx.global_settings();
 
@@ -785,9 +792,11 @@ impl NMatch {
 impl NMatch {
     fn unlink_unit(&mut self, ctx: &mut ServerContext, unit_id: u64) -> NodeResult<Option<u64>> {
         self.id.remove_child(ctx.rctx(), unit_id);
-        if let Some(id) = unit_id.get_kind_parent(ctx.rctx(), NodeKind::NTeamSlot) {
-            ctx.remove_link(id, unit_id)?;
-            return Ok(Some(id));
+        for slot in self.slots_load(ctx)? {
+            if slot.unit_load(ctx).is_ok_and(|u| u.id == unit_id) {
+                slot.id.remove_child(ctx.rctx(), unit_id);
+                return Ok(Some(slot.id));
+            }
         }
         Ok(None)
     }

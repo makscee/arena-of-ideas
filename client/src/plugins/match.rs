@@ -240,107 +240,108 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
+            let m = player.active_match_ref(ctx)?.clone().load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
             // Display slots
             let slot_count = global_settings().team_slots;
-            ui.horizontal(|ui| {
-                for slot_index in 1..=slot_count {
+            ui.horizontal(|ui| -> NodeResult<()> {
+                for slot_index in 0..slot_count {
                     let slot = m
                         .slots
                         .iter()
                         .find(|s| s.index == slot_index as i32)
-                        .cloned();
+                        .unwrap();
 
-                    ui.vertical(|ui| {
-                        if let Some(slot) = &slot {
-                            if let Ok(unit) = slot.unit_ref(ctx) {
-                                // Filled slot - show unit with MatRect
-                                let response = MatRect::new(egui::vec2(70.0, 100.0))
-                                    .unit_rep_with_default(unit.id)
-                                    .ui(ui, ctx);
+                    if let Ok(unit) = slot.unit_ref(ctx) {
+                        // Filled slot - show unit with MatRect
+                        let response = MatRect::new(egui::vec2(100.0, 100.0))
+                            .add_mat(&unit.representation()?.material, unit.id)
+                            .unit_rep_with_default(unit.id)
+                            .ui(ui, ctx)
+                            .on_hover_ui(|ui| {
+                                unit.as_card().compose(ctx, ui);
+                            });
 
-                                if response.hovered() {
-                                    unit.as_card().compose(ctx, ui);
-                                }
+                        // Set drag payload
+                        response.dnd_set_drag_payload(DraggedUnit {
+                            unit_id: unit.id,
+                            from_location: UnitLocation::Slot {
+                                index: slot_index as i32,
+                            },
+                        });
 
-                                // Set drag payload
-                                response.dnd_set_drag_payload(DraggedUnit {
-                                    unit_id: unit.id,
-                                    from_location: UnitLocation::Slot {
-                                        index: slot_index as i32,
-                                    },
-                                });
-
-                                // Context menu for filled slots
-                                response.context_menu(|ui| {
-                                    if ui.button("Sell Unit").clicked() {
-                                        cn().reducers.match_sell_unit(unit.id).notify_error_op();
-                                        ui.close_kind(UiKind::Menu);
-                                    }
-                                    if ui.button("Move to Bench").clicked() {
-                                        cn().reducers.match_bench_unit(unit.id).notify_error_op();
-                                        ui.close_kind(UiKind::Menu);
-                                    }
-                                });
-
-                                // Handle drop on this slot
-                                let slot_rect = response.rect;
-                                if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
-                                    .text_fn(ui, |_| Some(format!("Stack/Fuse")))
-                                    .ui(ui)
-                                {
-                                    if dragged.unit_id != unit.id {
-                                        // Check for stack or fuse
-                                        if let Ok(mut source) = ctx.load::<NUnit>(dragged.unit_id) {
-                                            let mut target = unit.clone();
-                                            if source
-                                                .check_stackable(&mut target, ctx)
-                                                .unwrap_or(false)
-                                            {
-                                                cn().reducers
-                                                    .match_stack_unit(dragged.unit_id, unit.id)
-                                                    .notify_error_op();
-                                            } else if source
-                                                .check_fusible_with(&mut target, ctx)
-                                                .unwrap_or(false)
-                                            {
-                                                cn().reducers
-                                                    .match_start_fusion(dragged.unit_id, unit.id)
-                                                    .notify_error_op();
-                                            }
-                                        }
-                                    }
-                                }
+                        // Context menu for filled slots
+                        response.context_menu(|ui| {
+                            if ui.button("Sell Unit").clicked() {
+                                cn().reducers.match_sell_unit(unit.id).notify_error_op();
+                                ui.close_kind(UiKind::Menu);
                             }
-                        } else {
-                            // Empty slot
-                            let response = MatRect::new(egui::vec2(70.0, 100.0))
-                                .enabled(false)
-                                .ui(ui, ctx);
+                            if ui.button("Move to Bench").clicked() {
+                                cn().reducers.match_bench_unit(unit.id).notify_error_op();
+                                ui.close_kind(UiKind::Menu);
+                            }
+                        });
 
-                            // Handle drop on empty slot
-                            let slot_rect = response.rect;
-                            if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
-                                .text_fn(ui, |_| Some(format!("Place here")))
-                                .ui(ui)
-                            {
-                                cn().reducers
-                                    .match_move_unit(dragged.unit_id, slot_index as i32)
-                                    .notify_error_op();
+                        // Handle drop on this slot
+                        let slot_rect = response.rect;
+                        if let Some(dragged) = DndArea::<DraggedUnit>::new(slot_rect)
+                            .text_fn(ui, |_| Some(format!("Stack/Fuse")))
+                            .ui(ui)
+                        {
+                            if dragged.unit_id != unit.id {
+                                // Check for stack or fuse
+                                if let Ok(mut source) = ctx.load::<NUnit>(dragged.unit_id) {
+                                    let mut target = unit.clone();
+                                    if source.check_stackable(&mut target, ctx).unwrap_or(false) {
+                                        cn().reducers
+                                            .match_stack_unit(dragged.unit_id, unit.id)
+                                            .notify_error_op();
+                                    } else if source
+                                        .check_fusible_with(&mut target, ctx)
+                                        .unwrap_or(false)
+                                    {
+                                        cn().reducers
+                                            .match_start_fusion(dragged.unit_id, unit.id)
+                                            .notify_error_op();
+                                    }
+                                }
                             }
                         }
-                    });
+                    } else {
+                        let resp = MatRect::new(egui::vec2(100.0, 100.0)).ui(ui, ctx);
+                        if let Some(dragged) = DndArea::<DraggedUnit>::new(resp.rect)
+                            .text_fn(ui, |_| Some(format!("Move")))
+                            .ui(ui)
+                        {
+                            cn().reducers
+                                .match_move_unit(dragged.unit_id, slot_index as i32)
+                                .notify_error_op();
+                        }
+                    }
                 }
+                Ok(())
             });
-
-            // Display bench
             ui.separator();
+            if let Some(dragged) = DndArea::<DraggedUnit>::new(ui.available_rect_before_wrap())
+                .text_fn(ui, |du| {
+                    if matches!(du.from_location, UnitLocation::Slot { .. }) {
+                        Some(format!("Bench"))
+                    } else {
+                        None
+                    }
+                })
+                .ui(ui)
+            {
+                cn().reducers
+                    .match_bench_unit(dragged.unit_id)
+                    .notify_error_op();
+            }
             ui.label("Bench:");
-            ui.horizontal(|ui| {
-                for unit in m.bench.iter() {
-                    let response = MatRect::new(egui::vec2(60.0, 80.0))
+            ui.horizontal(|ui| -> NodeResult<()> {
+                for unit in m.bench()? {
+                    let response = MatRect::new(egui::vec2(100.0, 100.0))
+                        .add_mat(&unit.representation()?.material, unit.id)
                         .unit_rep_with_default(unit.id)
                         .ui(ui, ctx);
 
@@ -362,7 +363,10 @@ impl MatchPlugin {
                         }
                     });
                 }
-            });
+                Ok(())
+            })
+            .inner
+            .ui(ui);
 
             // Handle shop card drops
             if let Some(card) = DndArea::<(usize, ShopSlot)>::new(rect)
