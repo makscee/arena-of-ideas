@@ -10,8 +10,9 @@ pub enum GameState {
     Loading,
     Loaded,
     Title,
-    Login,
+    Auth,
     Connect,
+    Login,
     Shop,
     Battle,
     MatchOver,
@@ -36,8 +37,8 @@ impl GameState {
             GameState::Connect => {
                 tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Connect.into());
             }
-            GameState::Login => {
-                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Login.into());
+            GameState::Auth => {
+                tile_tree.tree = Tree::new_tabs(TREE_ID, Pane::Auth.into());
             }
             GameState::Title => {
                 let mut tiles = Tiles::default();
@@ -181,7 +182,7 @@ impl GameState {
 
 #[derive(PartialEq, Eq, Clone, Hash, AsRefStr, Serialize, Deserialize, Debug, Display, Copy)]
 pub enum Pane {
-    Login,
+    Auth,
     Connect,
     MainMenu,
     Battle(BattlePane),
@@ -285,7 +286,7 @@ impl Pane {
                     .ui(ui);
                 });
             }
-            Pane::Login => LoginPlugin::pane_login(ui, world),
+            Pane::Auth => StdbAuthPlugin::pane_auth(ui, world),
             Pane::Connect => ConnectPlugin::pane(ui),
             Pane::Admin => AdminPlugin::pane(ui, world),
             Pane::Leaderboard => MatchPlugin::pane_leaderboard(ui, world)?,
@@ -318,10 +319,11 @@ impl ToCstr for GameState {
 
 const STATE_OPTIONS: LazyCell<HashMap<GameState, Vec<GameOption>>> = LazyCell::new(|| {
     let mut m = HashMap::new();
+    m.insert(GameState::Connect, [GameOption::Auth].into());
     m.insert(GameState::Login, [GameOption::Connect].into());
     m.insert(
         GameState::Title,
-        [GameOption::Connect, GameOption::Login].into(),
+        [GameOption::Auth, GameOption::Connect, GameOption::Login].into(),
     );
     m.insert(
         GameState::Shop,

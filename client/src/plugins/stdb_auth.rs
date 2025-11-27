@@ -12,8 +12,53 @@ pub struct StdbAuthPlugin;
 impl Plugin for StdbAuthPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(HttpClientPlugin)
+            .init_resource::<AuthOption>()
             .add_observer(spacetimeauth_login)
             .add_systems(Update, (handle_response, handle_error));
+    }
+}
+
+impl StdbAuthPlugin {
+    pub fn pane_auth(ui: &mut Ui, world: &mut World) {
+        ui.vertical_centered_justified(|ui| {
+            let mut ld = world.resource_mut::<AuthOption>();
+            ui.add_space(ui.available_height() * 0.3);
+            ui.set_width(350.0.at_most(ui.available_width()));
+            let cs = pd().client_state.clone();
+            if let Some((name, identity)) = &cs.last_logged_in {
+                format!("Login as {name}")
+                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
+                    .label(ui);
+                if (pd().client_settings.auto_login
+                    || Button::new("Login")
+                        .enabled(!ld.id_token.is_none())
+                        .ui(ui)
+                        .clicked())
+                    && !ld.id_token.is_none()
+                {
+                    ld.id_token = creds_store().load().expect("Token not found");
+                    let _ = cn().reducers.login_by_identity();
+                }
+                br(ui);
+                if Button::new("Logout")
+                    .enabled(!ld.id_token.is_none())
+                    .gray(ui)
+                    .ui(ui)
+                    .clicked()
+                    || ConnectOption::get(world).identity != *identity
+                {
+                    pd_mut(|data| data.client_state.last_logged_in = None);
+                }
+            } else {
+                "Arena of Ideas"
+                    .cstr_cs(high_contrast_text(), CstrStyle::Heading)
+                    .label(ui);
+                space(ui);
+                if Button::new("Login via SpacetimeAuth").ui(ui).clicked() {
+                    world.trigger(SpaceLogin);
+                }
+            }
+        });
     }
 }
 
@@ -35,9 +80,8 @@ fn spacetimeauth_login(_: On<SpaceLogin>, mut ev_request: MessageWriter<HttpRequ
     IoTaskPool::get()
         .spawn(async move {
             let server = tiny_http::Server::http("127.0.0.1:42069").unwrap();
-            info!("Server started at http://127.0.0.1:42069");
+            dbg!("Server started at http://127.0.0.1:42069");
             let request = server.recv().unwrap();
-            info!("Received request: {:?}", request);
             if *request.method() == tiny_http::Method::Get {
                 let url = request.url();
                 // Parse query parameters from URL
@@ -63,7 +107,6 @@ fn spacetimeauth_login(_: On<SpaceLogin>, mut ev_request: MessageWriter<HttpRequ
                 }
                 if let (Some(received_state), Some(auth_code)) = (state, code) {
                     if received_state == expected_state {
-                        info!("Successfully received auth code: {}", auth_code);
                         s1.send(auth_code).unwrap();
                     }
                 }
@@ -99,12 +142,16 @@ pub struct TokenResponse {
     pub id_token: String,
 }
 
-fn handle_response(mut ev_resp: MessageReader<HttpResponse>, mut login_data: ResMut<LoginData>) {
+fn handle_response(mut ev_resp: MessageReader<HttpResponse>, mut cmd: Commands) {
     for response in ev_resp.read() {
-        // info!("response {}", response.text().unwrap());
         let token_response: TokenResponse = response.json().unwrap();
         info!("response {:#?}", token_response);
-        login_data.id_token = Some(token_response.id_token);
+        cmd.insert_resource(AuthOption {
+            id_token: Some(token_response.id_token),
+        });
+        op(|world| {
+            GameState::proceed(world);
+        });
     }
 }
 
