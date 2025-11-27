@@ -32,14 +32,15 @@ pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
     }
 }
 
-fn creds_store() -> credentials::File {
+pub(crate) fn creds_store() -> credentials::File {
     credentials::File::new("aoi_creds")
 }
 
 impl ConnectPlugin {
-    fn run_connect() {
+    fn run_connect(world: &mut World) {
         info!("Connect start");
-        Self::connect(|_, identity, token| {
+        let id_token = world.get_resource::<AuthOption>().unwrap().id_token.clone();
+        Self::connect(id_token, |_, identity, token| {
             info!("Connected {identity}");
             let token = token.to_owned();
             save_player_identity(identity);
@@ -58,11 +59,14 @@ impl ConnectPlugin {
                 .label(ui);
         });
     }
-    pub fn connect(on_connect: fn(&DbConnection, Identity, &str)) {
+    pub fn connect(default_token: Option<String>, on_connect: fn(&DbConnection, Identity, &str)) {
         let (uri, module) = current_server();
-        info!("Connect start {} {}", uri, module);
+        info!(
+            "Connect start {} {} with token {:?}",
+            uri, module, default_token
+        );
         let c = DbConnection::builder()
-            .with_token(creds_store().load().expect("Error loading credentials"))
+            .with_token(default_token)
             .with_uri(uri)
             .with_module_name(module)
             .on_connect(on_connect)

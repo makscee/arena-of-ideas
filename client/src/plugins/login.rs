@@ -1,6 +1,4 @@
-use spacetimedb_sdk::Table;
-
-use crate::{login, stdb_auth::SpaceLogin};
+use crate::login;
 
 use super::*;
 
@@ -16,15 +14,8 @@ pub struct LoginPlugin;
 
 impl Plugin for LoginPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Login), Self::login)
-            .init_resource::<LoginData>();
+        app.add_systems(OnEnter(GameState::Login), Self::login);
     }
-}
-
-#[derive(Resource, Default)]
-pub struct LoginData {
-    login_requested: bool,
-    pub id_token: Option<String>,
 }
 
 impl LoginPlugin {
@@ -35,7 +26,7 @@ impl LoginPlugin {
             }
             e.event.on_success_error(LoginPlugin::complete, || {
                 op(|world| {
-                    world.resource_mut::<LoginData>().login_requested = false;
+                    world.resource_mut::<AuthOption>().id_token = None;
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
@@ -46,7 +37,7 @@ impl LoginPlugin {
             }
             e.event.on_success_error(LoginPlugin::complete, || {
                 op(|world| {
-                    world.resource_mut::<LoginData>().login_requested = false;
+                    world.resource_mut::<AuthOption>().id_token = None;
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
@@ -57,6 +48,7 @@ impl LoginPlugin {
         subscribe_reducers();
     }
     fn find_identity_node(identity: Identity) -> Option<NPlayerIdentity> {
+        info!("Finding identity node for identity: {}", identity);
         let data = NPlayerIdentity::new(0, 0, Some(identity.to_string())).get_data();
         cn().db
             .nodes_world()
@@ -88,48 +80,6 @@ impl LoginPlugin {
                 error!("Failed to load NPlayer by Identity");
             }
             GameState::proceed(world);
-        });
-    }
-    pub fn pane_login(ui: &mut Ui, world: &mut World) {
-        ui.vertical_centered_justified(|ui| {
-            let mut ld = world.resource_mut::<LoginData>();
-            ui.add_space(ui.available_height() * 0.3);
-            ui.set_width(350.0.at_most(ui.available_width()));
-            let cs = pd().client_state.clone();
-            if let Some((name, identity)) = &cs.last_logged_in {
-                format!("Login as {name}")
-                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
-                    .label(ui);
-                if (pd().client_settings.auto_login
-                    || Button::new("Login")
-                        .enabled(!ld.login_requested)
-                        .ui(ui)
-                        .clicked())
-                    && !ld.login_requested
-                {
-                    ld.login_requested = true;
-                    //let _ = cn().reducers.login_by_identity();
-                }
-                br(ui);
-                if Button::new("Logout")
-                    .enabled(!ld.login_requested)
-                    .gray(ui)
-                    .ui(ui)
-                    .clicked()
-                    || ConnectOption::get(world).identity != *identity
-                {
-                    pd_mut(|data| data.client_state.last_logged_in = None);
-                }
-            } else {
-                "Arena of Ideas"
-                    .cstr_cs(high_contrast_text(), CstrStyle::Heading)
-                    .label(ui);
-                space(ui);
-                br(ui);
-                if Button::new("Login via SpacetimeAuth").ui(ui).clicked() {
-                    world.trigger(SpaceLogin);
-                }
-            }
         });
     }
 }
