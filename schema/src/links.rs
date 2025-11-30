@@ -53,7 +53,7 @@ pub enum RefMultiple<T> {
     _Phantom(std::marker::PhantomData<T>),
 }
 
-pub trait SingleLink<T> {
+pub trait SingleLink<T: Node> {
     fn new_loaded(parent_id: u64, value: T) -> Self;
     fn none(parent_id: u64) -> Self;
     fn unknown(parent_id: u64) -> Self;
@@ -72,7 +72,7 @@ pub trait SingleLink<T> {
     fn id(&self) -> NodeResult<u64>;
 }
 
-pub trait MultipleLink<T> {
+pub trait MultipleLink<T: Node> {
     fn new_loaded(parent_id: u64, value: Vec<T>) -> Self;
     fn none(parent_id: u64) -> Self;
     fn unknown(parent_id: u64) -> Self;
@@ -107,7 +107,7 @@ pub trait MultipleLink<T> {
     }
 }
 
-impl<T> SingleLink<T> for Component<T> {
+impl<T: Node> SingleLink<T> for Component<T> {
     fn new_loaded(parent_id: u64, data: T) -> Self {
         Component::Loaded { parent_id, data }
     }
@@ -179,7 +179,7 @@ impl<T> SingleLink<T> for Component<T> {
     }
 }
 
-impl<T> SingleLink<T> for Owned<T> {
+impl<T: Node> SingleLink<T> for Owned<T> {
     fn new_loaded(parent_id: u64, data: T) -> Self {
         Owned::Loaded { parent_id, data }
     }
@@ -251,7 +251,7 @@ impl<T> SingleLink<T> for Owned<T> {
     }
 }
 
-impl<T> SingleLink<T> for Ref<T> {
+impl<T: Node> SingleLink<T> for Ref<T> {
     fn new_loaded(parent_id: u64, _: T) -> Self {
         Ref::Id {
             parent_id,
@@ -323,7 +323,7 @@ impl<T> SingleLink<T> for Ref<T> {
     }
 }
 
-impl<T> MultipleLink<T> for OwnedMultiple<T> {
+impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
     fn new_loaded(parent_id: u64, data: Vec<T>) -> Self {
         OwnedMultiple::Loaded { parent_id, data }
     }
@@ -398,11 +398,11 @@ impl<T> MultipleLink<T> for OwnedMultiple<T> {
     }
 }
 
-impl<T> MultipleLink<T> for RefMultiple<T> {
-    fn new_loaded(parent_id: u64, _: Vec<T>) -> Self {
+impl<T: Node> MultipleLink<T> for RefMultiple<T> {
+    fn new_loaded(parent_id: u64, nodes: Vec<T>) -> Self {
         RefMultiple::Ids {
             parent_id,
-            node_ids: Vec::new(),
+            node_ids: nodes.into_iter().map(|n| n.id()).collect(),
         }
     }
 
@@ -449,11 +449,11 @@ impl<T> MultipleLink<T> for RefMultiple<T> {
         }
     }
 
-    fn set_loaded(&mut self, _: Vec<T>) {
+    fn set_loaded(&mut self, nodes: Vec<T>) {
         let parent_id = self.parent_id();
         *self = RefMultiple::Ids {
             parent_id,
-            node_ids: Vec::new(),
+            node_ids: nodes.iter().map(|n| n.id()).collect(),
         };
     }
 
@@ -467,6 +467,25 @@ impl<T> MultipleLink<T> for RefMultiple<T> {
             RefMultiple::Ids { node_ids, .. } => Ok(node_ids),
             _ => Err(NodeError::custom("RefMultiple link not loaded")),
         }
+    }
+}
+
+impl<T: Node> Ref<T> {
+    pub fn set_id(&mut self, id: u64) {
+        *self = Ref::Id {
+            parent_id: self.parent_id(),
+            node_id: id,
+        };
+    }
+}
+
+impl<T: Node> RefMultiple<T> {
+    pub fn set_ids(&mut self, ids: Vec<u64>) {
+        let parent_id = self.parent_id();
+        *self = RefMultiple::Ids {
+            parent_id,
+            node_ids: ids,
+        };
     }
 }
 
@@ -497,50 +516,5 @@ impl<T> Default for OwnedMultiple<T> {
 impl<T> Default for RefMultiple<T> {
     fn default() -> Self {
         RefMultiple::Unknown { parent_id: 0 }
-    }
-}
-
-impl<'a, T> IntoIterator for &'a Owned<T> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().ok().into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a Component<T> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().ok().into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a Ref<T> {
-    type Item = &'a T;
-    type IntoIter = std::option::IntoIter<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().ok().into_iter()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a OwnedMultiple<T> {
-    type Item = &'a T;
-    type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.get().ok().map(|vec| vec.iter()).into_iter().flatten()
-    }
-}
-
-impl<'a, T> IntoIterator for &'a RefMultiple<T> {
-    type Item = &'a T;
-    type IntoIter = std::iter::Empty<&'a T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        std::iter::empty()
     }
 }

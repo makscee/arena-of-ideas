@@ -115,7 +115,11 @@ pub trait ContextSource {
         node_kind: NodeKind,
     ) -> NodeResult<()>;
 
-    fn commit(&mut self, nodes: Vec<impl Node>) -> NodeResult<()> {
+    fn commit(&mut self, node: impl Node) -> NodeResult<()> {
+        self.commit_vec(vec![node])
+    }
+
+    fn commit_vec(&mut self, nodes: Vec<impl Node>) -> NodeResult<()> {
         // 1. Get flat structure of nodes and links
         let mut all_nodes = HashMap::new();
         let mut all_links = HashSet::new();
