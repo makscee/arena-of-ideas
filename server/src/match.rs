@@ -371,7 +371,6 @@ fn match_submit_battle_result(
             return Err("Invalid state: battle result submitted while in shop".into());
         }
     }
-    m.set_dirty(true);
     player.take().save(ctx)?;
     Ok(())
 }
@@ -530,7 +529,6 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     }
 
     m.fusion = Some((source_id, target_id, packed_variants));
-    m.set_dirty(true);
     m.take().save(ctx)?;
     Ok(())
 }
@@ -543,7 +541,6 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
     let Some((source_id, target_id, ref variants)) = m.fusion.take() else {
         return Err("No fusion in progress".into());
     };
-    m.set_dirty(true);
     m.take().save(ctx)?;
     let fusion_idx = fusion_index as usize;
     if fusion_idx >= variants.len() {
@@ -578,7 +575,6 @@ fn match_cancel_fusion(ctx: &ReducerContext) -> Result<(), String> {
 
     let m = player.active_match_load(ctx)?;
     m.fusion = None;
-    m.set_dirty(true);
     m.take().save(ctx)?;
     Ok(())
 }

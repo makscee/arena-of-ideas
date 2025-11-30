@@ -60,11 +60,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
             }
         });
 
-        // Add is_dirty field for change tracking
-        let is_dirty_field = quote! {
-            pub is_dirty: bool
-        };
-
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
@@ -96,7 +91,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 pub id: u64,
                 pub owner: u64,
                 #(#fields,)*
-                #is_dirty_field
             }
 
             #serialize_impl
@@ -260,7 +254,6 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             _ => None,
         });
 
-    let save_method = generate_save_impl(node, "ClientContext");
     let load_methods = generate_load_functions(node, "ClientContext");
 
     let allow_attrs = generated_code_allow_attrs();
@@ -285,7 +278,6 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 kind.on_spawn(ctx, id)
             }
 
-            #save_method
 
             #load_methods
         }
@@ -354,7 +346,6 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                                 ui.label(format!("ID: {}", id));
                                 if ui.button("❌").on_hover_text("Clear reference").clicked() {
                                     self.#field_name = Default::default();
-                                    self.is_dirty = true;
                                     changed = true;
                                 }
                             } else {
@@ -465,7 +456,6 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     ui.label(#field_label);
                     let field_response = self.#field_name.edit(ui);
                     if field_response.changed() {
-                        self.is_dirty = true;
                         changed = true;
                     }
                 });

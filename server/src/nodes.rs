@@ -6,7 +6,6 @@ include!(concat!(env!("OUT_DIR"), "/server_nodes.rs"));
 
 #[allow(unused)]
 pub trait ServerNode: Sized + schema::Node {
-    fn save(self, ctx: &mut ServerContext) -> NodeResult<()>;
     fn load_components(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
     fn load_all(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
     fn load(source: &ServerSource, id: u64) -> NodeResult<Self> {
@@ -109,7 +108,6 @@ pub trait ServerNode: Sized + schema::Node {
         let mut id_map = std::collections::HashMap::new();
         self.reassign_ids(&mut next_id, &mut id_map);
         GlobalData::set_next_id(ctx.rctx(), next_id);
-        self.set_dirty(true);
         self
     }
 }

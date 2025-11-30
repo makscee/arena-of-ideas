@@ -3,11 +3,6 @@ use spacetimedb::StdbRng;
 
 use super::*;
 
-/// Trait for server-side node data sources
-pub trait ServerSourceTrait {
-    fn insert_node<T: Node>(&mut self, node: &T) -> NodeResult<()>;
-}
-
 /// Server-side source implementation
 pub struct ServerSource<'a> {
     ctx: &'a ReducerContext,
@@ -44,24 +39,6 @@ impl<'a> ServerSource<'a> {
         }
 
         tnode.to_node::<T>()
-    }
-}
-
-impl<'a> ServerSourceTrait for ServerSource<'a> {
-    fn insert_node<T: Node>(&mut self, node: &T) -> NodeResult<()> {
-        let id = node.id();
-        let owner = node.owner();
-        let kind = T::kind_s();
-        let data = node.get_data();
-        let row = TNode::new(id, owner, kind, data);
-        match self.ctx.db.nodes_world().try_insert(row.clone()) {
-            Ok(_) => {}
-            Err(_) => {
-                self.ctx.db.nodes_world().id().update(row);
-            }
-        }
-
-        Ok(())
     }
 }
 
@@ -157,6 +134,24 @@ impl<'a> ContextSource for ServerSource<'a> {
 
     fn is_linked(&self, parent_id: u64, child_id: u64) -> NodeResult<bool> {
         Ok(parent_id.has_child(&self.ctx, child_id))
+    }
+
+    fn insert_node(
+        &mut self,
+        id: u64,
+        owner: u64,
+        data: String,
+        node_kind: NodeKind,
+    ) -> NodeResult<()> {
+        let row = TNode::new(id, owner, node_kind, data);
+        match self.ctx.db.nodes_world().try_insert(row.clone()) {
+            Ok(_) => {}
+            Err(_) => {
+                self.ctx.db.nodes_world().id().update(row);
+            }
+        }
+
+        Ok(())
     }
 
     fn delete_node(&mut self, node_id: u64) -> NodeResult<()> {

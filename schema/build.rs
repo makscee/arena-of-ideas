@@ -148,8 +148,8 @@ fn generate_node_kind(
     let component_children_arms = generate_children_arms(&relationships.component_children);
     let component_children_recursive_arms =
         generate_children_recursive_arms(&relationships.component_children);
-    let owned_parent_arms = generate_parent_arms(&relationships.owned_parents);
-    let owned_children_arms = generate_children_arms(&relationships.owned_children);
+    let owned_parent_arms = generate_owning_parent_arms(&relationships.owned_parents);
+    let owned_children_arms = generate_owning_children_arms(&relationships.owned_children);
     let other_components_arms = generate_other_components_arms(
         &relationships.component_parents,
         &relationships.component_children,
@@ -230,18 +230,36 @@ fn generate_node_kind(
                 }
             }
 
-            pub fn owned_parent(self) -> Option<NodeKind> {
+            pub fn owning_parents(self) -> Vec<NodeKind> {
+                let mut parents = Vec::new();
+
+                // Add component parent if exists
+                if let Some(parent) = self.component_parent() {
+                    parents.push(parent);
+                }
+
+                // Add owned parent if exists
                 match self {
                     #owned_parent_arms
-                    _ => None,
+                    _ => {}
                 }
+
+                parents
             }
 
-            pub fn owned_children(self) -> HashSet<NodeKind> {
+            pub fn owning_children(self) -> Vec<NodeKind> {
+                let mut children = Vec::new();
+
+                // Add component children
+                children.extend(self.component_children());
+
+                // Add owned children
                 match self {
                     #owned_children_arms
-                    _ => HashSet::new(),
+                    _ => {}
                 }
+
+                children
             }
 
             pub fn other_components(self) -> HashSet<NodeKind> {

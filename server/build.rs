@@ -54,11 +54,6 @@ fn generate_server_nodes(
             }
         });
 
-        // Add is_dirty field for change tracking
-        let is_dirty_field = quote! {
-            pub is_dirty: bool
-        };
-
         // Generate new() method with parameters
         let new_method = generate_new(node);
 
@@ -93,7 +88,6 @@ fn generate_server_nodes(
                 pub id: u64,
                 pub owner: u64,
                 #(#fields,)*
-                #is_dirty_field
             }
 
             #serialize_impl
@@ -158,14 +152,12 @@ fn generate_server_node_impl(
     _node_map: &HashMap<String, NodeInfo>,
 ) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
-    let save_method = generate_save_impl(node, "ServerContext");
     let load_methods = generate_load_functions(node, "ServerContext");
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
         #allow_attrs
         impl ServerNode for #struct_name {
-            #save_method
 
             #load_methods
         }

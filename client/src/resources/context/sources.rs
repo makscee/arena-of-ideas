@@ -87,7 +87,6 @@ where
 }
 
 pub trait ClientSource {
-    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()>;
     fn world(&self) -> NodeResult<&World>;
     fn world_mut(&mut self) -> NodeResult<&mut World>;
     fn entity(&self, node_id: u64) -> NodeResult<Entity>;
@@ -778,21 +777,6 @@ impl<'a> Sources<'a> {
 }
 
 impl ClientSource for Sources<'_> {
-    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()> {
-        let kind = node.kind();
-        let entity = self.find_or_create_component_entity(node.id(), kind)?;
-        let world = self.world_mut()?;
-        let id = node.id();
-
-        world.entity_mut(entity).insert(node.clone());
-
-        if let Some(mut node_data) = world.get_resource_mut::<NodesMapResource>() {
-            node_data.insert(id, kind, entity);
-        }
-
-        Ok(())
-    }
-
     fn world(&self) -> NodeResult<&World> {
         match self {
             Sources::Solid(w) | Sources::Core(w) | Sources::Incubator(w) => Ok(w),
@@ -983,6 +967,32 @@ impl ContextSource for Sources<'_> {
 
     fn is_linked(&self, parent_id: u64, child_id: u64) -> NodeResult<bool> {
         Ok(self.get_links_data()?.is_linked(parent_id, child_id))
+    }
+
+    fn insert_node(
+        &mut self,
+        id: u64,
+        owner: u64,
+        data: String,
+        node_kind: NodeKind,
+    ) -> NodeResult<()> {
+        node_kind_match!(node_kind, {
+            let mut node = NodeType::default();
+            node.inject_data(&data)?;
+            node.set_id(id);
+            node.set_owner(owner);
+
+            let entity = self.find_or_create_component_entity(id, node_kind)?;
+            let world = self.world_mut()?;
+
+            world.entity_mut(entity).insert(node);
+
+            if let Some(mut node_data) = world.get_resource_mut::<NodesMapResource>() {
+                node_data.insert(id, node_kind, entity);
+            }
+        });
+
+        Ok(())
     }
 
     fn delete_node(&mut self, node_id: u64) -> NodeResult<()> {

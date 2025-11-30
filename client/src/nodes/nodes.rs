@@ -9,7 +9,6 @@ pub trait ClientNode:
     Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
 {
     fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()>;
-    fn save(self, ctx: &mut ClientContext) -> NodeResult<()>;
     fn load_components(&mut self, ctx: &ClientContext) -> NodeResult<&mut Self>;
     fn load_all(&mut self, ctx: &ClientContext) -> NodeResult<&mut Self>;
     fn entity(&self, ctx: &ClientContext) -> NodeResult<Entity> {
@@ -27,7 +26,6 @@ pub trait ClientNode:
         let mut id_map = std::collections::HashMap::new();
         self.reassign_ids(&mut next_id, &mut id_map);
         set_next_id(next_id);
-        self.set_dirty(true);
         self
     }
     fn to_tnode(&self) -> TNode {

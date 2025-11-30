@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use itertools::Itertools;
 
 use crate::*;
@@ -30,9 +32,6 @@ pub trait Node: Send + Sync + Default + StringData {
     fn set_var(&mut self, var: VarName, value: VarValue) -> NodeResult<()>;
     fn get_var(&self, var: VarName) -> NodeResult<VarValue>;
     fn get_vars(&self) -> Vec<(VarName, VarValue)>;
-
-    fn set_dirty(&mut self, value: bool);
-    fn is_dirty(&self) -> bool;
 
     fn pack(&self) -> PackedNodes {
         let mut packed = PackedNodes::default();
@@ -108,6 +107,142 @@ pub trait ContextSource {
     fn clear_links(&mut self, node_id: u64) -> NodeResult<()>;
     fn is_linked(&self, parent_id: u64, child_id: u64) -> NodeResult<bool>;
     fn delete_node(&mut self, node_id: u64) -> NodeResult<()>;
+    fn insert_node(
+        &mut self,
+        id: u64,
+        owner: u64,
+        data: String,
+        node_kind: NodeKind,
+    ) -> NodeResult<()>;
+
+    fn commit(&mut self, nodes: Vec<impl Node>) -> NodeResult<()> {
+        // 1. Get flat structure of nodes and links
+        let mut all_nodes = HashMap::new();
+        let mut all_links = HashSet::new();
+        let mut root_ids = Vec::new();
+
+        for node in nodes {
+            root_ids.push(node.id());
+            let packed = node.pack();
+
+            // Collect all nodes
+            for (id, node_data) in packed.nodes {
+                all_nodes.insert(id, node_data);
+            }
+
+            // Collect all links
+            for link in packed.links {
+                all_links.insert(link);
+            }
+        }
+
+        // 2. For any parent+child_kind in links, remove existing links from source that are not listed
+        let mut links_by_parent_kind: HashMap<(u64, String), HashSet<u64>> = HashMap::new();
+        for link in &all_links {
+            links_by_parent_kind
+                .entry((link.parent, link.child_kind.clone()))
+                .or_default()
+                .insert(link.child);
+        }
+
+        for ((parent_id, child_kind), new_children) in &links_by_parent_kind {
+            let child_kind_enum = NodeKind::from_str(child_kind)
+                .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", child_kind)))?;
+            let existing_children = self
+                .get_children_of_kind(*parent_id, child_kind_enum)
+                .unwrap_or_default();
+
+            for existing_child in existing_children {
+                if !new_children.contains(&existing_child) {
+                    self.remove_link(*parent_id, existing_child)?;
+                }
+            }
+        }
+
+        // 3. Check for orphaned nodes and collect them
+        let mut orphans_to_delete = Vec::new();
+        let mut checked_nodes = HashSet::new();
+
+        // Get all affected children from removed links
+        for ((parent_id, child_kind), new_children) in &links_by_parent_kind {
+            let child_kind_enum = NodeKind::from_str(child_kind)
+                .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", child_kind)))?;
+            let existing_children = self
+                .get_children_of_kind(*parent_id, child_kind_enum)
+                .unwrap_or_default();
+
+            for existing_child in existing_children {
+                if !new_children.contains(&existing_child)
+                    && !checked_nodes.contains(&existing_child)
+                {
+                    checked_nodes.insert(existing_child);
+
+                    // Check if this child has become an orphan
+                    if !root_ids.contains(&existing_child) {
+                        let child_kind = self.get_node_kind(existing_child)?;
+                        let owning_parents = child_kind.owning_parents();
+
+                        let mut has_owner = false;
+                        for parent_kind in owning_parents {
+                            let parents = self.get_parents_of_kind(existing_child, parent_kind)?;
+
+                            // Also check if any parent exists in our new links
+                            for parent in &parents {
+                                if all_links
+                                    .iter()
+                                    .any(|l| l.parent == *parent && l.child == existing_child)
+                                {
+                                    has_owner = true;
+                                    break;
+                                }
+                            }
+
+                            if has_owner || !parents.is_empty() {
+                                has_owner = true;
+                                break;
+                            }
+                        }
+
+                        if !has_owner {
+                            orphans_to_delete.push(existing_child);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Delete orphaned nodes
+        for orphan_id in orphans_to_delete {
+            self.delete_node(orphan_id)?;
+        }
+
+        // 4. Insert/update all nodes to source
+        for (id, node_data) in all_nodes {
+            let kind = NodeKind::from_str(&node_data.kind)
+                .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", node_data.kind)))?;
+
+            // Get owner from first owning parent in the links
+            let owner = all_links
+                .iter()
+                .find_map(|link| {
+                    if link.child == id {
+                        Some(link.parent)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or(0);
+
+            self.insert_node(id, owner, node_data.data, kind)?;
+        }
+
+        // 5. Insert all links to source
+        for link in all_links {
+            self.add_link(link.parent, link.child)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Context layer for scoped operations

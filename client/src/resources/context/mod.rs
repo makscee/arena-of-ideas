@@ -351,10 +351,6 @@ impl LinkRatings {
 }
 
 impl ClientSource for ClientContext<'_> {
-    fn insert_node<T: ClientNode + BevyComponent>(&mut self, node: &T) -> NodeResult<()> {
-        self.source_mut().insert_node(node)
-    }
-
     fn world(&self) -> NodeResult<&World> {
         self.source().world()
     }
