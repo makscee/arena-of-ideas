@@ -192,8 +192,8 @@ impl TeamBuilder {
         }
         let mut team = NTeam::default();
         team.set_id(self.id);
-        team.houses = OwnedMultiple::new_loaded(built_houses);
-        team.slots = OwnedMultiple::new_loaded(slots);
+        team.houses = OwnedMultiple::new_loaded(self.id, built_houses);
+        team.slots = OwnedMultiple::new_loaded(self.id, slots);
         team
     }
 }
@@ -254,7 +254,10 @@ impl HouseBuilder {
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
         house.color = Component::new_loaded(color);
-        house.units = RefMultiple::Ids(built_units.iter().map(|u| u.id).collect());
+        house.units = RefMultiple::Ids {
+            parent_id: self.id,
+            node_ids: built_units.iter().map(|u| u.id).collect(),
+        };
 
         if let Some(ability_builder) = self.ability {
             house.ability = Component::new_loaded(ability_builder.build());

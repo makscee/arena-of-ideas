@@ -235,7 +235,7 @@ impl Pane {
                     ui.add_space(ui.available_height() * 0.3);
                     ui.set_width(350.0.at_most(ui.available_width()));
                     with_solid_source(|ctx| {
-                        match player(ctx)?.active_match_ref(ctx) {
+                        match player(ctx)?.active_match.load_node(ctx) {
                             Ok(_) => {
                                 if "Abandon Game"
                                     .cstr_cs(RED, CstrStyle::Bold)

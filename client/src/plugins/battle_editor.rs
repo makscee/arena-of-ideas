@@ -47,8 +47,8 @@ impl BattleEditorPlugin {
                             // Remove from houses
                             if let Ok(houses) = team.houses.get_mut() {
                                 for house in houses {
-                                    if let RefMultiple::Ids(units) = &mut house.units {
-                                        units.retain(|&id| id != unit_id);
+                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
+                                        node_ids.retain(|&id| id != unit_id);
                                     }
                                 }
                             }
@@ -69,18 +69,21 @@ impl BattleEditorPlugin {
                             };
 
                             let mut unit = NUnit::placeholder();
-                            unit.state_set(NUnitState::new(next_id(), player_id(), 1, 0))
-                                .unwrap();
+                            unit.state
+                                .set_loaded(NUnitState::new(next_id(), player_id(), 1, 0));
 
                             // Add to first house or create one
                             if let Ok(houses) = team.houses.get_mut() {
                                 if houses.is_empty() {
                                     let mut house = NHouse::placeholder();
-                                    house.units = RefMultiple::Ids(vec![unit.id]);
+                                    house.units = RefMultiple::Ids {
+                                        parent_id: house.id,
+                                        node_ids: vec![unit.id],
+                                    };
                                     houses.push(house);
                                 } else if let Some(house) = houses.first_mut() {
-                                    if let RefMultiple::Ids(units) = &mut house.units {
-                                        units.push(unit.id);
+                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
+                                        node_ids.push(unit.id);
                                     }
                                 }
                             }
@@ -89,11 +92,17 @@ impl BattleEditorPlugin {
                             if let Ok(slots) = team.slots.get_mut() {
                                 if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
                                 {
-                                    slot.unit = Owned::Loaded(team.id, unit);
+                                    slot.unit = Owned::Loaded {
+                                        parent_id: team.id,
+                                        data: unit,
+                                    };
                                 } else {
                                     let mut new_slot =
                                         NTeamSlot::new(next_id(), team.id, slot_index);
-                                    new_slot.unit = Owned::Loaded(team.id, unit);
+                                    new_slot.unit = Owned::Loaded {
+                                        parent_id: team.id,
+                                        data: unit,
+                                    };
                                     slots.push(new_slot);
                                 }
                             }
@@ -115,18 +124,26 @@ impl BattleEditorPlugin {
                         op(move |world| {
                             let mut state = world.resource_mut::<BattleEditorState>();
                             // Determine which team(s) are involved
-                            let left_has_from = state.left_team.slots.iter().any(|s| {
-                                if s.index == from_slot {
-                                    match &s.unit {
-                                        Owned::Loaded(_, u) => u.id == dragged_unit_id,
-                                        _ => false,
+                            let left_has_from =
+                                state.left_team.slots.get().unwrap().iter().any(|s| {
+                                    if s.index == from_slot {
+                                        match &s.unit {
+                                            Owned::Loaded { data: u, .. } => {
+                                                u.id == dragged_unit_id
+                                            }
+                                            _ => false,
+                                        }
+                                    } else {
+                                        false
                                     }
-                                } else {
-                                    false
-                                }
-                            });
-                            let left_has_to =
-                                state.left_team.slots.iter().any(|s| s.index == to_slot);
+                                });
+                            let left_has_to = state
+                                .left_team
+                                .slots
+                                .get()
+                                .unwrap()
+                                .iter()
+                                .any(|s| s.index == to_slot);
 
                             // Perform swap within the appropriate team
                             let team = if left_has_from || left_has_to {
@@ -140,12 +157,12 @@ impl BattleEditorPlugin {
                                     .iter()
                                     .find(|s| s.index == from_slot)
                                     .and_then(|s| match &s.unit {
-                                        Owned::Loaded(_, unit) => Some(unit.clone()),
+                                        Owned::Loaded { data: unit, .. } => Some(unit.clone()),
                                         _ => None,
                                     });
                                 let to_unit = slots.iter().find(|s| s.index == to_slot).and_then(
                                     |s| match &s.unit {
-                                        Owned::Loaded(_, unit) => Some(unit.clone()),
+                                        Owned::Loaded { data: unit, .. } => Some(unit.clone()),
                                         _ => None,
                                     },
                                 );
@@ -155,7 +172,10 @@ impl BattleEditorPlugin {
                                     slots.iter_mut().find(|s| s.index == from_slot)
                                 {
                                     if let Some(to_unit) = to_unit {
-                                        from_slot_mut.unit = Owned::Loaded(team.id, to_unit);
+                                        from_slot_mut.unit = Owned::Loaded {
+                                            parent_id: team.id,
+                                            data: to_unit,
+                                        };
                                     } else {
                                         from_slot_mut.unit = Owned::default();
                                     }
@@ -165,12 +185,18 @@ impl BattleEditorPlugin {
                                     if let Some(to_slot_mut) =
                                         slots.iter_mut().find(|s| s.index == to_slot)
                                     {
-                                        to_slot_mut.unit = Owned::Loaded(team.id, from_unit);
+                                        to_slot_mut.unit = Owned::Loaded {
+                                            parent_id: team.id,
+                                            data: from_unit,
+                                        };
                                     } else {
                                         // Create new slot if it doesn't exist
                                         let mut new_slot =
                                             NTeamSlot::new(next_id(), team.id, to_slot);
-                                        new_slot.unit = Owned::Loaded(team.id, from_unit);
+                                        new_slot.unit = Owned::Loaded {
+                                            parent_id: team.id,
+                                            data: from_unit,
+                                        };
                                         slots.push(new_slot);
                                     }
                                 }

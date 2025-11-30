@@ -166,7 +166,7 @@ impl<'a> BattleCameraBuilder<'a> {
                     .cloned()
                     .collect_vec()
                 {
-                    let Ok(unit) = slot.unit_ref(ctx).cloned() else {
+                    let Ok(unit) = slot.unit.load_node(ctx) else {
                         continue;
                     };
                     ctx.with_owner(unit.id, |ctx| {
@@ -174,7 +174,10 @@ impl<'a> BattleCameraBuilder<'a> {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
-                        unit.representation_ref(ctx)?.material.paint(rect, ctx, ui);
+                        unit.representation
+                            .load_node(ctx)?
+                            .material
+                            .paint(rect, ctx, ui);
                         unit.show_status_tags(rect, ctx, ui).ui(ui);
                         Ok(())
                     })
@@ -454,7 +457,7 @@ impl BattleCamera {
         if let Ok(team) = ctx.load::<NTeam>(team_id) {
             if let Ok(slots) = team.slots.get() {
                 if let Some(team_slot) = slots.iter().find(|s| s.index == slot) {
-                    if let Ok(unit) = team_slot.unit_ref(ctx).cloned() {
+                    if let Ok(unit) = team_slot.unit.load_node(ctx) {
                         if response.hovered() {
                             if let Some(on_hover) = &builder.on_hover_filled {
                                 on_hover(unit.id, ctx, ui);

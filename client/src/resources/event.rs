@@ -49,12 +49,12 @@ impl EventImpl for Event {
 
                 for status in statuses {
                     let status_id = status.id;
-                    if status.state_ref(ctx)?.stax <= 0 {
+                    if status.state.load_node(ctx)?.stax <= 0 {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
                         if let Some(actions) = status
-                            .behavior_ref(ctx)?
+                            .behavior.load_node(ctx)?
                             .reactions
                             .react_actions(self, ctx)
                             .cloned()

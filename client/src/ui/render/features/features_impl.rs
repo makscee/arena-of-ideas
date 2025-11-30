@@ -365,7 +365,7 @@ impl FTitle for Action {
         fn x_text(ctx: &ClientContext, mut x: i32) -> NodeResult<String> {
             let owner = ctx.owner()?;
             let house = ctx.load_first_parent_recursive_ref::<NHouse>(owner)?;
-            let house_x = house.state_ref(ctx)?.stax;
+            let house_x = house.state.load_node(ctx)?.stax;
             if house_x > 0 {
                 x = x.at_most(house_x);
             }
@@ -584,7 +584,7 @@ impl FTitle for NUnit {
 
 impl FDescription for NUnit {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(description) = self.description_ref(ctx) {
+        if let Ok(description) = self.description.load_node(ctx) {
             description.description_expanded_cstr(ctx)
         } else {
             "[tw -]".cstr()
@@ -604,7 +604,7 @@ impl FStats for NUnit {
         if let Ok(stax) = ctx.get_var_inherited(self.id, VarName::stax) {
             if let Ok(house_state) = ctx
                 .load_first_parent_ref::<NHouse>(self.id)
-                .and_then(|h| h.state_ref(ctx))
+                .and_then(|h| h.state.load_node(ctx))
             {
                 let house_x = house_state.stax;
                 let unit_x = stax.get_i32().unwrap();
@@ -623,7 +623,7 @@ impl FStats for NUnit {
                 stats.push((VarName::stax, stax));
             }
         }
-        let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
+        let tier = if let Ok(behavior) = self.behavior.load_node(ctx) {
             behavior.reactions.first().map(|r| r.tier()).unwrap_or(0)
         } else {
             0
@@ -647,7 +647,7 @@ impl FTag for NUnit {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        let tier = if let Ok(behavior) = self.behavior_ref(ctx) {
+        let tier = if let Ok(behavior) = self.behavior.load_node(ctx) {
             behavior.reactions.first().map(|r| r.tier()).unwrap_or(0)
         } else {
             0
@@ -678,7 +678,7 @@ impl FTag for NUnit {
 impl FInfo for NUnit {
     fn info(&self, ctx: &ClientContext) -> Cstr {
         let mut info_parts = Vec::new();
-        if let Ok(stats) = self.stats_ref(ctx) {
+        if let Ok(stats) = self.stats.load_node(ctx) {
             info_parts.push(format!(
                 "[{} {}]/[{} {}]",
                 VarName::pwr.color().to_hex(),
@@ -691,7 +691,7 @@ impl FInfo for NUnit {
             let color = house.color_for_text(ctx);
             info_parts.push(house.house_name.cstr_c(color));
         }
-        if let Ok(desc) = self.description_ref(ctx) {
+        if let Ok(desc) = self.description.load_node(ctx) {
             if !desc.description.is_empty() {
                 info_parts.push(desc.description.clone());
             }
@@ -748,7 +748,7 @@ impl FTag for NHouse {
         Some(format!(
             "[{} [b x{}]]",
             VarName::stax.color().to_hex(),
-            self.state_ref(ctx).ok()?.stax
+            self.state.load_node(ctx).ok()?.stax
         ))
     }
 
@@ -760,10 +760,10 @@ impl FTag for NHouse {
 impl FInfo for NHouse {
     fn info(&self, ctx: &ClientContext) -> Cstr {
         let mut info_parts = vec![self.house_name.clone()];
-        if let Ok(ability) = self.ability_ref(ctx) {
+        if let Ok(ability) = self.ability.load_node(ctx) {
             info_parts.push(ability.info(ctx));
         }
-        if let Ok(status) = self.status_ref(ctx) {
+        if let Ok(status) = self.status.load_node(ctx) {
             info_parts.push(status.info(ctx));
         }
         let color = self.color_for_text(ctx);
@@ -796,7 +796,7 @@ impl FTitle for NAbilityMagic {
 impl FDescription for NAbilityMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         let name = self.name().cstr_c(ctx.color());
-        if let Ok(description) = self.description_ref(ctx) {
+        if let Ok(description) = self.description.load_node(ctx) {
             format!("{name}: {}", description.description)
         } else {
             name
@@ -863,7 +863,7 @@ impl FTitle for NStatusMagic {
 impl FDescription for NStatusMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         let name = self.name().cstr_c(ctx.color());
-        if let Ok(description) = self.description_ref(ctx) {
+        if let Ok(description) = self.description.load_node(ctx) {
             format!("{name}: {}", description.description)
         } else {
             name
@@ -1041,7 +1041,7 @@ impl FTitle for NPlayer {
 
 impl FDescription for NPlayer {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(data) = self.player_data_ref(ctx) {
+        if let Ok(data) = self.player_data.load_node(ctx) {
             if data.online {
                 "Online".cstr_c(Color32::from_rgb(0, 255, 0))
             } else {
@@ -1065,7 +1065,7 @@ impl FTag for NPlayer {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        if let Ok(data) = self.player_data_ref(ctx) {
+        if let Ok(data) = self.player_data.load_node(ctx) {
             Some(if data.online {
                 "●".cstr_c(Color32::from_rgb(0, 255, 0))
             } else {
@@ -1100,7 +1100,7 @@ impl FDisplay for NPlayer {
                 .player_name
                 .cstr_c(Color32::from_rgb(0, 0, 255))
                 .label(ui);
-            if let Ok(data) = self.player_data_ref(ctx) {
+            if let Ok(data) = self.player_data.load_node(ctx) {
                 if data.online {
                     "●".cstr_c(Color32::from_rgb(0, 255, 0)).label(ui);
                 } else {
@@ -1406,10 +1406,10 @@ impl FPlaceholder for NStatusRepresentation {
 
 impl FTitle for NTeam {
     fn title(&self, ctx: &ClientContext) -> Cstr {
-        match self.slots_ref(ctx) {
+        match self.slots.load_nodes(ctx) {
             Ok(f) => f
                 .into_iter()
-                .filter_map(|f| Some(f.unit_ref(ctx).ok()?.title(ctx)))
+                .filter_map(|f| Some(f.unit.load_node(ctx).ok()?.title(ctx)))
                 .join("[tw +]"),
             Err(_) => "[red error]".into(),
         }
@@ -1473,7 +1473,7 @@ impl FPlaceholder for NTeam {
 impl FDisplay for NTeam {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
-            if let Ok(houses) = self.houses.load_node(ctx) {
+            if let Ok(houses) = self.houses.load_nodes(ctx) {
                 ui.label(format!("Houses ({})", houses.len()));
                 for house in houses {
                     ui.horizontal(|ui| {

@@ -18,7 +18,7 @@ impl Plugin for MatchPlugin {
 impl MatchPlugin {
     pub fn check_battles(world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let m = player(ctx)?.active_match.load_node(ctx)?;
             if m.state.is_battle() {
                 GameState::Battle.set_next(world);
             }
@@ -27,7 +27,7 @@ impl MatchPlugin {
     }
     pub fn check_active(world: &mut World) -> NodeResult<bool> {
         with_solid_source(|ctx| {
-            let m = player(ctx)?.active_match_ref(ctx)?;
+            let m = player(ctx)?.active_match.load_node(ctx)?;
             if !m.active {
                 GameState::MatchOver.set_next(world);
                 Ok(false)
@@ -60,7 +60,7 @@ impl MatchPlugin {
     pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
+            let m = player.active_match.load_node(ctx)?;
 
             if m.state.is_battle() {
                 ui.vertical_centered_justified(|ui| {
@@ -171,7 +171,7 @@ impl MatchPlugin {
     pub fn pane_info(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
+            let m = player.active_match.load_node(ctx)?;
             let g = m.g;
             let lives = m.lives;
             let floor = m.floor;
@@ -222,11 +222,11 @@ impl MatchPlugin {
     pub fn pane_roster(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?;
+            let m = player.active_match.load_node(ctx)?;
             let (_, card) =
                 ui.dnd_drop_zone::<(usize, CardKind), NodeResult<()>>(Frame::new(), |ui| {
                     ui.expand_to_include_rect(ui.available_rect_before_wrap());
-                    for house in m.shop_pool()?.houses.iter() {
+                    for house in m.shop_pool.get()?.houses.get()? {
                         house.as_card().compose(ctx, ui);
                     }
                     Ok(())
@@ -240,7 +240,12 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let mut m = player.active_match_ref(ctx)?.clone().load_all(ctx)?.take();
+            let mut m = player
+                .active_match
+                .load_node(ctx)?
+                .clone()
+                .load_all(ctx)?
+                .take();
             let rect = ui.available_rect_before_wrap();
 
             // Display slots
@@ -257,7 +262,7 @@ impl MatchPlugin {
                     if let Ok(slot_unit) = slot.unit.get_mut() {
                         // Filled slot - show unit with MatRect
                         let response = MatRect::new(egui::vec2(100.0, 100.0))
-                            .add_mat(&slot_unit.representation()?.material, slot_unit.id)
+                            .add_mat(&slot_unit.representation.get()?.material, slot_unit.id)
                             .unit_rep_with_default(slot_unit.id)
                             .ui(ui, ctx)
                             .on_hover_ui(|ui| {
@@ -379,9 +384,9 @@ impl MatchPlugin {
             }
             ui.label("Bench:");
             ui.horizontal(|ui| -> NodeResult<()> {
-                for unit in m.bench()? {
+                for unit in m.bench.get()? {
                     let response = MatRect::new(egui::vec2(100.0, 100.0))
-                        .add_mat(&unit.representation()?.material, unit.id)
+                        .add_mat(&unit.representation.get()?.material, unit.id)
                         .unit_rep_with_default(unit.id)
                         .ui(ui, ctx);
 
@@ -475,7 +480,7 @@ impl MatchPlugin {
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let m = player.active_match_ref(ctx)?.clone();
+            let m = player.active_match.load_node(ctx)?.clone();
             let won_last = if let Some(last_battle_id) = m.battle_history.last() {
                 cn().db
                     .battle()
@@ -602,7 +607,7 @@ impl MatchPlugin {
                             Ok(())
                         },
                         |ctx, t| {
-                            let team = t.team_ref(ctx)?;
+                            let team = t.team.load_node(ctx)?;
                             Ok(team.owner.into())
                         },
                     )
@@ -612,7 +617,7 @@ impl MatchPlugin {
                             team_str.get_string()?.label(ui);
                             Ok(())
                         },
-                        |ctx, n| Ok(n.team_ref(ctx)?.title(ctx).into()),
+                        |ctx, n| Ok(n.team.load_node(ctx)?.title(ctx).into()),
                     )
                     .ui(ctx, ui);
             }

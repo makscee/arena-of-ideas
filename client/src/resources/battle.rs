@@ -89,11 +89,11 @@ fn ids_by_slot_from_context(parent: Entity, ctx: &ClientContext) -> Vec<u64> {
     let ids = parent.ids(ctx).unwrap_or_default();
     let id = ids.into_iter().next().unwrap_or(0);
     if let Ok(team) = ctx.load::<NTeam>(id) {
-        if let Ok(slots) = team.slots_ref(ctx) {
+        if let Ok(slots) = team.slots.load_nodes(ctx) {
             slots
                 .into_iter()
                 .sorted_by_key(|s| s.index)
-                .filter_map(|slot| Some(slot.unit_ref(ctx).ok()?.id))
+                .filter_map(|slot| Some(slot.unit.load_node(ctx).ok()?.id))
                 .collect_vec()
         } else {
             vec![]
@@ -194,7 +194,7 @@ impl ToCstr for BattleAction {
                     "{caster} +[{} {}]>{target}({})",
                     color.to_hex(),
                     status.status_name,
-                    status.state().unwrap().stax
+                    status.state.get().unwrap().stax
                 )
             }
             BattleAction::wait(t) => format!("~{t}"),
@@ -226,8 +226,8 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time() * 3.0));
                     let mut unit_a = ctx.load::<NUnit>(*a).track()?;
                     let mut unit_b = ctx.load::<NUnit>(*b).track()?;
-                    let pwr_a = unit_a.stats_load(ctx).track()?.pwr;
-                    let pwr_b = unit_b.stats_load(ctx).track()?.pwr;
+                    let pwr_a = unit_a.stats.load_mut_node(ctx).track()?.pwr;
+                    let pwr_b = unit_b.stats.load_mut_node(ctx).track()?.pwr;
                     add_actions.extend(ctx.battle()?.slots_sync());
                     add_actions.push(Self::wait(animation_time()));
                     add_actions.push(Self::damage(*a, *b, pwr_a));
@@ -269,7 +269,15 @@ impl BattleAction {
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
                         BattleSimulation::send_event(ctx, Event::DamageDealt(*a, *b, x))?;
-                        let dmg = ctx.load::<NUnit>(*b).track()?.state_load(ctx).track()?.dmg + x;
+                        let dmg = ctx
+                            .load::<NUnit>(*b)
+                            .track()?
+                            .state
+                            .load_mut(ctx)
+                            .track()?
+                            .get()?
+                            .dmg
+                            + x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.into()));
                         add_actions.push(
                             Self::new_vfx("pain_vfx")
@@ -305,7 +313,15 @@ impl BattleAction {
                                 |context| pleasure.apply(context),
                             )?;
                         }
-                        let dmg = ctx.load::<NUnit>(*b).track()?.state_load(ctx).track()?.dmg - *x;
+                        let dmg = ctx
+                            .load::<NUnit>(*b)
+                            .track()?
+                            .state
+                            .load_mut(ctx)
+                            .track()?
+                            .get()?
+                            .dmg
+                            - *x;
                         add_actions.push(Self::var_set(*b, VarName::dmg, dmg.at_least(0).into()));
                         add_actions.push(
                             Self::new_text(format!("[b [green +{}]]", x), target_pos)
@@ -687,7 +703,8 @@ impl BattleSimulation {
                         .load::<NUnit>(id)
                         .track()?
                         .clone()
-                        .behavior_load(ctx)?
+                        .behavior
+                        .load_mut_node(ctx)?
                         .reactions
                         .react_battle_actions(&event, ctx)
                     {
@@ -715,11 +732,11 @@ impl BattleSimulation {
                     ],
                     |ctx| {
                         let mut status = ctx.load::<NStatusMagic>(status_id)?;
-                        let stax = status.state_ref(ctx)?.stax;
+                        let stax = status.state.load_node(ctx)?.stax;
                         if stax <= 0 {
                             return Ok(vec![]);
                         }
-                        let behavior = status.behavior_load(ctx).track()?;
+                        let behavior = status.behavior.load_node(ctx).track()?;
                         let actions = behavior.reactions.react_actions(&event, ctx);
                         if let Some(actions) = actions {
                             actions.clone().process(ctx)
@@ -757,8 +774,8 @@ impl BattleSimulation {
                 new_index += 1;
                 if child_status.status_name == status.status_name {
                     // Update stax on the status state component
-                    if let Ok(mut state) = child_status.state_ref(ctx).cloned() {
-                        let new_stax = state.stax + status.state_ref(ctx)?.stax;
+                    if let Ok(mut state) = child_status.state.load_node(ctx) {
+                        let new_stax = state.stax + status.state.load_node(ctx)?.stax;
                         state.set_var(VarName::stax, new_stax.into())?;
                         state.save(ctx)?;
                         BattleSimulation::send_event(

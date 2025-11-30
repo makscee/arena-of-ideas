@@ -727,14 +727,14 @@ impl NMatch {
             .cloned()
             .collect_vec()
         {
-            if let RefMultiple::Ids(unit_ids) = &mut house.units {
+            if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
                 // Keep only units that are in slots
                 let slot_unit_ids: Vec<u64> = self
                     .slots
                     .iter()
                     .filter_map(|s| s.unit().ok().map(|u| u.id))
                     .collect();
-                unit_ids.retain(|id| slot_unit_ids.contains(id));
+                node_ids.retain(|id| slot_unit_ids.contains(id));
             }
             team.houses_push(house)?;
         }

@@ -908,7 +908,7 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         Some(match field.link_type {
             LinkType::OwnedMultiple => quote! {
                 match &self.#field_name {
-                    OwnedMultiple::Loaded(_, items) => {
+                    OwnedMultiple::Loaded { data: items, .. } => {
                         for item in items {
                             item.pack_recursive(packed, visited);
                             packed.link_parent_child(
@@ -924,7 +924,7 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Component => quote! {
                 match &self.#field_name {
-                    Component::Loaded(_, item) => {
+                    Component::Loaded { data: item, .. } => {
                         item.pack_recursive(packed, visited);
                         packed.link_parent_child(
                             self.id,
@@ -938,7 +938,7 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Owned => quote! {
                 match &self.#field_name {
-                    Owned::Loaded(_, item) => {
+                    Owned::Loaded { data: item, .. } => {
                         item.pack_recursive(packed, visited);
                         packed.link_parent_child(
                             self.id,
@@ -952,10 +952,10 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Ref => quote! {
                 match &self.#field_name {
-                    Ref::Loaded(_, item) => {
+                    Ref::Id { node_id, .. } => {
                         packed.link_parent_child(
                             self.id,
-                            item.id(),
+                            *node_id,
                             stringify!(#struct_name).to_string(),
                             stringify!(#target_type).to_string()
                         );
@@ -966,11 +966,11 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
 
             LinkType::RefMultiple => quote! {
                 match &self.#field_name {
-                    RefMultiple::Loaded(_, items) => {
-                        for item in items {
+                    RefMultiple::Ids { node_ids, .. } => {
+                        for item_id in node_ids {
                             packed.link_parent_child(
                                 self.id,
-                                item.id(),
+                                *item_id,
                                 stringify!(#struct_name).to_string(),
                                 stringify!(#target_type).to_string()
                             );
@@ -1482,9 +1482,9 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
             LinkType::Ref => {
                 ref_update_statements.push(quote! {
                     match &mut self.#field_name {
-                        Ref::Id(id) => {
-                            if let Some(&new_id) = id_map.get(id) {
-                                *id = new_id;
+                        Ref::Id { node_id, .. } => {
+                            if let Some(&new_id) = id_map.get(node_id) {
+                                *node_id = new_id;
                             }
                         },
                         _ => {}
@@ -1494,8 +1494,8 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
             LinkType::RefMultiple => {
                 ref_update_statements.push(quote! {
                     match &mut self.#field_name {
-                        RefMultiple::Ids(ids) => {
-                            for id in ids.iter_mut() {
+                        RefMultiple::Ids { node_ids, .. } => {
+                            for id in node_ids.iter_mut() {
                                 if let Some(&new_id) = id_map.get(id) {
                                     *id = new_id;
                                 }
@@ -1621,21 +1621,21 @@ pub fn generate_set_owner_calls(node: &NodeInfo) -> Vec<TokenStream> {
             match field.link_type {
                 LinkType::Owned => {
                     quote! {
-                        if let schema::Owned::Loaded(_, node) = &mut self.#field_name {
+                        if let schema::Owned::Loaded { data: node, .. } = &mut self.#field_name {
                             node.set_owner(owner);
                         }
                     }
                 }
                 LinkType::Component => {
                     quote! {
-                        if let schema::Component::Loaded(_, node) = &mut self.#field_name {
+                        if let schema::Component::Loaded { data: node, .. } = &mut self.#field_name {
                             node.set_owner(owner);
                         }
                     }
                 }
                 LinkType::OwnedMultiple => {
                     quote! {
-                        if let schema::OwnedMultiple::Loaded(_, nodes) = &mut self.#field_name {
+                        if let schema::OwnedMultiple::Loaded { data: nodes, .. } = &mut self.#field_name {
                             for node in nodes.iter_mut() {
                                 node.set_owner(owner);
                             }

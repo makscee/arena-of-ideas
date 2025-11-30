@@ -1,13 +1,19 @@
 use super::*;
 
-pub trait ClientSingleLinkLoad<T: Node> {
+pub trait ClientSingleLinkLoad<T: Node>: SingleLink<T> {
     fn load_mut<'a>(&mut self, ctx: &ClientContext<'a>) -> NodeResult<&mut Self>;
     fn load_node<'a>(&self, ctx: &ClientContext<'a>) -> NodeResult<T>;
+    fn load_mut_node<'a>(&mut self, ctx: &ClientContext<'a>) -> NodeResult<&mut T> {
+        self.load_mut(ctx)?.get_mut()
+    }
 }
 
-pub trait ClientMultipleLinkLoad<T: Node> {
+pub trait ClientMultipleLinkLoad<T: Node>: MultipleLink<T> {
     fn load_mut<'a>(&mut self, ctx: &ClientContext<'a>) -> NodeResult<&mut Self>;
     fn load_nodes<'a>(&self, ctx: &ClientContext<'a>) -> NodeResult<Vec<T>>;
+    fn load_mut_nodes<'a>(&mut self, ctx: &ClientContext<'a>) -> NodeResult<&mut Vec<T>> {
+        self.load_mut(ctx)?.get_mut()
+    }
 }
 
 impl<T: ClientNode + Clone> ClientSingleLinkLoad<T> for Component<T> {
