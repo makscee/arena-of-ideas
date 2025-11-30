@@ -1,13 +1,19 @@
 use super::*;
 
-pub trait ServerSingleLinkLoad<T: Node> {
+pub trait ServerSingleLinkLoad<T: Node>: SingleLink<T> {
     fn load_mut(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
     fn load_node(&self, ctx: &ServerContext) -> NodeResult<T>;
+    fn load_node_mut(&mut self, ctx: &ServerContext) -> NodeResult<&mut T> {
+        self.load_mut(ctx)?.get_mut()
+    }
 }
 
-pub trait ServerMultipleLinkLoad<T: Node> {
+pub trait ServerMultipleLinkLoad<T: Node>: MultipleLink<T> {
     fn load_mut(&mut self, ctx: &ServerContext) -> NodeResult<&mut Self>;
     fn load_nodes(&self, ctx: &ServerContext) -> NodeResult<Vec<T>>;
+    fn load_nodes_mut(&mut self, ctx: &ServerContext) -> NodeResult<&mut Vec<T>> {
+        self.load_mut(ctx)?.get_mut()
+    }
 }
 
 impl<T: Node + DeserializeOwned + Clone> ServerSingleLinkLoad<T> for Component<T> {

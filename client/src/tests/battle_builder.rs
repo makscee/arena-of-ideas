@@ -253,18 +253,18 @@ impl HouseBuilder {
         let mut house = NHouse::default();
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
-        house.color = Component::new_loaded(color);
+        house.color = Component::new_loaded(self.id, color);
         house.units = RefMultiple::Ids {
             parent_id: self.id,
             node_ids: built_units.iter().map(|u| u.id).collect(),
         };
 
         if let Some(ability_builder) = self.ability {
-            house.ability = Component::new_loaded(ability_builder.build());
+            house.ability = Component::new_loaded(self.id, ability_builder.build());
         }
 
         if let Some(status_builder) = self.status {
-            house.status = Component::new_loaded(status_builder.build());
+            house.status = Component::new_loaded(self.id, status_builder.build());
         }
 
         (house, built_units)
@@ -305,14 +305,14 @@ impl UnitBuilder {
         let mut unit = NUnit::default();
         unit.set_id(self.id);
         unit.unit_name = format!("Unit {}", self.id);
-        unit.stats = Component::new_loaded(stats);
-        unit.description = Component::new_loaded(desc);
-        unit.state = Component::new_loaded(state);
+        unit.stats = Component::new_loaded(self.id, stats);
+        unit.description = Component::new_loaded(self.id, desc);
+        unit.state = Component::new_loaded(self.id, state);
         if let Some(reaction) = self.reaction {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
             behavior.reactions = vec![reaction];
-            unit.behavior = Component::new_loaded(behavior);
+            unit.behavior = Component::new_loaded(self.id, behavior);
         }
 
         unit
@@ -343,9 +343,9 @@ impl AbilityBuilder {
 
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
-        ability.effect = Component::new_loaded(effect);
+        ability.effect = Component::new_loaded(self.id, effect);
         ability.ability_name = format!("Ability {}", self.id);
-        ability.description = Component::new_loaded(desc);
+        ability.description = Component::new_loaded(self.id, desc);
 
         ability
     }
@@ -390,11 +390,11 @@ impl StatusBuilder {
 
         let mut status = NStatusMagic::default();
         status.set_id(self.id);
-        status.behavior = Component::new_loaded(behavior);
+        status.behavior = Component::new_loaded(self.id, behavior);
         status.status_name = format!("Status {}", self.id);
-        status.description = Component::new_loaded(desc);
-        status.representation = Component::new_loaded(representation);
-        status.state = Component::new_loaded(state);
+        status.description = Component::new_loaded(self.id, desc);
+        status.representation = Component::new_loaded(self.id, representation);
+        status.state = Component::new_loaded(self.id, state);
 
         status
     }

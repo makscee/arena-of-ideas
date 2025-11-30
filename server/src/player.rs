@@ -12,25 +12,19 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.rctx().sender);
     let mut player = NPlayer::new(ctx.next_id(), ID_PLAYERS, name);
-    player
-        .player_data
-        .set_loaded(NPlayerData::new(
-            ctx.next_id(),
-            ID_PLAYERS,
-            pass_hash,
-            false,
-            0,
-        ))
-        .ok();
-    player
-        .identity
-        .set_loaded(NPlayerIdentity::new(
-            ctx.next_id(),
-            ID_PLAYERS,
-            Some(ctx.rctx().sender.to_string()),
-        ))
-        .ok();
-    player.save(ctx)?;
+    player.player_data.set_loaded(NPlayerData::new(
+        ctx.next_id(),
+        ID_PLAYERS,
+        pass_hash,
+        false,
+        0,
+    ));
+    player.identity.set_loaded(NPlayerIdentity::new(
+        ctx.next_id(),
+        ID_PLAYERS,
+        Some(ctx.rctx().sender.to_string()),
+    ));
+    ctx.source_mut().commit(player)?;
     Ok(())
 }
 
@@ -40,22 +34,26 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
     let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, 0, name).get_data())
         .to_custom_e_s("Player not found")?;
     debug!("{player:?}");
-    if player.player_data_load(ctx).track()?.pass_hash.is_none() {
+    if player
+        .player_data
+        .load_node(ctx)
+        .track()?
+        .pass_hash
+        .is_none()
+    {
         return Err("No password set for player".to_owned());
     }
     if !player.check_pass(pass) {
         Err("Wrong name or password".to_owned())
     } else {
         NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-        player
-            .identity_set(NPlayerIdentity::new(
-                ctx.next_id(),
-                ID_PLAYERS,
-                Some(ctx.rctx().sender.to_string()),
-            ))
-            .unwrap();
+        player.identity.set_loaded(NPlayerIdentity::new(
+            ctx.next_id(),
+            ID_PLAYERS,
+            Some(ctx.rctx().sender.to_string()),
+        ));
         player = player.login(ctx)?;
-        player.save(ctx)?;
+        ctx.source_mut().commit(player)?;
         Ok(())
     }
 }
@@ -63,16 +61,16 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    ctx.player()?.login(ctx)?.take().save(ctx)?;
+    let player = ctx.player()?.login(ctx)?;
+    ctx.source_mut().commit(player)?;
     Ok(())
 }
 
 #[reducer]
 fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?.logout(ctx)?;
-    player.identity_load(ctx)?.delete(ctx);
-    player.take().save(ctx)?;
+    let player = ctx.player()?.logout(ctx)?;
+    player.identity.load_node(ctx)?.delete(ctx);
     Ok(())
 }
 
@@ -83,10 +81,10 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
     if !player.check_pass(old_pass) {
         return Err("Old password did not match".to_owned());
     }
-    if let Ok(player_data) = player.player_data.get_mut() {
+    if let Ok(player_data) = player.player_data.load_node_mut(ctx) {
         player_data.pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
     }
-    player.take().save(ctx)?;
+    ctx.source_mut().commit(player)?;
     Ok(())
 }
 
@@ -94,7 +92,9 @@ fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Res
 fn identity_disconnected(ctx: &ReducerContext) {
     let ctx = &mut ctx.as_context();
     if let Ok(player) = ctx.player() {
-        player.logout(ctx).unwrap().save(ctx).log();
+        if let Ok(logged_out) = player.logout(ctx) {
+            ctx.source_mut().commit(logged_out).log();
+        }
     }
 }
 
@@ -142,16 +142,17 @@ impl NPlayer {
             .into_iter()
             .next()
     }
-    fn login(mut self, ctx: &ServerContext) -> Result<Self, String> {
+    fn login(self, ctx: &ServerContext) -> Result<Self, String> {
         let ts = ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64;
-        let data = self.player_data_load(ctx)?;
+        let mut data = self.player_data.load_node(ctx)?;
         debug!("{data:?}");
         data.last_login = ts;
         data.online = true;
         Ok(self)
     }
-    fn logout(mut self, ctx: &ServerContext) -> Result<Self, String> {
-        self.player_data_load(ctx)?.online = false;
+    fn logout(self, ctx: &ServerContext) -> Result<Self, String> {
+        let mut data = self.player_data.load_node(ctx)?;
+        data.online = false;
         Ok(self)
     }
     fn clear_identity(ctx: &ServerContext, identity: &Identity) {

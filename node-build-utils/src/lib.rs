@@ -1683,14 +1683,14 @@ pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenSt
 
                 if houses.len() == 1 {
                     // Unit with one house needs at least 2 stax to be fusible
-                    let state = self.state_load(ctx)?;
+                    let state = self.state.load_node(ctx)?;
                     Ok(state.stax >= 2)
                 } else {
                     // Multi-house unit needs total actions >= stax to be fusible
-                    let state = self.state_load(ctx)?;
+                    let state = self.state.load_node(ctx)?;
                     let stax = state.stax;
                     let actions = self
-                        .behavior_load(ctx)?
+                        .behavior.load_node(ctx)?
                         .reactions
                         .iter()
                         .map(|r| r.actions.len() as i32)

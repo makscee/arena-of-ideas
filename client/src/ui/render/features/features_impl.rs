@@ -1418,12 +1418,7 @@ impl FTitle for NTeam {
 
 impl FDescription for NTeam {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        let houses = self
-            .houses
-            .iter()
-            .map(|h: &NHouse| h.description_cstr(ctx))
-            .join(", ");
-        format!("{} houses", houses).cstr()
+        "Team description".to_owned()
     }
 }
 
@@ -1453,7 +1448,9 @@ impl FPaste for NTeam {}
 impl FPlaceholder for NTeam {
     fn placeholder() -> Self {
         let unit = NUnit::placeholder().with_state(NUnitState::new(next_id(), player_id(), 1, 0));
-        let house = NHouse::placeholder().with_units_id([unit.id].into());
+        let mut house = NHouse::placeholder();
+        house.units.set_ids([unit.id].into());
+
         let slot = NTeamSlot::new(next_id(), player_id(), 0).with_unit(unit);
         NTeam::new(next_id(), player_id())
             .with_houses([house].into())

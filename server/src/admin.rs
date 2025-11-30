@@ -87,9 +87,9 @@ fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     let ctx = &mut ctx.as_context();
     let mut player = ctx.player()?;
-    let m = player.active_match_load(ctx)?;
-    m.g_set(m.g + 10);
-    player.save(ctx)?;
+    let mut m = player.active_match.load_node(ctx)?;
+    m.g += 10;
+    ctx.source_mut().commit(m)?;
     Ok(())
 }
 

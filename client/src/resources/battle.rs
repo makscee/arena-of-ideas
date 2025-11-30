@@ -777,7 +777,7 @@ impl BattleSimulation {
                     if let Ok(mut state) = child_status.state.load_node(ctx) {
                         let new_stax = state.stax + status.state.load_node(ctx)?.stax;
                         state.set_var(VarName::stax, new_stax.into())?;
-                        state.save(ctx)?;
+                        ctx.source_mut().commit(state);
                         BattleSimulation::send_event(
                             ctx,
                             Event::StatusApplied(caster, target, child_status.id),
