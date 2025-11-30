@@ -144,7 +144,7 @@ impl NodeLinkRender for Ui {
         };
         self.separator();
         if need_remove {
-            *link = SingleLink::none();
+            *link = SingleLink::none(owner_id);
             true
         } else {
             changed

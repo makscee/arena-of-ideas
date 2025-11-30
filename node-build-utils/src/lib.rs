@@ -552,7 +552,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         .map(|field| {
             let field_name = &field.name;
             let link_type = Ident::new(field.link_type.as_ref(), Span::call_site());
-            quote! { #field_name: #link_type::None, }
+            quote! { #field_name: #link_type::unknown(node_id), }
         });
 
     quote! {
@@ -587,58 +587,35 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
         let (param_type, wrapped_value, clear_value) = match field.link_type {
             LinkType::Component => (
                 quote! { #target },
-                quote! { Component::new_loaded(value) },
-                quote! { Component::none() },
+                quote! { Component::new_loaded(self.id, value) },
+                quote! { Component::none(self.id) },
             ),
             LinkType::Owned => (
                 quote! { #target },
-                quote! { Owned::new_loaded(value) },
-                quote! { Owned::none() },
+                quote! { Owned::new_loaded(self.id, value) },
+                quote! { Owned::none(self.id) },
             ),
             LinkType::OwnedMultiple => (
                 quote! { Vec<#target> },
-                quote! { OwnedMultiple::new_loaded(value) },
-                quote! { OwnedMultiple::none() },
+                quote! { OwnedMultiple::new_loaded(self.id, value) },
+                quote! { OwnedMultiple::none(self.id) },
             ),
             LinkType::Ref => (
                 quote! { #target },
-                quote! { Ref::new_id(value.id) },
-                quote! { Ref::none() },
+                quote! { Ref::new_loaded(self.id, value) },
+                quote! { Ref::none(self.id) },
             ),
             LinkType::RefMultiple => (
-                quote! { Vec<u64> },
-                quote! { RefMultiple::new_ids(value) },
-                quote! { RefMultiple::none() },
+                quote! { Vec<#target> },
+                quote! { RefMultiple::new_loaded(self.id, value) },
+                quote! { RefMultiple::none(self.id) },
             ),
             _ => return None,
-        };
-
-        let with_id_method = format_ident!("with_{}_id", field_name);
-
-        let (id_param_type, wrapped_id_value) = match field.link_type {
-            LinkType::Component => (quote! { u64 }, quote! { Component::new_id(id) }),
-            LinkType::Owned => (quote! { u64 }, quote! { Owned::new_id(id) }),
-            LinkType::OwnedMultiple => {
-                (quote! { Vec<u64> }, quote! { OwnedMultiple::new_ids(ids) })
-            }
-            LinkType::Ref => (quote! { u64 }, quote! { Ref::new_id(id) }),
-            LinkType::RefMultiple => (quote! { Vec<u64> }, quote! { RefMultiple::new_ids(ids) }),
-            _ => return None,
-        };
-
-        let id_param_name = match field.link_type {
-            LinkType::OwnedMultiple | LinkType::RefMultiple => quote! { ids },
-            _ => quote! { id },
         };
 
         Some(quote! {
             pub fn #with_method(mut self, value: #param_type) -> Self {
                 self.#field_name = #wrapped_value;
-                self
-            }
-
-            pub fn #with_id_method(mut self, #id_param_name: #id_param_type) -> Self {
-                self.#field_name = #wrapped_id_value;
                 self
             }
 
@@ -823,261 +800,6 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 }
 
 /// Generate link loading methods for nodes with specified context type
-pub fn generate_link_methods(node: &NodeInfo, context_ident: &str) -> TokenStream {
-    let context_ident = Ident::new(context_ident, proc_macro2::Span::call_site());
-
-    let link_methods = node.fields.iter().filter_map(|field| {
-        if matches!(field.link_type, LinkType::None) {
-            return None;
-        }
-        let field_name = &field.name;
-        let target_type = format_ident!("{}", field.target_type);
-
-        let load_method = format_ident!("{}_load", field_name);
-        let load_id_method = format_ident!("{}_load_id", field_name);
-        let set_method = format_ident!("{}_set", field_name);
-        let push_method = format_ident!("{}_push", field_name);
-        let get_method = format_ident!("{}", field_name);
-        let get_mut_method = format_ident!("{}_mut", field_name);
-
-        if matches!(field.link_type, LinkType::OwnedMultiple) {
-            let load_logic =
-                quote! {
-                    let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                    if !children.is_empty() {
-                        self.#field_name.set_ids(children.clone())?;
-                        Ok(children)
-                    } else {
-                        self.#field_name.set_none()?;
-                        Ok(Vec::new())
-                    }
-                };
-
-            let load_method_logic = quote! {
-                let ids = self.#load_id_method(ctx)?;
-                let loaded_nodes = ids
-                    .iter()
-                    .filter_map(|&id| ctx.load::<#target_type>(id).ok())
-                    .collect_vec();
-                self.#field_name.set_loaded(loaded_nodes)?;
-                self.#field_name.get_mut()
-            };
-
-            let ref_method = if context_ident == "ClientContext" {
-                let ref_method_name = format_ident!("{}_ref", field_name);
-                quote! {
-                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<Vec<&'a #target_type>, NodeError>
-                    {
-                        let ids = if let Ok(ids) = ctx.get_children_of_kind(self.id, NodeKind::#target_type) {
-                            ids
-                        } else {
-                            return Ok(Vec::new());
-                        };
-                        ctx.load_many_ref::<#target_type>(&ids)
-                    }
-                }
-            } else {
-                quote! {}
-            };
-
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<Vec<u64>, NodeError> {
-                    #load_logic
-                }
-
-                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<&mut Vec<#target_type>, NodeError>
-                {
-                    #load_method_logic
-                }
-
-                pub fn #get_method(&self) -> NodeResult<&Vec<#target_type>> {
-                    self.#field_name.get()
-                }
-
-                pub fn #get_mut_method(&mut self) -> NodeResult<&mut Vec<#target_type>> {
-                    self.#field_name.get_mut()
-                }
-
-                pub fn #set_method(&mut self, nodes: Vec<#target_type>) -> NodeResult<()> {
-                    self.#field_name.set_loaded(nodes)?;
-                    Ok(())
-                }
-
-                pub fn #push_method(&mut self, node: #target_type) -> NodeResult<()> {
-                    self.#get_mut_method()?.push(node);
-                    Ok(())
-                }
-
-                #ref_method
-            })
-        } else if matches!(field.link_type, LinkType::RefMultiple) {
-            let load_logic = quote! {
-                if let Some(ids) = self.#field_name.ids() {
-                    return Ok(ids);
-                }
-
-                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                if !children.is_empty() {
-                    self.#field_name.set_ids(children.clone())?;
-                    Ok(children)
-                } else {
-                    self.#field_name.set_none()?;
-                    Ok(Vec::new())
-                }
-            };
-
-            let load_method_logic = quote! {
-                let ids = self.#load_id_method(ctx)?;
-                let loaded_nodes = ids
-                    .iter()
-                    .filter_map(|&id| ctx.load::<#target_type>(id).ok())
-                    .collect_vec();
-                Ok(loaded_nodes)
-            };
-
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<Vec<u64>, NodeError> {
-                    #load_logic
-                }
-
-                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<Vec<#target_type>, NodeError>
-                {
-                    #load_method_logic
-                }
-            })
-        } else if matches!(field.link_type, LinkType::Ref) {
-            let load_id_logic = quote! {
-                if !self.#field_name.is_none() && self.#field_name.id().is_some() {
-                    return Ok(self.#field_name.id().unwrap());
-                }
-                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                if let Some(&first_id) = children.first() {
-                    self.#field_name.set_id(first_id)?;
-                    Ok(first_id)
-                } else {
-                    self.#field_name.set_none()?;
-                    Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
-                }
-            };
-
-            let load_method_logic = quote! {
-                let id = self.#load_id_method(ctx)?;
-                let loaded_node = ctx.load::<#target_type>(id)?;
-                Ok(loaded_node)
-            };
-
-            let ref_method = if context_ident == "ClientContext" {
-                let ref_method_name = format_ident!("{}_ref", field_name);
-                quote! {
-                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<&'a #target_type, NodeError>
-                    {
-                        let id = if let Some(id) = self.#field_name.id() {
-                            id
-                        } else if let Some(id) = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?
-                            .into_iter()
-                            .next() {
-                            id
-                        } else {
-                            return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
-                        };
-                        ctx.load_ref::<#target_type>(id)
-                    }
-                }
-            } else {
-                quote! {}
-            };
-
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<u64, NodeError> {
-                    #load_id_logic
-                }
-
-                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<#target_type, NodeError>
-                {
-                    #load_method_logic
-                }
-
-                #ref_method
-            })
-        } else {
-            // Handle Owned and Component links
-            let load_id_logic = quote! {
-                if !self.#field_name.is_none() && self.#field_name.id().is_some() {
-                    return Ok(self.#field_name.id().unwrap());
-                }
-                let children = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?;
-                if let Some(&first_id) = children.first() {
-                    self.#field_name.set_id(first_id)?;
-                    Ok(first_id)
-                } else {
-                    self.#field_name.set_none()?;
-                    Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type))
-                }
-            };
-
-            let load_method_logic = quote! {
-                let id = self.#load_id_method(ctx)?;
-                let loaded_node = ctx.load::<#target_type>(id)?;
-                self.#field_name.set_loaded(loaded_node)?;
-                self.#field_name.get_mut()
-            };
-
-            let ref_method = if context_ident == "ClientContext" {
-                let ref_method_name = format_ident!("{}_ref", field_name);
-                quote! {
-                    pub fn #ref_method_name<'a>(&'a self, ctx: &'a #context_ident) -> Result<&'a #target_type, NodeError>
-                    {
-                        if self.#field_name.is_loaded() {
-                            return Ok(self.#field_name.get().unwrap());
-                        }
-                        let id = if let Some(id) = self.#field_name.id() {
-                            id
-                        } else if let Some(id) = ctx.get_children_of_kind(self.id, NodeKind::#target_type)?
-                            .into_iter()
-                            .next() {
-                            id
-                        } else {
-                            return Err(NodeError::linked_node_not_found(self.id(), NodeKind::#target_type));
-                        };
-                        ctx.load_ref::<#target_type>(id)
-                    }
-                }
-            } else {
-                quote! {}
-            };
-
-            Some(quote! {
-                pub fn #load_id_method(&mut self, ctx: &#context_ident) -> Result<u64, NodeError> {
-                    #load_id_logic
-                }
-
-                pub fn #load_method(&mut self, ctx: &#context_ident) -> Result<&mut #target_type, NodeError>
-                {
-                    #load_method_logic
-                }
-
-                pub fn #get_method(&self) -> NodeResult<&#target_type> {
-                    self.#field_name.get()
-                }
-
-                pub fn #get_mut_method(&mut self) -> NodeResult<&mut #target_type> {
-                    self.#field_name.get_mut()
-                }
-
-                pub fn #set_method(&mut self, node: #target_type) -> NodeResult<()> {
-                    self.#field_name.set_loaded(node)?;
-                    Ok(())
-                }
-
-                #ref_method
-            })
-        }
-    }).collect::<Vec<_>>();
-
-    quote! {
-        #(#link_methods)*
-    }
-}
 
 pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStream {
     let context_ident = Ident::new(context_ident, proc_macro2::Span::call_site());
@@ -1096,10 +818,9 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
     // Generate load_components method (only Component links, recursive)
     let component_field_loads = component_fields.iter().map(|field| {
         let field_name = &field.name;
-        let load_method = format_ident!("{}_load", field_name);
 
         quote! {
-            if let Ok(loaded_item) = self.#load_method(ctx) {
+            if let Ok(loaded_item) = self.#field_name.get_mut() {
                 loaded_item.load_components(ctx)?;
             }
         }
@@ -1127,31 +848,23 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         .filter_map(|field| match field.link_type {
             LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple => {
                 let field_name = &field.name;
-                let load_method = format_ident!("{}_load", field_name);
 
                 Some(match field.link_type {
                     LinkType::OwnedMultiple => quote! {
-                        if let Ok(loaded_items) = self.#load_method(ctx) {
+                        if let Ok(loaded_items) = self.#field_name.get_mut() {
                             for item in loaded_items.iter_mut() {
                                 item.load_all(ctx)?;
                             }
                         }
                     },
                     _ => quote! {
-                        if let Ok(loaded_item) = self.#load_method(ctx) {
+                        if let Ok(loaded_item) = self.#field_name.get_mut() {
                             loaded_item.load_all(ctx)?;
                         }
                     },
                 })
             }
-            LinkType::Ref | LinkType::RefMultiple => {
-                let field_name = &field.name;
-                let load_id_method = format_ident!("{}_load_id", field_name);
-
-                Some(quote! {
-                    let _ = self.#load_id_method(ctx);
-                })
-            }
+            LinkType::Ref | LinkType::RefMultiple => None,
             LinkType::None => None,
         });
 
@@ -1198,22 +911,12 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         Some(match field.link_type {
             LinkType::OwnedMultiple => quote! {
                 match &self.#field_name {
-                    OwnedMultiple::Loaded(items) => {
+                    OwnedMultiple::Loaded(_, items) => {
                         for item in items {
                             item.pack_recursive(packed, visited);
                             packed.link_parent_child(
                                 self.id,
                                 item.id(),
-                                stringify!(#struct_name).to_string(),
-                                stringify!(#target_type).to_string()
-                            );
-                        }
-                    },
-                    OwnedMultiple::Ids(ids) => {
-                        for &id in ids {
-                            packed.link_parent_child(
-                                self.id,
-                                id,
                                 stringify!(#struct_name).to_string(),
                                 stringify!(#target_type).to_string()
                             );
@@ -1224,19 +927,11 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Component => quote! {
                 match &self.#field_name {
-                    Component::Loaded(item) => {
+                    Component::Loaded(_, item) => {
                         item.pack_recursive(packed, visited);
                         packed.link_parent_child(
                             self.id,
                             item.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
-                    },
-                    Component::Id(id) => {
-                        packed.link_parent_child(
-                            self.id,
-                            *id,
                             stringify!(#struct_name).to_string(),
                             stringify!(#target_type).to_string()
                         );
@@ -1246,19 +941,11 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Owned => quote! {
                 match &self.#field_name {
-                    Owned::Loaded(item) => {
+                    Owned::Loaded(_, item) => {
                         item.pack_recursive(packed, visited);
                         packed.link_parent_child(
                             self.id,
                             item.id(),
-                            stringify!(#struct_name).to_string(),
-                            stringify!(#target_type).to_string()
-                        );
-                    },
-                    Owned::Id(id) => {
-                        packed.link_parent_child(
-                            self.id,
-                            *id,
                             stringify!(#struct_name).to_string(),
                             stringify!(#target_type).to_string()
                         );
@@ -1268,10 +955,10 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             },
             LinkType::Ref => quote! {
                 match &self.#field_name {
-                    Ref::Id(id) => {
+                    Ref::Loaded(_, item) => {
                         packed.link_parent_child(
                             self.id,
-                            *id,
+                            item.id(),
                             stringify!(#struct_name).to_string(),
                             stringify!(#target_type).to_string()
                         );
@@ -1282,11 +969,11 @@ pub fn generate_pack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
 
             LinkType::RefMultiple => quote! {
                 match &self.#field_name {
-                    RefMultiple::Ids(ids) => {
-                        for &id in ids {
+                    RefMultiple::Loaded(_, items) => {
+                        for item in items {
                             packed.link_parent_child(
                                 self.id,
-                                id,
+                                item.id(),
                                 stringify!(#struct_name).to_string(),
                                 stringify!(#target_type).to_string()
                             );
@@ -1329,17 +1016,27 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                     }
                 }
                 if !children.is_empty() {
-                    self.#field_name = OwnedMultiple::new_loaded(children);
+                    self.#field_name = OwnedMultiple::new_loaded(self.id, children);
                 } else {
-                    self.#field_name = OwnedMultiple::none();
+                    self.#field_name = OwnedMultiple::none(self.id);
                 }
             },
             LinkType::RefMultiple => quote! {
                 let child_ids = packed.kind_children(self.id, stringify!(#target_type));
                 if !child_ids.is_empty() {
-                    self.#field_name = RefMultiple::new_ids(child_ids);
+                    let mut children = Vec::new();
+                    for child_id in child_ids {
+                        if let Some(child_data) = packed.get(child_id) {
+                            let mut child = #target_type::default();
+                            child.inject_data(&child_data.data).unwrap();
+                            child.set_id(child_id);
+                            child.unpack_links(packed);
+                            children.push(child);
+                        }
+                    }
+                    self.#field_name = RefMultiple::new_loaded(self.id, children);
                 } else {
-                    self.#field_name = RefMultiple::none();
+                    self.#field_name = RefMultiple::none(self.id);
                 }
             },
             LinkType::Component => quote! {
@@ -1350,10 +1047,10 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.inject_data(&child_data.data).unwrap();
                         child.set_id(child_id);
                         child.unpack_links(packed);
-                        self.#field_name = Component::new_loaded(child);
+                        self.#field_name = Component::new_loaded(self.id, child);
                     }
                 } else {
-                    self.#field_name = Component::none();
+                    self.#field_name = Component::none(self.id);
                 }
             },
             LinkType::Owned => quote! {
@@ -1364,10 +1061,10 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.inject_data(&child_data.data).unwrap();
                         child.set_id(child_id);
                         child.unpack_links(packed);
-                        self.#field_name = Owned::new_loaded(child);
+                        self.#field_name = Owned::new_loaded(self.id, child);
                     }
                 } else {
-                    self.#field_name = Owned::none();
+                    self.#field_name = Owned::none(self.id);
                 }
             },
             LinkType::Ref => quote! {
@@ -1378,10 +1075,10 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         child.inject_data(&child_data.data).unwrap();
                         child.set_id(child_id);
                         child.unpack_links(packed);
-                        self.#field_name = Ref::new_id(child.id);
+                        self.#field_name = Ref::new_loaded(self.id, child);
                     }
                 } else {
-                    self.#field_name = Ref::none();
+                    self.#field_name = Ref::none(self.id);
                 }
             },
             _ => quote! {},
@@ -1954,21 +1651,21 @@ pub fn generate_set_owner_calls(node: &NodeInfo) -> Vec<TokenStream> {
             match field.link_type {
                 LinkType::Owned => {
                     quote! {
-                        if let schema::Owned::Loaded(node) = &mut self.#field_name {
+                        if let schema::Owned::Loaded(_, node) = &mut self.#field_name {
                             node.set_owner(owner);
                         }
                     }
                 }
                 LinkType::Component => {
                     quote! {
-                        if let schema::Component::Loaded(node) = &mut self.#field_name {
+                        if let schema::Component::Loaded(_, node) = &mut self.#field_name {
                             node.set_owner(owner);
                         }
                     }
                 }
                 LinkType::OwnedMultiple => {
                     quote! {
-                        if let schema::OwnedMultiple::Loaded(nodes) = &mut self.#field_name {
+                        if let schema::OwnedMultiple::Loaded(_, nodes) = &mut self.#field_name {
                             for node in nodes.iter_mut() {
                                 node.set_owner(owner);
                             }

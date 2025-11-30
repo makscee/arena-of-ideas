@@ -72,9 +72,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         // Generate ClientNode implementation
         let client_node_impl = generate_client_node_impl(node);
 
-        // Generate link loading methods
-        let link_methods = generate_link_methods(node, "ClientContext");
-
         // All nodes are Components in client
         let allow_attrs = generated_code_allow_attrs();
         let derives = quote! {
@@ -101,9 +98,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
 
                 #with_methods
 
-
-
-                #link_methods
             }
 
             #client_node_impl
@@ -236,17 +230,17 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Ref => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Some(ref_id) = self.#field_name.id() {
-                        ctx.add_link(self.id, ref_id).track()?;
+                    if let Ok(node) = self.#field_name.get() {
+                        ctx.add_link(self.id, node.id).track()?;
                     }
                 })
             }
             LinkType::RefMultiple => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Some(ids) = self.#field_name.ids() {
-                        for &ref_id in &ids {
-                            ctx.add_link(self.id, ref_id).track()?;
+                    if let Ok(nodes) = self.#field_name.get() {
+                        for node in nodes {
+                            ctx.add_link(self.id, node.id).track()?;
                         }
                     }
                 })
@@ -323,7 +317,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             let target_type = format_ident!("{}", field.target_type);
 
             match field.link_type {
-                LinkType::Component | LinkType::Owned => {
+                LinkType::Component | LinkType::Owned | LinkType::Ref => {
                     quote! {
                         changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id);
                         if NodeKind::#target_type.is_compact() && self.#field_name.is_loaded() {
@@ -333,41 +327,9 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         }
                     }
                 }
-                LinkType::OwnedMultiple => {
+                LinkType::OwnedMultiple | LinkType::RefMultiple => {
                     quote! {
                         changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id);
-                    }
-                }
-                LinkType::Ref => {
-                    quote! {
-                        ui.horizontal(|ui| {
-                            ui.label(format!("{} (ref):", #field_label));
-                            if let Some(id) = self.#field_name.id() {
-                                ui.label(format!("ID: {}", id));
-                                if ui.button("❌").on_hover_text("Clear reference").clicked() {
-                                    self.#field_name = Default::default();
-                                    changed = true;
-                                }
-                            } else {
-                                ui.label("(no reference)");
-                            }
-                        });
-                    }
-                }
-                LinkType::RefMultiple => {
-                    quote! {
-                        ui.vertical(|ui| {
-                            ui.label(format!("{} (refs):", #field_label));
-                            if let Some(ids) = self.#field_name.ids() {
-                                for (index, id) in ids.iter().enumerate() {
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("  [{}] ID: {}", index, id));
-                                    });
-                                }
-                            } else {
-                                ui.label("  (no references)");
-                            }
-                        });
                     }
                 }
                 LinkType::None => unreachable!(),
@@ -419,8 +381,6 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 ui: &mut egui::Ui,
                 breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
             ) -> bool {
-                use crate::ui::render::features::NodeLinkRender;
-
                 let mut changed = false;
                 #(#linked_field_calls)*
                 changed

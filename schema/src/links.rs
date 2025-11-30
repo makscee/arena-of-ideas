@@ -1,130 +1,132 @@
 use super::*;
 
-// Single link types with state as direct enum variants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Component<T> {
-    Loaded(T),
-    Id(u64),
-    None,
-    Unknown,
+    Loaded(u64, T),
+    None(u64),
+    Unknown(u64),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Owned<T> {
-    Loaded(T),
-    Id(u64),
-    None,
-    Unknown,
+    Loaded(u64, T),
+    None(u64),
+    Unknown(u64),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Ref<T> {
-    Id(u64),
-    None,
-    Unknown,
+    Loaded(u64, T),
+    None(u64),
+    Unknown(u64),
     #[serde(skip)]
     _Phantom(std::marker::PhantomData<T>),
 }
 
-// Multiple link types with state as direct enum variants
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum OwnedMultiple<T> {
-    Loaded(Vec<T>),
-    Ids(Vec<u64>),
-    None,
-    Unknown,
+    Loaded(u64, Vec<T>),
+    None(u64),
+    Unknown(u64),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RefMultiple<T> {
-    Ids(Vec<u64>),
-    None,
-    Unknown,
+    Loaded(u64, Vec<T>),
+    None(u64),
+    Unknown(u64),
     #[serde(skip)]
     _Phantom(std::marker::PhantomData<T>),
 }
 
-// Single node link trait
 pub trait SingleLink<T> {
-    fn new_loaded(value: T) -> Self;
-    fn new_id(id: u64) -> Self;
-    fn none() -> Self;
-    fn unknown() -> Self;
+    fn new_loaded(parent_id: u64, value: T) -> Self;
+    fn none(parent_id: u64) -> Self;
+    fn unknown(parent_id: u64) -> Self;
 
     fn get(&self) -> NodeResult<&T>;
     fn get_mut(&mut self) -> NodeResult<&mut T>;
     fn take_loaded(&mut self) -> NodeResult<T>;
 
-    fn id(&self) -> Option<u64>
-    where
-        T: Node;
-
     fn is_loaded(&self) -> bool;
     fn is_none(&self) -> bool;
 
-    fn set_loaded(&mut self, value: T) -> NodeResult<()>;
-    fn set_id(&mut self, id: u64) -> NodeResult<()>;
-    fn set_none(&mut self) -> NodeResult<()>;
+    fn set_loaded(&mut self, value: T);
+    fn set_none(&mut self);
+
+    fn parent_id(&self) -> u64;
+
+    fn set(&mut self, node: T) -> NodeResult<()> {
+        self.set_loaded(node);
+        Ok(())
+    }
 }
 
-// Multiple node link trait
 pub trait MultipleLink<T> {
-    fn new_loaded(value: Vec<T>) -> Self;
-    fn new_ids(ids: Vec<u64>) -> Self;
-    fn none() -> Self;
-    fn unknown() -> Self;
+    fn new_loaded(parent_id: u64, value: Vec<T>) -> Self;
+    fn none(parent_id: u64) -> Self;
+    fn unknown(parent_id: u64) -> Self;
 
     fn get(&self) -> NodeResult<&Vec<T>>;
     fn get_mut(&mut self) -> NodeResult<&mut Vec<T>>;
     fn take_loaded(&mut self) -> NodeResult<Vec<T>>;
 
-    fn ids(&self) -> Option<Vec<u64>>
-    where
-        T: Node;
-
     fn is_loaded(&self) -> bool;
     fn is_none(&self) -> bool;
 
-    fn set_loaded(&mut self, value: Vec<T>) -> NodeResult<()>;
-    fn set_ids(&mut self, ids: Vec<u64>) -> NodeResult<()>;
-    fn set_none(&mut self) -> NodeResult<()>;
+    fn set_loaded(&mut self, value: Vec<T>);
+    fn set_none(&mut self);
+
+    fn parent_id(&self) -> u64;
+
+    fn push(&mut self, node: T) -> NodeResult<()> {
+        match self {
+            _ if self.is_loaded() => {
+                self.get_mut()?.push(node);
+                Ok(())
+            }
+            _ if self.is_none() => {
+                self.set_loaded(vec![node]);
+                Ok(())
+            }
+            _ => Err(NodeError::custom(
+                "Cannot push to link that is not Loaded or None",
+            )),
+        }
+    }
 }
 
-// Component implementation
 impl<T> SingleLink<T> for Component<T> {
-    fn new_loaded(value: T) -> Self {
-        Component::Loaded(value)
+    fn new_loaded(parent_id: u64, value: T) -> Self {
+        Component::Loaded(parent_id, value)
     }
 
-    fn new_id(id: u64) -> Self {
-        Component::Id(id)
+    fn none(parent_id: u64) -> Self {
+        Component::None(parent_id)
     }
 
-    fn none() -> Self {
-        Component::None
-    }
-
-    fn unknown() -> Self {
-        Component::Unknown
+    fn unknown(parent_id: u64) -> Self {
+        Component::Unknown(parent_id)
     }
 
     fn get(&self) -> NodeResult<&T> {
         match self {
-            Component::Loaded(val) => Ok(val),
+            Component::Loaded(_, val) => Ok(val),
             _ => Err(NodeError::custom("Component link not loaded")),
         }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
-            Component::Loaded(val) => Ok(val),
+            Component::Loaded(_, val) => Ok(val),
             _ => Err(NodeError::custom("Component link not loaded")),
         }
     }
 
     fn take_loaded(&mut self) -> NodeResult<T> {
-        match std::mem::replace(self, Component::Unknown) {
-            Component::Loaded(val) => Ok(val),
+        let parent_id = self.parent_id();
+        match std::mem::replace(self, Component::Unknown(parent_id)) {
+            Component::Loaded(_, val) => Ok(val),
             other => {
                 *self = other;
                 Err(NodeError::custom("Component link not loaded"))
@@ -132,76 +134,62 @@ impl<T> SingleLink<T> for Component<T> {
         }
     }
 
-    fn id(&self) -> Option<u64>
-    where
-        T: Node,
-    {
-        match self {
-            Component::Loaded(val) => Some(val.id()),
-            Component::Id(id) => Some(*id),
-            _ => None,
-        }
-    }
-
     fn is_loaded(&self) -> bool {
-        matches!(self, Component::Loaded(_))
+        matches!(self, Component::Loaded(..))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self, Component::None)
+        matches!(self, Component::None(..))
     }
 
-    fn set_loaded(&mut self, value: T) -> NodeResult<()> {
-        *self = Component::Loaded(value);
-        Ok(())
+    fn parent_id(&self) -> u64 {
+        match self {
+            Component::Loaded(id, _) | Component::None(id) | Component::Unknown(id) => *id,
+        }
     }
 
-    fn set_id(&mut self, id: u64) -> NodeResult<()> {
-        *self = Component::Id(id);
-        Ok(())
+    fn set_loaded(&mut self, value: T) {
+        let parent_id = self.parent_id();
+        *self = Component::Loaded(parent_id, value);
     }
 
-    fn set_none(&mut self) -> NodeResult<()> {
-        *self = Component::None;
-        Ok(())
+    fn set_none(&mut self) {
+        let parent_id = self.parent_id();
+        *self = Component::None(parent_id);
     }
 }
 
-// Owned implementation
 impl<T> SingleLink<T> for Owned<T> {
-    fn new_loaded(value: T) -> Self {
-        Owned::Loaded(value)
+    fn new_loaded(parent_id: u64, value: T) -> Self {
+        Owned::Loaded(parent_id, value)
     }
 
-    fn new_id(id: u64) -> Self {
-        Owned::Id(id)
+    fn none(parent_id: u64) -> Self {
+        Owned::None(parent_id)
     }
 
-    fn none() -> Self {
-        Owned::None
-    }
-
-    fn unknown() -> Self {
-        Owned::Unknown
+    fn unknown(parent_id: u64) -> Self {
+        Owned::Unknown(parent_id)
     }
 
     fn get(&self) -> NodeResult<&T> {
         match self {
-            Owned::Loaded(val) => Ok(val),
+            Owned::Loaded(_, val) => Ok(val),
             _ => Err(NodeError::custom("Owned link not loaded")),
         }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
-            Owned::Loaded(val) => Ok(val),
+            Owned::Loaded(_, val) => Ok(val),
             _ => Err(NodeError::custom("Owned link not loaded")),
         }
     }
 
     fn take_loaded(&mut self) -> NodeResult<T> {
-        match std::mem::replace(self, Owned::Unknown) {
-            Owned::Loaded(val) => Ok(val),
+        let parent_id = self.parent_id();
+        match std::mem::replace(self, Owned::Unknown(parent_id)) {
+            Owned::Loaded(_, val) => Ok(val),
             other => {
                 *self = other;
                 Err(NodeError::custom("Owned link not loaded"))
@@ -209,140 +197,120 @@ impl<T> SingleLink<T> for Owned<T> {
         }
     }
 
-    fn id(&self) -> Option<u64>
-    where
-        T: Node,
-    {
-        match self {
-            Owned::Loaded(val) => Some(val.id()),
-            Owned::Id(id) => Some(*id),
-            _ => None,
-        }
-    }
-
     fn is_loaded(&self) -> bool {
-        matches!(self, Owned::Loaded(_))
+        matches!(self, Owned::Loaded(..))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self, Owned::None)
+        matches!(self, Owned::None(..))
     }
 
-    fn set_loaded(&mut self, value: T) -> NodeResult<()> {
-        *self = Owned::Loaded(value);
-        Ok(())
+    fn parent_id(&self) -> u64 {
+        match self {
+            Owned::Loaded(id, _) | Owned::None(id) | Owned::Unknown(id) => *id,
+        }
     }
 
-    fn set_id(&mut self, id: u64) -> NodeResult<()> {
-        *self = Owned::Id(id);
-        Ok(())
+    fn set_loaded(&mut self, value: T) {
+        let parent_id = self.parent_id();
+        *self = Owned::Loaded(parent_id, value);
     }
 
-    fn set_none(&mut self) -> NodeResult<()> {
-        *self = Owned::None;
-        Ok(())
+    fn set_none(&mut self) {
+        let parent_id = self.parent_id();
+        *self = Owned::None(parent_id);
     }
 }
 
-// Ref implementation - Note: does NOT support Loaded state
 impl<T> SingleLink<T> for Ref<T> {
-    fn new_loaded(_value: T) -> Self {
-        panic!("Ref links do not support loaded state - use new_id() instead")
+    fn new_loaded(parent_id: u64, value: T) -> Self {
+        Ref::Loaded(parent_id, value)
     }
 
-    fn new_id(id: u64) -> Self {
-        Ref::Id(id)
+    fn none(parent_id: u64) -> Self {
+        Ref::None(parent_id)
     }
 
-    fn none() -> Self {
-        Ref::None
-    }
-
-    fn unknown() -> Self {
-        Ref::Unknown
+    fn unknown(parent_id: u64) -> Self {
+        Ref::Unknown(parent_id)
     }
 
     fn get(&self) -> NodeResult<&T> {
-        Err(NodeError::custom(
-            "Ref links do not support getting loaded data",
-        ))
+        match self {
+            Ref::Loaded(_, val) => Ok(val),
+            _ => Err(NodeError::custom("Ref link not loaded")),
+        }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut T> {
-        Err(NodeError::custom(
-            "Ref links do not support getting loaded data",
-        ))
+        match self {
+            Ref::Loaded(_, val) => Ok(val),
+            _ => Err(NodeError::custom("Ref link not loaded")),
+        }
     }
 
     fn take_loaded(&mut self) -> NodeResult<T> {
-        Err(NodeError::custom(
-            "Ref links do not support getting loaded data",
-        ))
-    }
-
-    fn id(&self) -> Option<u64>
-    where
-        T: Node,
-    {
-        match self {
-            Ref::Id(id) => Some(*id),
-            _ => None,
+        let parent_id = self.parent_id();
+        match std::mem::replace(self, Ref::Unknown(parent_id)) {
+            Ref::Loaded(_, val) => Ok(val),
+            other => {
+                *self = other;
+                Err(NodeError::custom("Ref link not loaded"))
+            }
         }
     }
 
     fn is_loaded(&self) -> bool {
-        false // Ref never has loaded state
+        matches!(self, Ref::Loaded(..))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self, Ref::None)
+        matches!(self, Ref::None(..))
     }
 
-    fn set_loaded(&mut self, _value: T) -> NodeResult<()> {
-        Err(NodeError::custom("Ref links do not support loaded state"))
+    fn parent_id(&self) -> u64 {
+        match self {
+            Ref::Loaded(id, _) | Ref::None(id) | Ref::Unknown(id) => *id,
+            Ref::_Phantom(_) => 0,
+        }
     }
 
-    fn set_id(&mut self, id: u64) -> NodeResult<()> {
-        *self = Ref::Id(id);
-        Ok(())
+    fn set_loaded(&mut self, value: T) {
+        let parent_id = self.parent_id();
+        *self = Ref::Loaded(parent_id, value);
     }
 
-    fn set_none(&mut self) -> NodeResult<()> {
-        *self = Ref::None;
-        Ok(())
+    fn set_none(&mut self) {
+        let parent_id = self.parent_id();
+        *self = Ref::None(parent_id);
     }
 }
 
-// OwnedMultiple implementation
 impl<T> MultipleLink<T> for OwnedMultiple<T> {
-    fn new_loaded(value: Vec<T>) -> Self {
-        OwnedMultiple::Loaded(value)
+    fn new_loaded(parent_id: u64, value: Vec<T>) -> Self {
+        OwnedMultiple::Loaded(parent_id, value)
     }
 
-    fn new_ids(ids: Vec<u64>) -> Self {
-        OwnedMultiple::Ids(ids)
+    fn none(parent_id: u64) -> Self {
+        OwnedMultiple::None(parent_id)
     }
 
-    fn none() -> Self {
-        OwnedMultiple::None
-    }
-
-    fn unknown() -> Self {
-        OwnedMultiple::Unknown
+    fn unknown(parent_id: u64) -> Self {
+        OwnedMultiple::Unknown(parent_id)
     }
 
     fn get(&self) -> NodeResult<&Vec<T>> {
         match self {
-            OwnedMultiple::Loaded(val) => Ok(val),
+            OwnedMultiple::Loaded(_, val) => Ok(val),
             _ => Err(NodeError::custom("OwnedMultiple link not loaded")),
         }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut Vec<T>> {
         match self {
-            OwnedMultiple::Loaded(val) => Ok(val),
-            OwnedMultiple::None => {
-                self.set_loaded(default())?;
+            OwnedMultiple::Loaded(_, val) => Ok(val),
+            OwnedMultiple::None(_) => {
+                self.set_loaded(Vec::new());
                 self.get_mut()
             }
             _ => Err(NodeError::custom("OwnedMultiple link not loaded")),
@@ -350,8 +318,9 @@ impl<T> MultipleLink<T> for OwnedMultiple<T> {
     }
 
     fn take_loaded(&mut self) -> NodeResult<Vec<T>> {
-        match std::mem::replace(self, OwnedMultiple::Unknown) {
-            OwnedMultiple::Loaded(val) => Ok(val),
+        let parent_id = self.parent_id();
+        match std::mem::replace(self, OwnedMultiple::Unknown(parent_id)) {
+            OwnedMultiple::Loaded(_, val) => Ok(val),
             other => {
                 *self = other;
                 Err(NodeError::custom("OwnedMultiple link not loaded"))
@@ -359,144 +328,131 @@ impl<T> MultipleLink<T> for OwnedMultiple<T> {
         }
     }
 
-    fn ids(&self) -> Option<Vec<u64>>
-    where
-        T: Node,
-    {
-        match self {
-            OwnedMultiple::Loaded(val) => Some(val.iter().map(|node| node.id()).collect()),
-            OwnedMultiple::Ids(ids) => Some(ids.clone()),
-            _ => None,
-        }
-    }
-
     fn is_loaded(&self) -> bool {
-        matches!(self, OwnedMultiple::Loaded(_))
+        matches!(self, OwnedMultiple::Loaded(..))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self, OwnedMultiple::None)
+        matches!(self, OwnedMultiple::None(..))
     }
 
-    fn set_loaded(&mut self, value: Vec<T>) -> NodeResult<()> {
-        *self = OwnedMultiple::Loaded(value);
-        Ok(())
+    fn parent_id(&self) -> u64 {
+        match self {
+            OwnedMultiple::Loaded(id, _) | OwnedMultiple::None(id) | OwnedMultiple::Unknown(id) => {
+                *id
+            }
+        }
     }
 
-    fn set_ids(&mut self, ids: Vec<u64>) -> NodeResult<()> {
-        *self = OwnedMultiple::Ids(ids);
-        Ok(())
+    fn set_loaded(&mut self, value: Vec<T>) {
+        let parent_id = self.parent_id();
+        *self = OwnedMultiple::Loaded(parent_id, value);
     }
 
-    fn set_none(&mut self) -> NodeResult<()> {
-        *self = OwnedMultiple::None;
-        Ok(())
+    fn set_none(&mut self) {
+        let parent_id = self.parent_id();
+        *self = OwnedMultiple::None(parent_id);
     }
 }
 
-// RefMultiple implementation - Note: does NOT support Loaded state
 impl<T> MultipleLink<T> for RefMultiple<T> {
-    fn new_loaded(_value: Vec<T>) -> Self {
-        panic!("RefMultiple links do not support loaded state - use new_ids() instead")
+    fn new_loaded(parent_id: u64, value: Vec<T>) -> Self {
+        RefMultiple::Loaded(parent_id, value)
     }
 
-    fn new_ids(ids: Vec<u64>) -> Self {
-        RefMultiple::Ids(ids)
+    fn none(parent_id: u64) -> Self {
+        RefMultiple::None(parent_id)
     }
 
-    fn none() -> Self {
-        RefMultiple::None
-    }
-
-    fn unknown() -> Self {
-        RefMultiple::Unknown
+    fn unknown(parent_id: u64) -> Self {
+        RefMultiple::Unknown(parent_id)
     }
 
     fn get(&self) -> NodeResult<&Vec<T>> {
-        Err(NodeError::custom(
-            "RefMultiple links do not support getting loaded data",
-        ))
+        match self {
+            RefMultiple::Loaded(_, val) => Ok(val),
+            _ => Err(NodeError::custom("RefMultiple link not loaded")),
+        }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut Vec<T>> {
-        Err(NodeError::custom(
-            "RefMultiple links do not support getting loaded data",
-        ))
+        match self {
+            RefMultiple::Loaded(_, val) => Ok(val),
+            RefMultiple::None(_) => {
+                self.set_loaded(Vec::new());
+                self.get_mut()
+            }
+            _ => Err(NodeError::custom("RefMultiple link not loaded")),
+        }
     }
 
     fn take_loaded(&mut self) -> NodeResult<Vec<T>> {
-        Err(NodeError::custom(
-            "RefMultiple links do not support getting loaded data",
-        ))
-    }
-
-    fn ids(&self) -> Option<Vec<u64>>
-    where
-        T: Node,
-    {
-        match self {
-            RefMultiple::Ids(ids) => Some(ids.clone()),
-            _ => None,
+        let parent_id = self.parent_id();
+        match std::mem::replace(self, RefMultiple::Unknown(parent_id)) {
+            RefMultiple::Loaded(_, val) => Ok(val),
+            other => {
+                *self = other;
+                Err(NodeError::custom("RefMultiple link not loaded"))
+            }
         }
     }
 
     fn is_loaded(&self) -> bool {
-        false // RefMultiple never has loaded state
+        matches!(self, RefMultiple::Loaded(..))
     }
 
     fn is_none(&self) -> bool {
-        matches!(self, RefMultiple::None)
+        matches!(self, RefMultiple::None(..))
     }
 
-    fn set_loaded(&mut self, _value: Vec<T>) -> NodeResult<()> {
-        Err(NodeError::custom(
-            "RefMultiple links do not support loaded state",
-        ))
+    fn parent_id(&self) -> u64 {
+        match self {
+            RefMultiple::Loaded(id, _) | RefMultiple::None(id) | RefMultiple::Unknown(id) => *id,
+            RefMultiple::_Phantom(_) => 0,
+        }
     }
 
-    fn set_ids(&mut self, ids: Vec<u64>) -> NodeResult<()> {
-        *self = RefMultiple::Ids(ids);
-        Ok(())
+    fn set_loaded(&mut self, value: Vec<T>) {
+        let parent_id = self.parent_id();
+        *self = RefMultiple::Loaded(parent_id, value);
     }
 
-    fn set_none(&mut self) -> NodeResult<()> {
-        *self = RefMultiple::None;
-        Ok(())
+    fn set_none(&mut self) {
+        let parent_id = self.parent_id();
+        *self = RefMultiple::None(parent_id);
     }
 }
 
-// Default implementations
 impl<T> Default for Component<T> {
     fn default() -> Self {
-        Component::Unknown
+        Component::Unknown(0)
     }
 }
 
 impl<T> Default for Owned<T> {
     fn default() -> Self {
-        Owned::Unknown
+        Owned::Unknown(0)
     }
 }
 
 impl<T> Default for Ref<T> {
     fn default() -> Self {
-        Ref::Unknown
+        Ref::Unknown(0)
     }
 }
 
 impl<T> Default for OwnedMultiple<T> {
     fn default() -> Self {
-        OwnedMultiple::Unknown
+        OwnedMultiple::Unknown(0)
     }
 }
 
 impl<T> Default for RefMultiple<T> {
     fn default() -> Self {
-        RefMultiple::Unknown
+        RefMultiple::Unknown(0)
     }
 }
 
-// IntoIterator implementations for single links
 impl<'a, T> IntoIterator for &'a Owned<T> {
     type Item = &'a T;
     type IntoIter = std::option::IntoIter<&'a T>;
@@ -520,11 +476,10 @@ impl<'a, T> IntoIterator for &'a Ref<T> {
     type IntoIter = std::option::IntoIter<&'a T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        None.into_iter() // Ref never has loaded data
+        self.get().ok().into_iter()
     }
 }
 
-// IntoIterator implementations for multiple links
 impl<'a, T> IntoIterator for &'a OwnedMultiple<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
@@ -539,46 +494,6 @@ impl<'a, T> IntoIterator for &'a RefMultiple<T> {
     type IntoIter = std::iter::Flatten<std::option::IntoIter<std::slice::Iter<'a, T>>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        None.map(|vec: &Vec<T>| vec.iter()).into_iter().flatten() // RefMultiple never has loaded data
-    }
-}
-
-// Extension trait for iteration functionality
-pub trait LinkIterable<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_>;
-}
-
-// Single link iterable implementations
-impl<T> LinkIterable<T> for Owned<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.get().ok().into_iter())
-    }
-}
-
-impl<T> LinkIterable<T> for Component<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(self.get().ok().into_iter())
-    }
-}
-
-impl<T> LinkIterable<T> for Ref<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(std::iter::empty()) // Ref never has loaded data
-    }
-}
-
-// Multiple link iterable implementations
-impl<T> LinkIterable<T> for OwnedMultiple<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        match self.get() {
-            Ok(vec) => Box::new(vec.iter()),
-            Err(_) => Box::new(std::iter::empty()),
-        }
-    }
-}
-
-impl<T> LinkIterable<T> for RefMultiple<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &T> + '_> {
-        Box::new(std::iter::empty()) // RefMultiple never has loaded data
+        self.get().ok().map(|vec| vec.iter()).into_iter().flatten()
     }
 }

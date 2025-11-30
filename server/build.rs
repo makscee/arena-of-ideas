@@ -66,9 +66,6 @@ fn generate_server_nodes(
         // Generate ServerNode implementation
         let server_node_impl = generate_server_node_impl(node, node_map);
 
-        // Generate link loading methods
-        let link_methods = generate_link_methods(node, "ServerContext");
-
         // Generate collect methods
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
         let collect_owned_links_method = generate_collect_owned_links_impl(node);
@@ -98,7 +95,6 @@ fn generate_server_nodes(
 
                 #with_methods
 
-                #link_methods
                 #collect_owned_ids_method
                 #collect_owned_links_method
             }

@@ -89,11 +89,11 @@ impl BattleEditorPlugin {
                             if let Ok(slots) = team.slots.get_mut() {
                                 if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
                                 {
-                                    slot.unit = Owned::Loaded(unit);
+                                    slot.unit = Owned::Loaded(team.id, unit);
                                 } else {
                                     let mut new_slot =
                                         NTeamSlot::new(next_id(), team.id, slot_index);
-                                    new_slot.unit = Owned::Loaded(unit);
+                                    new_slot.unit = Owned::Loaded(team.id, unit);
                                     slots.push(new_slot);
                                 }
                             }
@@ -118,8 +118,7 @@ impl BattleEditorPlugin {
                             let left_has_from = state.left_team.slots.iter().any(|s| {
                                 if s.index == from_slot {
                                     match &s.unit {
-                                        Owned::Loaded(u) => u.id == dragged_unit_id,
-                                        Owned::Id(id) => *id == dragged_unit_id,
+                                        Owned::Loaded(_, u) => u.id == dragged_unit_id,
                                         _ => false,
                                     }
                                 } else {
@@ -141,12 +140,12 @@ impl BattleEditorPlugin {
                                     .iter()
                                     .find(|s| s.index == from_slot)
                                     .and_then(|s| match &s.unit {
-                                        Owned::Loaded(unit) => Some(unit.clone()),
+                                        Owned::Loaded(_, unit) => Some(unit.clone()),
                                         _ => None,
                                     });
                                 let to_unit = slots.iter().find(|s| s.index == to_slot).and_then(
                                     |s| match &s.unit {
-                                        Owned::Loaded(unit) => Some(unit.clone()),
+                                        Owned::Loaded(_, unit) => Some(unit.clone()),
                                         _ => None,
                                     },
                                 );
@@ -156,7 +155,7 @@ impl BattleEditorPlugin {
                                     slots.iter_mut().find(|s| s.index == from_slot)
                                 {
                                     if let Some(to_unit) = to_unit {
-                                        from_slot_mut.unit = Owned::Loaded(to_unit);
+                                        from_slot_mut.unit = Owned::Loaded(team.id, to_unit);
                                     } else {
                                         from_slot_mut.unit = Owned::default();
                                     }
@@ -166,12 +165,12 @@ impl BattleEditorPlugin {
                                     if let Some(to_slot_mut) =
                                         slots.iter_mut().find(|s| s.index == to_slot)
                                     {
-                                        to_slot_mut.unit = Owned::Loaded(from_unit);
+                                        to_slot_mut.unit = Owned::Loaded(team.id, from_unit);
                                     } else {
                                         // Create new slot if it doesn't exist
                                         let mut new_slot =
                                             NTeamSlot::new(next_id(), team.id, to_slot);
-                                        new_slot.unit = Owned::Loaded(from_unit);
+                                        new_slot.unit = Owned::Loaded(team.id, from_unit);
                                         slots.push(new_slot);
                                     }
                                 }
