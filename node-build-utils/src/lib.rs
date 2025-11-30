@@ -717,7 +717,6 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
         let var_accessor_methods = generate_var_accessor_methods(node);
-        let setter_methods = generate_setter_methods(node);
 
         // Generate collect methods
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
@@ -785,8 +784,6 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
             #allow_attrs
             impl #struct_name {
-                #setter_methods
-
                 #update_link_references_impl
             }
 
@@ -1089,33 +1086,6 @@ pub fn generate_unpack_links_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
         fn unpack_links(&mut self, packed: &PackedNodes) {
             #(#unpack_link_calls)*
         }
-    }
-}
-
-pub fn generate_setter_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
-    let setter_methods = node.fields.iter().filter_map(|field| {
-        // Generate setters only for non-link, non-var fields
-        // Var fields are handled by the set_var method
-        if field.link_type == LinkType::None && !field.is_var {
-            let field_name = &field.name;
-            let setter_name = format_ident!("set_{}", field_name);
-            let field_type: syn::Type = syn::parse_str(&field.raw_type).unwrap_or_else(|_| {
-                syn::parse_quote! { String }
-            });
-
-            Some(quote! {
-                pub fn #setter_name(&mut self, value: #field_type) -> &mut Self {
-                    self.#field_name = value;
-                    self
-                }
-            })
-        } else {
-            None
-        }
-    });
-
-    quote! {
-        #(#setter_methods)*
     }
 }
 

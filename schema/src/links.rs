@@ -55,11 +55,6 @@ pub trait SingleLink<T> {
     fn set_none(&mut self);
 
     fn parent_id(&self) -> u64;
-
-    fn set(&mut self, node: T) -> NodeResult<()> {
-        self.set_loaded(node);
-        Ok(())
-    }
 }
 
 pub trait MultipleLink<T> {

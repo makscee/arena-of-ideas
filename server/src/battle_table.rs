@@ -58,7 +58,7 @@ impl TBattle {
 
     fn team_name(team: &NTeam) -> String {
         let mut houses = vec![];
-        if let Ok(team_houses) = team.houses() {
+        if let Ok(team_houses) = team.houses.get() {
             for house in team_houses {
                 houses.push(house.house_name.clone());
             }

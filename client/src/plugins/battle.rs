@@ -136,7 +136,7 @@ impl BattlePlugin {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
             if !team.slots.is_loaded() {
-                team.slots_set(default()).unwrap();
+                team.slots.set_loaded(default());
             }
             while team.slots.get().unwrap().len() < slots {
                 let mut slot = NTeamSlot::default().with_id(next_id());
@@ -152,13 +152,13 @@ impl BattlePlugin {
         let slots = global_settings().team_slots as usize;
         for team in [&mut left, &mut right] {
             if !team.slots.is_loaded() {
-                team.slots_set(default()).unwrap();
+                team.slots.set_loaded(default());
             }
             while team.slots.get().unwrap().len() < slots {
                 let mut slot = NTeamSlot::default().with_id(next_id());
                 slot.index = team.slots.get().unwrap().len() as i32;
                 slot.owner = team.owner;
-                team.slots.get_mut().unwrap().push(slot);
+                team.slots.push(slot).unwrap();
             }
         }
         let id = next_id();

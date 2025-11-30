@@ -1473,7 +1473,7 @@ impl FPlaceholder for NTeam {
 impl FDisplay for NTeam {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         ui.vertical(|ui| {
-            if let Ok(houses) = self.houses_ref(ctx) {
+            if let Ok(houses) = self.houses.load_node(ctx) {
                 ui.label(format!("Houses ({})", houses.len()));
                 for house in houses {
                     ui.horizontal(|ui| {
@@ -1588,7 +1588,7 @@ impl FTitle for NTeamSlot {
 
 impl FDescription for NTeamSlot {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(unit) = self.unit_ref(ctx) {
+        if let Ok(unit) = self.unit.load_node(ctx) {
             unit.unit_name.cstr()
         } else {
             "Empty slot".cstr()
@@ -1608,7 +1608,7 @@ impl FTag for NTeamSlot {
     }
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
-        if let Ok(unit) = self.unit_ref(ctx) {
+        if let Ok(unit) = self.unit.load_node(ctx) {
             Some(unit.unit_name.cstr())
         } else {
             None
@@ -1627,7 +1627,7 @@ impl FDisplay for NTeamSlot {
                 .cstr_c(Color32::from_rgb(128, 0, 128))
                 .label(ui);
             ui.label(":");
-            if let Ok(unit) = self.unit_ref(ctx) {
+            if let Ok(unit) = self.unit.load_node(ctx) {
                 unit.unit_name.cstr().label(ui)
             } else {
                 "Empty".cstr_c(Color32::from_rgb(128, 128, 128)).label(ui)
@@ -2229,10 +2229,10 @@ impl FCompactView for NUnit {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Unit: {}", self.unit_name));
-            if let Ok(stats) = self.stats_ref(ctx) {
+            if let Ok(stats) = self.stats.load_node(ctx) {
                 ui.label(format!("Power: {}, HP: {}", stats.pwr, stats.hp));
             }
-            if let Ok(desc) = self.description_ref(ctx) {
+            if let Ok(desc) = self.description.load_node(ctx) {
                 if !desc.description.is_empty() {
                     ui.separator();
                     desc.description.cstr().label_w(ui);
@@ -2256,10 +2256,10 @@ impl FCompactView for NHouse {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("House: {}", self.house_name));
-            if let Ok(ability) = self.ability_ref(ctx) {
+            if let Ok(ability) = self.ability.load_node(ctx) {
                 ui.label(format!("Ability: {}", ability.ability_name));
             }
-            if let Ok(status) = self.status_ref(ctx) {
+            if let Ok(status) = self.status.load_node(ctx) {
                 ui.label(format!("Status: {}", status.status_name));
             }
         });
@@ -2397,7 +2397,7 @@ impl FCompactView for NAbilityMagic {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Ability: {}", self.ability_name));
-            if let Ok(desc) = self.description_ref(ctx) {
+            if let Ok(desc) = self.description.load_node(ctx) {
                 ui.separator();
                 desc.description.cstr().label_w(ui);
             }
@@ -2417,7 +2417,7 @@ impl FCompactView for NStatusMagic {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Status: {}", self.status_name));
-            if let Ok(desc) = self.description_ref(ctx) {
+            if let Ok(desc) = self.description.load_node(ctx) {
                 ui.separator();
                 desc.description.cstr().label_w(ui);
             }
@@ -2474,7 +2474,7 @@ impl FPreview for NUnit {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ctx.exec_ref(|ctx| {
             MatRect::new(rect.size())
-                .add_mat(&self.representation_ref(ctx)?.material, self.id)
+                .add_mat(&self.representation.load_node(ctx)?.material, self.id)
                 .unit_rep_with_default(self.id)
                 .corners(false)
                 .enabled(false)
@@ -2490,18 +2490,18 @@ impl FPreview for NHouse {
         ui.scope_builder(UiBuilder::new().max_rect(rect), |ui| {
             let color = ctx.color();
             ui.vertical_centered(|ui| {
-                if let Ok(ability) = self.ability_ref(ctx) {
+                if let Ok(ability) = self.ability.load_node(ctx) {
                     ability
                         .ability_name
                         .cstr_cs(color, CstrStyle::Bold)
                         .label(ui);
-                    if let Ok(dsc) = ability.description_ref(ctx) {
+                    if let Ok(dsc) = ability.description.load_node(ctx) {
                         dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
                     }
                 }
-                if let Ok(status) = self.status_ref(ctx) {
+                if let Ok(status) = self.status.load_node(ctx) {
                     status.status_name.cstr_cs(color, CstrStyle::Bold).label(ui);
-                    if let Ok(dsc) = status.description_ref(ctx) {
+                    if let Ok(dsc) = status.description.load_node(ctx) {
                         dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
                     }
                 }

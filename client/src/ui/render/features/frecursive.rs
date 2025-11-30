@@ -137,7 +137,7 @@ impl NodeLinkRender for Ui {
                 let mut new_node = T::default();
                 new_node.set_id(next_id());
                 new_node.set_owner(owner_id);
-                link.set_loaded(new_node).unwrap();
+                link.set_loaded(new_node);
                 return true;
             }
             false
@@ -210,7 +210,7 @@ impl NodeLinkRender for Ui {
                     .button(format!("➕ Create {} list", field_name))
                     .clicked()
                 {
-                    link.set_loaded(vec![]).unwrap();
+                    link.set_loaded(vec![]);
                     changed = true;
                 }
             }
