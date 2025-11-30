@@ -1,7 +1,10 @@
 use super::*;
 use crate::stdb::TNodeLink;
+mod link_ext;
 mod sources;
 
+pub use link_ext::{ClientMultipleLinkLoad, ClientSingleLinkLoad};
+use schema::*;
 pub use sources::*;
 
 pub type ClientContext<'a> = Context<Sources<'a>>;

@@ -68,7 +68,7 @@ impl BattlePlugin {
 
             match player_result {
                 Ok(p) => {
-                    let m_clone = p.active_match_ref(ctx)?.clone();
+                    let m_clone = p.active_match.load_node(ctx)?;
                     if m_clone.state.is_battle() {
                         if let Some(battle_id) = m_clone.pending_battle {
                             if let Some(battle) = cn().db.battle().id().find(&battle_id) {

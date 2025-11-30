@@ -5,6 +5,7 @@ mod context;
 mod daily_updater;
 mod global_data;
 mod global_settings;
+mod link_ext;
 mod r#match;
 mod nodes;
 pub mod nodes_table;
@@ -16,6 +17,7 @@ pub use admin::*;
 pub use context::*;
 use global_data::*;
 use global_settings::GlobalSettings;
+pub use link_ext::{ServerMultipleLinkLoad, ServerSingleLinkLoad};
 
 use itertools::Itertools;
 use log::{debug, error, info};
@@ -24,6 +26,7 @@ pub use nodes_table::*;
 use player::*;
 
 use schema::*;
+use serde::de::DeserializeOwned;
 use spacetimedb::Table;
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Timestamp, reducer, table};
 use std::collections::HashMap;

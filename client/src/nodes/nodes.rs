@@ -106,7 +106,7 @@ impl NodeKindOnSpawn for NodeKind {
         match self {
             NodeKind::NUnit => {
                 let unit = ctx.load::<NUnit>(id)?;
-                if let Ok(mut rep) = unit.representation_ref(ctx).cloned() {
+                if let Ok(mut rep) = unit.representation.load_node(ctx) {
                     rep.material.0.append(&mut unit_rep().material.0.clone());
                     rep.spawn(ctx, Some(entity))?;
                 } else {
@@ -139,7 +139,8 @@ impl NodeKindOnSpawn for NodeKind {
 
 impl NHouse {
     pub fn color_for_text(&self, ctx: &ClientContext) -> Color32 {
-        self.color_ref(ctx)
+        self.color
+            .load_node(ctx)
             .map(|c| c.color.c32())
             .unwrap_or_else(|_| colorix().low_contrast_text())
     }
