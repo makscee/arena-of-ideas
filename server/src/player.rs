@@ -61,8 +61,8 @@ fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String>
 #[reducer]
 fn login_by_identity(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let player = ctx.player()?.login(ctx)?;
-    ctx.source_mut().commit(player)?;
+    let player = ctx.player().track()?.login(ctx).track()?;
+    ctx.source_mut().commit(player).track()?;
     Ok(())
 }
 
@@ -142,7 +142,7 @@ impl NPlayer {
             .into_iter()
             .next()
     }
-    fn login(self, ctx: &ServerContext) -> Result<Self, String> {
+    fn login(self, ctx: &ServerContext) -> NodeResult<Self> {
         let ts = ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64;
         let mut data = self.player_data.load_node(ctx)?;
         debug!("{data:?}");
@@ -170,12 +170,14 @@ pub trait GetPlayer {
 impl GetPlayer for ServerContext<'_> {
     fn player(&self) -> NodeResult<NPlayer> {
         let identity = NPlayer::find_identity(self, &self.source().rctx().sender)
-            .to_custom_e_s("NPlayerIdentity not found")?;
+            .to_custom_e("NPlayerIdentity not found")
+            .track()?;
         let id = self
             .get_parents_of_kind(identity.id, NodeKind::NPlayer)?
             .into_iter()
             .next()
-            .to_not_found()?;
+            .to_not_found()
+            .track()?;
         NPlayer::load(self.source(), id)
     }
 }

@@ -84,9 +84,9 @@ fn create_battle(
 #[reducer]
 fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let pid = player.id;
-    let mut m = player.active_match.load_node(ctx)?;
+    let mut m = player.active_match.load_node(ctx)?.load_all(ctx)?.take();
     let offer = m
         .shop_offers
         .last_mut()
@@ -103,9 +103,6 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let node_id = slot.node_id;
     let card_kind = slot.card_kind;
     m.pay(ctx, price).track()?;
-    let mid = m.id;
-    ctx.source_mut().commit(m)?;
-    let mut m = ctx.load::<NMatch>(mid)?;
 
     match card_kind {
         CardKind::Unit => {
@@ -115,75 +112,72 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .load_components(ctx)
                 .track()?
                 .take();
-            let house_id = ctx.collect_kind_parents(team_unit.id, NodeKind::NHouse)?[0];
+            let house_id = ctx.first_parent(team_unit.id, NodeKind::NHouse)?;
             team_unit =
                 team_unit
                     .remap_ids(ctx)
                     .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
-            let id = team_unit.id;
-            ctx.source_mut().commit(team_unit)?;
-            id.add_parent(ctx.rctx(), mid)?;
-            id.add_parent(ctx.rctx(), house_id)?;
+            let unit_id = team_unit.id;
+            m.bench.push(team_unit)?;
+            m.shop_pool
+                .get_mut()?
+                .houses
+                .get_mut()?
+                .iter_mut()
+                .find(|h| h.id == house_id)
+                .to_not_found()?
+                .units
+                .push_id(unit_id)?;
         }
         CardKind::House => {
             let house = ctx
                 .load::<NHouse>(node_id)
                 .track()?
-                .load_components(ctx)
+                .load_all(ctx)
                 .track()?
                 .take();
-            let shop_pool = m.shop_pool.load_node(ctx).track()?;
-            let mut houses = shop_pool.houses.load_nodes(ctx).track()?;
+            let shop_pool = m.shop_pool.get_mut()?;
+            let houses = shop_pool.houses.get_mut()?;
             let house_to_use = if let Some(existing_house) =
                 houses.iter_mut().find(|h| h.house_name == house.house_name)
             {
-                let mut state = existing_house.state.load_node(ctx).track()?;
-                state.stax += 1;
-                ctx.source_mut().commit(state)?;
-                existing_house.id
+                existing_house.state.get_mut()?.stax += 1;
+                existing_house
             } else {
                 let new_house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
                     ctx.next_id(),
                     pid,
                     1,
                 ));
-                let new_house_id = new_house.id;
-                ctx.source_mut().commit(new_house)?;
-                shop_pool.id.add_child(ctx.rctx(), new_house_id).track()?;
-                new_house_id
+                shop_pool.houses.push(new_house)?
             };
             let all_core_units = NUnit::collect_owner(ctx, ID_CORE);
-            for _ in 0..5 {
-                if let Some(mut unit) = all_core_units.choose(&mut ctx.rng()).cloned() {
-                    let new_unit = unit
-                        .load_components(ctx)
-                        .track()?
-                        .take()
-                        .remap_ids(ctx)
-                        .with_owner(pid);
-                    let new_unit_id = new_unit.id;
-                    ctx.source_mut().commit(new_unit)?;
-                    new_unit_id.add_parent(ctx.rctx(), house_to_use)?;
-                    let shop_pool = m.shop_pool.load_node(ctx)?;
-                    new_unit_id.add_parent(ctx.rctx(), shop_pool.id)?;
-                } else {
-                    return Err("No core units available".to_string());
-                }
+            if all_core_units.is_empty() {
+                return Err("No core units found".into());
+            }
+            for mut unit in all_core_units.choose_multiple(&mut ctx.rng(), 5).cloned() {
+                let new_unit = unit
+                    .load_components(ctx)
+                    .track()?
+                    .take()
+                    .remap_ids(ctx)
+                    .with_owner(pid);
+                house_to_use.units.push_id(new_unit.id)?;
+                shop_pool.units.push(new_unit)?;
             }
         }
     }
     if card_kind == CardKind::House {
-        let mut m = ctx.load::<NMatch>(mid).track()?;
         m.fill_shop_case(ctx).track()?;
-        ctx.source_mut().commit(m)?;
     }
+    ctx.source_mut().commit(m)?;
     Ok(())
 }
 
 #[reducer]
 fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let pid = player.id;
     let unit = ctx.load::<NUnit>(unit_id)?;
     if unit.owner != pid {
@@ -212,7 +206,7 @@ fn match_move_unit(ctx: &ReducerContext, unit_id: u64, slot_index: i32) -> Resul
 #[reducer]
 fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let pid = player.id;
     let unit = ctx.load::<NUnit>(unit_id)?;
     if unit.owner != pid {
@@ -228,7 +222,7 @@ fn match_sell_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
 #[reducer]
 fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let pid = player.id;
     let unit = ctx.load::<NUnit>(unit_id)?;
     if unit.owner != pid {
@@ -243,7 +237,7 @@ fn match_bench_unit(ctx: &ReducerContext, unit_id: u64) -> Result<(), String> {
 #[reducer]
 fn match_shop_reroll(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let mut m = player.active_match.load_node(ctx)?;
     m.fill_shop_case(ctx)?;
     m.pay(ctx, ctx.global_settings().match_settings.reroll)?;
@@ -259,7 +253,7 @@ fn match_submit_battle_result(
     _hash: u64,
 ) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let pid = player.id;
     let mut m = player.active_match.load_node(ctx)?;
     let current_floor = m.floor;
@@ -691,7 +685,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     for i in 0..gs.team_slots {
         team_slots.push(NTeamSlot::new(ctx.next_id(), pid, i as i32));
     }
-    let m = NMatch::new(
+    let mut m = NMatch::new(
         ctx.next_id(),
         pid,
         gs.match_settings.initial,
@@ -706,11 +700,8 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
     )
     .with_shop_pool(NShopPool::new(ctx.next_id(), pid))
     .with_slots(team_slots);
-    let mid = m.id;
-    ctx.source_mut().commit(m)?;
-    let mut m = ctx.load::<NMatch>(mid).track()?;
     m.fill_shop_case(ctx).track()?;
-    player.active_match = Component::new_loaded(player.id, m);
+    player.active_match.set_loaded(m);
     ctx.source_mut().commit(player).track()?;
     Ok(())
 }

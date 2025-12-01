@@ -176,7 +176,7 @@ impl ActionImpl for Action {
                 let stack_change = x.get_i32(ctx)?;
                 if let Some(status_id) = ctx.status() {
                     let mut status = ctx.load::<NStatusMagic>(status_id).track()?;
-                    let current_stax = status.state.load_mut_node(ctx).track()?.stax;
+                    let current_stax = status.state.load_node_mut(ctx).track()?.stax;
                     let name = status.name();
                     let color = ctx.color();
                     let new_stax = current_stax + stack_change;

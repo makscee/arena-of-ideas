@@ -69,6 +69,7 @@ pub trait SingleLink<T: Node> {
     fn set_none(&mut self);
 
     fn parent_id(&self) -> u64;
+    fn set_parent_id(&mut self, parent_id: u64);
     fn id(&self) -> NodeResult<u64>;
 }
 
@@ -88,17 +89,18 @@ pub trait MultipleLink<T: Node> {
     fn set_none(&mut self);
 
     fn parent_id(&self) -> u64;
+    fn set_parent_id(&mut self, parent_id: u64);
     fn ids(&self) -> NodeResult<&Vec<u64>>;
 
-    fn push(&mut self, node: T) -> NodeResult<()> {
+    fn push(&mut self, node: T) -> NodeResult<&mut T> {
         match self {
             _ if self.is_loaded() => {
                 self.get_mut()?.push(node);
-                Ok(())
+                Ok(self.get_mut()?.last_mut().unwrap())
             }
             _ if self.is_none() => {
                 self.set_loaded(vec![node]);
-                Ok(())
+                Ok(self.get_mut()?.first_mut().unwrap())
             }
             _ => Err(NodeError::custom(
                 "Cannot push to link that is not Loaded or None",
@@ -158,6 +160,14 @@ impl<T: Node> SingleLink<T> for Component<T> {
             Component::Loaded { parent_id, .. }
             | Component::None { parent_id }
             | Component::Unknown { parent_id } => *parent_id,
+        }
+    }
+
+    fn set_parent_id(&mut self, new_parent_id: u64) {
+        match self {
+            Self::Loaded { parent_id, .. }
+            | Self::None { parent_id }
+            | Self::Unknown { parent_id } => *parent_id = new_parent_id,
         }
     }
 
@@ -233,6 +243,14 @@ impl<T: Node> SingleLink<T> for Owned<T> {
         }
     }
 
+    fn set_parent_id(&mut self, new_parent_id: u64) {
+        match self {
+            Self::Loaded { parent_id, .. }
+            | Self::None { parent_id }
+            | Self::Unknown { parent_id } => *parent_id = new_parent_id,
+        }
+    }
+
     fn set_loaded(&mut self, data: T) {
         let parent_id = self.parent_id();
         *self = Owned::Loaded { parent_id, data };
@@ -299,6 +317,15 @@ impl<T: Node> SingleLink<T> for Ref<T> {
                 *parent_id
             }
             Ref::_Phantom(_) => 0,
+        }
+    }
+
+    fn set_parent_id(&mut self, new_parent_id: u64) {
+        match self {
+            Self::Id { parent_id, .. } | Self::None { parent_id } | Self::Unknown { parent_id } => {
+                *parent_id = new_parent_id
+            }
+            Ref::_Phantom(..) => {}
         }
     }
 
@@ -381,6 +408,14 @@ impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
         }
     }
 
+    fn set_parent_id(&mut self, new_parent_id: u64) {
+        match self {
+            Self::Loaded { parent_id, .. }
+            | Self::None { parent_id }
+            | Self::Unknown { parent_id } => *parent_id = new_parent_id,
+        }
+    }
+
     fn set_loaded(&mut self, data: Vec<T>) {
         let parent_id = self.parent_id();
         *self = OwnedMultiple::Loaded { parent_id, data };
@@ -449,6 +484,15 @@ impl<T: Node> MultipleLink<T> for RefMultiple<T> {
         }
     }
 
+    fn set_parent_id(&mut self, new_parent_id: u64) {
+        match self {
+            Self::Ids { parent_id, .. }
+            | Self::None { parent_id }
+            | Self::Unknown { parent_id } => *parent_id = new_parent_id,
+            RefMultiple::_Phantom(..) => {}
+        }
+    }
+
     fn set_loaded(&mut self, nodes: Vec<T>) {
         let parent_id = self.parent_id();
         *self = RefMultiple::Ids {
@@ -477,6 +521,15 @@ impl<T: Node> Ref<T> {
             node_id: id,
         };
     }
+
+    pub fn load_id<C: ContextSource>(&mut self, ctx: &Context<C>) -> NodeResult<u64> {
+        let node_id = ctx.first_child(self.parent_id(), T::kind_s())?;
+        *self = Ref::Id {
+            parent_id: self.parent_id(),
+            node_id,
+        };
+        Ok(node_id)
+    }
 }
 
 impl<T: Node> RefMultiple<T> {
@@ -486,6 +539,30 @@ impl<T: Node> RefMultiple<T> {
             parent_id,
             node_ids: ids,
         };
+    }
+    pub fn push_id(&mut self, id: u64) -> NodeResult<()> {
+        match self {
+            RefMultiple::Ids { node_ids, .. } => node_ids.push(id),
+            RefMultiple::None { parent_id } => {
+                *self = RefMultiple::Ids {
+                    parent_id: *parent_id,
+                    node_ids: vec![id],
+                }
+            }
+            _ => {
+                return Err(NodeError::custom("RefMultiple link not loaded"));
+            }
+        };
+        Ok(())
+    }
+
+    pub fn load_ids<C: ContextSource>(&mut self, ctx: &Context<C>) -> NodeResult<Vec<u64>> {
+        let node_ids = ctx.collect_kind_children(self.parent_id(), T::kind_s())?;
+        *self = RefMultiple::Ids {
+            parent_id: self.parent_id(),
+            node_ids: node_ids.clone(),
+        };
+        Ok(node_ids)
     }
 }
 

@@ -15,6 +15,7 @@ pub struct PackedNodes {
 pub struct NodeData {
     pub kind: String,
     pub data: String,
+    pub owner: u64,
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Hash, Eq)]
 pub struct NodeLink {
@@ -40,8 +41,8 @@ impl PackedNodes {
     pub fn get<'a>(&'a self, id: u64) -> Option<&'a NodeData> {
         self.nodes.get(&id)
     }
-    pub fn add_node(&mut self, kind: String, data: String, id: u64) {
-        self.nodes.insert(id, NodeData { kind, data });
+    pub fn add_node(&mut self, kind: String, data: String, id: u64, owner: u64) {
+        self.nodes.insert(id, NodeData { kind, data, owner });
     }
     pub fn link_parent_child(
         &mut self,

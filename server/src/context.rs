@@ -144,6 +144,11 @@ impl<'a> ContextSource for ServerSource<'a> {
         node_kind: NodeKind,
     ) -> NodeResult<()> {
         let row = TNode::new(id, owner, node_kind, data);
+        if owner == 0 {
+            return Err(NodeError::custom(format!(
+                "Tried to insert node with owner = 0: {row:?}"
+            )));
+        }
         match self.ctx.db.nodes_world().try_insert(row.clone()) {
             Ok(_) => {}
             Err(_) => {

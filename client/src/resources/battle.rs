@@ -226,8 +226,8 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time() * 3.0));
                     let mut unit_a = ctx.load::<NUnit>(*a).track()?;
                     let mut unit_b = ctx.load::<NUnit>(*b).track()?;
-                    let pwr_a = unit_a.stats.load_mut_node(ctx).track()?.pwr;
-                    let pwr_b = unit_b.stats.load_mut_node(ctx).track()?.pwr;
+                    let pwr_a = unit_a.stats.load_node_mut(ctx).track()?.pwr;
+                    let pwr_b = unit_b.stats.load_node_mut(ctx).track()?.pwr;
                     add_actions.extend(ctx.battle()?.slots_sync());
                     add_actions.push(Self::wait(animation_time()));
                     add_actions.push(Self::damage(*a, *b, pwr_a));
@@ -704,7 +704,7 @@ impl BattleSimulation {
                         .track()?
                         .clone()
                         .behavior
-                        .load_mut_node(ctx)?
+                        .load_node_mut(ctx)?
                         .reactions
                         .react_battle_actions(&event, ctx)
                     {
@@ -731,7 +731,7 @@ impl BattleSimulation {
                         ContextLayer::Status(status_id),
                     ],
                     |ctx| {
-                        let mut status = ctx.load::<NStatusMagic>(status_id)?;
+                        let status = ctx.load::<NStatusMagic>(status_id)?;
                         let stax = status.state.load_node(ctx)?.stax;
                         if stax <= 0 {
                             return Ok(vec![]);
@@ -777,7 +777,7 @@ impl BattleSimulation {
                     if let Ok(mut state) = child_status.state.load_node(ctx) {
                         let new_stax = state.stax + status.state.load_node(ctx)?.stax;
                         state.set_var(VarName::stax, new_stax.into())?;
-                        ctx.source_mut().commit(state);
+                        ctx.source_mut().commit(state)?;
                         BattleSimulation::send_event(
                             ctx,
                             Event::StatusApplied(caster, target, child_status.id),

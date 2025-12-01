@@ -469,8 +469,6 @@ fn generate_reducer_registry() -> String {
 
     let generated = quote! {
         use strum_macros::EnumIter;
-        use strum::IntoEnumIterator;
-
         /// Auto-generated enum of all reducers from stdb/*_reducer.rs files
         /// Updated by build.rs - do not edit manually
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]

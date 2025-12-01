@@ -86,7 +86,7 @@ fn admin_upload_world(
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
     ctx.is_admin()?;
     let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
+    let player = ctx.player()?;
     let mut m = player.active_match.load_node(ctx)?;
     m.g += 10;
     ctx.source_mut().commit(m)?;

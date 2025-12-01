@@ -725,6 +725,11 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let update_link_references_impl = generate_update_link_references_impl(node);
         let set_owner_calls = generate_set_owner_calls(node);
         let allow_attrs = generated_code_allow_attrs();
+        let link_fields: Vec<_> = node.fields.iter().filter_map(|f| if f.link_type != LinkType::None {
+            Some(f.name.clone())
+        } else {
+            None
+        }).collect();
 
         quote! {
             #allow_attrs
@@ -735,6 +740,9 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
 
                 fn set_id(&mut self, id: u64) {
                     self.id = id;
+                    #(
+                        self.#link_fields.set_parent_id(id);
+                    )*
                 }
 
                 fn owner(&self) -> u64 {
@@ -817,7 +825,7 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
         let field_name = &field.name;
 
         quote! {
-            if let Ok(loaded_item) = self.#field_name.get_mut() {
+            if let Ok(loaded_item) = self.#field_name.load_node_mut(ctx) {
                 loaded_item.load_components(ctx)?;
             }
         }
@@ -839,31 +847,34 @@ pub fn generate_load_functions(node: &NodeInfo, context_ident: &str) -> TokenStr
     };
 
     // Generate load_all method (Component + Owned + Ref links)
-    let all_field_loads = node
-        .fields
-        .iter()
-        .filter_map(|field| match field.link_type {
+    let all_field_loads = node.fields.iter().filter_map(|field| {
+        let field_name = &field.name;
+        match field.link_type {
             LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple => {
-                let field_name = &field.name;
-
                 Some(match field.link_type {
                     LinkType::OwnedMultiple => quote! {
-                        if let Ok(loaded_items) = self.#field_name.get_mut() {
+                        if let Ok(loaded_items) = self.#field_name.load_nodes_mut(ctx) {
                             for item in loaded_items.iter_mut() {
-                                item.load_all(ctx)?;
+                                item.load_all(ctx).track()?;
                             }
                         }
                     },
                     _ => quote! {
-                        if let Ok(loaded_item) = self.#field_name.get_mut() {
+                        if let Ok(loaded_item) = self.#field_name.load_node_mut(ctx) {
                             loaded_item.load_all(ctx)?;
                         }
                     },
                 })
             }
-            LinkType::Ref | LinkType::RefMultiple => None,
+            LinkType::Ref => Some(quote! {
+                self.#field_name.load_id(ctx)?;
+            }),
+            LinkType::RefMultiple => Some(quote! {
+                self.#field_name.load_ids(ctx)?;
+            }),
             LinkType::None => None,
-        });
+        }
+    });
 
     let ref_fields: Vec<_> = node
         .fields

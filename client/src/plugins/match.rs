@@ -59,8 +59,7 @@ impl MatchPlugin {
     }
     pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {
-            let player = player(ctx)?;
-            let m = player.active_match.load_node(ctx)?;
+            let m = player(ctx)?.active_match.load_node(ctx)?.take();
 
             if m.state.is_battle() {
                 ui.vertical_centered_justified(|ui| {
@@ -79,8 +78,6 @@ impl MatchPlugin {
                 Self::show_fusion_window(ctx, ui, variants.clone())?;
                 return Ok(());
             }
-
-            let m = m.clone();
 
             let slots = &m.shop_offers.last().to_e_not_found()?.case;
             let available_rect = ui.available_rect_before_wrap();
@@ -240,12 +237,7 @@ impl MatchPlugin {
     pub fn pane_team(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {
         with_solid_source(|ctx| {
             let player = player(ctx)?;
-            let mut m = player
-                .active_match
-                .load_node(ctx)?
-                .clone()
-                .load_all(ctx)?
-                .take();
+            let mut m = player.active_match.load_node(ctx)?.load_all(ctx)?.take();
             let rect = ui.available_rect_before_wrap();
 
             // Display slots

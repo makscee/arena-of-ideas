@@ -16,7 +16,15 @@ fn content_publish_node(
     pack.reassign_ids(&mut next_id);
     GlobalData::set_next_id(ctx.rctx(), next_id);
     let mut remap: HashMap<u64, u64> = default();
-    for (id, NodeData { kind, data }) in &pack.nodes {
+    for (
+        id,
+        NodeData {
+            kind,
+            data,
+            owner: _,
+        },
+    ) in &pack.nodes
+    {
         let filter = ctx.rctx().db.nodes_world().kind_data_owner();
         if let Some(n) = filter
             .filter((kind, data, ID_CORE))

@@ -38,7 +38,12 @@ pub trait Node: Send + Sync + Default + StringData {
         let mut visited = HashSet::new();
         self.pack_recursive(&mut packed, &mut visited);
         packed.root = self.id();
-        packed.add_node(Self::kind_s().to_string(), self.get_data(), self.id());
+        packed.add_node(
+            Self::kind_s().to_string(),
+            self.get_data(),
+            self.id(),
+            self.owner(),
+        );
         packed
     }
 
@@ -54,7 +59,7 @@ pub trait Node: Send + Sync + Default + StringData {
         visited.insert(id);
 
         // Add this node's data
-        packed.add_node(self.kind().to_string(), self.get_data(), id);
+        packed.add_node(self.kind().to_string(), self.get_data(), id, self.owner());
 
         // This will be implemented by the generated code for each node type
         // to handle their specific linked fields
@@ -120,6 +125,9 @@ pub trait ContextSource {
     }
 
     fn commit_vec(&mut self, nodes: Vec<impl Node>) -> NodeResult<()> {
+        if nodes.is_empty() {
+            return Ok(());
+        }
         // 1. Get flat structure of nodes and links
         let mut all_nodes = HashMap::new();
         let mut all_links = HashSet::new();
@@ -224,20 +232,7 @@ pub trait ContextSource {
         for (id, node_data) in all_nodes {
             let kind = NodeKind::from_str(&node_data.kind)
                 .map_err(|_| NodeError::custom(format!("Invalid node kind: {}", node_data.kind)))?;
-
-            // Get owner from first owning parent in the links
-            let owner = all_links
-                .iter()
-                .find_map(|link| {
-                    if link.child == id {
-                        Some(link.parent)
-                    } else {
-                        None
-                    }
-                })
-                .unwrap_or(0);
-
-            self.insert_node(id, owner, node_data.data, kind)?;
+            self.insert_node(id, node_data.owner, node_data.data, kind)?;
         }
 
         // 5. Insert all links to source
