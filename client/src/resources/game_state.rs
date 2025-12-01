@@ -61,7 +61,7 @@ impl GameState {
             }
             GameState::Editor => {
                 let mut tiles = Tiles::default();
-                let view = tiles.insert_pane(Pane::Battle(BattlePane::View));
+                let view = tiles.insert_pane(Pane::Battle(BattlePane::ViewEditor));
 
                 // Left team graph
                 let left_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
@@ -210,6 +210,7 @@ pub enum Pane {
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum BattlePane {
     View,
+    ViewEditor,
     EditLeftGraph,
     EditRightGraph,
 }
@@ -311,7 +312,8 @@ impl Pane {
                 ShopPane::Team => MatchPlugin::pane_team(ui, world)?,
             },
             Pane::Battle(pane) => match pane {
-                BattlePane::View => BattleEditorPlugin::pane_view(ui, world),
+                BattlePane::View => BattlePlugin::pane_view(ui, world)?,
+                BattlePane::ViewEditor => BattleEditorPlugin::pane_view(ui, world),
                 BattlePane::EditLeftGraph => BattleEditorPlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattleEditorPlugin::pane_edit_graph(false, ui, world),
             },

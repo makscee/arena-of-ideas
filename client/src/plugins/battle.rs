@@ -176,31 +176,34 @@ impl BattlePlugin {
     }
 
     pub fn pane_view(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope(|world, mut data: Mut<BattleData>| {
-            BattleCamera::builder()
-                .on_battle_end(|ui, _res| {})
-                .show(&mut data, ui);
+        let Some(mut data) = world.get_resource_mut::<BattleData>() else {
+            return Err(NodeError::custom("Battle not loaded"));
+        };
 
-            // Update time
-            if data.playing {
-                let duration = data
+        BattleCamera::builder()
+            .on_battle_end(|ui, _res| {})
+            .show(data.as_mut(), ui);
+
+        // Update time
+        if data.playing {
+            let duration = data
+                .source
+                .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+            data.t += gt().last_delta() * data.playback_speed;
+            data.t = data.t.at_most(duration);
+
+            if data.t >= duration {
+                let not_ended = data
                     .source
-                    .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
-                data.t += gt().last_delta() * data.playback_speed;
-                data.t = data.t.at_most(duration);
-
-                if data.t >= duration {
-                    let not_ended = data
-                        .source
-                        .exec_context_ref(|ctx| ctx.battle().map(|s| !s.ended()).unwrap_or(false));
-                    if not_ended {
-                        data.source
-                            .exec_context(|ctx| BattleSimulation::run(ctx))
-                            .log();
-                    }
+                    .exec_context_ref(|ctx| ctx.battle().map(|s| !s.ended()).unwrap_or(false));
+                if not_ended {
+                    data.source
+                        .exec_context(|ctx| BattleSimulation::run(ctx))
+                        .log();
                 }
             }
-        });
+        }
+
         Ok(())
     }
 }

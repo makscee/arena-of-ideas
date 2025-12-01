@@ -4,6 +4,8 @@ use schema::MatchState;
 use spacetimedb::rand::{Rng, seq::SliceRandom};
 use strum::IntoEnumIterator;
 
+use crate::battle_table::TBattle;
+
 use super::*;
 
 fn get_floor_bosses(ctx: &ServerContext) -> Vec<TNode> {
@@ -257,23 +259,19 @@ fn match_submit_battle_result(
     if battle_id != id {
         return Err("Wrong Battle id".into());
     }
-
-    // Update battle result in TBattle table
-    crate::battle_table::TBattle::update_result(ctx.rctx(), battle_id, result)?;
+    let battle = TBattle::load(ctx, battle_id)?;
+    let player_team = PackedNodes::from_string(&battle.left_team)?.unpack::<NTeam>()?;
+    battle.update_result(ctx, result)?;
 
     // Move pending battle to history
     m.battle_history.push(battle_id);
     m.pending_battle = None;
 
     let current_state = m.state;
-
     let mut arena = ctx.load::<NArena>(ID_ARENA)?;
     match current_state {
         MatchState::ChampionBattle => {
             if result {
-                // Won champion battle - create new floor with boss and pool
-                let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
-
                 // Create new boss team for the new floor
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
                 let mut new_floor_boss = NFloorBoss::new(ctx.next_id(), ID_ARENA, current_floor);
@@ -282,21 +280,15 @@ fn match_submit_battle_result(
                 new_floor_pool
                     .teams
                     .push(new_boss_team.clone().remap_ids(ctx))?;
-
-                arena.floor_pools.load_mut(ctx)?;
-                arena.floor_bosses.load_mut(ctx)?;
+                arena.floor_pools.load_mut(ctx)?.push(new_floor_pool)?;
+                arena.floor_bosses.load_mut(ctx)?.push(new_floor_boss)?;
                 arena.last_floor = current_floor;
-                arena.floor_bosses.push(new_floor_boss)?;
-                arena.floor_pools.push(new_floor_pool)?;
                 ctx.source_mut().commit(arena)?;
             }
             m.active = false;
         }
         MatchState::BossBattle => {
             if result {
-                // Won against boss - replace boss with player's team
-                let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
-
                 // Create new boss team
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
                 let last_floor = arena.last_floor;
@@ -306,7 +298,7 @@ fn match_submit_battle_result(
                     .find(|f| f.floor == current_floor)
                     .to_custom_err_fn(|| format!("Floor boss not found for {current_floor}"))?
                     .clone();
-                boss.team = Owned::new_loaded(boss.id, new_boss_team);
+                boss.team.set_loaded(new_boss_team);
                 ctx.source_mut().commit(boss)?;
 
                 if current_floor == last_floor {

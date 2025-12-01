@@ -115,4 +115,8 @@ impl PackedNodes {
         }));
         self.root = *remap.get(&self.root).unwrap();
     }
+
+    pub fn unpack<T: Node>(&self) -> NodeResult<T> {
+        T::unpack(self)
+    }
 }

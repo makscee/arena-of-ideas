@@ -17,7 +17,7 @@ pub struct BattleEditorState {
 
 impl BattleEditorPlugin {
     pub fn pane_view(ui: &mut Ui, world: &mut World) {
-        world.resource_scope(|world, mut battle_data: Mut<BattleData>| {
+        world.resource_scope(|_, mut battle_data: Mut<BattleData>| {
             BattleCamera::builder()
                 .filled_slot_action(
                     "Inspect Unit".to_string(),

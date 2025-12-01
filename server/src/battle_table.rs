@@ -46,13 +46,13 @@ impl TBattle {
         Ok(battle_id)
     }
 
-    pub fn update_result(ctx: &ReducerContext, battle_id: u64, result: bool) -> Result<(), String> {
-        let Some(mut battle) = ctx.db.battle().id().find(&battle_id) else {
-            return Err(format!("Battle {} not found", battle_id));
-        };
+    pub fn load(ctx: &ServerContext, battle_id: u64) -> NodeResult<TBattle> {
+        ctx.rctx().db.battle().id().find(&battle_id).to_not_found()
+    }
 
-        battle.result = Some(result);
-        ctx.db.battle().id().update(battle);
+    pub fn update_result(mut self, ctx: &ServerContext, result: bool) -> Result<(), String> {
+        self.result = Some(result);
+        ctx.rctx().db.battle().id().update(self);
         Ok(())
     }
 
