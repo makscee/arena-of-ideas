@@ -56,7 +56,6 @@ impl Battle {
         source
             .exec_context(|ctx| {
                 let mut battle = ctx.battle()?.battle.clone();
-                dbg!(&battle.left);
                 battle.left.spawn(ctx, Some(left_entity)).track()?;
                 if battle.right.id == 0 {
                     battle.right = battle.right.remap_ids();

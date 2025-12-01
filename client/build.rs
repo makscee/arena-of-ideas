@@ -230,17 +230,17 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             LinkType::Ref => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Ok(node) = self.#field_name.get() {
-                        ctx.add_link(self.id, node.id).track()?;
+                    if let Ok(id) = self.#field_name.id() {
+                        ctx.add_link(self.id, id).track()?;
                     }
                 })
             }
             LinkType::RefMultiple => {
                 let field_name = &field.name;
                 Some(quote! {
-                    if let Ok(nodes) = self.#field_name.get() {
-                        for node in nodes {
-                            ctx.add_link(self.id, node.id).track()?;
+                    if let Ok(ids) = self.#field_name.ids() {
+                        for id in ids {
+                            ctx.add_link(self.id, id).track()?;
                         }
                     }
                 })

@@ -68,8 +68,7 @@ fn create_battle(
     let left_team = ctx.load::<NTeam>(player_team_id)?;
     let right_team = ctx.load::<NTeam>(enemy_team_id).unwrap_or_default();
 
-    let battle_id =
-        crate::battle_table::TBattle::create(ctx, player_id, &left_team, &right_team, default())?;
+    let battle_id = TBattle::create(ctx, player_id, &left_team, &right_team, default())?;
 
     m.pending_battle = Some(battle_id);
     Ok(battle_id)
@@ -365,7 +364,7 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
     }
 
     m.state = MatchState::RegularBattle;
-    let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
+    let player_team = m.build_team(ctx)?;
     let player_team_id = player_team.id;
     let pool_id = ensure_floor_pool(ctx, floor)?;
     let pool_teams = get_floor_pool_teams(ctx, pool_id);
@@ -710,6 +709,9 @@ impl NMatch {
             .iter()
             .filter_map(|s| s.unit.get().ok().map(|u| u.id))
             .collect_vec();
+        if slot_units.is_empty() {
+            return Err(NodeError::custom("No units in slots"));
+        }
         for slot in slots.iter() {
             team.slots.push(slot.clone())?;
         }

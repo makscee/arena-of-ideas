@@ -83,8 +83,7 @@ impl<'a> BattleCameraBuilder<'a> {
     }
 
     pub fn show(mut self, battle_data: &mut BattleData, ui: &mut Ui) {
-        let has_on_done = battle_data.on_done.is_some();
-        let should_show_end_screen = std::cell::Cell::new(false);
+        let mut should_show_end_screen = false;
 
         battle_data.source.exec_context(|ctx| {
             let sim = ctx.battle().unwrap();
@@ -94,7 +93,7 @@ impl<'a> BattleCameraBuilder<'a> {
             let ended = sim.ended();
 
             if battle_data.t >= duration && ended {
-                should_show_end_screen.set(true);
+                should_show_end_screen = true;
                 return;
             }
 
@@ -216,16 +215,16 @@ impl<'a> BattleCameraBuilder<'a> {
             ui.data_mut(|w| w.insert_temp(ui.id(), cam));
         });
 
-        if should_show_end_screen.get() {
+        if should_show_end_screen {
             let result = battle_data
                 .source
                 .exec_context_ref(|ctx| ctx.battle().unwrap().units_right.is_empty());
-            self.render_end_screen(ui, result, has_on_done);
+            self.render_end_screen(ui, result);
             self.render_end_screen_with_actions(ui, battle_data);
         }
     }
 
-    fn render_end_screen(&self, ui: &mut Ui, result: bool, has_on_done: bool) {
+    fn render_end_screen(&self, ui: &mut Ui, result: bool) {
         ui.vertical_centered_justified(|ui| {
             if result {
                 "Victory".cstr_cs(GREEN, CstrStyle::Heading)
