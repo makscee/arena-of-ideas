@@ -90,7 +90,7 @@ pub trait MultipleLink<T: Node> {
 
     fn parent_id(&self) -> u64;
     fn set_parent_id(&mut self, parent_id: u64);
-    fn ids(&self) -> NodeResult<&Vec<u64>>;
+    fn ids(&self) -> NodeResult<Vec<u64>>;
 
     fn push(&mut self, node: T) -> NodeResult<&mut T> {
         match self {
@@ -184,7 +184,8 @@ impl<T: Node> SingleLink<T> for Component<T> {
     fn id(&self) -> NodeResult<u64> {
         match self {
             Component::Loaded { parent_id, .. } => Ok(*parent_id),
-            _ => Err(NodeError::custom("Component link not loaded")),
+            Component::None { .. } => Err(NodeError::custom("Component link is None")),
+            Component::Unknown { .. } => Err(NodeError::custom("Component link not loaded")),
         }
     }
 }
@@ -263,8 +264,9 @@ impl<T: Node> SingleLink<T> for Owned<T> {
 
     fn id(&self) -> NodeResult<u64> {
         match self {
-            Owned::Loaded { parent_id, .. } => Ok(*parent_id),
-            _ => Err(NodeError::custom("Owned link not loaded")),
+            Owned::Loaded { data, .. } => Ok(data.id()),
+            Owned::None { .. } => Err(NodeError::custom("Owned link is None")),
+            Owned::Unknown { .. } => Err(NodeError::custom("Owned link not loaded")),
         }
     }
 }
@@ -345,6 +347,7 @@ impl<T: Node> SingleLink<T> for Ref<T> {
     fn id(&self) -> NodeResult<u64> {
         match self {
             Ref::Id { node_id, .. } => Ok(*node_id),
+            Ref::None { .. } => Err(NodeError::custom("Ref link is None")),
             _ => Err(NodeError::custom("Ref link not loaded")),
         }
     }
@@ -426,10 +429,14 @@ impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
         *self = OwnedMultiple::None { parent_id };
     }
 
-    fn ids(&self) -> NodeResult<&Vec<u64>> {
-        Err(NodeError::custom(
-            "OwnedMultiple link stores loaded values, not ids",
-        ))
+    fn ids(&self) -> NodeResult<Vec<u64>> {
+        match self {
+            OwnedMultiple::Loaded { data, .. } => Ok(data.iter().map(|n| n.id()).collect()),
+            OwnedMultiple::None { .. } => Ok(default()),
+            OwnedMultiple::Unknown { .. } => {
+                Err(NodeError::custom("OwnedMultiple link not loaded"))
+            }
+        }
     }
 }
 
@@ -506,9 +513,10 @@ impl<T: Node> MultipleLink<T> for RefMultiple<T> {
         *self = RefMultiple::None { parent_id };
     }
 
-    fn ids(&self) -> NodeResult<&Vec<u64>> {
+    fn ids(&self) -> NodeResult<Vec<u64>> {
         match self {
-            RefMultiple::Ids { node_ids, .. } => Ok(node_ids),
+            RefMultiple::Ids { node_ids, .. } => Ok(node_ids.clone()),
+            RefMultiple::None { .. } => Ok(default()),
             _ => Err(NodeError::custom("RefMultiple link not loaded")),
         }
     }

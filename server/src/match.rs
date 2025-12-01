@@ -29,10 +29,8 @@ fn get_floor_boss_team_id(ctx: &ServerContext, floor: i32) -> Option<u64> {
 }
 
 fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> NodeResult<u64> {
-    let mut arena = ctx.load::<NArena>(ID_ARENA)?;
+    let mut arena = ctx.load::<NArena>(ID_ARENA)?.load_all(ctx)?.take();
     if arena.last_floor < floor {
-        arena.floor_pools.load_mut(ctx)?;
-        arena.floor_bosses.load_mut(ctx)?;
         arena.last_floor += 1;
         let pool = NFloorPool::new(ctx.next_id(), ID_ARENA, floor);
         let pool_id = pool.id;
@@ -51,17 +49,11 @@ fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> NodeResult<u64> {
     }
 }
 
-fn add_team_to_pool(
-    ctx: &mut ServerContext,
-    pool_id: u64,
-    team: &NTeam,
-    owner: u64,
-) -> Result<u64, String> {
-    let team = team.clone().remap_ids(ctx).with_owner(owner);
-    let pool_team_id = team.id;
-    ctx.source_mut().commit(team)?;
-    ctx.add_link(pool_id, pool_team_id)?;
-    Ok(pool_team_id)
+fn add_team_to_pool(ctx: &mut ServerContext, pool_id: u64, team: NTeam) -> NodeResult<()> {
+    let mut pool = ctx.load::<NFloorPool>(pool_id)?;
+    pool.teams.load_mut(ctx)?.push(team)?;
+    ctx.source_mut().commit(pool)?;
+    Ok(())
 }
 
 fn create_battle(
@@ -382,16 +374,17 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
 
     m.state = MatchState::RegularBattle;
     let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
+    let player_team_id = player_team.id;
     let pool_id = ensure_floor_pool(ctx, floor)?;
     let pool_teams = get_floor_pool_teams(ctx, pool_id);
-    let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
+    add_team_to_pool(ctx, pool_id, player_team)?;
 
     let enemy_team_id = if let Some(team_id) = pool_teams.choose(&mut ctx.rng()) {
         *team_id
     } else {
         0
     };
-    create_battle(ctx, &mut m, pid, pool_team_id, enemy_team_id)?;
+    create_battle(ctx, &mut m, pid, player_team_id, enemy_team_id)?;
     ctx.source_mut().commit(m)?;
     Ok(())
 }
@@ -399,26 +392,23 @@ fn match_start_battle(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer]
 fn match_boss_battle(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
-    let player = ctx.player().track()?;
+    let player = ctx.player()?;
     let pid = player.id;
-    let mut m = player.active_match.load_node(ctx).track()?;
+    let mut m = player.active_match.load_node(ctx)?;
     let floor = m.floor;
     let last_floor = ctx.load::<NArena>(ID_ARENA)?.last_floor;
-    if m.floor > last_floor {
+    let enemy_team_id = if m.floor > last_floor {
         m.state = MatchState::ChampionBattle;
-        let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
-        let pool_id = ensure_floor_pool(ctx, floor).track()?;
-        let player_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
-        let enemy_team_id = get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0);
-        create_battle(ctx, &mut m, pid, player_team_id, enemy_team_id).track()?;
+        get_floor_boss_team_id(ctx, floor - 1).unwrap_or(0)
     } else {
         m.state = MatchState::BossBattle;
-        let player_team = m.build_team(ctx)?.load_all(ctx)?.take();
-        let pool_id = ensure_floor_pool(ctx, floor).track()?;
-        let pool_team_id = add_team_to_pool(ctx, pool_id, &player_team, pid)?;
-        let enemy_team_id = get_floor_boss_team_id(ctx, floor).unwrap_or(0);
-        create_battle(ctx, &mut m, pid, pool_team_id, enemy_team_id).track()?;
-    }
+        get_floor_boss_team_id(ctx, floor).unwrap_or(0)
+    };
+    let player_team = m.build_team(ctx)?;
+    let player_team_id = player_team.id;
+    let pool_id = ensure_floor_pool(ctx, floor).track()?;
+    add_team_to_pool(ctx, pool_id, player_team)?;
+    create_battle(ctx, &mut m, pid, player_team_id, enemy_team_id).track()?;
     ctx.source_mut().commit(m).track()?;
     Ok(())
 }
@@ -723,23 +713,27 @@ impl NMatch {
         let mut team = NTeam::new(ctx.next_id(), self.owner);
 
         // Copy slots
-        let slots = self.slots.load_nodes(ctx)?;
+        let slots = self.slots.get_mut()?;
+        let slot_units = slots
+            .iter()
+            .filter_map(|s| s.unit.get().ok().map(|u| u.id))
+            .collect_vec();
         for slot in slots.iter() {
             team.slots.push(slot.clone())?;
         }
 
         // Copy houses but remove any references to bench or shop_pool units
-        let shop_pool = self.shop_pool.load_node(ctx)?;
-        for mut house in shop_pool.houses.load_nodes(ctx)? {
-            if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
-                // Keep only units that are in slots
-                let slots = self.slots.load_nodes(ctx)?;
-                let slot_unit_ids: Vec<u64> = slots
-                    .iter()
-                    .filter_map(|s| s.unit.get().ok().map(|u| u.id))
-                    .collect();
-                node_ids.retain(|id| slot_unit_ids.contains(id));
-            }
+        let shop_pool = self.shop_pool.get()?;
+        for mut house in shop_pool.houses.get()?.clone() {
+            house.units = RefMultiple::Ids {
+                parent_id: house.id,
+                node_ids: house
+                    .units
+                    .ids()?
+                    .into_iter()
+                    .filter(|u| slot_units.contains(u))
+                    .collect_vec(),
+            };
             team.houses.push(house)?;
         }
 

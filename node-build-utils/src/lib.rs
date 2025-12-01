@@ -552,7 +552,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
         .map(|field| {
             let field_name = &field.name;
             let link_type = Ident::new(field.link_type.as_ref(), Span::call_site());
-            quote! { #field_name: #link_type::unknown(node_id), }
+            quote! { #field_name: #link_type::none(node_id), }
         });
 
     quote! {
