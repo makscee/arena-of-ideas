@@ -18,7 +18,7 @@ pub struct BattleEditorState {
 impl BattleEditorPlugin {
     pub fn pane_view(ui: &mut Ui, world: &mut World) {
         world.resource_scope(|_, mut battle_data: Mut<BattleData>| {
-            BattleCamera::builder()
+            BattleView::builder()
                 .filled_slot_action(
                     "Inspect Unit".to_string(),
                     |team_id, unit_id, _slot, _ctx, ui| {
@@ -26,7 +26,7 @@ impl BattleEditorPlugin {
                     },
                 )
                 .filled_slot_action(
-                    "Delete Unit".to_string(),
+                    "[red Delete Unit]".to_string(),
                     |team_id, unit_id, slot_index, _ctx, _ui| {
                         op(move |world| {
                             let mut state = world.resource_mut::<BattleEditorState>();
@@ -40,7 +40,7 @@ impl BattleEditorPlugin {
                             if let Ok(slots) = team.slots.get_mut() {
                                 if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
                                 {
-                                    slot.unit = Owned::default();
+                                    slot.unit.set_none();
                                 }
                             }
 
@@ -76,10 +76,7 @@ impl BattleEditorPlugin {
                             if let Ok(houses) = team.houses.get_mut() {
                                 if houses.is_empty() {
                                     let mut house = NHouse::placeholder();
-                                    house.units = RefMultiple::Ids {
-                                        parent_id: house.id,
-                                        node_ids: vec![unit.id],
-                                    };
+                                    house.units.set_ids(vec![unit.id]);
                                     houses.push(house);
                                 } else if let Some(house) = houses.first_mut() {
                                     if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
@@ -92,17 +89,11 @@ impl BattleEditorPlugin {
                             if let Ok(slots) = team.slots.get_mut() {
                                 if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
                                 {
-                                    slot.unit = Owned::Loaded {
-                                        parent_id: team.id,
-                                        data: unit,
-                                    };
+                                    slot.unit.set_loaded(unit);
                                 } else {
                                     let mut new_slot =
                                         NTeamSlot::new(next_id(), team.id, slot_index);
-                                    new_slot.unit = Owned::Loaded {
-                                        parent_id: team.id,
-                                        data: unit,
-                                    };
+                                    new_slot.unit.set_loaded(unit);
                                     slots.push(new_slot);
                                 }
                             }

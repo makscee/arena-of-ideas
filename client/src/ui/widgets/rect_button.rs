@@ -6,6 +6,7 @@ pub struct RectButton {
     active: bool,
     enabled: bool,
     no_bar_check: bool,
+    corners: bool,
     color_override: Option<Color32>,
 }
 
@@ -17,6 +18,7 @@ impl RectButton {
             active: false,
             enabled: true,
             no_bar_check: false,
+            corners: false,
             color_override: None,
         }
     }
@@ -27,6 +29,7 @@ impl RectButton {
             active: false,
             enabled: true,
             no_bar_check: false,
+            corners: false,
             color_override: None,
         }
     }
@@ -46,7 +49,10 @@ impl RectButton {
         self.no_bar_check = value;
         self
     }
-    #[must_use]
+    pub fn corners(mut self, value: bool) -> Self {
+        self.corners = value;
+        self
+    }
     pub fn ui(
         self,
         ui: &mut Ui,
@@ -87,6 +93,9 @@ impl RectButton {
                 ui.style().interact(&response).fg_stroke.color
             }
         };
+        if self.corners {
+            corners_rounded_rect(rect, rect.width() * 0.1, color.stroke(), ui);
+        }
         let ui = &mut ui.new_child(UiBuilder::new().max_rect(rect));
         content(color, rect, &response, ui);
         response

@@ -575,7 +575,6 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
 
         let field_name = &field.name;
         let with_method = format_ident!("with_{}", field_name);
-        let clear_method = format_ident!("{}_clear", field_name);
 
         let target = if field.target_type.is_empty() {
             quote! { String }
@@ -584,31 +583,26 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
             quote! { #target_ident }
         };
 
-        let (param_type, wrapped_value, clear_value) = match field.link_type {
+        let (param_type, wrapped_value) = match field.link_type {
             LinkType::Component => (
                 quote! { #target },
                 quote! { Component::new_loaded(self.id, value) },
-                quote! { Component::none(self.id) },
             ),
             LinkType::Owned => (
                 quote! { #target },
                 quote! { Owned::new_loaded(self.id, value) },
-                quote! { Owned::none(self.id) },
             ),
             LinkType::OwnedMultiple => (
                 quote! { Vec<#target> },
                 quote! { OwnedMultiple::new_loaded(self.id, value) },
-                quote! { OwnedMultiple::none(self.id) },
             ),
             LinkType::Ref => (
                 quote! { #target },
                 quote! { Ref::new_loaded(self.id, value) },
-                quote! { Ref::none(self.id) },
             ),
             LinkType::RefMultiple => (
                 quote! { Vec<#target> },
                 quote! { RefMultiple::new_loaded(self.id, value) },
-                quote! { RefMultiple::none(self.id) },
             ),
             _ => return None,
         };
@@ -616,11 +610,6 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
         Some(quote! {
             pub fn #with_method(mut self, value: #param_type) -> Self {
                 self.#field_name = #wrapped_value;
-                self
-            }
-
-            pub fn #clear_method(mut self) -> Self {
-                self.#field_name = #clear_value;
                 self
             }
         })

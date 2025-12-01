@@ -1,13 +1,13 @@
 use super::*;
 
 #[derive(Clone, Copy)]
-pub struct BattleCamera {
+pub struct BattleView {
     zoom: f32,
     pos: egui::Vec2,
     rect: Rect,
 }
 
-impl Default for BattleCamera {
+impl Default for BattleView {
     fn default() -> Self {
         Self {
             zoom: 22.0,
@@ -82,25 +82,46 @@ impl<'a> BattleCameraBuilder<'a> {
         self
     }
 
-    pub fn show(mut self, battle_data: &mut BattleData, ui: &mut Ui) {
+    pub fn show(mut self, data: &mut BattleData, ui: &mut Ui) {
         let mut should_show_end_screen = false;
 
-        battle_data.source.exec_context(|ctx| {
+        if data.playing {
+            let duration = data
+                .source
+                .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
+            data.t += gt().last_delta() * data.playback_speed;
+            data.t = data.t.at_most(duration);
+
+            if data.t >= duration {
+                let not_ended = data
+                    .source
+                    .exec_context_ref(|ctx| ctx.battle().map(|s| !s.ended()).unwrap_or(false));
+                if not_ended {
+                    data.source
+                        .exec_context(|ctx| BattleSimulation::run(ctx))
+                        .log();
+                }
+            }
+        }
+        if !ui.ctx().wants_keyboard_input() && ui.ctx().input(|r| r.key_pressed(Key::Space)) {
+            data.playing = !data.playing;
+        }
+        data.source.exec_context(|ctx| {
             let sim = ctx.battle().unwrap();
             let team_left_id = sim.team_left;
             let team_right_id = sim.team_right;
             let duration = sim.duration;
             let ended = sim.ended();
 
-            if battle_data.t >= duration && ended {
+            if data.t >= duration && ended {
                 should_show_end_screen = true;
                 return;
             }
 
             let mut cam = ui
-                .data(|r| r.get_temp::<BattleCamera>(ui.id()))
+                .data(|r| r.get_temp::<BattleView>(ui.id()))
                 .unwrap_or_default();
-            cam.update(ui, &mut battle_data.playing);
+            cam.update(ui, &mut data.playing);
 
             let bg_response = ui.allocate_rect(cam.rect, Sense::click_and_drag());
             if bg_response.dragged() {
@@ -113,15 +134,15 @@ impl<'a> BattleCameraBuilder<'a> {
                 cam.to_center();
             }
 
-            self.render_battle_texts(ctx, ui, cam.rect, battle_data.t);
+            self.render_battle_texts(ctx, ui, cam.rect, data.t);
             self.render_player_names(ctx, ui, cam.rect);
             self.render_playback_controls(
                 ui,
                 cam.rect,
-                &mut battle_data.t,
+                &mut data.t,
                 duration,
-                &mut battle_data.playing,
-                &mut battle_data.playback_speed,
+                &mut data.playing,
+                &mut data.playback_speed,
             );
 
             let slots = global_settings().team_slots;
@@ -131,7 +152,7 @@ impl<'a> BattleCameraBuilder<'a> {
             }
 
             ctx.exec_mut(|ctx| {
-                *ctx.source_mut().t_mut().unwrap() = battle_data.t;
+                *ctx.source_mut().t_mut().unwrap() = data.t;
                 let world = ctx.world_mut()?;
 
                 for entity in world
@@ -216,11 +237,11 @@ impl<'a> BattleCameraBuilder<'a> {
         });
 
         if should_show_end_screen {
-            let result = battle_data
+            let result = data
                 .source
                 .exec_context_ref(|ctx| ctx.battle().unwrap().units_right.is_empty());
             self.render_end_screen(ui, result);
-            self.render_end_screen_with_actions(ui, battle_data);
+            self.render_end_screen_with_actions(ui, data);
         }
     }
 
@@ -336,7 +357,7 @@ impl<'a> BattleCameraBuilder<'a> {
         playing: &mut bool,
         speed: &mut f32,
     ) {
-        let overlay_height = 80.0;
+        let overlay_height = LINE_HEIGHT * 1.5;
         let slider_rect = Rect::from_min_size(
             rect.left_bottom() - egui::vec2(0.0, overlay_height),
             egui::vec2(rect.width(), overlay_height),
@@ -391,7 +412,7 @@ impl<'a> BattleCameraBuilder<'a> {
     }
 }
 
-impl BattleCamera {
+impl BattleView {
     pub fn builder() -> BattleCameraBuilder<'static> {
         BattleCameraBuilder::new()
     }
@@ -451,22 +472,32 @@ impl BattleCamera {
         team_id: u64,
     ) {
         let rect = self.slot_rect(slot);
-        let response = ui.allocate_rect(rect, Sense::click());
-
-        if let Ok(team) = ctx.load::<NTeam>(team_id) {
-            if let Ok(slots) = team.slots.get() {
-                if let Some(team_slot) = slots.iter().find(|s| s.index == slot) {
+        let slot = slot.abs() - 1;
+        RectButton::new_rect(rect)
+            .corners(true)
+            .ui(ui, |_, _, response, ui| {
+                ctx.exec_mut(|ctx| {
+                    let team = ctx.load::<NTeam>(team_id)?;
+                    let team_slot = team
+                        .slots
+                        .load_nodes(ctx)?
+                        .into_iter()
+                        .find(|s| s.index == slot)
+                        .to_not_found()?;
                     if let Ok(unit) = team_slot.unit.load_node(ctx) {
-                        if response.hovered() {
-                            if let Some(on_hover) = &builder.on_hover_filled {
+                        if let Some(on_hover) = &builder.on_hover_filled {
+                            response.clone().on_hover_ui(|ui| {
                                 on_hover(unit.id, ctx, ui);
-                            }
+                            });
                         }
-
-                        for (_name, action) in &builder.filled_slot_actions {
-                            if response.clicked() {
-                                action(team_id, unit.id, slot, ctx, ui);
-                            }
+                        if !builder.filled_slot_actions.is_empty() {
+                            response.show_menu(ui, |ui| {
+                                for (name, action) in &builder.filled_slot_actions {
+                                    if name.cstr().button(ui).clicked() {
+                                        action(team_id, unit.id, slot, ctx, ui);
+                                    }
+                                }
+                            });
                         }
 
                         if let Some(on_drag_drop) = &builder.on_drag_drop {
@@ -489,14 +520,19 @@ impl BattleCamera {
                             }
                         }
                     } else {
-                        for (_name, action) in &builder.empty_slot_actions {
-                            if response.clicked() {
-                                action(team_id, slot, ctx, ui);
-                            }
+                        if !builder.empty_slot_actions.is_empty() {
+                            response.show_menu(ui, |ui| {
+                                for (name, action) in &builder.empty_slot_actions {
+                                    if name.cstr().button(ui).clicked() {
+                                        action(team_id, slot, ctx, ui);
+                                    }
+                                }
+                            });
                         }
                     }
-                }
-            }
-        }
+                    Ok(())
+                })
+                .ui(ui);
+            });
     }
 }

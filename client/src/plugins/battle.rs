@@ -22,21 +22,17 @@ pub struct BattleData {
 }
 
 impl BattleData {
-    fn load(battle: Battle) -> Self {
+    fn load(battle: Battle) -> NodeResult<Self> {
         let mut source = battle.clone().to_source();
-
-        source
-            .exec_context(|ctx| BattleSimulation::start(ctx))
-            .unwrap();
-
-        Self {
+        source.exec_context(|ctx| BattleSimulation::start(ctx))?;
+        Ok(Self {
             battle,
             source,
             t: 0.0,
             playing: true,
             playback_speed: 1.0,
             on_done: None,
-        }
+        })
     }
 
     fn load_replay(battle: Battle) -> Self {
@@ -145,7 +141,10 @@ impl BattlePlugin {
                 team.slots.get_mut().unwrap().push(slot);
             }
         }
-        world.insert_resource(BattleData::load(Battle { left, right, id }));
+        match BattleData::load(Battle { left, right, id }) {
+            Ok(b) => world.insert_resource(b),
+            Err(e) => e.cstr().notify_error(world),
+        }
     }
 
     pub fn load_replay(mut left: NTeam, mut right: NTeam, world: &mut World) {
@@ -180,29 +179,9 @@ impl BattlePlugin {
             return Err(NodeError::custom("Battle not loaded"));
         };
 
-        BattleCamera::builder()
+        BattleView::builder()
             .on_battle_end(|ui, _res| {})
             .show(data.as_mut(), ui);
-
-        // Update time
-        if data.playing {
-            let duration = data
-                .source
-                .exec_context_ref(|ctx| ctx.battle().map(|s| s.duration).unwrap_or(0.0));
-            data.t += gt().last_delta() * data.playback_speed;
-            data.t = data.t.at_most(duration);
-
-            if data.t >= duration {
-                let not_ended = data
-                    .source
-                    .exec_context_ref(|ctx| ctx.battle().map(|s| !s.ended()).unwrap_or(false));
-                if not_ended {
-                    data.source
-                        .exec_context(|ctx| BattleSimulation::run(ctx))
-                        .log();
-                }
-            }
-        }
 
         Ok(())
     }

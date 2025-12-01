@@ -205,12 +205,10 @@ impl<'a> MatRect<'a> {
     pub fn ui(self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let button = RectButton::new_size(self.size)
             .enabled(self.enabled)
-            .active(self.active);
+            .active(self.active)
+            .corners(self.corners);
 
         button.ui(ui, |color, rect, _, ui| {
-            if self.corners {
-                corners_rounded_rect(rect, rect.width() * 0.1, color.stroke(), ui);
-            }
             let content_rect = rect.shrink(5.0);
 
             // Render all materials

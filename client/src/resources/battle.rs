@@ -84,8 +84,8 @@ impl Battle {
     }
 }
 
-fn ids_by_slot_from_context(parent: Entity, ctx: &ClientContext) -> Vec<u64> {
-    let ids = parent.ids(ctx).unwrap_or_default();
+fn ids_by_slot_from_context(team: Entity, ctx: &ClientContext) -> Vec<u64> {
+    let ids = team.ids(ctx).unwrap_or_default();
     let id = ids.into_iter().next().unwrap_or(0);
     if let Ok(team) = ctx.load::<NTeam>(id) {
         if let Ok(slots) = team.slots.load_nodes(ctx) {
