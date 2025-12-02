@@ -125,19 +125,12 @@ impl ComponentFixer {
         let is_complete = match kind {
             NodeKind::NUnit => {
                 let fixed = node.id.fixed_kinds(ctx);
-                fixed.contains(&NodeKind::NUnitDescription)
-                    && fixed.contains(&NodeKind::NUnitBehavior)
-                    && fixed.contains(&NodeKind::NUnitRepresentation)
-                    && fixed.contains(&NodeKind::NUnitStats)
+                fixed.contains(&NodeKind::NUnitBehavior)
             }
             NodeKind::NHouse => {
                 let fixed = node.id.fixed_kinds(ctx);
-                let has_ability = fixed.contains(&NodeKind::NAbilityMagic)
-                    && fixed.contains(&NodeKind::NAbilityDescription)
-                    && fixed.contains(&NodeKind::NAbilityEffect);
-                let has_status = fixed.contains(&NodeKind::NStatusMagic)
-                    && fixed.contains(&NodeKind::NStatusDescription)
-                    && fixed.contains(&NodeKind::NStatusBehavior);
+                let has_ability = fixed.contains(&NodeKind::NAbilityMagic);
+                let has_status = fixed.contains(&NodeKind::NStatusMagic);
                 fixed.contains(&NodeKind::NHouseColor) && (has_ability || has_status)
             }
             _ => false,

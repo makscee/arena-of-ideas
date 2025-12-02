@@ -524,7 +524,8 @@ impl FDescription for Reaction {
         format!(
             "{}:\n{}",
             self.trigger.cstr(),
-            self.actions
+            self.effect
+                .actions
                 .iter()
                 .map(|a| a.title_recursive(ctx))
                 .join("\n")
@@ -543,12 +544,28 @@ impl FDisplay for Reaction {
         ui.group(|ui| {
             ui.vertical(|ui| {
                 let mut response = self.trigger.display(ctx, ui);
-                for action in &self.actions {
+                for action in &self.effect.actions {
                     response |= action.display(ctx, ui);
                 }
                 response
             })
             .inner
+        })
+        .inner
+    }
+}
+
+impl FEdit for Effect {
+    fn edit(&mut self, ui: &mut Ui) -> Response {
+        ui.vertical(|ui| {
+            let response = ui
+                .horizontal(|ui| {
+                    ui.label("Description:");
+                    self.description.edit(ui)
+                })
+                .inner;
+            ui.label("Actions:");
+            self.actions.edit(ui).union(response)
         })
         .inner
     }
@@ -563,8 +580,8 @@ impl FEdit for Reaction {
                     self.trigger.edit(ui)
                 })
                 .inner;
-            ui.label("Actions:");
-            self.actions.edit(ui).union(response)
+            ui.label("Effect:");
+            self.effect.edit(ui).union(response)
         })
         .inner
     }
@@ -583,12 +600,8 @@ impl FTitle for NUnit {
 }
 
 impl FDescription for NUnit {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        if let Ok(description) = self.description.load_node(ctx) {
-            description.description_expanded_cstr(ctx)
-        } else {
-            "[tw -]".cstr()
-        }
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
+        "[tw -]".cstr()
     }
 }
 
@@ -678,24 +691,23 @@ impl FTag for NUnit {
 impl FInfo for NUnit {
     fn info(&self, ctx: &ClientContext) -> Cstr {
         let mut info_parts = Vec::new();
-        if let Ok(stats) = self.stats.load_node(ctx) {
-            info_parts.push(format!(
-                "[{} {}]/[{} {}]",
-                VarName::pwr.color().to_hex(),
-                stats.pwr,
-                VarName::hp.color().to_hex(),
-                stats.hp
-            ));
+        if let Ok(behavior) = self.behavior.load_node(ctx) {
+            if let Ok(stats) = behavior.stats.load_node(ctx) {
+                info_parts.push(format!(
+                    "[{} {}]/[{} {}]",
+                    VarName::pwr.color().to_hex(),
+                    stats.pwr,
+                    VarName::hp.color().to_hex(),
+                    stats.hp
+                ));
+            }
         }
+
         if let Ok(house) = ctx.load_first_parent_ref::<NHouse>(self.id()) {
             let color = house.color_for_text(ctx);
             info_parts.push(house.house_name.cstr_c(color));
         }
-        if let Ok(desc) = self.description.load_node(ctx) {
-            if !desc.description.is_empty() {
-                info_parts.push(desc.description.clone());
-            }
-        }
+
         info_parts.join(" | ")
     }
 }
@@ -706,9 +718,7 @@ impl FPaste for NUnit {}
 impl FPlaceholder for NUnit {
     fn placeholder() -> Self {
         NUnit::new(next_id(), player_id(), "New Unit".to_string())
-            .with_description(NUnitDescription::placeholder())
-            .with_stats(NUnitStats::placeholder())
-            .with_representation(NUnitRepresentation::placeholder())
+            .with_state(NUnitState::placeholder())
             .with_behavior(NUnitBehavior::placeholder())
     }
 }
@@ -796,11 +806,7 @@ impl FTitle for NAbilityMagic {
 impl FDescription for NAbilityMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         let name = self.name().cstr_c(ctx.color());
-        if let Ok(description) = self.description.load_node(ctx) {
-            format!("{name}: {}", description.description)
-        } else {
-            name
-        }
+        name
     }
 }
 
@@ -838,7 +844,6 @@ impl FPaste for NAbilityMagic {}
 impl FPlaceholder for NAbilityMagic {
     fn placeholder() -> Self {
         NAbilityMagic::new(next_id(), player_id(), "New Ability".to_string())
-            .with_description(NAbilityDescription::placeholder())
             .with_effect(NAbilityEffect::placeholder())
     }
 }
@@ -863,11 +868,7 @@ impl FTitle for NStatusMagic {
 impl FDescription for NStatusMagic {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
         let name = self.name().cstr_c(ctx.color());
-        if let Ok(description) = self.description.load_node(ctx) {
-            format!("{name}: {}", description.description)
-        } else {
-            name
-        }
+        name
     }
 }
 
@@ -905,9 +906,7 @@ impl FPaste for NStatusMagic {}
 impl FPlaceholder for NStatusMagic {
     fn placeholder() -> Self {
         NStatusMagic::new(next_id(), player_id(), "New Status".to_string())
-            .with_description(NStatusDescription::placeholder())
             .with_behavior(NStatusBehavior::placeholder())
-            .with_representation(NStatusRepresentation::placeholder())
             .with_state(NState::new(next_id(), player_id(), 1))
     }
 }
@@ -1222,30 +1221,6 @@ impl FPlaceholder for NHouseColor {
     }
 }
 
-impl FDisplay for NAbilityDescription {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.title(ctx).label(ui)
-    }
-}
-
-impl FTitle for NAbilityDescription {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl FPlaceholder for NAbilityDescription {
-    fn placeholder() -> Self {
-        NAbilityDescription::new(next_id(), player_id(), "Default description".to_string())
-    }
-}
-
-impl FDescription for NAbilityDescription {
-    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        self.description.cstr()
-    }
-}
-
 impl FTitle for NAbilityEffect {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Ability Effect".cstr()
@@ -1254,7 +1229,8 @@ impl FTitle for NAbilityEffect {
 
 impl FDescription for NAbilityEffect {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.actions
+        self.effect
+            .actions
             .iter()
             .map(|a| a.title_recursive(ctx))
             .join("\n")
@@ -1279,39 +1255,11 @@ impl FTag for NAbilityEffect {
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{} actions", self.actions.len()).cstr())
+        Some(format!("{} actions", self.effect.actions.len()).cstr())
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
         Color32::from_rgb(255, 165, 0)
-    }
-}
-
-impl FDisplay for NStatusDescription {
-    fn display(&self, _: &ClientContext, ui: &mut Ui) -> Response {
-        self.description.cstr().label(ui)
-    }
-}
-
-impl FTitle for NStatusDescription {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl FPlaceholder for NStatusDescription {
-    fn placeholder() -> Self {
-        NStatusDescription::new(
-            next_id(),
-            player_id(),
-            "Default status description".to_string(),
-        )
-    }
-}
-
-impl FDescription for NStatusDescription {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.description.cstr()
     }
 }
 
@@ -1646,30 +1594,6 @@ impl FTitle for NShopPool {
     }
 }
 
-impl FTitle for NUnitDescription {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        self.description.cstr()
-    }
-}
-
-impl FDescription for NUnitDescription {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.description.cstr()
-    }
-}
-
-impl FStats for NUnitDescription {
-    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![]
-    }
-}
-
-impl FDisplay for NUnitDescription {
-    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.description.cstr().label_w(ui)
-    }
-}
-
 impl FTitle for NUnitStats {
     fn title(&self, _: &ClientContext) -> Cstr {
         format!("{}/{}", self.pwr, self.hp).cstr()
@@ -1799,7 +1723,7 @@ impl FTitle for NUnitBehavior {
                 .unwrap_or_default(),
             self.reactions
                 .iter()
-                .map(|r| r.actions.len())
+                .map(|r| r.effect.actions.len())
                 .sum::<usize>()
         )
     }
@@ -1917,7 +1841,14 @@ impl FPlaceholder for NPlayerData {
 
 impl FPlaceholder for NAbilityEffect {
     fn placeholder() -> Self {
-        NAbilityEffect::new(next_id(), 0, vec![Action::noop])
+        NAbilityEffect::new(
+            next_id(),
+            0,
+            Effect {
+                description: "Effect".to_string(),
+                actions: vec![Action::noop],
+            },
+        )
     }
 }
 
@@ -1934,9 +1865,13 @@ impl FPlaceholder for NStatusBehavior {
             0,
             vec![Reaction {
                 trigger: Trigger::BattleStart,
-                actions: vec![Action::noop],
+                effect: Effect {
+                    description: "Status effect".to_string(),
+                    actions: vec![Action::noop],
+                },
             }],
         )
+        .with_representation(NStatusRepresentation::placeholder())
     }
 }
 
@@ -2077,12 +2012,17 @@ impl FPlaceholder for NUnitBehavior {
             0,
             [Reaction {
                 trigger: Trigger::BattleStart,
-                actions: vec![Action::debug(
-                    Expression::string("debug action".into()).into(),
-                )],
+                effect: Effect {
+                    description: "Unit behavior effect".to_string(),
+                    actions: vec![Action::debug(
+                        Expression::string("debug action".into()).into(),
+                    )],
+                },
             }]
             .into(),
         )
+        .with_stats(NUnitStats::placeholder())
+        .with_representation(NUnitRepresentation::placeholder())
     }
 }
 
@@ -2098,9 +2038,13 @@ impl FPlaceholder for NUnitStats {
     }
 }
 
-impl FPlaceholder for NUnitDescription {
+impl FPlaceholder for NUnitState {
     fn placeholder() -> Self {
-        NUnitDescription::new(next_id(), 0, "Placeholder Description".to_string())
+        let mut state = NUnitState::default();
+        state.set_id(next_id());
+        state.stax = 0;
+        state.dmg = 0;
+        state
     }
 }
 
@@ -2226,13 +2170,9 @@ impl FCompactView for NUnit {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Unit: {}", self.unit_name));
-            if let Ok(stats) = self.stats.load_node(ctx) {
-                ui.label(format!("Power: {}, HP: {}", stats.pwr, stats.hp));
-            }
-            if let Ok(desc) = self.description.load_node(ctx) {
-                if !desc.description.is_empty() {
-                    ui.separator();
-                    desc.description.cstr().label_w(ui);
+            if let Ok(behavior) = self.behavior.load_node(ctx) {
+                if let Ok(stats) = behavior.stats.load_node(ctx) {
+                    ui.label(format!("Power: {}, HP: {}", stats.pwr, stats.hp));
                 }
             }
 
@@ -2273,30 +2213,9 @@ impl FCompactView for NUnitRepresentation {
     }
 }
 
-impl FCompactView for NUnitDescription {
-    fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        ui.vertical(|ui| {
-            ui.set_max_width(200.0);
-            self.description.cstr().label_w(ui);
-        });
-    }
-
-    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        ui.vertical(|ui| {
-            ui.strong("Unit Description");
-            ui.separator();
-            ui.horizontal(|ui| {
-                ui.label("Type:");
-            });
-            ui.separator();
-            self.description.cstr().label_w(ui);
-        });
-    }
-}
-
 impl FCompactView for NUnitBehavior {
     fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        let actions_count: usize = self.reactions.iter().map(|r| r.actions.len()).sum();
+        let actions_count: usize = self.reactions.iter().map(|r| r.effect.actions.len()).sum();
         let tier = self.reactions.first().map(|r| r.tier()).unwrap_or(0);
 
         ui.horizontal(|ui| {
@@ -2328,11 +2247,11 @@ impl FCompactView for NUnitBehavior {
                 format!("{}", tier).cstr_c(VarName::tier.color()).label(ui);
             });
             ui.separator();
-            let total_actions: usize = self.reactions.iter().map(|r| r.actions.len()).sum();
+            let total_actions: usize = self.reactions.iter().map(|r| r.effect.actions.len()).sum();
             ui.label(format!("Actions ({})", total_actions));
             let mut shown = 0;
             for reaction in &self.reactions {
-                for action in reaction.actions.iter() {
+                for action in reaction.effect.actions.iter() {
                     if shown >= 3 {
                         break;
                     }
@@ -2394,9 +2313,9 @@ impl FCompactView for NAbilityMagic {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Ability: {}", self.ability_name));
-            if let Ok(desc) = self.description.load_node(ctx) {
+            if let Ok(effect) = self.effect.load_node(ctx) {
                 ui.separator();
-                desc.description.cstr().label_w(ui);
+                effect.effect.description.cstr().label_w(ui);
             }
         });
     }
@@ -2414,9 +2333,9 @@ impl FCompactView for NStatusMagic {
     fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong(format!("Status: {}", self.status_name));
-            if let Ok(desc) = self.description.load_node(ctx) {
+            if let Ok(behavior) = self.behavior.load_node(ctx) {
                 ui.separator();
-                desc.description.cstr().label_w(ui);
+                ui.label("Status with behavior");
             }
         });
     }
@@ -2470,8 +2389,17 @@ impl FCard for NStatusMagic {}
 impl FPreview for NUnit {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ctx.exec_ref(|ctx| {
+            let mat = if let Ok(behavior) = self.behavior.load_node(ctx) {
+                if let Ok(rep) = behavior.representation.load_node(ctx) {
+                    rep.material.clone()
+                } else {
+                    unit_rep().material.clone()
+                }
+            } else {
+                unit_rep().material.clone()
+            };
             MatRect::new(rect.size())
-                .add_mat(&self.representation.load_node(ctx)?.material, self.id)
+                .add_mat(&mat, self.id)
                 .unit_rep_with_default(self.id)
                 .corners(false)
                 .enabled(false)
@@ -2492,15 +2420,9 @@ impl FPreview for NHouse {
                         .ability_name
                         .cstr_cs(color, CstrStyle::Bold)
                         .label(ui);
-                    if let Ok(dsc) = ability.description.load_node(ctx) {
-                        dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
-                    }
                 }
                 if let Ok(status) = self.status.load_node(ctx) {
                     status.status_name.cstr_cs(color, CstrStyle::Bold).label(ui);
-                    if let Ok(dsc) = status.description.load_node(ctx) {
-                        dsc.description.cstr_s(CstrStyle::Small).label_w(ui);
-                    }
                 }
             });
         });

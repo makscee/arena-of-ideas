@@ -454,7 +454,8 @@ fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> 
     target_unit_state.stax += stax;
     ctx.source_mut().commit(target_unit_state)?;
 
-    let mut target_unit_stats = target_unit.stats.load_node(ctx)?;
+    let mut target_behavior = target_unit.behavior.load_node(ctx)?;
+    let mut target_unit_stats = target_behavior.stats.load_node(ctx)?;
     target_unit_stats.hp += stax;
     target_unit_stats.pwr += stax;
     ctx.source_mut().commit(target_unit_stats)?;
@@ -558,33 +559,21 @@ fn create_fused_unit(
     fusion_type: FusionType,
 ) -> NodeResult<PackedNodes> {
     let mut new_unit = target.clone();
-    let target_desc = target.description.load_node(ctx)?;
-    let source_desc = source.description.load_node(ctx)?;
-    let (desc_a, desc_b) = (
-        &mut target_desc.description.clone(),
-        &mut source_desc.description.clone(),
-    );
 
     let mut front_name = target.unit_name.clone();
     let mut back_name = source.unit_name.clone();
     match fusion_type {
         FusionType::StickFront => {
-            mem::swap(desc_a, desc_b);
             mem::swap(&mut front_name, &mut back_name);
         }
         FusionType::StickBack | FusionType::PushBack => {}
     }
     let front_half = front_name.len() / 2;
     let back_half = back_name.len() / 2;
-    let (name_a, name_b) = (
-        &mut (&front_name[..front_half]).to_owned(),
-        &mut (&back_name[back_name.len() - back_half..]).to_owned(),
-    );
+    let name_a = &front_name[..front_half];
+    let name_b = &back_name[back_name.len() - back_half..];
 
     new_unit.unit_name = format!("{name_a}{name_b}");
-    let mut new_desc = new_unit.description.load_node(ctx)?;
-    new_desc.description = format!("{desc_a}\n{desc_b}");
-    ctx.source_mut().commit(new_desc)?;
 
     let mut new_behavior = new_unit.behavior.load_node(ctx)?;
     let source_behavior = source.behavior.load_node(ctx)?;
@@ -593,11 +582,12 @@ fn create_fused_unit(
     match fusion_type {
         FusionType::StickFront => {
             *reactions = source_behavior.reactions.clone();
-            reactions.last_mut().unwrap().actions.extend(
+            reactions.last_mut().unwrap().effect.actions.extend(
                 target_behavior
                     .reactions
                     .first()
                     .unwrap()
+                    .effect
                     .actions
                     .clone()
                     .into_iter(),
@@ -605,11 +595,12 @@ fn create_fused_unit(
             reactions.extend(target_behavior.reactions[1..].iter().cloned());
         }
         FusionType::StickBack => {
-            reactions.last_mut().unwrap().actions.extend(
+            reactions.last_mut().unwrap().effect.actions.extend(
                 source_behavior
                     .reactions
                     .first()
                     .unwrap()
+                    .effect
                     .actions
                     .clone()
                     .into_iter(),
@@ -622,9 +613,12 @@ fn create_fused_unit(
     }
     ctx.source_mut().commit(new_behavior)?;
 
-    let mut new_representation = new_unit.representation.load_node(ctx)?;
-    let source_representation = source.representation.load_node(ctx)?;
-    let target_representation = target.representation.load_node(ctx)?;
+    let new_behavior = new_unit.behavior.load_node(ctx)?;
+    let mut new_representation = new_behavior.representation.load_node(ctx)?;
+    let source_behavior = source.behavior.load_node(ctx)?;
+    let source_representation = source_behavior.representation.load_node(ctx)?;
+    let target_behavior = target.behavior.load_node(ctx)?;
+    let target_representation = target_behavior.representation.load_node(ctx)?;
     let actions = &mut new_representation.material.0;
     match fusion_type {
         FusionType::StickFront => {
@@ -639,8 +633,10 @@ fn create_fused_unit(
     }
     ctx.source_mut().commit(new_representation)?;
 
-    let mut new_stats = new_unit.stats.load_node(ctx)?;
-    let source_stats = source.stats.load_node(ctx)?;
+    let mut new_behavior = new_unit.behavior.load_node(ctx)?;
+    let mut new_stats = new_behavior.stats.load_node(ctx)?;
+    let source_behavior = source.behavior.load_node(ctx)?;
+    let source_stats = source_behavior.stats.load_node(ctx)?;
     new_stats.hp += source_stats.hp;
     new_stats.pwr += source_stats.pwr;
     ctx.source_mut().commit(new_stats)?;

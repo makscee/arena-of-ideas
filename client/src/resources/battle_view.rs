@@ -194,10 +194,11 @@ impl<'a> BattleCameraBuilder<'a> {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
-                        unit.representation
-                            .load_node(ctx)?
-                            .material
-                            .paint(rect, ctx, ui);
+                        if let Ok(behavior) = unit.behavior.load_node(ctx) {
+                            if let Ok(rep) = behavior.representation.load_node(ctx) {
+                                rep.material.paint(rect, ctx, ui);
+                            }
+                        }
                         unit.show_status_tags(rect, ctx, ui).ui(ui);
                         Ok(())
                     })

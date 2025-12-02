@@ -193,18 +193,6 @@ impl IncubatorPanes {
         Ok(())
     }
 
-    pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<IncubatorState, _>(|_world, state| {
-            if let Some(unit_id) = state.inspected_unit {
-                with_incubator_source(|ctx| {
-                    Self::pane_component::<NUnitDescription>(ui, ctx, unit_id, Some(unit_id))
-                })
-            } else {
-                Ok(())
-            }
-        })
-    }
-
     pub fn pane_unit_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
         world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
@@ -294,7 +282,7 @@ impl IncubatorPanes {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NAbilityMagic).ok();
-                    Self::pane_component::<NAbilityDescription>(ui, ctx, house_id, parent)
+                    Self::pane_component::<NAbilityEffect>(ui, ctx, house_id, parent)
                 })
             } else {
                 Ok(())
@@ -332,7 +320,7 @@ impl IncubatorPanes {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NStatusMagic).ok();
-                    Self::pane_component::<NStatusDescription>(ui, ctx, house_id, parent)
+                    Self::pane_component::<NStatusBehavior>(ui, ctx, house_id, parent)
                 })
             } else {
                 Ok(())
@@ -359,17 +347,14 @@ impl IncubatorPanes {
             | ContentNodeKind::NUnit
             | ContentNodeKind::NAbilityMagic
             | ContentNodeKind::NHouseColor
-            | ContentNodeKind::NUnitDescription
             | ContentNodeKind::NStatusMagic => return true,
-            ContentNodeKind::NAbilityDescription => NodeKind::NAbilityMagic,
-            ContentNodeKind::NAbilityEffect => NodeKind::NAbilityDescription,
-            ContentNodeKind::NStatusDescription => NodeKind::NStatusMagic,
+            ContentNodeKind::NAbilityEffect => NodeKind::NAbilityMagic,
             ContentNodeKind::NStatusBehavior | ContentNodeKind::NStatusRepresentation => {
-                NodeKind::NStatusDescription
+                NodeKind::NStatusMagic
             }
             ContentNodeKind::NUnitStats
             | ContentNodeKind::NUnitBehavior
-            | ContentNodeKind::NUnitRepresentation => NodeKind::NUnitDescription,
+            | ContentNodeKind::NUnitRepresentation => NodeKind::NUnitBehavior,
         };
         if !parent_id.fixed_kinds().contains(&kind) {
             false

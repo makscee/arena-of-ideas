@@ -70,21 +70,13 @@ pub struct NHouseColor {
 pub struct NAbilityMagic {
     #[var]
     pub ability_name: String,
-    pub description: Component<NAbilityDescription>,
     pub effect: Component<NAbilityEffect>,
 }
 
 #[derive(Node)]
 #[content]
-pub struct NAbilityDescription {
-    #[var]
-    pub description: String,
-}
-
-#[derive(Node)]
-#[content]
 pub struct NAbilityEffect {
-    pub actions: Vec<Action>,
+    pub effect: Effect,
 }
 
 #[derive(Node)]
@@ -93,23 +85,15 @@ pub struct NAbilityEffect {
 pub struct NStatusMagic {
     #[var]
     pub status_name: String,
-    pub description: Component<NStatusDescription>,
     pub behavior: Component<NStatusBehavior>,
-    pub representation: Component<NStatusRepresentation>,
     pub state: Component<NState>,
-}
-
-#[derive(Node)]
-#[content]
-pub struct NStatusDescription {
-    #[var]
-    pub description: String,
 }
 
 #[derive(Node)]
 #[content]
 pub struct NStatusBehavior {
     pub reactions: Vec<Reaction>,
+    pub representation: Component<NStatusRepresentation>,
 }
 
 #[derive(Node)]
@@ -178,18 +162,16 @@ pub struct NTeamSlot {
 pub struct NUnit {
     #[var]
     pub unit_name: String,
-    pub description: Component<NUnitDescription>,
-    pub representation: Component<NUnitRepresentation>,
     pub behavior: Component<NUnitBehavior>,
-    pub stats: Component<NUnitStats>,
     pub state: Component<NUnitState>,
 }
 
 #[derive(Node)]
 #[content]
-pub struct NUnitDescription {
-    #[var]
-    pub description: String,
+pub struct NUnitBehavior {
+    pub reactions: Vec<Reaction>,
+    pub stats: Component<NUnitStats>,
+    pub representation: Component<NUnitRepresentation>,
 }
 
 #[derive(Node)]
@@ -199,12 +181,6 @@ pub struct NUnitStats {
     pub pwr: i32,
     #[var]
     pub hp: i32,
-}
-
-#[derive(Node)]
-#[content]
-pub struct NUnitBehavior {
-    pub reactions: Vec<Reaction>,
 }
 
 #[derive(Node)]

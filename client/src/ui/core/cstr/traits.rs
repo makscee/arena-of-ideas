@@ -224,6 +224,7 @@ impl ToCstr for Reaction {
         s += &self.trigger.cstr();
         s += "\n";
         s += &self
+            .effect
             .actions
             .iter()
             .map(|a| format!("  {}", a.cstr()))

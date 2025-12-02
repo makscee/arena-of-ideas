@@ -608,7 +608,8 @@ impl FRecursive for Material {
 // Reaction
 impl FRecursive for Reaction {
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.actions
+        self.effect
+            .actions
             .iter()
             .enumerate()
             .map(|(i, action)| RecursiveField::indexed(i, RecursiveValue::Action(action)))
@@ -624,7 +625,8 @@ impl FRecursive for Reaction {
     }
 
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.actions
+        self.effect
+            .actions
             .iter_mut()
             .enumerate()
             .map(|(i, action)| RecursiveFieldMut::indexed(i, RecursiveValueMut::Action(action)))

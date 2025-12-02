@@ -4,6 +4,13 @@ use super::*;
 #[serde(deny_unknown_fields)]
 pub struct Reaction {
     pub trigger: Trigger,
+    pub effect: Effect,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
+#[serde(deny_unknown_fields)]
+pub struct Effect {
+    pub description: String,
     pub actions: Vec<Action>,
 }
 
@@ -15,7 +22,7 @@ impl ReactionTier for Vec<Reaction> {
     fn tier(&self) -> u8 {
         let action_tiers = self
             .iter()
-            .map(|r| r.actions.iter().map(|a| a.tier()).sum::<u8>())
+            .map(|r| r.effect.actions.iter().map(|a| a.tier()).sum::<u8>())
             .sum::<u8>();
         (action_tiers + 1) / 2
     }

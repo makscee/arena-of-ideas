@@ -106,16 +106,18 @@ impl NodeKindOnSpawn for NodeKind {
         match self {
             NodeKind::NUnit => {
                 let unit = ctx.load::<NUnit>(id)?;
-                if let Ok(mut rep) = unit.representation.load_node(ctx) {
-                    rep.material.0.append(&mut unit_rep().material.0.clone());
-                    rep.spawn(ctx, Some(entity))?;
-                } else {
-                    let rep_id = next_id();
-                    unit_rep()
-                        .clone()
-                        .with_id(rep_id)
-                        .spawn(ctx, Some(entity))?;
-                    ctx.add_link(id, rep_id)?;
+                if let Ok(behavior) = unit.behavior.load_node(ctx) {
+                    if let Ok(mut rep) = behavior.representation.load_node(ctx) {
+                        rep.material.0.append(&mut unit_rep().material.0.clone());
+                        rep.spawn(ctx, Some(entity))?;
+                    } else {
+                        let rep_id = next_id();
+                        unit_rep()
+                            .clone()
+                            .with_id(rep_id)
+                            .spawn(ctx, Some(entity))?;
+                        ctx.add_link(id, rep_id)?;
+                    }
                 }
             }
             NodeKind::NStatusMagic => {

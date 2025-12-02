@@ -33,12 +33,9 @@ impl NodeKindCompact for NodeKind {
     fn is_compact(self) -> bool {
         match self {
             Self::NUnit
-            | Self::NUnitDescription
             | Self::NUnitBehavior
-            | Self::NAbilityDescription
             | Self::NAbilityEffect
             | Self::NStatusBehavior
-            | Self::NStatusDescription
             | Self::NHouseColor
             | Self::NUnitStats => true,
             _ => false,

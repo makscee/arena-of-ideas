@@ -253,8 +253,17 @@ impl MatchPlugin {
 
                     if let Ok(slot_unit) = slot.unit.get_mut() {
                         // Filled slot - show unit with MatRect
+                        let mat = if let Ok(behavior) = slot_unit.behavior.get() {
+                            if let Ok(rep) = behavior.representation.get() {
+                                rep.material.clone()
+                            } else {
+                                unit_rep().material.clone()
+                            }
+                        } else {
+                            unit_rep().material.clone()
+                        };
                         let response = MatRect::new(egui::vec2(100.0, 100.0))
-                            .add_mat(&slot_unit.representation.get()?.material, slot_unit.id)
+                            .add_mat(&mat, slot_unit.id)
                             .unit_rep_with_default(slot_unit.id)
                             .ui(ui, ctx)
                             .on_hover_ui(|ui| {
@@ -377,8 +386,17 @@ impl MatchPlugin {
             ui.label("Bench:");
             ui.horizontal(|ui| -> NodeResult<()> {
                 for unit in m.bench.get()? {
+                    let mat = if let Ok(behavior) = unit.behavior.get() {
+                        if let Ok(rep) = behavior.representation.get() {
+                            rep.material.clone()
+                        } else {
+                            unit_rep().material.clone()
+                        }
+                    } else {
+                        unit_rep().material.clone()
+                    };
                     let response = MatRect::new(egui::vec2(100.0, 100.0))
-                        .add_mat(&unit.representation.get()?.material, unit.id)
+                        .add_mat(&mat, unit.id)
                         .unit_rep_with_default(unit.id)
                         .ui(ui, ctx);
 

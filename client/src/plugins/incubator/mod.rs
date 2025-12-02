@@ -47,7 +47,6 @@ impl IncubatorPlugin {
             IncubatorPane::UnitCard => IncubatorPanes::pane_unit_card(ui, world)?,
             IncubatorPane::HouseCard => IncubatorPanes::pane_house_card(ui, world)?,
 
-            IncubatorPane::UnitDescription => IncubatorPanes::pane_unit_description(ui, world)?,
             IncubatorPane::UnitBehavior => IncubatorPanes::pane_unit_behavior(ui, world)?,
             IncubatorPane::UnitRepresentation => {
                 IncubatorPanes::pane_unit_representation(ui, world)?
@@ -56,12 +55,8 @@ impl IncubatorPlugin {
 
             IncubatorPane::HouseColor => IncubatorPanes::pane_house_color(ui, world)?,
             IncubatorPane::AbilityMagic => IncubatorPanes::pane_ability_magic(ui, world)?,
-            IncubatorPane::AbilityDescription => {
-                IncubatorPanes::pane_ability_description(ui, world)?
-            }
             IncubatorPane::AbilityEffect => IncubatorPanes::pane_ability_effect(ui, world)?,
             IncubatorPane::StatusMagic => IncubatorPanes::pane_status_magic(ui, world)?,
-            IncubatorPane::StatusDescription => IncubatorPanes::pane_status_description(ui, world)?,
             IncubatorPane::StatusBehavior => IncubatorPanes::pane_status_behavior(ui, world)?,
         }
 
@@ -78,7 +73,6 @@ pub enum IncubatorPane {
     HouseCard,
 
     // Unit component panes
-    UnitDescription,
     UnitBehavior,
     UnitRepresentation,
     UnitStats,
@@ -86,9 +80,7 @@ pub enum IncubatorPane {
     // House component panes
     HouseColor,
     AbilityMagic,
-    AbilityDescription,
     AbilityEffect,
     StatusMagic,
-    StatusDescription,
     StatusBehavior,
 }

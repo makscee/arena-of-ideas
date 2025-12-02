@@ -11,14 +11,14 @@ pub trait BehaviorImpl {
 
 impl BehaviorImpl for Vec<Reaction> {
     fn react_actions(&self, event: &Event, ctx: &ClientContext) -> Option<&Vec<Action>> {
-        for Reaction { trigger, actions } in self.iter() {
-            match trigger.fire(event, ctx) {
+        for reaction in self.iter() {
+            match reaction.trigger.fire(event, ctx) {
                 Ok(fired) => {
                     if fired {
-                        return Some(actions);
+                        return Some(&reaction.effect.actions);
                     }
                 }
-                Err(e) => error!("trigger {trigger} fire err: {e}"),
+                Err(e) => error!("trigger {} fire err: {e}", reaction.trigger),
             }
         }
         None

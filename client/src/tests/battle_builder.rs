@@ -226,7 +226,10 @@ impl HouseBuilder {
             .expect("Cannot add reaction without a unit");
         unit.reaction = Some(Reaction {
             trigger,
-            actions: actions.into(),
+            effect: Effect {
+                description: "Unit reaction".to_string(),
+                actions: actions.into(),
+            },
         });
     }
 
@@ -294,24 +297,32 @@ impl UnitBuilder {
         stats.pwr = self.pwr;
         stats.hp = self.hp;
 
-        let mut desc = NUnitDescription::default();
-        desc.set_id(self.id + 2);
-        desc.description = format!("Unit {}", self.id);
-
         let mut state = NUnitState::default();
-        state.set_id(self.id + 3);
+        state.set_id(self.id + 2);
         state.stax = 1;
+
+        let mut representation = NUnitRepresentation::default();
+        representation.set_id(self.id + 4);
+        representation.material = Material::default();
 
         let mut unit = NUnit::default();
         unit.set_id(self.id);
         unit.unit_name = format!("Unit {}", self.id);
-        unit.stats = Component::new_loaded(self.id, stats);
-        unit.description = Component::new_loaded(self.id, desc);
         unit.state = Component::new_loaded(self.id, state);
+
         if let Some(reaction) = self.reaction {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
             behavior.reactions = vec![reaction];
+            behavior.stats = Component::new_loaded(self.id, stats);
+            behavior.representation = Component::new_loaded(self.id, representation);
+            unit.behavior = Component::new_loaded(self.id, behavior);
+        } else {
+            let mut behavior = NUnitBehavior::default();
+            behavior.set_id(self.id + 3);
+            behavior.reactions = vec![];
+            behavior.stats = Component::new_loaded(self.id, stats);
+            behavior.representation = Component::new_loaded(self.id, representation);
             unit.behavior = Component::new_loaded(self.id, behavior);
         }
 
@@ -319,33 +330,35 @@ impl UnitBuilder {
     }
 }
 
-struct AbilityBuilder {
+pub struct AbilityBuilder {
     id: u64,
+    name: String,
     actions: Vec<Action>,
 }
 
 impl AbilityBuilder {
     fn new(id: u64, actions: Vec<Action>) -> Self {
-        Self { id, actions }
+        Self {
+            id,
+            name: format!("Ability {}", id),
+            actions,
+        }
     }
 
     fn build(self) -> NAbilityMagic {
-        let desc_id = self.id + 1;
-        let effect_id = self.id + 2;
+        let effect_id = self.id + 1;
 
         let mut effect = NAbilityEffect::default();
         effect.set_id(effect_id);
-        effect.actions = self.actions;
-
-        let mut desc = NAbilityDescription::default();
-        desc.set_id(desc_id);
-        desc.description = "Ability".to_string();
+        effect.effect = Effect {
+            description: "Ability".to_string(),
+            actions: self.actions,
+        };
 
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
+        ability.ability_name = self.name.clone();
         ability.effect = Component::new_loaded(self.id, effect);
-        ability.ability_name = format!("Ability {}", self.id);
-        ability.description = Component::new_loaded(self.id, desc);
 
         ability
     }
@@ -362,38 +375,36 @@ impl StatusBuilder {
             id,
             reactions: vec![Reaction {
                 trigger,
-                actions: actions.into(),
+                effect: Effect {
+                    description: "Status effect".to_string(),
+                    actions: actions.into(),
+                },
             }],
         }
     }
 
     fn build(self) -> NStatusMagic {
-        let desc_id = self.id + 1;
-        let behavior_id = self.id + 2;
-        let rep_id = self.id + 3;
-
-        let mut behavior = NStatusBehavior::default();
-        behavior.set_id(behavior_id);
-        behavior.reactions = self.reactions;
-
-        let mut desc = NStatusDescription::default();
-        desc.set_id(desc_id);
-        desc.description = "Status".to_string();
+        let behavior_id = self.id + 1;
+        let rep_id = self.id + 2;
+        let state_id = self.id + 3;
 
         let mut representation = NStatusRepresentation::default();
         representation.set_id(rep_id);
         representation.material = Material::default();
 
+        let mut behavior = NStatusBehavior::default();
+        behavior.set_id(behavior_id);
+        behavior.reactions = self.reactions;
+        behavior.representation = Component::new_loaded(self.id, representation);
+
         let mut state = NState::default();
-        state.set_id(self.id + 4);
+        state.set_id(state_id);
         state.stax = 1;
 
         let mut status = NStatusMagic::default();
         status.set_id(self.id);
-        status.behavior = Component::new_loaded(self.id, behavior);
         status.status_name = format!("Status {}", self.id);
-        status.description = Component::new_loaded(self.id, desc);
-        status.representation = Component::new_loaded(self.id, representation);
+        status.behavior = Component::new_loaded(self.id, behavior);
         status.state = Component::new_loaded(self.id, state);
 
         status

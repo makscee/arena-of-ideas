@@ -1693,7 +1693,7 @@ pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenSt
                         .behavior.load_node(ctx)?
                         .reactions
                         .iter()
-                        .map(|r| r.actions.len() as i32)
+                        .map(|r| r.effect.actions.len() as i32)
                         .sum::<i32>();
                     Ok(actions >= stax)
                 }

@@ -225,8 +225,10 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time() * 3.0));
                     let mut unit_a = ctx.load::<NUnit>(*a).track()?;
                     let mut unit_b = ctx.load::<NUnit>(*b).track()?;
-                    let pwr_a = unit_a.stats.load_node_mut(ctx).track()?.pwr;
-                    let pwr_b = unit_b.stats.load_node_mut(ctx).track()?.pwr;
+                    let behavior_a = unit_a.behavior.load_node_mut(ctx).track()?;
+                    let behavior_b = unit_b.behavior.load_node_mut(ctx).track()?;
+                    let pwr_a = behavior_a.stats.load_node_mut(ctx).track()?.pwr;
+                    let pwr_b = behavior_b.stats.load_node_mut(ctx).track()?.pwr;
                     add_actions.extend(ctx.battle()?.slots_sync());
                     add_actions.push(Self::wait(animation_time()));
                     add_actions.push(Self::damage(*a, *b, pwr_a));

@@ -88,17 +88,14 @@ impl GameState {
                 let left_column = tiles.insert_vertical_tile([units_list, unit_card].into());
 
                 // Create 2x2 component panes for units
-                let unit_description =
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitDescription));
                 let unit_behavior = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitBehavior));
                 let unit_representation =
                     tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitRepresentation));
                 let unit_stats = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitStats));
 
                 let middle_column =
-                    tiles.insert_vertical_tile([unit_description, unit_behavior].into());
-                let right_column =
-                    tiles.insert_vertical_tile([unit_representation, unit_stats].into());
+                    tiles.insert_vertical_tile([unit_behavior, unit_representation].into());
+                let right_column = tiles.insert_vertical_tile([unit_stats].into());
 
                 let units_content =
                     tiles.insert_horizontal_tile([left_column, middle_column, right_column].into());
@@ -119,22 +116,16 @@ impl GameState {
 
                 // Create 2 rows for abilities and statuses
                 let ability_magic = tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityMagic));
-                let ability_description =
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityDescription));
                 let ability_effect =
                     tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityEffect));
-                let abilities_row = tiles.insert_horizontal_tile(
-                    [ability_magic, ability_description, ability_effect].into(),
-                );
+                let abilities_row =
+                    tiles.insert_horizontal_tile([ability_magic, ability_effect].into());
 
                 let status_magic = tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusMagic));
-                let status_description =
-                    tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusDescription));
                 let status_behavior =
                     tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusBehavior));
-                let statuses_row = tiles.insert_horizontal_tile(
-                    [status_magic, status_description, status_behavior].into(),
-                );
+                let statuses_row =
+                    tiles.insert_horizontal_tile([status_magic, status_behavior].into());
 
                 let right_content =
                     tiles.insert_vertical_tile([abilities_row, statuses_row].into());

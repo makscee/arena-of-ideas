@@ -106,7 +106,7 @@ impl ActionImpl for Action {
                     .at_least(1);
                 let color = ctx.color();
                 let name = ability.ability_name.clone();
-                let effect = ability.effect.load_node(ctx)?.actions.clone();
+                let effect = ability.effect.load_node(ctx)?.effect.actions.clone();
                 ctx.with_layers(
                     [
                         ContextLayer::Var(VarName::stax, x.into()),
