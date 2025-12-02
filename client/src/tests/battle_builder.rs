@@ -256,18 +256,18 @@ impl HouseBuilder {
         let mut house = NHouse::default();
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
-        house.color = Component::new_loaded(self.id, color);
+        house.color.set_loaded(color);
         house.units = RefMultiple::Ids {
             parent_id: self.id,
             node_ids: built_units.iter().map(|u| u.id).collect(),
         };
 
         if let Some(ability_builder) = self.ability {
-            house.ability = Component::new_loaded(self.id, ability_builder.build());
+            house.ability.set_loaded(ability_builder.build());
         }
 
         if let Some(status_builder) = self.status {
-            house.status = Component::new_loaded(self.id, status_builder.build());
+            house.status.set_loaded(status_builder.build());
         }
 
         (house, built_units)
@@ -308,22 +308,22 @@ impl UnitBuilder {
         let mut unit = NUnit::default();
         unit.set_id(self.id);
         unit.unit_name = format!("Unit {}", self.id);
-        unit.state = Component::new_loaded(self.id, state);
+        unit.state.set_loaded(state);
 
         if let Some(reaction) = self.reaction {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
             behavior.reactions = vec![reaction];
-            behavior.stats = Component::new_loaded(self.id, stats);
-            behavior.representation = Component::new_loaded(self.id, representation);
-            unit.behavior = Component::new_loaded(self.id, behavior);
+            behavior.stats.set_loaded(stats);
+            behavior.representation.set_loaded(representation);
+            unit.behavior.set_loaded(behavior);
         } else {
             let mut behavior = NUnitBehavior::default();
             behavior.set_id(self.id + 3);
             behavior.reactions = vec![];
-            behavior.stats = Component::new_loaded(self.id, stats);
-            behavior.representation = Component::new_loaded(self.id, representation);
-            unit.behavior = Component::new_loaded(self.id, behavior);
+            behavior.stats.set_loaded(stats);
+            behavior.representation.set_loaded(representation);
+            unit.behavior.set_loaded(behavior);
         }
 
         unit
@@ -358,7 +358,7 @@ impl AbilityBuilder {
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
         ability.ability_name = self.name.clone();
-        ability.effect = Component::new_loaded(self.id, effect);
+        ability.effect.set_loaded(effect);
 
         ability
     }
@@ -395,7 +395,7 @@ impl StatusBuilder {
         let mut behavior = NStatusBehavior::default();
         behavior.set_id(behavior_id);
         behavior.reactions = self.reactions;
-        behavior.representation = Component::new_loaded(self.id, representation);
+        behavior.representation.set_loaded(representation);
 
         let mut state = NState::default();
         state.set_id(state_id);
@@ -404,8 +404,8 @@ impl StatusBuilder {
         let mut status = NStatusMagic::default();
         status.set_id(self.id);
         status.status_name = format!("Status {}", self.id);
-        status.behavior = Component::new_loaded(self.id, behavior);
-        status.state = Component::new_loaded(self.id, state);
+        status.behavior.set_loaded(behavior);
+        status.state.set_loaded(state);
 
         status
     }
