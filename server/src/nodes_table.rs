@@ -1,5 +1,4 @@
 use super::*;
-use schema::INCUBATOR_VOTES_THRESHOLD;
 use std::collections::{HashSet, VecDeque};
 
 #[table(public, name = nodes_world,

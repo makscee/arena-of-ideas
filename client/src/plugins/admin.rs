@@ -157,11 +157,7 @@ impl AdminPlugin {
         if "Reset Core".cstr().button(ui).clicked() {
             cn().reducers.content_reset_core().notify_error_op();
         }
-        if "Check Phase Completion".cstr().button(ui).clicked() {
-            cn().reducers
-                .content_check_phase_completion()
-                .notify_error_op();
-        }
+
         if "Add 10 Votes".cstr().button(ui).clicked() {
             cn().reducers.admin_add_votes(10).notify_error_op();
         }

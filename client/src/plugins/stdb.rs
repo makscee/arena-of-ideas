@@ -182,9 +182,6 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
         AllReducers::AdminUploadWorld => {
             r.on_admin_upload_world(|e, _, _, _| default_callback(e));
         }
-        AllReducers::ContentCheckPhaseCompletion => {
-            r.on_content_check_phase_completion(|e| default_callback(e));
-        }
         AllReducers::ContentDeleteNode => {
             r.on_content_delete_node(|e, _| default_callback(e));
         }

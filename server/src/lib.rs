@@ -24,7 +24,7 @@ pub use link_ext::{ServerMultipleLinkLoad, ServerSingleLinkLoad};
 use itertools::Itertools;
 use log::{debug, error, info};
 use nodes::*;
-pub use nodes_table::*;
+use nodes_table::*;
 use player::*;
 
 use schema::*;

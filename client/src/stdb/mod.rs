@@ -12,7 +12,6 @@ pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
 pub mod admin_upload_world_reducer;
 pub mod battle_table;
-pub mod content_check_phase_completion_reducer;
 pub mod content_delete_node_reducer;
 pub mod content_downvote_node_reducer;
 pub mod content_publish_node_reducer;
@@ -79,10 +78,6 @@ pub use admin_upload_world_reducer::{
     admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
 };
 pub use battle_table::*;
-pub use content_check_phase_completion_reducer::{
-    content_check_phase_completion, set_flags_for_content_check_phase_completion,
-    ContentCheckPhaseCompletionCallbackId,
-};
 pub use content_delete_node_reducer::{
     content_delete_node, set_flags_for_content_delete_node, ContentDeleteNodeCallbackId,
 };
@@ -200,7 +195,6 @@ pub enum Reducer {
         nodes: Vec<String>,
         links: Vec<String>,
     },
-    ContentCheckPhaseCompletion,
     ContentDeleteNode {
         node_id: u64,
     },
@@ -287,7 +281,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
             Reducer::AdminUploadWorld { .. } => "admin_upload_world",
-            Reducer::ContentCheckPhaseCompletion => "content_check_phase_completion",
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentDownvoteNode { .. } => "content_downvote_node",
             Reducer::ContentPublishNode { .. } => "content_publish_node",
@@ -345,12 +338,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_upload_world_reducer::AdminUploadWorldArgs,
             >("admin_upload_world", &value.args)?
             .into()),
-            "content_check_phase_completion" => {
-                Ok(__sdk::parse_reducer_args::<
-                    content_check_phase_completion_reducer::ContentCheckPhaseCompletionArgs,
-                >("content_check_phase_completion", &value.args)?
-                .into())
-            }
             "content_delete_node" => Ok(__sdk::parse_reducer_args::<
                 content_delete_node_reducer::ContentDeleteNodeArgs,
             >("content_delete_node", &value.args)?
