@@ -1,14 +1,14 @@
 use super::*;
 
 #[derive(Resource)]
-pub struct ExplorerState {
+pub struct IncubatorState {
     pub inspected_unit: Option<u64>,
     pub inspected_house: Option<u64>,
 
-    pub pending_actions: Vec<ExplorerAction>,
+    pub pending_actions: Vec<IncubatorAction>,
 }
 
-impl Default for ExplorerState {
+impl Default for IncubatorState {
     fn default() -> Self {
         Self {
             inspected_unit: None,

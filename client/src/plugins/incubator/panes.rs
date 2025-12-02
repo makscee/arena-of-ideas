@@ -1,8 +1,8 @@
 use super::*;
 
-pub struct ExplorerPanes;
+pub struct IncubatorPanes;
 
-impl ExplorerPanes {
+impl IncubatorPanes {
     fn show_add_new(ui: &mut Ui, kind: NodeKind, parent: Option<u64>) {
         node_kind_match!(
             kind,
@@ -16,7 +16,7 @@ impl ExplorerPanes {
     pub fn render_node_list(ui: &mut Ui, world: &mut World, kind: NamedNodeKind) -> NodeResult<()> {
         Self::show_add_new(ui, kind.to_kind(), None);
 
-        world.resource_scope::<ExplorerState, _>(|_, mut state| {
+        world.resource_scope::<IncubatorState, _>(|_, mut state| {
             with_incubator_source(|ctx| {
                 let mut node_list = named_node_kind_match!(kind, {
                     ctx.world_mut()?
@@ -52,8 +52,8 @@ impl ExplorerPanes {
                     .with_hover(|(id, _name, _rating), _ctx, ui| {
                         if ui.button("Inspect").clicked() {
                             let action = match kind {
-                                NamedNodeKind::NUnit => ExplorerAction::InspectUnit(*id),
-                                NamedNodeKind::NHouse => ExplorerAction::InspectHouse(*id),
+                                NamedNodeKind::NUnit => IncubatorAction::InspectUnit(*id),
+                                NamedNodeKind::NHouse => IncubatorAction::InspectHouse(*id),
                                 _ => unreachable!(),
                             };
 
@@ -179,7 +179,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NUnitDescription>(ui, ctx, unit_id, Some(unit_id))
@@ -191,7 +191,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NUnitBehavior>(ui, ctx, unit_id, Some(unit_id))
@@ -203,7 +203,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_stats(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NUnitStats>(ui, ctx, unit_id, Some(unit_id))
@@ -215,7 +215,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NUnit>(unit_id)?, ctx, ui)
@@ -227,7 +227,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_card(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     Self::render_node_card(ctx.load_ref::<NHouse>(house_id)?, ctx, ui)
@@ -239,7 +239,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_unit_representation(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NUnitRepresentation>(ui, ctx, unit_id, Some(unit_id))
@@ -251,7 +251,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_house_color(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NHouseColor>(ui, ctx, house_id, Some(house_id))
@@ -263,7 +263,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_ability_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NAbilityMagic>(ui, ctx, house_id, Some(house_id))
@@ -275,7 +275,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_ability_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NAbilityMagic).ok();
@@ -288,7 +288,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_ability_effect(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NAbilityMagic).ok();
@@ -301,7 +301,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_status_magic(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     Self::pane_component::<NStatusMagic>(ui, ctx, house_id, Some(house_id))
@@ -313,7 +313,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_status_description(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NStatusMagic).ok();
@@ -326,7 +326,7 @@ impl ExplorerPanes {
     }
 
     pub fn pane_status_behavior(ui: &mut Ui, world: &mut World) -> NodeResult<()> {
-        world.resource_scope::<ExplorerState, _>(|_world, state| {
+        world.resource_scope::<IncubatorState, _>(|_world, state| {
             if let Some(house_id) = state.inspected_house {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(house_id, NodeKind::NStatusMagic).ok();

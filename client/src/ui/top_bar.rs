@@ -34,7 +34,7 @@ impl TopBar {
                     ui.close_kind(UiKind::Menu);
                 }
             });
-            Self::state_btn(GameState::Explorer, ui, world, |_, _| {});
+            Self::state_btn(GameState::Incubator, ui, world, |_, _| {});
             ui.menu_button("settings", |ui| {
                 if "reset tiles".cstr().button(ui).clicked() {
                     pd_mut(|d| {

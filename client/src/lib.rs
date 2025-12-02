@@ -113,7 +113,7 @@ pub fn run() {
             PersistentDataPlugin,
             BattlePlugin,
             BattleEditorPlugin,
-            ExplorerPlugin,
+            IncubatorPlugin,
         ))
         .add_plugins((
             OperationsPlugin,

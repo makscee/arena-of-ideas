@@ -27,7 +27,7 @@ pub enum GameState {
     Error,
     Query,
     Editor,
-    Explorer,
+    Incubator,
 }
 
 const TREE_ID: &str = "tree";
@@ -79,21 +79,21 @@ impl GameState {
                 }
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
             }
-            GameState::Explorer => {
+            GameState::Incubator => {
                 let mut tiles = Tiles::default();
 
                 // Create Units tab layout
-                let units_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitsList));
-                let unit_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitCard));
+                let units_list = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitsList));
+                let unit_card = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitCard));
                 let left_column = tiles.insert_vertical_tile([units_list, unit_card].into());
 
                 // Create 2x2 component panes for units
                 let unit_description =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitDescription));
-                let unit_behavior = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitBehavior));
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitDescription));
+                let unit_behavior = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitBehavior));
                 let unit_representation =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitRepresentation));
-                let unit_stats = tiles.insert_pane(Pane::Explorer(ExplorerPane::UnitStats));
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitRepresentation));
+                let unit_stats = tiles.insert_pane(Pane::Incubator(IncubatorPane::UnitStats));
 
                 let middle_column =
                     tiles.insert_vertical_tile([unit_description, unit_behavior].into());
@@ -112,32 +112,33 @@ impl GameState {
                 let units_tab = units_content.with_name(tile_tree, "Units");
 
                 // Create Houses tab layout
-                let houses_list = tiles.insert_pane(Pane::Explorer(ExplorerPane::HousesList));
-                let house_card = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseCard));
+                let houses_list = tiles.insert_pane(Pane::Incubator(IncubatorPane::HousesList));
+                let house_card = tiles.insert_pane(Pane::Incubator(IncubatorPane::HouseCard));
                 let houses_left_column =
                     tiles.insert_vertical_tile([houses_list, house_card].into());
 
                 // Create 2 rows for abilities and statuses
-                let ability_magic = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityMagic));
+                let ability_magic = tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityMagic));
                 let ability_description =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityDescription));
-                let ability_effect = tiles.insert_pane(Pane::Explorer(ExplorerPane::AbilityEffect));
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityDescription));
+                let ability_effect =
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::AbilityEffect));
                 let abilities_row = tiles.insert_horizontal_tile(
                     [ability_magic, ability_description, ability_effect].into(),
                 );
 
-                let status_magic = tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusMagic));
+                let status_magic = tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusMagic));
                 let status_description =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusDescription));
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusDescription));
                 let status_behavior =
-                    tiles.insert_pane(Pane::Explorer(ExplorerPane::StatusBehavior));
+                    tiles.insert_pane(Pane::Incubator(IncubatorPane::StatusBehavior));
                 let statuses_row = tiles.insert_horizontal_tile(
                     [status_magic, status_description, status_behavior].into(),
                 );
 
                 let right_content =
                     tiles.insert_vertical_tile([abilities_row, statuses_row].into());
-                let house_color = tiles.insert_pane(Pane::Explorer(ExplorerPane::HouseColor));
+                let house_color = tiles.insert_pane(Pane::Incubator(IncubatorPane::HouseColor));
 
                 let houses_content = tiles.insert_horizontal_tile(
                     [houses_left_column, right_content, house_color].into(),
@@ -199,7 +200,7 @@ pub enum Pane {
     MainMenu,
     Battle(BattlePane),
     Shop(ShopPane),
-    Explorer(ExplorerPane),
+    Incubator(IncubatorPane),
     MatchOver,
     Leaderboard,
     BattleHistory,
@@ -317,7 +318,7 @@ impl Pane {
                 BattlePane::EditLeftGraph => BattleEditorPlugin::pane_edit_graph(true, ui, world),
                 BattlePane::EditRightGraph => BattleEditorPlugin::pane_edit_graph(false, ui, world),
             },
-            Pane::Explorer(pane) => ExplorerPlugin::pane(pane, ui, world)?,
+            Pane::Incubator(pane) => IncubatorPlugin::pane(pane, ui, world)?,
             Pane::WorldDownload => world_download_ui_system(ui, world),
         };
         Ok(())
