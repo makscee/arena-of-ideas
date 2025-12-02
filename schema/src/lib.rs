@@ -55,6 +55,8 @@ pub const ID_PLAYERS: u64 = 2;
 pub const ID_ARENA: u64 = 3;
 pub const ID_INCUBATOR: u64 = 4;
 
+pub const INCUBATOR_VOTES_THRESHOLD: i32 = 5;
+
 // Include generated NodeKind enum
 include!(concat!(env!("OUT_DIR"), "/node_kind.rs"));
 

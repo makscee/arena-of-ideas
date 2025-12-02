@@ -282,6 +282,14 @@ fn generate_node_kind(
                     _ => None,
                 }
             }
+
+            pub fn base_kind(self) -> NodeKind {
+                let mut current = self;
+                while let Some(parent_kind) = current.component_parent() {
+                    current = parent_kind;
+                }
+                current
+            }
         }
 
         #allow_attrs

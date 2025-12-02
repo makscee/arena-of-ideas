@@ -63,6 +63,21 @@ impl TopBar {
                     .1
                     .cstr_cs(low_contrast_text(), CstrStyle::Bold)
                     .label(ui);
+
+                if is_connected() {
+                    match cn().db.votes().player_id().find(&player_id()) {
+                        Some(v) => {
+                            format!(
+                                "[tw votes left:] [b [green {}] [red {}]]",
+                                v.upvotes, v.downvotes
+                            )
+                            .label(ui);
+                        }
+                        None => {
+                            "[red Votes not found]".cstr().label(ui);
+                        }
+                    }
+                }
             })
         });
     }

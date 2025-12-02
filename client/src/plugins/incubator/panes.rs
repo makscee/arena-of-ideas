@@ -1,3 +1,5 @@
+use std::ops::Not;
+
 use super::*;
 
 pub struct IncubatorPanes;
@@ -22,34 +24,41 @@ impl IncubatorPanes {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
                         .iter(ctx.world()?)
-                        .map(|(_, n)| (n.id, n.name().to_owned(), n.rating()))
+                        .map(|(_, n)| (n.id, n.name().to_owned(), n.rating(), n.owner))
                         .collect_vec()
                 });
-                node_list.sort_by_key(|(_, _, rating)| *rating);
+                node_list.sort_by_key(|(_, _, rating, _)| -*rating);
                 // Get inspected item
                 let inspected_id = match kind {
                     NamedNodeKind::NUnit => state.inspected_unit,
                     NamedNodeKind::NHouse => state.inspected_house,
                     _ => unreachable!(),
                 };
-
                 // Render the list
                 node_list
-                    .as_list(|(id, name, rating), _ctx, ui| {
+                    .as_list(|(id, name, rating, owner), _ctx, ui| {
                         let color = if inspected_id == Some(*id) {
                             YELLOW
                         } else {
                             colorix().high_contrast_text()
                         };
+                        let marker = if *owner == ID_CORE {
+                            "⭐️"
+                        } else if id.fixed_kinds().contains(&kind.to_kind()) {
+                            "📌"
+                        } else {
+                            ""
+                        };
                         format!(
-                            "[b {}] [{} {}]",
+                            "[b {}] {} [{} {}]",
                             rating.cstr_expanded(),
+                            marker,
                             color.to_hex(),
                             name
                         )
                         .label(ui)
                     })
-                    .with_hover(|(id, _name, _rating), _ctx, ui| {
+                    .with_hover(|(id, _name, _rating, _), _ctx, ui| {
                         if ui.button("Inspect").clicked() {
                             let action = match kind {
                                 NamedNodeKind::NUnit => IncubatorAction::InspectUnit(*id),
@@ -95,10 +104,16 @@ impl IncubatorPanes {
         parent: Option<u64>,
     ) -> NodeResult<()> {
         let kind = T::kind_s();
+
         if parent.is_none()
             || !Self::check_fixed(ui, base, ContentNodeKind::try_from(kind).unwrap())
         {
             format!("[b {}] [tw should be fixed first]", kind.cstr()).label_w(ui);
+            return Ok(());
+        }
+        let fixed = base.fixed_kinds();
+        if !fixed.contains(&kind.base_kind()) {
+            format!("[b {}] [tw should be fixed first]", kind.base_kind().cstr()).label_w(ui);
             return Ok(());
         }
         let parent = parent.unwrap();

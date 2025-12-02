@@ -1,4 +1,5 @@
 use super::*;
+use schema::INCUBATOR_VOTES_THRESHOLD;
 use std::collections::{HashSet, VecDeque};
 
 #[table(public, name = nodes_world,
@@ -139,11 +140,24 @@ impl TVotes {
             is_upvote,
             timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
         });
+        let mut node = ctx.db.nodes_world().id().find(node_id).to_not_found()?;
+        let old_rating = node.rating;
+        node.rating += if is_upvote { 1 } else { -1 };
+        ctx.db.nodes_world().id().update(node.clone());
 
-        // Update node rating
-        if let Some(mut node) = ctx.db.nodes_world().id().find(node_id) {
-            node.rating += if is_upvote { 1 } else { -1 };
-            ctx.db.nodes_world().id().update(node);
+        if node.rating == INCUBATOR_VOTES_THRESHOLD {
+            ComponentFixer::fix_component(ctx, &node)?;
+        } else if old_rating > 0 && node.rating == 0 && !is_upvote {
+            ComponentFixer::unfix_component(ctx, &node)?;
+        }
+
+        if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
+            TNode::delete_by_id_recursive(ctx, node.id);
+        }
+
+        let kind = node.kind();
+        if kind.component_children().is_empty() && node.owner == ID_INCUBATOR {
+            ComponentFixer::check_base_completion(ctx, &node)?;
         }
 
         Ok(())
