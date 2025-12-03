@@ -2,7 +2,7 @@ mod admin;
 mod battle_table;
 mod content;
 mod context;
-mod creation_phases;
+mod creation_parts;
 mod daily_updater;
 mod global_data;
 mod global_settings;
@@ -16,7 +16,7 @@ use std::str::FromStr;
 
 pub use admin::*;
 pub use context::*;
-pub use creation_phases::*;
+pub use creation_parts::*;
 use global_data::*;
 use global_settings::GlobalSettings;
 pub use link_ext::{ServerMultipleLinkLoad, ServerSingleLinkLoad};

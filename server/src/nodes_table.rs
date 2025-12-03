@@ -135,11 +135,11 @@ impl TVotes {
         node.rating += if is_upvote { 1 } else { -1 };
         rctx.db.nodes_world().id().update(node.clone());
 
-        if let Ok(phase) = node.get_creation_phase() {
+        if let Ok(part) = node.get_creation_part() {
             if node.rating >= INCUBATOR_VOTES_THRESHOLD {
-                TCreationPhases::complete_node_phase(ctx, &node, phase)?;
+                TCreationParts::complete_node_part(ctx, &node, part)?;
             } else if node.rating <= 0 && !is_upvote {
-                TCreationPhases::uncomplete_node_phase(ctx, &node)?;
+                TCreationParts::uncomplete_node_part(ctx, &node)?;
             }
 
             if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
@@ -148,7 +148,7 @@ impl TVotes {
 
             let kind = node.kind();
             if kind.component_children().is_empty() && node.owner == ID_INCUBATOR {
-                TCreationPhases::check_base_completion(ctx, &node)?;
+                TCreationParts::check_base_completion(ctx, &node)?;
             }
         }
 

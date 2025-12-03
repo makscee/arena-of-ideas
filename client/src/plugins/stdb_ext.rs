@@ -114,14 +114,15 @@ impl NodeIdExt for u64 {
         cn().db.nodes_world().id().find(&self).map(|n| n.rating)
     }
     fn fixed_kinds(self) -> HashSet<NodeKind> {
-        let id: u64 = self;
-        let kinds = cn()
-            .db
-            .creation_phases()
-            .node_id()
-            .find(&id)
-            .map(|cp| cp.fixed_kinds)
-            .unwrap_or_default();
-        HashSet::from_iter(kinds.into_iter().map(|k| k.to_kind()))
+        todo!()
+        // let id: u64 = self;
+        // let kinds = cn()
+        //     .db
+        //     .creation_parts()
+        //     .node_id()
+        //     .find(&id)
+        //     .map(|cp| cp.fixed_kinds)
+        //     .unwrap_or_default();
+        // HashSet::from_iter(kinds.into_iter().map(|k| k.to_kind()))
     }
 }

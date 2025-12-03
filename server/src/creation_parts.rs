@@ -1,22 +1,22 @@
 use super::*;
 
-#[spacetimedb::table(name = creation_phases, public)]
-pub struct TCreationPhases {
+#[spacetimedb::table(name = creation_parts, public)]
+pub struct TCreationParts {
     #[primary_key]
     pub node_id: u64,
-    pub phases: Vec<String>,
+    pub parts: Vec<String>,
 }
 
-pub trait CreationPhasesHelper {
+pub trait CreationPartHelper {
     fn base_id(self, kind: NodeKind, ctx: &ServerContext) -> NodeResult<u64>;
-    fn complete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()>;
-    fn uncomplete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()>;
-    fn check_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<bool>;
-    fn get_phases(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPhase>>;
+    fn complete_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<()>;
+    fn uncomplete_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<()>;
+    fn check_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<bool>;
+    fn get_part(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPart>>;
 }
 
-fn check_kind(ctx: &ServerContext, node_id: u64, phase: CreationPhase) -> NodeResult<()> {
-    let expected = if phase.is_unit() {
+fn check_kind(ctx: &ServerContext, node_id: u64, part: CreationPart) -> NodeResult<()> {
+    let expected = if part.is_unit() {
         NodeKind::NUnit
     } else {
         NodeKind::NHouse
@@ -30,7 +30,7 @@ fn check_kind(ctx: &ServerContext, node_id: u64, phase: CreationPhase) -> NodeRe
     Ok(())
 }
 
-impl CreationPhasesHelper for u64 {
+impl CreationPartHelper for u64 {
     fn base_id(self, kind: NodeKind, ctx: &ServerContext) -> NodeResult<u64> {
         let base_kind = kind.base_kind();
         if kind == base_kind {
@@ -39,115 +39,115 @@ impl CreationPhasesHelper for u64 {
         ctx.first_parent_recursive(self, base_kind)
     }
 
-    fn complete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()> {
-        check_kind(ctx, self, phase)?;
+    fn complete_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<()> {
+        check_kind(ctx, self, part)?;
         let mut cp = ctx
             .rctx()
             .db
-            .creation_phases()
+            .creation_parts()
             .node_id()
             .find(self)
             .unwrap_or_else(|| {
-                ctx.rctx().db.creation_phases().insert(TCreationPhases {
+                ctx.rctx().db.creation_parts().insert(TCreationParts {
                     node_id: self,
-                    phases: default(),
+                    parts: default(),
                 })
             });
-        let phase = phase.as_ref().to_string();
-        if !cp.phases.contains(&phase) {
-            cp.phases.push(phase);
-            ctx.rctx().db.creation_phases().node_id().update(cp);
+        let part = part.as_ref().to_string();
+        if !cp.parts.contains(&part) {
+            cp.parts.push(part);
+            ctx.rctx().db.creation_parts().node_id().update(cp);
         }
         Ok(())
     }
 
-    fn uncomplete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()> {
-        check_kind(ctx, self, phase)?;
-        if let Some(mut cp) = ctx.rctx().db.creation_phases().node_id().find(self) {
-            let phase_str = phase.as_ref().to_string();
-            cp.phases.retain(|k| k != &phase_str);
-            ctx.rctx().db.creation_phases().node_id().update(cp);
+    fn uncomplete_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<()> {
+        check_kind(ctx, self, part)?;
+        if let Some(mut cp) = ctx.rctx().db.creation_parts().node_id().find(self) {
+            let part_str = part.as_ref().to_string();
+            cp.parts.retain(|k| k != &part_str);
+            ctx.rctx().db.creation_parts().node_id().update(cp);
         }
         Ok(())
     }
 
-    fn get_phases(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPhase>> {
+    fn get_part(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPart>> {
         Ok(ctx
             .rctx()
             .db
-            .creation_phases()
+            .creation_parts()
             .node_id()
             .find(self)
             .to_not_found()?
-            .phases
+            .parts
             .into_iter()
-            .map(|p| CreationPhase::from_str(&p).unwrap())
+            .map(|p| CreationPart::from_str(&p).unwrap())
             .collect_vec())
     }
 
-    fn check_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<bool> {
-        check_kind(ctx, self, phase)?;
-        Ok(self.get_phases(ctx)?.contains(&phase))
+    fn check_part(self, ctx: &ServerContext, part: CreationPart) -> NodeResult<bool> {
+        check_kind(ctx, self, part)?;
+        Ok(self.get_part(ctx)?.contains(&part))
     }
 }
 
 impl TNode {
-    pub fn get_creation_phase(&self) -> NodeResult<CreationPhase> {
+    pub fn get_creation_part(&self) -> NodeResult<CreationPart> {
         let kind = self.kind();
-        let phase = match kind {
-            NodeKind::NHouse => CreationPhase::HouseName,
-            NodeKind::NHouseColor => CreationPhase::HouseColor,
-            NodeKind::NAbilityMagic => CreationPhase::AbilityName,
+        let part = match kind {
+            NodeKind::NHouse => CreationPart::HouseName,
+            NodeKind::NHouseColor => CreationPart::HouseColor,
+            NodeKind::NAbilityMagic => CreationPart::AbilityName,
             NodeKind::NAbilityEffect => {
                 let node = self.to_node::<NAbilityEffect>()?;
                 if node.effect.actions.is_empty() {
-                    CreationPhase::AbilityDescription
+                    CreationPart::AbilityDescription
                 } else {
-                    CreationPhase::AbilityImplementation
+                    CreationPart::AbilityImplementation
                 }
             }
-            NodeKind::NStatusMagic => CreationPhase::StatusName,
+            NodeKind::NStatusMagic => CreationPart::StatusName,
             NodeKind::NStatusBehavior => {
                 let node = self.to_node::<NStatusBehavior>()?;
                 if node.reactions.iter().all(|r| !r.effect.actions.is_empty()) {
-                    CreationPhase::StatusImplementation
+                    CreationPart::StatusImplementation
                 } else {
-                    CreationPhase::StatusDescription
+                    CreationPart::StatusDescription
                 }
             }
-            NodeKind::NUnit => CreationPhase::UnitName,
+            NodeKind::NUnit => CreationPart::UnitName,
             NodeKind::NUnitBehavior => {
                 let node = self.to_node::<NUnitBehavior>()?;
                 if node.reactions.iter().all(|r| !r.effect.actions.is_empty()) {
-                    CreationPhase::UnitImplementation
+                    CreationPart::UnitImplementation
                 } else {
-                    CreationPhase::UnitDescription
+                    CreationPart::UnitDescription
                 }
             }
-            NodeKind::NUnitStats => CreationPhase::UnitStats,
-            NodeKind::NUnitRepresentation => CreationPhase::UnitRepresentation,
+            NodeKind::NUnitStats => CreationPart::UnitStats,
+            NodeKind::NUnitRepresentation => CreationPart::UnitRepresentation,
             _ => {
                 return Err(NodeError::custom(format!(
-                    "Invalid node kind for creation phase: {}",
+                    "Invalid node kind for creation part: {}",
                     self.kind()
                 )));
             }
         };
-        Ok(phase)
+        Ok(part)
     }
 }
 
-impl TCreationPhases {
-    pub fn complete_node_phase(
+impl TCreationParts {
+    pub fn complete_node_part(
         ctx: &ServerContext,
         node: &TNode,
-        phase: CreationPhase,
+        part: CreationPart,
     ) -> NodeResult<()> {
         let kind = node.kind();
         let base_id = node.id.base_id(kind, ctx)?;
-        if base_id.check_phase(ctx, phase)? {
+        if base_id.check_part(ctx, part)? {
             return Err(NodeError::custom(format!(
-                "Phase {phase} already complete for {base_id}"
+                "Part {part} already complete for {base_id}"
             )));
         }
         let Some(parent_kind) = kind.component_parent() else {
@@ -176,40 +176,40 @@ impl TCreationPhases {
                 }
             }
         }
-        base_id.complete_phase(ctx, phase)?;
+        base_id.complete_part(ctx, part)?;
         Ok(())
     }
 
-    pub fn uncomplete_node_phase(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
+    pub fn uncomplete_node_part(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
         let kind = node.kind();
         let base_id = node.id.base_id(kind, ctx)?;
-        let phases = match kind {
-            NodeKind::NHouse => [CreationPhase::HouseName].to_vec(),
-            NodeKind::NHouseColor => [CreationPhase::HouseColor].to_vec(),
-            NodeKind::NAbilityMagic => [CreationPhase::AbilityName].to_vec(),
+        let parts = match kind {
+            NodeKind::NHouse => [CreationPart::HouseName].to_vec(),
+            NodeKind::NHouseColor => [CreationPart::HouseColor].to_vec(),
+            NodeKind::NAbilityMagic => [CreationPart::AbilityName].to_vec(),
             NodeKind::NAbilityEffect => [
-                CreationPhase::AbilityDescription,
-                CreationPhase::AbilityImplementation,
+                CreationPart::AbilityDescription,
+                CreationPart::AbilityImplementation,
             ]
             .to_vec(),
-            NodeKind::NStatusMagic => [CreationPhase::StatusName].to_vec(),
+            NodeKind::NStatusMagic => [CreationPart::StatusName].to_vec(),
             NodeKind::NStatusBehavior => [
-                CreationPhase::StatusDescription,
-                CreationPhase::StatusImplementation,
+                CreationPart::StatusDescription,
+                CreationPart::StatusImplementation,
             ]
             .to_vec(),
-            NodeKind::NUnit => [CreationPhase::UnitName].to_vec(),
+            NodeKind::NUnit => [CreationPart::UnitName].to_vec(),
             NodeKind::NUnitBehavior => [
-                CreationPhase::UnitDescription,
-                CreationPhase::UnitImplementation,
+                CreationPart::UnitDescription,
+                CreationPart::UnitImplementation,
             ]
             .to_vec(),
-            NodeKind::NUnitStats => [CreationPhase::UnitStats].to_vec(),
-            NodeKind::NUnitRepresentation => [CreationPhase::UnitRepresentation].to_vec(),
-            _ => return Err(NodeError::custom(format!("Invalid phase kind {kind}"))),
+            NodeKind::NUnitStats => [CreationPart::UnitStats].to_vec(),
+            NodeKind::NUnitRepresentation => [CreationPart::UnitRepresentation].to_vec(),
+            _ => return Err(NodeError::custom(format!("Invalid part kind {kind}"))),
         };
-        for phase in phases {
-            base_id.uncomplete_phase(ctx, phase)?;
+        for part in parts {
+            base_id.uncomplete_part(ctx, part)?;
         }
         Ok(())
     }
@@ -220,7 +220,7 @@ impl TCreationPhases {
         let base_kind = base_id.kind(ctx.rctx()).to_not_found()?;
 
         let is_complete =
-            CreationPhase::is_complete(&base_id.get_phases(ctx)?, base_kind == NodeKind::NUnit);
+            CreationPart::is_complete(&base_id.get_part(ctx)?, base_kind == NodeKind::NUnit);
         if is_complete {
             let mut node_mut = node.clone();
             node_mut.owner = ID_CORE;

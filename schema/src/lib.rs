@@ -1,6 +1,6 @@
 mod action;
 mod context;
-mod creation_phases;
+mod creation_parts;
 mod event;
 mod expression;
 mod fusion;
@@ -25,7 +25,7 @@ use std::{fmt::Display, str::FromStr};
 
 pub use action::*;
 pub use context::*;
-pub use creation_phases::*;
+pub use creation_parts::*;
 use ecolor::Color32;
 pub use event::*;
 pub use expression::*;

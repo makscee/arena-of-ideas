@@ -18,7 +18,7 @@ pub mod content_publish_node_reducer;
 pub mod content_reset_core_reducer;
 pub mod content_suggest_node_reducer;
 pub mod content_upvote_node_reducer;
-pub mod creation_phases_table;
+pub mod creation_parts_table;
 pub mod creators_table;
 pub mod daily_update_reducer_reducer;
 pub mod daily_update_timer_table;
@@ -52,7 +52,7 @@ pub mod nodes_world_table;
 pub mod register_reducer;
 pub mod set_password_reducer;
 pub mod t_battle_type;
-pub mod t_creation_phases_type;
+pub mod t_creation_parts_type;
 pub mod t_creators_type;
 pub mod t_node_link_type;
 pub mod t_node_type;
@@ -96,7 +96,7 @@ pub use content_suggest_node_reducer::{
 pub use content_upvote_node_reducer::{
     content_upvote_node, set_flags_for_content_upvote_node, ContentUpvoteNodeCallbackId,
 };
-pub use creation_phases_table::*;
+pub use creation_parts_table::*;
 pub use creators_table::*;
 pub use daily_update_reducer_reducer::{
     daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
@@ -165,7 +165,7 @@ pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
 pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use t_battle_type::TBattle;
-pub use t_creation_phases_type::TCreationPhases;
+pub use t_creation_parts_type::TCreationParts;
 pub use t_creators_type::TCreators;
 pub use t_node_link_type::TNodeLink;
 pub use t_node_type::TNode;
@@ -476,7 +476,7 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
 #[doc(hidden)]
 pub struct DbUpdate {
     battle: __sdk::TableUpdate<TBattle>,
-    creation_phases: __sdk::TableUpdate<TCreationPhases>,
+    creation_parts: __sdk::TableUpdate<TCreationParts>,
     creators: __sdk::TableUpdate<TCreators>,
     daily_update_timer: __sdk::TableUpdate<DailyUpdateTimer>,
     global_data: __sdk::TableUpdate<GlobalData>,
@@ -496,9 +496,9 @@ impl TryFrom<__ws::DatabaseUpdate<__ws::BsatnFormat>> for DbUpdate {
                 "battle" => db_update
                     .battle
                     .append(battle_table::parse_table_update(table_update)?),
-                "creation_phases" => db_update
-                    .creation_phases
-                    .append(creation_phases_table::parse_table_update(table_update)?),
+                "creation_parts" => db_update
+                    .creation_parts
+                    .append(creation_parts_table::parse_table_update(table_update)?),
                 "creators" => db_update
                     .creators
                     .append(creators_table::parse_table_update(table_update)?),
@@ -552,8 +552,8 @@ impl __sdk::DbUpdate for DbUpdate {
         diff.battle = cache
             .apply_diff_to_table::<TBattle>("battle", &self.battle)
             .with_updates_by_pk(|row| &row.id);
-        diff.creation_phases = cache
-            .apply_diff_to_table::<TCreationPhases>("creation_phases", &self.creation_phases)
+        diff.creation_parts = cache
+            .apply_diff_to_table::<TCreationParts>("creation_parts", &self.creation_parts)
             .with_updates_by_pk(|row| &row.node_id);
         diff.creators = cache
             .apply_diff_to_table::<TCreators>("creators", &self.creators)
@@ -587,7 +587,7 @@ impl __sdk::DbUpdate for DbUpdate {
 #[doc(hidden)]
 pub struct AppliedDiff<'r> {
     battle: __sdk::TableAppliedDiff<'r, TBattle>,
-    creation_phases: __sdk::TableAppliedDiff<'r, TCreationPhases>,
+    creation_parts: __sdk::TableAppliedDiff<'r, TCreationParts>,
     creators: __sdk::TableAppliedDiff<'r, TCreators>,
     daily_update_timer: __sdk::TableAppliedDiff<'r, DailyUpdateTimer>,
     global_data: __sdk::TableAppliedDiff<'r, GlobalData>,
@@ -609,9 +609,9 @@ impl<'r> __sdk::AppliedDiff<'r> for AppliedDiff<'r> {
         callbacks: &mut __sdk::DbCallbacks<RemoteModule>,
     ) {
         callbacks.invoke_table_row_callbacks::<TBattle>("battle", &self.battle, event);
-        callbacks.invoke_table_row_callbacks::<TCreationPhases>(
-            "creation_phases",
-            &self.creation_phases,
+        callbacks.invoke_table_row_callbacks::<TCreationParts>(
+            "creation_parts",
+            &self.creation_parts,
             event,
         );
         callbacks.invoke_table_row_callbacks::<TCreators>("creators", &self.creators, event);
@@ -1225,7 +1225,7 @@ impl __sdk::SpacetimeModule for RemoteModule {
 
     fn register_tables(client_cache: &mut __sdk::ClientCache<Self>) {
         battle_table::register_table(client_cache);
-        creation_phases_table::register_table(client_cache);
+        creation_parts_table::register_table(client_cache);
         creators_table::register_table(client_cache);
         daily_update_timer_table::register_table(client_cache);
         global_data_table::register_table(client_cache);

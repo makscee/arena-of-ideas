@@ -24,10 +24,10 @@ where
                         .iter(ctx.world()?)
                         .filter(|n| {
                             cn().db
-                                .creation_phases()
+                                .creation_parts()
                                 .node_id()
                                 .find(&n.id)
-                                .map(|cp| !cp.fixed_kinds.contains(&kind_str))
+                                .map(|cp| todo!())
                                 .unwrap_or(true)
                         })
                         .map(|n| (n.id, n.title(ctx)))
