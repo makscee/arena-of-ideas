@@ -1,5 +1,6 @@
 mod action;
 mod context;
+mod creation_phases;
 mod event;
 mod expression;
 mod fusion;
@@ -9,14 +10,13 @@ mod node_assets;
 mod node_error;
 mod packed_nodes;
 mod painter_action;
+#[allow(dead_code)]
+mod raw_nodes;
 mod reaction;
 mod tier;
 mod trigger;
 mod var_name;
 mod var_value;
-
-#[allow(dead_code)]
-mod raw_nodes;
 
 // Re-export node macro and types from raw_nodes
 pub use proc_macros::Node;
@@ -25,6 +25,7 @@ use std::{fmt::Display, str::FromStr};
 
 pub use action::*;
 pub use context::*;
+pub use creation_phases::*;
 use ecolor::Color32;
 pub use event::*;
 pub use expression::*;
@@ -34,7 +35,6 @@ pub use r#match::*;
 pub use node_assets::*;
 #[allow(unused_imports)]
 pub use node_error::*;
-
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;
@@ -46,7 +46,8 @@ pub use var_value::*;
 
 pub use glam::Vec2;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use strum_macros::{AsRefStr, Display, EnumIter, EnumString};
+pub use strum::{EnumIter, IntoEnumIterator};
+pub use strum_macros::{AsRefStr, Display, EnumString};
 pub use thiserror::Error;
 pub use utils::*;
 

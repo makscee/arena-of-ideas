@@ -46,13 +46,6 @@ pub struct TCreators {
     pub player_id: u64,
 }
 
-#[spacetimedb::table(name = creation_phases, public)]
-pub struct TCreationPhases {
-    #[primary_key]
-    pub node_id: u64,
-    pub fixed_kinds: Vec<String>,
-}
-
 #[table(public, name = node_links,
     index(name = parent_child, btree(columns = [parent, child])),
     index(name = parent_child_kind, btree(columns = [parent, child_kind])),
@@ -139,23 +132,24 @@ impl TVotes {
             timestamp: rctx.timestamp.to_micros_since_unix_epoch() as u64,
         });
         let mut node = rctx.db.nodes_world().id().find(node_id).to_not_found()?;
-        let old_rating = node.rating;
         node.rating += if is_upvote { 1 } else { -1 };
         rctx.db.nodes_world().id().update(node.clone());
 
-        if node.rating == INCUBATOR_VOTES_THRESHOLD {
-            ComponentFixer::fix_component(ctx, &node)?;
-        } else if old_rating > 0 && node.rating == 0 && !is_upvote {
-            ComponentFixer::unfix_component(ctx, &node)?;
-        }
+        if let Ok(phase) = node.get_creation_phase() {
+            if node.rating >= INCUBATOR_VOTES_THRESHOLD {
+                TCreationPhases::complete_node_phase(ctx, &node, phase)?;
+            } else if node.rating <= 0 && !is_upvote {
+                TCreationPhases::uncomplete_node_phase(ctx, &node)?;
+            }
 
-        if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
-            TNode::delete_by_id_recursive(ctx.rctx(), node.id);
-        }
+            if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
+                TNode::delete_by_id_recursive(ctx.rctx(), node.id);
+            }
 
-        let kind = node.kind();
-        if kind.component_children().is_empty() && node.owner == ID_INCUBATOR {
-            ComponentFixer::check_base_completion(ctx, &node)?;
+            let kind = node.kind();
+            if kind.component_children().is_empty() && node.owner == ID_INCUBATOR {
+                TCreationPhases::check_base_completion(ctx, &node)?;
+            }
         }
 
         Ok(())
@@ -276,7 +270,6 @@ pub trait NodeIdExt {
     fn collect_children(self, ctx: &ReducerContext) -> HashSet<u64>;
     fn has_parent(self, ctx: &ReducerContext, id: u64) -> bool;
     fn has_child(self, ctx: &ReducerContext, id: u64) -> bool;
-    fn fixed_kinds(self, ctx: &ReducerContext) -> HashSet<NodeKind>;
 }
 
 impl NodeIdExt for u64 {
@@ -454,19 +447,6 @@ impl NodeIdExt for u64 {
             .filter((self, id))
             .next()
             .is_some()
-    }
-
-    fn fixed_kinds(self, ctx: &ReducerContext) -> HashSet<NodeKind> {
-        HashSet::from_iter(
-            ctx.db
-                .creation_phases()
-                .node_id()
-                .find(self)
-                .map(|cp| cp.fixed_kinds)
-                .unwrap_or_default()
-                .into_iter()
-                .map(|k| k.to_kind()),
-        )
     }
 }
 

@@ -1,11 +1,33 @@
 use super::*;
-use crate::nodes_table::creation_phases;
+
+#[spacetimedb::table(name = creation_phases, public)]
+pub struct TCreationPhases {
+    #[primary_key]
+    pub node_id: u64,
+    pub phases: Vec<String>,
+}
 
 pub trait CreationPhasesHelper {
     fn base_id(self, kind: NodeKind, ctx: &ServerContext) -> NodeResult<u64>;
-    fn fix_kind(self, ctx: &ServerContext, kind: NodeKind) -> NodeResult<()>;
-    fn unfix_kind(self, ctx: &ServerContext, kind: NodeKind) -> NodeResult<()>;
-    fn is_kind_fixed(self, ctx: &ServerContext, kind: NodeKind) -> bool;
+    fn complete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()>;
+    fn uncomplete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()>;
+    fn check_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<bool>;
+    fn get_phases(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPhase>>;
+}
+
+fn check_kind(ctx: &ServerContext, node_id: u64, phase: CreationPhase) -> NodeResult<()> {
+    let expected = if phase.is_unit() {
+        NodeKind::NUnit
+    } else {
+        NodeKind::NHouse
+    };
+    let kind = node_id.kind(ctx.rctx()).to_not_found()?;
+    if kind != expected {
+        return Err(NodeError::custom(format!(
+            "Wrong node kind, expected {expected} got {kind}"
+        )));
+    }
+    Ok(())
 }
 
 impl CreationPhasesHelper for u64 {
@@ -17,8 +39,8 @@ impl CreationPhasesHelper for u64 {
         ctx.first_parent_recursive(self, base_kind)
     }
 
-    fn fix_kind(self, ctx: &ServerContext, kind: NodeKind) -> NodeResult<()> {
-        let kind_str = kind.to_string();
+    fn complete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()> {
+        check_kind(ctx, self, phase)?;
         let mut cp = ctx
             .rctx()
             .db
@@ -28,135 +50,177 @@ impl CreationPhasesHelper for u64 {
             .unwrap_or_else(|| {
                 ctx.rctx().db.creation_phases().insert(TCreationPhases {
                     node_id: self,
-                    fixed_kinds: default(),
+                    phases: default(),
                 })
             });
-
-        if !cp.fixed_kinds.contains(&kind_str) {
-            cp.fixed_kinds.push(kind_str);
+        let phase = phase.as_ref().to_string();
+        if !cp.phases.contains(&phase) {
+            cp.phases.push(phase);
             ctx.rctx().db.creation_phases().node_id().update(cp);
         }
         Ok(())
     }
 
-    fn unfix_kind(self, ctx: &ServerContext, kind: NodeKind) -> NodeResult<()> {
+    fn uncomplete_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<()> {
+        check_kind(ctx, self, phase)?;
         if let Some(mut cp) = ctx.rctx().db.creation_phases().node_id().find(self) {
-            let kind_str = kind.to_string();
-            cp.fixed_kinds.retain(|k| k != &kind_str);
+            let phase_str = phase.as_ref().to_string();
+            cp.phases.retain(|k| k != &phase_str);
             ctx.rctx().db.creation_phases().node_id().update(cp);
         }
         Ok(())
     }
 
-    fn is_kind_fixed(self, ctx: &ServerContext, kind: NodeKind) -> bool {
-        ctx.rctx()
+    fn get_phases(self, ctx: &ServerContext) -> NodeResult<Vec<CreationPhase>> {
+        Ok(ctx
+            .rctx()
             .db
             .creation_phases()
             .node_id()
             .find(self)
-            .map(|cp| cp.fixed_kinds.contains(&kind.to_string()))
-            .unwrap_or(false)
+            .to_not_found()?
+            .phases
+            .into_iter()
+            .map(|p| CreationPhase::from_str(&p).unwrap())
+            .collect_vec())
+    }
+
+    fn check_phase(self, ctx: &ServerContext, phase: CreationPhase) -> NodeResult<bool> {
+        check_kind(ctx, self, phase)?;
+        Ok(self.get_phases(ctx)?.contains(&phase))
     }
 }
 
-pub struct ComponentFixer;
-
-impl ComponentFixer {
-    pub fn fix_component(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
-        let kind = node.kind();
-        let base_kind = kind.base_kind();
-        let base_id = if kind == base_kind {
-            node.id
-        } else {
-            ctx.first_parent_recursive(node.id, base_kind)?
-        };
-        let fixed = base_id.fixed_kinds(ctx.rctx());
-        if fixed.contains(&node.kind()) {
-            return Ok(());
-        }
-        if kind == base_kind {
-            return node.id.fix_kind(ctx, kind);
-        }
-        if let Some(parent_kind) = kind.component_parent() {
-            if let Some(parent_link) = ctx
-                .rctx()
-                .db
-                .node_links()
-                .child_parent_kind()
-                .filter((&node.id, &parent_kind.to_string()))
-                .next()
-            {
-                let other_links: Vec<_> = ctx
-                    .rctx()
-                    .db
-                    .node_links()
-                    .parent_child_kind()
-                    .filter((&parent_link.parent, &parent_link.child_kind))
-                    .filter(|l| l.child != node.id)
-                    .collect();
-
-                for link in other_links {
-                    if let Some(alt_node) = ctx.rctx().db.nodes_world().id().find(link.child) {
-                        if alt_node.owner == ID_INCUBATOR {
-                            TNode::delete_by_id_recursive(ctx.rctx(), link.child);
-                        }
-                    }
+impl TNode {
+    pub fn get_creation_phase(&self) -> NodeResult<CreationPhase> {
+        let kind = self.kind();
+        let phase = match kind {
+            NodeKind::NHouse => CreationPhase::HouseName,
+            NodeKind::NHouseColor => CreationPhase::HouseColor,
+            NodeKind::NAbilityMagic => CreationPhase::AbilityName,
+            NodeKind::NAbilityEffect => {
+                let node = self.to_node::<NAbilityEffect>()?;
+                if node.effect.actions.is_empty() {
+                    CreationPhase::AbilityDescription
+                } else {
+                    CreationPhase::AbilityImplementation
                 }
+            }
+            NodeKind::NStatusMagic => CreationPhase::StatusName,
+            NodeKind::NStatusBehavior => {
+                let node = self.to_node::<NStatusBehavior>()?;
+                if node.reactions.iter().all(|r| !r.effect.actions.is_empty()) {
+                    CreationPhase::StatusImplementation
+                } else {
+                    CreationPhase::StatusDescription
+                }
+            }
+            NodeKind::NUnit => CreationPhase::UnitName,
+            NodeKind::NUnitBehavior => {
+                let node = self.to_node::<NUnitBehavior>()?;
+                if node.reactions.iter().all(|r| !r.effect.actions.is_empty()) {
+                    CreationPhase::UnitImplementation
+                } else {
+                    CreationPhase::UnitDescription
+                }
+            }
+            NodeKind::NUnitStats => CreationPhase::UnitStats,
+            NodeKind::NUnitRepresentation => CreationPhase::UnitRepresentation,
+            _ => {
+                return Err(NodeError::custom(format!(
+                    "Invalid node kind for creation phase: {}",
+                    self.kind()
+                )));
+            }
+        };
+        Ok(phase)
+    }
+}
 
-                let base_id = ctx.first_parent_recursive(node.id, base_kind)?;
+impl TCreationPhases {
+    pub fn complete_node_phase(
+        ctx: &ServerContext,
+        node: &TNode,
+        phase: CreationPhase,
+    ) -> NodeResult<()> {
+        let kind = node.kind();
+        let base_id = node.id.base_id(kind, ctx)?;
+        if base_id.check_phase(ctx, phase)? {
+            return Err(NodeError::custom(format!(
+                "Phase {phase} already complete for {base_id}"
+            )));
+        }
+        let Some(parent_kind) = kind.component_parent() else {
+            return Err(NodeError::custom(format!(
+                "No parent kind found for {kind}"
+            )));
+        };
+        let parent_id = node
+            .id
+            .get_kind_parent(ctx.rctx(), parent_kind)
+            .to_not_found()?;
 
-                base_id.fix_kind(ctx, kind)?;
+        let other_links: Vec<_> = ctx
+            .rctx()
+            .db
+            .node_links()
+            .parent_child_kind()
+            .filter((&parent_id, &kind.to_string()))
+            .filter(|l| l.child != node.id)
+            .collect();
+
+        for link in other_links {
+            if let Some(alt_node) = ctx.rctx().db.nodes_world().id().find(link.child) {
+                if alt_node.owner == ID_INCUBATOR {
+                    TNode::delete_by_id_recursive(ctx.rctx(), link.child);
+                }
             }
         }
-
+        base_id.complete_phase(ctx, phase)?;
         Ok(())
     }
 
-    pub fn unfix_component(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
+    pub fn uncomplete_node_phase(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
         let kind = node.kind();
-        let base_id = node.id.base_id(kind, ctx);
-
-        if let Some(parent_kind) = kind.component_parent() {
-            if let Some(_parent_link) = ctx
-                .rctx()
-                .db
-                .node_links()
-                .child_parent_kind()
-                .filter((&node.id, &parent_kind.to_string()))
-                .next()
-            {
-                let base_id = ctx.first_parent_recursive(node.id, kind.base_kind())?;
-
-                base_id.unfix_kind(ctx, kind)?;
-
-                if node.owner == ID_CORE {
-                    let mut unfixed_node = node.clone();
-                    unfixed_node.owner = ID_INCUBATOR;
-                    ctx.rctx().db.nodes_world().id().update(unfixed_node);
-                }
-            }
+        let base_id = node.id.base_id(kind, ctx)?;
+        let phases = match kind {
+            NodeKind::NHouse => [CreationPhase::HouseName].to_vec(),
+            NodeKind::NHouseColor => [CreationPhase::HouseColor].to_vec(),
+            NodeKind::NAbilityMagic => [CreationPhase::AbilityName].to_vec(),
+            NodeKind::NAbilityEffect => [
+                CreationPhase::AbilityDescription,
+                CreationPhase::AbilityImplementation,
+            ]
+            .to_vec(),
+            NodeKind::NStatusMagic => [CreationPhase::StatusName].to_vec(),
+            NodeKind::NStatusBehavior => [
+                CreationPhase::StatusDescription,
+                CreationPhase::StatusImplementation,
+            ]
+            .to_vec(),
+            NodeKind::NUnit => [CreationPhase::UnitName].to_vec(),
+            NodeKind::NUnitBehavior => [
+                CreationPhase::UnitDescription,
+                CreationPhase::UnitImplementation,
+            ]
+            .to_vec(),
+            NodeKind::NUnitStats => [CreationPhase::UnitStats].to_vec(),
+            NodeKind::NUnitRepresentation => [CreationPhase::UnitRepresentation].to_vec(),
+            _ => return Err(NodeError::custom(format!("Invalid phase kind {kind}"))),
+        };
+        for phase in phases {
+            base_id.uncomplete_phase(ctx, phase)?;
         }
-
         Ok(())
     }
 
     pub fn check_base_completion(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
         let kind = node.kind();
+        let base_id = node.id.base_id(kind, ctx)?;
+        let base_kind = base_id.kind(ctx.rctx()).to_not_found()?;
 
-        let is_complete = match kind {
-            NodeKind::NUnit => {
-                let fixed = node.id.fixed_kinds(ctx.rctx());
-                fixed.contains(&NodeKind::NUnitBehavior)
-            }
-            NodeKind::NHouse => {
-                let fixed = node.id.fixed_kinds(ctx.rctx());
-                let has_ability = fixed.contains(&NodeKind::NAbilityMagic);
-                let has_status = fixed.contains(&NodeKind::NStatusMagic);
-                fixed.contains(&NodeKind::NHouseColor) && (has_ability || has_status)
-            }
-            _ => false,
-        };
-
+        let is_complete =
+            CreationPhase::is_complete(&base_id.get_phases(ctx)?, base_kind == NodeKind::NUnit);
         if is_complete {
             let mut node_mut = node.clone();
             node_mut.owner = ID_CORE;
