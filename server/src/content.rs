@@ -12,7 +12,7 @@ fn content_publish_node(
     let mut pack = ron::from_str::<PackedNodes>(&pack).map_err(|e| e.to_string())?;
     let mut next_id = ctx.next_id();
     pack.reassign_ids(&mut next_id);
-    GlobalData::set_next_id(ctx.rctx(), next_id);
+    GlobalData::set_next_id(&ctx, next_id);
     let mut remap: HashMap<u64, u64> = default();
     for (
         id,
@@ -38,8 +38,7 @@ fn content_publish_node(
         }
         let tnode = TNode::new(*id, ID_INCUBATOR, kind, data.clone());
         tnode.insert(ctx.rctx());
-        // Record who created this node
-        TCreators::record_creation(ctx.rctx(), player.id, *id);
+        TCreators::record_creation(&ctx, player.id, *id);
     }
     for NodeLink {
         mut parent,
@@ -67,14 +66,16 @@ fn content_publish_node(
 
 #[reducer]
 fn content_upvote_node(ctx: &ReducerContext, node_id: u64) -> Result<(), String> {
-    let player = ctx.as_context().player()?;
-    TVotes::upvote_node(ctx, player.id, node_id).map_err(|e| e.to_string())
+    let ctx = ctx.as_context();
+    let player = ctx.player()?;
+    TVotes::upvote_node(&ctx, player.id, node_id).map_err(|e| e.to_string())
 }
 
 #[reducer]
 fn content_downvote_node(ctx: &ReducerContext, node_id: u64) -> Result<(), String> {
-    let player = ctx.as_context().player()?;
-    TVotes::downvote_node(ctx, player.id, node_id).map_err(|e| e.to_string())
+    let ctx = ctx.as_context();
+    let player = ctx.player()?;
+    TVotes::downvote_node(&ctx, player.id, node_id).map_err(|e| e.to_string())
 }
 
 #[reducer]
@@ -113,19 +114,21 @@ fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Res
     };
 
     tnode.insert(ctx.rctx());
-    TCreators::record_creation(ctx.rctx(), player.id, node_id);
-    GlobalData::set_next_id(ctx.rctx(), node_id + 1);
+    TCreators::record_creation(&ctx, player.id, node_id);
+    GlobalData::set_next_id(&ctx, node_id + 1);
 
     Ok(())
 }
 
 #[reducer]
 fn content_reset_core(ctx: &ReducerContext) -> Result<(), String> {
+    let ctx = ctx.as_context();
     info!("Resetting core...");
     ctx.is_admin()?;
-    for mut node in ctx.db.nodes_world().owner().filter(ID_CORE) {
+    let rctx = ctx.rctx();
+    for mut node in rctx.db.nodes_world().owner().filter(ID_CORE) {
         node.owner = ID_INCUBATOR;
-        ctx.db.nodes_world().id().update(node);
+        rctx.db.nodes_world().id().update(node);
     }
     Ok(())
 }

@@ -36,7 +36,7 @@ pub trait ServerNode: Sized + schema::Node {
     }
     fn insert(mut self, ctx: &ServerContext) -> Self {
         if self.id() == 0 {
-            self.set_id(next_id(ctx.rctx()));
+            self.set_id(next_id(ctx));
         }
         let node = self.to_tnode();
         debug!("insert {node:?}");
@@ -57,10 +57,9 @@ pub trait ServerNode: Sized + schema::Node {
         if self.id() == 0 {
             panic!("Node id not set");
         }
-        let ctx = ctx.rctx();
-        ctx.db.node_links().child().delete(self.id());
-        ctx.db.node_links().parent().delete(self.id());
-        TNode::delete_by_id(ctx, self.id());
+        ctx.rctx().db.node_links().child().delete(self.id());
+        ctx.rctx().db.node_links().parent().delete(self.id());
+        TNode::delete_by_id(ctx.rctx(), self.id());
     }
     fn to_tnode(&self) -> TNode {
         TNode::new(self.id(), self.owner(), self.kind(), self.get_data())
@@ -107,7 +106,7 @@ pub trait ServerNode: Sized + schema::Node {
         let mut next_id = ctx.next_id();
         let mut id_map = std::collections::HashMap::new();
         self.reassign_ids(&mut next_id, &mut id_map);
-        GlobalData::set_next_id(ctx.rctx(), next_id);
+        GlobalData::set_next_id(ctx, next_id);
         self
     }
 }

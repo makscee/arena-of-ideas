@@ -80,9 +80,7 @@ impl<'a> ContextSource for ServerSource<'a> {
         Ok(())
     }
 
-    fn var_updated(&mut self, _node_id: u64, _var: VarName, _value: VarValue) {
-        // Server doesn't need history tracking like client battle simulations
-    }
+    fn var_updated(&mut self, _node_id: u64, _var: VarName, _value: VarValue) {}
 
     fn get_node_kind(&self, node_id: u64) -> NodeResult<NodeKind> {
         node_id.kind(&self.ctx).ok_or(NodeError::not_found(node_id))

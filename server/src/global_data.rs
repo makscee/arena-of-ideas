@@ -1,5 +1,3 @@
-use spacetimedb::Table;
-
 use super::*;
 
 #[spacetimedb::table(public, name = global_data)]
@@ -13,9 +11,10 @@ pub struct GlobalData {
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 impl GlobalData {
-    pub fn init(ctx: &ReducerContext) {
-        ctx.db.global_data().always_zero().delete(0);
-        ctx.db.global_data().insert(Self {
+    pub fn init(ctx: &ServerContext<'_>) {
+        let rctx = ctx.rctx();
+        rctx.db.global_data().always_zero().delete(0);
+        rctx.db.global_data().insert(Self {
             always_zero: 0,
             next_id: 0,
             game_version: VERSION.to_owned(),
@@ -23,21 +22,21 @@ impl GlobalData {
         });
     }
 
-    pub fn next_id(ctx: &ReducerContext) -> u64 {
+    pub fn next_id(ctx: &ServerContext<'_>) -> u64 {
         let mut gd = Self::get(ctx);
-        let ts = ctx.timestamp.to_micros_since_unix_epoch() as u64;
+        let ts = ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64;
         gd.next_id = ts.max(gd.next_id + 1);
         let id = gd.next_id;
-        ctx.db.global_data().always_zero().update(gd);
+        ctx.rctx().db.global_data().always_zero().update(gd);
         id
     }
-    pub fn set_next_id(ctx: &ReducerContext, value: u64) {
+    pub fn set_next_id(ctx: &ServerContext<'_>, value: u64) {
         let mut gd = Self::get(ctx);
         gd.next_id = value;
-        ctx.db.global_data().always_zero().update(gd);
+        ctx.rctx().db.global_data().always_zero().update(gd);
     }
 
-    pub fn get(ctx: &ReducerContext) -> Self {
-        ctx.db.global_data().always_zero().find(0).unwrap()
+    pub fn get(ctx: &ServerContext<'_>) -> Self {
+        ctx.rctx().db.global_data().always_zero().find(0).unwrap()
     }
 }

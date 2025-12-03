@@ -40,11 +40,17 @@ pub struct MatchSettings {
 }
 
 impl GlobalSettings {
-    pub fn get(ctx: &ReducerContext) -> Self {
-        ctx.db.global_settings().always_zero().find(0).unwrap()
+    pub fn get(ctx: &ServerContext<'_>) -> Self {
+        ctx.rctx()
+            .db
+            .global_settings()
+            .always_zero()
+            .find(0)
+            .unwrap()
     }
-    pub fn replace(self, ctx: &ReducerContext) {
-        ctx.db.global_settings().always_zero().delete(0);
-        ctx.db.global_settings().insert(self);
+    pub fn replace(self, ctx: &ServerContext<'_>) {
+        let rctx = ctx.rctx();
+        rctx.db.global_settings().always_zero().delete(0);
+        rctx.db.global_settings().insert(self);
     }
 }

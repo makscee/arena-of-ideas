@@ -73,13 +73,14 @@ pub struct TNodeLink {
 }
 
 impl TVotes {
-    pub fn get_or_create(ctx: &ReducerContext, player_id: u64) -> Self {
-        ctx.db
+    pub fn get_or_create(ctx: &ServerContext<'_>, player_id: u64) -> Self {
+        let rctx = ctx.rctx();
+        rctx.db
             .votes()
             .player_id()
             .find(player_id)
             .unwrap_or_else(|| {
-                ctx.db.votes().insert(Self {
+                rctx.db.votes().insert(Self {
                     player_id,
                     upvotes: 0,
                     downvotes: 0,
@@ -87,21 +88,22 @@ impl TVotes {
             })
     }
 
-    pub fn add_votes(ctx: &ReducerContext, player_id: u64, amount: i32) {
+    pub fn add_votes(ctx: &ServerContext<'_>, player_id: u64, amount: i32) {
         let mut votes = Self::get_or_create(ctx, player_id);
         votes.upvotes += amount;
         votes.downvotes += amount;
-        ctx.db.votes().player_id().update(votes);
+        ctx.rctx().db.votes().player_id().update(votes);
     }
 
     fn vote_node(
-        ctx: &ReducerContext,
+        ctx: &ServerContext<'_>,
         player_id: u64,
         node_id: u64,
         is_upvote: bool,
     ) -> NodeResult<()> {
+        let rctx = ctx.rctx();
         if false
-            && ctx
+            && rctx
                 .db
                 .votes_history()
                 .iter()
@@ -110,7 +112,6 @@ impl TVotes {
             return Err("Already voted on this node".into());
         }
 
-        // Check if player has votes available
         let mut votes = Self::get_or_create(ctx, player_id);
         let available_votes = if is_upvote {
             votes.upvotes
@@ -123,26 +124,24 @@ impl TVotes {
             return Err(format!("No {} available", vote_type).into());
         }
 
-        // Deduct vote from player
         if is_upvote {
             votes.upvotes -= 1;
         } else {
             votes.downvotes -= 1;
         }
-        ctx.db.votes().player_id().update(votes);
+        rctx.db.votes().player_id().update(votes);
 
-        // Record vote in history
-        ctx.db.votes_history().insert(TVotesHistory {
+        rctx.db.votes_history().insert(TVotesHistory {
             id: 0,
             player_id,
             node_id,
             is_upvote,
-            timestamp: ctx.timestamp.to_micros_since_unix_epoch() as u64,
+            timestamp: rctx.timestamp.to_micros_since_unix_epoch() as u64,
         });
-        let mut node = ctx.db.nodes_world().id().find(node_id).to_not_found()?;
+        let mut node = rctx.db.nodes_world().id().find(node_id).to_not_found()?;
         let old_rating = node.rating;
         node.rating += if is_upvote { 1 } else { -1 };
-        ctx.db.nodes_world().id().update(node.clone());
+        rctx.db.nodes_world().id().update(node.clone());
 
         if node.rating == INCUBATOR_VOTES_THRESHOLD {
             ComponentFixer::fix_component(ctx, &node)?;
@@ -151,7 +150,7 @@ impl TVotes {
         }
 
         if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
-            TNode::delete_by_id_recursive(ctx, node.id);
+            TNode::delete_by_id_recursive(ctx.rctx(), node.id);
         }
 
         let kind = node.kind();
@@ -162,22 +161,23 @@ impl TVotes {
         Ok(())
     }
 
-    pub fn upvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
+    pub fn upvote_node(ctx: &ServerContext<'_>, player_id: u64, node_id: u64) -> NodeResult<()> {
         Self::vote_node(ctx, player_id, node_id, true)
     }
 
-    pub fn downvote_node(ctx: &ReducerContext, player_id: u64, node_id: u64) -> NodeResult<()> {
+    pub fn downvote_node(ctx: &ServerContext<'_>, player_id: u64, node_id: u64) -> NodeResult<()> {
         Self::vote_node(ctx, player_id, node_id, false)
     }
 }
 
 impl TCreators {
-    pub fn record_creation(ctx: &ReducerContext, player_id: u64, node_id: u64) {
-        ctx.db.creators().insert(Self { player_id, node_id });
+    pub fn record_creation(ctx: &ServerContext<'_>, player_id: u64, node_id: u64) {
+        ctx.rctx().db.creators().insert(Self { player_id, node_id });
     }
 
-    pub fn get_creator(ctx: &ReducerContext, node_id: u64) -> Option<u64> {
-        ctx.db
+    pub fn get_creator(ctx: &ServerContext<'_>, node_id: u64) -> Option<u64> {
+        ctx.rctx()
+            .db
             .creators()
             .node_id()
             .find(node_id)

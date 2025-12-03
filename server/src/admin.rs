@@ -1,6 +1,6 @@
 use super::*;
 
-use spacetimedb::{Identity, ReducerContext, reducer};
+use spacetimedb::Identity;
 use std::str::FromStr;
 
 const ADMIN_IDENTITY_HEX: &str = "c200fd59bb7bf2e9069a5db968bea2659d6826ab39f4e07fa96b0756fae2b16a";
@@ -15,9 +15,9 @@ pub trait AdminCheck {
     fn is_admin(self) -> Result<(), String>;
 }
 
-impl AdminCheck for &ReducerContext {
+impl AdminCheck for &ServerContext<'_> {
     fn is_admin(self) -> Result<(), String> {
-        if is_admin(&self.sender)? {
+        if is_admin(&self.rctx().sender)? {
             Ok(())
         } else {
             Err("Need admin access".to_owned())
@@ -27,14 +27,16 @@ impl AdminCheck for &ReducerContext {
 
 #[reducer]
 fn admin_daily_update(ctx: &ReducerContext) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     ctx.is_admin()?;
     crate::daily_updater::daily_update(ctx)
 }
 
 #[reducer]
 fn admin_delete_node_recursive(ctx: &ReducerContext, id: u64) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     ctx.is_admin()?;
-    TNode::delete_by_id_recursive(ctx, id);
+    TNode::delete_by_id_recursive(ctx.rctx(), id);
     Ok(())
 }
 
@@ -45,14 +47,16 @@ fn admin_upload_world(
     nodes: Vec<String>,
     links: Vec<String>,
 ) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     GlobalData::init(ctx);
     ctx.is_admin()?;
     global_settings.replace(ctx);
-    for node in ctx.db.nodes_world().iter() {
-        ctx.db.nodes_world().id().delete(node.id);
+    let rctx = ctx.rctx();
+    for node in rctx.db.nodes_world().iter() {
+        rctx.db.nodes_world().id().delete(node.id);
     }
-    for link in ctx.db.node_links().iter() {
-        ctx.db.node_links().id().delete(link.id);
+    for link in rctx.db.node_links().iter() {
+        rctx.db.node_links().id().delete(link.id);
     }
     for node in nodes {
         let (id, kind, (data, owner, rating)) =
@@ -64,28 +68,28 @@ fn admin_upload_world(
             data,
             rating,
         }
-        .insert(ctx);
+        .insert(ctx.rctx());
     }
     for link in links {
         let (parent, child, parent_kind, child_kind) =
             ron::from_str::<LinkAsset>(&link).map_err(|e| e.to_string())?;
         TNodeLink {
-            id: ctx.as_context().next_id(),
+            id: ctx.next_id(),
             parent,
             child,
             parent_kind,
             child_kind,
         }
-        .insert(ctx);
+        .insert(ctx.rctx());
     }
-    init(ctx)?;
+    init(ctx.rctx())?;
     Ok(())
 }
 
 #[reducer]
 fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.is_admin()?;
     let ctx = &mut ctx.as_context();
+    ctx.is_admin()?;
     let player = ctx.player()?;
     let mut m = player.active_match.load_node(ctx)?;
     m.g += 10;
@@ -95,8 +99,9 @@ fn admin_add_gold(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 fn admin_add_votes(ctx: &ReducerContext, amount: i32) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     ctx.is_admin()?;
-    let player = ctx.as_context().player()?;
+    let player = ctx.player()?;
     TVotes::add_votes(ctx, player.id, amount);
     Ok(())
 }

@@ -1,4 +1,4 @@
-use spacetimedb::{ScheduleAt, Table};
+use spacetimedb::ScheduleAt;
 
 use super::*;
 
@@ -12,9 +12,11 @@ pub struct DailyUpdateTimer {
 
 #[spacetimedb::reducer]
 fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Result<(), String> {
+    let ctx = &ctx.as_context();
     log::info!("Daily update called");
     daily_update(ctx)?;
     let next_day = (ctx
+        .rctx()
         .timestamp
         .duration_since(Timestamp::UNIX_EPOCH)
         .unwrap()
@@ -23,20 +25,21 @@ fn daily_update_reducer(ctx: &ReducerContext, _timer: DailyUpdateTimer) -> Resul
         + 1)
         * 86400
         * 1000000;
-    ctx.db.daily_update_timer().insert(DailyUpdateTimer {
+    ctx.rctx().db.daily_update_timer().insert(DailyUpdateTimer {
         scheduled_id: 0,
         scheduled_at: Timestamp::from_micros_since_unix_epoch(next_day as i64).into(),
     });
     Ok(())
 }
 
-pub fn daily_update(_ctx: &ReducerContext) -> Result<(), String> {
+pub fn daily_update(ctx: &ServerContext<'_>) -> Result<(), String> {
     Ok(())
 }
 
-pub fn _daily_timer_init(ctx: &ReducerContext) {
-    ctx.db.daily_update_timer().insert(DailyUpdateTimer {
+pub fn _daily_timer_init(ctx: &ServerContext<'_>) {
+    let rctx = ctx.rctx();
+    rctx.db.daily_update_timer().insert(DailyUpdateTimer {
         scheduled_id: 0,
-        scheduled_at: ctx.timestamp.into(),
+        scheduled_at: rctx.timestamp.into(),
     });
 }
