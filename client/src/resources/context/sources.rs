@@ -504,15 +504,114 @@ impl<'a> Sources<'a> {
         node_data: &TNode,
     ) -> NodeResult<()> {
         let target_entity = self.find_or_create_component_entity(node_id, kind)?;
+
+        if let Some(parent_kind) = kind.component_parent() {
+            if let Ok(parents) = self.get_parents_of_kind(node_id, parent_kind) {
+                for parent_id in parents {
+                    if let Ok(parent_entity) = self.entity(parent_id) {
+                        let _ = self.check_and_handle_promotion_from_extras(
+                            node_id,
+                            kind,
+                            parent_entity,
+                            node_data,
+                        );
+                    }
+                }
+            }
+        }
+
         let world = self.world_mut()?;
         node_kind_match!(kind, {
             let node = node_data.to_node::<NodeType>()?;
-            world.entity_mut(target_entity).insert(node);
-            if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
-                node_map.insert(node_id, kind, target_entity);
+
+            let is_in_extras = world
+                .get::<ExtraNodes<NodeType>>(target_entity)
+                .map(|extras| extras.contains(node_id))
+                .unwrap_or(false);
+
+            if is_in_extras {
+                if let Some(mut extras_container) = world
+                    .entity_mut(target_entity)
+                    .get_mut::<ExtraNodes<NodeType>>()
+                {
+                    if let Some(extra_comp) = extras_container.get_mut(node_id) {
+                        *extra_comp = node;
+                    }
+                }
+            } else {
+                world.entity_mut(target_entity).insert(node);
+                if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                    node_map.insert(node_id, kind, target_entity);
+                }
             }
         });
         debug!("spawn {self} {kind} {node_id} {target_entity}");
+
+        Ok(())
+    }
+
+    fn check_and_handle_promotion_from_extras(
+        &mut self,
+        node_id: u64,
+        kind: NodeKind,
+        parent_entity: Entity,
+        node_data: &TNode,
+    ) -> NodeResult<()> {
+        node_kind_match!(kind, {
+            let new_node = node_data.to_node::<NodeType>()?;
+            let new_rating = new_node.rating();
+
+            let world = self.world()?;
+
+            let is_in_extras = world
+                .get::<ExtraNodes<NodeType>>(parent_entity)
+                .map(|extras| extras.contains(node_id))
+                .unwrap_or(false);
+
+            if !is_in_extras {
+                return Ok(());
+            }
+
+            if let Some(existing_main) = world.get::<NodeType>(parent_entity) {
+                let existing_rating = existing_main.rating();
+                let existing_id = existing_main.id();
+
+                if new_rating > existing_rating
+                    || (new_rating == existing_rating && node_id < existing_id)
+                {
+                    let world = self.world_mut()?;
+                    let existing_comp = world.entity_mut(parent_entity).take::<NodeType>().unwrap();
+                    let existing_id = existing_comp.id();
+
+                    if !world
+                        .entity(parent_entity)
+                        .contains::<ExtraNodes<NodeType>>()
+                    {
+                        world
+                            .entity_mut(parent_entity)
+                            .insert(ExtraNodes::<NodeType>::new());
+                    }
+
+                    world
+                        .entity_mut(parent_entity)
+                        .get_mut::<ExtraNodes<NodeType>>()
+                        .unwrap()
+                        .add(existing_id, existing_comp);
+
+                    world
+                        .entity_mut(parent_entity)
+                        .get_mut::<ExtraNodes<NodeType>>()
+                        .unwrap()
+                        .remove(node_id);
+
+                    if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                        node_map.insert(node_id, kind, parent_entity);
+                        node_map.insert(existing_id, kind, parent_entity);
+                    }
+                }
+            }
+        });
+
         Ok(())
     }
 

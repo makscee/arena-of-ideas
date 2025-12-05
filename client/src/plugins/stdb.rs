@@ -562,6 +562,18 @@ mod tests {
             "color_1 (rating 2) should be on same entity (in ExtraNodes)"
         );
         let mut updated_color_1 = color_1.clone();
+        updated_color_1.rating = 2;
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeUpdate {
+                old: color_1.clone(),
+                new: updated_color_1.clone(),
+            })
+            .unwrap();
+        let main_color = solid_source.load_ref::<NHouseColor>(1008).unwrap();
+        assert_eq!(
+            main_color.id, color_2.id,
+            "Color should not switch after first rating update"
+        );
         updated_color_1.rating = 5;
         solid_source
             .handle_stdb_update(&StdbUpdate::NodeUpdate {
@@ -569,10 +581,10 @@ mod tests {
                 new: updated_color_1.clone(),
             })
             .unwrap();
-        let new_color = solid_source.load_ref::<NHouseColor>(1006).unwrap();
+        let new_color = solid_source.load_ref::<NHouseColor>(1007).unwrap();
         assert_eq!(
             new_color.id, color_1.id,
-            "Color should switch after rating update"
+            "Color should switch after second rating update"
         );
 
         let world = solid_source.world().expect("World should be accessible");
@@ -582,7 +594,7 @@ mod tests {
         );
         assert!(
             world.get::<NHouseColor>(house_entity).is_some(),
-            "NHouseColor (rating 3) should exist as main component on house entity"
+            "NHouseColor (rating 5) should exist as main component on house entity"
         );
 
         let extras = world.get::<ExtraNodes<NHouseColor>>(house_entity);
@@ -591,13 +603,13 @@ mod tests {
             "ExtraNodes<NHouseColor> should exist on house entity"
         );
         assert!(
-            extras.unwrap().contains(1007),
-            "color_1 (node_id=1007) should be in ExtraNodes after promotion"
+            extras.unwrap().contains(1008),
+            "color_2 (node_id=1008) should be in ExtraNodes after color_1 promotion"
         );
         assert_eq!(
-            extras.unwrap().get(1007).map(|c| c.rating),
-            Some(2),
-            "color_1 in ExtraNodes should have rating 2"
+            extras.unwrap().get(1008).map(|c| c.rating),
+            Some(3),
+            "color_2 in ExtraNodes should have rating 3"
         );
     }
 
@@ -660,8 +672,6 @@ mod tests {
         behavior_1.rating = 3;
         behavior_2.rating = 2;
 
-        link(&mut incubator_source, &unit_node, &behavior_2);
-        link(&mut incubator_source, &unit_node, &behavior_1);
         incubator_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node.clone()))
             .unwrap();
@@ -671,6 +681,8 @@ mod tests {
         incubator_source
             .handle_stdb_update(&StdbUpdate::NodeInsert(behavior_2.clone()))
             .unwrap();
+        link(&mut incubator_source, &unit_node, &behavior_2);
+        link(&mut incubator_source, &unit_node, &behavior_1);
 
         let loaded_behavior_1: NUnitBehavior = incubator_source
             .load(3001u64)
