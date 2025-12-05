@@ -560,6 +560,7 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
             Self {
                 id: node_id,
                 owner: owner_id,
+                rating: 0,
                 #(#field_assignments)*
                 #(#component_defaults)*
             }
@@ -630,6 +631,7 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
                 Self {
                     id: 0,
                     owner: 0,
+                    rating: 0,
                     #(#fields: default(),)*
                 }
             }
@@ -745,7 +747,13 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                     #(#set_owner_calls)*
                 }
 
+                fn rating(&self) -> i32 {
+                    self.rating
+                }
 
+                fn set_rating(&mut self, rating: i32) {
+                    self.rating = rating;
+                }
 
                 fn reassign_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>) {
                     // Record old ID and assign new ID
@@ -1427,6 +1435,7 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     Ok(Self {
                         id: 0,
                         owner: 0,
+                        rating: 0,
                         #field_name: value,
                         #(#other_fields),*
                     })
@@ -1462,6 +1471,7 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     Ok(Self {
                         id: 0,
                         owner: 0,
+                        rating: 0,
                         #(#deserialize_fields),*,
                         #(#other_fields),*
                     })

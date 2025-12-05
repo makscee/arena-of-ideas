@@ -8,14 +8,14 @@ impl IncubatorPanes {
             with_incubator_source(|ctx| {
                 named_node_kind_match!(
                     kind,
-                    Self::render_suggestion_button::<NamedNodeType>(ui, None)
+                    Self::render_suggestion_button::<NamedNodeType>(ui, None).ui(ui)
                 );
 
                 let mut node_list = named_node_kind_match!(kind, {
                     ctx.world_mut()?
                         .query::<(Entity, &NamedNodeType)>()
                         .iter(ctx.world()?)
-                        .map(|(_, n)| (n.id, n.name().to_owned(), n.rating(), n.owner))
+                        .map(|(_, n)| (n.id, n.name().to_owned(), schema::Node::rating(n), n.owner))
                         .collect_vec()
                 });
                 node_list.sort_by_key(|(_, _, rating, _)| -*rating);

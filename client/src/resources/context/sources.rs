@@ -251,8 +251,23 @@ impl<'a> Sources<'a> {
 
     pub fn load_ref<T: ClientNode>(&self, node_id: u64) -> NodeResult<&T> {
         let entity = self.entity(node_id).track()?;
-        self.world()?
-            .get::<T>(entity)
+        let world = self.world()?;
+        if let Some(component) = world.get::<T>(entity) {
+            if component.id() == node_id {
+                return Ok(component);
+            }
+            if let Some(extras) = world.get::<ExtraNodes<T>>(entity) {
+                if let Some(extra) = extras.get(node_id) {
+                    return Ok(extra);
+                }
+                return Err(NodeError::not_found(node_id));
+            }
+            return Ok(component);
+        }
+
+        world
+            .get::<ExtraNodes<T>>(entity)
+            .and_then(|extras| extras.get(node_id))
             .ok_or_else(|| NodeError::not_found(node_id))
     }
 
@@ -339,9 +354,13 @@ impl<'a> Sources<'a> {
     }
 
     fn handle_link_insert(&mut self, link: &TNodeLink) -> NodeResult<()> {
+        let is_incubator = matches!(self, Sources::Incubator(..));
         let world = self.world_mut()?;
         if let Some(mut links_map) = world.get_resource_mut::<LinksMapResource>() {
             links_map.insert(link.clone());
+        }
+        if is_incubator {
+            debug!("link_insert {link:?}");
         }
         // Handle component links specially
         if Self::is_component_link(link) {
@@ -357,47 +376,16 @@ impl<'a> Sources<'a> {
                     self.clone_component_tree_for_link(link.child, parent_entity)?;
                 }
             } else {
-                // For one-to-one and one-to-many, use the original logic
-                // First, check if parent already has a child of this type
-                let existing_child_of_same_kind = {
-                    let world = self.world()?;
-                    let node_map = world
-                        .get_resource::<NodesMapResource>()
-                        .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
-
-                    // Get parent entity
-                    if let Some(&parent_entity) = node_map.entities.get(&link.parent) {
-                        // Find existing component of the same kind on parent entity
-                        node_map
-                            .entity_to_nodes
-                            .get(&parent_entity)
-                            .and_then(|nodes| {
-                                nodes
-                                    .iter()
-                                    .find(|&&node_id| {
-                                        node_map.get_kind(node_id).map_or(false, |kind| {
-                                            kind == link.child_kind.to_kind()
-                                                && node_id != link.parent
-                                        })
-                                    })
-                                    .copied()
-                            })
-                    } else {
-                        None
-                    }
-                };
-
-                // If there's an existing child of the same kind, unlink it first
-                if let Some(existing_child_id) = existing_child_of_same_kind {
-                    self.unlink_from_component_parent(existing_child_id)?;
+                if is_incubator {
+                    debug!(
+                        "entities {:?} {:?}",
+                        self.entity(link.parent),
+                        self.entity(link.child)
+                    );
                 }
-                // Now unlink the new child from any existing component parent it might have
-                self.unlink_from_component_parent(link.child)?;
-                // Finally, merge the child onto the parent's entity
-                if self.entity(link.parent).is_ok() && self.entity(link.child).is_ok() {
-                    let parent_entity = self.entity(link.parent)?;
-                    self.merge_component_entities_for_link(link.child, parent_entity)?;
-                }
+                let parent_entity = self.entity(link.parent)?;
+                let _ = self.entity(link.child)?;
+                self.merge_component_with_rating_check(link.child, parent_entity, child_kind)?;
             }
         }
 
@@ -564,6 +552,149 @@ impl<'a> Sources<'a> {
         let world = self.world_mut()?;
         let target_entity = world.spawn_empty().id();
         Ok(target_entity)
+    }
+
+    fn merge_component_with_rating_check(
+        &mut self,
+        child_id: u64,
+        parent_entity: Entity,
+        child_kind: NodeKind,
+    ) -> NodeResult<()> {
+        node_kind_match!(child_kind, {
+            self.merge_component_with_rating_check_impl::<NodeType>(
+                child_id,
+                parent_entity,
+                child_kind,
+            )
+        })
+    }
+
+    fn merge_component_with_rating_check_impl<T: ClientNode + BevyComponent>(
+        &mut self,
+        child_id: u64,
+        parent_entity: Entity,
+        child_kind: NodeKind,
+    ) -> NodeResult<()> {
+        let new_rating = {
+            let world = self.world()?;
+            world.get::<T>(self.entity(child_id)?).map(|n| n.rating())
+        };
+
+        let existing_main_node_id = {
+            let world = self.world()?;
+            let node_map = world
+                .get_resource::<NodesMapResource>()
+                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+
+            node_map
+                .entity_to_nodes
+                .get(&parent_entity)
+                .and_then(|nodes| {
+                    nodes
+                        .iter()
+                        .find(|&&nid| node_map.get_kind(nid).map_or(false, |k| k == child_kind))
+                        .copied()
+                })
+        };
+
+        let existing_main_rating = {
+            let world = self.world()?;
+            world.get::<T>(parent_entity).map(|n| n.rating())
+        };
+
+        debug!(
+            "merge_component_with_rating_check: child_id={}, new_rating={:?}, existing_main_rating={:?}",
+            child_id, new_rating, existing_main_rating
+        );
+
+        let should_replace_existing = match (new_rating, existing_main_rating) {
+            (Some(new_r), Some(existing_r)) => {
+                if new_r > existing_r {
+                    true
+                } else if new_r == existing_r {
+                    if let Some(existing_id) = existing_main_node_id {
+                        child_id < existing_id
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+
+        match (new_rating, existing_main_rating) {
+            (Some(new_r), Some(existing_r)) if should_replace_existing => {
+                debug!(
+                    "  Case 1: new ({}) > existing ({}) or same rating with lower id, moving existing to extras",
+                    new_r, existing_r
+                );
+                let world = self.world_mut()?;
+
+                let existing_comp = world.entity_mut(parent_entity).take::<T>().unwrap();
+                if let Some(existing_id) = existing_main_node_id {
+                    if !world.entity(parent_entity).contains::<ExtraNodes<T>>() {
+                        world
+                            .entity_mut(parent_entity)
+                            .insert(ExtraNodes::<T>::new());
+                    }
+                    world
+                        .entity_mut(parent_entity)
+                        .get_mut::<ExtraNodes<T>>()
+                        .unwrap()
+                        .add(existing_id, existing_comp);
+                }
+
+                self.merge_component_entities_for_link(child_id, parent_entity)?;
+            }
+            (Some(_new_r), Some(_existing_r)) => {
+                debug!(
+                    "  Case 2: new ({}) <= existing ({}), moving new to extras",
+                    _new_r, _existing_r
+                );
+                let child_entity = self.entity(child_id)?;
+                let world = self.world_mut()?;
+
+                if let Some(child_comp) = world.entity_mut(child_entity).take::<T>() {
+                    if !world.entity(parent_entity).contains::<ExtraNodes<T>>() {
+                        world
+                            .entity_mut(parent_entity)
+                            .insert(ExtraNodes::<T>::new());
+                    }
+                    world
+                        .entity_mut(parent_entity)
+                        .get_mut::<ExtraNodes<T>>()
+                        .unwrap()
+                        .add(child_id, child_comp);
+                }
+
+                if let Some(mut node_map) = world.get_resource_mut::<NodesMapResource>() {
+                    node_map.insert(child_id, child_kind, parent_entity);
+                }
+
+                if child_entity != parent_entity {
+                    let should_despawn = {
+                        let node_map = world
+                            .get_resource::<NodesMapResource>()
+                            .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                        node_map
+                            .entity_to_nodes
+                            .get(&child_entity)
+                            .map_or(true, |nodes| nodes.is_empty())
+                    };
+                    if should_despawn {
+                        world.despawn(child_entity);
+                    }
+                }
+            }
+            _ => {
+                debug!("  Case 3: no existing main component, normal merge");
+                self.merge_component_entities_for_link(child_id, parent_entity)?;
+            }
+        }
+
+        Ok(())
     }
 
     fn merge_component_entities_for_link(

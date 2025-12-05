@@ -1,8 +1,10 @@
+mod extra_components;
 mod node_assets;
 mod nodes;
 
 use super::*;
 
+pub use extra_components::*;
 pub use node_assets::*;
 pub use nodes::*;
 

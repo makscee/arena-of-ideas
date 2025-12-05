@@ -84,6 +84,7 @@ fn generate_server_nodes(
             pub struct #struct_name {
                 pub id: u64,
                 pub owner: u64,
+                pub rating: i32,
                 #(#fields,)*
             }
 

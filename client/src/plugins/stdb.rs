@@ -365,6 +365,338 @@ mod tests {
     }
 
     #[test]
+    fn test_component_rating_replacement_lower_first() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1000, 0, default()).to_tnode();
+        let mut color_1 = NHouseColor::new(1001, 0, default()).to_tnode();
+        let mut color_2 = NHouseColor::new(1002, 0, default()).to_tnode();
+        color_1.rating = 3;
+        color_2.rating = 2;
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_1.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_2.clone()))
+            .unwrap();
+
+        link(&mut solid_source, &house_node, &color_2);
+        println!(
+            "After linking house->color_2 (rating 2): house={:?}, color_2={:?}",
+            solid_source.entity(1000),
+            solid_source.entity(1002)
+        );
+        link(&mut solid_source, &house_node, &color_1);
+        println!(
+            "After linking house->color_1 (rating 3): house={:?}, color_1={:?}, color_2={:?}",
+            solid_source.entity(1000),
+            solid_source.entity(1001),
+            solid_source.entity(1002)
+        );
+
+        let house_entity = solid_source
+            .entity(1000)
+            .expect("House entity should exist");
+        let color_1_entity = solid_source
+            .entity(1001)
+            .expect("color_1 entity should exist");
+        let color_2_entity = solid_source
+            .entity(1002)
+            .expect("color_2 entity should exist");
+
+        assert_eq!(
+            house_entity, color_1_entity,
+            "House and color_1 (rating 3) should be on same entity"
+        );
+        assert_eq!(
+            house_entity, color_2_entity,
+            "House and color_2 (rating 2) should be on same entity (in ExtraNodes)"
+        );
+
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(house_entity).is_some(),
+            "NHouse should exist on house entity"
+        );
+        assert!(
+            world.get::<NHouseColor>(house_entity).is_some(),
+            "NHouseColor (rating 3) should exist as main component on house entity"
+        );
+
+        let extras = world.get::<ExtraNodes<NHouseColor>>(house_entity);
+        assert!(
+            extras.is_some(),
+            "ExtraNodes<NHouseColor> should exist on house entity"
+        );
+        assert!(
+            extras.unwrap().contains(1002),
+            "color_2 (node_id=1002) should be in ExtraNodes"
+        );
+        assert_eq!(
+            extras.unwrap().get(1002).map(|c| c.rating),
+            Some(2),
+            "color_2 in ExtraNodes should have rating 2"
+        );
+    }
+
+    #[test]
+    fn test_component_rating_replacement_higher_first() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1003, 0, default()).to_tnode();
+        let mut color_1 = NHouseColor::new(1004, 0, default()).to_tnode();
+        let mut color_2 = NHouseColor::new(1005, 0, default()).to_tnode();
+        color_1.rating = 3;
+        color_2.rating = 2;
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_1.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_2.clone()))
+            .unwrap();
+
+        link(&mut solid_source, &house_node, &color_1);
+        println!(
+            "After linking house->color_1 (rating 3): house={:?}, color_1={:?}",
+            solid_source.entity(1003),
+            solid_source.entity(1004)
+        );
+        link(&mut solid_source, &house_node, &color_2);
+        println!(
+            "After linking house->color_2 (rating 2): house={:?}, color_1={:?}, color_2={:?}",
+            solid_source.entity(1003),
+            solid_source.entity(1004),
+            solid_source.entity(1005)
+        );
+
+        let house_entity = solid_source
+            .entity(1003)
+            .expect("House entity should exist");
+        let color_1_entity = solid_source
+            .entity(1004)
+            .expect("color_1 entity should exist");
+        let color_2_entity = solid_source
+            .entity(1005)
+            .expect("color_2 entity should exist");
+
+        assert_eq!(
+            house_entity, color_1_entity,
+            "House and color_1 (rating 3) should be on same entity"
+        );
+        assert_eq!(
+            house_entity, color_2_entity,
+            "House and color_2 (rating 2) should be on same entity (in ExtraNodes)"
+        );
+
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(house_entity).is_some(),
+            "NHouse should exist on house entity"
+        );
+        assert!(
+            world.get::<NHouseColor>(house_entity).is_some(),
+            "NHouseColor (rating 3) should exist as main component on house entity"
+        );
+
+        let extras = world.get::<ExtraNodes<NHouseColor>>(house_entity);
+        assert!(
+            extras.is_some(),
+            "ExtraNodes<NHouseColor> should exist on house entity"
+        );
+        assert!(
+            extras.unwrap().contains(1005),
+            "color_2 (node_id=1005) should be in ExtraNodes"
+        );
+        assert_eq!(
+            extras.unwrap().get(1005).map(|c| c.rating),
+            Some(2),
+            "color_2 in ExtraNodes should have rating 2"
+        );
+    }
+
+    #[test]
+    fn test_component_rating_promotion() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(1006, 0, default()).to_tnode();
+        let mut color_1 = NHouseColor::new(1007, 0, default()).to_tnode();
+        let mut color_2 = NHouseColor::new(1008, 0, default()).to_tnode();
+        color_1.rating = 1;
+        color_2.rating = 3;
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_1.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_2.clone()))
+            .unwrap();
+
+        link(&mut solid_source, &house_node, &color_1);
+        let house_entity = solid_source
+            .entity(1006)
+            .expect("House entity should exist");
+        let color_1_entity = solid_source
+            .entity(1007)
+            .expect("color_1 entity should exist");
+        assert_eq!(
+            house_entity, color_1_entity,
+            "After first link, house and color_1 (rating 2) should be on same entity"
+        );
+
+        link(&mut solid_source, &house_node, &color_2);
+        let color_2_entity = solid_source
+            .entity(1008)
+            .expect("color_2 entity should exist");
+
+        assert_eq!(
+            house_entity, color_2_entity,
+            "After second link, house and color_2 (rating 3) should be on same entity"
+        );
+        assert_eq!(
+            color_1_entity, color_2_entity,
+            "color_1 (rating 2) should be on same entity (in ExtraNodes)"
+        );
+        let mut updated_color_1 = color_1.clone();
+        updated_color_1.rating = 5;
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeUpdate {
+                old: color_1.clone(),
+                new: updated_color_1.clone(),
+            })
+            .unwrap();
+        let new_color = solid_source.load_ref::<NHouseColor>(1006).unwrap();
+        assert_eq!(
+            new_color.id, color_1.id,
+            "Color should switch after rating update"
+        );
+
+        let world = solid_source.world().expect("World should be accessible");
+        assert!(
+            world.get::<NHouse>(house_entity).is_some(),
+            "NHouse should exist on house entity"
+        );
+        assert!(
+            world.get::<NHouseColor>(house_entity).is_some(),
+            "NHouseColor (rating 3) should exist as main component on house entity"
+        );
+
+        let extras = world.get::<ExtraNodes<NHouseColor>>(house_entity);
+        assert!(
+            extras.is_some(),
+            "ExtraNodes<NHouseColor> should exist on house entity"
+        );
+        assert!(
+            extras.unwrap().contains(1007),
+            "color_1 (node_id=1007) should be in ExtraNodes after promotion"
+        );
+        assert_eq!(
+            extras.unwrap().get(1007).map(|c| c.rating),
+            Some(2),
+            "color_1 in ExtraNodes should have rating 2"
+        );
+    }
+
+    #[test]
+    fn test_load_component_from_extras() {
+        let mut solid_source = Sources::new_solid();
+        let house_node = NHouse::new(2000, 0, default()).to_tnode();
+        let mut color_1 = NHouseColor::new(2001, 0, default()).to_tnode();
+        let mut color_2 = NHouseColor::new(2002, 0, default()).to_tnode();
+        color_1.rating = 3;
+        color_2.rating = 2;
+
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(house_node.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_1.clone()))
+            .unwrap();
+        solid_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(color_2.clone()))
+            .unwrap();
+
+        link(&mut solid_source, &house_node, &color_2);
+        link(&mut solid_source, &house_node, &color_1);
+
+        let house_entity = solid_source
+            .entity(2000)
+            .expect("House entity should exist");
+
+        let world = solid_source.world().expect("World should be accessible");
+
+        let main_color: NHouseColor = solid_source
+            .load(2001u64)
+            .expect("Should load main color (rating 3) by ID");
+        assert_eq!(
+            main_color.rating, 3,
+            "Main component should be the highest-rated"
+        );
+
+        let extra_color: NHouseColor = solid_source
+            .load(2002u64)
+            .expect("Should load extra color (rating 2) by ID from ExtraNodes");
+        assert_eq!(
+            extra_color.rating, 2,
+            "Extra component should be loadable from ExtraNodes"
+        );
+
+        let extras = world
+            .get::<ExtraNodes<NHouseColor>>(house_entity)
+            .expect("ExtraNodes should exist");
+        assert!(extras.contains(2002), "color_2 should be in ExtraNodes");
+    }
+
+    #[test]
+    fn test_load_different_extras_from_incubator() {
+        let mut incubator_source = Sources::new_incubator();
+        let unit_node = NUnit::new(3000, ID_INCUBATOR, default()).to_tnode();
+        let mut behavior_1 = NUnitBehavior::new(3001, ID_INCUBATOR, default()).to_tnode();
+        let mut behavior_2 = NUnitBehavior::new(3002, ID_INCUBATOR, default()).to_tnode();
+        behavior_1.rating = 3;
+        behavior_2.rating = 2;
+
+        link(&mut incubator_source, &unit_node, &behavior_2);
+        link(&mut incubator_source, &unit_node, &behavior_1);
+        incubator_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(unit_node.clone()))
+            .unwrap();
+        incubator_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(behavior_1.clone()))
+            .unwrap();
+        incubator_source
+            .handle_stdb_update(&StdbUpdate::NodeInsert(behavior_2.clone()))
+            .unwrap();
+
+        let loaded_behavior_1: NUnitBehavior = incubator_source
+            .load(3001u64)
+            .expect("Should load behavior_1 (rating 3)");
+        assert_eq!(
+            loaded_behavior_1.rating, 3,
+            "behavior_1 should have rating 3"
+        );
+        assert_eq!(loaded_behavior_1.id, 3001, "behavior_1 should have id 3001");
+
+        let loaded_behavior_2: NUnitBehavior = incubator_source
+            .load(3002u64)
+            .expect("Should load behavior_2 (rating 2) from ExtraNodes");
+        assert_eq!(
+            loaded_behavior_2.rating, 2,
+            "behavior_2 should have rating 2"
+        );
+        assert_eq!(loaded_behavior_2.id, 3002, "behavior_2 should have id 3002");
+
+        assert_ne!(
+            loaded_behavior_1.id, loaded_behavior_2.id,
+            "Loaded behaviors should have different ids"
+        );
+    }
+
+    #[test]
     fn test_component_entity_merging() {
         let mut solid_source = Sources::new_solid();
         let house_node = NHouse::new(1001, 0, default()).to_tnode();

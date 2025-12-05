@@ -48,9 +48,6 @@ pub trait ClientNode:
             rating: 0,
         }
     }
-    fn rating(&self) -> i32 {
-        self.id().node_rating().unwrap_or_default()
-    }
 }
 
 pub trait NodeExt: ClientNode {
@@ -73,6 +70,7 @@ impl TNode {
         d.inject_data(&self.data)?;
         d.set_id(self.id);
         d.set_owner(self.owner);
+        d.set_rating(self.rating);
         Ok(d)
     }
     pub fn to_ron(self) -> String {

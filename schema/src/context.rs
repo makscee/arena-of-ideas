@@ -18,6 +18,8 @@ pub trait Node: Send + Sync + Default + StringData {
     fn set_id(&mut self, id: u64);
     fn owner(&self) -> u64;
     fn set_owner(&mut self, owner: u64);
+    fn rating(&self) -> i32;
+    fn set_rating(&mut self, rating: i32);
     fn kind(&self) -> NodeKind {
         Self::kind_s()
     }
