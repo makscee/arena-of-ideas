@@ -13,6 +13,7 @@ pub enum GameState {
     Auth,
     Connect,
     Login,
+    //Registration,
     Shop,
     Battle,
     MatchOver,
@@ -184,6 +185,7 @@ impl GameState {
 pub enum Pane {
     Auth,
     Connect,
+    //Registration,
     MainMenu,
     Battle(BattlePane),
     Shop(ShopPane),
