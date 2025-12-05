@@ -195,7 +195,7 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
             r.on_content_reset_core(|e| default_callback(e));
         }
         AllReducers::ContentSuggestNode => {
-            r.on_content_suggest_node(|e, _, _| default_callback(e));
+            r.on_content_suggest_node(|e, _, _, _| default_callback(e));
         }
         AllReducers::ContentUpvoteNode => {
             r.on_content_upvote_node(|e, _| default_callback(e));
@@ -273,6 +273,16 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
                         GameState::Shop.set_next(world);
                     });
                 });
+            });
+        }
+        AllReducers::AdminAddToCore => {
+            cn().reducers.on_admin_add_to_core(|e, _, _| {
+                default_callback(e);
+            });
+        }
+        AllReducers::AdminEditNode => {
+            cn().reducers.on_admin_edit_node(|e, _, _| {
+                default_callback(e);
             });
         }
     }

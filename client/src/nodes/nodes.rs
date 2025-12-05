@@ -6,7 +6,18 @@ use std::fmt::Debug;
 include!(concat!(env!("OUT_DIR"), "/client_nodes.rs"));
 
 pub trait ClientNode:
-    Default + BevyComponent + Sized + FDisplay + Debug + StringData + Clone + ToCstr + schema::Node
+    Default
+    + BevyComponent
+    + Sized
+    + FDisplay
+    + Debug
+    + StringData
+    + Clone
+    + ToCstr
+    + schema::Node
+    + FEdit
+    + FDisplay
+    + FTitle
 {
     fn spawn(self, ctx: &mut ClientContext, entity: Option<Entity>) -> NodeResult<()>;
     fn load_components(&mut self, ctx: &ClientContext) -> NodeResult<&mut Self>;

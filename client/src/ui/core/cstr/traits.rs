@@ -220,16 +220,12 @@ impl ToCstr for NodeError {
 
 impl ToCstr for Reaction {
     fn cstr(&self) -> Cstr {
-        let mut s = String::new();
-        s += &self.trigger.cstr();
-        s += "\n";
-        s += &self
-            .effect
-            .actions
-            .iter()
-            .map(|a| format!("  {}", a.cstr()))
-            .join("\n");
-        s
+        format!(
+            "[b {}]: {}\n[s {}]",
+            self.trigger.cstr(),
+            self.effect.description,
+            self.effect.actions.iter().map(|a| a.cstr()).join(" ")
+        )
     }
 }
 

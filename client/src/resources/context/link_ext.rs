@@ -37,7 +37,9 @@ impl<T: ClientNode + Clone> ClientSingleLinkLoad<T> for Component<T> {
         }
         let children = ctx.load_children_ref::<T>(self.parent_id())?;
         children
-            .first()
+            .into_iter()
+            .sorted_by_key(|n| -n.rating())
+            .next()
             .map(|child| (*child).clone())
             .ok_or_else(|| NodeError::custom("No child found"))
     }

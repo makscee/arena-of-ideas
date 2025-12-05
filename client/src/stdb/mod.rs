@@ -7,9 +7,11 @@
 use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 
 pub mod admin_add_gold_reducer;
+pub mod admin_add_to_core_reducer;
 pub mod admin_add_votes_reducer;
 pub mod admin_daily_update_reducer;
 pub mod admin_delete_node_recursive_reducer;
+pub mod admin_edit_node_reducer;
 pub mod admin_upload_world_reducer;
 pub mod battle_table;
 pub mod content_delete_node_reducer;
@@ -64,6 +66,9 @@ pub mod votes_table;
 pub use admin_add_gold_reducer::{
     admin_add_gold, set_flags_for_admin_add_gold, AdminAddGoldCallbackId,
 };
+pub use admin_add_to_core_reducer::{
+    admin_add_to_core, set_flags_for_admin_add_to_core, AdminAddToCoreCallbackId,
+};
 pub use admin_add_votes_reducer::{
     admin_add_votes, set_flags_for_admin_add_votes, AdminAddVotesCallbackId,
 };
@@ -73,6 +78,9 @@ pub use admin_daily_update_reducer::{
 pub use admin_delete_node_recursive_reducer::{
     admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
     AdminDeleteNodeRecursiveCallbackId,
+};
+pub use admin_edit_node_reducer::{
+    admin_edit_node, set_flags_for_admin_edit_node, AdminEditNodeCallbackId,
 };
 pub use admin_upload_world_reducer::{
     admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
@@ -183,12 +191,20 @@ pub use votes_table::*;
 
 pub enum Reducer {
     AdminAddGold,
+    AdminAddToCore {
+        node_id: u64,
+        with_children: bool,
+    },
     AdminAddVotes {
         amount: i32,
     },
     AdminDailyUpdate,
     AdminDeleteNodeRecursive {
         id: u64,
+    },
+    AdminEditNode {
+        node_id: u64,
+        data: String,
     },
     AdminUploadWorld {
         global_settings: GlobalSettings,
@@ -208,7 +224,8 @@ pub enum Reducer {
     ContentResetCore,
     ContentSuggestNode {
         kind: String,
-        name: String,
+        data: String,
+        parent: Option<u64>,
     },
     ContentUpvoteNode {
         node_id: u64,
@@ -277,9 +294,11 @@ impl __sdk::Reducer for Reducer {
     fn reducer_name(&self) -> &'static str {
         match self {
             Reducer::AdminAddGold => "admin_add_gold",
+            Reducer::AdminAddToCore { .. } => "admin_add_to_core",
             Reducer::AdminAddVotes { .. } => "admin_add_votes",
             Reducer::AdminDailyUpdate => "admin_daily_update",
             Reducer::AdminDeleteNodeRecursive { .. } => "admin_delete_node_recursive",
+            Reducer::AdminEditNode { .. } => "admin_edit_node",
             Reducer::AdminUploadWorld { .. } => "admin_upload_world",
             Reducer::ContentDeleteNode { .. } => "content_delete_node",
             Reducer::ContentDownvoteNode { .. } => "content_downvote_node",
@@ -320,6 +339,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 admin_add_gold_reducer::AdminAddGoldArgs,
             >("admin_add_gold", &value.args)?
             .into()),
+            "admin_add_to_core" => Ok(__sdk::parse_reducer_args::<
+                admin_add_to_core_reducer::AdminAddToCoreArgs,
+            >("admin_add_to_core", &value.args)?
+            .into()),
             "admin_add_votes" => Ok(__sdk::parse_reducer_args::<
                 admin_add_votes_reducer::AdminAddVotesArgs,
             >("admin_add_votes", &value.args)?
@@ -334,6 +357,10 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 >("admin_delete_node_recursive", &value.args)?
                 .into())
             }
+            "admin_edit_node" => Ok(__sdk::parse_reducer_args::<
+                admin_edit_node_reducer::AdminEditNodeArgs,
+            >("admin_edit_node", &value.args)?
+            .into()),
             "admin_upload_world" => Ok(__sdk::parse_reducer_args::<
                 admin_upload_world_reducer::AdminUploadWorldArgs,
             >("admin_upload_world", &value.args)?

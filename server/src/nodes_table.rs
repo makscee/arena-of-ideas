@@ -135,20 +135,15 @@ impl TVotes {
         node.rating += if is_upvote { 1 } else { -1 };
         rctx.db.nodes_world().id().update(node.clone());
 
-        if let Ok(part) = node.get_creation_part() {
+        if let Ok(_) = node.get_content_kind() {
             if node.rating >= INCUBATOR_VOTES_THRESHOLD {
-                TCreationParts::complete_node_part(ctx, &node, part)?;
+                TCreationParts::complete_node_part(ctx, &node)?;
             } else if node.rating <= 0 && !is_upvote {
                 TCreationParts::uncomplete_node_part(ctx, &node)?;
             }
 
             if !is_upvote && node.rating <= -INCUBATOR_VOTES_THRESHOLD {
                 TNode::delete_by_id_recursive(ctx.rctx(), node.id);
-            }
-
-            let kind = node.kind();
-            if kind.component_children().is_empty() && node.owner == ID_INCUBATOR {
-                TCreationParts::check_base_completion(ctx, &node)?;
             }
         }
 

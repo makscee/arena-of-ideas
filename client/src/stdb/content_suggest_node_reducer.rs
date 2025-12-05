@@ -8,14 +8,16 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct ContentSuggestNodeArgs {
     pub kind: String,
-    pub name: String,
+    pub data: String,
+    pub parent: Option<u64>,
 }
 
 impl From<ContentSuggestNodeArgs> for super::Reducer {
     fn from(args: ContentSuggestNodeArgs) -> Self {
         Self::ContentSuggestNode {
             kind: args.kind,
-            name: args.name,
+            data: args.data,
+            parent: args.parent,
         }
     }
 }
@@ -36,7 +38,12 @@ pub trait content_suggest_node {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_content_suggest_node`] callbacks.
-    fn content_suggest_node(&self, kind: String, name: String) -> __sdk::Result<()>;
+    fn content_suggest_node(
+        &self,
+        kind: String,
+        data: String,
+        parent: Option<u64>,
+    ) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `content_suggest_node`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +53,9 @@ pub trait content_suggest_node {
     /// to cancel the callback.
     fn on_content_suggest_node(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
+            + Send
+            + 'static,
     ) -> ContentSuggestNodeCallbackId;
     /// Cancel a callback previously registered by [`Self::on_content_suggest_node`],
     /// causing it not to run in the future.
@@ -54,15 +63,22 @@ pub trait content_suggest_node {
 }
 
 impl content_suggest_node for super::RemoteReducers {
-    fn content_suggest_node(&self, kind: String, name: String) -> __sdk::Result<()> {
+    fn content_suggest_node(
+        &self,
+        kind: String,
+        data: String,
+        parent: Option<u64>,
+    ) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "content_suggest_node",
-            ContentSuggestNodeArgs { kind, name },
+            ContentSuggestNodeArgs { kind, data, parent },
         )
     }
     fn on_content_suggest_node(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
+            + Send
+            + 'static,
     ) -> ContentSuggestNodeCallbackId {
         ContentSuggestNodeCallbackId(self.imp.on_reducer(
             "content_suggest_node",
@@ -70,7 +86,7 @@ impl content_suggest_node for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::ContentSuggestNode { kind, name },
+                            reducer: super::Reducer::ContentSuggestNode { kind, data, parent },
                             ..
                         },
                     ..
@@ -78,7 +94,7 @@ impl content_suggest_node for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, kind, name)
+                callback(ctx, kind, data, parent)
             }),
         ))
     }

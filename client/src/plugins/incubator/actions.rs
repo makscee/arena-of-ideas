@@ -4,7 +4,6 @@ use super::*;
 pub enum IncubatorAction {
     InspectUnit(u64),
     InspectHouse(u64),
-    SuggestNode(NamedNodeKind, String),
     UpvoteNode(u64),
     DownvoteNode(u64),
 }
@@ -19,11 +18,6 @@ impl IncubatorAction {
             IncubatorAction::InspectHouse(id) => {
                 let mut state = world.resource_mut::<IncubatorState>();
                 state.inspected_house = Some(*id);
-            }
-            IncubatorAction::SuggestNode(kind, name) => {
-                cn().reducers
-                    .content_suggest_node(kind.to_string(), name.clone())
-                    .notify_error_op();
             }
             IncubatorAction::UpvoteNode(node_id) => {
                 cn().reducers

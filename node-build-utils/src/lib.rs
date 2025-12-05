@@ -1580,13 +1580,37 @@ pub fn generate_named_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
 }
 
 pub fn generate_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
-    let match_arms = nodes.iter().map(|node| {
+    let node_kind_match_arms = nodes.iter().map(|node| {
         let node_kind_variant = &node.name;
         let struct_name = &node.name;
 
         quote! {
             NodeKind::#node_kind_variant => {
                 type NodeType = #struct_name;
+                $code
+            }
+        }
+    });
+
+    let named_node_kind_match_arms = nodes.iter().filter(|node| node.is_named).map(|node| {
+        let node_kind_variant = &node.name;
+        let struct_name = &node.name;
+
+        quote! {
+            NamedNodeKind::#node_kind_variant => {
+                type NamedNodeType = #struct_name;
+                $code
+            }
+        }
+    });
+
+    let content_node_kind_match_arms = nodes.iter().filter(|node| node.is_content).map(|node| {
+        let node_kind_variant = &node.name;
+        let struct_name = &node.name;
+
+        quote! {
+            ContentNodeKind::#node_kind_variant => {
+                type ContentNodeType = #struct_name;
                 $code
             }
         }
@@ -1600,13 +1624,30 @@ pub fn generate_node_kind_match_macro(nodes: &[NodeInfo]) -> proc_macro2::TokenS
                     NodeKind::None => {
                         unreachable!()
                     }
-                    #(#match_arms)*
+                    #(#node_kind_match_arms)*
+                }
+            };
+        }
+
+        #[macro_export]
+        macro_rules! named_node_kind_match {
+            ($kind:expr, $code:expr) => {
+                match $kind {
+                    #(#named_node_kind_match_arms)*
+                }
+            };
+        }
+
+        #[macro_export]
+        macro_rules! content_node_kind_match {
+            ($kind:expr, $code:expr) => {
+                match $kind {
+                    #(#content_node_kind_match_arms)*
                 }
             };
         }
     }
 }
-
 pub fn generate_set_owner_calls(node: &NodeInfo) -> Vec<TokenStream> {
     node.fields
         .iter()
@@ -1646,31 +1687,6 @@ pub fn generate_set_owner_calls(node: &NodeInfo) -> Vec<TokenStream> {
             }
         })
         .collect()
-}
-
-pub fn generate_named_node_kind_match_macro(nodes: &[NodeInfo]) -> TokenStream {
-    let match_arms = nodes.iter().filter(|node| node.is_named).map(|node| {
-        let node_kind_variant = &node.name;
-        let struct_name = &node.name;
-
-        quote! {
-            NamedNodeKind::#node_kind_variant => {
-                type NamedNodeType = #struct_name;
-                $code
-            }
-        }
-    });
-
-    quote! {
-        #[macro_export]
-        macro_rules! named_node_kind_match {
-            ($kind:expr, $code:expr) => {
-                match $kind {
-                    #(#match_arms)*
-                }
-            };
-        }
-    }
 }
 
 pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenStream {

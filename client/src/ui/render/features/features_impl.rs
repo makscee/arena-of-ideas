@@ -600,8 +600,11 @@ impl FTitle for NUnit {
 }
 
 impl FDescription for NUnit {
-    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        "[tw -]".cstr()
+    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+        self.behavior
+            .load_node(ctx)
+            .map(|b| b.description_cstr(ctx))
+            .unwrap_or("[tw -]".to_owned())
     }
 }
 
@@ -1730,11 +1733,8 @@ impl FTitle for NUnitBehavior {
 }
 
 impl FDescription for NUnitBehavior {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.reactions
-            .first()
-            .map(|r| r.description_cstr(ctx))
-            .unwrap_or_default()
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        self.reactions.iter().map(|r| r.cstr()).join("\n")
     }
 }
 
@@ -1756,7 +1756,7 @@ impl FInfo for NUnitBehavior {
 
 impl FDisplay for NUnitBehavior {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.description_expanded_cstr(ctx).label(ui)
+        self.description_expanded_cstr(ctx).label_w(ui)
     }
 }
 

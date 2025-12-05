@@ -290,9 +290,7 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                             .outer_margin(3)
                             .inner_margin(3)
                             .show(ui, |ui| {
-                                self.description_expanded_cstr(ctx)
-                                    .cstr_s(CstrStyle::Small)
-                                    .label_w(ui);
+                                self.description_expanded_cstr(ctx).label_w(ui);
                             });
                     }
                 });

@@ -68,3 +68,14 @@ impl StringUtils for String {
         self.drain(self.len().saturating_sub(len)..).collect()
     }
 }
+pub trait ForceCast: Sized
+where
+    Self: 'static,
+{
+    fn force_cast<U: 'static>(&self) -> &U {
+        let any_ref = self as &dyn std::any::Any;
+        any_ref.downcast_ref::<U>().unwrap()
+    }
+}
+
+impl<T: Sized + 'static> ForceCast for T {}

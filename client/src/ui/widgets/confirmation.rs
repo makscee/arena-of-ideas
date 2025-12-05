@@ -89,6 +89,11 @@ impl Confirmation {
     pub fn push(self, world: &mut World) {
         rm(world).new.push(self);
     }
+    pub fn push_op(self) {
+        op(move |world| {
+            self.push(world);
+        })
+    }
     pub fn close_current(accepted: bool) {
         op(move |world| {
             rm(world).close_requested = Some(accepted);

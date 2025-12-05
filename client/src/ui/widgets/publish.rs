@@ -13,7 +13,6 @@ where
     fn open_publish_window(self, world: &mut World, mut parent: Option<u64>) {
         let mut node = self.clone();
         let kind = T::kind_s();
-        let kind_str = kind.to_string();
         let parent_kind = kind.component_parent();
         let parents = if let Some(parent_kind) = parent_kind {
             match with_incubator_source(|ctx| {

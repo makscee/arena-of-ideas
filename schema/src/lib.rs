@@ -1,6 +1,6 @@
 mod action;
 mod context;
-mod creation_parts;
+
 mod event;
 mod expression;
 mod fusion;
@@ -25,7 +25,7 @@ use std::{fmt::Display, str::FromStr};
 
 pub use action::*;
 pub use context::*;
-pub use creation_parts::*;
+
 use ecolor::Color32;
 pub use event::*;
 pub use expression::*;
@@ -74,6 +74,13 @@ impl ToNodeKind for String {
 impl NodeKind {
     pub fn to_named(self) -> NodeResult<NamedNodeKind> {
         if self.is_named() {
+            Ok(self.try_into().unwrap())
+        } else {
+            Err(format!("NodeKind is not named").into())
+        }
+    }
+    pub fn to_content(self) -> NodeResult<ContentNodeKind> {
+        if self.is_content() {
             Ok(self.try_into().unwrap())
         } else {
             Err(format!("NodeKind is not named").into())

@@ -97,25 +97,39 @@ fn content_delete_node(ctx: &ReducerContext, node_id: u64) -> Result<(), String>
 }
 
 #[reducer]
-fn content_suggest_node(ctx: &ReducerContext, kind: String, name: String) -> Result<(), String> {
+fn content_suggest_node(
+    ctx: &ReducerContext,
+    kind: String,
+    data: String,
+    parent: Option<u64>,
+) -> Result<(), String> {
     let ctx = ctx.as_context();
     let player = ctx.player()?;
-    let named_kind = kind
-        .parse::<NamedNodeKind>()
+    let node_kind = kind
+        .parse::<NodeKind>()
         .map_err(|_| format!("Invalid node kind: {}", kind))?;
 
+    if !node_kind.is_content() {
+        return Err("Can only suggest content nodes".to_string());
+    }
+
     let node_id = ctx.next_id();
-
-    let tnode = match named_kind {
-        NamedNodeKind::NUnit => NUnit::new(node_id, ID_INCUBATOR, name).to_tnode(),
-        NamedNodeKind::NHouse => NHouse::new(node_id, ID_INCUBATOR, name).to_tnode(),
-        NamedNodeKind::NAbilityMagic => NAbilityMagic::new(node_id, ID_INCUBATOR, name).to_tnode(),
-        NamedNodeKind::NStatusMagic => NStatusMagic::new(node_id, ID_INCUBATOR, name).to_tnode(),
-    };
-
+    let tnode = TNode::new(node_id, ID_INCUBATOR, node_kind, data);
     tnode.insert(ctx.rctx());
     TCreators::record_creation(&ctx, player.id, node_id);
     GlobalData::set_next_id(&ctx, node_id + 1);
+
+    if let Some(parent_id) = parent {
+        let parent_kind = parent_id.kind(ctx.rctx()).to_not_found()?;
+        TNodeLink::add_by_id(
+            ctx.rctx(),
+            parent_id,
+            node_id,
+            parent_kind.to_string(),
+            node_kind.to_string(),
+        )
+        .track()?;
+    }
 
     Ok(())
 }

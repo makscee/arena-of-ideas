@@ -8,7 +8,7 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub struct TCreationParts {
     pub node_id: u64,
-    pub parts: Vec<String>,
+    pub kinds: Vec<String>,
 }
 
 impl __sdk::InModule for TCreationParts {

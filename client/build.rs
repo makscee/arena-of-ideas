@@ -128,9 +128,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
     // Generate NamedNode trait and implementations
     let named_node_trait = generate_named_node_trait();
 
-    // Generate named node kind match macro
-    let named_node_kind_match_macro = generate_named_node_kind_match_macro(nodes);
-
     // Generate node kind match macro
     let node_kind_match_macro = generate_node_kind_match_macro(nodes);
 
@@ -167,8 +164,6 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
         #named_node_trait
 
         #node_kind_match_macro
-
-        #named_node_kind_match_macro
 
         #(#named_node_impls)*
 
