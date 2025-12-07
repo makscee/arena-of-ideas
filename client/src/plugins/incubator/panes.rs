@@ -94,7 +94,11 @@ impl IncubatorPanes {
         let kind = T::kind_s();
 
         if parent.is_none() {
-            format!("[b {}] [tw parent not found]", kind.cstr()).label_w(ui);
+            format!(
+                "[b {}] [tw not found]",
+                kind.component_parent().to_not_found()?.cstr()
+            )
+            .label_w(ui);
             return Ok(());
         }
 
@@ -122,22 +126,23 @@ impl IncubatorPanes {
         ui.separator();
 
         if fixed.contains(&kind) {
-            let id = ctx.first_child_recursive(base, kind)?;
-            return ui
-                .vertical_centered_justified(|ui| -> NodeResult<()> {
-                    let node = ctx.load::<T>(id)?;
-                    ui.horizontal(|ui| {
-                        node.rating().cstr_expanded().label(ui);
-                        render_vote_btns(id, ui);
-                    });
-                    if node.kind() == NodeKind::NUnitRepresentation {
-                        node.display(ctx, ui);
-                        ui.separator();
-                    }
-                    node.description_cstr(ctx).label_w(ui);
-                    Ok(())
-                })
-                .inner;
+            if let Ok(id) = ctx.first_child_recursive(base, kind) {
+                return ui
+                    .vertical_centered_justified(|ui| -> NodeResult<()> {
+                        let node = ctx.load::<T>(id)?;
+                        ui.horizontal(|ui| {
+                            node.rating().cstr_expanded().label(ui);
+                            render_vote_btns(id, ui);
+                        });
+                        if node.kind() == NodeKind::NUnitRepresentation {
+                            node.display(ctx, ui);
+                            ui.separator();
+                        }
+                        node.description_cstr(ctx).label_w(ui);
+                        Ok(())
+                    })
+                    .inner;
+            }
         }
 
         Self::render_suggestion_button::<T>(ui, Some(parent)).ui(ui);
@@ -153,9 +158,10 @@ impl IncubatorPanes {
         }
         let kind = T::kind_s().to_content()?;
         let mut node = T::default();
-        Confirmation::new(&format!("Create new {}", kind))
+        Confirmation::new(&format!("Create new {}", kind.to_kind().cstr()))
             .accept_name("[green ✅ Create]")
             .cancel_name("Cancel")
+            .fullscreen()
             .content(move |ui, _world, button_pressed| {
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
@@ -211,7 +217,24 @@ impl IncubatorPanes {
                         node.edit(ui);
                     }
                 }
-                node.display(&EMPTY_CONTEXT, ui);
+                if kind == ContentNodeKind::NUnitRepresentation {
+                    with_incubator_source(|ctx| {
+                        let parent = parent.to_not_found()?;
+                        let mut unit = ctx
+                            .load_or_first_parent_recursive_ref::<NUnit>(parent)?
+                            .clone();
+                        unit.behavior
+                            .load_mut(ctx)?
+                            .get_mut()?
+                            .representation
+                            .set_loaded(node.force_cast::<NUnitRepresentation>().clone());
+                        unit.as_card().compose(ctx, ui);
+                        Ok(())
+                    })
+                    .ui(ui);
+                } else {
+                    node.display(&EMPTY_CONTEXT, ui);
+                }
                 if let Some(true) = button_pressed {
                     cn().reducers
                         .content_suggest_node(kind.to_string(), node.get_data(), parent)

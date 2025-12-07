@@ -55,7 +55,9 @@ impl MatchPlugin {
         }
     }
     fn add_g() {
-        cn().reducers.admin_add_gold().notify_op();
+        if GameState::get_target() == GameState::Shop && is_dev_mode() {
+            cn().reducers.admin_add_gold().notify_op();
+        }
     }
     pub fn pane_shop(ui: &mut Ui, _world: &World) -> NodeResult<()> {
         with_solid_source(|ctx| {

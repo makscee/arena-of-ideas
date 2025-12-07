@@ -771,21 +771,11 @@ impl FRecursive for Option<Expression> {
 }
 impl FRecursive for Vec<Box<PainterAction>> {
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.iter()
-            .enumerate()
-            .map(|(i, item)| {
-                RecursiveField::indexed(i, RecursiveValue::PainterAction(item.as_ref()))
-            })
-            .collect()
+        default()
     }
 
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.iter_mut()
-            .enumerate()
-            .map(|(i, item)| {
-                RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(item.as_mut()))
-            })
-            .collect()
+        default()
     }
 
     fn to_recursive_value(&self) -> RecursiveValue<'_> {

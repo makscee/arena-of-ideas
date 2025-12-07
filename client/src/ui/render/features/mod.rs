@@ -245,7 +245,7 @@ pub trait FCard: FDescription + FTitle + FStats + FPreview + Node {
                 .max_rect(rect)
                 .layout(Layout::top_down(Align::Center)),
         );
-        ui.set_clip_rect(rect);
+        // ui.set_clip_rect(rect);
         let color = ctx.color();
         Frame::new()
             .corner_radius(ROUNDING)

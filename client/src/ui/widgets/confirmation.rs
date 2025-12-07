@@ -61,19 +61,22 @@ impl Confirmation {
     }
     fn ui(&mut self, ctx: &egui::Context, world: &mut World) {
         popup("Confirmation window", self.fullscreen, ctx, |ui| {
-            ui.vertical_centered_justified(|ui| {
+            ui.vertical_centered(|ui| {
                 self.text.as_label(ui.style()).wrap().ui(ui);
             });
             if let Some(content) = &mut self.content {
-                ui.vertical(|ui| {
-                    let r = rm(world).close_requested;
-                    (content)(ui, world, r);
-                });
+                let r = rm(world).close_requested;
+                let rect = ui.ctx().content_rect();
+                ScrollArea::both()
+                    .max_width(rect.width() - 30.0)
+                    .max_height(rect.height() - 100.0)
+                    .show(ui, |ui| {
+                        (content)(ui, world, r);
+                    });
             }
-            space(ui);
             ui.columns(2, |ui| {
                 ui[0].vertical_centered_justified(|ui| {
-                    if Button::new(&self.cancel_name).ui(ui).clicked() {
+                    if Button::new(&self.cancel_name).ui(ui).clicked() || ui.key_down(Key::Escape) {
                         Self::close_current(false);
                     }
                 });
