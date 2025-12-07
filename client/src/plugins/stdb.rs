@@ -275,13 +275,13 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
                 });
             });
         }
-        AllReducers::AdminAddToCore => {
-            cn().reducers.on_admin_add_to_core(|e, _, _| {
+        AllReducers::AdminEditOwner => {
+            cn().reducers.on_admin_edit_owner(|e, _, _| {
                 default_callback(e);
             });
         }
-        AllReducers::AdminEditNode => {
-            cn().reducers.on_admin_edit_node(|e, _, _| {
+        AllReducers::AdminEditNodes => {
+            cn().reducers.on_admin_edit_nodes(|e, _| {
                 default_callback(e);
             });
         }

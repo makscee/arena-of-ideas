@@ -107,30 +107,21 @@ fn admin_add_votes(ctx: &ReducerContext, amount: i32) -> Result<(), String> {
 }
 
 #[reducer]
-fn admin_edit_node(ctx: &ReducerContext, node_id: u64, data: String) -> Result<(), String> {
+fn admin_edit_nodes(ctx: &ReducerContext, pack: String) -> Result<(), String> {
     let ctx = &ctx.as_context();
     ctx.is_admin()?;
-
-    let mut node = ctx
-        .rctx()
-        .db
-        .nodes_world()
-        .id()
-        .find(node_id)
-        .ok_or_else(|| format!("Node {} not found", node_id))?;
-
-    node.data = data;
-    ctx.rctx().db.nodes_world().id().update(node);
+    let pack = PackedNodes::from_string(&pack)?;
+    for (id, data) in pack.nodes {
+        let mut node = TNode::load(ctx.rctx(), id).to_not_found()?;
+        node.data = data.data;
+        node.update(ctx.rctx());
+    }
 
     Ok(())
 }
 
 #[reducer]
-fn admin_add_to_core(
-    ctx: &ReducerContext,
-    node_id: u64,
-    with_children: bool,
-) -> Result<(), String> {
+fn admin_edit_owner(ctx: &ReducerContext, node_id: u64, owner_id: u64) -> Result<(), String> {
     let ctx = &ctx.as_context();
     ctx.is_admin()?;
 
@@ -141,16 +132,12 @@ fn admin_add_to_core(
         .id()
         .find(node_id)
         .ok_or_else(|| format!("Node {} not found", node_id))?;
-
-    node.owner = ID_CORE;
+    node.owner = owner_id;
     ctx.rctx().db.nodes_world().id().update(node);
-
-    if with_children {
-        for child_id in node_id.collect_children_recursive(ctx.rctx()) {
-            if let Some(mut child_node) = ctx.rctx().db.nodes_world().id().find(child_id) {
-                child_node.owner = ID_CORE;
-                ctx.rctx().db.nodes_world().id().update(child_node);
-            }
+    for child_id in node_id.collect_children_recursive(ctx.rctx()) {
+        if let Some(mut child_node) = ctx.rctx().db.nodes_world().id().find(child_id) {
+            child_node.owner = owner_id;
+            ctx.rctx().db.nodes_world().id().update(child_node);
         }
     }
 

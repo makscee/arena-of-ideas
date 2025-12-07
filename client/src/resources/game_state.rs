@@ -132,7 +132,7 @@ impl GameState {
                 let house_color = tiles.insert_pane(Pane::Incubator(IncubatorPane::HouseColor));
 
                 let houses_content = tiles.insert_horizontal_tile(
-                    [houses_left_column, right_content, house_color].into(),
+                    [houses_left_column, house_color, right_content].into(),
                 );
                 if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
                     if let Container::Linear(h) = h {
@@ -141,7 +141,7 @@ impl GameState {
                 }
                 if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
                     if let Container::Linear(h) = h {
-                        h.shares.set_share(house_color, 0.6);
+                        h.shares.set_share(house_color, 0.7);
                     }
                 }
 

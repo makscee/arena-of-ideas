@@ -1273,11 +1273,8 @@ impl FTitle for NStatusBehavior {
 }
 
 impl FDescription for NStatusBehavior {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.reactions
-            .iter()
-            .map(|r| r.description_cstr(ctx))
-            .join("\n")
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        self.reactions.iter().map(|r| r.cstr()).join("\n")
     }
 }
 

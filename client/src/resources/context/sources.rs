@@ -78,6 +78,9 @@ where
     F: FnOnce(&mut ClientContext) -> NodeResult<R>,
 {
     with_static_sources(|sources| {
+        if matches!(sources.incubator, Sources::None) {
+            panic!("Double take of Incubator source");
+        }
         let taken = std::mem::replace(&mut sources.incubator, Sources::None);
         let mut context = taken.as_context();
         let result = f(&mut context);
