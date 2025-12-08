@@ -1,3 +1,5 @@
+use jsonwebtoken::{TokenData, dangerous::insecure_decode};
+
 use crate::login;
 
 use super::*;
@@ -18,6 +20,29 @@ impl Plugin for LoginPlugin {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    // Standard Claims
+    pub sub: String,
+    pub iss: String,
+    pub aud: String, // Can be String or Vec<String>, your payload has a String
+    pub exp: usize,
+    pub iat: usize,
+
+    // Custom & OIDC Claims
+    pub email: String,
+    pub email_verified: bool,
+    pub picture: String,
+    pub preferred_username: String,
+    pub project_id: String,
+    pub login_method: String,
+
+    // Nullable fields must be Option<T>
+    pub name: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
+}
+
 impl LoginPlugin {
     fn login() {
         cn().reducers.on_login_by_identity(|e| {
@@ -26,7 +51,7 @@ impl LoginPlugin {
             }
             e.event.on_success_error(LoginPlugin::complete, || {
                 op(|world| {
-                    world.resource_mut::<AuthOption>().id_token = None;
+                    info!("Logging in with identity");
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
@@ -37,7 +62,6 @@ impl LoginPlugin {
             }
             e.event.on_success_error(LoginPlugin::complete, || {
                 op(|world| {
-                    world.resource_mut::<AuthOption>().id_token = None;
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                 });
             });
@@ -80,6 +104,18 @@ impl LoginPlugin {
                 error!("Failed to load NPlayer by Identity");
             }
             GameState::proceed(world);
+        });
+    }
+    pub fn pane_login(ui: &mut Ui, world: &mut World) {
+        ui.vertical_centered_justified(|ui| {
+            ui.add_space(ui.available_height() * 0.3);
+            let token = world.resource::<AuthOption>();
+
+            let token_data: TokenData<Claims> =
+                insecure_decode(token.id_token.as_ref().unwrap()).expect("Failed to decode token");
+            format!("Welcome {}", token_data.claims.preferred_username)
+                .cstr_cs(high_contrast_text(), CstrStyle::Heading)
+                .label(ui);
         });
     }
 }

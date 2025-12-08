@@ -68,6 +68,7 @@ base64 = "0.22.1"
 sha2 = "0.10.9"
 crossbeam-channel = "0.5.15"
 tiny_http = "0.12.0"
+jsonwebtoken = { version = "10.2.0", features = ["rust_crypto"]}
 
 [dependencies.winit]
 version = "0.30.12"
