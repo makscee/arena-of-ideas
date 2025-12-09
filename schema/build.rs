@@ -55,7 +55,7 @@ fn generate_node_relation_arms(node_map: &HashMap<String, NodeInfo>) -> proc_mac
                 .unwrap();
 
             match field.link_type {
-                LinkType::OwnedMultiple | LinkType::RefMultiple => {
+                LinkType::OwnedMultiple => {
                     if field.is_many_to_one {
                         arms.push(quote! {
                             (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::ManyToOne),
@@ -66,14 +66,14 @@ fn generate_node_relation_arms(node_map: &HashMap<String, NodeInfo>) -> proc_mac
                         });
                     }
                 }
-                LinkType::Owned | LinkType::Ref => {
+                LinkType::Owned => {
                     if field.is_many_to_one {
                         arms.push(quote! {
                             (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::ManyToOne),
                         });
                     } else {
                         arms.push(quote! {
-                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::OneToOne),
+                            (NodeKind::#parent_kind, NodeKind::#child_kind) => Some(NodeRelation::OneToMany),
                         });
                     }
                 }
@@ -105,11 +105,7 @@ fn generate_is_one_to_many_arms(node_map: &HashMap<String, NodeInfo>) -> proc_ma
 
     for (node_name, node_info) in node_map {
         for field in &node_info.fields {
-            if matches!(
-                field.link_type,
-                LinkType::OwnedMultiple | LinkType::RefMultiple
-            ) && !field.is_many_to_one
-            {
+            if matches!(field.link_type, LinkType::OwnedMultiple) && !field.is_many_to_one {
                 let parent_ident = syn::parse_str::<syn::Ident>(node_name).unwrap();
                 let child_ident = syn::parse_str::<syn::Ident>(&field.target_type).unwrap();
                 arms.push(quote! {

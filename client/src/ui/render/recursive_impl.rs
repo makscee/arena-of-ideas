@@ -284,8 +284,8 @@ impl FRecursive for Action {
             Action::noop
             | Action::deal_damage
             | Action::heal_damage
-            | Action::use_ability(_)
-            | Action::apply_status(_) => vec![],
+            | Action::use_ability(..)
+            | Action::apply_status(..) => vec![],
 
             Action::debug(expr)
             | Action::set_value(expr)
@@ -330,8 +330,8 @@ impl FRecursive for Action {
             Action::noop
             | Action::deal_damage
             | Action::heal_damage
-            | Action::use_ability(_)
-            | Action::apply_status(_) => vec![],
+            | Action::use_ability(..)
+            | Action::apply_status(..) => vec![],
 
             Action::debug(expr)
             | Action::set_value(expr)

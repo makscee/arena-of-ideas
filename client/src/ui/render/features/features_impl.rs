@@ -372,7 +372,7 @@ impl FTitle for Action {
             Ok(format!(" [{} x{x}]", VarName::stax.color().to_hex()))
         }
         match self {
-            Action::use_ability(_) => {
+            Action::use_ability(..) => {
                 let mut r = self.cstr();
                 if let Ok(ability) = ctx.get_var(VarName::ability_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
@@ -385,7 +385,7 @@ impl FTitle for Action {
                 }
                 r
             }
-            Action::apply_status(_) => {
+            Action::apply_status(..) => {
                 let mut r = self.cstr();
                 if let Ok(status) = ctx.get_var(VarName::status_name).get_string() {
                     if let Ok(color) = ctx.get_var(VarName::color).get_color() {
@@ -435,6 +435,39 @@ impl FEdit for Action {
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
         }
+
+        match self {
+            Action::use_ability(house_name, ability_name, color) => {
+                ui.horizontal(|ui| {
+                    ui.label("House:");
+                    ui.text_edit_singleline(house_name);
+                    ui.label("Ability:");
+                    ui.text_edit_singleline(ability_name);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Color:");
+                    let mut hex_str = color.0.clone();
+                    ui.text_edit_singleline(&mut hex_str);
+                    color.0 = hex_str;
+                });
+            }
+            Action::apply_status(house_name, status_name, color) => {
+                ui.horizontal(|ui| {
+                    ui.label("House:");
+                    ui.text_edit_singleline(house_name);
+                    ui.label("Status:");
+                    ui.text_edit_singleline(status_name);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Color:");
+                    let mut hex_str = color.0.clone();
+                    ui.text_edit_singleline(&mut hex_str);
+                    color.0 = hex_str;
+                });
+            }
+            _ => {}
+        }
+
         response
     }
 }
@@ -1396,8 +1429,7 @@ impl FPaste for NTeam {}
 impl FPlaceholder for NTeam {
     fn placeholder() -> Self {
         let unit = NUnit::placeholder().with_state(NUnitState::new(next_id(), player_id(), 1, 0));
-        let mut house = NHouse::placeholder();
-        house.units.set_ids([unit.id].into());
+        let house = NHouse::placeholder();
 
         let slot = NTeamSlot::new(next_id(), player_id(), 0).with_unit(unit);
         NTeam::new(next_id(), player_id())

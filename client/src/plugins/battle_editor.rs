@@ -44,15 +44,6 @@ impl BattleEditorPlugin {
                                 }
                             }
 
-                            // Remove from houses
-                            if let Ok(houses) = team.houses.get_mut() {
-                                for house in houses {
-                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
-                                        node_ids.retain(|&id| id != unit_id);
-                                    }
-                                }
-                            }
-
                             BattleEditorPlugin::save_changes_and_reload(world);
                         })
                     },
@@ -76,12 +67,7 @@ impl BattleEditorPlugin {
                             if let Ok(houses) = team.houses.get_mut() {
                                 if houses.is_empty() {
                                     let mut house = NHouse::placeholder();
-                                    house.units.set_ids(vec![unit.id]);
                                     houses.push(house);
-                                } else if let Some(house) = houses.first_mut() {
-                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
-                                        node_ids.push(unit.id);
-                                    }
                                 }
                             }
 
@@ -321,7 +307,8 @@ impl BattleEditorPlugin {
             })
             .unwrap_or(true);
 
-        let state = world.resource_mut::<BattleEditorState>();
+        let mut state = world.resource_mut::<BattleEditorState>();
+
         pd_mut(|pd| {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)

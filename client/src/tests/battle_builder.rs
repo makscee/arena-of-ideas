@@ -257,10 +257,6 @@ impl HouseBuilder {
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
         house.color.set_loaded(color);
-        house.units = RefMultiple::Ids {
-            parent_id: self.id,
-            node_ids: built_units.iter().map(|u| u.id).collect(),
-        };
 
         if let Some(ability_builder) = self.ability {
             house.ability.set_loaded(ability_builder.build());

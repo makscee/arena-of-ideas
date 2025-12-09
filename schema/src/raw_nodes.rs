@@ -54,7 +54,6 @@ pub struct NHouse {
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
     pub state: Component<NState>,
-    pub units: RefMultiple<NUnit>,
 }
 
 #[derive(Node)]

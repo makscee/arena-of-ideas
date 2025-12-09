@@ -96,16 +96,36 @@ impl ActionImpl for Action {
                     }
                 }
             }
-            Action::use_ability(ability_id) => {
+            Action::use_ability(house_name, ability_name, color) => {
                 let owner = ctx.owner()?;
-                let ability = ctx.load::<NAbilityMagic>(*ability_id)?;
+
+                // Find the team parent and then the house
+                let team_id = ctx.first_parent_recursive(owner, NodeKind::NTeam)?;
+                let team = ctx.load::<NTeam>(team_id)?;
+
+                // Find the house with matching name
+                let houses = team.houses.get()?;
+                let house = houses
+                    .into_iter()
+                    .find(|h| h.house_name == *house_name)
+                    .ok_or_else(|| {
+                        NodeError::custom(format!("House '{}' not found", house_name))
+                    })?;
+
+                // Get the ability from the house
+                let ability = house.ability.get()?;
+                if ability.ability_name != *ability_name {
+                    return Err(NodeError::custom(format!(
+                        "Ability '{}' not found in house '{}'",
+                        ability_name, house_name
+                    )));
+                }
+
                 let x = ctx
                     .load::<NUnitState>(owner)
                     .unwrap_or_default()
                     .stax
                     .at_least(1);
-                let color = ctx.color();
-                let name = ability.ability_name.clone();
                 let effect = ability.effect.load_node(ctx)?.effect.actions.clone();
                 ctx.with_layers(
                     [
@@ -117,20 +137,40 @@ impl ActionImpl for Action {
                         Ok(())
                     },
                 )?;
-                let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
+                let text = format!("use [b x{x}] [{} {}]", color.0, ability_name);
                 let position = ctx.get_var(VarName::position).track()?;
                 actions.push(BattleAction::new_text(text, position).into());
             }
-            Action::apply_status(status_id) => {
+            Action::apply_status(house_name, status_name, color) => {
                 let owner = ctx.owner()?;
-                let status = ctx.load::<NStatusMagic>(*status_id)?;
+
+                // Find the team parent and then the house
+                let team_id = ctx.first_parent_recursive(owner, NodeKind::NTeam)?;
+                let team = ctx.load::<NTeam>(team_id)?;
+
+                // Find the house with matching name
+                let houses = team.houses.get()?;
+                let house = houses
+                    .into_iter()
+                    .find(|h| h.house_name == *house_name)
+                    .ok_or_else(|| {
+                        NodeError::custom(format!("House '{}' not found", house_name))
+                    })?;
+
+                // Get the status from the house
+                let status = house.status.get()?;
+                if status.status_name != *status_name {
+                    return Err(NodeError::custom(format!(
+                        "Status '{}' not found in house '{}'",
+                        status_name, house_name
+                    )));
+                }
+
                 let x = ctx
                     .load::<NUnitState>(owner)
                     .unwrap_or_default()
                     .stax
                     .at_least(1);
-                let color = ctx.color();
-                let name = status.status_name.clone();
                 let status = status
                     .clone()
                     .load_components(ctx)?
@@ -140,7 +180,7 @@ impl ActionImpl for Action {
                 if targets.is_empty() {
                     return Err("No targets".into());
                 }
-                let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
+                let text = format!("apply [b x{x}] [{} {}]", color.0, status_name);
                 actions.push(
                     BattleAction::new_text(
                         text,
@@ -153,14 +193,14 @@ impl ActionImpl for Action {
                         owner,
                         target,
                         status.clone().remap_ids(),
-                        color,
+                        color.c32(),
                     ));
                     let position = ctx
                         .get_var_inherited(target, VarName::position)
                         .get_vec2()?;
                     actions.push(
                         BattleAction::new_text(
-                            format!("gain [b x{x}] [{} {name}]", color.to_hex()),
+                            format!("gain [b x{x}] [{} {}]", color.0, status_name),
                             position,
                         )
                         .into(),

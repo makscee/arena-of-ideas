@@ -222,27 +222,7 @@ fn generate_client_node_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let spawn_refs = node
         .fields
         .iter()
-        .filter_map(|field| match field.link_type {
-            LinkType::Ref => {
-                let field_name = &field.name;
-                Some(quote! {
-                    if let Ok(id) = self.#field_name.id() {
-                        ctx.add_link(self.id, id).track()?;
-                    }
-                })
-            }
-            LinkType::RefMultiple => {
-                let field_name = &field.name;
-                Some(quote! {
-                    if let Ok(ids) = self.#field_name.ids() {
-                        for id in ids {
-                            ctx.add_link(self.id, id).track()?;
-                        }
-                    }
-                })
-            }
-            _ => None,
-        });
+        .filter_map(|_field| None::<proc_macro2::TokenStream>);
 
     let load_methods = generate_load_functions(node, "ClientContext");
 
@@ -313,7 +293,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             let target_type = format_ident!("{}", field.target_type);
 
             match field.link_type {
-                LinkType::Component | LinkType::Owned | LinkType::Ref => {
+                LinkType::Component | LinkType::Owned => {
                     quote! {
                         changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id);
                         if NodeKind::#target_type.is_compact() && self.#field_name.is_loaded() {
@@ -323,7 +303,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         }
                     }
                 }
-                LinkType::OwnedMultiple | LinkType::RefMultiple => {
+                LinkType::OwnedMultiple => {
                     quote! {
                         changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id);
                     }

@@ -114,7 +114,11 @@ fn test_battle_with_abilities() {
                 Action::add_target(
                     Expression::random_unit(Expression::all_enemy_units.into()).into(),
                 ),
-                Action::use_ability(1110),
+                Action::use_ability(
+                    "test_house".to_string(),
+                    "test_ability".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_team(2000)
@@ -145,7 +149,11 @@ fn test_battle_with_status_effects() {
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(1120),
+                Action::apply_status(
+                    "test_house".to_string(),
+                    "test_status".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_team(2000)
@@ -204,7 +212,11 @@ fn test_change_stats_status() {
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(1120),
+                Action::apply_status(
+                    "test_house".to_string(),
+                    "test_status".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_team(2000)
@@ -320,7 +332,11 @@ fn test_status_applied_trigger() {
             Trigger::TurnEnd,
             [
                 Action::add_target(Expression::adjacent_front.into()),
-                Action::apply_status(1120),
+                Action::apply_status(
+                    "test_house".to_string(),
+                    "test_status".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_team(2000)
@@ -359,7 +375,11 @@ fn test_combined_triggers() {
             Trigger::BattleStart,
             vec![
                 Action::add_target(Expression::owner.into()),
-                Action::apply_status(1120),
+                Action::apply_status(
+                    "test_house".to_string(),
+                    "test_status".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_unit(1300, 1, 1)
@@ -369,7 +389,11 @@ fn test_combined_triggers() {
                 Action::add_target(
                     Expression::random_unit(Expression::all_enemy_units.into()).into(),
                 ),
-                Action::use_ability(1110),
+                Action::use_ability(
+                    "test_house".to_string(),
+                    "test_ability".to_string(),
+                    HexColor::default(),
+                ),
             ],
         )
         .add_team(2000)

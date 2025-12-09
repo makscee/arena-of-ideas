@@ -112,15 +112,6 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                     .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
             let unit_id = team_unit.id;
             m.bench.push(team_unit)?;
-            m.shop_pool
-                .get_mut()?
-                .houses
-                .get_mut()?
-                .iter_mut()
-                .find(|h| h.id == house_id)
-                .to_not_found()?
-                .units
-                .push_id(unit_id)?;
         }
         CardKind::House => {
             let house = ctx
