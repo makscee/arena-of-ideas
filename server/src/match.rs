@@ -74,6 +74,67 @@ fn create_battle(
     Ok(battle_id)
 }
 
+fn inject_house_actions(unit: &mut NUnit, house: &NHouse) -> NodeResult<()> {
+    let house_name = house.house_name.clone();
+    let house_color = house.color.get()?.color.clone();
+    let ability_name = house.ability.get().ok().map(|a| a.ability_name.clone());
+    let status_name = house.status.get().ok().map(|s| s.status_name.clone());
+
+    if let Ok(behavior) = unit.behavior.get_mut() {
+        for reaction in behavior.reactions.iter_mut() {
+            inject_actions(
+                &mut reaction.effect.actions,
+                &house_name,
+                &ability_name,
+                &status_name,
+                &house_color,
+            )?;
+        }
+    }
+
+    Ok(())
+}
+
+fn inject_actions(
+    actions: &mut Vec<Action>,
+    house_name: &str,
+    ability_name: &Option<String>,
+    status_name: &Option<String>,
+    color: &HexColor,
+) -> NodeResult<()> {
+    for action in actions.iter_mut() {
+        match action {
+            Action::use_ability(_, _, _) => {
+                if let Some(name) = ability_name {
+                    *action =
+                        Action::use_ability(house_name.to_string(), name.clone(), color.clone());
+                }
+            }
+            Action::apply_status(_, _, _) => {
+                if let Some(name) = status_name {
+                    *action =
+                        Action::apply_status(house_name.to_string(), name.clone(), color.clone());
+                }
+            }
+            Action::repeat(expr, vec) => {
+                for boxed_action in vec.iter_mut() {
+                    let mut single_action = vec![(**boxed_action).clone()];
+                    inject_actions(
+                        &mut single_action,
+                        house_name,
+                        ability_name,
+                        status_name,
+                        color,
+                    )?;
+                    *boxed_action = Box::new(single_action.into_iter().next().unwrap());
+                }
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
 #[reducer]
 fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
@@ -106,11 +167,13 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .track()?
                 .take();
             let house_id = ctx.first_parent(team_unit.id, NodeKind::NHouse)?;
+            let house = ctx.load::<NHouse>(house_id).track()?;
+            inject_house_actions(&mut team_unit, &house).track()?;
             team_unit =
                 team_unit
                     .remap_ids(ctx)
                     .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
-            let unit_id = team_unit.id;
+            let _unit_id = team_unit.id;
             m.bench.push(team_unit)?;
         }
         CardKind::House => {
@@ -122,17 +185,17 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .take();
             let shop_pool = m.shop_pool.get_mut()?;
             let houses = shop_pool.houses.get_mut()?;
-            let house_to_use = if let Some(existing_house) =
+            let _house_to_use = if let Some(existing_house) =
                 houses.iter_mut().find(|h| h.house_name == house.house_name)
             {
                 existing_house.state.get_mut()?.stax += 1;
                 existing_house
             } else {
-                let new_house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
-                    ctx.next_id(),
-                    pid,
-                    1,
-                ));
+                let new_house = house
+                    .clone()
+                    .remap_ids(ctx)
+                    .with_owner(pid)
+                    .with_state(NState::new(ctx.next_id(), pid, 1));
                 shop_pool.houses.push(new_house)?
             };
             let all_core_units = NUnit::collect_owner(ctx, ID_CORE);
@@ -140,13 +203,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 return Err("No core units found".into());
             }
             for mut unit in all_core_units.choose_multiple(&mut ctx.rng(), 5).cloned() {
-                let new_unit = unit
-                    .load_components(ctx)
-                    .track()?
-                    .take()
-                    .remap_ids(ctx)
-                    .with_owner(pid);
-                house_to_use.units.push_id(new_unit.id)?;
+                unit.load_components(ctx).track()?;
+                inject_house_actions(&mut unit, &house).track()?;
+                let new_unit = unit.remap_ids(ctx).with_owner(pid);
                 shop_pool.units.push(new_unit)?;
             }
         }
@@ -705,16 +764,7 @@ impl NMatch {
 
         // Copy houses but remove any references to bench or shop_pool units
         let shop_pool = self.shop_pool.get()?;
-        for mut house in shop_pool.houses.get()?.clone() {
-            house.units = RefMultiple::Ids {
-                parent_id: house.id,
-                node_ids: house
-                    .units
-                    .ids()?
-                    .into_iter()
-                    .filter(|u| slot_units.contains(u))
-                    .collect_vec(),
-            };
+        for house in shop_pool.houses.get()?.clone() {
             team.houses.push(house)?;
         }
 

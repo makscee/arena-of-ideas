@@ -104,7 +104,7 @@ impl ActionImpl for Action {
                 let team = ctx.load::<NTeam>(team_id)?;
 
                 // Find the house with matching name
-                let houses = team.houses.get()?;
+                let houses = team.houses.load_nodes(ctx)?;
                 let house = houses
                     .into_iter()
                     .find(|h| h.house_name == *house_name)
@@ -113,7 +113,7 @@ impl ActionImpl for Action {
                     })?;
 
                 // Get the ability from the house
-                let ability = house.ability.get()?;
+                let ability = house.ability.load_node(ctx)?.load_components(ctx)?.take();
                 if ability.ability_name != *ability_name {
                     return Err(NodeError::custom(format!(
                         "Ability '{}' not found in house '{}'",
@@ -149,7 +149,7 @@ impl ActionImpl for Action {
                 let team = ctx.load::<NTeam>(team_id)?;
 
                 // Find the house with matching name
-                let houses = team.houses.get()?;
+                let houses = team.houses.load_nodes(ctx)?;
                 let house = houses
                     .into_iter()
                     .find(|h| h.house_name == *house_name)
@@ -158,7 +158,7 @@ impl ActionImpl for Action {
                     })?;
 
                 // Get the status from the house
-                let status = house.status.get()?;
+                let status = house.status.load_node(ctx)?.load_components(ctx)?.take();
                 if status.status_name != *status_name {
                     return Err(NodeError::custom(format!(
                         "Status '{}' not found in house '{}'",
@@ -173,8 +173,6 @@ impl ActionImpl for Action {
                     .at_least(1);
                 let status = status
                     .clone()
-                    .load_components(ctx)?
-                    .take()
                     .with_state(NState::new(next_id(), player_id(), x));
                 let targets = ctx.get_targets();
                 if targets.is_empty() {

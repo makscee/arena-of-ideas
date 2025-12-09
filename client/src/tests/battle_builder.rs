@@ -2,6 +2,22 @@ use std::sync::OnceLock;
 
 use super::*;
 
+pub fn create_use_ability_action(house_id: u64, ability_id: u64) -> Action {
+    Action::use_ability(
+        format!("House {}", house_id),
+        format!("Ability {}", ability_id),
+        HexColor::default(),
+    )
+}
+
+pub fn create_apply_status_action(house_id: u64, status_id: u64) -> Action {
+    Action::apply_status(
+        format!("House {}", house_id),
+        format!("Status {}", status_id),
+        HexColor::default(),
+    )
+}
+
 pub struct TestBuilder {
     teams: Vec<TeamBuilder>,
 }
