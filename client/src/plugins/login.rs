@@ -24,7 +24,6 @@ pub struct LoginData {
 
 impl LoginPlugin {
     fn login() {
-        let _ = cn().reducers.login_by_identity();
         cn().reducers.on_login_by_identity(|e| {
             if !e.check_identity() {
                 return;
@@ -95,32 +94,19 @@ impl LoginPlugin {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
             let mut ld = world.resource_mut::<LoginData>();
-            if ld.user_exists {
-                // --- EXISTING USER ---
-                format!("Welcome - {}", ld.username)
-                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
-                    .label(ui);
-                if Button::new("Continue").ui(ui).clicked() {
-                    //let _ = cn().reducers.login_by_identity();
-                }
-            } else {
-                // --- NEW USER: SHOW REGISTER UI ---
+            if !ld.user_exists {
                 "Register New Player"
                     .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
                     .label(ui);
 
-                // Username is prefilled from OIDC token
                 Input::new("username").ui_string(&mut ld.username, ui);
-
                 if Button::new("Register").ui(ui).clicked() {
-                    // Call the new reducer
                     cn().reducers.on_register(|e, _| {
                         if !e.check_identity() {
                             return;
                         }
                         e.event.on_success(LoginPlugin::complete);
                     });
-
                     cn().reducers.register(ld.username.clone()).unwrap();
                 }
             }

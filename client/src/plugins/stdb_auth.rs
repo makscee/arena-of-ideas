@@ -25,27 +25,18 @@ impl StdbAuthPlugin {
             ui.add_space(ui.available_height() * 0.3);
             ui.set_width(350.0.at_most(ui.available_width()));
             let cs = pd().client_state.clone();
-            if let Some((name, identity)) = &cs.last_logged_in {
+            if let Some((name, _)) = &cs.last_logged_in {
                 format!("Login as {name}")
                     .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
                     .label(ui);
-                if (pd().client_settings.auto_login
-                    || Button::new("Login")
-                        //.enabled(!ld.id_token.is_none())
-                        .ui(ui)
-                        .clicked())
-                // && !ld.id_token.is_none()
-                {
-                    ld.id_token = creds_store().load().expect("Token not found");
-                    let _ = cn().reducers.login_by_identity();
-                }
                 br(ui);
-                if Button::new("Logout")
-                    //.enabled(!ld.id_token.is_none())
-                    .gray(ui)
-                    .ui(ui)
-                    .clicked()
-                {
+                if pd().client_settings.auto_login || Button::new("Login").ui(ui).clicked() {
+                    ld.id_token = creds_store().load().expect("Token not found");
+                    op(|world| {
+                        GameState::proceed(world);
+                    });
+                }
+                if Button::new("Logout").ui(ui).clicked() {
                     pd_mut(|data| data.client_state.last_logged_in = None);
                 }
             } else {

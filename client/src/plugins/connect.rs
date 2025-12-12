@@ -46,6 +46,7 @@ fn store_token_data(ao: Res<AuthOption>, mut ld: ResMut<LoginData>) {
     let token = ao.id_token.as_ref().unwrap();
     // let token_data: TokenData<Claims> = insecure_decode(token).expect("Failed to decode token");
     // ld.username = token_data.claims.preferred_username;
+    ld.username = "izarma".to_string();
 }
 
 impl ConnectPlugin {
@@ -62,6 +63,7 @@ impl ConnectPlugin {
                 GameState::proceed(world);
             });
         });
+        let _ = cn().reducers.login_by_identity();
     }
     pub fn pane(ui: &mut Ui) {
         ui.vertical_centered_justified(|ui| {
