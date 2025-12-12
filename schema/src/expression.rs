@@ -62,6 +62,7 @@ pub enum Expression {
     rand(Box<Expression>),
     random_unit(Box<Expression>),
     neg(Box<Expression>),
+    list(Vec<Expression>),
 
     to_f32(Box<Expression>),
 
@@ -146,6 +147,11 @@ impl std::hash::Hash for Expression {
             | Expression::fract(e)
             | Expression::dbg(e)
             | Expression::neg(e) => e.hash(state),
+            Expression::list(exprs) => {
+                for expr in exprs {
+                    expr.hash(state);
+                }
+            }
             Expression::str_macro(a, b)
             | Expression::vec2_ee(a, b)
             | Expression::sum(a, b)

@@ -706,7 +706,7 @@ impl BattleSimulation {
                         .clone()
                         .behavior
                         .load_node_mut(ctx)?
-                        .reactions
+                        .behavior
                         .react_battle_actions(&event, ctx)
                     {
                         Ok(actions) => {
@@ -738,7 +738,7 @@ impl BattleSimulation {
                             return Ok(vec![]);
                         }
                         let behavior = status.behavior.load_node(ctx).track()?;
-                        let actions = behavior.reactions.react_actions(&event, ctx);
+                        let actions = behavior.behavior.react_actions(&event, ctx);
                         if let Some(actions) = actions {
                             actions.clone().process(ctx)
                         } else {

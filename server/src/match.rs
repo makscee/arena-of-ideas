@@ -1,8 +1,5 @@
-use std::mem;
-
 use schema::MatchState;
 use spacetimedb::rand::{Rng, seq::SliceRandom};
-use strum::IntoEnumIterator;
 
 use crate::battle_table::TBattle;
 
@@ -81,15 +78,13 @@ fn inject_house_actions(unit: &mut NUnit, house: &NHouse) -> NodeResult<()> {
     let status_name = house.status.get().ok().map(|s| s.status_name.clone());
 
     if let Ok(behavior) = unit.behavior.get_mut() {
-        for reaction in behavior.reactions.iter_mut() {
-            inject_actions(
-                &mut reaction.effect.actions,
-                &house_name,
-                &ability_name,
-                &status_name,
-                &house_color,
-            )?;
-        }
+        inject_actions(
+            &mut behavior.behavior.effect.actions,
+            &house_name,
+            &ability_name,
+            &status_name,
+            &house_color,
+        )?;
     }
 
     Ok(())
@@ -540,34 +535,29 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     }
 
     let mut m = player.active_match.load_node(ctx)?;
-
-    let mut packed_variants = Vec::new();
-    for fusion_type in FusionType::iter() {
-        packed_variants.push(create_fused_unit(
-            ctx,
-            &mut source,
-            &mut target,
-            fusion_type,
-        )?);
-    }
-
-    m.fusion = Some((source_id, target_id, packed_variants));
+    m.fusion = Some((source_id, target_id));
     ctx.source_mut().commit(m)?;
     Ok(())
 }
 
 #[reducer]
-fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), String> {
+fn match_choose_fusion(ctx: &ReducerContext, fusion_choice: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let player = ctx.player()?;
     let mut m = player.active_match.load_node(ctx)?;
-    let Some((source_id, target_id, ref variants)) = m.fusion.take() else {
+    let Some((source_id, target_id)) = m.fusion.take() else {
         return Err("No fusion in progress".into());
     };
     ctx.source_mut().commit(m)?;
-    let fusion_idx = fusion_index as usize;
-    if fusion_idx >= variants.len() {
-        return Err("Invalid fusion type index".into());
+
+    // Validate fusion choice string
+    if fusion_choice.len() != 3 {
+        return Err("Fusion choice must be exactly 3 characters".into());
+    }
+
+    let chars: Vec<char> = fusion_choice.chars().collect();
+    if !chars.contains(&'<') || !chars.contains(&'>') || !chars.contains(&'=') {
+        return Err("Fusion choice must contain exactly one '<', '>', and '='".into());
     }
     let houses = target_id
         .collect_kind_parents(ctx.rctx(), NodeKind::NHouse)
@@ -577,11 +567,17 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
     let slot = target_id
         .find_kind_parent(ctx.rctx(), NodeKind::NTeamSlot)
         .to_not_found()?;
+    let source = ctx.load::<NUnit>(source_id)?.load_components(ctx)?.take();
+    let target = ctx.load::<NUnit>(target_id)?.load_components(ctx)?.take();
+
     TNode::delete_by_id_recursive(ctx.rctx(), target_id);
     TNode::delete_by_id_recursive(ctx.rctx(), source_id);
 
-    let packed = &variants[fusion_idx];
-    let merged_unit = NUnit::unpack(packed)?.remap_ids(ctx).with_owner(player.id);
+    let merged_unit_id = create_fused_unit(ctx, &source, &target, &fusion_choice)?;
+    let merged_unit = ctx
+        .load::<NUnit>(merged_unit_id)?
+        .remap_ids(ctx)
+        .with_owner(player.id);
     let unit_id = merged_unit.id;
     ctx.source_mut().commit(merged_unit)?;
     for house in houses {
@@ -604,89 +600,88 @@ fn match_cancel_fusion(ctx: &ReducerContext) -> Result<(), String> {
 
 fn create_fused_unit(
     ctx: &mut ServerContext,
-    source: &mut NUnit,
-    target: &mut NUnit,
-    fusion_type: FusionType,
-) -> NodeResult<PackedNodes> {
+    source: &NUnit,
+    target: &NUnit,
+    fusion_choice: &str,
+) -> NodeResult<u64> {
     let mut new_unit = target.clone();
+    new_unit.unit_name = format!("{}{}", target.unit_name, source.unit_name);
 
-    let mut front_name = target.unit_name.clone();
-    let mut back_name = source.unit_name.clone();
-    match fusion_type {
-        FusionType::StickFront => {
-            mem::swap(&mut front_name, &mut back_name);
-        }
-        FusionType::StickBack | FusionType::PushBack => {}
-    }
-    let front_half = front_name.len() / 2;
-    let back_half = back_name.len() / 2;
-    let name_a = &front_name[..front_half];
-    let name_b = &back_name[back_name.len() - back_half..];
+    let source_behavior_node = source.behavior.load_node(ctx)?;
+    let target_behavior_node = target.behavior.load_node(ctx)?;
 
-    new_unit.unit_name = format!("{name_a}{name_b}");
+    let source_behavior = &source_behavior_node.behavior;
+    let target_behavior = &target_behavior_node.behavior;
 
-    let mut new_behavior = new_unit.behavior.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let target_behavior = target.behavior.load_node(ctx)?;
-    let reactions = &mut new_behavior.reactions;
-    match fusion_type {
-        FusionType::StickFront => {
-            *reactions = source_behavior.reactions.clone();
-            reactions.last_mut().unwrap().effect.actions.extend(
-                target_behavior
-                    .reactions
-                    .first()
-                    .unwrap()
-                    .effect
-                    .actions
-                    .clone()
-                    .into_iter(),
-            );
-            reactions.extend(target_behavior.reactions[1..].iter().cloned());
-        }
-        FusionType::StickBack => {
-            reactions.last_mut().unwrap().effect.actions.extend(
-                source_behavior
-                    .reactions
-                    .first()
-                    .unwrap()
-                    .effect
-                    .actions
-                    .clone()
-                    .into_iter(),
-            );
-            reactions.extend(source_behavior.reactions[1..].iter().cloned());
-        }
-        FusionType::PushBack => {
-            reactions.extend(source_behavior.reactions.clone().into_iter());
-        }
-    }
-    ctx.source_mut().commit(new_behavior)?;
+    let mut new_behavior_node = NUnitBehavior::new(ctx.next_id(), new_unit.id, default());
+    new_behavior_node.stats = target_behavior_node.stats.clone();
+    new_behavior_node.representation = target_behavior_node.representation.clone();
 
-    let new_behavior = new_unit.behavior.load_node(ctx)?;
-    let mut new_representation = new_behavior.representation.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let source_representation = source_behavior.representation.load_node(ctx)?;
-    let target_behavior = target.behavior.load_node(ctx)?;
-    let target_representation = target_behavior.representation.load_node(ctx)?;
+    let chars: Vec<char> = fusion_choice.chars().collect();
+    let trigger_choice = chars[0];
+    let target_choice = chars[1];
+    let effect_choice = chars[2];
+
+    let merged_trigger = match trigger_choice {
+        '<' => source_behavior.trigger.clone(),
+        '>' => target_behavior.trigger.clone(),
+        '=' => Trigger::Any(vec![
+            source_behavior.trigger.clone(),
+            target_behavior.trigger.clone(),
+        ]),
+        _ => return Err(format!("Invalid trigger choice: {}", trigger_choice).into()),
+    };
+
+    let merged_target = match target_choice {
+        '<' => source_behavior.target.clone(),
+        '>' => target_behavior.target.clone(),
+        '=' => Target::List(vec![
+            source_behavior.target.clone(),
+            target_behavior.target.clone(),
+        ]),
+        _ => return Err(format!("Invalid target choice: {}", target_choice).into()),
+    };
+
+    let merged_effect = match effect_choice {
+        '<' => source_behavior.effect.clone(),
+        '>' => target_behavior.effect.clone(),
+        '=' => Effect {
+            description: format!(
+                "{}\n{}",
+                source_behavior.effect.description, target_behavior.effect.description
+            ),
+            actions: {
+                let mut combined = source_behavior.effect.actions.clone();
+                combined.extend(target_behavior.effect.actions.clone());
+                combined
+            },
+        },
+        _ => return Err(format!("Invalid effect choice: {}", effect_choice).into()),
+    };
+
+    let merged_behavior = Behavior {
+        trigger: merged_trigger,
+        target: merged_target,
+        effect: merged_effect,
+    };
+
+    new_behavior_node.behavior = merged_behavior;
+
+    ctx.source_mut().commit(new_behavior_node.clone())?;
+    new_unit.behavior.set_loaded(new_behavior_node);
+
+    let mut new_representation = target_behavior_node.representation.load_node(ctx)?;
+    let source_representation = source_behavior_node.representation.load_node(ctx)?;
+    let target_representation = target_behavior_node.representation.load_node(ctx)?;
     let actions = &mut new_representation.material.0;
-    match fusion_type {
-        FusionType::StickFront => {
-            *actions = source_representation.material.0.clone();
-            actions.push(PainterAction::paint);
-            actions.extend(target_representation.material.0.clone().into_iter());
-        }
-        FusionType::StickBack | FusionType::PushBack => {
-            actions.push(PainterAction::paint);
-            actions.extend(source_representation.material.0.clone().into_iter());
-        }
-    }
+
+    *actions = target_representation.material.0.clone();
+    actions.push(PainterAction::paint);
+    actions.extend(source_representation.material.0.clone().into_iter());
     ctx.source_mut().commit(new_representation)?;
 
-    let mut new_behavior = new_unit.behavior.load_node(ctx)?;
-    let mut new_stats = new_behavior.stats.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let source_stats = source_behavior.stats.load_node(ctx)?;
+    let mut new_stats = target_behavior_node.stats.load_node(ctx)?;
+    let source_stats = source_behavior_node.stats.load_node(ctx)?;
     new_stats.hp += source_stats.hp;
     new_stats.pwr += source_stats.pwr;
     ctx.source_mut().commit(new_stats)?;
@@ -696,7 +691,7 @@ fn create_fused_unit(
     new_state.stax += source_state.stax;
     ctx.source_mut().commit(new_state)?;
 
-    Ok(new_unit.pack())
+    Ok(new_unit.id)
 }
 
 #[reducer]
@@ -723,7 +718,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         default(),
         vec![], // battle_history
         None,   // pending_battle
-        None,   // fusion
+        None,   // fusion (now stores just unit ids)
     )
     .with_shop_pool(NShopPool::new(ctx.next_id(), pid))
     .with_slots(team_slots);

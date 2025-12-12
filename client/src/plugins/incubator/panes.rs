@@ -171,16 +171,15 @@ impl IncubatorPanes {
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
-                        if cn.reactions.is_empty() {
-                            cn.reactions.push(default());
-                        }
-                        let reaction = cn.reactions.first_mut().unwrap();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut reaction.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.behavior.trigger, ui).1.changed() {
+                            changed = true;
+                        }
+                        if Selector::ui_enum(&mut cn.behavior.target, ui).1.changed() {
                             changed = true;
                         }
                         if Input::new("Unit Description")
-                            .ui_string(&mut reaction.effect.description, ui)
+                            .ui_string(&mut cn.behavior.effect.description, ui)
                             .changed()
                         {
                             changed = true;
@@ -191,16 +190,15 @@ impl IncubatorPanes {
                     }
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
-                        if cn.reactions.is_empty() {
-                            cn.reactions.push(default());
-                        }
-                        let reaction = cn.reactions.first_mut().unwrap();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut reaction.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.behavior.trigger, ui).1.changed() {
+                            changed = true;
+                        }
+                        if Selector::ui_enum(&mut cn.behavior.target, ui).1.changed() {
                             changed = true;
                         }
                         if Input::new("Status Description")
-                            .ui_string(&mut reaction.effect.description, ui)
+                            .ui_string(&mut cn.behavior.effect.description, ui)
                             .changed()
                         {
                             changed = true;

@@ -3,7 +3,6 @@ mod context;
 
 mod event;
 mod expression;
-mod fusion;
 mod links;
 mod r#match;
 mod node_assets;
@@ -29,7 +28,6 @@ pub use context::*;
 use ecolor::Color32;
 pub use event::*;
 pub use expression::*;
-pub use fusion::*;
 pub use links::*;
 pub use r#match::*;
 pub use node_assets::*;

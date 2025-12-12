@@ -76,8 +76,8 @@ impl MatchPlugin {
                 return Ok(());
             }
 
-            if let Some((_, _, variants)) = &m.fusion {
-                Self::show_fusion_window(ctx, ui, variants.clone())?;
+            if let Some((_source_id, _target_id)) = &m.fusion {
+                Self::show_fusion_input_window(ctx, ui)?;
                 return Ok(());
             }
 
@@ -437,56 +437,58 @@ impl MatchPlugin {
         })
     }
 
-    fn show_fusion_window(
-        ctx: &mut ClientContext,
-        ui: &mut Ui,
-        variants: Vec<PackedNodes>,
-    ) -> NodeResult<()> {
-        ui.vertical_centered_justified(|ui| -> NodeResult<()> {
+    fn show_fusion_input_window(ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
+        ui.vertical_centered_justified(|ui| {
             "Unit Fusion".cstr_s(CstrStyle::Heading2).label(ui);
-            "Select one of three fusion variants:".cstr().label(ui);
+            "Select fusion options for trigger, target, and effect:"
+                .cstr()
+                .label(ui);
+            ui.label("[yellow <] take from A  |  [yellow >] take from B  |  [yellow =] combine");
             ui.separator();
 
-            ui.horizontal_wrapped(|ui| -> NodeResult<()> {
-                for (idx, packed) in variants.iter().enumerate() {
-                    let merged_unit = NUnit::unpack(packed)?;
-                    let fusion_names = match idx {
-                        0 => ("Front", "Combines source actions first"),
-                        1 => ("Back", "Combines target actions first"),
-                        2 => ("Split", "Keeps separate triggers"),
-                        _ => ("Unknown", ""),
-                    };
+            let mut choice = ['?'; 3];
+            let mut valid = true;
 
-                    ui.vertical(|ui| {
-                        format!("[b {}]", fusion_names.0).cstr().label(ui);
-                        fusion_names.1.cstr_s(CstrStyle::Small).label(ui);
+            let positions = [("Trigger", 0), ("Target", 1), ("Effect", 2)];
 
-                        ctx.with_owner(merged_unit.id, |ctx| {
-                            merged_unit.as_card().compose(ctx, ui);
-                            Ok(())
-                        })
-                        .ok();
-
-                        if format!("Select [b {}]", fusion_names.0)
-                            .cstr()
-                            .button(ui)
-                            .clicked()
-                        {
-                            cn().reducers.match_choose_fusion(idx as i32).notify_op();
+            for (label, idx) in positions.iter() {
+                ui.horizontal(|ui| {
+                    ui.label(format!("[b {}]:", label));
+                    for symbol in ['<', '=', '>'].iter() {
+                        let mut button_text = symbol.to_string();
+                        if choice[*idx] == *symbol {
+                            button_text = format!("[yellow [b {}]]", symbol);
                         }
-                    });
+                        if button_text.cstr().button(ui).clicked() {
+                            choice[*idx] = *symbol;
+                        }
+                    }
+                });
+            }
+
+            valid = choice.iter().all(|c| *c != '?')
+                && choice.contains(&'<')
+                && choice.contains(&'>')
+                && choice.contains(&'=');
+
+            ui.separator();
+            if valid {
+                let choice_str: String = choice.iter().collect();
+                if "Confirm Fusion".cstr().button(ui).clicked() {
+                    cn().reducers.match_choose_fusion(choice_str).notify_op();
                 }
-                Ok(())
-            })
-            .inner?;
+            } else {
+                "Incomplete selection - must have one <, one >, one ="
+                    .cstr_s(CstrStyle::Small)
+                    .label(ui);
+            }
 
             ui.separator();
             if "Cancel Fusion".cstr().button(ui).clicked() {
                 cn().reducers.match_cancel_fusion().notify_op();
             }
-            Ok(())
-        })
-        .inner
+        });
+        Ok(())
     }
 
     pub fn pane_match_over(ui: &mut Ui, _world: &mut World) -> NodeResult<()> {

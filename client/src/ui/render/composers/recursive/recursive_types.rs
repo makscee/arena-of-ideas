@@ -18,7 +18,7 @@ pub enum RecursiveValue<'a> {
     F32(&'a f32),
     Bool(&'a bool),
     Vec2(&'a Vec2),
-    Reaction(&'a Reaction),
+    Behavior(&'a Behavior),
     Material(&'a Material),
     PainterActionList(&'a Vec<Box<PainterAction>>),
 }
@@ -42,7 +42,7 @@ pub enum RecursiveValueMut<'a> {
     F32(&'a mut f32),
     Bool(&'a mut bool),
     Vec2(&'a mut Vec2),
-    Reaction(&'a mut Reaction),
+    Behavior(&'a mut Behavior),
     Material(&'a mut Material),
     PainterActionList(&'a mut Vec<Box<PainterAction>>),
 }
@@ -95,7 +95,7 @@ macro_rules! recursive_value_match {
             RecursiveValue::F32($v) => $code,
             RecursiveValue::Bool($v) => $code,
             RecursiveValue::Vec2($v) => $code,
-            RecursiveValue::Reaction($v) => $code,
+            RecursiveValue::Behavior($v) => $code,
             RecursiveValue::Material($v) => $code,
             RecursiveValue::PainterActionList($v) => $code,
         }
@@ -116,7 +116,7 @@ macro_rules! call_on_recursive_value {
             RecursiveValue::F32(v) => v.$func($($arg),*),
             RecursiveValue::Bool(v) => v.$func($($arg),*),
             RecursiveValue::Vec2(v) => v.$func($($arg),*),
-            RecursiveValue::Reaction(v) => v.$func($($arg),*),
+            RecursiveValue::Behavior(v) => v.$func($($arg),*),
             RecursiveValue::Material(v) => v.$func($($arg),*),
             RecursiveValue::PainterActionList(v) => v.$func($($arg),*),
         }
@@ -138,7 +138,7 @@ macro_rules! call_pass_recursive_value {
             RecursiveValue::F32(v) => $func(v, $($arg),*),
             RecursiveValue::Bool(v) => $func(v, $($arg),*),
             RecursiveValue::Vec2(v) => $func(v, $($arg),*),
-            RecursiveValue::Reaction(v) => $func(v, $($arg),*),
+            RecursiveValue::Behavior(v) => $func(v, $($arg),*),
             RecursiveValue::Material(v) => $func(v, $($arg),*),
             RecursiveValue::PainterActionList(v) => $func(v, $($arg),*),
         }
@@ -160,7 +160,7 @@ macro_rules! call_on_recursive_value_mut {
             RecursiveValueMut::F32(v) => v.$func($($arg),*),
             RecursiveValueMut::Bool(v) => v.$func($($arg),*),
             RecursiveValueMut::Vec2(v) => v.$func($($arg),*),
-            RecursiveValueMut::Reaction(v) => v.$func($($arg),*),
+            RecursiveValueMut::Behavior(v) => v.$func($($arg),*),
             RecursiveValueMut::Material(v) => v.$func($($arg),*),
             RecursiveValueMut::PainterActionList(v) => v.$func($($arg),*),
         }
@@ -182,7 +182,7 @@ macro_rules! call_pass_recursive_value_mut {
             RecursiveValueMut::F32(v) => $func(v, $($arg),*),
             RecursiveValueMut::Bool(v) => $func(v, $($arg),*),
             RecursiveValueMut::Vec2(v) => $func(v, $($arg),*),
-            RecursiveValueMut::Reaction(v) => $func(v, $($arg),*),
+            RecursiveValueMut::Behavior(v) => $func(v, $($arg),*),
             RecursiveValueMut::Material(v) => $func(v, $($arg),*),
             RecursiveValueMut::PainterActionList(v) => $func(v, $($arg),*),
         }
@@ -246,7 +246,7 @@ impl<'a> RecursiveValueMut<'a> {
                 mem::swap(*source, *target);
                 true
             }
-            (RecursiveValueMut::Reaction(source), RecursiveValueMut::Reaction(target)) => {
+            (RecursiveValueMut::Behavior(source), RecursiveValueMut::Behavior(target)) => {
                 mem::swap(*source, *target);
                 true
             }

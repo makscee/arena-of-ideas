@@ -1584,10 +1584,8 @@ pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenSt
                     let stax = state.stax;
                     let actions = self
                         .behavior.load_node(ctx)?
-                        .reactions
-                        .iter()
-                        .map(|r| r.effect.actions.len() as i32)
-                        .sum::<i32>();
+                        .behavior
+                        .effect.actions.len() as i32;
                     Ok(actions >= stax)
                 }
             }

@@ -194,6 +194,13 @@ impl ExpressionImpl for Expression {
                     .map_err(|e| format!("lua error: {e}"))?;
                 Ok(v.into())
             }
+            Expression::list(exprs) => {
+                let mut values = Vec::new();
+                for expr in exprs {
+                    values.push(Box::new(expr.get_value(ctx)?));
+                }
+                Ok(VarValue::list(values))
+            }
         }
     }
     fn get_f32(&self, ctx: &mut ClientContext) -> Result<f32, NodeError> {

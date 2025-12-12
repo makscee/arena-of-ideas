@@ -125,6 +125,11 @@ impl FRecursive for Expression {
                 RecursiveField::named("chroma", RecursiveValue::Expr(c.as_ref())),
                 RecursiveField::named("hue", RecursiveValue::Expr(h.as_ref())),
             ],
+            Expression::list(exprs) => exprs
+                .iter()
+                .enumerate()
+                .map(|(i, expr)| RecursiveField::indexed(i, RecursiveValue::Expr(expr)))
+                .collect(),
         }
     }
 
@@ -273,6 +278,11 @@ impl FRecursive for Expression {
                 RecursiveFieldMut::named("chroma", RecursiveValueMut::Expr(c.as_mut())),
                 RecursiveFieldMut::named("hue", RecursiveValueMut::Expr(h.as_mut())),
             ],
+            Expression::list(exprs) => exprs
+                .iter_mut()
+                .enumerate()
+                .map(|(i, expr)| RecursiveFieldMut::indexed(i, RecursiveValueMut::Expr(expr)))
+                .collect(),
         }
     }
 }
@@ -606,7 +616,7 @@ impl FRecursive for Material {
 }
 
 // Reaction
-impl FRecursive for Reaction {
+impl FRecursive for Behavior {
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         self.effect
             .actions
@@ -617,11 +627,11 @@ impl FRecursive for Reaction {
     }
 
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
-        RecursiveValue::Reaction(self)
+        RecursiveValue::Behavior(self)
     }
 
     fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
-        RecursiveValueMut::Reaction(self)
+        RecursiveValueMut::Behavior(self)
     }
 
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {

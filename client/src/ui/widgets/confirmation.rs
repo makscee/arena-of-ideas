@@ -68,6 +68,7 @@ impl Confirmation {
                 let r = rm(world).close_requested;
                 let rect = ui.ctx().content_rect();
                 ScrollArea::both()
+                    .min_scrolled_width(700.0)
                     .max_width(rect.width() - 30.0)
                     .max_height(rect.height() - 100.0)
                     .show(ui, |ui| {

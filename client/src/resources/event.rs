@@ -26,7 +26,7 @@ impl EventImpl for Event {
                 if let Some(actions) = ctx
                     .load::<NUnitBehavior>(owner)
                     .ok()
-                    .and_then(|ub| ub.reactions.react_actions(self, ctx).cloned())
+                    .and_then(|ub| ub.behavior.react_actions(self, ctx).cloned())
                 {
                     for action in actions {
                         match action.process(ctx) {
@@ -54,8 +54,9 @@ impl EventImpl for Event {
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
                         if let Some(actions) = status
-                            .behavior.load_node(ctx)?
-                            .reactions
+                            .behavior
+                            .load_node(ctx)?
+                            .behavior
                             .react_actions(self, ctx)
                             .cloned()
                         {

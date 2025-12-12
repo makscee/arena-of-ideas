@@ -136,6 +136,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn setup(world: &mut World) {
     let ctx = world.query::<&EguiContext>().single(world).unwrap().get();
     egui_extras::install_image_loaders(&ctx);
+    pd_save_settings();
 }
 
 fn on_error_state(world: &mut World) {

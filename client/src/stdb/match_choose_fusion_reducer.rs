@@ -7,13 +7,13 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[derive(__lib::ser::Serialize, __lib::de::Deserialize, Clone, PartialEq, Debug)]
 #[sats(crate = __lib)]
 pub(super) struct MatchChooseFusionArgs {
-    pub fusion_index: i32,
+    pub fusion_choice: String,
 }
 
 impl From<MatchChooseFusionArgs> for super::Reducer {
     fn from(args: MatchChooseFusionArgs) -> Self {
         Self::MatchChooseFusion {
-            fusion_index: args.fusion_index,
+            fusion_choice: args.fusion_choice,
         }
     }
 }
@@ -34,7 +34,7 @@ pub trait match_choose_fusion {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_match_choose_fusion`] callbacks.
-    fn match_choose_fusion(&self, fusion_index: i32) -> __sdk::Result<()>;
+    fn match_choose_fusion(&self, fusion_choice: String) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `match_choose_fusion`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -44,7 +44,7 @@ pub trait match_choose_fusion {
     /// to cancel the callback.
     fn on_match_choose_fusion(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &i32) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
     ) -> MatchChooseFusionCallbackId;
     /// Cancel a callback previously registered by [`Self::on_match_choose_fusion`],
     /// causing it not to run in the future.
@@ -52,15 +52,15 @@ pub trait match_choose_fusion {
 }
 
 impl match_choose_fusion for super::RemoteReducers {
-    fn match_choose_fusion(&self, fusion_index: i32) -> __sdk::Result<()> {
+    fn match_choose_fusion(&self, fusion_choice: String) -> __sdk::Result<()> {
         self.imp.call_reducer(
             "match_choose_fusion",
-            MatchChooseFusionArgs { fusion_index },
+            MatchChooseFusionArgs { fusion_choice },
         )
     }
     fn on_match_choose_fusion(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &i32) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
     ) -> MatchChooseFusionCallbackId {
         MatchChooseFusionCallbackId(self.imp.on_reducer(
             "match_choose_fusion",
@@ -68,7 +68,7 @@ impl match_choose_fusion for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::MatchChooseFusion { fusion_index },
+                            reducer: super::Reducer::MatchChooseFusion { fusion_choice },
                             ..
                         },
                     ..
@@ -76,7 +76,7 @@ impl match_choose_fusion for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, fusion_index)
+                callback(ctx, fusion_choice)
             }),
         ))
     }

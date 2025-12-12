@@ -246,7 +246,7 @@ pub enum Reducer {
     MatchBossBattle,
     MatchCancelFusion,
     MatchChooseFusion {
-        fusion_index: i32,
+        fusion_choice: String,
     },
     MatchComplete,
     MatchInsert,

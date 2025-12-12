@@ -240,8 +240,9 @@ impl HouseBuilder {
             .units
             .last_mut()
             .expect("Cannot add reaction without a unit");
-        unit.reaction = Some(Reaction {
+        unit.behavior = Some(Behavior {
             trigger,
+            target: Target::default(),
             effect: Effect {
                 description: "Unit reaction".to_string(),
                 actions: actions.into(),
@@ -290,7 +291,7 @@ struct UnitBuilder {
     id: u64,
     pwr: i32,
     hp: i32,
-    reaction: Option<Reaction>,
+    behavior: Option<Behavior>,
 }
 
 impl UnitBuilder {
@@ -299,7 +300,7 @@ impl UnitBuilder {
             id,
             pwr,
             hp,
-            reaction: None,
+            behavior: None,
         }
     }
 
@@ -322,21 +323,14 @@ impl UnitBuilder {
         unit.unit_name = format!("Unit {}", self.id);
         unit.state.set_loaded(state);
 
-        if let Some(reaction) = self.reaction {
-            let mut behavior = NUnitBehavior::default();
-            behavior.set_id(self.id + 3);
-            behavior.reactions = vec![reaction];
-            behavior.stats.set_loaded(stats);
-            behavior.representation.set_loaded(representation);
-            unit.behavior.set_loaded(behavior);
-        } else {
-            let mut behavior = NUnitBehavior::default();
-            behavior.set_id(self.id + 3);
-            behavior.reactions = vec![];
-            behavior.stats.set_loaded(stats);
-            behavior.representation.set_loaded(representation);
-            unit.behavior.set_loaded(behavior);
+        let mut behavior = NUnitBehavior::default();
+        behavior.set_id(self.id + 3);
+        if let Some(beh) = self.behavior {
+            behavior.behavior = beh;
         }
+        behavior.stats.set_loaded(stats);
+        behavior.representation.set_loaded(representation);
+        unit.behavior.set_loaded(behavior);
 
         unit
     }
@@ -378,20 +372,21 @@ impl AbilityBuilder {
 
 struct StatusBuilder {
     id: u64,
-    reactions: Vec<Reaction>,
+    behavior: Behavior,
 }
 
 impl StatusBuilder {
     fn new(id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
         Self {
             id,
-            reactions: vec![Reaction {
+            behavior: Behavior {
                 trigger,
+                target: Target::default(),
                 effect: Effect {
                     description: "Status effect".to_string(),
                     actions: actions.into(),
                 },
-            }],
+            },
         }
     }
 
@@ -406,7 +401,7 @@ impl StatusBuilder {
 
         let mut behavior = NStatusBehavior::default();
         behavior.set_id(behavior_id);
-        behavior.reactions = self.reactions;
+        behavior.behavior = self.behavior.clone();
         behavior.representation.set_loaded(representation);
 
         let mut state = NState::default();

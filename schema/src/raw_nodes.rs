@@ -91,7 +91,7 @@ pub struct NStatusMagic {
 #[derive(Node)]
 #[content]
 pub struct NStatusBehavior {
-    pub reactions: Vec<Reaction>,
+    pub behavior: Behavior,
     pub representation: Component<NStatusRepresentation>,
 }
 
@@ -135,7 +135,7 @@ pub struct NMatch {
     pub shop_offers: Vec<ShopOffer>,
     pub battle_history: Vec<u64>,
     pub pending_battle: Option<u64>,
-    pub fusion: Option<(u64, u64, Vec<PackedNodes>)>,
+    pub fusion: Option<(u64, u64)>,
 
     pub shop_pool: Owned<NShopPool>,
     pub slots: OwnedMultiple<NTeamSlot>,
@@ -168,7 +168,7 @@ pub struct NUnit {
 #[derive(Node)]
 #[content]
 pub struct NUnitBehavior {
-    pub reactions: Vec<Reaction>,
+    pub behavior: Behavior,
     pub stats: Component<NUnitStats>,
     pub representation: Component<NUnitRepresentation>,
 }
