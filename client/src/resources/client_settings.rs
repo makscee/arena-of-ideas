@@ -150,7 +150,7 @@ impl FDisplay for WindowMode {
 }
 
 impl FEdit for WindowMode {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         let (_, response) = Selector::ui_enum(self, ui);
         response
     }

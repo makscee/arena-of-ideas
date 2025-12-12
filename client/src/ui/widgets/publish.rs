@@ -70,7 +70,7 @@ where
                     return;
                 }
                 ui.vertical(|ui| {
-                    node.render_recursive_edit(ui);
+                    node.render_recursive_edit(ui, &EMPTY_CONTEXT);
                 });
 
                 if let Some(true) = button_pressed {

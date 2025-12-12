@@ -217,7 +217,7 @@ impl IncubatorPanes {
                         }
                     }
                     _ => {
-                        node.edit(ui);
+                        node.edit(ui, &EMPTY_CONTEXT);
                     }
                 }
                 if kind == ContentNodeKind::NUnitRepresentation {
@@ -452,7 +452,7 @@ fn render_node_menu_btn<T: ClientNode + FRecursiveNodeEdit>(
                 .fullscreen()
                 .accept_name("Publish")
                 .content(move |ui, world, btn_pressed| {
-                    node.render_recursive_edit(ui);
+                    node.render_recursive_edit(ui, &EMPTY_CONTEXT);
                     if let Some(btn) = btn_pressed {
                         if btn {
                             cn().reducers

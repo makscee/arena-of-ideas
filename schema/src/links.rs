@@ -91,6 +91,7 @@ impl<T: Node> SingleLink<T> for Component<T> {
     fn get(&self) -> NodeResult<&T> {
         match self {
             Component::Loaded { data, .. } => Ok(data),
+            Component::None { .. } => Err(NodeError::custom("Component link is None")),
             _ => Err(NodeError::custom("Component link not loaded")),
         }
     }
@@ -98,6 +99,7 @@ impl<T: Node> SingleLink<T> for Component<T> {
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
             Component::Loaded { data, .. } => Ok(data),
+            Component::None { .. } => Err(NodeError::custom("Component link is None")),
             _ => Err(NodeError::custom("Component link not loaded")),
         }
     }
@@ -164,6 +166,7 @@ impl<T: Node> SingleLink<T> for Owned<T> {
     fn get(&self) -> NodeResult<&T> {
         match self {
             Owned::Loaded { data, .. } => Ok(data),
+            Owned::None { .. } => Err(NodeError::custom("Owned link is None")),
             _ => Err(NodeError::custom("Owned link not loaded")),
         }
     }
@@ -171,6 +174,7 @@ impl<T: Node> SingleLink<T> for Owned<T> {
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
             Owned::Loaded { data, .. } => Ok(data),
+            Owned::None { .. } => Err(NodeError::custom("Owned link is None")),
             _ => Err(NodeError::custom("Owned link not loaded")),
         }
     }

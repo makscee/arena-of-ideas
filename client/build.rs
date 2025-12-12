@@ -295,17 +295,17 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             match field.link_type {
                 LinkType::Component | LinkType::Owned => {
                     quote! {
-                        changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id);
+                        changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id, ctx);
                         if NodeKind::#target_type.is_compact() && self.#field_name.is_loaded() {
                             if let Ok(loaded) = self.#field_name.get_mut() {
-                                changed |= loaded.edit(ui).changed();
+                                changed |= loaded.edit(ui, ctx).changed();
                             }
                         }
                     }
                 }
                 LinkType::OwnedMultiple => {
                     quote! {
-                        changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id);
+                        changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id, ctx);
                     }
                 }
                 LinkType::None => unreachable!(),
@@ -325,7 +325,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                 LinkType::Component | LinkType::Owned => {
                     quote! {
                         if let Ok(loaded) = self.#field_name.get_mut() {
-                            if render_node_field_recursive_with_path(ui, #field_label, loaded, breadcrumb_path) {
+                            if render_node_field_recursive_with_path(ui, #field_label, loaded, breadcrumb_path, ctx) {
                                 return true;
                             }
                         }
@@ -336,7 +336,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
                         if let Ok(items) = self.#field_name.get_mut() {
                             for (index, item) in items.iter_mut().sorted_by_key(|i| i.id()).enumerate() {
                                 let item_field_name = format!("{}#{}", #field_label, index);
-                                if render_node_field_recursive_with_path(ui, &item_field_name, item, breadcrumb_path) {
+                                if render_node_field_recursive_with_path(ui, &item_field_name, item, breadcrumb_path, ctx) {
                                     return true;
                                 }
                             }
@@ -355,6 +355,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             fn render_linked_fields(
                 &mut self,
                 ui: &mut egui::Ui,
+                ctx: &ClientContext,
                 breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
             ) -> bool {
                 let mut changed = false;
@@ -365,6 +366,7 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             fn render_recursive_search(
                 &mut self,
                 ui: &mut egui::Ui,
+                ctx: &ClientContext,
                 breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
             ) -> bool {
                 use crate::ui::render::features::render_node_field_recursive_with_path;
@@ -390,7 +392,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             quote! {
                 ui.horizontal(|ui| {
                     ui.label(#field_label);
-                    let field_response = self.#field_name.edit(ui);
+                    let field_response = self.#field_name.edit(ui, ctx);
                     if field_response.changed() {
                         changed = true;
                     }
@@ -402,7 +404,7 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         #allow_attrs
         impl FEdit for #struct_name {
-            fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
+            fn edit(&mut self, ui: &mut egui::Ui, ctx: &ClientContext) -> egui::Response {
                 let mut changed = false;
                 let mut main_response = ui.group(|ui| {
                     #(#data_field_edits)*

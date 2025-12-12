@@ -125,9 +125,9 @@ impl<T: FRecursive + FTitle> FTitleRecursive for T {}
 
 /// Feature for types that can be edited
 pub trait FEdit {
-    fn edit(&mut self, ui: &mut Ui) -> Response;
-    fn edit_self(&mut self, ui: &mut Ui) -> Response {
-        self.edit(ui)
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response;
+    fn edit_self(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
+        self.edit(ui, ctx)
     }
 }
 

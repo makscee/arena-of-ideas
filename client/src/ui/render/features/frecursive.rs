@@ -3,10 +3,10 @@ use super::*;
 /// Feature for types that can be rendered recursively with breadcrumb navigation
 pub trait FRecursiveNodeEdit: FEdit + FTitle + ClientNode + Clone + Debug {
     /// Render the node recursively, handling breadcrumbs and inspection state
-    fn render_recursive_edit(&mut self, ui: &mut Ui) -> bool {
+    fn render_recursive_edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> bool {
         let node_id = self.id();
         ui.set_edit_context(node_id);
-        let result = render_node_field_recursive_with_path(ui, "root", self, &mut vec![]);
+        let result = render_node_field_recursive_with_path(ui, "root", self, &mut vec![], ctx);
         ui.clear_edit_context();
         result
     }
@@ -15,6 +15,7 @@ pub trait FRecursiveNodeEdit: FEdit + FTitle + ClientNode + Clone + Debug {
     fn render_linked_fields(
         &mut self,
         ui: &mut Ui,
+        ctx: &ClientContext,
         breadcrumb_path: &mut Vec<NodeBreadcrumb>,
     ) -> bool;
 
@@ -22,6 +23,7 @@ pub trait FRecursiveNodeEdit: FEdit + FTitle + ClientNode + Clone + Debug {
     fn render_recursive_search(
         &mut self,
         ui: &mut Ui,
+        ctx: &ClientContext,
         breadcrumb_path: &mut Vec<NodeBreadcrumb>,
     ) -> bool;
 }
@@ -86,20 +88,38 @@ pub fn render_breadcrumbs(ui: &mut Ui, breadcrumb_path: &[NodeBreadcrumb]) -> Op
 /// Helper trait for rendering node link fields
 pub trait NodeLinkRender {
     /// Render a single link field (Component or Owned)
-    fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
+    fn render_single_link<L, T>(
+        &mut self,
+        field_name: &str,
+        link: &mut L,
+        owner_id: u64,
+        ctx: &ClientContext,
+    ) -> bool
     where
         L: SingleLink<T>,
         T: FRecursiveNodeEdit + Node + Default;
 
     /// Render a multiple link field
-    fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
+    fn render_multiple_link<L, T>(
+        &mut self,
+        field_name: &str,
+        link: &mut L,
+        owner_id: u64,
+        ctx: &ClientContext,
+    ) -> bool
     where
         L: MultipleLink<T>,
         T: FRecursiveNodeEdit + Node + Default;
 }
 
 impl NodeLinkRender for Ui {
-    fn render_single_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
+    fn render_single_link<L, T>(
+        &mut self,
+        field_name: &str,
+        link: &mut L,
+        owner_id: u64,
+        ctx: &ClientContext,
+    ) -> bool
     where
         L: SingleLink<T>,
         T: FRecursiveNodeEdit + Node + Default,
@@ -148,10 +168,16 @@ impl NodeLinkRender for Ui {
         }
     }
 
-    fn render_multiple_link<L, T>(&mut self, field_name: &str, link: &mut L, owner_id: u64) -> bool
+    fn render_multiple_link<L, T>(
+        &mut self,
+        field_name: &str,
+        link: &mut L,
+        owner_id: u64,
+        ctx: &ClientContext,
+    ) -> bool
     where
         L: MultipleLink<T>,
-        T: FRecursiveNodeEdit + Default,
+        T: FRecursiveNodeEdit + Node + Default,
     {
         let mut changed = false;
 
@@ -300,6 +326,7 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
     field_name: &str,
     field_node: &mut T,
     breadcrumb_path: &mut Vec<NodeBreadcrumb>,
+    ctx: &ClientContext,
 ) -> bool {
     let node_id = field_node.id();
     let node_kind = field_node.kind();
@@ -324,17 +351,25 @@ pub fn render_node_field_recursive_with_path<T: FRecursiveNodeEdit>(
                 format!("[tw [b Owner:]] #[tw {}]", field_node.owner()).label(ui);
             });
         });
-        changed |= field_node.edit(ui).changed();
+        ctx.exec_ref(|ctx| {
+            ctx.set_owner(node_id);
+            changed |= field_node.edit(ui, ctx).changed();
+            Ok(())
+        })
+        .ui(ui);
         ui.separator();
-        changed |= field_node.render_linked_fields(ui, breadcrumb_path);
+        changed |= field_node.render_linked_fields(ui, ctx, breadcrumb_path);
 
         changed
     } else if inspected.is_none() {
         ui.set_inspected_node(node_id);
         false
     } else {
-        // Other node is inspected - recurse through linked fields to find it
-        field_node.render_recursive_search(ui, breadcrumb_path)
+        ctx.exec_ref(|ctx| {
+            ctx.set_owner(node_id);
+            Ok(field_node.render_recursive_search(ui, ctx, breadcrumb_path))
+        })
+        .unwrap()
     };
     breadcrumb_path.pop();
     changed

@@ -266,18 +266,24 @@ impl BattleEditorPlugin {
             }
         });
 
-        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
-            let needs_reload = if left {
-                state.left_team.render_recursive_edit(ui)
-            } else {
-                state.right_team.render_recursive_edit(ui)
-            };
+        let mut needs_reload = false;
+        world.resource_scope(|world, mut state: Mut<BattleEditorState>| {
+            world
+                .resource::<BattleData>()
+                .source
+                .exec_context_ref(|ctx| {
+                    needs_reload = if left {
+                        state.left_team.render_recursive_edit(ui, ctx)
+                    } else {
+                        state.right_team.render_recursive_edit(ui, ctx)
+                    };
 
-            if needs_reload {
-                BattleEditorPlugin::save_changes_and_reload(world);
-            }
-        } else {
-            "[red [b BattleEditorState] not found]".cstr().label(ui);
+                    Ok(())
+                })
+                .ui(ui);
+        });
+        if needs_reload {
+            BattleEditorPlugin::save_changes_and_reload(world);
         }
     }
 
@@ -307,7 +313,7 @@ impl BattleEditorPlugin {
             })
             .unwrap_or(true);
 
-        let mut state = world.resource_mut::<BattleEditorState>();
+        let state = world.resource_mut::<BattleEditorState>();
 
         pd_mut(|pd| {
             pd.client_state

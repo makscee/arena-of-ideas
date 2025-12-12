@@ -93,37 +93,37 @@ impl FDisplay for HexColor {
 
 // FEdit implementations for basic types
 impl FEdit for i32 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         DragValue::new(self).ui(ui)
     }
 }
 
 impl FEdit for f32 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         DragValue::new(self).min_decimals(1).ui(ui)
     }
 }
 
 impl FEdit for String {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         Input::new("").ui_string(self, ui)
     }
 }
 
 impl FEdit for u8 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         DragValue::new(self).ui(ui)
     }
 }
 
 impl FEdit for u64 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         DragValue::new(self).ui(ui)
     }
 }
 
 impl FEdit for usize {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         let mut val = *self as i32;
         let resp = DragValue::new(&mut val).ui(ui);
         *self = val.max(0) as usize;
@@ -132,13 +132,13 @@ impl FEdit for usize {
 }
 
 impl FEdit for bool {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         Checkbox::new(self, "").ui(ui)
     }
 }
 
 impl FEdit for Vec2 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         ui.horizontal(|ui| {
             let rx = DragValue::new(&mut self.x).prefix("x:").ui(ui);
             let ry = DragValue::new(&mut self.y).prefix("y:").ui(ui);
@@ -149,7 +149,7 @@ impl FEdit for Vec2 {
 }
 
 impl FEdit for Color32 {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         ui.horizontal(|ui| {
             let mut hsva = (*self).into();
             let response = ui.color_edit_button_hsva(&mut hsva);
@@ -163,7 +163,7 @@ impl FEdit for Color32 {
 }
 
 impl FEdit for HexColor {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         ui.horizontal(|ui| {
             let input_id = ui.next_auto_id().with("input");
             let c = self.try_c32().ok();
@@ -194,7 +194,7 @@ impl FEdit for HexColor {
 }
 
 impl FEdit for MatchState {
-    fn edit(&mut self, ui: &mut egui::Ui) -> egui::Response {
+    fn edit(&mut self, ui: &mut egui::Ui, _ctx: &ClientContext) -> egui::Response {
         let response = ui.label("MatchState");
         egui::ComboBox::from_id_salt("match_state")
             .selected_text(format!("{:?}", self))
@@ -232,7 +232,7 @@ impl FDisplay for VarName {
 }
 
 impl FEdit for VarName {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         let (_old_value, response) = Selector::ui_enum(self, ui);
         response
     }
@@ -271,19 +271,19 @@ impl FDisplay for VarValue {
 }
 
 impl FEdit for VarValue {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let (_, mut response) = Selector::ui_enum(self, ui);
         ui.horizontal(|ui| match self {
-            VarValue::i32(v) => response |= v.edit(ui),
-            VarValue::f32(v) => response |= v.edit(ui),
+            VarValue::i32(v) => response |= v.edit(ui, ctx),
+            VarValue::f32(v) => response |= v.edit(ui, ctx),
             VarValue::u64(v) => response |= DragValue::new(v).ui(ui),
-            VarValue::bool(v) => response |= v.edit(ui),
-            VarValue::String(v) => response |= v.edit(ui),
-            VarValue::Vec2(v) => response |= v.edit(ui),
-            VarValue::Color32(v) => response |= v.edit(ui),
+            VarValue::bool(v) => response |= v.edit(ui, ctx),
+            VarValue::String(v) => response |= v.edit(ui, ctx),
+            VarValue::Vec2(v) => response |= v.edit(ui, ctx),
+            VarValue::Color32(v) => response |= v.edit(ui, ctx),
             VarValue::list(v) => {
                 for v in v {
-                    response |= v.edit(ui);
+                    response |= v.edit(ui, ctx);
                 }
             }
         });
@@ -311,7 +311,7 @@ impl FDisplay for Expression {
 }
 
 impl FEdit for Expression {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let (old_value, mut response) = Selector::ui_enum(self, ui);
         const DEBUG_TXT: &str = "🪲 Debug";
         const SCALE_TXT: &str = "⚖️ Scale";
@@ -322,7 +322,7 @@ impl FEdit for Expression {
             .add_paste()
             .add_action_empty(DEBUG_TXT)
             .add_action_empty(SCALE_TXT)
-            .compose_with_menu(&EMPTY_CONTEXT, ui);
+            .compose_with_menu(ctx, ui);
         if let Some(d) = menu_response.custom_action() {
             if d.eq(DEBUG_TXT) {
                 *self = Expression::dbg(self.clone().into());
@@ -348,7 +348,7 @@ impl FTitle for Trigger {
 }
 
 impl FEdit for Trigger {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.horizontal(|ui| {
             "[tw Trigger:]".cstr().label(ui);
             let resp = Selector::ui_enum(self, ui).1;
@@ -365,8 +365,8 @@ impl FEdit for Trigger {
                 | Trigger::ChangeOutgoingDamage
                 | Trigger::ChangeIncomingDamage
                 | Trigger::AllyDeath => resp,
-                Trigger::ChangeStat(var) => var.edit(ui) | resp,
-                Trigger::Any(triggers) => triggers.edit(ui) | resp,
+                Trigger::ChangeStat(var) => var.edit(ui, ctx) | resp,
+                Trigger::Any(triggers) => triggers.edit(ui, ctx) | resp,
             }
         })
         .inner
@@ -374,7 +374,7 @@ impl FEdit for Trigger {
 }
 
 impl FEdit for Target {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.horizontal(|ui| {
             "[tw Target:]".cstr().label(ui);
             let resp = Selector::ui_enum(self, ui).1;
@@ -411,7 +411,7 @@ impl FEdit for Target {
                     .inner
                         | resp
                 }
-                Target::List(targets) => targets.edit(ui) | resp,
+                Target::List(targets) => targets.edit(ui, ctx) | resp,
             }
         })
         .inner
@@ -475,54 +475,87 @@ impl FDisplay for Action {
 }
 
 impl FEdit for Action {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         "[tw Action:]".cstr().label(ui);
-        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui))
+        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui, ctx))
             .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(&EMPTY_CONTEXT, ui)
+            .compose(ctx, ui)
     }
-    fn edit_self(&mut self, ui: &mut Ui) -> Response {
-        let (old_value, response) = Selector::ui_enum(self, ui);
+    fn edit_self(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
+        let (old_value, mut response) = Selector::ui_enum(self, ui);
         let menu_resp = self
             .as_empty_mut()
             .with_menu()
             .add_copy()
             .add_paste()
-            .compose_with_menu(&EMPTY_CONTEXT, ui);
+            .compose_with_menu(ctx, ui);
         if let Some(value) = menu_resp.pasted() {
             *self = value.clone();
         }
         if let Some(mut old_val) = old_value {
             self.move_inner_fields_from(&mut old_val);
         }
-
+        fn house_selector(
+            ui: &mut Ui,
+            ctx: &ClientContext,
+            house_name: &mut String,
+            is_ability: bool,
+        ) -> Option<NHouse> {
+            match ctx.exec_ref(|ctx| {
+                let owner = ctx.owner()?;
+                let parent = ctx
+                    .first_parent(owner, NodeKind::NTeam)
+                    .or_else(|_| ctx.first_parent(owner, NodeKind::NMatch))?;
+                let houses = ctx.collect_kind_children_recursive(parent, NodeKind::NHouse)?;
+                let mut houses: HashMap<String, NHouse> = HashMap::from_iter(
+                    ctx.load_many_ref::<NHouse>(&houses)?
+                        .into_iter()
+                        .cloned()
+                        .filter_map(|mut h| {
+                            if (is_ability && h.ability.load_mut(ctx).is_ok_and(|a| a.is_loaded())
+                                || !is_ability
+                                    && h.status.load_mut(ctx).is_ok_and(|a| a.is_loaded()))
+                                && h.color.load_mut(ctx).is_ok_and(|a| a.is_loaded())
+                            {
+                                Some((h.name().to_owned(), h))
+                            } else {
+                                None
+                            }
+                        }),
+                );
+                "[tw House:]".cstr().label(ui);
+                if Selector::ui_iter(house_name, houses.keys(), ui).0 {
+                    let house = houses.remove(house_name).unwrap();
+                    return Ok(Some(house));
+                }
+                Ok(None)
+            }) {
+                Ok(h) => h,
+                Err(e) => {
+                    e.ui(ui);
+                    None
+                }
+            }
+        }
         match self {
             Action::use_ability(house_name, ability_name, color) => {
                 ui.horizontal(|ui| {
-                    ui.label("House:");
-                    ui.text_edit_singleline(house_name);
-                    ui.label("Ability:");
-                    ui.text_edit_singleline(ability_name);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Color:");
-                    let mut hex_str = color.0.clone();
-                    ui.text_edit_singleline(&mut hex_str);
-                    color.0 = hex_str;
+                    if let Some(mut house) = house_selector(ui, ctx, house_name, true) {
+                        *ability_name = house.ability.take_loaded().unwrap().ability_name;
+                        *color = house.color.take_loaded().unwrap().color;
+                        response.mark_changed();
+                    }
+                    format!("[{} [b {}][tw /]{}]", color, house_name, ability_name).label(ui);
                 });
             }
             Action::apply_status(house_name, status_name, color) => {
                 ui.horizontal(|ui| {
-                    ui.label("House:");
-                    ui.text_edit_singleline(house_name);
-                    ui.label("Status:");
-                    ui.text_edit_singleline(status_name);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Color:");
-                    let mut hex_str = color.0.clone();
-                    ui.text_edit_singleline(&mut hex_str);
-                    color.0 = hex_str;
+                    if let Some(mut house) = house_selector(ui, ctx, house_name, false) {
+                        *status_name = house.status.take_loaded().unwrap().status_name;
+                        *color = house.color.take_loaded().unwrap().color;
+                        response.mark_changed();
+                    }
+                    format!("[{} [b {}][tw /]{}]", color, house_name, status_name).label(ui);
                 });
             }
             _ => {}
@@ -554,12 +587,12 @@ impl FDisplay for PainterAction {
 }
 
 impl FEdit for PainterAction {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
-        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui))
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
+        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui, ctx))
             .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(&EMPTY_CONTEXT, ui)
+            .compose(ctx, ui)
     }
-    fn edit_self(&mut self, ui: &mut Ui) -> Response {
+    fn edit_self(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         let (old_value, response) = Selector::ui_enum(self, ui);
         let menu_resp = self
             .as_empty_mut()
@@ -596,10 +629,10 @@ impl FDisplay for Material {
 }
 
 impl FEdit for Material {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
-            let mut response = self.paint_viewer(&EMPTY_CONTEXT, ui);
-            response |= self.0.edit(ui);
+            let mut response = self.paint_viewer(ctx, ui);
+            response |= self.0.edit(ui, ctx);
             response
         })
         .inner
@@ -649,25 +682,27 @@ impl FDisplay for Behavior {
 }
 
 impl FEdit for Effect {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
             let response = ui
                 .horizontal(|ui| {
                     ui.label("Description:");
-                    self.description.edit(ui)
+                    self.description.edit(ui, ctx)
                 })
                 .inner;
             ui.label("Actions:");
-            self.actions.edit(ui).union(response)
+            self.actions.edit(ui, ctx).union(response)
         })
         .inner
     }
 }
 
 impl FEdit for Behavior {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
-        ui.vertical(|ui| self.trigger.edit(ui) | self.target.edit(ui) | self.effect.edit(ui))
-            .inner
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
+        ui.vertical(|ui| {
+            self.trigger.edit(ui, ctx) | self.target.edit(ui, ctx) | self.effect.edit(ui, ctx)
+        })
+        .inner
     }
 }
 
@@ -1964,12 +1999,12 @@ impl FPlaceholder for NTeamSlot {
     }
 }
 impl FEdit for ShopOffer {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
                 ui.label("Buy Limit:");
                 if let Some(ref mut limit) = self.buy_limit {
-                    limit.edit(ui)
+                    limit.edit(ui, ctx)
                 } else {
                     if ui.button("Set Limit").clicked() {
                         self.buy_limit = Some(1);
@@ -1984,19 +2019,19 @@ impl FEdit for ShopOffer {
 }
 
 impl FEdit for ShopSlot {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
             let mut response = ui
                 .horizontal(|ui| {
                     ui.label("Card Kind:");
-                    self.card_kind.edit(ui)
+                    self.card_kind.edit(ui, ctx)
                 })
                 .inner;
 
             response = response.union(
                 ui.horizontal(|ui| {
                     ui.label("Node ID:");
-                    self.node_id.edit(ui)
+                    self.node_id.edit(ui, ctx)
                 })
                 .inner,
             );
@@ -2004,7 +2039,7 @@ impl FEdit for ShopSlot {
             response = response.union(
                 ui.horizontal(|ui| {
                     ui.label("Price:");
-                    self.price.edit(ui)
+                    self.price.edit(ui, ctx)
                 })
                 .inner,
             );
@@ -2012,7 +2047,7 @@ impl FEdit for ShopSlot {
             response = response.union(
                 ui.horizontal(|ui| {
                     ui.label("Sold:");
-                    self.sold.edit(ui)
+                    self.sold.edit(ui, ctx)
                 })
                 .inner,
             );
@@ -2024,7 +2059,7 @@ impl FEdit for ShopSlot {
 }
 
 impl FEdit for CardKind {
-    fn edit(&mut self, _: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         // let (_, response) = Selector::ui_iter(self, ui);
         // response
         todo!()
@@ -2051,11 +2086,11 @@ impl<T: FDisplay> FDisplay for Vec<T> {
 }
 
 impl<T: FEdit + Default> FEdit for Vec<T> {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
-            self.as_mutable_list(|a, _, ui| a.edit(ui))
+            self.as_mutable_list(|a, _, ui| a.edit(ui, ctx))
                 .editable(|| T::default())
-                .compose(&EMPTY_CONTEXT, ui)
+                .compose(ctx, ui)
         })
         .inner
     }
@@ -2078,11 +2113,11 @@ impl FDisplay for Vec<Box<PainterAction>> {
 }
 
 impl FEdit for Vec<Box<PainterAction>> {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {
-            self.as_mutable_list(|a, _, ui| a.edit(ui))
+            self.as_mutable_list(|a, _, ui| a.edit(ui, ctx))
                 .editable(|| Box::new(PainterAction::default()))
-                .compose(&EMPTY_CONTEXT, ui)
+                .compose(ctx, ui)
         })
         .inner
     }
@@ -2143,7 +2178,7 @@ impl<T: FDisplay> FDisplay for Option<T> {
 }
 
 impl<T: FEdit + Default> FEdit for Option<T> {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let mut is_some = self.is_some();
         let checkbox_response = Checkbox::new(&mut is_some, "").ui(ui);
         if checkbox_response.changed() {
@@ -2154,7 +2189,7 @@ impl<T: FEdit + Default> FEdit for Option<T> {
             }
         }
         let edit_response = if let Some(v) = self {
-            v.edit(ui)
+            v.edit(ui, ctx)
         } else {
             ui.label("(none)")
         };
@@ -2163,7 +2198,7 @@ impl<T: FEdit + Default> FEdit for Option<T> {
 }
 
 impl FEdit for Colorix {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         ui.group(|ui| {
             ui.label("Theme Configuration");
 
@@ -2529,13 +2564,13 @@ impl FPreview for NStatusMagic {
 }
 
 impl FEdit for Option<(u64, u64, Vec<PackedNodes>)> {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
         "fusions".cstr().label(ui)
     }
 }
 
 impl FEdit for Option<(u64, u64)> {
-    fn edit(&mut self, ui: &mut Ui) -> Response {
+    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         let resp = ui.checkbox(&mut self.is_none(), "");
         if resp.changed() {
             if self.is_some() {
