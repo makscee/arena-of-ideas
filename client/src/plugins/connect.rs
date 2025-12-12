@@ -1,3 +1,4 @@
+use jsonwebtoken::{TokenData, dangerous::insecure_decode};
 use spacetimedb_lib::Identity;
 use spacetimedb_sdk::credentials;
 
@@ -7,7 +8,11 @@ pub struct ConnectPlugin;
 
 impl Plugin for ConnectPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Connect), Self::run_connect);
+        app.add_systems(
+            OnEnter(GameState::Connect),
+            (Self::run_connect, store_token_data),
+        );
+        app.init_resource::<LoginData>();
     }
 }
 
@@ -34,6 +39,13 @@ pub fn on_connect(operation: impl FnOnce(&mut World) + Send + Sync + 'static) {
 
 pub(crate) fn creds_store() -> credentials::File {
     credentials::File::new("aoi_creds")
+}
+
+fn store_token_data(ao: Res<AuthOption>, mut ld: ResMut<LoginData>) {
+    // TODO: need secure decode with verification for prod - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/fn.decode.html
+    let token = ao.id_token.as_ref().unwrap();
+    // let token_data: TokenData<Claims> = insecure_decode(token).expect("Failed to decode token");
+    // ld.username = token_data.claims.preferred_username;
 }
 
 impl ConnectPlugin {
@@ -80,4 +92,26 @@ impl ConnectPlugin {
             }
         }
     }
+}
+
+struct Claims {
+    // Standard Claims
+    pub sub: String,
+    pub iss: String,
+    pub aud: String, // Can be String or Vec<String>, your payload has a String
+    pub exp: usize,
+    pub iat: usize,
+
+    // Custom & OIDC Claims
+    pub email: String,
+    pub email_verified: bool,
+    pub picture: String,
+    pub preferred_username: String,
+    pub project_id: String,
+    pub login_method: String,
+
+    // Nullable fields must be Option<T>
+    pub name: Option<String>,
+    pub given_name: Option<String>,
+    pub family_name: Option<String>,
 }

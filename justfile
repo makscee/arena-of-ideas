@@ -11,7 +11,7 @@ pingiza:
     spacetime server ping iza-web
 
 publishiza:
-    spacetime publish -p server -s iza-web aoidev --delete-data -y
+    spacetime publish -p server -s iza-web aoi-dev --delete-data -y
 
 gen-binds:
-    spacetime generate --lang rust --out-dir client/src/stdb --project-path server
+    spacetime generate --lang rust --out-dir client/src/stdb --project-path server -y

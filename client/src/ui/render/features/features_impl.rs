@@ -1835,7 +1835,7 @@ impl FPlaceholder for NFloorBoss {
 
 impl FPlaceholder for NPlayerData {
     fn placeholder() -> Self {
-        NPlayerData::new(next_id(), 0, None, true, 0)
+        NPlayerData::new(next_id(), 0, true, 0)
     }
 }
 

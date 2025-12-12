@@ -31,21 +31,20 @@ impl StdbAuthPlugin {
                     .label(ui);
                 if (pd().client_settings.auto_login
                     || Button::new("Login")
-                        .enabled(!ld.id_token.is_none())
+                        //.enabled(!ld.id_token.is_none())
                         .ui(ui)
                         .clicked())
-                    && !ld.id_token.is_none()
+                // && !ld.id_token.is_none()
                 {
                     ld.id_token = creds_store().load().expect("Token not found");
                     let _ = cn().reducers.login_by_identity();
                 }
                 br(ui);
                 if Button::new("Logout")
-                    .enabled(!ld.id_token.is_none())
+                    //.enabled(!ld.id_token.is_none())
                     .gray(ui)
                     .ui(ui)
                     .clicked()
-                    || ConnectOption::get(world).identity != *identity
                 {
                     pd_mut(|data| data.client_state.last_logged_in = None);
                 }

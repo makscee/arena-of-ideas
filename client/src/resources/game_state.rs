@@ -13,7 +13,6 @@ pub enum GameState {
     Auth,
     Connect,
     Login,
-    //Registration,
     Shop,
     Battle,
     MatchOver,

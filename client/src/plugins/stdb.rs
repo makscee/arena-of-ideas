@@ -1,5 +1,3 @@
-use crate::login;
-
 use super::*;
 
 static UPDATE_QUEUE: once_cell::sync::Lazy<Mutex<VecDeque<StdbUpdate>>> =
@@ -206,9 +204,6 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
         AllReducers::IdentityDisconnected => {
             r.on_identity_disconnected(|e| default_callback(e));
         }
-        AllReducers::Login => {
-            r.on_login(|e, _, _| default_callback(e));
-        }
         AllReducers::LoginByIdentity => {
             r.on_login_by_identity(|e| default_callback(e));
         }
@@ -258,10 +253,7 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
             r.on_match_start_fusion(|e, _, _| default_callback(e));
         }
         AllReducers::Register => {
-            r.on_register(|e, _, _| default_callback(e));
-        }
-        AllReducers::SetPassword => {
-            r.on_set_password(|e, _, _| default_callback(e));
+            r.on_register(|e, _| default_callback(e));
         }
         AllReducers::MatchSubmitBattleResult => {
             cn().reducers.on_match_submit_battle_result(|e, _, _, _| {

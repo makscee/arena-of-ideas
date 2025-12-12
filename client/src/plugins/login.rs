@@ -1,7 +1,3 @@
-use jsonwebtoken::{TokenData, dangerous::insecure_decode};
-
-use crate::login;
-
 use super::*;
 
 pub const HOME_DIR: &str = ".aoi";
@@ -20,51 +16,39 @@ impl Plugin for LoginPlugin {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    // Standard Claims
-    pub sub: String,
-    pub iss: String,
-    pub aud: String, // Can be String or Vec<String>, your payload has a String
-    pub exp: usize,
-    pub iat: usize,
-
-    // Custom & OIDC Claims
-    pub email: String,
-    pub email_verified: bool,
-    pub picture: String,
-    pub preferred_username: String,
-    pub project_id: String,
-    pub login_method: String,
-
-    // Nullable fields must be Option<T>
-    pub name: Option<String>,
-    pub given_name: Option<String>,
-    pub family_name: Option<String>,
+#[derive(Resource, Default)]
+pub struct LoginData {
+    pub user_exists: bool,
+    pub username: String,
 }
 
 impl LoginPlugin {
     fn login() {
+        let _ = cn().reducers.login_by_identity();
         cn().reducers.on_login_by_identity(|e| {
             if !e.check_identity() {
                 return;
             }
-            e.event.on_success_error(LoginPlugin::complete, || {
-                op(|world| {
-                    info!("Logging in with identity");
-                    pd_mut(|pd| pd.client_state.last_logged_in = None);
-                });
-            });
-        });
-        cn().reducers.on_login(|e, _, _| {
-            if !e.check_identity() {
-                return;
+            match &e.event.status {
+                spacetimedb_sdk::Status::Committed => {
+                    op(|world| {
+                        if let Some(mut ld) = world.get_resource_mut::<LoginData>() {
+                            ld.user_exists = true;
+                        }
+                    });
+                    e.event.on_success_error(LoginPlugin::complete, || {
+                        info!("Logging in with identity");
+                        pd_mut(|pd| pd.client_state.last_logged_in = None);
+                    });
+                }
+                spacetimedb_sdk::Status::Failed(err) => {
+                    let err_str = err.to_string();
+                    if err_str.contains("NO_IDENTITY_FOUND") {
+                        info!("No player found for identity");
+                    }
+                }
+                _ => panic!(),
             }
-            e.event.on_success_error(LoginPlugin::complete, || {
-                op(|world| {
-                    pd_mut(|pd| pd.client_state.last_logged_in = None);
-                });
-            });
         });
     }
     fn complete() {
@@ -109,13 +93,37 @@ impl LoginPlugin {
     pub fn pane_login(ui: &mut Ui, world: &mut World) {
         ui.vertical_centered_justified(|ui| {
             ui.add_space(ui.available_height() * 0.3);
-            let token = world.resource::<AuthOption>();
+            ui.set_width(350.0.at_most(ui.available_width()));
+            let mut ld = world.resource_mut::<LoginData>();
+            if ld.user_exists {
+                // --- EXISTING USER ---
+                format!("Welcome - {}", ld.username)
+                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
+                    .label(ui);
+                if Button::new("Continue").ui(ui).clicked() {
+                    //let _ = cn().reducers.login_by_identity();
+                }
+            } else {
+                // --- NEW USER: SHOW REGISTER UI ---
+                "Register New Player"
+                    .cstr_cs(high_contrast_text(), CstrStyle::Heading2)
+                    .label(ui);
 
-            let token_data: TokenData<Claims> =
-                insecure_decode(token.id_token.as_ref().unwrap()).expect("Failed to decode token");
-            format!("Welcome {}", token_data.claims.preferred_username)
-                .cstr_cs(high_contrast_text(), CstrStyle::Heading)
-                .label(ui);
+                // Username is prefilled from OIDC token
+                Input::new("username").ui_string(&mut ld.username, ui);
+
+                if Button::new("Register").ui(ui).clicked() {
+                    // Call the new reducer
+                    cn().reducers.on_register(|e, _| {
+                        if !e.check_identity() {
+                            return;
+                        }
+                        e.event.on_success(LoginPlugin::complete);
+                    });
+
+                    cn().reducers.register(ld.username.clone()).unwrap();
+                }
+            }
         });
     }
 }
