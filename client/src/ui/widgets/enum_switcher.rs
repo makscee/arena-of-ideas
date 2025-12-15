@@ -38,7 +38,7 @@ impl EnumSwitcher {
                 *c = c.cstr_s(style);
             }
             if let Some(prefix) = es.prefix.clone() {
-                *c = prefix + c;
+                *c = prefix + c.as_str();
             }
         }
         if self.columns {
