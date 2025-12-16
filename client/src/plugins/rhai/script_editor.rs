@@ -1,5 +1,7 @@
 use super::*;
+use crate::ui::render::features::FEdit;
 use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
+use schema::RhaiScript;
 
 #[derive(Clone, Resource)]
 pub struct ScriptEditorState {
@@ -100,7 +102,49 @@ fn create_rhai_syntax() -> Syntax {
     syntax.special.insert("unit_actions");
     syntax.special.insert("status_actions");
     syntax.special.insert("ability_actions");
+    syntax.special.insert("painter");
     syntax.special.insert("x");
 
     syntax
+}
+
+pub fn show_rhai_script_editor<T: schema::ScriptAction>(
+    script: &mut RhaiScript<T>,
+    ui: &mut egui::Ui,
+) -> Response {
+    ui.vertical(|ui| {
+        ui.horizontal(|ui| {
+            ui.label("Description:");
+            ui.text_edit_singleline(&mut script.description);
+        });
+
+        ui.label("Script Code:");
+        let syntax = create_rhai_syntax();
+        let editor_height = 300.0;
+
+        ui.group(|ui| {
+            ui.set_min_height(editor_height);
+            CodeEditor::default()
+                .id_source("rhai_script_editor")
+                .with_rows((editor_height / 14.0) as usize)
+                .with_fontsize(13.0)
+                .with_theme(ColorTheme::GRUVBOX)
+                .with_syntax(syntax)
+                .with_numlines(true)
+                .show(ui, &mut script.code);
+        });
+
+        if !script.code.is_empty() {
+            ui.colored_label(egui::Color32::GREEN, "✓ Script compiled");
+        } else {
+            ui.colored_label(egui::Color32::YELLOW, "○ Empty script");
+        }
+    })
+    .response
+}
+
+impl<T: schema::ScriptAction> FEdit for RhaiScript<T> {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
+        show_rhai_script_editor(self, ui)
+    }
 }

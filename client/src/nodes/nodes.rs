@@ -117,7 +117,12 @@ impl NodeKindOnSpawn for NodeKind {
                 let unit = ctx.load::<NUnit>(id)?;
                 if let Ok(behavior) = unit.behavior.load_node(ctx) {
                     if let Ok(mut rep) = behavior.representation.load_node(ctx) {
-                        rep.material.0.append(&mut unit_rep().material.0.clone());
+                        // Material is now a script, so we merge the code
+                        let default_mat_code = unit_rep().material.script.code.clone();
+                        if !default_mat_code.is_empty() {
+                            rep.material.script.code =
+                                format!("{}\n{}", rep.material.script.code, default_mat_code);
+                        }
                         rep.spawn(ctx, Some(entity))?;
                     } else {
                         let rep_id = next_id();

@@ -48,7 +48,7 @@ epaint_default_fonts = { workspace = true }
 
 backtrace = { workspace = true }
 mlua = { workspace = true }
-rhai = { version = "1.19", features = ["serde", "sync", "only_i32"] }
+rhai = { workspace = true }
 egui_code_editor = "0.2"
 
 bevy_asset_loader = { git = "https://github.com/NiklasEi/bevy_asset_loader.git", branch = "bevy_main", features = [

@@ -374,228 +374,13 @@ impl FRecursive for Action {
     }
 }
 
-// PainterAction
-impl FRecursive for PainterAction {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        match self {
-            PainterAction::paint => vec![],
-
-            PainterAction::circle(radius) => {
-                vec![RecursiveField::named(
-                    "radius",
-                    RecursiveValue::Expr(radius.as_ref()),
-                )]
-            }
-            PainterAction::rectangle(size) => {
-                vec![RecursiveField::named(
-                    "size",
-                    RecursiveValue::Expr(size.as_ref()),
-                )]
-            }
-            PainterAction::text(content) => {
-                vec![RecursiveField::named(
-                    "content",
-                    RecursiveValue::Expr(content.as_ref()),
-                )]
-            }
-            PainterAction::hollow(thickness) => {
-                vec![RecursiveField::named(
-                    "thickness",
-                    RecursiveValue::Expr(thickness.as_ref()),
-                )]
-            }
-            PainterAction::translate(offset) => {
-                vec![RecursiveField::named(
-                    "offset",
-                    RecursiveValue::Expr(offset.as_ref()),
-                )]
-            }
-            PainterAction::rotate(angle) => {
-                vec![RecursiveField::named(
-                    "angle",
-                    RecursiveValue::Expr(angle.as_ref()),
-                )]
-            }
-            PainterAction::scale_mesh(factor) => {
-                vec![RecursiveField::named(
-                    "factor",
-                    RecursiveValue::Expr(factor.as_ref()),
-                )]
-            }
-            PainterAction::scale_rect(factor) => {
-                vec![RecursiveField::named(
-                    "factor",
-                    RecursiveValue::Expr(factor.as_ref()),
-                )]
-            }
-            PainterAction::color(color_expr) => {
-                vec![RecursiveField::named(
-                    "color",
-                    RecursiveValue::Expr(color_expr.as_ref()),
-                )]
-            }
-            PainterAction::alpha(alpha_expr) => {
-                vec![RecursiveField::named(
-                    "alpha",
-                    RecursiveValue::Expr(alpha_expr.as_ref()),
-                )]
-            }
-            PainterAction::feathering(amount) => {
-                vec![RecursiveField::named(
-                    "amount",
-                    RecursiveValue::Expr(amount.as_ref()),
-                )]
-            }
-
-            PainterAction::curve {
-                thickness,
-                curvature,
-            } => vec![
-                RecursiveField::named("thickness", RecursiveValue::Expr(thickness.as_ref())),
-                RecursiveField::named("curvature", RecursiveValue::Expr(curvature.as_ref())),
-            ],
-
-            PainterAction::repeat(count, action) => vec![
-                RecursiveField::named("count", RecursiveValue::Expr(count.as_ref())),
-                RecursiveField::named("action", RecursiveValue::PainterAction(action.as_ref())),
-            ],
-
-            PainterAction::list(actions) => vec![RecursiveField::named(
-                "items",
-                RecursiveValue::PainterActionList(actions),
-            )],
-
-            PainterAction::if_ok(expr, actions) => vec![
-                RecursiveField::named("condition", RecursiveValue::Expr(expr.as_ref())),
-                RecursiveField::named("then", RecursiveValue::PainterActionList(actions)),
-            ],
-
-            PainterAction::exit => vec![],
-        }
-    }
-
-    fn to_recursive_value(&self) -> RecursiveValue<'_> {
-        RecursiveValue::PainterAction(self)
-    }
-
-    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
-        RecursiveValueMut::PainterAction(self)
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        match self {
-            PainterAction::paint => vec![],
-
-            PainterAction::circle(radius) => {
-                vec![RecursiveFieldMut::named(
-                    "radius",
-                    RecursiveValueMut::Expr(radius.as_mut()),
-                )]
-            }
-            PainterAction::rectangle(size) => {
-                vec![RecursiveFieldMut::named(
-                    "size",
-                    RecursiveValueMut::Expr(size.as_mut()),
-                )]
-            }
-            PainterAction::text(content) => {
-                vec![RecursiveFieldMut::named(
-                    "content",
-                    RecursiveValueMut::Expr(content.as_mut()),
-                )]
-            }
-            PainterAction::hollow(thickness) => {
-                vec![RecursiveFieldMut::named(
-                    "thickness",
-                    RecursiveValueMut::Expr(thickness.as_mut()),
-                )]
-            }
-            PainterAction::translate(offset) => {
-                vec![RecursiveFieldMut::named(
-                    "offset",
-                    RecursiveValueMut::Expr(offset.as_mut()),
-                )]
-            }
-            PainterAction::rotate(angle) => {
-                vec![RecursiveFieldMut::named(
-                    "angle",
-                    RecursiveValueMut::Expr(angle.as_mut()),
-                )]
-            }
-            PainterAction::scale_mesh(factor) => {
-                vec![RecursiveFieldMut::named(
-                    "factor",
-                    RecursiveValueMut::Expr(factor.as_mut()),
-                )]
-            }
-            PainterAction::scale_rect(factor) => {
-                vec![RecursiveFieldMut::named(
-                    "factor",
-                    RecursiveValueMut::Expr(factor.as_mut()),
-                )]
-            }
-            PainterAction::color(color_expr) => {
-                vec![RecursiveFieldMut::named(
-                    "color",
-                    RecursiveValueMut::Expr(color_expr.as_mut()),
-                )]
-            }
-            PainterAction::alpha(alpha_expr) => {
-                vec![RecursiveFieldMut::named(
-                    "alpha",
-                    RecursiveValueMut::Expr(alpha_expr.as_mut()),
-                )]
-            }
-            PainterAction::feathering(amount) => {
-                vec![RecursiveFieldMut::named(
-                    "amount",
-                    RecursiveValueMut::Expr(amount.as_mut()),
-                )]
-            }
-
-            PainterAction::curve {
-                thickness,
-                curvature,
-            } => vec![
-                RecursiveFieldMut::named("thickness", RecursiveValueMut::Expr(thickness.as_mut())),
-                RecursiveFieldMut::named("curvature", RecursiveValueMut::Expr(curvature.as_mut())),
-            ],
-
-            PainterAction::repeat(count, action) => vec![
-                RecursiveFieldMut::named("count", RecursiveValueMut::Expr(count.as_mut())),
-                RecursiveFieldMut::named(
-                    "action",
-                    RecursiveValueMut::PainterAction(action.as_mut()),
-                ),
-            ],
-
-            PainterAction::list(actions) => {
-                vec![RecursiveFieldMut::named(
-                    "items",
-                    RecursiveValueMut::PainterActionList(actions),
-                )]
-            }
-
-            PainterAction::if_ok(expr, actions) => {
-                vec![
-                    RecursiveFieldMut::named("condition", RecursiveValueMut::Expr(expr.as_mut())),
-                    RecursiveFieldMut::named("then", RecursiveValueMut::PainterActionList(actions)),
-                ]
-            }
-
-            PainterAction::exit => vec![],
-        }
-    }
-}
-
 // Material
 impl FRecursive for Material {
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        self.0
-            .iter()
-            .enumerate()
-            .map(|(i, item)| RecursiveField::indexed(i, RecursiveValue::PainterAction(item)))
-            .collect()
+        vec![RecursiveField::named(
+            "script",
+            RecursiveValue::String(&self.script.code),
+        )]
     }
 
     fn to_recursive_value(&self) -> RecursiveValue<'_> {
@@ -607,11 +392,10 @@ impl FRecursive for Material {
     }
 
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        self.0
-            .iter_mut()
-            .enumerate()
-            .map(|(i, item)| RecursiveFieldMut::indexed(i, RecursiveValueMut::PainterAction(item)))
-            .collect()
+        vec![RecursiveFieldMut::named(
+            "script",
+            RecursiveValueMut::String(&mut self.script.code),
+        )]
     }
 }
 
@@ -777,22 +561,5 @@ impl FRecursive for Option<Expression> {
             Some(expr) => RecursiveValueMut::Expr(expr),
             None => panic!("Cannot convert None to RecursiveValueMut"),
         }
-    }
-}
-impl FRecursive for Vec<Box<PainterAction>> {
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        default()
-    }
-
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        default()
-    }
-
-    fn to_recursive_value(&self) -> RecursiveValue<'_> {
-        RecursiveValue::PainterActionList(self)
-    }
-
-    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_> {
-        RecursiveValueMut::PainterActionList(self)
     }
 }

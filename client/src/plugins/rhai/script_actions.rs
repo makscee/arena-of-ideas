@@ -204,51 +204,81 @@ pub fn register_ability_actions_type(engine: &mut Engine) {
         );
 }
 
-pub fn register_painter_functions(engine: &mut Engine) {
+pub fn register_painter_type(engine: &mut ::rhai::Engine) {
     engine
-        .register_fn(
-            "painter_circle",
-            |actions: &mut Vec<String>, radius: f64| {
-                actions.push(format!("circle:{}", radius));
-            },
-        )
-        .register_fn(
-            "painter_rectangle",
-            |actions: &mut Vec<String>, width: f64, height: f64| {
-                actions.push(format!("rect:{}:{}", width, height));
-            },
-        )
-        .register_fn("painter_text", |actions: &mut Vec<String>, text: String| {
-            actions.push(format!("text:{}", text));
+        .register_type_with_name::<Vec<PainterAction>>("PainterActions")
+        .register_fn("circle", |actions: &mut Vec<PainterAction>, radius: f32| {
+            actions.push(PainterAction::Circle { radius });
         })
         .register_fn(
-            "painter_translate",
-            |actions: &mut Vec<String>, x: f64, y: f64| {
-                actions.push(format!("translate:{}:{}", x, y));
+            "rectangle",
+            |actions: &mut Vec<PainterAction>, width: f32, height: f32| {
+                actions.push(PainterAction::Rectangle { width, height });
             },
         )
-        .register_fn("painter_rotate", |actions: &mut Vec<String>, angle: f64| {
-            actions.push(format!("rotate:{}", angle));
+        .register_fn(
+            "curve",
+            |actions: &mut Vec<PainterAction>, thickness: f32, curvature: f32| {
+                actions.push(PainterAction::Curve {
+                    thickness,
+                    curvature,
+                });
+            },
+        )
+        .register_fn("text", |actions: &mut Vec<PainterAction>, text: String| {
+            actions.push(PainterAction::Text { text });
         })
-        .register_fn("painter_scale", |actions: &mut Vec<String>, factor: f64| {
-            actions.push(format!("scale:{}", factor));
+        .register_fn("hollow", |actions: &mut Vec<PainterAction>, width: f32| {
+            actions.push(PainterAction::Hollow { width });
+        })
+        .register_fn("solid", |actions: &mut Vec<PainterAction>| {
+            actions.push(PainterAction::Solid);
         })
         .register_fn(
-            "painter_color",
-            |actions: &mut Vec<String>, r: i64, g: i64, b: i64| {
-                actions.push(format!("color:{}:{}:{}", r, g, b));
+            "translate",
+            |actions: &mut Vec<PainterAction>, x: f32, y: f32| {
+                actions.push(PainterAction::Translate { x, y });
             },
         )
-        .register_fn("painter_alpha", |actions: &mut Vec<String>, a: f64| {
-            actions.push(format!("alpha:{}", a));
+        .register_fn("rotate", |actions: &mut Vec<PainterAction>, angle: f32| {
+            actions.push(PainterAction::Rotate { angle });
         })
         .register_fn(
-            "painter_hollow",
-            |actions: &mut Vec<String>, thickness: f64| {
-                actions.push(format!("hollow:{}", thickness));
+            "scale_mesh",
+            |actions: &mut Vec<PainterAction>, scale: f32| {
+                actions.push(PainterAction::ScaleMesh { scale });
             },
         )
-        .register_fn("painter_paint", |actions: &mut Vec<String>| {
-            actions.push("paint".to_string());
+        .register_fn(
+            "scale_rect",
+            |actions: &mut Vec<PainterAction>, scale: f32| {
+                actions.push(PainterAction::ScaleRect { scale });
+            },
+        )
+        .register_fn(
+            "color",
+            |actions: &mut Vec<PainterAction>, r: i32, g: i32, b: i32, a: i32| {
+                actions.push(PainterAction::Color {
+                    r: (r as u8).clamp(0, 255),
+                    g: (g as u8).clamp(0, 255),
+                    b: (b as u8).clamp(0, 255),
+                    a: (a as u8).clamp(0, 255),
+                });
+            },
+        )
+        .register_fn("alpha", |actions: &mut Vec<PainterAction>, alpha: f32| {
+            actions.push(PainterAction::Alpha { alpha });
+        })
+        .register_fn(
+            "feathering",
+            |actions: &mut Vec<PainterAction>, amount: f32| {
+                actions.push(PainterAction::Feathering { amount });
+            },
+        )
+        .register_fn("paint", |actions: &mut Vec<PainterAction>| {
+            actions.push(PainterAction::Paint);
+        })
+        .register_fn("exit", |actions: &mut Vec<PainterAction>| {
+            actions.push(PainterAction::Exit);
         });
 }

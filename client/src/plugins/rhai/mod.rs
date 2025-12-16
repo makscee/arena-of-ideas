@@ -3,20 +3,14 @@ mod script_actions;
 mod script_context;
 mod script_editor;
 mod script_engine;
-mod script_painter;
 mod script_types;
 
 use super::*;
 pub use behavior_executor::TargetResolver;
-pub use script_actions::{
-    ToBattleAction, register_ability_actions_type, register_ability_type,
-    register_painter_functions, register_status_actions_type, register_status_type,
-    register_unit_actions_type, register_unit_type,
-};
+pub use script_actions::*;
 pub use script_context::*;
 pub use script_editor::*;
 pub use script_engine::*;
-pub use script_painter::*;
 pub use script_types::{
     RhaiScriptAbilityExt, RhaiScriptExt, RhaiScriptPainterExt, RhaiScriptStatusExt,
     RhaiScriptUnitExt,
@@ -62,7 +56,6 @@ fn register_client_types(engine: &mut Engine) {
     register_status_actions_type(engine);
     register_ability_type(engine);
     register_ability_actions_type(engine);
-    register_painter_functions(engine);
     register_context_type(engine);
     register_painter_type(engine);
     register_vec_extensions(engine);

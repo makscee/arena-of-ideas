@@ -154,11 +154,27 @@ impl ScriptAction for AbilityAction {
     }
 }
 
-/// Action for painter scripts (client-side only visualization)
+/// Actions that can be performed by painter scripts (client-side only visualization)
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct RhaiPainterAction(pub String);
+pub enum PainterAction {
+    Paint,
+    Circle { radius: f32 },
+    Rectangle { width: f32, height: f32 },
+    Curve { thickness: f32, curvature: f32 },
+    Text { text: String },
+    Hollow { width: f32 },
+    Solid,
+    Translate { x: f32, y: f32 },
+    Rotate { angle: f32 },
+    ScaleMesh { scale: f32 },
+    ScaleRect { scale: f32 },
+    Color { r: u8, g: u8, b: u8, a: u8 },
+    Alpha { alpha: f32 },
+    Feathering { amount: f32 },
+    Exit,
+}
 
-impl ScriptAction for RhaiPainterAction {
+impl ScriptAction for PainterAction {
     fn actions_var_name() -> &'static str {
         "painter_actions"
     }

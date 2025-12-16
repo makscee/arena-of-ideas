@@ -196,7 +196,7 @@ impl<'a> MatRect<'a> {
         // Try to get entity from owner_id - could be any node type
         ctx.exec_ref(|ctx| {
             ctx.with_owner(owner_id, |ctx| {
-                material.paint(clipped_rect, ctx, ui);
+                MaterialPaint::paint(material, clipped_rect, ctx, ui);
                 Ok(())
             })
         })
@@ -236,7 +236,7 @@ impl<'a> MatRect<'a> {
                 }
                 ctx.exec_ref(|ctx| {
                     ctx.with_owner(*owner_id, |ctx| {
-                        unit_rep().material.paint(clipped_rect, ctx, ui);
+                        MaterialPaint::paint(&unit_rep().material, clipped_rect, ctx, ui);
                         Ok(())
                     })
                 })

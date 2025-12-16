@@ -170,10 +170,12 @@ impl<'a> BattleCameraBuilder<'a> {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
-                        ctx.load::<NStatusRepresentation>(id)
-                            .track()?
-                            .material
-                            .paint(rect, ctx, ui);
+                        MaterialPaint::paint(
+                            &ctx.load::<NStatusRepresentation>(id).track()?.material,
+                            rect,
+                            ctx,
+                            ui,
+                        );
                         Ok(())
                     })
                     .notify_error_op();
@@ -196,7 +198,7 @@ impl<'a> BattleCameraBuilder<'a> {
                         let rect = cam.rect_from_context(ctx).track()?;
                         if let Ok(behavior) = unit.behavior.load_node(ctx) {
                             if let Ok(rep) = behavior.representation.load_node(ctx) {
-                                rep.material.paint(rect, ctx, ui);
+                                MaterialPaint::paint(&rep.material, rect, ctx, ui);
                             }
                         }
                         unit.show_status_tags(rect, ctx, ui).ui(ui);
@@ -221,10 +223,12 @@ impl<'a> BattleCameraBuilder<'a> {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
-                        ctx.load::<NRepresentation>(id)
-                            .track()?
-                            .material
-                            .paint(rect, ctx, ui);
+                        MaterialPaint::paint(
+                            &ctx.load::<NRepresentation>(id).track()?.material,
+                            rect,
+                            ctx,
+                            ui,
+                        );
                         Ok(())
                     })
                     .track()

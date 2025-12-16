@@ -7,7 +7,7 @@ edition.workspace = true
 utils = { path = "../utils" }
 serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
-rhai = { version = "1.19", features = ["serde", "sync"] }
+rhai = { workspace = true }
 strum_macros = { workspace = true }
 thiserror = { workspace = true }
 anyhow = "1.0"

@@ -1,3 +1,4 @@
+use schema::RhaiScript;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;
@@ -112,26 +113,28 @@ pub fn parse_content_tree() {
     // let path = "./assets/ron/export_test/";
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
-    UNIT_REP
-        .set(NUnitRepresentation::from_file("./assets/ron/unit_rep.ron").unwrap())
-        .unwrap();
-    STATUS_REP
-        .set(NStatusRepresentation::from_file("./assets/ron/status_rep.ron").unwrap())
-        .unwrap();
+    let unit_rep_code = include_str!("../../../assets/ron/unit_rep.rhai");
+    let unit_rep = NUnitRepresentation::new(next_id(), 0, Material::new(unit_rep_code.to_string()));
+    UNIT_REP.set(unit_rep).unwrap();
+
+    let status_rep_code = include_str!("../../../assets/ron/status_rep.rhai");
+    let status_rep =
+        NStatusRepresentation::new(next_id(), 0, Material::new(status_rep_code.to_string()));
+    STATUS_REP.set(status_rep).unwrap();
     let mut animations = HashMap::default();
-    for f in assets().get_dir("animation").unwrap().files() {
-        let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
-        animations.insert(
-            f.path()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .trim_end_matches(".ron")
-                .to_owned(),
-            Anim::new(a),
-        );
-    }
+    // for f in assets().get_dir("animation").unwrap().files() {
+    //     let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
+    //     animations.insert(
+    //         f.path()
+    //             .file_name()
+    //             .unwrap()
+    //             .to_str()
+    //             .unwrap()
+    //             .trim_end_matches(".ron")
+    //             .to_owned(),
+    //         Anim::new(a),
+    //     );
+    // }
     ANIMATIONS.set(animations).unwrap();
 }
 

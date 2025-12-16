@@ -14,19 +14,14 @@ impl RepresentationPlugin {
         if let Ok(color) = ctx.get_var(VarName::color).get_color() {
             p.color = color;
         }
-        for a in &m.0 {
-            if a.paint(ctx, &mut p, ui).track()? {
-                break;
-            }
-        }
-        PainterAction::paint.paint(ctx, &mut p, ui).track()?;
+        // Execute the Material's Rhai script
+        m.paint_err(ctx, &mut p, ui)?;
         Ok(())
     }
 }
 
 pub trait MaterialPaint {
     fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui);
-    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
 
 impl MaterialPaint for Material {
@@ -40,9 +35,7 @@ impl MaterialPaint for Material {
                         "[red [b (e)]]".cstr().button(ui).on_hover_ui(|ui| {
                             ui.vertical(|ui| {
                                 e.ui(ui);
-                                for a in &self.0 {
-                                    a.title_recursive(ctx).label(ui);
-                                }
+                                self.script.code.label(ui);
                                 for l in ctx.layers() {
                                     format!("{l:?}").label(ui);
                                 }
@@ -52,22 +45,5 @@ impl MaterialPaint for Material {
                 );
             }
         };
-    }
-    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let size_id = ui.id().with("view size");
-        let mut size = ui.ctx().data_mut(|w| *w.get_temp_mut_or(size_id, 100.0));
-        if DragValue::new(&mut size).ui(ui).changed() {
-            size = size.at_least(10.0);
-            ui.ctx().data_mut(|w| w.insert_temp(size_id, size));
-        }
-        let (rect, response) = ui.allocate_exact_size(egui::vec2(size, size), Sense::hover());
-        self.paint(rect, ctx, ui);
-        ui.painter().rect_stroke(
-            rect,
-            0,
-            Stroke::new(1.0, subtle_borders_and_separators()),
-            egui::StrokeKind::Middle,
-        );
-        response
     }
 }

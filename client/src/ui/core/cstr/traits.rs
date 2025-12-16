@@ -136,45 +136,6 @@ impl ToCstr for Expression {
     }
 }
 
-impl ToCstr for PainterAction {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            PainterAction::circle(x)
-            | PainterAction::rectangle(x)
-            | PainterAction::text(x)
-            | PainterAction::hollow(x)
-            | PainterAction::translate(x)
-            | PainterAction::rotate(x)
-            | PainterAction::scale_mesh(x)
-            | PainterAction::scale_rect(x)
-            | PainterAction::alpha(x)
-            | PainterAction::feathering(x)
-            | PainterAction::color(x) => x.cstr_expanded(),
-            PainterAction::curve {
-                thickness,
-                curvature,
-            } => format!(
-                "{}, {}",
-                thickness.cstr_expanded(),
-                curvature.cstr_expanded()
-            ),
-            PainterAction::repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
-            PainterAction::list(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
-            PainterAction::if_ok(expr, actions) => {
-                let actions_str = actions.into_iter().map(|a| a.cstr_expanded()).join(", ");
-                format!("{}, [{}]", expr.cstr_expanded(), actions_str)
-            }
-            PainterAction::exit => Default::default(),
-            PainterAction::paint => Default::default(),
-        };
-        format!("{}({inner})", self.cstr())
-    }
-}
-
 impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
         let mut s = match self {
@@ -258,11 +219,15 @@ impl ToCstr for Behavior {
 
 impl ToCstr for Material {
     fn cstr(&self) -> Cstr {
-        format!("Material([th {}])", self.0.len())
+        if self.script.code.is_empty() {
+            "Material(empty)".to_string()
+        } else {
+            format!("Material({})", self.script.code.lines().count())
+        }
     }
 
     fn cstr_expanded(&self) -> Cstr {
-        self.0.iter().map(|a| a.cstr()).join("\n")
+        self.script.code.clone()
     }
 }
 

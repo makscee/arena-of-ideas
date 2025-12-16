@@ -1,5 +1,5 @@
 use super::*;
-use ::rhai::{Engine, EvalAltResult, Scope};
+use ::rhai::{EvalAltResult, Scope};
 use schema::RhaiScript;
 
 /// Extension trait for RhaiScript to provide client-side execution methods
@@ -203,13 +203,18 @@ impl RhaiScriptAbilityExt for RhaiScript<schema::AbilityAction> {
 
 /// Extension methods for painter action scripts
 pub trait RhaiScriptPainterExt {
-    fn execute_painter(&self, ctx: &ClientContext) -> Result<Vec<String>, Box<EvalAltResult>>;
+    fn execute_painter(
+        &self,
+        ctx: &ClientContext,
+    ) -> Result<Vec<schema::PainterAction>, Box<EvalAltResult>>;
 }
 
-impl RhaiScriptPainterExt for RhaiScript<schema::RhaiPainterAction> {
-    fn execute_painter(&self, ctx: &ClientContext) -> Result<Vec<String>, Box<EvalAltResult>> {
+impl RhaiScriptPainterExt for RhaiScript<schema::PainterAction> {
+    fn execute_painter(
+        &self,
+        ctx: &ClientContext,
+    ) -> Result<Vec<schema::PainterAction>, Box<EvalAltResult>> {
         let scope = Scope::new();
-        let actions = RhaiScriptExt::execute(self, scope, ctx)?;
-        Ok(actions.into_iter().map(|a| a.0).collect())
+        RhaiScriptExt::execute(self, scope, ctx)
     }
 }

@@ -1,39 +1,20 @@
-use expression::Expression;
-
 use super::*;
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Serialize, Deserialize, AsRefStr, EnumIter, PartialEq, Hash)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(deny_unknown_fields)]
-pub enum PainterAction {
-    paint,
-    circle(Box<Expression>),
-    rectangle(Box<Expression>),
-    curve {
-        thickness: Box<Expression>,
-        curvature: Box<Expression>,
-    },
-    text(Box<Expression>),
-    hollow(Box<Expression>),
-    translate(Box<Expression>),
-    rotate(Box<Expression>),
-    scale_mesh(Box<Expression>),
-    scale_rect(Box<Expression>),
-    color(Box<Expression>),
-    alpha(Box<Expression>),
-    feathering(Box<Expression>),
-    repeat(Box<Expression>, Box<PainterAction>),
-    list(Vec<Box<PainterAction>>),
-    if_ok(Box<Expression>, Vec<Box<PainterAction>>),
-    exit,
+pub struct Material {
+    pub script: RhaiScript<PainterAction>,
 }
 
-impl Default for PainterAction {
-    fn default() -> Self {
-        Self::circle(Box::new(Expression::f32(1.0)))
+impl Material {
+    pub fn new(code: String) -> Self {
+        Self {
+            script: RhaiScript::new(code),
+        }
+    }
+
+    pub fn with_description(mut self, description: String) -> Self {
+        self.script = self.script.with_description(description);
+        self
     }
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Hash)]
-#[serde(deny_unknown_fields)]
-pub struct Material(pub Vec<PainterAction>);

@@ -567,50 +567,6 @@ impl FEdit for Action {
 }
 
 // PainterAction
-impl FTitle for PainterAction {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        self.cstr()
-    }
-}
-
-impl FColoredTitle for PainterAction {
-    fn title_color(&self, ctx: &ClientContext) -> Color32 {
-        ctx.get_var(VarName::color)
-            .get_color()
-            .unwrap_or(Color32::from_rgb(0, 255, 255))
-    }
-}
-
-impl FDisplay for PainterAction {
-    fn display(&self, _: &ClientContext, ui: &mut Ui) -> Response {
-        self.cstr().label(ui)
-    }
-}
-
-impl FEdit for PainterAction {
-    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui, ctx))
-            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(ctx, ui)
-    }
-    fn edit_self(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
-        let (old_value, response) = Selector::ui_enum(self, ui);
-        let menu_resp = self
-            .as_empty_mut()
-            .with_menu()
-            .add_copy()
-            .add_paste()
-            .compose_with_menu(&EMPTY_CONTEXT, ui);
-        if let Some(value) = menu_resp.pasted() {
-            *self = value.clone();
-        }
-        if let Some(mut old_val) = old_value {
-            self.move_inner_fields_from(&mut old_val);
-        }
-        response
-    }
-}
-
 impl FTitle for Material {
     fn title(&self, _: &ClientContext) -> Cstr {
         self.cstr()
@@ -618,8 +574,8 @@ impl FTitle for Material {
 }
 
 impl FDescription for Material {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.0.iter().map(|p| p.title_recursive(ctx)).join("\n")
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
+        format!("Script with {} lines", self.script.code.lines().count())
     }
 }
 
@@ -631,12 +587,7 @@ impl FDisplay for Material {
 
 impl FEdit for Material {
     fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        ui.vertical(|ui| {
-            let mut response = self.paint_viewer(ctx, ui);
-            response |= self.0.edit(ui, ctx);
-            response
-        })
-        .inner
+        self.script.edit(ui, ctx)
     }
 }
 
@@ -693,18 +644,6 @@ impl FEdit for Effect {
                 .inner;
             ui.label("Actions:");
             self.actions.edit(ui, ctx).union(response)
-        })
-        .inner
-    }
-}
-
-impl<T> FEdit for RhaiScript<T> {
-    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
-        ui.vertical(|ui| {
-            ui.label("Description:");
-            ui.text_edit_singleline(&mut self.description);
-            ui.label("Script Code:");
-            ui.text_edit_multiline(&mut self.code)
         })
         .inner
     }
@@ -1477,7 +1416,7 @@ impl FPlaceholder for NStatusRepresentation {
         NStatusRepresentation::new(
             next_id(),
             player_id(),
-            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+            Material::new("painter.circle(0.5);".to_string()),
         )
     }
 }
@@ -2086,21 +2025,8 @@ impl FTitle for Vec<Box<PainterAction>> {
 impl FDisplay for Vec<Box<PainterAction>> {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         let mut response = format!("List ({})", self.len()).label(ui);
-        for item in self {
-            response |= item.display(ctx, ui);
-        }
+        for item in self {}
         response
-    }
-}
-
-impl FEdit for Vec<Box<PainterAction>> {
-    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        ui.vertical(|ui| {
-            self.as_mutable_list(|a, _, ui| a.edit(ui, ctx))
-                .editable(|| Box::new(PainterAction::default()))
-                .compose(ctx, ui)
-        })
-        .inner
     }
 }
 
@@ -2230,7 +2156,7 @@ impl FPlaceholder for NUnitRepresentation {
         NUnitRepresentation::new(
             next_id(),
             0,
-            Material(vec![PainterAction::circle(Box::new(Expression::f32(0.5)))]),
+            Material::new("painter.circle(0.5);".to_string()),
         )
     }
 }
@@ -2242,14 +2168,11 @@ impl FPlaceholder for NUnitRepresentation {
 impl FCompactView for Material {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
         let (rect, _) = ui.allocate_exact_size((LINE_HEIGHT * 2.0).v2(), Sense::click());
-        self.paint(rect, ctx, ui);
+        MaterialPaint::paint(self, rect, ctx, ui);
     }
 
-    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
-        self.display(ctx, ui);
-        for action in &self.0 {
-            action.display(ctx, ui);
-        }
+    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
+        ui.label(&self.script.code);
     }
 }
 
