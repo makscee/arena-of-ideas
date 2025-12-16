@@ -176,6 +176,6 @@ pub enum PainterAction {
 
 impl ScriptAction for PainterAction {
     fn actions_var_name() -> &'static str {
-        "painter_actions"
+        "painter"
     }
 }

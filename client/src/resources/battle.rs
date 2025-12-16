@@ -25,9 +25,9 @@ use crate::resources::context::{NodesLinkResource, NodesMapResource};
 fn find_ability_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, NAbilityMagic)> {
     let parts: Vec<&str> = path.split('/').collect();
     if parts.len() != 2 {
-        return Err(NodeError::custom(
-            "Ability path must be in format 'House/Ability'",
-        ));
+        return Err(NodeError::custom(format!(
+            "Ability path must be in format 'House/Ability', got {path}",
+        )));
     }
 
     let house_name = parts[0];

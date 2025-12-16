@@ -121,26 +121,32 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
         ui.label("Script Code:");
         let syntax = create_rhai_syntax();
         let editor_height = 300.0;
-
-        ui.group(|ui| {
-            ui.set_min_height(editor_height);
-            CodeEditor::default()
-                .id_source("rhai_script_editor")
-                .with_rows((editor_height / 14.0) as usize)
-                .with_fontsize(13.0)
-                .with_theme(ColorTheme::GRUVBOX)
-                .with_syntax(syntax)
-                .with_numlines(true)
-                .show(ui, &mut script.code);
-        });
+        let response = ui
+            .group(|ui| {
+                ui.set_min_height(editor_height);
+                CodeEditor::default()
+                    .id_source("rhai_script_editor")
+                    .with_rows((editor_height / 14.0) as usize)
+                    .with_fontsize(13.0)
+                    .with_theme(ColorTheme::SONOKAI)
+                    .with_syntax(syntax)
+                    .with_numlines(true)
+                    .show(ui, &mut script.code)
+                    .response
+            })
+            .inner;
+        if response.changed() {
+            script.clear_compiled();
+        }
 
         if !script.code.is_empty() {
             ui.colored_label(egui::Color32::GREEN, "✓ Script compiled");
         } else {
             ui.colored_label(egui::Color32::YELLOW, "○ Empty script");
         }
+        response
     })
-    .response
+    .inner
 }
 
 impl<T: schema::ScriptAction> FEdit for RhaiScript<T> {
