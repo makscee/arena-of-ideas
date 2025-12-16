@@ -76,7 +76,7 @@ pub fn register_common_functions(engine: &mut Engine) {
         });
 
     // Game-specific constants
-    engine.register_fn("player_id", || player_id() as i64);
+    engine.register_fn("player_id", || player_id());
 
     // Logging functions
     engine
@@ -95,12 +95,12 @@ pub fn create_autocomplete_items() -> Vec<AutocompleteItem> {
         AutocompleteItem::new("target", "Unit", "The target unit"),
         AutocompleteItem::new("unit_actions", "Vec<UnitAction>", "Unit action list"),
         AutocompleteItem::new(".unit_name", "String", "Unit's name"),
-        AutocompleteItem::new(".id", "i64", "Unit's ID"),
+        AutocompleteItem::new(".id", "u64", "Unit's ID"),
         // Status variables and properties
         AutocompleteItem::new("status", "Status", "The status object"),
         AutocompleteItem::new("status_actions", "Vec<StatusAction>", "Status action list"),
         AutocompleteItem::new(".status_name", "String", "Status name"),
-        AutocompleteItem::new(".id", "i64", "Status ID"),
+        AutocompleteItem::new(".id", "u64", "Status ID"),
         // Ability variables and properties
         AutocompleteItem::new("ability", "Ability", "The ability object"),
         AutocompleteItem::new(
@@ -109,7 +109,7 @@ pub fn create_autocomplete_items() -> Vec<AutocompleteItem> {
             "Ability action list",
         ),
         AutocompleteItem::new(".ability_name", "String", "Ability name"),
-        AutocompleteItem::new(".id", "i64", "Ability ID"),
+        AutocompleteItem::new(".id", "u64", "Ability ID"),
         // Action functions
         AutocompleteItem::new("use_ability()", "void", "Add use ability action"),
         AutocompleteItem::new("apply_status()", "void", "Add apply status action"),
@@ -129,8 +129,8 @@ pub fn create_autocomplete_items() -> Vec<AutocompleteItem> {
         AutocompleteItem::new("painter.alpha()", "void", "Set alpha"),
         AutocompleteItem::new("painter.hollow()", "void", "Set hollow"),
         // Common functions
-        AutocompleteItem::new("random()", "i64", "Random number 0-99"),
-        AutocompleteItem::new("random_range()", "i64", "Random number in range"),
+        AutocompleteItem::new("random()", "u64", "Random number 0-99"),
+        AutocompleteItem::new("random_range()", "u64", "Random number in range"),
         AutocompleteItem::new("random_float()", "f64", "Random float 0-1"),
         AutocompleteItem::new("abs()", "i64", "Absolute value"),
         AutocompleteItem::new("min()", "i64", "Minimum of two values"),
@@ -156,12 +156,28 @@ pub fn create_autocomplete_items() -> Vec<AutocompleteItem> {
         AutocompleteItem::new("ctx.get_all_units()", "Vec<i64>", "Get all units in battle"),
         AutocompleteItem::new("ctx.get_enemies()", "Vec<i64>", "Get enemy unit IDs"),
         AutocompleteItem::new("ctx.get_allies()", "Vec<i64>", "Get ally unit IDs"),
-        AutocompleteItem::new("ctx.get_adjacent_left()", "Option<i64>", "Get left adjacent unit ID"),
-        AutocompleteItem::new("ctx.get_adjacent_right()", "Option<i64>", "Get right adjacent unit ID"),
-        AutocompleteItem::new("ctx.get_adjacent_allies()", "Vec<i64>", "Get adjacent ally IDs"),
+        AutocompleteItem::new(
+            "ctx.get_adjacent_left()",
+            "Option<i64>",
+            "Get left adjacent unit ID",
+        ),
+        AutocompleteItem::new(
+            "ctx.get_adjacent_right()",
+            "Option<i64>",
+            "Get right adjacent unit ID",
+        ),
+        AutocompleteItem::new(
+            "ctx.get_adjacent_allies()",
+            "Vec<i64>",
+            "Get adjacent ally IDs",
+        ),
         AutocompleteItem::new("ctx.load_unit()", "Option<Unit>", "Load unit by ID"),
         AutocompleteItem::new("ctx.load_status()", "Option<Status>", "Load status by ID"),
-        AutocompleteItem::new("ctx.load_ability()", "Option<Ability>", "Load ability by ID"),
+        AutocompleteItem::new(
+            "ctx.load_ability()",
+            "Option<Ability>",
+            "Load ability by ID",
+        ),
         AutocompleteItem::new("ctx.load_house()", "Option<House>", "Load house by ID"),
         AutocompleteItem::new("vec.random()", "T?", "Get random element from vector"),
     ]
@@ -207,10 +223,13 @@ pub fn register_vec_extensions(engine: &mut Engine) {
             v.as_mut_slice().shuffle(&mut rand::rng());
             v.first().cloned()
         })
-        .register_fn("random", |vec: Vec<NAbilityMagic>| -> Option<NAbilityMagic> {
-            use rand::seq::SliceRandom;
-            let mut v = vec;
-            v.as_mut_slice().shuffle(&mut rand::rng());
-            v.first().cloned()
-        });
+        .register_fn(
+            "random",
+            |vec: Vec<NAbilityMagic>| -> Option<NAbilityMagic> {
+                use rand::seq::SliceRandom;
+                let mut v = vec;
+                v.as_mut_slice().shuffle(&mut rand::rng());
+                v.first().cloned()
+            },
+        );
 }

@@ -99,6 +99,30 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
             }
+            Event::StatusGained(caster, target) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::StatusGained) && owner.id == *target {
+                    return Ok(true);
+                }
+            }
+            Event::ChangeOutgoingDamage(source, _) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
+                    return Ok(true);
+                }
+            }
+            Event::ChangeIncomingDamage(_, target) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
+                    return Ok(true);
+                }
+            }
         }
         Ok(false)
     }

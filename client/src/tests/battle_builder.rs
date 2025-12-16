@@ -23,6 +23,9 @@ impl TestBuilder {
     }
 
     fn init_test_logging() {
+        unsafe {
+            std::env::set_var("RUST_BACKTRACE", "1");
+        }
         static INIT: OnceLock<()> = OnceLock::new();
         INIT.get_or_init(|| {
             struct TestLogger;
@@ -208,6 +211,18 @@ impl HouseBuilder {
             ability: None,
             status: None,
         }
+    }
+
+    fn house_name(&self) -> String {
+        format!("House {}", self.id)
+    }
+
+    fn ability_path(&self, ability_id: u64) -> String {
+        format!("{}/Ability {}", self.house_name(), ability_id)
+    }
+
+    fn status_path(&self, status_id: u64) -> String {
+        format!("{}/Status {}", self.house_name(), status_id)
     }
 
     fn add_unit(&mut self, id: u64, pwr: i32, hp: i32) {

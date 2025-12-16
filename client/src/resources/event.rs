@@ -33,20 +33,16 @@ impl EventImpl for Event {
 
                 for status in statuses {
                     let status_id = status.id;
-                    if status.state.load_node(ctx)?.stax <= 0 {
+                    let x = status.state.load_node(ctx)?.stax;
+                    if x <= 0 {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
                         if let Ok(behavior) = status.behavior.load_node(ctx) {
                             if behavior.trigger.fire(self, ctx).ok().unwrap_or(false) {
-                                let x = match ctx.get_var(VarName::value)? {
-                                    VarValue::i32(v) => v as i64,
-                                    VarValue::f32(v) => v as i64,
-                                    _ => 0,
-                                };
-                                use crate::plugins::rhai::RhaiScriptStatusExt;
-                                if let Ok(actions) =
-                                    behavior.effect.execute_status(status.clone(), x, ctx)
+                                if let Ok((actions, modified_value)) = behavior
+                                    .effect
+                                    .execute_status_with_value(status.clone(), x, ctx)
                                 {
                                     for action in actions {
                                         use crate::plugins::rhai::ToBattleAction;
@@ -54,6 +50,7 @@ impl EventImpl for Event {
                                             battle_actions.push(ba);
                                         }
                                     }
+                                    return Ok(modified_value);
                                 }
                             }
                         }

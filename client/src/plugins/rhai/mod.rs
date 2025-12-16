@@ -7,6 +7,7 @@ mod script_painter;
 mod script_types;
 
 use super::*;
+pub use behavior_executor::TargetResolver;
 pub use script_actions::{
     ToBattleAction, register_ability_actions_type, register_ability_type,
     register_painter_functions, register_status_actions_type, register_status_type,

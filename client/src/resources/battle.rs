@@ -39,8 +39,9 @@ fn find_ability_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, 
     for house_id in houses {
         let house = ctx.load_ref::<NHouse>(house_id)?;
         if house.house_name == house_name {
-            if let Ok(ability) = house.ability.load_node(ctx) {
+            if let Ok(mut ability) = house.ability.load_node(ctx) {
                 if ability.ability_name == ability_name {
+                    ability.load_all(ctx)?;
                     return Ok((house.clone(), ability));
                 }
             }
@@ -67,8 +68,9 @@ fn find_status_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, N
     for house_id in houses {
         let house = ctx.load_ref::<NHouse>(house_id)?;
         if house.house_name == house_name {
-            if let Ok(status) = house.status.load_node(ctx) {
+            if let Ok(mut status) = house.status.load_node(ctx) {
                 if status.status_name == status_name {
+                    status.load_all(ctx)?;
                     return Ok((house.clone(), status));
                 }
             }
@@ -264,7 +266,7 @@ impl ToCstr for BattleAction {
                 target_id,
                 status_path,
             } => {
-                format!("{caster_id} +[{status_path}]>{target_id}")
+                format!("{caster_id} +{status_path}>{target_id}")
             }
             BattleAction::use_ability {
                 caster_id,
@@ -336,11 +338,13 @@ impl BattleAction {
                             .into(),
                     );
                     let (value, actions) =
-                        Event::OutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
+                        Event::ChangeOutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
+                    debug!("Before {x}");
                     let (value, actions) =
-                        Event::IncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
+                        Event::ChangeIncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
+                    debug!("After {value}");
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
@@ -706,9 +710,14 @@ impl BattleSimulation {
                 .into_iter()
                 .enumerate()
             {
-                if ctx.load::<NState>(status).track()?.stax > 0 {
-                    ctx.source_mut()
-                        .set_var(status, VarName::index, (index as i32).into())?;
+                if let Ok(status_node) = ctx.load::<NStatusMagic>(status).track() {
+                    if let Ok(state) = status_node.state.load_node(ctx) {
+                        if state.stax > 0 {
+                            ctx.source_mut()
+                                .set_var(status, VarName::index, (index as i32).into())
+                                .ok();
+                        }
+                    }
                 }
             }
         }
@@ -809,27 +818,41 @@ impl BattleSimulation {
                     if let Ok(unit) = ctx.load::<NUnit>(id).track() {
                         if let Ok(behavior) = unit.clone().behavior.load_node(ctx) {
                             if behavior.trigger.fire(&event, ctx)? {
-                                use crate::plugins::rhai::RhaiScriptUnitExt;
-                                match behavior.effect.execute_unit(
-                                    unit.clone(),
-                                    unit.clone(),
-                                    0,
-                                    ctx,
-                                ) {
-                                    Ok(actions) => {
-                                        if !actions.is_empty() {
+                                use crate::plugins::rhai::{RhaiScriptUnitExt, TargetResolver};
+
+                                match behavior.target.resolve_targets(ctx) {
+                                    Ok(target_ids) => {
+                                        if !target_ids.is_empty() {
                                             ctx.battle_mut()?.fired.insert(id);
-                                            let mut battle_actions = Vec::new();
-                                            for action in actions {
-                                                use crate::plugins::rhai::ToBattleAction;
-                                                if let Ok(ba) = action.to_battle_action(ctx, id) {
-                                                    battle_actions.push(ba);
+                                            let mut all_battle_actions = Vec::new();
+
+                                            for target_id in target_ids {
+                                                if let Ok(target_unit) = ctx.load::<NUnit>(target_id).track() {
+                                                    match behavior.effect.execute_unit(
+                                                        unit.clone(),
+                                                        target_unit,
+                                                        0,
+                                                        ctx,
+                                                    ) {
+                                                        Ok(actions) => {
+                                                            for action in actions {
+                                                                use crate::plugins::rhai::ToBattleAction;
+                                                                if let Ok(ba) = action.to_battle_action(ctx, id) {
+                                                                    all_battle_actions.push(ba);
+                                                                }
+                                                            }
+                                                        }
+                                                        Err(e) => error!("NFusion event {event} failed: {e}"),
+                                                    }
                                                 }
                                             }
-                                            process_actions(ctx, battle_actions);
+
+                                            if !all_battle_actions.is_empty() {
+                                                process_actions(ctx, all_battle_actions);
+                                            }
                                         }
                                     }
-                                    Err(e) => error!("NFusion event {event} failed: {e}"),
+                                    Err(e) => error!("Failed to resolve targets for unit behavior: {e}"),
                                 }
                             }
                         }
@@ -856,16 +879,10 @@ impl BattleSimulation {
                         }
                         let behavior = status.behavior.load_node(ctx).track()?;
                         if behavior.trigger.fire(&event, ctx)? {
-                            let x = match ctx.get_var(VarName::value)? {
-                                VarValue::i32(v) => v as i64,
-                                VarValue::f32(v) => v as i64,
-                                _ => 0,
-                            };
-                            use crate::plugins::rhai::RhaiScriptStatusExt;
-                            match behavior.effect.execute_status(status.clone(), x, ctx) {
+                            match behavior.effect.execute_status(status.clone(), stax, ctx) {
                                 Ok(actions) => {
                                     if !actions.is_empty() {
-                                        let owner_id = status.id;
+                                        let owner_id = fusion_id;
                                         let mut battle_actions = Vec::new();
                                         for action in actions {
                                             use crate::plugins::rhai::ToBattleAction;
@@ -930,6 +947,7 @@ impl BattleSimulation {
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
+        let status_id = status.id;
         let new_status = status.remap_ids();
         let new_status_id = new_status.id();
         new_status.spawn(ctx, Some(entity))?;
@@ -943,6 +961,7 @@ impl BattleSimulation {
         state.insert(t, 0.0, VarName::color, color.into());
         state.insert(t, 0.0, VarName::index, new_index.into());
         BattleSimulation::send_event(ctx, Event::StatusApplied(caster, target, new_status_id))?;
+        BattleSimulation::send_event(ctx, Event::StatusGained(caster, target))?;
         Ok(())
     }
 

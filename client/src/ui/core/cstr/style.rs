@@ -93,10 +93,10 @@ impl StyleState {
         self.stack.push(style);
     }
 
-    pub fn push_token(&mut self, token: &str) {
+    pub fn push_token(&mut self, token: &str, full_str: &str) {
         match CstrStyle::from_str(token) {
             Some(v) => self.stack.push(v),
-            None => error!("Failed to parse token: {token}"),
+            None => error!("Failed to parse token: \"{token}\" in \"{full_str}\""),
         }
     }
 

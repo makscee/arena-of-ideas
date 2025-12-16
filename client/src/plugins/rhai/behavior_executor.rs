@@ -42,11 +42,11 @@ impl TargetResolver for Target {
             Target::Attacker => ctx.attacker().to_not_found().map(|id| vec![id]),
             Target::Target => ctx.target().to_not_found().map(|id| vec![id]),
             Target::AdjacentBack => battle
-                .offset_unit(owner_id, -1)
+                .offset_unit(owner_id, 1)
                 .to_not_found()
                 .map(|id| vec![id]),
             Target::AdjacentFront => battle
-                .offset_unit(owner_id, 1)
+                .offset_unit(owner_id, -1)
                 .to_not_found()
                 .map(|id| vec![id]),
             Target::AllyAtSlot(slot) => {

@@ -39,10 +39,18 @@ impl std::fmt::Display for SourceTrace {
             .locations
             .iter()
             .map(|loc| {
-                let file = if let Some(pos) = loc.file().rfind("/") {
-                    &loc.file()[pos + 1..]
+                let file_path = loc.file();
+                let file = if file_path.len() > 15 {
+                    let truncated = &file_path[file_path.len() - 15..];
+                    if let Some(pos) = truncated.find("/") {
+                        &truncated[pos + 1..]
+                    } else {
+                        truncated
+                    }
+                } else if let Some(pos) = file_path.rfind("/") {
+                    &file_path[pos + 1..]
                 } else {
-                    loc.file()
+                    file_path
                 };
                 format!("{}:{}:{}", file, loc.line(), loc.column())
             })
