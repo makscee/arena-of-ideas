@@ -49,7 +49,7 @@ epaint_default_fonts = { workspace = true }
 backtrace = { workspace = true }
 mlua = { workspace = true }
 rhai = { workspace = true }
-egui_code_editor = "0.2"
+egui_code_editor = "0.2.20"
 
 bevy_asset_loader = { git = "https://github.com/NiklasEi/bevy_asset_loader.git", branch = "bevy_main", features = [
     "standard_dynamic_assets",

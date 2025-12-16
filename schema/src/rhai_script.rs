@@ -9,6 +9,10 @@ pub struct RhaiScript<T> {
     #[serde(skip)]
     compiled_ast: Arc<RwLock<Option<rhai::AST>>>,
     #[serde(skip)]
+    pub compile_error: Arc<RwLock<Option<String>>>,
+    #[serde(skip)]
+    pub run_error: Arc<RwLock<Option<String>>>,
+    #[serde(skip)]
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -24,6 +28,8 @@ impl<T> Default for RhaiScript<T> {
             code: String::new(),
             description: String::new(),
             compiled_ast: Arc::new(RwLock::new(None)),
+            compile_error: Arc::new(RwLock::new(None)),
+            run_error: Arc::new(RwLock::new(None)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -35,6 +41,8 @@ impl<T> RhaiScript<T> {
             code,
             description: String::new(),
             compiled_ast: Arc::new(RwLock::new(None)),
+            compile_error: Arc::new(RwLock::new(None)),
+            run_error: Arc::new(RwLock::new(None)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -49,6 +57,8 @@ impl<T> RhaiScript<T> {
             code: String::new(),
             description: String::new(),
             compiled_ast: Arc::new(RwLock::new(None)),
+            compile_error: Arc::new(RwLock::new(None)),
+            run_error: Arc::new(RwLock::new(None)),
             _phantom: std::marker::PhantomData,
         }
     }
@@ -59,12 +69,21 @@ impl<T> RhaiScript<T> {
 
         if let Some(ast) = ast_guard.as_ref() {
             return Ok(ast.clone());
+        } else if let Some(e) = self.compile_error.read().unwrap().as_ref() {
+            return Err(format!("Compile err: {e}").into());
         }
 
-        // Compile and cache
-        let ast = engine.compile(&self.code)?;
-        *ast_guard = Some(ast.clone());
-        Ok(ast)
+        match engine.compile(&self.code) {
+            Ok(ast) => {
+                self.compile_error.write().unwrap().take();
+                *ast_guard = Some(ast.clone());
+                Ok(ast)
+            }
+            Err(e) => {
+                *self.compile_error.write().unwrap() = Some(format!("{}", e));
+                Err(e.into())
+            }
+        }
     }
 
     /// Clear the compiled AST (useful when code changes)

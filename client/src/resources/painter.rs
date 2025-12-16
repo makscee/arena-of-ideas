@@ -73,7 +73,8 @@ impl Paint for Material {
                 log::error!("Painter script execution error: {}", err);
                 return Ok(false);
             }
-        };
+        }
+        .0;
 
         // Process each action
         for action in actions {

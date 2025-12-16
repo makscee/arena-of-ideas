@@ -68,6 +68,7 @@ pub fn run() {
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
     parse_content_tree();
+    init_completer();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins
         .set(bevy::log::LogPlugin {

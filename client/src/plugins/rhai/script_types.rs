@@ -4,14 +4,7 @@ use schema::RhaiScript;
 
 /// Extension trait for RhaiScript to provide client-side execution methods
 pub trait RhaiScriptExt<T> {
-    /// Execute the script with a custom scope
     fn execute<S: Into<Scope<'static>>>(
-        &self,
-        scope_builder: S,
-        ctx: &ClientContext,
-    ) -> Result<Vec<T>, Box<EvalAltResult>>;
-
-    fn execute_with_scope<S: Into<Scope<'static>>>(
         &self,
         scope_builder: S,
         ctx: &ClientContext,
@@ -26,36 +19,23 @@ where
         &self,
         scope_builder: S,
         ctx: &ClientContext,
-    ) -> Result<Vec<T>, Box<EvalAltResult>> {
-        let mut scope = scope_builder.into();
-
-        scope.push(T::actions_var_name(), Vec::<T>::new());
-        scope.push("ctx", RhaiContext::with_context(ctx));
-
-        let engine = super::rhai_engine().lock().unwrap();
-        let ast = self.get_ast(&engine)?;
-        engine.run_ast_with_scope(&mut scope, &ast)?;
-
-        let actions: Vec<T> = scope
-            .get_value(T::actions_var_name())
-            .ok_or_else(|| format!("Failed to get {} from scope", T::actions_var_name()))?;
-
-        Ok(actions)
-    }
-
-    fn execute_with_scope<S: Into<Scope<'static>>>(
-        &self,
-        scope_builder: S,
-        ctx: &ClientContext,
     ) -> Result<(Vec<T>, Scope<'static>), Box<EvalAltResult>> {
         let mut scope = scope_builder.into();
 
         scope.push(T::actions_var_name(), Vec::<T>::new());
         scope.push("ctx", RhaiContext::with_context(ctx));
 
-        let engine = super::rhai_engine().lock().unwrap();
+        let engine = super::rhai_engine().lock();
         let ast = self.get_ast(&engine)?;
-        engine.run_ast_with_scope(&mut scope, &ast)?;
+        match engine.run_ast_with_scope(&mut scope, &ast) {
+            Ok(_) => {
+                self.run_error.write().unwrap().take();
+            }
+            Err(e) => {
+                self.run_error.write().unwrap().replace(e.to_string());
+                return Err(format!("Run err: {e}").into());
+            }
+        }
 
         let actions: Vec<T> = scope
             .get_value(T::actions_var_name())
@@ -89,7 +69,7 @@ impl RhaiScriptUnitExt for RhaiScript<schema::UnitAction> {
         scope.push("target", target);
         scope.push("x", x);
 
-        RhaiScriptExt::execute(self, scope, ctx)
+        RhaiScriptExt::execute(self, scope, ctx).map(|r| r.0)
     }
 }
 
@@ -160,7 +140,7 @@ impl RhaiScriptStatusExt for RhaiScript<schema::StatusAction> {
             }
         }
 
-        let (actions, scope) = RhaiScriptExt::execute_with_scope(self, scope, ctx)?;
+        let (actions, scope) = RhaiScriptExt::execute(self, scope, ctx)?;
 
         let modified_value = if let Some(rhai_value) = scope.get_value::<i32>("value") {
             match initial_value {
@@ -197,7 +177,7 @@ impl RhaiScriptAbilityExt for RhaiScript<schema::AbilityAction> {
         scope.push("ability", ability);
         scope.push("target", target);
 
-        RhaiScriptExt::execute(self, scope, ctx)
+        RhaiScriptExt::execute(self, scope, ctx).map(|r| r.0)
     }
 }
 
@@ -215,6 +195,6 @@ impl RhaiScriptPainterExt for RhaiScript<schema::PainterAction> {
         ctx: &ClientContext,
     ) -> Result<Vec<schema::PainterAction>, Box<EvalAltResult>> {
         let scope = Scope::new();
-        RhaiScriptExt::execute(self, scope, ctx)
+        RhaiScriptExt::execute(self, scope, ctx).map(|r| r.0)
     }
 }

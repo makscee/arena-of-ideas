@@ -17,8 +17,6 @@ pub use script_types::{
 };
 
 use ::rhai::Engine;
-use once_cell::sync::OnceCell;
-use std::sync::Mutex;
 
 static RHAI_ENGINE: OnceCell<Mutex<Engine>> = OnceCell::new();
 

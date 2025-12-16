@@ -1,6 +1,6 @@
 use super::*;
 use crate::ui::render::features::FEdit;
-use egui_code_editor::{CodeEditor, ColorTheme, Syntax};
+use egui_code_editor::{CodeEditor, ColorTheme, Completer, Syntax};
 use schema::RhaiScript;
 
 #[derive(Clone, Resource)]
@@ -8,6 +8,8 @@ pub struct ScriptEditorState {
     pub code: String,
     pub theme: ColorTheme,
     pub show_help: bool,
+    pub auto_compile: bool,
+    pub compile_error: Option<String>,
 }
 
 impl Default for ScriptEditorState {
@@ -16,96 +18,76 @@ impl Default for ScriptEditorState {
             code: String::new(),
             theme: ColorTheme::GRUVBOX,
             show_help: false,
+            auto_compile: false,
+            compile_error: None,
         }
     }
 }
 
-pub fn pane_rhai_script_editor(ui: &mut egui::Ui, world: &mut World) -> NodeResult<()> {
-    let mut editor_state = world
-        .get_resource_or_insert_with(ScriptEditorState::default)
-        .clone();
-
-    ui.horizontal(|ui| {
-        ui.heading("Rhai Script Editor");
-        ui.separator();
-        if !editor_state.code.is_empty() {
-            ui.colored_label(egui::Color32::GREEN, "✓ Script");
-        }
-    });
-
-    ui.separator();
-    ui.checkbox(&mut editor_state.show_help, "Show Help");
-
-    let available_height = ui.available_height();
-    let editor_height = if editor_state.show_help {
-        available_height * 0.6
-    } else {
-        available_height
-    };
-
-    ui.group(|ui| {
-        ui.set_min_height(editor_height);
-        let syntax = create_rhai_syntax();
-
-        CodeEditor::default()
-            .id_source("rhai_editor")
-            .with_rows((editor_height / 14.0) as usize)
-            .with_fontsize(14.0)
-            .with_theme(editor_state.theme.clone())
-            .with_syntax(syntax)
-            .with_numlines(true)
-            .show(ui, &mut editor_state.code);
-    });
-
-    if editor_state.show_help {
-        ui.separator();
-        egui::ScrollArea::vertical()
-            .max_height(available_height * 0.35)
-            .show(ui, |ui| {
-                ui.label("Rhai Script Help");
-                ui.separator();
-                ui.vertical(|ui| {
-                    ui.label("Unit Actions:");
-                    ui.code("unit_actions.use_ability(ability_name, target_id)");
-                    ui.code("unit_actions.apply_status(status_name, target_id, stacks)");
-                    ui.separator();
-                    ui.label("Status Actions:");
-                    ui.code("status_actions.deal_damage(target_id, amount)");
-                    ui.code("status_actions.heal_damage(target_id, amount)");
-                    ui.code("status_actions.use_ability(ability_name, target_id)");
-                    ui.code("status_actions.modify_stacks(delta)");
-                    ui.separator();
-                    ui.label("Ability Actions:");
-                    ui.code("ability_actions.deal_damage(target_id, amount)");
-                    ui.code("ability_actions.heal_damage(target_id, amount)");
-                    ui.code("ability_actions.change_status(status_name, target_id, delta)");
-                });
-            });
-    }
-    world.insert_resource(editor_state);
-
-    Ok(())
+static COMPLETER: OnceCell<Mutex<Completer>> = OnceCell::new();
+pub fn init_completer() {
+    COMPLETER
+        .set(Mutex::new(
+            Completer::new_with_syntax(&rhai_syntax()).with_user_words(),
+        ))
+        .unwrap();
 }
 
-fn create_rhai_syntax() -> Syntax {
-    let mut syntax = Syntax::rust();
-    syntax.keywords.clear();
+fn rhai_completer() -> MutexGuard<'static, Completer> {
+    COMPLETER.get().unwrap().lock()
+}
 
-    syntax.types.insert("Unit");
-    syntax.types.insert("Status");
-    syntax.types.insert("Ability");
+fn rhai_syntax() -> Syntax {
+    static SYNTAX: OnceCell<Syntax> = OnceCell::new();
 
-    syntax.special.insert("owner");
-    syntax.special.insert("target");
-    syntax.special.insert("status");
-    syntax.special.insert("ability");
-    syntax.special.insert("unit_actions");
-    syntax.special.insert("status_actions");
-    syntax.special.insert("ability_actions");
-    syntax.special.insert("painter");
-    syntax.special.insert("x");
+    SYNTAX
+        .get_or_init(|| {
+            let mut syntax = Syntax::rust();
+            syntax.keywords.clear();
 
-    syntax
+            syntax.types.insert("Unit");
+            syntax.types.insert("Status");
+            syntax.types.insert("Ability");
+
+            syntax.special.insert("owner");
+            syntax.special.insert("target");
+            syntax.special.insert("status");
+            syntax.special.insert("ability");
+            syntax.special.insert("unit_actions");
+            syntax.special.insert("status_actions");
+            syntax.special.insert("ability_actions");
+            syntax.special.insert("painter");
+            syntax.special.insert("x");
+
+            add_syntax_functions(&mut syntax);
+
+            syntax
+        })
+        .clone()
+}
+
+fn add_syntax_functions(syntax: &mut Syntax) {
+    syntax.keywords.insert("use_ability");
+    syntax.keywords.insert("apply_status");
+    syntax.keywords.insert("deal_damage");
+    syntax.keywords.insert("heal_damage");
+    syntax.keywords.insert("modify_stacks");
+    syntax.keywords.insert("change_status");
+    syntax.keywords.insert("circle");
+    syntax.keywords.insert("rectangle");
+    syntax.keywords.insert("curve");
+    syntax.keywords.insert("text");
+    syntax.keywords.insert("hollow");
+    syntax.keywords.insert("solid");
+    syntax.keywords.insert("translate");
+    syntax.keywords.insert("rotate");
+    syntax.keywords.insert("scale_mesh");
+    syntax.keywords.insert("scale_rect");
+    syntax.keywords.insert("color");
+    syntax.keywords.insert("alpha");
+    syntax.keywords.insert("feathering");
+    syntax.keywords.insert("paint");
+    syntax.keywords.insert("exit");
 }
 
 pub fn show_rhai_script_editor<T: schema::ScriptAction>(
@@ -119,9 +101,32 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
         });
 
         ui.label("Script Code:");
-        let syntax = create_rhai_syntax();
+        let syntax = rhai_syntax();
         let editor_height = 300.0;
+        let mut saved = false;
         let response = ui
+            .horizontal(|ui| {
+                if ui.button("Save & Compile (Cmd+S)").clicked()
+                    || ui.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.command)
+                {
+                    script.clear_compiled();
+                    script.compile_error.write().unwrap().take();
+                    saved = true;
+                }
+
+                if let Some(ref error) = *script.compile_error.read().unwrap() {
+                    ui.colored_label(egui::Color32::RED, "❌ Compilation Error:");
+                    ui.label(RichText::new(error).monospace());
+                } else if let Some(ref error) = *script.run_error.read().unwrap() {
+                    ui.colored_label(egui::Color32::RED, "❌ Runtime Error:");
+                    ui.label(RichText::new(error).monospace());
+                } else {
+                    ui.colored_label(egui::Color32::GREEN, "✅ Script compiled");
+                }
+            })
+            .response;
+
+        let mut editor_response = ui
             .group(|ui| {
                 ui.set_min_height(editor_height);
                 CodeEditor::default()
@@ -131,20 +136,16 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
                     .with_theme(ColorTheme::SONOKAI)
                     .with_syntax(syntax)
                     .with_numlines(true)
-                    .show(ui, &mut script.code)
+                    .show_with_completer(ui, &mut script.code, &mut rhai_completer())
                     .response
             })
             .inner;
-        if response.changed() {
-            script.clear_compiled();
-        }
-
-        if !script.code.is_empty() {
-            ui.colored_label(egui::Color32::GREEN, "✓ Script compiled");
+        if saved {
+            editor_response.mark_changed();
+            editor_response
         } else {
-            ui.colored_label(egui::Color32::YELLOW, "○ Empty script");
+            response
         }
-        response
     })
     .inner
 }
