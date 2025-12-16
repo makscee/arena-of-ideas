@@ -7,7 +7,6 @@ members = [
     "proc-macros",
     "client",
     "node-build-utils",
-    "disco-server",
 ]
 
 [workspace.package]

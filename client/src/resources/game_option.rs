@@ -4,8 +4,9 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, AsRefStr)]
 pub enum GameOption {
-    Connect,
+    Auth,
     Login,
+    Connect,
     ForceLogin,
     TestScenariosLoad,
     ActiveRun,
@@ -15,7 +16,8 @@ pub enum GameOption {
 impl ToCstr for GameOption {
     fn cstr(&self) -> Cstr {
         match self {
-            GameOption::Connect
+            GameOption::Auth
+            | GameOption::Connect
             | GameOption::Login
             | GameOption::ForceLogin
             | GameOption::TestScenariosLoad
@@ -25,7 +27,7 @@ impl ToCstr for GameOption {
     }
 }
 
-static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Connect);
+static CURRENTLY_FULFILLING: Mutex<GameOption> = Mutex::new(GameOption::Auth);
 pub fn currently_fulfilling() -> GameOption {
     CURRENTLY_FULFILLING.lock().clone()
 }
@@ -33,6 +35,12 @@ pub fn currently_fulfilling() -> GameOption {
 impl GameOption {
     pub fn is_fulfilled(&self, world: &World) -> bool {
         match self {
+            GameOption::Auth => {
+                info!("got option {:#?}", world.get_resource::<AuthOption>());
+                world
+                    .get_resource::<AuthOption>()
+                    .is_some_and(|ao| ao.id_token.is_some())
+            }
             GameOption::Connect => world.get_resource::<ConnectOption>().is_some(),
             GameOption::Login | GameOption::ForceLogin => {
                 world.get_resource::<LoginOption>().is_some()
@@ -50,6 +58,7 @@ impl GameOption {
         );
         *CURRENTLY_FULFILLING.lock() = self.clone();
         match self {
+            GameOption::Auth => AuthOption::fulfill(world),
             GameOption::Connect => ConnectOption::fulfill(world),
             GameOption::Login | GameOption::ForceLogin => LoginOption::fulfill(world),
             GameOption::TestScenariosLoad => GameState::TestScenariosLoad.set_next(world),
@@ -63,6 +72,11 @@ impl GameOption {
             }
         }
     }
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct AuthOption {
+    pub id_token: Option<String>,
 }
 
 #[derive(Resource, Debug)]
@@ -97,6 +111,12 @@ pub trait OptionResource: Resource + Sized + Debug {
 impl OptionResource for ConnectOption {
     fn fulfill(world: &mut World) {
         GameState::Connect.set_next(world);
+    }
+}
+
+impl OptionResource for AuthOption {
+    fn fulfill(world: &mut World) {
+        GameState::Auth.set_next(world);
     }
 }
 

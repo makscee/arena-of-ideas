@@ -33,7 +33,6 @@ pub struct NPlayer {
 
 #[derive(Node)]
 pub struct NPlayerData {
-    pub pass_hash: Option<String>,
     #[var]
     pub online: bool,
     pub last_login: u64,
