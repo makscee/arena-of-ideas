@@ -431,16 +431,15 @@ impl BattleAction {
                     target_id,
                     status_path,
                 } => {
-                    let status = find_status_by_path(status_path, ctx)?;
-                    let color = status
-                        .state
-                        .load_node(ctx)
-                        .ok()
-                        .and_then(|s| s.color.load_node(ctx).ok())
-                        .map(|c| c.color.into())
-                        .unwrap_or_default();
-                    BattleSimulation::apply_status(ctx, *caster_id, *target_id, status, color)
-                        .log();
+                    let (house, status) = find_status_by_path(status_path, ctx)?;
+                    let color = house.color.load_node(ctx)?.color.c32();
+                    BattleSimulation::apply_status(
+                        ctx,
+                        *caster_id,
+                        *target_id,
+                        status.clone(),
+                        color,
+                    )?;
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
@@ -449,30 +448,17 @@ impl BattleAction {
                     target_id,
                     ability_path,
                 } => {
-                    let mut result = false;
-                    if let Ok(ability) = find_ability_by_path(ability_path, ctx) {
-                        if let Ok(effect) = ability.effect.load_node(ctx) {
-                            if let Ok(target) = ctx.load::<NUnit>(*target_id).track() {
-                                let engine = crate::plugins::rhai::create_base_engine();
-                                if let Ok(actions) =
-                                    crate::plugins::rhai::AbilityEffectExecutor::execute(
-                                        &effect,
-                                        ability.clone(),
-                                        target,
-                                        &engine,
-                                        ctx,
-                                    )
-                                {
-                                    for action in actions {
-                                        if let Ok(battle_action) =
-                                            action.to_battle_action(ctx, *caster_id)
-                                        {
-                                            add_actions.push(battle_action);
-                                        }
-                                    }
-                                    result = true;
-                                }
-                            }
+                    let (_, ability) = find_ability_by_path(ability_path, ctx)?;
+                    let effect = ability.effect.load_node(ctx)?;
+                    let target = ctx.load::<NUnit>(*target_id).track()?;
+                    let actions = effect
+                        .effect
+                        .execute_ability(ability.clone(), target, ctx)
+                        .to_node_result()?;
+                    let result = actions.is_empty();
+                    for action in actions {
+                        if let Ok(battle_action) = action.to_battle_action(ctx, *caster_id) {
+                            add_actions.push(battle_action);
                         }
                     }
                     result
@@ -820,23 +806,34 @@ impl BattleSimulation {
                     fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
                 }
                 ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
-                    match ctx
-                        .load::<NUnit>(id)
-                        .track()?
-                        .clone()
-                        .behavior
-                        .load_node_mut(ctx)?
-                        .behavior
-                        .react_battle_actions(&event, ctx)
-                    {
-                        Ok(actions) => {
-                            if !actions.is_empty() {
-                                ctx.battle_mut()?.fired.insert(id);
-                                process_actions(ctx, actions);
+                    if let Ok(unit) = ctx.load::<NUnit>(id).track() {
+                        if let Ok(behavior) = unit.clone().behavior.load_node(ctx) {
+                            if behavior.trigger.fire(&event, ctx)? {
+                                use crate::plugins::rhai::RhaiScriptUnitExt;
+                                match behavior.effect.execute_unit(
+                                    unit.clone(),
+                                    unit.clone(),
+                                    0,
+                                    ctx,
+                                ) {
+                                    Ok(actions) => {
+                                        if !actions.is_empty() {
+                                            ctx.battle_mut()?.fired.insert(id);
+                                            let mut battle_actions = Vec::new();
+                                            for action in actions {
+                                                use crate::plugins::rhai::ToBattleAction;
+                                                if let Ok(ba) = action.to_battle_action(ctx, id) {
+                                                    battle_actions.push(ba);
+                                                }
+                                            }
+                                            process_actions(ctx, battle_actions);
+                                        }
+                                    }
+                                    Err(e) => error!("NFusion event {event} failed: {e}"),
+                                }
                             }
                         }
-                        Err(e) => error!("NFusion event {event} failed: {e}"),
-                    };
+                    }
                     Ok(())
                 })
                 .log();
@@ -858,9 +855,33 @@ impl BattleSimulation {
                             return Ok(vec![]);
                         }
                         let behavior = status.behavior.load_node(ctx).track()?;
-                        let actions = behavior.behavior.react_actions(&event, ctx);
-                        if let Some(actions) = actions {
-                            actions.clone().process(ctx)
+                        if behavior.trigger.fire(&event, ctx)? {
+                            let x = match ctx.get_var(VarName::value)? {
+                                VarValue::i32(v) => v as i64,
+                                VarValue::f32(v) => v as i64,
+                                _ => 0,
+                            };
+                            use crate::plugins::rhai::RhaiScriptStatusExt;
+                            match behavior.effect.execute_status(status.clone(), x, ctx) {
+                                Ok(actions) => {
+                                    if !actions.is_empty() {
+                                        let owner_id = status.id;
+                                        let mut battle_actions = Vec::new();
+                                        for action in actions {
+                                            use crate::plugins::rhai::ToBattleAction;
+                                            if let Ok(ba) = action.to_battle_action(ctx, owner_id) {
+                                                battle_actions.push(ba);
+                                            }
+                                        }
+                                        process_actions(ctx, battle_actions);
+                                    }
+                                    Ok(default())
+                                }
+                                Err(e) => {
+                                    error!("Status behavior failed: {e}");
+                                    Ok(default())
+                                }
+                            }
                         } else {
                             Ok(default())
                         }

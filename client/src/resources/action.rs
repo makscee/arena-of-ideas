@@ -97,114 +97,22 @@ impl ActionImpl for Action {
                 }
             }
             Action::use_ability(house_name, ability_name, color) => {
-                let owner = ctx.owner()?;
-
-                // Find the team parent and then the house
-                let team_id = ctx.first_parent_recursive(owner, NodeKind::NTeam)?;
-                let team = ctx.load::<NTeam>(team_id)?;
-
-                // Find the house with matching name
-                let houses = team.houses.load_nodes(ctx)?;
-                let house = houses
-                    .into_iter()
-                    .find(|h| h.house_name == *house_name)
-                    .ok_or_else(|| {
-                        NodeError::custom(format!("House '{}' not found", house_name))
-                    })?;
-
-                // Get the ability from the house
-                let ability = house.ability.load_node(ctx)?.load_components(ctx)?.take();
-                if ability.ability_name != *ability_name {
-                    return Err(NodeError::custom(format!(
-                        "Ability '{}' not found in house '{}'",
-                        ability_name, house_name
-                    )));
-                }
-
-                let x = ctx
-                    .load::<NUnitState>(owner)
-                    .unwrap_or_default()
-                    .stax
-                    .at_least(1);
-                let effect = ability.effect.load_node(ctx)?.effect.actions.clone();
-                ctx.with_layers(
-                    [
-                        ContextLayer::Var(VarName::stax, x.into()),
-                        ContextLayer::Var(VarName::value, x.into()),
-                    ],
-                    |ctx| {
-                        actions.extend(effect.process(ctx).track()?);
-                        Ok(())
-                    },
-                )?;
-                let text = format!("use [b x{x}] [{} {}]", color.0, ability_name);
-                let position = ctx.get_var(VarName::position).track()?;
-                actions.push(BattleAction::new_text(text, position).into());
+                // TODO: Migrate to Rhai script execution system
+                // This action type is being replaced by NUnitBehavior with RhaiScript
+                log::warn!(
+                    "Action::use_ability not yet migrated to Rhai scripts: {} / {}",
+                    house_name,
+                    ability_name
+                );
             }
             Action::apply_status(house_name, status_name, color) => {
-                let owner = ctx.owner()?;
-
-                // Find the team parent and then the house
-                let team_id = ctx.first_parent_recursive(owner, NodeKind::NTeam)?;
-                let team = ctx.load::<NTeam>(team_id)?;
-
-                // Find the house with matching name
-                let houses = team.houses.load_nodes(ctx)?;
-                let house = houses
-                    .into_iter()
-                    .find(|h| h.house_name == *house_name)
-                    .ok_or_else(|| {
-                        NodeError::custom(format!("House '{}' not found", house_name))
-                    })?;
-
-                // Get the status from the house
-                let status = house.status.load_node(ctx)?.load_components(ctx)?.take();
-                if status.status_name != *status_name {
-                    return Err(NodeError::custom(format!(
-                        "Status '{}' not found in house '{}'",
-                        status_name, house_name
-                    )));
-                }
-
-                let x = ctx
-                    .load::<NUnitState>(owner)
-                    .unwrap_or_default()
-                    .stax
-                    .at_least(1);
-                let status = status
-                    .clone()
-                    .with_state(NState::new(next_id(), player_id(), x));
-                let targets = ctx.get_targets();
-                if targets.is_empty() {
-                    return Err("No targets".into());
-                }
-                let text = format!("apply [b x{x}] [{} {}]", color.0, status_name);
-                actions.push(
-                    BattleAction::new_text(
-                        text,
-                        ctx.get_var(VarName::position).get_vec2().track()?,
-                    )
-                    .into(),
+                // TODO: Migrate to Rhai script execution system
+                // This action type is being replaced by NStatusBehavior with RhaiScript
+                log::warn!(
+                    "Action::apply_status not yet migrated to Rhai scripts: {} / {}",
+                    house_name,
+                    status_name
                 );
-                for target in targets {
-                    actions.push(BattleAction::apply_status(
-                        owner,
-                        target,
-                        status.clone().remap_ids(),
-                        color.c32(),
-                    ));
-                    let position = ctx
-                        .get_var_inherited(target, VarName::position)
-                        .get_vec2()?;
-                    actions.push(
-                        BattleAction::new_text(
-                            format!("gain [b x{x}] [{} {}]", color.0, status_name),
-                            position,
-                        )
-                        .into(),
-                    );
-                    actions.push(BattleAction::wait(animation_time()));
-                }
             }
             Action::set_status(x) => {
                 let status_id = x.get_u64(ctx)?;

@@ -667,8 +667,22 @@ mod tests {
     fn test_load_different_extras_from_incubator() {
         let mut incubator_source = Sources::new_incubator();
         let unit_node = NUnit::new(3000, ID_INCUBATOR, default()).to_tnode();
-        let mut behavior_1 = NUnitBehavior::new(3001, ID_INCUBATOR, default()).to_tnode();
-        let mut behavior_2 = NUnitBehavior::new(3002, ID_INCUBATOR, default()).to_tnode();
+        let mut behavior_1 = NUnitBehavior::new(
+            3001,
+            ID_INCUBATOR,
+            schema::Trigger::BattleStart,
+            schema::Target::default(),
+            schema::RhaiScript::empty(),
+        )
+        .to_tnode();
+        let mut behavior_2 = NUnitBehavior::new(
+            3002,
+            ID_INCUBATOR,
+            schema::Trigger::BattleStart,
+            schema::Target::default(),
+            schema::RhaiScript::empty(),
+        )
+        .to_tnode();
         behavior_1.rating = 3;
         behavior_2.rating = 2;
 

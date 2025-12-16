@@ -7,75 +7,38 @@ mod script_painter;
 mod script_types;
 
 use super::*;
-pub use behavior_executor::*;
-pub use script_actions::*;
+pub use script_actions::{
+    ToBattleAction, register_ability_actions_type, register_ability_type,
+    register_painter_functions, register_status_actions_type, register_status_type,
+    register_unit_actions_type, register_unit_type,
+};
 pub use script_context::*;
 pub use script_editor::*;
 pub use script_engine::*;
 pub use script_painter::*;
-pub use script_types::*;
+pub use script_types::{
+    RhaiScriptAbilityExt, RhaiScriptExt, RhaiScriptPainterExt, RhaiScriptStatusExt,
+    RhaiScriptUnitExt,
+};
 
-use ::rhai::{AST, Engine, EvalAltResult, Position};
-use parking_lot::RwLock;
-use std::sync::Arc;
+use ::rhai::Engine;
+use once_cell::sync::OnceCell;
+use std::sync::Mutex;
+
+static RHAI_ENGINE: OnceCell<Mutex<Engine>> = OnceCell::new();
+
+pub fn rhai_engine() -> &'static Mutex<Engine> {
+    RHAI_ENGINE.get_or_init(|| {
+        let mut engine = create_base_engine();
+        register_client_types(&mut engine);
+        Mutex::new(engine)
+    })
+}
 
 pub struct RhaiPlugin;
 
 impl Plugin for RhaiPlugin {
-    fn build(&self, app: &mut App) {
-        app.insert_resource(RhaiEngineResource::new())
-            .add_systems(Startup, setup_rhai_engine);
-    }
-}
-
-#[derive(Resource)]
-pub struct RhaiEngineResource {
-    pub engine: Arc<Engine>,
-    pub compiled_scripts: Arc<RwLock<HashMap<u64, CompiledScript>>>,
-}
-
-impl RhaiEngineResource {
-    pub fn new() -> Self {
-        Self {
-            engine: Arc::new(create_base_engine()),
-            compiled_scripts: Arc::new(RwLock::new(HashMap::new())),
-        }
-    }
-
-    pub fn compile_script<T>(&self, script: &RhaiScript<T>) -> Result<AST, Box<EvalAltResult>> {
-        self.engine.compile(&script.code).map_err(|e| {
-            Box::new(EvalAltResult::ErrorRuntime(
-                format!("Parse error: {}", e).into(),
-                Position::new(0, 0),
-            ))
-        })
-    }
-
-    pub fn store_compiled(&self, id: u64, script: CompiledScript) {
-        self.compiled_scripts.write().insert(id, script);
-    }
-
-    pub fn get_compiled(&self, id: u64) -> Option<CompiledScript> {
-        self.compiled_scripts.read().get(&id).cloned()
-    }
-}
-
-#[derive(Clone)]
-pub struct CompiledScript {
-    pub ast: AST,
-    pub last_compiled: std::time::Instant,
-}
-
-impl std::fmt::Debug for CompiledScript {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("CompiledScript")
-            .field("last_compiled", &self.last_compiled)
-            .finish()
-    }
-}
-
-fn setup_rhai_engine(mut res: ResMut<RhaiEngineResource>) {
-    register_client_types(&mut Arc::get_mut(&mut res.engine).unwrap());
+    fn build(&self, _app: &mut App) {}
 }
 
 pub fn create_base_engine() -> Engine {

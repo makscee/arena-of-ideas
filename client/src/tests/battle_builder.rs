@@ -78,12 +78,12 @@ impl TestBuilder {
         self
     }
 
-    pub fn add_reaction(mut self, trigger: Trigger, script: String) -> Self {
+    pub fn add_reaction(mut self, trigger: Trigger, target: Target, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add reaction without a team");
-        team.add_reaction(trigger, script);
+        team.add_reaction(trigger, target, script);
         self
     }
 
@@ -146,12 +146,12 @@ impl TeamBuilder {
         house.add_unit(id, pwr, hp);
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, script: String) {
+    fn add_reaction(&mut self, trigger: Trigger, target: Target, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add reaction without a house");
-        house.add_reaction(trigger, script);
+        house.add_reaction(trigger, target, script);
     }
 
     fn add_ability(&mut self, id: u64, script: String) {
@@ -214,12 +214,12 @@ impl HouseBuilder {
         self.units.push(UnitBuilder::new(id, pwr, hp));
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, script: String) {
+    fn add_reaction(&mut self, trigger: Trigger, target: Target, script: String) {
         let unit = self
             .units
             .last_mut()
             .expect("Cannot add reaction without a unit");
-        unit.behavior = Some((trigger, script));
+        unit.behavior = Some((trigger, target, script));
     }
 
     fn add_ability(&mut self, id: u64, script: String) {
@@ -263,7 +263,7 @@ struct UnitBuilder {
     id: u64,
     pwr: i32,
     hp: i32,
-    behavior: Option<(Trigger, String)>,
+    behavior: Option<(Trigger, Target, String)>,
 }
 
 impl UnitBuilder {
@@ -297,9 +297,9 @@ impl UnitBuilder {
 
         let mut behavior = NUnitBehavior::default();
         behavior.set_id(self.id + 3);
-        if let Some((trigger, script)) = self.behavior {
+        if let Some((trigger, target, script)) = self.behavior {
             behavior.trigger = trigger;
-            behavior.target = Target::default();
+            behavior.target = target;
             behavior.effect = RhaiScript::new(script).with_description("Unit reaction".to_string());
         }
         behavior.stats.set_loaded(stats);

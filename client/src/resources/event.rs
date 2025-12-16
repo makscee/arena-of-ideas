@@ -23,19 +23,6 @@ impl EventImpl for Event {
                 ContextLayer::Var(VarName::value, value.clone()),
             ],
             |ctx| {
-                // Process unit behavior with Rhai
-                if let Ok(ub) = ctx.load::<NUnitBehavior>(owner) {
-                    match crate::plugins::rhai::RhaiBehaviorImpl::react_for_unit_behavior(
-                        &ub, self, ctx,
-                    ) {
-                        Ok(actions) => {
-                            battle_actions.extend(actions);
-                        }
-                        Err(e) => {
-                            e.log();
-                        }
-                    }
-                }
                 let statuses = ctx
                     .load_children_ref::<NStatusMagic>(owner)?
                     .into_iter()
@@ -50,19 +37,23 @@ impl EventImpl for Event {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
-                        // Process status behavior with Rhai
-                        if let Ok(sb) = status.behavior.load_node(ctx) {
-                            match crate::plugins::rhai::RhaiBehaviorImpl::react_for_status_behavior(
-                                &sb,
-                                status.clone(),
-                                self,
-                                ctx,
-                            ) {
-                                Ok(actions) => {
-                                    battle_actions.extend(actions);
-                                }
-                                Err(e) => {
-                                    return Err(e);
+                        if let Ok(behavior) = status.behavior.load_node(ctx) {
+                            if behavior.trigger.fire(self, ctx).ok().unwrap_or(false) {
+                                let x = match ctx.get_var(VarName::value)? {
+                                    VarValue::i32(v) => v as i64,
+                                    VarValue::f32(v) => v as i64,
+                                    _ => 0,
+                                };
+                                use crate::plugins::rhai::RhaiScriptStatusExt;
+                                if let Ok(actions) =
+                                    behavior.effect.execute_status(status.clone(), x, ctx)
+                                {
+                                    for action in actions {
+                                        use crate::plugins::rhai::ToBattleAction;
+                                        if let Ok(ba) = action.to_battle_action(ctx, status_id) {
+                                            battle_actions.push(ba);
+                                        }
+                                    }
                                 }
                             }
                         }

@@ -32,3 +32,9 @@ impl Tier for Behavior {
         (trigger_tier + target_tier + effect_tier) / 3
     }
 }
+
+impl<T> Tier for RhaiScript<T> {
+    fn tier(&self) -> u8 {
+        1
+    }
+}

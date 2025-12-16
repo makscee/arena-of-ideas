@@ -1,108 +1,86 @@
 use super::*;
+use crate::resources::battle::BattleAction;
 use ::rhai::Engine;
-use serde::{Deserialize, Serialize};
+use schema::{AbilityAction, StatusAction, UnitAction};
 
-/// Trait for script action types that defines how they are executed
-pub trait ScriptAction: Clone + Send + Sync + 'static {
-    /// The name of the variable in the script scope that holds the actions vec
-    fn actions_var_name() -> &'static str;
-
-    /// Register the type and its methods with the Rhai engine
-    fn register_type(engine: &mut Engine);
+/// Trait for converting script actions to battle actions
+pub trait ToBattleAction {
+    fn to_battle_action(&self, ctx: &ClientContext, owner_id: u64) -> NodeResult<BattleAction>;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum UnitAction {
-    UseAbility {
-        ability_name: String,
-        target_id: u64,
-    },
-    ApplyStatus {
-        status_name: String,
-        target_id: u64,
-        stacks: i32,
-    },
-}
-
-impl ScriptAction for UnitAction {
-    fn actions_var_name() -> &'static str {
-        "unit_actions"
-    }
-
-    fn register_type(engine: &mut Engine) {
-        register_unit_type(engine);
-        register_unit_actions_type(engine);
+impl ToBattleAction for UnitAction {
+    fn to_battle_action(&self, _ctx: &ClientContext, owner_id: u64) -> NodeResult<BattleAction> {
+        match self {
+            UnitAction::UseAbility {
+                ability_name,
+                target_id,
+            } => Ok(BattleAction::vfx(
+                vec![
+                    ContextLayer::Caster(owner_id),
+                    ContextLayer::Target(*target_id),
+                ],
+                format!("ability:{}", ability_name),
+            )),
+            UnitAction::ApplyStatus {
+                status_name,
+                target_id,
+                stacks: _,
+            } => Ok(BattleAction::apply_status {
+                caster_id: owner_id,
+                target_id: *target_id,
+                status_path: status_name.clone(),
+            }),
+        }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum StatusAction {
-    DealDamage {
-        target_id: u64,
-        amount: i32,
-    },
-    HealDamage {
-        target_id: u64,
-        amount: i32,
-    },
-    UseAbility {
-        ability_name: String,
-        target_id: u64,
-    },
-    ModifyStacks {
-        delta: i32,
-    },
-}
-
-impl ScriptAction for StatusAction {
-    fn actions_var_name() -> &'static str {
-        "status_actions"
-    }
-
-    fn register_type(engine: &mut Engine) {
-        register_status_type(engine);
-        register_status_actions_type(engine);
+impl ToBattleAction for StatusAction {
+    fn to_battle_action(&self, _ctx: &ClientContext, owner_id: u64) -> NodeResult<BattleAction> {
+        match self {
+            StatusAction::DealDamage { target_id, amount } => {
+                Ok(BattleAction::damage(owner_id, *target_id, *amount))
+            }
+            StatusAction::HealDamage { target_id, amount } => {
+                Ok(BattleAction::heal(owner_id, *target_id, *amount))
+            }
+            StatusAction::UseAbility {
+                ability_name,
+                target_id,
+            } => Ok(BattleAction::vfx(
+                vec![
+                    ContextLayer::Caster(owner_id),
+                    ContextLayer::Target(*target_id),
+                ],
+                format!("ability:{}", ability_name),
+            )),
+            StatusAction::ModifyStacks { delta } => Ok(BattleAction::var_set(
+                owner_id,
+                VarName::stax,
+                VarValue::i32(*delta),
+            )),
+        }
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AbilityAction {
-    DealDamage {
-        target_id: u64,
-        amount: i32,
-    },
-    HealDamage {
-        target_id: u64,
-        amount: i32,
-    },
-    ChangeStatus {
-        status_name: String,
-        target_id: u64,
-        delta: i32,
-    },
-}
-
-impl ScriptAction for AbilityAction {
-    fn actions_var_name() -> &'static str {
-        "ability_actions"
-    }
-
-    fn register_type(engine: &mut Engine) {
-        register_ability_type(engine);
-        register_ability_actions_type(engine);
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RhaiPainterAction(pub String);
-
-impl ScriptAction for RhaiPainterAction {
-    fn actions_var_name() -> &'static str {
-        "painter_actions"
-    }
-
-    fn register_type(engine: &mut Engine) {
-        register_painter_functions(engine);
+impl ToBattleAction for AbilityAction {
+    fn to_battle_action(&self, _ctx: &ClientContext, caster_id: u64) -> NodeResult<BattleAction> {
+        match self {
+            AbilityAction::DealDamage { target_id, amount } => {
+                Ok(BattleAction::damage(caster_id, *target_id, *amount))
+            }
+            AbilityAction::HealDamage { target_id, amount } => {
+                Ok(BattleAction::heal(caster_id, *target_id, *amount))
+            }
+            AbilityAction::ChangeStatus {
+                status_name,
+                target_id,
+                delta: _,
+            } => Ok(BattleAction::apply_status {
+                caster_id,
+                target_id: *target_id,
+                status_path: status_name.clone(),
+            }),
+        }
     }
 }
 

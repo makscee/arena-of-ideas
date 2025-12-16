@@ -772,7 +772,8 @@ impl FStats for NUnit {
             }
         }
         let tier = if let Ok(behavior) = self.behavior.load_node(ctx) {
-            schema::Tier::tier(&behavior.behavior)
+            use schema::Tier;
+            behavior.tier()
         } else {
             0
         };
@@ -796,7 +797,8 @@ impl FTag for NUnit {
 
     fn tag_value(&self, ctx: &ClientContext) -> Option<Cstr> {
         let tier = if let Ok(behavior) = self.behavior.load_node(ctx) {
-            schema::Tier::tier(&behavior.behavior)
+            use schema::Tier;
+            behavior.tier()
         } else {
             0
         };
@@ -1363,12 +1365,8 @@ impl FTitle for NAbilityEffect {
 }
 
 impl FDescription for NAbilityEffect {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.effect
-            .actions
-            .iter()
-            .map(|a| a.title_recursive(ctx))
-            .join("\n")
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
+        self.effect.description.clone().into()
     }
 }
 
@@ -1428,7 +1426,7 @@ impl FTag for NStatusBehavior {
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("T{}", schema::Tier::tier(&self.behavior)).cstr())
+        Some(format!("T{}", self.tier()).cstr())
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
@@ -1954,14 +1952,7 @@ impl FPlaceholder for NPlayerData {
 
 impl FPlaceholder for NAbilityEffect {
     fn placeholder() -> Self {
-        NAbilityEffect::new(
-            next_id(),
-            0,
-            Effect {
-                description: "Effect".to_string(),
-                actions: vec![Action::noop],
-            },
-        )
+        NAbilityEffect::new(next_id(), 0, schema::RhaiScript::empty())
     }
 }
 
@@ -1976,14 +1967,8 @@ impl FPlaceholder for NStatusBehavior {
         NStatusBehavior::new(
             next_id(),
             0,
-            Behavior {
-                trigger: Trigger::BattleStart,
-                target: Target::default(),
-                effect: Effect {
-                    description: "Status effect".to_string(),
-                    actions: vec![Action::noop],
-                },
-            },
+            schema::Trigger::BattleStart,
+            schema::RhaiScript::empty(),
         )
         .with_representation(NStatusRepresentation::placeholder())
     }
@@ -2345,7 +2330,8 @@ impl FCompactView for NUnitBehavior {
             });
             ui.horizontal(|ui| {
                 ui.label("Tier:");
-                let tier = schema::Tier::tier(self);
+                use schema::Tier;
+                let tier = self.effect.tier();
                 format!("{}", tier).cstr_c(VarName::tier.color()).label(ui);
             });
             ui.horizontal(|ui| {
