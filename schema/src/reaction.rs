@@ -29,34 +29,11 @@ pub enum Target {
     Caster,
     Attacker,
     Target,
-    AdjacentAlly,
+    AdjacentBack,
+    AdjacentFront,
     AllyAtSlot(u8),
     EnemyAtSlot(u8),
     List(Vec<Target>),
-}
-
-impl Target {
-    pub fn to_expression(&self) -> Expression {
-        match self {
-            Target::Owner => Expression::owner,
-            Target::RandomEnemy => Expression::random_unit(Expression::all_enemy_units.into()),
-            Target::AllEnemies => Expression::all_enemy_units,
-            Target::RandomAlly => Expression::random_unit(Expression::all_ally_units.into()),
-            Target::AllAllies => Expression::all_ally_units,
-            Target::All => Expression::all_units,
-            Target::Caster => Expression::caster,
-            Target::Attacker => Expression::attacker,
-            Target::Target => Expression::target,
-            Target::AdjacentAlly => Expression::adjacent_ally_units,
-            Target::AllyAtSlot(slot) => Expression::value(VarValue::f32(*slot as f32)),
-            Target::EnemyAtSlot(slot) => Expression::value(VarValue::f32(*slot as f32)),
-            Target::List(targets) => {
-                let expressions: Vec<Expression> =
-                    targets.iter().map(|t| t.to_expression()).collect();
-                Expression::list(expressions.into())
-            }
-        }
-    }
 }
 
 pub trait BehaviorTier {
@@ -77,7 +54,10 @@ impl BehaviorTier for Target {
         match self {
             Target::Owner | Target::Caster => 0,
             Target::RandomEnemy | Target::RandomAlly | Target::Attacker | Target::Target => 1,
-            Target::AdjacentAlly | Target::AllyAtSlot(_) | Target::EnemyAtSlot(_) => 2,
+            Target::AdjacentBack
+            | Target::AdjacentFront
+            | Target::AllyAtSlot(_)
+            | Target::EnemyAtSlot(_) => 2,
             Target::AllEnemies | Target::AllAllies => 3,
             Target::All => 4,
             Target::List(targets) => {

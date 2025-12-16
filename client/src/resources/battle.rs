@@ -22,6 +22,62 @@ use rand_chacha::rand_core::SeedableRng;
 use super::*;
 use crate::resources::context::{NodesLinkResource, NodesMapResource};
 
+fn find_ability_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, NAbilityMagic)> {
+    let parts: Vec<&str> = path.split('/').collect();
+    if parts.len() != 2 {
+        return Err(NodeError::custom(
+            "Ability path must be in format 'House/Ability'",
+        ));
+    }
+
+    let house_name = parts[0];
+    let ability_name = parts[1];
+
+    let team = ctx.first_parent_recursive(ctx.owner()?, NodeKind::NTeam)?;
+    let houses = ctx.collect_kind_children_recursive(team, NodeKind::NHouse)?;
+
+    for house_id in houses {
+        let house = ctx.load_ref::<NHouse>(house_id)?;
+        if house.house_name == house_name {
+            if let Ok(ability) = house.ability.load_node(ctx) {
+                if ability.ability_name == ability_name {
+                    return Ok((house.clone(), ability));
+                }
+            }
+        }
+    }
+
+    Err(NodeError::not_found_generic(path.to_owned()))
+}
+
+fn find_status_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, NStatusMagic)> {
+    let parts: Vec<&str> = path.split('/').collect();
+    if parts.len() != 2 {
+        return Err(NodeError::custom(
+            "Status path must be in format 'House/Status'",
+        ));
+    }
+
+    let house_name = parts[0];
+    let status_name = parts[1];
+
+    let team = ctx.first_parent_recursive(ctx.owner()?, NodeKind::NTeam)?;
+    let houses = ctx.collect_kind_children_recursive(team, NodeKind::NHouse)?;
+
+    for house_id in houses {
+        let house = ctx.load_ref::<NHouse>(house_id)?;
+        if house.house_name == house_name {
+            if let Ok(status) = house.status.load_node(ctx) {
+                if status.status_name == status_name {
+                    return Ok((house.clone(), status));
+                }
+            }
+        }
+    }
+
+    Err(NodeError::not_found_generic(path.to_owned()))
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct Battle {
     pub id: u64,
@@ -139,7 +195,16 @@ pub enum BattleAction {
     heal(u64, u64, i32),
     death(u64),
     spawn(u64),
-    apply_status(u64, u64, NStatusMagic, Color32),
+    apply_status {
+        caster_id: u64,
+        target_id: u64,
+        status_path: String,
+    },
+    use_ability {
+        caster_id: u64,
+        target_id: u64,
+        ability_path: String,
+    },
     send_event(Event),
     vfx(Vec<ContextLayer>, String),
     wait(f32),
@@ -148,11 +213,6 @@ pub enum BattleAction {
 impl Hash for BattleAction {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            BattleAction::var_set(id, var, value) => {
-                id.hash(state);
-                var.hash(state);
-                value.hash(state);
-            }
             BattleAction::strike(a, b) => {
                 a.hash(state);
                 b.hash(state);
@@ -164,12 +224,23 @@ impl Hash for BattleAction {
             }
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
             BattleAction::fatigue(a) => a.hash(state),
-            BattleAction::apply_status(caster, target, status, _) => {
-                caster.hash(state);
-                target.hash(state);
-                status.id.hash(state);
-                // Note: stax are in state component, using status_name for hash consistency
-                status.status_name.hash(state);
+            BattleAction::apply_status {
+                caster_id,
+                target_id,
+                status_path,
+            } => {
+                caster_id.hash(state);
+                target_id.hash(state);
+                status_path.hash(state);
+            }
+            BattleAction::use_ability {
+                caster_id,
+                target_id,
+                ability_path,
+            } => {
+                caster_id.hash(state);
+                target_id.hash(state);
+                ability_path.hash(state);
             }
             BattleAction::send_event(event) => event.hash(state),
             _ => {
@@ -186,16 +257,20 @@ impl ToCstr for BattleAction {
             BattleAction::damage(a, b, x) => format!("{a}>{b}-{x}"),
             BattleAction::heal(a, b, x) => format!("{a}>{b}+{x}"),
             BattleAction::death(a) => format!("x{a}"),
-            BattleAction::var_set(a, var, value) => format!("{a}>${var}>{value}"),
+            BattleAction::var_set(a, var, value) => format!("{a}${var}>{value}"),
             BattleAction::spawn(a) => format!("*{a}"),
-            BattleAction::apply_status(caster, target, status, color) => {
-                format!(
-                    "{caster} +[{} {}]>{target}({})",
-                    color.to_hex(),
-                    status.status_name,
-                    status.state.get().unwrap().stax
-                )
+            BattleAction::apply_status {
+                caster_id,
+                target_id,
+                status_path,
+            } => {
+                format!("{caster_id} +[{status_path}]>{target_id}")
             }
+            BattleAction::use_ability {
+                caster_id,
+                target_id,
+                ability_path,
+            } => format!("{caster_id}@{target_id}:{ability_path}"),
             BattleAction::wait(t) => format!("~{t}"),
             BattleAction::vfx(_, vfx) => format!("vfx({vfx})"),
             BattleAction::send_event(e) => format!("event({e})"),
@@ -351,11 +426,56 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
-                BattleAction::apply_status(caster, target, status, color) => {
-                    BattleSimulation::apply_status(ctx, *caster, *target, status.clone(), *color)
+                BattleAction::apply_status {
+                    caster_id,
+                    target_id,
+                    status_path,
+                } => {
+                    let status = find_status_by_path(status_path, ctx)?;
+                    let color = status
+                        .state
+                        .load_node(ctx)
+                        .ok()
+                        .and_then(|s| s.color.load_node(ctx).ok())
+                        .map(|c| c.color.into())
+                        .unwrap_or_default();
+                    BattleSimulation::apply_status(ctx, *caster_id, *target_id, status, color)
                         .log();
                     add_actions.push(Self::wait(animation_time()));
                     true
+                }
+                BattleAction::use_ability {
+                    caster_id,
+                    target_id,
+                    ability_path,
+                } => {
+                    let mut result = false;
+                    if let Ok(ability) = find_ability_by_path(ability_path, ctx) {
+                        if let Ok(effect) = ability.effect.load_node(ctx) {
+                            if let Ok(target) = ctx.load::<NUnit>(*target_id).track() {
+                                let engine = crate::plugins::rhai::create_base_engine();
+                                if let Ok(actions) =
+                                    crate::plugins::rhai::AbilityEffectExecutor::execute(
+                                        &effect,
+                                        ability.clone(),
+                                        target,
+                                        &engine,
+                                        ctx,
+                                    )
+                                {
+                                    for action in actions {
+                                        if let Ok(battle_action) =
+                                            action.to_battle_action(ctx, *caster_id)
+                                        {
+                                            add_actions.push(battle_action);
+                                        }
+                                    }
+                                    result = true;
+                                }
+                            }
+                        }
+                    }
+                    result
                 }
                 BattleAction::wait(t) => {
                     ctx.battle_mut()?.duration += *t;

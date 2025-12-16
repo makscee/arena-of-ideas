@@ -1,6 +1,6 @@
 mod action;
 mod anim;
-mod battle;
+pub mod battle;
 mod battle_view;
 mod client_settings;
 mod client_state;
@@ -12,7 +12,7 @@ mod game_option;
 mod game_state;
 mod painter;
 mod rarity;
-mod reaction;
+pub mod reaction;
 mod trigger;
 mod tween;
 

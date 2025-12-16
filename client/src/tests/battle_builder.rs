@@ -2,22 +2,6 @@ use std::sync::OnceLock;
 
 use super::*;
 
-pub fn create_use_ability_action(house_id: u64, ability_id: u64) -> Action {
-    Action::use_ability(
-        format!("House {}", house_id),
-        format!("Ability {}", ability_id),
-        HexColor::default(),
-    )
-}
-
-pub fn create_apply_status_action(house_id: u64, status_id: u64) -> Action {
-    Action::apply_status(
-        format!("House {}", house_id),
-        format!("Status {}", status_id),
-        HexColor::default(),
-    )
-}
-
 pub struct TestBuilder {
     teams: Vec<TeamBuilder>,
 }
@@ -94,35 +78,30 @@ impl TestBuilder {
         self
     }
 
-    pub fn add_reaction(mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
+    pub fn add_reaction(mut self, trigger: Trigger, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add reaction without a team");
-        team.add_reaction(trigger, actions);
+        team.add_reaction(trigger, script);
         self
     }
 
-    pub fn add_ability(mut self, id: u64, actions: Vec<Action>) -> Self {
+    pub fn add_ability(mut self, id: u64, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add ability without a team");
-        team.add_ability(id, actions);
+        team.add_ability(id, script);
         self
     }
 
-    pub fn add_status(
-        mut self,
-        id: u64,
-        trigger: Trigger,
-        actions: impl Into<Vec<Action>>,
-    ) -> Self {
+    pub fn add_status(mut self, id: u64, trigger: Trigger, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add status without a team");
-        team.add_status(id, trigger, actions);
+        team.add_status(id, trigger, script);
         self
     }
 
@@ -167,28 +146,28 @@ impl TeamBuilder {
         house.add_unit(id, pwr, hp);
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_reaction(&mut self, trigger: Trigger, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add reaction without a house");
-        house.add_reaction(trigger, actions);
+        house.add_reaction(trigger, script);
     }
 
-    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
+    fn add_ability(&mut self, id: u64, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add ability without a house");
-        house.add_ability(id, actions);
+        house.add_ability(id, script);
     }
 
-    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_status(&mut self, id: u64, trigger: Trigger, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add status without a house");
-        house.add_status(id, trigger, actions);
+        house.add_status(id, trigger, script);
     }
 
     fn build(self) -> NTeam {
@@ -235,27 +214,20 @@ impl HouseBuilder {
         self.units.push(UnitBuilder::new(id, pwr, hp));
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_reaction(&mut self, trigger: Trigger, script: String) {
         let unit = self
             .units
             .last_mut()
             .expect("Cannot add reaction without a unit");
-        unit.behavior = Some(Behavior {
-            trigger,
-            target: Target::default(),
-            effect: Effect {
-                description: "Unit reaction".to_string(),
-                actions: actions.into(),
-            },
-        });
+        unit.behavior = Some((trigger, script));
     }
 
-    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
-        self.ability = Some(AbilityBuilder::new(id, actions));
+    fn add_ability(&mut self, id: u64, script: String) {
+        self.ability = Some(AbilityBuilder::new(id, script));
     }
 
-    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        self.status = Some(StatusBuilder::new(id, trigger, actions));
+    fn add_status(&mut self, id: u64, trigger: Trigger, script: String) {
+        self.status = Some(StatusBuilder::new(id, trigger, script));
     }
 
     fn build(self) -> (NHouse, Vec<NUnit>) {
@@ -291,7 +263,7 @@ struct UnitBuilder {
     id: u64,
     pwr: i32,
     hp: i32,
-    behavior: Option<Behavior>,
+    behavior: Option<(Trigger, String)>,
 }
 
 impl UnitBuilder {
@@ -325,8 +297,10 @@ impl UnitBuilder {
 
         let mut behavior = NUnitBehavior::default();
         behavior.set_id(self.id + 3);
-        if let Some(beh) = self.behavior {
-            behavior.behavior = beh;
+        if let Some((trigger, script)) = self.behavior {
+            behavior.trigger = trigger;
+            behavior.target = Target::default();
+            behavior.effect = RhaiScript::new(script).with_description("Unit reaction".to_string());
         }
         behavior.stats.set_loaded(stats);
         behavior.representation.set_loaded(representation);
@@ -339,15 +313,15 @@ impl UnitBuilder {
 pub struct AbilityBuilder {
     id: u64,
     name: String,
-    actions: Vec<Action>,
+    script: String,
 }
 
 impl AbilityBuilder {
-    fn new(id: u64, actions: Vec<Action>) -> Self {
+    fn new(id: u64, script: String) -> Self {
         Self {
             id,
             name: format!("Ability {}", id),
-            actions,
+            script,
         }
     }
 
@@ -356,10 +330,7 @@ impl AbilityBuilder {
 
         let mut effect = NAbilityEffect::default();
         effect.set_id(effect_id);
-        effect.effect = Effect {
-            description: "Ability".to_string(),
-            actions: self.actions,
-        };
+        effect.effect = RhaiScript::new(self.script).with_description("Ability".to_string());
 
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
@@ -372,21 +343,16 @@ impl AbilityBuilder {
 
 struct StatusBuilder {
     id: u64,
-    behavior: Behavior,
+    trigger: Trigger,
+    script: String,
 }
 
 impl StatusBuilder {
-    fn new(id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
+    fn new(id: u64, trigger: Trigger, script: String) -> Self {
         Self {
             id,
-            behavior: Behavior {
-                trigger,
-                target: Target::default(),
-                effect: Effect {
-                    description: "Status effect".to_string(),
-                    actions: actions.into(),
-                },
-            },
+            trigger,
+            script,
         }
     }
 
@@ -401,7 +367,9 @@ impl StatusBuilder {
 
         let mut behavior = NStatusBehavior::default();
         behavior.set_id(behavior_id);
-        behavior.behavior = self.behavior.clone();
+        behavior.trigger = self.trigger;
+        behavior.effect =
+            RhaiScript::new(self.script).with_description("Status effect".to_string());
         behavior.representation.set_loaded(representation);
 
         let mut state = NState::default();

@@ -12,6 +12,7 @@ mod painter_action;
 #[allow(dead_code)]
 mod raw_nodes;
 mod reaction;
+mod rhai_script;
 mod tier;
 mod trigger;
 mod var_name;
@@ -36,6 +37,7 @@ pub use node_error::*;
 pub use packed_nodes::*;
 pub use painter_action::*;
 pub use reaction::*;
+pub use rhai_script::*;
 use ron::ser::to_string;
 pub use tier::*;
 pub use trigger::*;

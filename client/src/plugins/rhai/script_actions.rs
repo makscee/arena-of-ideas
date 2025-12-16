@@ -1,6 +1,15 @@
 use super::*;
-use ::rhai::{Dynamic, Engine};
+use ::rhai::Engine;
 use serde::{Deserialize, Serialize};
+
+/// Trait for script action types that defines how they are executed
+pub trait ScriptAction: Clone + Send + Sync + 'static {
+    /// The name of the variable in the script scope that holds the actions vec
+    fn actions_var_name() -> &'static str;
+
+    /// Register the type and its methods with the Rhai engine
+    fn register_type(engine: &mut Engine);
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UnitAction {
@@ -13,6 +22,17 @@ pub enum UnitAction {
         target_id: u64,
         stacks: i32,
     },
+}
+
+impl ScriptAction for UnitAction {
+    fn actions_var_name() -> &'static str {
+        "unit_actions"
+    }
+
+    fn register_type(engine: &mut Engine) {
+        register_unit_type(engine);
+        register_unit_actions_type(engine);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +54,17 @@ pub enum StatusAction {
     },
 }
 
+impl ScriptAction for StatusAction {
+    fn actions_var_name() -> &'static str {
+        "status_actions"
+    }
+
+    fn register_type(engine: &mut Engine) {
+        register_status_type(engine);
+        register_status_actions_type(engine);
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AbilityAction {
     DealDamage {
@@ -49,6 +80,30 @@ pub enum AbilityAction {
         target_id: u64,
         delta: i32,
     },
+}
+
+impl ScriptAction for AbilityAction {
+    fn actions_var_name() -> &'static str {
+        "ability_actions"
+    }
+
+    fn register_type(engine: &mut Engine) {
+        register_ability_type(engine);
+        register_ability_actions_type(engine);
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RhaiPainterAction(pub String);
+
+impl ScriptAction for RhaiPainterAction {
+    fn actions_var_name() -> &'static str {
+        "painter_actions"
+    }
+
+    fn register_type(engine: &mut Engine) {
+        register_painter_functions(engine);
+    }
 }
 
 pub fn register_unit_type(engine: &mut Engine) {

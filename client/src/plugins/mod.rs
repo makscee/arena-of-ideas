@@ -10,7 +10,7 @@ mod r#match;
 mod node_state;
 mod persistent_data;
 mod representation;
-mod rhai;
+pub mod rhai;
 mod stdb;
 mod stdb_ext;
 mod tile;

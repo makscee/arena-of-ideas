@@ -172,14 +172,14 @@ impl IncubatorPanes {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut cn.behavior.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
                             changed = true;
                         }
-                        if Selector::ui_enum(&mut cn.behavior.target, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.target, ui).1.changed() {
                             changed = true;
                         }
-                        if Input::new("Unit Description")
-                            .ui_string(&mut cn.behavior.effect.description, ui)
+                        if Input::new("Unit Effect Script")
+                            .ui_string(&mut cn.effect.code, ui)
                             .changed()
                         {
                             changed = true;
@@ -191,14 +191,11 @@ impl IncubatorPanes {
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut cn.behavior.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
                             changed = true;
                         }
-                        if Selector::ui_enum(&mut cn.behavior.target, ui).1.changed() {
-                            changed = true;
-                        }
-                        if Input::new("Status Description")
-                            .ui_string(&mut cn.behavior.effect.description, ui)
+                        if Input::new("Status Effect Script")
+                            .ui_string(&mut cn.effect.code, ui)
                             .changed()
                         {
                             changed = true;

@@ -62,7 +62,7 @@ impl EnumColor for Target {
         match self {
             Target::Owner | Target::Caster => high_contrast_text(),
             Target::RandomEnemy | Target::RandomAlly | Target::Attacker | Target::Target => YELLOW,
-            Target::AdjacentAlly | Target::AllyAtSlot(_) | Target::EnemyAtSlot(_) => ORANGE,
+            Target::AdjacentBack | Target::AllyAtSlot(_) | Target::EnemyAtSlot(_) => ORANGE,
             Target::AllEnemies | Target::AllAllies => RED,
             Target::All => PURPLE,
             Target::List(_) => BLUE,

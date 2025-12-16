@@ -23,19 +23,16 @@ impl EventImpl for Event {
                 ContextLayer::Var(VarName::value, value.clone()),
             ],
             |ctx| {
-                if let Some(actions) = ctx
-                    .load::<NUnitBehavior>(owner)
-                    .ok()
-                    .and_then(|ub| ub.behavior.react_actions(self, ctx).cloned())
-                {
-                    for action in actions {
-                        match action.process(ctx) {
-                            Ok(actions) => {
-                                battle_actions.extend(actions);
-                            }
-                            Err(e) => {
-                                e.log();
-                            }
+                // Process unit behavior with Rhai
+                if let Ok(ub) = ctx.load::<NUnitBehavior>(owner) {
+                    match crate::plugins::rhai::RhaiBehaviorImpl::react_for_unit_behavior(
+                        &ub, self, ctx,
+                    ) {
+                        Ok(actions) => {
+                            battle_actions.extend(actions);
+                        }
+                        Err(e) => {
+                            e.log();
                         }
                     }
                 }
@@ -53,14 +50,14 @@ impl EventImpl for Event {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
-                        if let Some(actions) = status
-                            .behavior
-                            .load_node(ctx)?
-                            .behavior
-                            .react_actions(self, ctx)
-                            .cloned()
-                        {
-                            match actions.process(ctx) {
+                        // Process status behavior with Rhai
+                        if let Ok(sb) = status.behavior.load_node(ctx) {
+                            match crate::plugins::rhai::RhaiBehaviorImpl::react_for_status_behavior(
+                                &sb,
+                                status.clone(),
+                                self,
+                                ctx,
+                            ) {
                                 Ok(actions) => {
                                     battle_actions.extend(actions);
                                 }

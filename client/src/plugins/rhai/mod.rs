@@ -1,3 +1,4 @@
+mod behavior_executor;
 mod script_actions;
 mod script_context;
 mod script_editor;
@@ -6,6 +7,7 @@ mod script_painter;
 mod script_types;
 
 use super::*;
+pub use behavior_executor::*;
 pub use script_actions::*;
 pub use script_context::*;
 pub use script_editor::*;
@@ -22,8 +24,7 @@ pub struct RhaiPlugin;
 impl Plugin for RhaiPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(RhaiEngineResource::new())
-            .add_systems(Startup, setup_rhai_engine)
-            .add_systems(Update, process_script_compilation_requests);
+            .add_systems(Startup, setup_rhai_engine);
     }
 }
 
@@ -41,11 +42,11 @@ impl RhaiEngineResource {
         }
     }
 
-    pub fn compile_script(&self, script: &RhaiScript) -> Result<AST, Box<EvalAltResult>> {
+    pub fn compile_script<T>(&self, script: &RhaiScript<T>) -> Result<AST, Box<EvalAltResult>> {
         self.engine.compile(&script.code).map_err(|e| {
             Box::new(EvalAltResult::ErrorRuntime(
                 format!("Parse error: {}", e).into(),
-                Position::new(0, 0)
+                Position::new(0, 0),
             ))
         })
     }
@@ -62,14 +63,13 @@ impl RhaiEngineResource {
 #[derive(Clone)]
 pub struct CompiledScript {
     pub ast: AST,
-    pub script_type: ScriptType,
     pub last_compiled: std::time::Instant,
 }
 
 impl std::fmt::Debug for CompiledScript {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CompiledScript")
-            .field("script_type", &self.script_type)
+            .field("last_compiled", &self.last_compiled)
             .finish()
     }
 }
@@ -78,24 +78,7 @@ fn setup_rhai_engine(mut res: ResMut<RhaiEngineResource>) {
     register_client_types(&mut Arc::get_mut(&mut res.engine).unwrap());
 }
 
-fn process_script_compilation_requests(
-    engine_res: Res<RhaiEngineResource>,
-    mut script_query: Query<&mut RhaiScript, bevy::prelude::Changed<RhaiScript>>,
-) {
-    for mut script in script_query.iter_mut() {
-        if let Ok(ast) = engine_res.compile_script(&script) {
-            let compiled = CompiledScript {
-                ast,
-                script_type: script.script_type.clone(),
-                last_compiled: std::time::Instant::now(),
-            };
-            engine_res.store_compiled(script.id, compiled.clone());
-            script.compiled = Some(compiled);
-        }
-    }
-}
-
-fn create_base_engine() -> Engine {
+pub fn create_base_engine() -> Engine {
     let mut engine = Engine::new();
 
     engine.set_max_expr_depths(100, 100);

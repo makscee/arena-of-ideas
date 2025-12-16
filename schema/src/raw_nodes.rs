@@ -75,7 +75,7 @@ pub struct NAbilityMagic {
 #[derive(Node)]
 #[content]
 pub struct NAbilityEffect {
-    pub effect: Effect,
+    pub effect: RhaiScript<AbilityAction>,
 }
 
 #[derive(Node)]
@@ -91,7 +91,8 @@ pub struct NStatusMagic {
 #[derive(Node)]
 #[content]
 pub struct NStatusBehavior {
-    pub behavior: Behavior,
+    pub trigger: Trigger,
+    pub effect: RhaiScript<StatusAction>,
     pub representation: Component<NStatusRepresentation>,
 }
 
@@ -168,7 +169,9 @@ pub struct NUnit {
 #[derive(Node)]
 #[content]
 pub struct NUnitBehavior {
-    pub behavior: Behavior,
+    pub trigger: Trigger,
+    pub target: Target,
+    pub effect: RhaiScript<UnitAction>,
     pub stats: Component<NUnitStats>,
     pub representation: Component<NUnitRepresentation>,
 }

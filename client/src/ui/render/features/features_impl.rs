@@ -388,7 +388,8 @@ impl FEdit for Target {
                 | Target::Caster
                 | Target::Attacker
                 | Target::Target
-                | Target::AdjacentAlly => resp,
+                | Target::AdjacentBack
+                | Target::AdjacentFront => resp,
                 Target::AllyAtSlot(slot) => {
                     ui.horizontal(|ui| {
                         ui.label("Slot:");
@@ -692,6 +693,18 @@ impl FEdit for Effect {
                 .inner;
             ui.label("Actions:");
             self.actions.edit(ui, ctx).union(response)
+        })
+        .inner
+    }
+}
+
+impl<T> FEdit for RhaiScript<T> {
+    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
+        ui.vertical(|ui| {
+            ui.label("Description:");
+            ui.text_edit_singleline(&mut self.description);
+            ui.label("Script Code:");
+            ui.text_edit_multiline(&mut self.code)
         })
         .inner
     }
@@ -1377,7 +1390,7 @@ impl FTag for NAbilityEffect {
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(format!("{} actions", self.effect.actions.len()).cstr())
+        Some(self.effect.description.clone().cstr())
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
@@ -1393,11 +1406,7 @@ impl FTitle for NStatusBehavior {
 
 impl FDescription for NStatusBehavior {
     fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        format!(
-            "{}: {}",
-            self.behavior.trigger, self.behavior.effect.description
-        )
-        .cstr()
+        format!("Trigger: {}", self.trigger).cstr()
     }
 }
 
@@ -1836,22 +1845,13 @@ impl FDisplay for NUnitState {
 
 impl FTitle for NUnitBehavior {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!(
-            "[tw {}]|[yellow {}]: ({})",
-            self.kind(),
-            self.behavior.trigger.to_string(),
-            self.behavior.effect.actions.len()
-        )
+        format!("[tw {}]|[yellow {}]", self.kind(), self.trigger.to_string())
     }
 }
 
 impl FDescription for NUnitBehavior {
     fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        format!(
-            "{}: {}",
-            self.behavior.trigger, self.behavior.effect.description
-        )
-        .cstr()
+        format!("Trigger: {}, Target: {}", self.trigger, self.target).cstr()
     }
 }
 
@@ -1863,11 +1863,7 @@ impl FStats for NUnitBehavior {
 
 impl FInfo for NUnitBehavior {
     fn info(&self, _ctx: &ClientContext) -> Cstr {
-        format!(
-            "{}: {}",
-            self.behavior.trigger, self.behavior.effect.description
-        )
-        .cstr()
+        format!("Trigger: {}, Target: {}", self.trigger, self.target).cstr()
     }
 }
 
@@ -2128,16 +2124,12 @@ impl FPlaceholder for NUnitBehavior {
         NUnitBehavior::new(
             next_id(),
             0,
-            Behavior {
-                trigger: Trigger::BattleStart,
-                target: Target::default(),
-                effect: Effect {
-                    description: "Unit behavior effect".to_string(),
-                    actions: vec![Action::debug(
-                        Expression::string("debug action".into()).into(),
-                    )],
-                },
-            },
+            Trigger::BattleStart,
+            Target::default(),
+            RhaiScript::new(
+                "// Unit behavior effect script\nunit_actions.use_ability(\"debug\", target.id);"
+                    .to_string(),
+            ),
         )
         .with_stats(NUnitStats::placeholder())
         .with_representation(NUnitRepresentation::placeholder())
@@ -2333,13 +2325,10 @@ impl FCompactView for NUnitRepresentation {
 
 impl FCompactView for NUnitBehavior {
     fn render_compact(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        let actions_count: usize = self.behavior.effect.actions.len();
-        let tier = schema::Tier::tier(&self.behavior);
-
         ui.horizontal(|ui| {
-            format!("{} actions", actions_count).cstr().label(ui);
+            format!("Trigger: {}", self.trigger).cstr().label(ui);
             ui.add_space(4.0);
-            format!("T{}", tier).cstr().label(ui);
+            format!("Target: {}", self.target).cstr().label(ui);
         });
     }
 
@@ -2352,30 +2341,26 @@ impl FCompactView for NUnitBehavior {
             });
             ui.horizontal(|ui| {
                 ui.label("Trigger:");
-                self.behavior.trigger.cstr().label(ui);
+                self.trigger.cstr().label(ui);
             });
             ui.horizontal(|ui| {
                 ui.label("Tier:");
-                let tier = schema::Tier::tier(&self.behavior);
+                let tier = schema::Tier::tier(self);
                 format!("{}", tier).cstr_c(VarName::tier.color()).label(ui);
             });
+            ui.horizontal(|ui| {
+                ui.label("Target:");
+                self.target.cstr().label(ui);
+            });
             ui.separator();
-            let total_actions: usize = self.behavior.effect.actions.len();
-            ui.label(format!("Actions ({})", total_actions));
-            let mut shown = 0;
-            for action in self.behavior.effect.actions.iter() {
-                if shown >= 3 {
-                    break;
-                }
-                ui.horizontal(|ui| {
-                    ui.label(format!("{}.", shown + 1));
-                    action.cstr().label(ui);
-                    action.title(ctx).label(ui);
-                });
-                shown += 1;
-            }
-            if total_actions > 3 {
-                ui.label(format!("... and {} more", total_actions - 3));
+            ui.label("Effect Script:");
+            if !self.effect.code.is_empty() {
+                let preview = if self.effect.code.len() > 100 {
+                    format!("{}...", &self.effect.code[..100])
+                } else {
+                    self.effect.code.clone()
+                };
+                preview.cstr().label(ui);
             }
         });
     }

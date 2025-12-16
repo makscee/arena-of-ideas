@@ -1,7 +1,7 @@
 use super::*;
 
 pub trait TriggerImpl {
-    fn fire(&self, event: &Event, context: &ClientContext) -> NodeResult<bool>;
+    fn fire(&self, event: &Event, ctx: &ClientContext) -> NodeResult<bool>;
 }
 
 fn get_owner_unit<'a>(ctx: &'a ClientContext) -> NodeResult<Option<&'a NUnit>> {
