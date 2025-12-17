@@ -65,6 +65,11 @@ impl Paint for Material {
     fn paint_err(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool> {
         let mut scope = ::rhai::Scope::new();
         scope.push("painter", Vec::<PainterAction>::new());
+        if let Ok(t) = ctx.get_var(VarName::t).get_f32() {
+            scope.push("t", t);
+        }
+        dbg!(ctx.get_var(VarName::t));
+        ctx.debug_layers();
 
         // Execute the Rhai script to get painter actions
         let actions = match self.0.execute(scope, ctx) {

@@ -223,7 +223,7 @@ pub fn register_ability_actions_type(engine: &mut Engine) {
         );
 }
 
-pub fn register_painter_type(engine: &mut ::rhai::Engine) {
+pub fn register_painter_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<Vec<PainterAction>>("PainterActions")
         .register_fn(
@@ -339,6 +339,53 @@ pub fn register_painter_type(engine: &mut ::rhai::Engine) {
             "exit".register_completer(),
             |actions: &mut Vec<PainterAction>| {
                 actions.push(PainterAction::Exit);
+            },
+        );
+}
+
+pub fn register_animator_type(engine: &mut Engine) {
+    engine
+        .register_type_with_name::<Vec<AnimAction>>("AnimatorActions")
+        .register_fn(
+            "translate".register_completer(),
+            |actions: &mut Vec<AnimAction>, x: f32, y: f32| {
+                actions.push(AnimAction::Translate { x, y });
+            },
+        )
+        .register_fn(
+            "set_target".register_completer(),
+            |actions: &mut Vec<AnimAction>, target: u64| {
+                actions.push(AnimAction::SetTarget { target });
+            },
+        )
+        .register_fn(
+            "add_target".register_completer(),
+            |actions: &mut Vec<AnimAction>, target: u64| {
+                actions.push(AnimAction::AddTarget { target });
+            },
+        )
+        .register_fn(
+            "duration".register_completer(),
+            |actions: &mut Vec<AnimAction>, duration: f32| {
+                actions.push(AnimAction::Duration { duration });
+            },
+        )
+        .register_fn(
+            "timeframe".register_completer(),
+            |actions: &mut Vec<AnimAction>, timeframe: f32| {
+                actions.push(AnimAction::Timeframe { timeframe });
+            },
+        )
+        .register_fn(
+            "wait".register_completer(),
+            |actions: &mut Vec<AnimAction>, duration: f32| {
+                actions.push(AnimAction::Wait { duration });
+            },
+        )
+        .register_fn(
+            "spawn_painter".register_completer(),
+            |actions: &mut Vec<AnimAction>, code: String| {
+                actions.push(AnimAction::SpawnPainter { code });
             },
         );
 }

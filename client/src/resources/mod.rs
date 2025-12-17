@@ -1,5 +1,5 @@
 mod action;
-mod anim;
+pub mod anim;
 pub mod battle;
 mod battle_view;
 mod client_settings;

@@ -1,4 +1,3 @@
-use schema::RhaiScript;
 use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;
@@ -70,6 +69,11 @@ pub fn assets() -> &'static Dir<'static> {
     &ASSETS
 }
 
+pub fn rhai_assets() -> &'static Dir<'static> {
+    const RHAI_ASSETS: Dir = include_dir!("./assets/rhai/");
+    &RHAI_ASSETS
+}
+
 pub fn parse_content_tree() {
     const GLOBAL_SETTINGS_STR: &str = include_str!("../../../assets/ron/_.global_settings.ron");
     const DESCRIPTIONS: &str = include_str!("../../../assets/ron/descriptions.ron");
@@ -122,19 +126,20 @@ pub fn parse_content_tree() {
         NStatusRepresentation::new(next_id(), 0, Material::new(status_rep_code.to_string()));
     STATUS_REP.set(status_rep).unwrap();
     let mut animations = HashMap::default();
-    for f in assets().get_dir("animation").unwrap().files() {
-        dbg!(f.contents_utf8());
-        let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
-        animations.insert(
-            f.path()
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .trim_end_matches(".ron")
-                .to_owned(),
-            Anim::new(a),
-        );
+    if let Some(anim_dir) = rhai_assets().get_dir("animation") {
+        for f in anim_dir.files() {
+            if let Some(contents) = f.contents_utf8() {
+                let name = f
+                    .path()
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .trim_end_matches(".rhai")
+                    .to_owned();
+                animations.insert(name, Anim::new(contents.to_string()));
+            }
+        }
     }
     ANIMATIONS.set(animations).unwrap();
 }

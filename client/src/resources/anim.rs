@@ -1,7 +1,9 @@
 use egui::NumExt;
+use schema::RhaiScript;
 use serde::{Deserialize, Serialize};
 
 use super::*;
+use crate::plugins::rhai::RhaiScriptAnimatorExt;
 
 pub struct Animator {
     targets: Vec<u64>,
@@ -11,38 +13,44 @@ pub struct Animator {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
 pub struct Anim {
-    actions: Vec<Box<AnimAction>>,
+    script: RhaiScript<AnimAction>,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Serialize, Deserialize, Clone, Debug, AsRefStr, EnumIter, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AnimAction {
-    translate(Box<Expression>),
-    set_target(Box<Expression>),
-    add_target(Box<Expression>),
-    duration(Box<Expression>),
-    timeframe(Box<Expression>),
-    wait(Box<Expression>),
-    spawn(Box<Material>),
-    list(Vec<Box<Self>>),
+    Translate { x: f32, y: f32 },
+    SetTarget { target: u64 },
+    AddTarget { target: u64 },
+    Duration { duration: f32 },
+    Timeframe { timeframe: f32 },
+    Wait { duration: f32 },
+    SpawnPainter { code: String },
+}
+
+impl schema::ScriptAction for AnimAction {
+    fn actions_var_name() -> &'static str {
+        "animator"
+    }
 }
 
 impl Anim {
-    pub fn new(actions: Vec<AnimAction>) -> Self {
+    pub fn new(code: String) -> Self {
         Self {
-            actions: actions.into_iter().map(|a| Box::new(a)).collect(),
+            script: RhaiScript::new(code),
         }
     }
+
     pub fn apply(&self, ctx: &mut ClientContext) -> NodeResult<()> {
+        let actions = self
+            .script
+            .execute_animator(ctx)
+            .map_err(|e| format!("Animation script error: {}", e))?;
+
         let a = &mut Animator::new();
-        for action in &self.actions {
+        for action in &actions {
             action.apply(a, ctx).track()?;
         }
         Ok(())
-    }
-    pub fn push(&mut self, action: AnimAction) -> &mut Self {
-        self.actions.push(Box::new(action));
-        self
     }
 }
 
@@ -52,8 +60,8 @@ pub struct Vfx;
 impl AnimAction {
     fn apply(&self, a: &mut Animator, ctx: &mut ClientContext) -> NodeResult<()> {
         match self {
-            AnimAction::translate(x) => {
-                let pos = x.get_vec2(ctx).track()?;
+            AnimAction::Translate { x, y } => {
+                let pos = vec2(*x, *y);
                 let mut t = ctx.battle_mut()?.duration;
                 for target in a.targets.iter().copied() {
                     let entity = target.entity(ctx)?;
@@ -65,28 +73,25 @@ impl AnimAction {
                 }
                 ctx.battle_mut()?.duration = t;
             }
-            AnimAction::set_target(x) => {
-                a.targets = x.get_u64_list(ctx).track()?;
+            AnimAction::SetTarget { target } => {
+                a.targets = vec![*target];
             }
-            AnimAction::add_target(x) => {
-                a.targets.push(x.get_u64(ctx).track()?);
+            AnimAction::AddTarget { target } => {
+                a.targets.push(*target);
             }
-            AnimAction::duration(x) => {
-                a.duration = x.get_f32(ctx).track()?;
+            AnimAction::Duration { duration } => {
+                a.duration = *duration;
             }
-            AnimAction::timeframe(x) => {
-                a.timeframe = x.get_f32(ctx).track()?;
+            AnimAction::Timeframe { timeframe } => {
+                a.timeframe = *timeframe;
                 a.duration = a.duration.at_least(a.timeframe);
             }
-            AnimAction::list(vec) => {
-                for aa in vec {
-                    aa.apply(a, ctx).track()?;
-                }
-            }
-            AnimAction::spawn(material) => {
+
+            AnimAction::SpawnPainter { code } => {
                 let entity = ctx.world_mut()?.spawn_empty().id();
                 let id = next_id();
-                NRepresentation::new(0, player_id(), *material.clone())
+                let material = Material::new(code.clone());
+                NRepresentation::new(0, player_id(), material)
                     .with_id(id)
                     .spawn(ctx, Some(entity))
                     .track()?;
@@ -112,8 +117,8 @@ impl AnimAction {
                 t += a.timeframe;
                 ctx.battle_mut()?.duration = t;
             }
-            AnimAction::wait(expression) => {
-                ctx.battle_mut()?.duration += expression.get_f32(ctx)?;
+            AnimAction::Wait { duration } => {
+                ctx.battle_mut()?.duration += duration;
             }
         };
         Ok(())
@@ -132,16 +137,27 @@ impl Animator {
 
 impl Default for AnimAction {
     fn default() -> Self {
-        Self::translate(Box::new(Expression::vec2(0.0, 0.0)))
+        Self::Translate { x: 0.0, y: 0.0 }
     }
 }
+
 impl ToCstr for AnimAction {
     fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(PURPLE)
+        match self {
+            AnimAction::Translate { .. } => "translate",
+            AnimAction::SetTarget { .. } => "set_target",
+            AnimAction::AddTarget { .. } => "add_target",
+            AnimAction::Duration { .. } => "duration",
+            AnimAction::Timeframe { .. } => "timeframe",
+            AnimAction::Wait { .. } => "wait",
+            AnimAction::SpawnPainter { .. } => "spawn_painter",
+        }
+        .cstr_c(PURPLE)
     }
 }
+
 impl ToCstr for Anim {
     fn cstr(&self) -> Cstr {
-        self.actions.iter().map(|a| a.cstr()).join(" ")
+        "animation".cstr_c(PURPLE)
     }
 }

@@ -181,20 +181,26 @@ impl RhaiScriptAbilityExt for RhaiScript<schema::AbilityAction> {
     }
 }
 
-/// Extension methods for painter action scripts
-pub trait RhaiScriptPainterExt {
-    fn execute_painter(
+/// Extension methods for animator action scripts
+pub trait RhaiScriptAnimatorExt {
+    fn execute_animator(
         &self,
         ctx: &ClientContext,
-    ) -> Result<Vec<schema::PainterAction>, Box<EvalAltResult>>;
+    ) -> Result<Vec<crate::resources::anim::AnimAction>, Box<EvalAltResult>>;
 }
 
-impl RhaiScriptPainterExt for RhaiScript<schema::PainterAction> {
-    fn execute_painter(
+impl RhaiScriptAnimatorExt for RhaiScript<crate::resources::anim::AnimAction> {
+    fn execute_animator(
         &self,
         ctx: &ClientContext,
-    ) -> Result<Vec<schema::PainterAction>, Box<EvalAltResult>> {
-        let scope = Scope::new();
+    ) -> Result<Vec<crate::resources::anim::AnimAction>, Box<EvalAltResult>> {
+        let mut scope = Scope::new();
+        if let Ok(owner) = ctx.owner() {
+            scope.push("owner", owner);
+        }
+        if let Some(target) = ctx.target() {
+            scope.push("target", target);
+        }
         RhaiScriptExt::execute(self, scope, ctx).map(|r| r.0)
     }
 }

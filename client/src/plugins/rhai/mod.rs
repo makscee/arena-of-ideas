@@ -11,10 +11,7 @@ pub use script_actions::*;
 pub use script_context::*;
 pub use script_editor::*;
 pub use script_engine::*;
-pub use script_types::{
-    RhaiScriptAbilityExt, RhaiScriptExt, RhaiScriptPainterExt, RhaiScriptStatusExt,
-    RhaiScriptUnitExt,
-};
+pub use script_types::*;
 
 use ::rhai::Engine;
 
@@ -57,6 +54,7 @@ fn register_client_types(engine: &mut Engine) {
     register_ability_actions_type(engine);
     register_context_type(engine);
     register_painter_type(engine);
+    register_animator_type(engine);
     register_vec_extensions(engine);
     register_common_functions(engine);
 }
