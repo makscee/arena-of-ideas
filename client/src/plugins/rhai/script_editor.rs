@@ -34,11 +34,11 @@ pub fn init_completer() {
 }
 
 pub trait CompleterHelper {
-    fn push_completer(&self) -> &Self;
+    fn register_completer(&self) -> &Self;
 }
 
 impl CompleterHelper for str {
-    fn push_completer(&self) -> &Self {
+    fn register_completer(&self) -> &Self {
         rhai_completer().push_word(self);
         self
     }

@@ -99,35 +99,35 @@ unsafe impl Sync for RhaiContext {}
 pub fn register_context_type(engine: &mut ::rhai::Engine) {
     engine
         .register_type_with_name::<RhaiContext>("Ctx")
-        .register_fn("get_all_units".push_completer(), |ctx: &mut RhaiContext| {
+        .register_fn("get_all_units".register_completer(), |ctx: &mut RhaiContext| {
             ctx.get_all_units()
         })
         .register_fn(
-            "get_enemies".push_completer(),
+            "get_enemies".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| ctx.get_enemies(owner_id),
         )
         .register_fn(
-            "get_allies".push_completer(),
+            "get_allies".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| ctx.get_allies(owner_id),
         )
         .register_fn(
-            "get_adjacent_left".push_completer(),
+            "get_adjacent_left".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| {
                 ctx.get_adjacent_left(owner_id).unwrap_or_default()
             },
         )
         .register_fn(
-            "get_adjacent_right".push_completer(),
+            "get_adjacent_right".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| {
                 ctx.get_adjacent_right(owner_id).unwrap_or_default()
             },
         )
         .register_fn(
-            "get_adjacent_allies".push_completer(),
+            "get_adjacent_allies".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| ctx.get_adjacent_allies(owner_id),
         )
         .register_fn(
-            "load_unit".push_completer(),
+            "load_unit".register_completer(),
             |ctx: &mut RhaiContext, unit_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NUnit>(unit_id)?.load_all(ctx)?.take()))
@@ -135,7 +135,7 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             },
         )
         .register_fn(
-            "load_status".push_completer(),
+            "load_status".register_completer(),
             |ctx: &mut RhaiContext, status_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NStatusMagic>(status_id)?.load_all(ctx)?.take()))
@@ -143,7 +143,7 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             },
         )
         .register_fn(
-            "load_ability".push_completer(),
+            "load_ability".register_completer(),
             |ctx: &mut RhaiContext, ability_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| {
@@ -153,14 +153,14 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             },
         )
         .register_fn(
-            "load_house".push_completer(),
+            "load_house".register_completer(),
             |ctx: &mut RhaiContext, house_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NHouse>(house_id)?.load_all(ctx)?.take()))
                     .to_dynamic()
             },
         )
-        .register_fn("owner".push_completer(), |ctx: &mut RhaiContext| {
+        .register_fn("owner".register_completer(), |ctx: &mut RhaiContext| {
             ctx.get_ctx().owner().unwrap()
         });
 }

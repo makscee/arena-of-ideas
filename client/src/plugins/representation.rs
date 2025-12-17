@@ -35,7 +35,7 @@ impl MaterialPaint for Material {
                         "[red [b (e)]]".cstr().button(ui).on_hover_ui(|ui| {
                             ui.vertical(|ui| {
                                 e.ui(ui);
-                                self.script.code.label(ui);
+                                self.0.code.label(ui);
                                 for l in ctx.layers() {
                                     format!("{l:?}").label(ui);
                                 }

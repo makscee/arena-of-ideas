@@ -379,7 +379,7 @@ impl FRecursive for Material {
     fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
         vec![RecursiveField::named(
             "script",
-            RecursiveValue::String(&self.script.code),
+            RecursiveValue::String(&self.0.code),
         )]
     }
 
@@ -394,7 +394,7 @@ impl FRecursive for Material {
     fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
         vec![RecursiveFieldMut::named(
             "script",
-            RecursiveValueMut::String(&mut self.script.code),
+            RecursiveValueMut::String(&mut self.0.code),
         )]
     }
 }

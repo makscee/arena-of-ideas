@@ -122,19 +122,20 @@ pub fn parse_content_tree() {
         NStatusRepresentation::new(next_id(), 0, Material::new(status_rep_code.to_string()));
     STATUS_REP.set(status_rep).unwrap();
     let mut animations = HashMap::default();
-    // for f in assets().get_dir("animation").unwrap().files() {
-    //     let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
-    //     animations.insert(
-    //         f.path()
-    //             .file_name()
-    //             .unwrap()
-    //             .to_str()
-    //             .unwrap()
-    //             .trim_end_matches(".ron")
-    //             .to_owned(),
-    //         Anim::new(a),
-    //     );
-    // }
+    for f in assets().get_dir("animation").unwrap().files() {
+        dbg!(f.contents_utf8());
+        let a: Vec<AnimAction> = ron::from_str(f.contents_utf8().unwrap()).unwrap();
+        animations.insert(
+            f.path()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .trim_end_matches(".ron")
+                .to_owned(),
+            Anim::new(a),
+        );
+    }
     ANIMATIONS.set(animations).unwrap();
 }
 

@@ -219,15 +219,15 @@ impl ToCstr for Behavior {
 
 impl ToCstr for Material {
     fn cstr(&self) -> Cstr {
-        if self.script.code.is_empty() {
+        if self.0.code.is_empty() {
             "Material(empty)".to_string()
         } else {
-            format!("Material({})", self.script.code.lines().count())
+            format!("Material({})", self.0.code.lines().count())
         }
     }
 
     fn cstr_expanded(&self) -> Cstr {
-        self.script.code.clone()
+        self.0.code.clone()
     }
 }
 

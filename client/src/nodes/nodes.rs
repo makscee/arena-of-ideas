@@ -118,10 +118,10 @@ impl NodeKindOnSpawn for NodeKind {
                 if let Ok(behavior) = unit.behavior.load_node(ctx) {
                     if let Ok(mut rep) = behavior.representation.load_node(ctx) {
                         // Material is now a script, so we merge the code
-                        let default_mat_code = unit_rep().material.script.code.clone();
+                        let default_mat_code = unit_rep().material.0.code.clone();
                         if !default_mat_code.is_empty() {
-                            rep.material.script.code =
-                                format!("{}\n{}", rep.material.script.code, default_mat_code);
+                            rep.material.0.code =
+                                format!("{}\n{}", rep.material.0.code, default_mat_code);
                         }
                         rep.spawn(ctx, Some(entity))?;
                     } else {

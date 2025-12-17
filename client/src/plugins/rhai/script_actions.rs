@@ -1,6 +1,6 @@
 use super::*;
 use crate::resources::battle::BattleAction;
-use ::rhai::Engine;
+use ::rhai::{Array, Engine};
 use schema::{AbilityAction, StatusAction, UnitAction};
 
 /// Trait for converting script actions to battle actions
@@ -85,17 +85,19 @@ impl ToBattleAction for AbilityAction {
 pub fn register_unit_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<NUnit>("Unit")
-        .register_get("id".push_completer(), |unit: &mut NUnit| unit.id() as u64)
-        .register_get("unit_name".push_completer(), |unit: &mut NUnit| {
+        .register_get("id".register_completer(), |unit: &mut NUnit| {
+            unit.id() as u64
+        })
+        .register_get("unit_name".register_completer(), |unit: &mut NUnit| {
             unit.unit_name.clone()
         })
-        .register_get("dmg".push_completer(), |unit: &mut NUnit| {
+        .register_get("dmg".register_completer(), |unit: &mut NUnit| {
             unit.state.get().unwrap().dmg
         })
-        .register_get("hp".push_completer(), |unit: &mut NUnit| {
+        .register_get("hp".register_completer(), |unit: &mut NUnit| {
             unit.behavior.get().unwrap().stats.get().unwrap().hp
         })
-        .register_get("pwr".push_completer(), |unit: &mut NUnit| {
+        .register_get("pwr".register_completer(), |unit: &mut NUnit| {
             unit.behavior.get().unwrap().stats.get().unwrap().pwr
         });
 }
@@ -104,7 +106,7 @@ pub fn register_unit_actions_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<Vec<UnitAction>>("UnitActions")
         .register_fn(
-            "use_ability".push_completer(),
+            "use_ability".register_completer(),
             |actions: &mut Vec<UnitAction>, ability_name: String, target_id: u64| {
                 actions.push(UnitAction::UseAbility {
                     ability_name,
@@ -113,7 +115,7 @@ pub fn register_unit_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "apply_status".push_completer(),
+            "apply_status".register_completer(),
             |actions: &mut Vec<UnitAction>, status_name: String, target_id: u64, stacks: i32| {
                 actions.push(UnitAction::ApplyStatus {
                     status_name,
@@ -127,11 +129,11 @@ pub fn register_unit_actions_type(engine: &mut Engine) {
 pub fn register_status_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<NStatusMagic>("Status")
-        .register_get("id".push_completer(), |status: &mut NStatusMagic| {
+        .register_get("id".register_completer(), |status: &mut NStatusMagic| {
             status.id() as u64
         })
         .register_get(
-            "status_name".push_completer(),
+            "status_name".register_completer(),
             |status: &mut NStatusMagic| status.status_name.clone(),
         );
 }
@@ -140,7 +142,7 @@ pub fn register_status_actions_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<Vec<StatusAction>>("StatusActions")
         .register_fn(
-            "deal_damage".push_completer(),
+            "deal_damage".register_completer(),
             |actions: &mut Vec<StatusAction>, target_id: u64, amount: i32| {
                 actions.push(StatusAction::DealDamage {
                     target_id: target_id as u64,
@@ -149,7 +151,7 @@ pub fn register_status_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "heal_damage".push_completer(),
+            "heal_damage".register_completer(),
             |actions: &mut Vec<StatusAction>, target_id: u64, amount: i32| {
                 actions.push(StatusAction::HealDamage {
                     target_id: target_id as u64,
@@ -158,7 +160,7 @@ pub fn register_status_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "use_ability".push_completer(),
+            "use_ability".register_completer(),
             |actions: &mut Vec<StatusAction>, ability_name: String, target_id: u64| {
                 actions.push(StatusAction::UseAbility {
                     ability_name,
@@ -167,7 +169,7 @@ pub fn register_status_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "modify_stacks".push_completer(),
+            "modify_stacks".register_completer(),
             |actions: &mut Vec<StatusAction>, delta: i32| {
                 actions.push(StatusAction::ModifyStacks {
                     delta: delta as i32,
@@ -179,11 +181,11 @@ pub fn register_status_actions_type(engine: &mut Engine) {
 pub fn register_ability_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<NAbilityMagic>("Ability")
-        .register_get("id".push_completer(), |ability: &mut NAbilityMagic| {
+        .register_get("id".register_completer(), |ability: &mut NAbilityMagic| {
             ability.id() as u64
         })
         .register_get(
-            "ability_name".push_completer(),
+            "ability_name".register_completer(),
             |ability: &mut NAbilityMagic| ability.ability_name.clone(),
         );
 }
@@ -192,7 +194,7 @@ pub fn register_ability_actions_type(engine: &mut Engine) {
     engine
         .register_type_with_name::<Vec<AbilityAction>>("AbilityActions")
         .register_fn(
-            "deal_damage".push_completer(),
+            "deal_damage".register_completer(),
             |actions: &mut Vec<AbilityAction>, target_id: u64, amount: i32| {
                 actions.push(AbilityAction::DealDamage {
                     target_id: target_id as u64,
@@ -201,7 +203,7 @@ pub fn register_ability_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "heal_damage".push_completer(),
+            "heal_damage".register_completer(),
             |actions: &mut Vec<AbilityAction>, target_id: u64, amount: i32| {
                 actions.push(AbilityAction::HealDamage {
                     target_id: target_id as u64,
@@ -210,7 +212,7 @@ pub fn register_ability_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "change_status".push_completer(),
+            "change_status".register_completer(),
             |actions: &mut Vec<AbilityAction>, status_name: String, target_id: u64, delta: i32| {
                 actions.push(AbilityAction::ChangeStatus {
                     status_name,
@@ -225,19 +227,19 @@ pub fn register_painter_type(engine: &mut ::rhai::Engine) {
     engine
         .register_type_with_name::<Vec<PainterAction>>("PainterActions")
         .register_fn(
-            "circle".push_completer(),
+            "circle".register_completer(),
             |actions: &mut Vec<PainterAction>, radius: f32| {
                 actions.push(PainterAction::Circle { radius });
             },
         )
         .register_fn(
-            "rectangle".push_completer(),
+            "rectangle".register_completer(),
             |actions: &mut Vec<PainterAction>, width: f32, height: f32| {
                 actions.push(PainterAction::Rectangle { width, height });
             },
         )
         .register_fn(
-            "curve".push_completer(),
+            "curve".register_completer(),
             |actions: &mut Vec<PainterAction>, thickness: f32, curvature: f32| {
                 actions.push(PainterAction::Curve {
                     thickness,
@@ -246,49 +248,52 @@ pub fn register_painter_type(engine: &mut ::rhai::Engine) {
             },
         )
         .register_fn(
-            "text".push_completer(),
+            "text".register_completer(),
             |actions: &mut Vec<PainterAction>, text: String| {
                 actions.push(PainterAction::Text { text });
             },
         )
         .register_fn(
-            "hollow".push_completer(),
+            "hollow".register_completer(),
             |actions: &mut Vec<PainterAction>, width: f32| {
                 actions.push(PainterAction::Hollow { width });
             },
         )
         .register_fn(
-            "solid".push_completer(),
+            "solid".register_completer(),
             |actions: &mut Vec<PainterAction>| {
                 actions.push(PainterAction::Solid);
             },
         )
         .register_fn(
-            "translate".push_completer(),
-            |actions: &mut Vec<PainterAction>, x: f32, y: f32| {
-                actions.push(PainterAction::Translate { x, y });
+            "translate".register_completer(),
+            |actions: &mut Vec<PainterAction>, v: Array| {
+                actions.push(PainterAction::Translate {
+                    x: v[0].as_float().unwrap_or_default(),
+                    y: v[1].as_float().unwrap_or_default(),
+                });
             },
         )
         .register_fn(
-            "rotate".push_completer(),
+            "rotate".register_completer(),
             |actions: &mut Vec<PainterAction>, angle: f32| {
                 actions.push(PainterAction::Rotate { angle });
             },
         )
         .register_fn(
-            "scale_mesh".push_completer(),
+            "scale_mesh".register_completer(),
             |actions: &mut Vec<PainterAction>, scale: f32| {
                 actions.push(PainterAction::ScaleMesh { scale });
             },
         )
         .register_fn(
-            "scale_rect".push_completer(),
+            "scale_rect".register_completer(),
             |actions: &mut Vec<PainterAction>, scale: f32| {
                 actions.push(PainterAction::ScaleRect { scale });
             },
         )
         .register_fn(
-            "color".push_completer(),
+            "color".register_completer(),
             |actions: &mut Vec<PainterAction>, r: i32, g: i32, b: i32, a: i32| {
                 actions.push(PainterAction::Color {
                     r: (r as u8).clamp(0, 255),
@@ -299,25 +304,39 @@ pub fn register_painter_type(engine: &mut ::rhai::Engine) {
             },
         )
         .register_fn(
-            "alpha".push_completer(),
+            "color".register_completer(),
+            |actions: &mut Vec<PainterAction>, hex: String| {
+                match Color32::from_hex(&hex) {
+                    Ok(v) => actions.push(PainterAction::Color {
+                        r: v.r(),
+                        g: v.g(),
+                        b: v.b(),
+                        a: v.a(),
+                    }),
+                    Err(e) => error!("Failed to parse color {e:?}"),
+                };
+            },
+        )
+        .register_fn(
+            "alpha".register_completer(),
             |actions: &mut Vec<PainterAction>, alpha: f32| {
                 actions.push(PainterAction::Alpha { alpha });
             },
         )
         .register_fn(
-            "feathering".push_completer(),
+            "feathering".register_completer(),
             |actions: &mut Vec<PainterAction>, amount: f32| {
                 actions.push(PainterAction::Feathering { amount });
             },
         )
         .register_fn(
-            "paint".push_completer(),
+            "paint".register_completer(),
             |actions: &mut Vec<PainterAction>| {
                 actions.push(PainterAction::Paint);
             },
         )
         .register_fn(
-            "exit".push_completer(),
+            "exit".register_completer(),
             |actions: &mut Vec<PainterAction>| {
                 actions.push(PainterAction::Exit);
             },

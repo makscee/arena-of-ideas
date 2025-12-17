@@ -67,7 +67,7 @@ impl Paint for Material {
         scope.push("painter", Vec::<PainterAction>::new());
 
         // Execute the Rhai script to get painter actions
-        let actions = match self.script.execute(scope, ctx) {
+        let actions = match self.0.execute(scope, ctx) {
             Ok(actions) => actions,
             Err(err) => {
                 log::error!("Painter script execution error: {}", err);

@@ -1,30 +1,17 @@
 [
     spawn(
         (
-            [
-                scale_rect(f32(2.0)),
-                color(color(HexColor("#a70101ab"))),
-                alpha(sub(f32(4.0), mul(var(t), f32(4.0)))),
-                repeat(
-                    i32(30),
-                    list(
-                        [
-                            circle(f32(0.2)),
-                            scale_mesh(mul(var(t), f32(1.0))),
-                            translate(
-                                mul(
-                                    unit_vec(mul(rand(var(index)), pi2)),
-                                    min(
-                                        mul(var(t), sum(rand(sub(var(index), f32(10.0))), one)),
-                                        f32(0.9),
-                                    ),
-                                ),
-                            ),
-                            paint,
-                        ],
-                    ),
-                ),
-            ],
-        ),
+        r#"
+            painter.scale_rect(2.0);
+            painter.color("#a70101ab");
+            painter.alpha(4.0 - t * 4.0);
+            for i in 0..30 {
+                painter.circle(0.2);
+                painter.scale_mesh(t);
+                let v = unit_vec(i.random(0.0, PI * 2.0)) * min(t * 10.0 * (i + 1).random(0.0, 1.0), 0.9);
+                painter.translate(v);
+                painter.paint();
+            }
+        "#
     ),
 ]

@@ -575,7 +575,7 @@ impl FTitle for Material {
 
 impl FDescription for Material {
     fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        format!("Script with {} lines", self.script.code.lines().count())
+        format!("Script with {} lines", self.0.code.lines().count())
     }
 }
 
@@ -587,7 +587,7 @@ impl FDisplay for Material {
 
 impl FEdit for Material {
     fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        self.script.edit(ui, ctx)
+        self.0.edit(ui, ctx)
     }
 }
 
@@ -2177,7 +2177,7 @@ impl FCompactView for Material {
     }
 
     fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        ui.label(&self.script.code);
+        ui.label(&self.0.code);
     }
 }
 

@@ -31,6 +31,12 @@ pub fn cur_state(world: &World) -> GameState {
 pub fn rng_seeded(seed: u64) -> ChaCha8Rng {
     ChaCha8Rng::seed_from_u64(seed)
 }
+pub fn rng_seeded_from_hash(h: &impl Hash) -> ChaCha8Rng {
+    let mut hasher = DefaultHasher::new();
+    h.hash(&mut hasher);
+    let hash = hasher.finish();
+    rng_seeded(hash)
+}
 pub fn show_daily_refresh_timer(ui: &mut Ui) {
     let now = Utc::now().timestamp();
     let til_refresh = (now / 86400 + 1) * 86400 - now;
