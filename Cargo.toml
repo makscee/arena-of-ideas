@@ -87,11 +87,12 @@ log = "0.4.29"
 glam = { version = "0.30.9", features = ["serde"] }
 color-hex = "0.2.0"
 
-rhai = { version = "1.19", features = [
+rhai = { version = "1.23.5", features = [
     "serde",
     "sync",
     "only_i32",
     "f32_float",
+    "internals",
 ] }
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.76"

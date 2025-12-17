@@ -37,12 +37,13 @@ impl Plugin for RhaiPlugin {
 pub fn create_base_engine() -> Engine {
     let mut engine = Engine::new();
 
-    engine.set_max_expr_depths(100, 100);
-    engine.set_max_call_levels(50);
-    engine.set_max_operations(100_000);
-    engine.set_max_string_size(10_000);
-    engine.set_max_array_size(1_000);
-    engine.set_max_map_size(1_000);
+    engine
+        .set_max_expr_depths(100, 100)
+        .set_max_call_levels(500)
+        .set_max_operations(100_000)
+        .set_max_string_size(10_000)
+        .set_max_array_size(1_000)
+        .set_max_map_size(1_000);
 
     engine
 }

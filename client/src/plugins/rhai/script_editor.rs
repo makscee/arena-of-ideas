@@ -33,8 +33,21 @@ pub fn init_completer() {
         .unwrap();
 }
 
-fn rhai_completer() -> MutexGuard<'static, Completer> {
-    COMPLETER.get().unwrap().lock()
+pub trait CompleterHelper {
+    fn push_completer(&self) -> &Self;
+}
+
+impl CompleterHelper for str {
+    fn push_completer(&self) -> &Self {
+        rhai_completer().push_word(self);
+        self
+    }
+}
+
+pub fn rhai_completer() -> MutexGuard<'static, Completer> {
+    COMPLETER
+        .get_or_init(|| Mutex::new(Completer::new_with_syntax(&rhai_syntax()).with_user_words()))
+        .lock()
 }
 
 fn rhai_syntax() -> Syntax {
@@ -59,35 +72,9 @@ fn rhai_syntax() -> Syntax {
             syntax.special.insert("painter");
             syntax.special.insert("x");
 
-            add_syntax_functions(&mut syntax);
-
             syntax
         })
         .clone()
-}
-
-fn add_syntax_functions(syntax: &mut Syntax) {
-    syntax.keywords.insert("use_ability");
-    syntax.keywords.insert("apply_status");
-    syntax.keywords.insert("deal_damage");
-    syntax.keywords.insert("heal_damage");
-    syntax.keywords.insert("modify_stacks");
-    syntax.keywords.insert("change_status");
-    syntax.keywords.insert("circle");
-    syntax.keywords.insert("rectangle");
-    syntax.keywords.insert("curve");
-    syntax.keywords.insert("text");
-    syntax.keywords.insert("hollow");
-    syntax.keywords.insert("solid");
-    syntax.keywords.insert("translate");
-    syntax.keywords.insert("rotate");
-    syntax.keywords.insert("scale_mesh");
-    syntax.keywords.insert("scale_rect");
-    syntax.keywords.insert("color");
-    syntax.keywords.insert("alpha");
-    syntax.keywords.insert("feathering");
-    syntax.keywords.insert("paint");
-    syntax.keywords.insert("exit");
 }
 
 pub fn show_rhai_script_editor<T: schema::ScriptAction>(
