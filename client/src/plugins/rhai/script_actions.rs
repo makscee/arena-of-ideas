@@ -88,6 +88,15 @@ pub fn register_unit_type(engine: &mut Engine) {
         .register_get("id".push_completer(), |unit: &mut NUnit| unit.id() as u64)
         .register_get("unit_name".push_completer(), |unit: &mut NUnit| {
             unit.unit_name.clone()
+        })
+        .register_get("dmg".push_completer(), |unit: &mut NUnit| {
+            unit.state.get().unwrap().dmg
+        })
+        .register_get("hp".push_completer(), |unit: &mut NUnit| {
+            unit.behavior.get().unwrap().stats.get().unwrap().hp
+        })
+        .register_get("pwr".push_completer(), |unit: &mut NUnit| {
+            unit.behavior.get().unwrap().stats.get().unwrap().pwr
         });
 }
 

@@ -726,27 +726,15 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                     self.set_id(new_id);
                     *next_id += 1;
                     id_map.insert(old_id, new_id);
-
-                    // Phase 1: Recursively reassign IDs for owned children
                     self.reassign_owned_ids(next_id, id_map);
-
-                    // Phase 2: Update reference links using the populated id_map
-                    self.update_reference_links(id_map);
                 }
 
                 fn kind_s() -> NodeKind {
                     NodeKind::#node_kind_variant
                 }
-
-
-
-
-
                 #var_methods
-
                 #pack_links_impl
                 #unpack_links_impl
-
                 #collect_owned_ids_method
                 #collect_owned_links_method
             }
@@ -760,8 +748,73 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         }
     });
 
+    // Generate standalone find_mut implementations for each node
+    let find_mut_impls = nodes.iter().map(|node| {
+        let struct_name = &node.name;
+
+        let find_mut_checks = node
+            .fields
+            .iter()
+            .filter(|field| !matches!(field.link_type, LinkType::None))
+            .map(|field| {
+                let field_name = &field.name;
+
+                match field.link_type {
+                    LinkType::Component | LinkType::Owned => {
+                        quote! {
+                            if let Ok(loaded) = self.#field_name.get_mut() {
+                                if let Some(found) = loaded.find_mut::<T>(id) {
+                                    return Some(found);
+                                }
+                            }
+                        }
+                    }
+                    LinkType::OwnedMultiple => {
+                        quote! {
+                            if let Ok(items) = self.#field_name.get_mut() {
+                                for item in items.iter_mut() {
+                                    if let Some(found) = item.find_mut::<T>(id) {
+                                        return Some(found);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    LinkType::None => unreachable!(),
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let allow_attrs = generated_code_allow_attrs();
+
+        quote! {
+            #allow_attrs
+            impl #struct_name {
+                pub fn find_mut<'a, T: schema::Node>(&'a mut self, id: u64) -> Option<&'a mut T> {
+                    use std::any::TypeId;
+
+                    // Check if this node matches
+                    if self.id == id {
+                        if T::kind_s() == self.kind() {
+                            return unsafe {
+                                let ptr = self as *mut Self as *mut T;
+                                Some(&mut *ptr)
+                            };
+                        }
+                    }
+
+                    // Check linked fields recursively
+                    #(#find_mut_checks)*
+
+                    None
+                }
+            }
+        }
+    });
+
     quote! {
         #(#node_trait_impls)*
+        #(#find_mut_impls)*
     }
 }
 
@@ -1375,9 +1428,7 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
 }
 
 pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
-    let ref_update_statements: Vec<proc_macro2::TokenStream> = Vec::new();
     let mut owned_recursive_statements = Vec::new();
-
     for field in &node.fields {
         let field_name = &field.name;
 
@@ -1401,14 +1452,9 @@ pub fn generate_update_link_references_impl(node: &NodeInfo) -> TokenStream {
             LinkType::None => {}
         }
     }
-
     quote! {
         fn reassign_owned_ids(&mut self, next_id: &mut u64, id_map: &mut std::collections::HashMap<u64, u64>) {
             #(#owned_recursive_statements)*
-        }
-
-        fn update_reference_links(&mut self, id_map: &std::collections::HashMap<u64, u64>) {
-            #(#ref_update_statements)*
         }
     }
 }

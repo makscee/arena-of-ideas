@@ -105,8 +105,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => "Battle View".into(),
                 BattlePane::ViewEditor => "Battle View Editor".into(),
-                BattlePane::EditLeftGraph => "Left Team".into(),
-                BattlePane::EditRightGraph => "Right Team".into(),
+                BattlePane::TeamTree => "Team Tree".into(),
+                BattlePane::Inspector => "Inspector".into(),
             },
             Pane::Shop(pane) => pane.as_ref().into(),
             _ => view.as_ref().into(),

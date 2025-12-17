@@ -1912,12 +1912,17 @@ impl FPlaceholder for NStatusBehavior {
         .with_representation(NStatusRepresentation::placeholder())
     }
 }
-
 impl FPlaceholder for NTeamSlot {
     fn placeholder() -> Self {
         NTeamSlot::new(next_id(), 0, 0)
     }
 }
+impl FPlaceholder for NShopPool {
+    fn placeholder() -> Self {
+        Self::new(next_id(), 0)
+    }
+}
+
 impl FEdit for ShopOffer {
     fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
         ui.vertical(|ui| {

@@ -92,7 +92,7 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
         let editor_height = 300.0;
         let mut saved = false;
         let response = ui
-            .horizontal(|ui| {
+            .group(|ui| {
                 if ui.button("Save & Compile (Cmd+S)").clicked()
                     || ui.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.command)
                 {

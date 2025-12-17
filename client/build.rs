@@ -283,10 +283,11 @@ fn generate_node_kind_spawn_impl(nodes: &[NodeInfo]) -> proc_macro2::TokenStream
 fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     let struct_name = &node.name;
 
-    let linked_field_calls = node
+    // Generate recursive tree calls for linked fields (returns bool for changes)
+    let linked_field_tree_calls = node
         .fields
         .iter()
-        .filter(|field| !matches!(field.link_type, LinkType::None))
+        .filter(|field| matches!(field.link_type, LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple))
         .map(|field| {
             let field_name = &field.name;
             let field_label = field.name.to_string();
@@ -295,51 +296,95 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             match field.link_type {
                 LinkType::Component | LinkType::Owned => {
                     quote! {
-                        changed |= ui.render_single_link(#field_label, &mut self.#field_name, self.id, ctx);
-                        if NodeKind::#target_type.is_compact() && self.#field_name.is_loaded() {
+                        {
+                            let mut field_changed = false;
                             if let Ok(loaded) = self.#field_name.get_mut() {
-                                changed |= loaded.edit(ui, ctx).changed();
-                            }
-                        }
-                    }
-                }
-                LinkType::OwnedMultiple => {
-                    quote! {
-                        changed |= ui.render_multiple_link(#field_label, &mut self.#field_name, self.id, ctx);
-                    }
-                }
-                LinkType::None => unreachable!(),
-            }
-        })
-        .collect::<Vec<_>>();
+                                let mut need_delete = false;
+                                let child_id = loaded.id();
+                                let child_kind = loaded.kind();
+                                let header_text = render_header(child_id, child_kind, ctx);
 
-    let recursive_search_calls = node
-        .fields
-        .iter()
-        .filter(|field| matches!(field.link_type, LinkType::Component | LinkType::Owned | LinkType::OwnedMultiple))
-        .map(|field| {
-            let field_name = &field.name;
-            let field_label = field.name.to_string();
-
-            match field.link_type {
-                LinkType::Component | LinkType::Owned => {
-                    quote! {
-                        if let Ok(loaded) = self.#field_name.get_mut() {
-                            if render_node_field_recursive_with_path(ui, #field_label, loaded, breadcrumb_path, ctx) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-                LinkType::OwnedMultiple => {
-                    quote! {
-                        if let Ok(items) = self.#field_name.get_mut() {
-                            for (index, item) in items.iter_mut().sorted_by_key(|i| i.id()).enumerate() {
-                                let item_field_name = format!("{}#{}", #field_label, index);
-                                if render_node_field_recursive_with_path(ui, &item_field_name, item, breadcrumb_path, ctx) {
+                                field_changed = ui.group(|ui| {
+                                    ui.horizontal(|ui| {
+                                        format!("{}: {}", #field_label, header_text).label(ui);
+                                        if "[red 🗑]".to_string().button(ui).on_hover_text("Delete").clicked() {
+                                            need_delete = true;
+                                        }
+                                    });
+                                    let changed = loaded.render_recursive_tree(ui, ctx, render_header, render_body);
+                                    changed
+                                }).inner;
+                                if need_delete {
+                                    self.#field_name.set_none();
                                     return true;
                                 }
+                            } else {
+                                // Show button to add placeholder for None link
+                                if ui.button(format!("➕ Add {}", #field_label)).clicked() {
+                                    let mut new_node = #target_type::placeholder();
+                                    new_node.set_id(next_id());
+                                    new_node.set_owner(self.id);
+                                    self.#field_name.set_loaded(new_node);
+                                    field_changed = true;
+                                }
                             }
+                            field_changed
+                        }
+                    }
+                }
+                LinkType::OwnedMultiple => {
+                    quote! {
+                        {
+                            ui.label(format!("{}:", #field_label));
+                            let mut field_changed = false;
+                            if let Ok(items) = self.#field_name.get_mut() {
+                                let mut to_remove: Option<usize> = None;
+                                for (index, (header_text, item)) in items.iter_mut().map(|item| (render_header(item.id(), item.kind(), ctx), item)).sorted_by_key(|(h, _)| h.clone()).enumerate() {
+                                    let item_changed = ui.horizontal(|ui| {
+                                        let header = egui::CollapsingHeader::new(format!("{} #{}: {}", #field_label, index, header_text).widget(1.0, ui.style()))
+                                            .id_salt(item.id);
+
+                                        let item_changed = header.show(ui, |ui| {
+                                            item.render_recursive_tree(ui, ctx, render_header, render_body)
+                                        }).body_returned.unwrap_or(false);
+
+                                        // Delete button
+                                        if ui.button("🗑").on_hover_text("Delete").clicked() {
+                                            to_remove = Some(index);
+                                            return true;
+                                        }
+
+                                        item_changed
+                                    }).inner;
+
+                                    field_changed |= item_changed;
+                                }
+
+                                // Remove deleted item
+                                if let Some(idx) = to_remove {
+                                    items.remove(idx);
+                                    field_changed = true;
+                                }
+
+                                // Always show button to add new item to the list
+                                if ui.button(format!("➕ Add to {}", #field_label)).clicked() {
+                                    let mut new_node = #target_type::default();
+                                    new_node.set_id(next_id());
+                                    new_node.set_owner(self.id);
+                                    items.push(new_node);
+                                    field_changed = true;
+                                }
+                            } else {
+                                // Show button to create the list if it's None
+                                if ui.button(format!("➕ Create {} list", #field_label)).clicked() {
+                                    let mut new_node = #target_type::default();
+                                    new_node.set_id(next_id());
+                                    new_node.set_owner(self.id);
+                                    self.#field_name.set_loaded(vec![new_node]);
+                                    field_changed = true;
+                                }
+                            }
+                            field_changed
                         }
                     }
                 }
@@ -352,27 +397,25 @@ fn generate_frecursive_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         #allow_attrs
         impl FRecursiveNodeEdit for #struct_name {
-            fn render_linked_fields(
+            fn render_linked_fields_tree<H, B>(
                 &mut self,
                 ui: &mut egui::Ui,
                 ctx: &ClientContext,
-                breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
-            ) -> bool {
+                render_header: &H,
+                render_body: &B,
+            ) -> bool
+            where
+                H: Fn(u64, NodeKind, &ClientContext) -> String,
+                B: Fn(u64, NodeKind, &ClientContext, &mut egui::Ui),
+            {
+                use crate::resources::context::EMPTY_CONTEXT;
                 let mut changed = false;
-                #(#linked_field_calls)*
+
+                #(
+                    changed |= #linked_field_tree_calls;
+                )*
+
                 changed
-            }
-
-            fn render_recursive_search(
-                &mut self,
-                ui: &mut egui::Ui,
-                ctx: &ClientContext,
-                breadcrumb_path: &mut Vec<crate::ui::NodeBreadcrumb>,
-            ) -> bool {
-                use crate::ui::render::features::render_node_field_recursive_with_path;
-
-                #(#recursive_search_calls)*
-                false
             }
         }
     }
@@ -390,13 +433,11 @@ fn generate_fedit_impl(node: &NodeInfo) -> proc_macro2::TokenStream {
             let field_name = &field.name;
             let field_label = field.name.to_string();
             quote! {
-                ui.horizontal(|ui| {
-                    ui.label(#field_label);
-                    let field_response = self.#field_name.edit(ui, ctx);
-                    if field_response.changed() {
-                        changed = true;
-                    }
-                });
+                #field_label.to_string().label(ui);
+                let field_response = self.#field_name.edit(ui, ctx);
+                if field_response.changed() {
+                    changed = true;
+                }
             }
         });
 
