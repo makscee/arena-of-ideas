@@ -1,9 +1,3 @@
-use ecolor::Color32;
-
-use glam::{Vec2, vec2};
-use itertools::Itertools;
-use std::cmp::Ordering;
-
 use super::*;
 
 /// Trait to enable chaining VarValue methods on NodeResult<VarValue>
@@ -66,6 +60,18 @@ pub enum VarValue {
 }
 
 impl VarValue {
+    pub fn dynamic(&self) -> Dynamic {
+        match self {
+            VarValue::i32(v) => v.to_dynamic(),
+            VarValue::f32(v) => v.to_dynamic(),
+            VarValue::u64(v) => v.to_dynamic(),
+            VarValue::bool(v) => v.to_dynamic(),
+            VarValue::String(v) => v.to_dynamic(),
+            VarValue::Vec2(v) => v.to_dynamic(),
+            VarValue::Color32(v) => v.to_hex().to_dynamic(),
+            VarValue::list(v) => v.to_dynamic(),
+        }
+    }
     pub fn get_string(&self) -> Result<String, NodeError> {
         self.as_ref();
         match self {

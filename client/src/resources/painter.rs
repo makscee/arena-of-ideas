@@ -68,8 +68,6 @@ impl Paint for Material {
         if let Ok(t) = ctx.get_var(VarName::t).get_f32() {
             scope.push("t", t);
         }
-        dbg!(ctx.get_var(VarName::t));
-        ctx.debug_layers();
 
         // Execute the Rhai script to get painter actions
         let actions = match self.0.execute(scope, ctx) {

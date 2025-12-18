@@ -22,6 +22,9 @@ where
     ) -> Result<(Vec<T>, Scope<'static>), Box<EvalAltResult>> {
         let mut scope = scope_builder.into();
 
+        for (var, value) in ctx.get_vars_layers() {
+            scope.push(var.as_ref(), value.dynamic());
+        }
         scope.push(T::actions_var_name(), Vec::<T>::new());
         scope.push("ctx", RhaiContext::with_context(ctx));
 

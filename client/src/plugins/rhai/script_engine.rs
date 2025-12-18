@@ -1,7 +1,7 @@
 use super::*;
-use ::rhai::{Array, Dynamic, Engine};
+use ::rhai::{Array, Dynamic, Engine, Variant};
 
-fn array_to_vec2(arr: &Array) -> Option<(f32, f32)> {
+pub fn array_to_vec2(arr: &Array) -> Option<(f32, f32)> {
     if arr.len() < 2 {
         return None;
     }
@@ -10,7 +10,7 @@ fn array_to_vec2(arr: &Array) -> Option<(f32, f32)> {
     Some((x, y))
 }
 
-fn array_to_vec3(arr: &Array) -> Option<(f32, f32, f32)> {
+pub fn array_to_vec3(arr: &Array) -> Option<(f32, f32, f32)> {
     if arr.len() < 3 {
         return None;
     }
@@ -20,15 +20,15 @@ fn array_to_vec3(arr: &Array) -> Option<(f32, f32, f32)> {
     Some((x, y, z))
 }
 
-fn vec2_to_array(x: f32, y: f32) -> Array {
+pub fn vec2_to_array(x: f32, y: f32) -> Array {
     vec![Dynamic::from(x), Dynamic::from(y)]
 }
 
-fn vec3_to_array(x: f32, y: f32, z: f32) -> Array {
+pub fn vec3_to_array(x: f32, y: f32, z: f32) -> Array {
     vec![Dynamic::from(x), Dynamic::from(y), Dynamic::from(z)]
 }
 
-trait ToArray {
+pub trait ToArray {
     fn to_dynamic_vec(&self) -> Array;
 }
 
@@ -47,6 +47,7 @@ impl ToArray for [f32; 3] {
 pub fn register_common_functions(engine: &mut Engine) {
     // Math functions
     engine
+        .register_fn("pi".register_completer(), || PI)
         .register_fn("abs".register_completer(), |x: i32| x.abs())
         .register_fn("min".register_completer(), |a: i32, b: i32| a.min(b))
         .register_fn("max".register_completer(), |a: i32, b: i32| a.max(b))
@@ -60,20 +61,14 @@ pub fn register_common_functions(engine: &mut Engine) {
 
     // Random functions
     engine
-        .register_fn("random_int".register_completer(), |seed: Dynamic| {
-            rng_seeded_from_hash(&seed).random_range(0..100)
-        })
         .register_fn(
-            "random_range".register_completer(),
-            |seed: Dynamic, min: i32, max: i32| rng_seeded_from_hash(&seed).random_range(min..max),
+            "random".register_completer(),
+            |seed: Dynamic, min: f32, max: f32| rng_seeded_from_hash(&seed).random_range(min..max),
         )
         .register_fn(
-            "random_range".register_completer(),
+            "random".register_completer(),
             |seed: Dynamic, min: i32, max: i32| rng_seeded_from_hash(&seed).random_range(min..max),
-        )
-        .register_fn("random_float".register_completer(), |seed: Dynamic| {
-            rng_seeded_from_hash(&seed).random_range(0.0..1.0)
-        });
+        );
 
     // Color helpers
     engine

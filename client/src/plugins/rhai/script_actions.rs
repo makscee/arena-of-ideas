@@ -348,7 +348,10 @@ pub fn register_animator_type(engine: &mut Engine) {
         .register_type_with_name::<Vec<AnimAction>>("AnimatorActions")
         .register_fn(
             "translate".register_completer(),
-            |actions: &mut Vec<AnimAction>, x: f32, y: f32| {
+            |actions: &mut Vec<AnimAction>, v: Array| {
+                let Some((x, y)) = array_to_vec2(&v) else {
+                    return;
+                };
                 actions.push(AnimAction::Translate { x, y });
             },
         )

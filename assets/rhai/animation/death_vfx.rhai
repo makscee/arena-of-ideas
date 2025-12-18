@@ -5,7 +5,7 @@ animator.spawn_painter(`
     for i in 0..30 {
         painter.circle(0.2);
         painter.scale_mesh(t);
-        let v = unit_vec(i.random(0.0, PI * 2.0)) * min(t * 10.0 * (i + 1).random(0.0, 1.0), 0.9);
+        let v = unit_vec(i.random(0.0, pi() * 2.0)) * min(t * (i + 1).random(1.0, 2.0), 0.9);
         painter.translate(v);
         painter.paint();
     }

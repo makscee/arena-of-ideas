@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use rhai::Dynamic;
+use rhai::{Dynamic, Variant};
 use std::panic::Location;
 use thiserror::Error;
 use var_value::VarValue;
@@ -111,16 +111,26 @@ pub enum NodeError {
 
 pub type NodeResult<T> = Result<T, NodeError>;
 
+pub trait ToDynamicResult {
+    fn dynamic_result(&self) -> Dynamic;
+}
+
+impl<T: Clone + Variant> ToDynamicResult for NodeResult<T> {
+    fn dynamic_result(&self) -> Dynamic {
+        match self {
+            Ok(value) => value.to_dynamic(),
+            Err(_) => Dynamic::UNIT,
+        }
+    }
+}
+
 pub trait ToDynamic {
     fn to_dynamic(&self) -> Dynamic;
 }
 
-impl<T: Clone + ::rhai::Variant> ToDynamic for NodeResult<T> {
+impl<T: Clone + Variant> ToDynamic for T {
     fn to_dynamic(&self) -> Dynamic {
-        match self {
-            Ok(value) => Dynamic::from(value.clone()),
-            Err(_) => Dynamic::UNIT,
-        }
+        Dynamic::from(self.clone())
     }
 }
 

@@ -1,3 +1,5 @@
+use ::rhai::Dynamic;
+
 use super::*;
 
 #[derive(Clone, Debug)]
@@ -99,9 +101,10 @@ unsafe impl Sync for RhaiContext {}
 pub fn register_context_type(engine: &mut ::rhai::Engine) {
     engine
         .register_type_with_name::<RhaiContext>("Ctx")
-        .register_fn("get_all_units".register_completer(), |ctx: &mut RhaiContext| {
-            ctx.get_all_units()
-        })
+        .register_fn(
+            "get_all_units".register_completer(),
+            |ctx: &mut RhaiContext| ctx.get_all_units(),
+        )
         .register_fn(
             "get_enemies".register_completer(),
             |ctx: &mut RhaiContext, owner_id: u64| ctx.get_enemies(owner_id),
@@ -131,7 +134,7 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             |ctx: &mut RhaiContext, unit_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NUnit>(unit_id)?.load_all(ctx)?.take()))
-                    .to_dynamic()
+                    .dynamic_result()
             },
         )
         .register_fn(
@@ -139,7 +142,7 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             |ctx: &mut RhaiContext, status_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NStatusMagic>(status_id)?.load_all(ctx)?.take()))
-                    .to_dynamic()
+                    .dynamic_result()
             },
         )
         .register_fn(
@@ -149,7 +152,7 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
                     .exec_ref(|ctx| {
                         Ok(ctx.load::<NAbilityMagic>(ability_id)?.load_all(ctx)?.take())
                     })
-                    .to_dynamic()
+                    .dynamic_result()
             },
         )
         .register_fn(
@@ -157,10 +160,23 @@ pub fn register_context_type(engine: &mut ::rhai::Engine) {
             |ctx: &mut RhaiContext, house_id: u64| {
                 ctx.get_ctx()
                     .exec_ref(|ctx| Ok(ctx.load::<NHouse>(house_id)?.load_all(ctx)?.take()))
-                    .to_dynamic()
+                    .dynamic_result()
             },
         )
         .register_fn("owner".register_completer(), |ctx: &mut RhaiContext| {
-            ctx.get_ctx().owner().unwrap()
-        });
+            ctx.get_ctx().owner().unwrap_or_default()
+        })
+        .register_fn("target".register_completer(), |ctx: &mut RhaiContext| {
+            ctx.get_ctx().target().unwrap_or_default()
+        })
+        .register_fn(
+            "get_position".register_completer(),
+            |ctx: &mut RhaiContext, id: u64| {
+                let ctx = ctx.get_ctx();
+                match ctx.get_var_inherited(id, VarName::position).get_vec2() {
+                    Ok(v) => Dynamic::from_array(v.to_array().to_dynamic_vec()),
+                    Err(_) => Dynamic::UNIT,
+                }
+            },
+        );
 }
