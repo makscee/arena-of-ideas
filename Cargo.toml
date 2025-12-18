@@ -87,7 +87,8 @@ log = "0.4.29"
 glam = { version = "0.30.9", features = ["serde"] }
 color-hex = "0.2.0"
 
-rhai = { version = "1.23.5", features = [
+rhai = { version = "1.23.5", default-features = false, features = [
+    "std",
     "serde",
     "sync",
     "only_i32",

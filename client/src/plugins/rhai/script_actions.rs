@@ -295,26 +295,28 @@ pub fn register_painter_type(engine: &mut Engine) {
         .register_fn(
             "color".register_completer(),
             |actions: &mut Vec<PainterAction>, r: i32, g: i32, b: i32, a: i32| {
-                actions.push(PainterAction::Color {
-                    r: (r as u8).clamp(0, 255),
-                    g: (g as u8).clamp(0, 255),
-                    b: (b as u8).clamp(0, 255),
-                    a: (a as u8).clamp(0, 255),
-                });
+                let color = Color32::from_rgba_premultiplied(
+                    (r as u8).clamp(0, 255),
+                    (g as u8).clamp(0, 255),
+                    (b as u8).clamp(0, 255),
+                    (a as u8).clamp(0, 255),
+                );
+                actions.push(PainterAction::Color { color });
             },
         )
         .register_fn(
             "color".register_completer(),
             |actions: &mut Vec<PainterAction>, hex: String| {
                 match Color32::from_hex(&hex) {
-                    Ok(v) => actions.push(PainterAction::Color {
-                        r: v.r(),
-                        g: v.g(),
-                        b: v.b(),
-                        a: v.a(),
-                    }),
+                    Ok(color) => actions.push(PainterAction::Color { color }),
                     Err(e) => error!("Failed to parse color {e:?}"),
                 };
+            },
+        )
+        .register_fn(
+            "color".register_completer(),
+            |actions: &mut Vec<PainterAction>, color: Color32| {
+                actions.push(PainterAction::Color { color });
             },
         )
         .register_fn(

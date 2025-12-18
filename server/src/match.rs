@@ -78,56 +78,58 @@ fn inject_house_actions(unit: &mut NUnit, house: &NHouse) -> NodeResult<()> {
     let status_name = house.status.get().ok().map(|s| s.status_name.clone());
 
     if let Ok(behavior) = unit.behavior.get_mut() {
-        inject_actions(
-            &mut behavior.behavior.effect.actions,
+        behavior.effect.code = inject_actions(
+            &behavior.effect.code,
             &house_name,
             &ability_name,
             &status_name,
-            &house_color,
-        )?;
+        );
+
+        if let Ok(representation) = behavior.representation.get_mut() {
+            let hex_str = house_color.0.trim_start_matches('#');
+            let (r, g, b) = if hex_str.len() == 6 {
+                let r = u8::from_str_radix(&hex_str[0..2], 16).unwrap_or(255);
+                let g = u8::from_str_radix(&hex_str[2..4], 16).unwrap_or(255);
+                let b = u8::from_str_radix(&hex_str[4..6], 16).unwrap_or(255);
+                (r, g, b)
+            } else {
+                (255, 255, 255)
+            };
+            let color_code = format!(
+                "painter.Color {{ r: {}, g: {}, b: {}, a: 255 }};\n",
+                r, g, b
+            );
+            representation.material.0.code =
+                format!("{}{}", color_code, representation.material.0.code);
+        }
     }
 
     Ok(())
 }
 
 fn inject_actions(
-    actions: &mut Vec<Action>,
+    code: &str,
     house_name: &str,
     ability_name: &Option<String>,
     status_name: &Option<String>,
-    color: &HexColor,
-) -> NodeResult<()> {
-    for action in actions.iter_mut() {
-        match action {
-            Action::use_ability(_, _, _) => {
-                if let Some(name) = ability_name {
-                    *action =
-                        Action::use_ability(house_name.to_string(), name.clone(), color.clone());
-                }
-            }
-            Action::apply_status(_, _, _) => {
-                if let Some(name) = status_name {
-                    *action =
-                        Action::apply_status(house_name.to_string(), name.clone(), color.clone());
-                }
-            }
-            Action::repeat(expr, vec) => {
-                for boxed_action in vec.iter_mut() {
-                    let mut single_action = vec![(**boxed_action).clone()];
-                    inject_actions(
-                        &mut single_action,
-                        house_name,
-                        ability_name,
-                        status_name,
-                        color,
-                    )?;
-                    *boxed_action = Box::new(single_action.into_iter().next().unwrap());
-                }
-            }
-            _ => {}
-        }
+) -> String {
+    let mut result = code.to_string();
+
+    if let Some(name) = ability_name {
+        result = result.replace(
+            "use_ability(",
+            &format!("use_ability(\"{}/{}\", ", house_name, name),
+        );
     }
-    Ok(())
+
+    if let Some(name) = status_name {
+        result = result.replace(
+            "apply_status(",
+            &format!("apply_status(\"{}/{}\", ", house_name, name),
+        );
+    }
+
+    result
 }
 
 #[reducer]
@@ -499,7 +501,7 @@ fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> 
     target_unit_state.stax += stax;
     ctx.source_mut().commit(target_unit_state)?;
 
-    let mut target_behavior = target_unit.behavior.load_node(ctx)?;
+    let target_behavior = target_unit.behavior.load_node(ctx)?;
     let mut target_unit_stats = target_behavior.stats.load_node(ctx)?;
     target_unit_stats.hp += stax;
     target_unit_stats.pwr += stax;
@@ -610,10 +612,13 @@ fn create_fused_unit(
     let source_behavior_node = source.behavior.load_node(ctx)?;
     let target_behavior_node = target.behavior.load_node(ctx)?;
 
-    let source_behavior = &source_behavior_node.behavior;
-    let target_behavior = &target_behavior_node.behavior;
-
-    let mut new_behavior_node = NUnitBehavior::new(ctx.next_id(), new_unit.id, default());
+    let mut new_behavior_node = NUnitBehavior::new(
+        ctx.next_id(),
+        new_unit.id,
+        default(),
+        default(),
+        RhaiScript::empty(),
+    );
     new_behavior_node.stats = target_behavior_node.stats.clone();
     new_behavior_node.representation = target_behavior_node.representation.clone();
 
@@ -623,49 +628,46 @@ fn create_fused_unit(
     let effect_choice = chars[2];
 
     let merged_trigger = match trigger_choice {
-        '<' => source_behavior.trigger.clone(),
-        '>' => target_behavior.trigger.clone(),
+        '<' => source_behavior_node.trigger.clone(),
+        '>' => target_behavior_node.trigger.clone(),
         '=' => Trigger::Any(vec![
-            source_behavior.trigger.clone(),
-            target_behavior.trigger.clone(),
+            source_behavior_node.trigger.clone(),
+            target_behavior_node.trigger.clone(),
         ]),
         _ => return Err(format!("Invalid trigger choice: {}", trigger_choice).into()),
     };
 
     let merged_target = match target_choice {
-        '<' => source_behavior.target.clone(),
-        '>' => target_behavior.target.clone(),
+        '<' => source_behavior_node.target.clone(),
+        '>' => target_behavior_node.target.clone(),
         '=' => Target::List(vec![
-            source_behavior.target.clone(),
-            target_behavior.target.clone(),
+            source_behavior_node.target.clone(),
+            target_behavior_node.target.clone(),
         ]),
         _ => return Err(format!("Invalid target choice: {}", target_choice).into()),
     };
 
     let merged_effect = match effect_choice {
-        '<' => source_behavior.effect.clone(),
-        '>' => target_behavior.effect.clone(),
-        '=' => Effect {
-            description: format!(
+        '<' => source_behavior_node.effect.clone(),
+        '>' => target_behavior_node.effect.clone(),
+        '=' => {
+            let merged_code = format!(
                 "{}\n{}",
-                source_behavior.effect.description, target_behavior.effect.description
-            ),
-            actions: {
-                let mut combined = source_behavior.effect.actions.clone();
-                combined.extend(target_behavior.effect.actions.clone());
-                combined
-            },
-        },
+                source_behavior_node.effect.code, target_behavior_node.effect.code
+            );
+            let mut merged = RhaiScript::new(merged_code);
+            merged.description = format!(
+                "{}\n{}",
+                source_behavior_node.effect.description, target_behavior_node.effect.description
+            );
+            merged
+        }
         _ => return Err(format!("Invalid effect choice: {}", effect_choice).into()),
     };
 
-    let merged_behavior = Behavior {
-        trigger: merged_trigger,
-        target: merged_target,
-        effect: merged_effect,
-    };
-
-    new_behavior_node.behavior = merged_behavior;
+    new_behavior_node.trigger = merged_trigger;
+    new_behavior_node.target = merged_target;
+    new_behavior_node.effect = merged_effect;
 
     ctx.source_mut().commit(new_behavior_node.clone())?;
     new_unit.behavior.set_loaded(new_behavior_node);
@@ -673,11 +675,11 @@ fn create_fused_unit(
     let mut new_representation = target_behavior_node.representation.load_node(ctx)?;
     let source_representation = source_behavior_node.representation.load_node(ctx)?;
     let target_representation = target_behavior_node.representation.load_node(ctx)?;
-    let actions = &mut new_representation.material.0;
 
-    *actions = target_representation.material.0.clone();
-    actions.push(PainterAction::paint);
-    actions.extend(source_representation.material.0.clone().into_iter());
+    new_representation.material.0.code = format!(
+        "{}\n{}",
+        target_representation.material.0.code, source_representation.material.0.code
+    );
     ctx.source_mut().commit(new_representation)?;
 
     let mut new_stats = target_behavior_node.stats.load_node(ctx)?;

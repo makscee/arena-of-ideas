@@ -211,8 +211,8 @@ fn process_painter_action(
             let size = p.rect.size() * scale - p.rect.size();
             p.rect = p.rect.expand2(size * 0.5);
         }
-        PainterAction::Color { r, g, b, a } => {
-            p.color = Color32::from_rgba_unmultiplied(r, g, b, a);
+        PainterAction::Color { color } => {
+            p.color = color;
         }
         PainterAction::Alpha { alpha } => {
             p.color = p.color.gamma_multiply(alpha.clamp(0.0, 1.0));

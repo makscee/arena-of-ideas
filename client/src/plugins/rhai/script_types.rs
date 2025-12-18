@@ -25,6 +25,17 @@ where
         for (var, value) in ctx.get_vars_layers() {
             scope.push(var.as_ref(), value.dynamic());
         }
+        scope.push(
+            "index",
+            ctx.owner_var(VarName::index).get_i32().unwrap_or_default(),
+        );
+
+        scope.push(
+            "color",
+            ctx.owner_var(VarName::color)
+                .get_color()
+                .unwrap_or_default(),
+        );
         scope.push(T::actions_var_name(), Vec::<T>::new());
         scope.push("ctx", RhaiContext::with_context(ctx));
 

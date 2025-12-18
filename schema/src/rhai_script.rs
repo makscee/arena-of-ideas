@@ -1,3 +1,4 @@
+use ecolor::Color32;
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 
@@ -187,7 +188,7 @@ pub enum PainterAction {
     Rotate { angle: f32 },
     ScaleMesh { scale: f32 },
     ScaleRect { scale: f32 },
-    Color { r: u8, g: u8, b: u8, a: u8 },
+    Color { color: Color32 },
     Alpha { alpha: f32 },
     Feathering { amount: f32 },
     Exit,
