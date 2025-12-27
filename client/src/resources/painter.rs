@@ -65,7 +65,7 @@ impl Paint for Material {
     fn paint_err(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool> {
         let mut scope = ::rhai::Scope::new();
         scope.push("painter", Vec::<PainterAction>::new());
-        if let Ok(t) = ctx.get_var(VarName::t).get_f32() {
+        if let Some(t) = ctx.t() {
             scope.push("t", t);
         }
 

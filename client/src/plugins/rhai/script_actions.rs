@@ -309,7 +309,7 @@ pub fn register_painter_type(engine: &mut Engine) {
             |actions: &mut Vec<PainterAction>, hex: String| {
                 match Color32::from_hex(&hex) {
                     Ok(color) => actions.push(PainterAction::Color { color }),
-                    Err(e) => error!("Failed to parse color {e:?}"),
+                    Err(e) => error!("Failed to parse color {e:?}: {hex}"),
                 };
             },
         )

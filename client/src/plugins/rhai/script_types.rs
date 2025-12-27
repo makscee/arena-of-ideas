@@ -34,7 +34,8 @@ where
             "color",
             ctx.owner_var(VarName::color)
                 .get_color()
-                .unwrap_or_default(),
+                .unwrap_or_default()
+                .to_hex(),
         );
         scope.push(T::actions_var_name(), Vec::<T>::new());
         scope.push("ctx", RhaiContext::with_context(ctx));

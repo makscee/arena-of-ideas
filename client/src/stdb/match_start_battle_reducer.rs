@@ -59,6 +59,7 @@ impl match_start_battle for super::RemoteReducers {
         MatchStartBattleCallbackId(self.imp.on_reducer(
             "match_start_battle",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

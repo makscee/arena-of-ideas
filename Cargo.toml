@@ -38,10 +38,10 @@ bevy = { version = "0.17", default-features = false, features = [
     "bevy_state",
     "bevy_log",
 ] }
-spacetimedb = "=1.6.0"
-spacetimedb-sdk = "=1.6.0"
-spacetimedb-sats = "=1.6.0"
-spacetimedb-lib = "=1.6.0"
+spacetimedb = "1.11.1"
+spacetimedb-sdk = "1.11.1"
+spacetimedb-sats = "1.11.1"
+spacetimedb-lib = "1.11.1"
 rand = "0.10.0-rc.1"
 rand_core = "0.10.0-rc-2"
 rand_chacha = "0.10.0-rc.1"

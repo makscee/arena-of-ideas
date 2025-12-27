@@ -86,21 +86,6 @@ impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
         debug!("on spawn {self} {id} ");
         let entity = ctx.entity(id).track()?;
-        let vars = node_kind_match!(self, ctx.load::<NodeType>(id).track()?.get_vars());
-
-        // Only create NodeStateHistory for battle simulations
-        if ctx.battle().is_ok() {
-            let world = ctx.world_mut()?;
-            let mut emut = world.entity_mut(entity);
-            let mut ns = if let Some(ns) = emut.get_mut::<NodeStateHistory>() {
-                ns
-            } else {
-                emut.insert(NodeStateHistory::default())
-                    .get_mut::<NodeStateHistory>()
-                    .unwrap()
-            };
-            ns.init_vars(vars.into_iter());
-        }
 
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);

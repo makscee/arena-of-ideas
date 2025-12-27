@@ -63,6 +63,7 @@ impl admin_add_votes for super::RemoteReducers {
         AdminAddVotesCallbackId(self.imp.on_reducer(
             "admin_add_votes",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

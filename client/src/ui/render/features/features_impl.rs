@@ -1416,6 +1416,8 @@ impl FPlaceholder for NStatusRepresentation {
         NStatusRepresentation::new(
             next_id(),
             player_id(),
+            default(),
+            true,
             Material::new("painter.circle(0.5);".to_string()),
         )
     }
@@ -2161,6 +2163,8 @@ impl FPlaceholder for NUnitRepresentation {
         NUnitRepresentation::new(
             next_id(),
             0,
+            default(),
+            true,
             Material::new("painter.circle(0.5);".to_string()),
         )
     }

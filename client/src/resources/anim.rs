@@ -64,11 +64,9 @@ impl AnimAction {
                 let pos = vec2(*x, *y);
                 let mut t = ctx.battle_mut()?.duration;
                 for target in a.targets.iter().copied() {
-                    let entity = target.entity(ctx)?;
-                    ctx.world_mut()?
-                        .get_mut::<NodeStateHistory>(entity)
-                        .to_not_found()?
-                        .insert(t, a.duration, VarName::position, pos.into());
+                    // Use set_var to track history in nodes directly
+                    ctx.source_mut()
+                        .set_var(target, VarName::position, pos.into())?;
                     t += a.timeframe;
                 }
                 ctx.battle_mut()?.duration = t;
@@ -91,28 +89,29 @@ impl AnimAction {
                 let entity = ctx.world_mut()?.spawn_empty().id();
                 let id = next_id();
                 let material = Material::new(code.clone());
-                NRepresentation::new(0, player_id(), material)
-                    .with_id(id)
+                NRepresentation::new(id, 0, default(), true, material)
                     .spawn(ctx, Some(entity))
                     .track()?;
                 ctx.world_mut()?.entity_mut(entity).insert(Vfx);
 
                 let mut t = ctx.battle_mut()?.duration;
                 let vars_layers = ctx.get_vars_layers();
-                let entity = ctx.entity(id).track()?;
-                let mut state = ctx
-                    .world_mut()?
-                    .get_mut::<NodeStateHistory>(entity)
-                    .to_not_found()
-                    .track()?;
-                state.insert(0.0, 0.0, VarName::visible, false.into());
-                state.insert(t, 0.0, VarName::visible, true.into());
-                state.insert(t + a.duration, 0.0, VarName::visible, false.into());
-                state.insert(t, 0.0, VarName::t, 0.0.into());
-                state.insert(t + 0.0001, a.duration, VarName::t, 1.0.into());
-                for (var, value) in vars_layers {
-                    state.insert(0.0, 0.0, var, value);
-                }
+
+                // Use set_var to track history in nodes directly
+                ctx.source_mut()
+                    .set_var(id, VarName::visible, false.into())?;
+                ctx.battle_mut()?.duration = t;
+                ctx.source_mut()
+                    .set_var(id, VarName::visible, true.into())?;
+                ctx.battle_mut()?.duration = t + a.duration;
+                ctx.source_mut()
+                    .set_var(id, VarName::visible, false.into())?;
+                ctx.battle_mut()?.duration = t;
+                ctx.source_mut().set_var(id, VarName::t, 0.0.into())?;
+                ctx.battle_mut()?.duration = t + 0.0001;
+                ctx.source_mut().set_var(id, VarName::t, 1.0.into())?;
+
+                ctx.battle_mut()?.duration = t;
                 a.targets = vec![id];
                 t += a.timeframe;
                 ctx.battle_mut()?.duration = t;

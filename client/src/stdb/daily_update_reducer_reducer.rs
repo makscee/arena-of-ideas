@@ -63,6 +63,7 @@ impl daily_update_reducer for super::RemoteReducers {
         DailyUpdateReducerCallbackId(self.imp.on_reducer(
             "daily_update_reducer",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

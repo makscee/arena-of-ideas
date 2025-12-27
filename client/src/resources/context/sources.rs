@@ -224,27 +224,6 @@ impl<'a> Sources<'a> {
             .ok_or_else(|| NodeError::custom("NodeLinksData resource not found"))
     }
 
-    fn get_var_from_node(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        let entity = self.entity(node_id).track()?;
-        let kind = self
-            .get_node_kind(node_id)
-            .track()?
-            .with_other_components()
-            .into_iter()
-            .find(|k| k.var_names().contains(&var))
-            .to_not_found()
-            .track()?;
-        let world = self.world().track()?;
-
-        node_kind_match!(kind, {
-            world
-                .get::<NodeType>(entity)
-                .ok_or_else(|| NodeError::not_found(node_id))
-                .track()?
-                .get_var(var)
-        })
-    }
-
     pub fn entity(&self, node_id: u64) -> NodeResult<Entity> {
         self.get_nodes_map()?
             .get_entity(node_id)
@@ -1099,26 +1078,34 @@ pub enum StdbUpdate {
 
 impl ContextSource for Sources<'_> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
-        if let Ok(sim) = self.battle() {
-            let world = &sim.world;
-            let time = self.t().unwrap_or(sim.duration);
-            // Check NodeStateHistory first for battle contexts
-            if let Some(node_data) = world.get_resource::<NodesMapResource>() {
-                if let Some(entity) = node_data.get_entity(node_id) {
-                    if let Some(state) = world.get::<NodeStateHistory>(entity) {
-                        if let Ok(value) = state.get_at(time, var) {
-                            return Ok(value);
-                        } else if let Some(value) = state.get(var) {
-                            return Ok(value);
-                        }
-                    }
-                }
-            }
+        let entity = self.entity(node_id).track()?;
+        let kind = self
+            .get_node_kind(node_id)
+            .track()?
+            .with_other_components()
+            .into_iter()
+            .find(|k| k.var_names().contains(&var))
+            .to_not_found()
+            .track()?;
+        let world = self.world().track()?;
 
-            // Fall back to node's own var
-            self.get_var_from_node(node_id, var)
+        // Use time-based accessor if we have a time context (in battles)
+        if let Some(t) = self.t() {
+            node_kind_match!(kind, {
+                world
+                    .get::<NodeType>(entity)
+                    .ok_or_else(|| NodeError::not_found(node_id))
+                    .track()?
+                    .get_var_at(var, t)
+            })
         } else {
-            self.get_var_from_node(node_id, var)
+            node_kind_match!(kind, {
+                world
+                    .get::<NodeType>(entity)
+                    .ok_or_else(|| NodeError::not_found(node_id))
+                    .track()?
+                    .get_var(var)
+            })
         }
     }
 
@@ -1142,17 +1129,18 @@ impl ContextSource for Sources<'_> {
 
     fn var_updated(&mut self, node_id: u64, var: VarName, value: VarValue) {
         if let Ok(sim) = self.battle_mut() {
-            // Save to NodeStateHistory in battle contexts
-            if let Some(node_data) = sim.world.get_resource::<NodesMapResource>() {
-                if let Some(entity) = node_data.get_entity(node_id) {
-                    let t = sim.duration;
-                    if let Some(mut state) = sim.world.get_mut::<NodeStateHistory>(entity) {
-                        if state.insert(t, 0.0, var, value) {
-                            // sim.duration += 0.01;
+            // Track history in battle contexts using the new history fields
+            let t = sim.duration;
+            let kind = self.get_node_kind(node_id).ok();
+            if let Some(kind) = kind {
+                for kind in kind.with_other_components() {
+                    node_kind_match!(kind, {
+                        if let Ok(mut node) = self.load_mut::<NodeType>(node_id) {
+                            if node.set_var_with_history(var, value.clone(), t).is_ok() {
+                                break;
+                            }
                         }
-                    } else {
-                        panic!("NodeStateHistory not found for {node_id}");
-                    }
+                    });
                 }
             }
         }

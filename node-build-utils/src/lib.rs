@@ -512,9 +512,17 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
             quote! { #field_name: #field_type }
         }));
 
-    let field_assignments = data_fields.iter().map(|field| {
+    let field_assignments = data_fields.iter().flat_map(|field| {
         let field_name = &field.name;
-        quote! { #field_name, }
+        let mut assignments = vec![quote! { #field_name, }];
+
+        // Add history field initialization for #[var] fields
+        if field.is_var && field.link_type == LinkType::None {
+            let history_field_name = format_ident!("{}_history", field_name);
+            assignments.push(quote! { #history_field_name: Vec::new(), });
+        }
+
+        assignments
     });
 
     let component_defaults = node
@@ -587,7 +595,18 @@ pub fn generate_with_methods(node: &NodeInfo) -> TokenStream {
 
 pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
     let struct_name = &node.name;
-    let fields = node.fields.iter().map(|f| f.name.clone());
+    let field_inits = node.fields.iter().flat_map(|f| {
+        let field_name = &f.name;
+        let mut inits = vec![quote! { #field_name: default() }];
+
+        // Add history field initialization for #[var] fields
+        if f.is_var && f.link_type == LinkType::None {
+            let history_field_name = format_ident!("{}_history", field_name);
+            inits.push(quote! { #history_field_name: Vec::new() });
+        }
+
+        inits
+    });
 
     quote! {
         impl Default for #struct_name {
@@ -596,7 +615,7 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
                     id: 0,
                     owner: 0,
                     rating: 0,
-                    #(#fields: default(),)*
+                    #(#field_inits,)*
                 }
             }
         }
@@ -672,6 +691,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
         let unpack_links_impl = generate_unpack_links_impl(node);
         let var_methods = generate_var_methods(node);
         let var_accessor_methods = generate_var_accessor_methods(node);
+        let history_methods = generate_history_methods(node);
 
         // Generate collect methods
         let collect_owned_ids_method = generate_collect_owned_ids_impl(node);
@@ -745,6 +765,7 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
             }
 
             #var_accessor_methods
+            #history_methods
         }
     });
 
@@ -1134,6 +1155,100 @@ pub fn generate_var_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
     }
 }
 
+// Generate history-related methods as separate impl block
+pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
+    let struct_name = &node.name;
+    let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
+
+    // Generate get_var_at method for time-based access
+    let get_var_at_arms: Vec<_> = var_fields
+        .iter()
+        .map(|f| {
+            let field_name = &f.name;
+            if f.link_type == LinkType::None {
+                let at_method_name = format_ident!("{}_at", field_name);
+                quote! {
+                    VarName::#field_name => Ok(self.#at_method_name(t).into())
+                }
+            } else {
+                quote! {
+                    VarName::#field_name => Ok(self.#field_name.clone().into())
+                }
+            }
+        })
+        .collect();
+
+    let get_var_at_impl = if !get_var_at_arms.is_empty() {
+        quote! {
+            pub fn get_var_at(&self, var: VarName, t: f32) -> NodeResult<VarValue> {
+                match var {
+                    #(#get_var_at_arms,)*
+                    _ => Err(NodeError::custom(format!("Variable {:?} not found", var))),
+                }
+            }
+        }
+    } else {
+        // For nodes without var fields, just call get_var (which will also fail, but maintains consistency)
+        quote! {
+            pub fn get_var_at(&self, var: VarName, _t: f32) -> NodeResult<VarValue> {
+                self.get_var(var)
+            }
+        }
+    };
+
+    // Generate set_var_with_history method for battle contexts
+    let set_var_history_arms: Vec<_> = var_fields
+        .iter()
+        .filter_map(|f| {
+            let field_name = &f.name;
+
+            // Only add history tracking for non-link vars
+            if f.link_type == LinkType::None {
+                let history_field_name = format_ident!("{}_history", field_name);
+                let field_type = generate_field_type(f);
+                Some(quote! {
+                    VarName::#field_name => {
+                        let new_value: #field_type = value.try_into().map_err(|_| NodeError::custom("Value conversion failed"))?;
+                        if self.#field_name != new_value {
+                            self.#field_name = new_value.clone();
+                            self.#history_field_name.push((t, new_value));
+                        }
+                        Ok(())
+                    }
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let set_var_with_history_impl = if !set_var_history_arms.is_empty() {
+        quote! {
+            pub fn set_var_with_history(&mut self, var: VarName, value: VarValue, t: f32) -> NodeResult<()> {
+                match var {
+                    #(#set_var_history_arms,)*
+                    _ => self.set_var(var, value),
+                }
+            }
+        }
+    } else {
+        // For nodes without history tracking, just delegate to set_var
+        quote! {
+            pub fn set_var_with_history(&mut self, var: VarName, value: VarValue, _t: f32) -> NodeResult<()> {
+                self.set_var(var, value)
+            }
+        }
+    };
+
+    // Always generate impl block since we always have get_var_at now
+    quote! {
+        impl #struct_name {
+            #get_var_at_impl
+            #set_var_with_history_impl
+        }
+    }
+}
+
 pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
     let var_fields: Vec<_> = node.fields.iter().filter(|f| f.is_var).collect();
 
@@ -1149,29 +1264,46 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
         .map(|f| {
             let field_name = &f.name;
             let field_type = generate_field_type(f);
-            let get_method_name = format_ident!("{}_get", field_name);
-            let set_method_name = format_ident!("{}_set", field_name);
-            let ctx_get_method_name = format_ident!("{}_ctx_get", field_name);
             let var_name = format_ident!("{}", field_name);
 
-            quote! {
-                #allow_attrs
-                pub fn #get_method_name(&self) -> #field_type {
-                    self.#field_name.clone()
-                }
+            // Generate time-based accessor for non-link vars
+            let time_accessor = if f.link_type == LinkType::None {
+                let at_method_name = format_ident!("{}_at", field_name);
+                let history_field_name = format_ident!("{}_history", field_name);
+                let field_type_raw: proc_macro2::TokenStream = f.raw_type.parse().unwrap_or_else(|_| quote! { String });
+                quote! {
+                    #allow_attrs
+                    pub fn #at_method_name(&self, t: f32) -> #field_type_raw {
+                        // If no history or time is before first entry, return current value
+                        if self.#history_field_name.is_empty() || t < 0.0 {
+                            return self.#field_name.clone();
+                        }
 
-                #allow_attrs
-                pub fn #ctx_get_method_name<S: ContextSource>(&self, ctx: &Context<S>) -> #field_type {
-                    if let Ok(value) = ctx.source().get_var(self.id(), VarName::#var_name) {
-                        return value.into();
+                        // Binary search for the right time point
+                        let mut i = match self.#history_field_name.binary_search_by(|(hist_t, _)| hist_t.total_cmp(&t)) {
+                            Ok(idx) => idx,
+                            Err(idx) => {
+                                if idx == 0 {
+                                    return self.#field_name.clone();  // Before all history
+                                }
+                                idx - 1
+                            }
+                        };
+
+                        // Find the most recent change at or before time t
+                        while i + 1 < self.#history_field_name.len() && self.#history_field_name[i + 1].0 <= t {
+                            i += 1;
+                        }
+
+                        self.#history_field_name[i].1.clone()
                     }
-                    self.#field_name.clone()
                 }
+            } else {
+                quote! {}
+            };
 
-                #allow_attrs
-                pub fn #set_method_name(&mut self, value: #field_type) {
-                    self.#field_name = value;
-                }
+            quote! {
+                #time_accessor
             }
         })
         .collect();
@@ -1353,6 +1485,17 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
         }
     });
 
+    // Generate history field initializations for var fields
+    let history_fields = node.fields.iter().filter_map(|field| {
+        if field.is_var && field.link_type == LinkType::None {
+            let field_name = &field.name;
+            let history_field_name = format_ident!("{}_history", field_name);
+            Some(quote! { #history_field_name: Vec::new() })
+        } else {
+            None
+        }
+    });
+
     let deserialize_fields = data_fields.iter().enumerate().map(|(i, field)| {
         let field_name = &field.name;
         let index = syn::Index::from(i);
@@ -1383,7 +1526,8 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                         owner: 0,
                         rating: 0,
                         #field_name: value,
-                        #(#other_fields),*
+                        #(#other_fields,)*
+                        #(#history_fields,)*
                     })
                 }
             }
@@ -1418,8 +1562,9 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                         id: 0,
                         owner: 0,
                         rating: 0,
-                        #(#deserialize_fields),*,
-                        #(#other_fields),*
+                        #(#deserialize_fields,)*
+                        #(#other_fields,)*
+                        #(#history_fields,)*
                     })
                 }
             }

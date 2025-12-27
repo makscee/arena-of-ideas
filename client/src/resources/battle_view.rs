@@ -166,7 +166,7 @@ impl<'a> BattleCameraBuilder<'a> {
                         .next()
                         .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                     ctx.with_status(id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
@@ -192,7 +192,7 @@ impl<'a> BattleCameraBuilder<'a> {
                         continue;
                     };
                     ctx.with_owner(unit.id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
@@ -219,7 +219,7 @@ impl<'a> BattleCameraBuilder<'a> {
                         .next()
                         .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                     ctx.with_owner(id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
                             return Ok(());
                         }
                         let rect = cam.rect_from_context(ctx).track()?;
@@ -455,7 +455,7 @@ impl BattleView {
         let pos = context
             .get_var(VarName::position)
             .get_vec2()
-            .track()?
+            .unwrap_or_default()
             .to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))

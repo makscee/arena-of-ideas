@@ -63,6 +63,7 @@ impl match_sell_unit for super::RemoteReducers {
         MatchSellUnitCallbackId(self.imp.on_reducer(
             "match_sell_unit",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

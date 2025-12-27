@@ -63,6 +63,7 @@ impl content_downvote_node for super::RemoteReducers {
         ContentDownvoteNodeCallbackId(self.imp.on_reducer(
             "content_downvote_node",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

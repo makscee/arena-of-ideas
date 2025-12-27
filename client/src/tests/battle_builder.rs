@@ -23,9 +23,9 @@ impl TestBuilder {
     }
 
     fn init_test_logging() {
-        unsafe {
-            std::env::set_var("RUST_BACKTRACE", "1");
-        }
+        // unsafe {
+        //     std::env::set_var("RUST_BACKTRACE", "1");
+        // }
         static INIT: OnceLock<()> = OnceLock::new();
         INIT.get_or_init(|| {
             struct TestLogger;

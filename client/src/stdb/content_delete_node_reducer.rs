@@ -63,6 +63,7 @@ impl content_delete_node for super::RemoteReducers {
         ContentDeleteNodeCallbackId(self.imp.on_reducer(
             "content_delete_node",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

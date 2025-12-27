@@ -65,6 +65,7 @@ impl set_password for super::RemoteReducers {
         SetPasswordCallbackId(self.imp.on_reducer(
             "set_password",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

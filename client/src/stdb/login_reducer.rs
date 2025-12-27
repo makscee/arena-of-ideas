@@ -64,6 +64,7 @@ impl login for super::RemoteReducers {
         LoginCallbackId(self.imp.on_reducer(
             "login",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

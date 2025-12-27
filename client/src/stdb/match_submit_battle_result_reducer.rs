@@ -69,6 +69,7 @@ impl match_submit_battle_result for super::RemoteReducers {
         MatchSubmitBattleResultCallbackId(self.imp.on_reducer(
             "match_submit_battle_result",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

@@ -59,6 +59,7 @@ impl admin_daily_update for super::RemoteReducers {
         AdminDailyUpdateCallbackId(self.imp.on_reducer(
             "admin_daily_update",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

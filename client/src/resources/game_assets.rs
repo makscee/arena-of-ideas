@@ -118,12 +118,23 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     let unit_rep_code = include_str!("../../../assets/ron/unit_rep.rhai");
-    let unit_rep = NUnitRepresentation::new(next_id(), 0, Material::new(unit_rep_code.to_string()));
+    let unit_rep = NUnitRepresentation::new(
+        next_id(),
+        0,
+        default(),
+        true,
+        Material::new(unit_rep_code.to_string()),
+    );
     UNIT_REP.set(unit_rep).unwrap();
 
     let status_rep_code = include_str!("../../../assets/ron/status_rep.rhai");
-    let status_rep =
-        NStatusRepresentation::new(next_id(), 0, Material::new(status_rep_code.to_string()));
+    let status_rep = NStatusRepresentation::new(
+        next_id(),
+        0,
+        default(),
+        true,
+        Material::new(status_rep_code.to_string()),
+    );
     STATUS_REP.set(status_rep).unwrap();
     let mut animations = HashMap::default();
     if let Some(anim_dir) = rhai_assets().get_dir("animation") {

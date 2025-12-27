@@ -59,6 +59,7 @@ impl match_cancel_fusion for super::RemoteReducers {
         MatchCancelFusionCallbackId(self.imp.on_reducer(
             "match_cancel_fusion",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

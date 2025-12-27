@@ -5,17 +5,17 @@
 //! ## Reading Nodes
 //! - Load nodes from context by reference using `ctx.load::<NodeType>(id)?`
 //! - Access inner nodes with generated `*_ref()` methods that can be chained with `?`
-//! - For var fields, use `NodeStateHistory::find_var(ctx, var, entity)` or `ctx.get_var(var)`
+//! - For var fields, use `ctx.get_var(var)` which now uses built-in node history
 //!
 //! ## Editing Nodes
 //! 1. Get owned node value (can clone a loaded reference): `let mut node = ctx.load::<NodeType>(id)?.clone()`
 //! 2. Edit fields with generated `set_*()` methods for data fields or `set_var(var, value)` for var fields
-//! 3. Save the node with `node.save(ctx)?` - this calls `set_dirty()` and updates NodeStateHistory
+//! 3. Save the node with `node.save(ctx)?` - this calls `set_dirty()` and updates history in nodes
 //!
 //! ## Var Fields
-//! - All var field operations go through context and NodeStateHistory for battle simulation variants
+//! - All var field operations go through context for battle simulation variants
 //! - Saving updates history for var fields automatically
-//! - Use `NodeStateHistory::get_at(t, var)` for time-based var retrieval in simulations
+//! - Use time-based accessors like `node.hp_at(t)` for time-based var retrieval in simulations
 
 use rand_chacha::rand_core::SeedableRng;
 
@@ -317,7 +317,7 @@ impl BattleAction {
                 BattleAction::death(a) => {
                     let position = ctx
                         .with_owner(*a, |context| context.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("death_vfx")
                             .with_var(VarName::position, position)
@@ -330,7 +330,9 @@ impl BattleAction {
                     let owner_pos = ctx
                         .get_var_inherited(*a, VarName::position)
                         .unwrap_or_default();
-                    let target_pos = ctx.get_var_inherited(*b, VarName::position).track()?;
+                    let target_pos = ctx
+                        .get_var_inherited(*b, VarName::position)
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -376,10 +378,10 @@ impl BattleAction {
                 BattleAction::heal(a, b, x) => {
                     let owner_pos = ctx
                         .with_owner(*a, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     let target_pos = ctx
                         .with_owner(*b, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -698,10 +700,8 @@ impl BattleSimulation {
             for (var, value) in vars {
                 let (value, new_actions) = Event::UpdateStat(var).update_value(ctx, value, id);
                 actions.extend(new_actions);
-                let t = ctx.t().to_not_found()?;
-                let entity = id.entity(ctx)?;
-                let mut state = NodeStateHistory::load_mut(entity, ctx)?;
-                state.insert(t, 0.0, var, value);
+                // History is now tracked directly in nodes via set_var
+                ctx.source_mut().set_var(id, var, value)?;
             }
             process_actions(ctx, actions);
 
@@ -729,6 +729,9 @@ impl BattleSimulation {
             BattleText::Turn,
             format!("[tw Turn] [yellow [b {}]]", sim.turns),
         );
+
+        let sync_actions = ctx.battle()?.slots_sync();
+        process_actions(ctx, sync_actions);
 
         let sim = ctx.battle()?;
         if !sim.units_left.is_empty() && !sim.units_right.is_empty() {
@@ -771,8 +774,6 @@ impl BattleSimulation {
         process_actions(ctx, actions);
         let a = BattleSimulation::death_check(ctx)?;
         process_actions(ctx, a);
-        let sync_actions = ctx.battle()?.slots_sync();
-        process_actions(ctx, sync_actions);
         BattleSimulation::send_event(ctx, Event::TurnEnd)?;
         Ok(())
     }
@@ -955,11 +956,19 @@ impl BattleSimulation {
 
         ctx.add_link(target, new_status_id)?;
 
-        let mut state = NodeStateHistory::load_mut(entity, ctx)?;
-        state.insert(0.0, 0.0, VarName::visible, false.into());
-        state.insert(t, 0.0, VarName::visible, true.into());
-        state.insert(t, 0.0, VarName::color, color.into());
-        state.insert(t, 0.0, VarName::index, new_index.into());
+        // Use set_var to track history in nodes directly
+        let current_t = ctx.battle_mut()?.duration;
+        ctx.battle_mut()?.duration = 0.0;
+        ctx.source_mut()
+            .set_var(new_status_id, VarName::visible, false.into())?;
+        ctx.battle_mut()?.duration = t;
+        ctx.source_mut()
+            .set_var(new_status_id, VarName::visible, true.into())?;
+        ctx.battle_mut()?.duration = current_t;
+        ctx.source_mut()
+            .set_var(new_status_id, VarName::color, color.into())?;
+        ctx.source_mut()
+            .set_var(new_status_id, VarName::index, new_index.into())?;
         BattleSimulation::send_event(ctx, Event::StatusApplied(caster, target, new_status_id))?;
         BattleSimulation::send_event(ctx, Event::StatusGained(caster, target))?;
         Ok(())

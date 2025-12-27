@@ -61,6 +61,7 @@ impl admin_edit_nodes for super::RemoteReducers {
         AdminEditNodesCallbackId(self.imp.on_reducer(
             "admin_edit_nodes",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

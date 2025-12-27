@@ -99,6 +99,10 @@ pub struct NStatusBehavior {
 #[derive(Node)]
 #[content]
 pub struct NStatusRepresentation {
+    #[var]
+    pub position: Vec2,
+    #[var]
+    pub visible: bool,
     pub material: Material,
 }
 
@@ -188,10 +192,18 @@ pub struct NUnitStats {
 #[derive(Node)]
 #[content]
 pub struct NUnitRepresentation {
+    #[var]
+    pub position: Vec2,
+    #[var]
+    pub visible: bool,
     pub material: Material,
 }
 
 #[derive(Node)]
 pub struct NRepresentation {
+    #[var]
+    pub position: Vec2,
+    #[var]
+    pub visible: bool,
     pub material: Material,
 }

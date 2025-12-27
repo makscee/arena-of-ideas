@@ -59,6 +59,7 @@ impl match_shop_reroll for super::RemoteReducers {
         MatchShopRerollCallbackId(self.imp.on_reducer(
             "match_shop_reroll",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

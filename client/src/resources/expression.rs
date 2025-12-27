@@ -45,9 +45,8 @@ impl ExpressionImpl for Expression {
             Expression::var_or_zero(var) => ctx.owner_var(*var).or_else(|_| Ok(0.into())),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;
-                NodeStateHistory::load(id.entity(ctx)?, ctx)?
-                    .get(*var)
-                    .to_e(*var)
+                // Use context source's get_var which now uses built-in node history
+                ctx.source().get_var(id, *var)
             }
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),
