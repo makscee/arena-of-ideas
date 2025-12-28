@@ -14,7 +14,6 @@ mod painter;
 mod rarity;
 pub mod reaction;
 mod trigger;
-mod tween;
 
 use super::*;
 
@@ -34,4 +33,3 @@ pub use painter::*;
 pub use rarity::*;
 pub use reaction::*;
 pub use trigger::*;
-pub use tween::*;

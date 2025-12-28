@@ -1,5 +1,4 @@
 use super::*;
-use crate::ui::render::composers::recursive::{RecursiveField, RecursiveFieldMut};
 
 mod features_impl;
 mod frecursive;
@@ -35,7 +34,7 @@ pub trait FIcon {
 
 /// Feature for types that can provide a visual representation
 pub trait FRepresentation {
-    fn representation(&self, ctx: &ClientContext) -> Result<Material, NodeError>;
+    fn representation(&self, ctx: &ClientContext) -> Result<RhaiScript<PainterAction>, NodeError>;
 }
 
 /// Feature for types that can provide stats/variables
@@ -55,73 +54,10 @@ pub trait FInfo {
     fn info(&self, ctx: &ClientContext) -> Cstr;
 }
 
-/// Feature for types that can be recursively traversed
-pub trait FRecursive {
-    /// Get inner fields for read-only traversal
-    fn get_inner_fields(&self) -> Vec<RecursiveField<'_>> {
-        vec![]
-    }
-
-    /// Get mutable inner fields for editing
-    fn get_inner_fields_mut(&mut self) -> Vec<RecursiveFieldMut<'_>> {
-        vec![]
-    }
-
-    /// Convert to a recursive value for unified handling
-    fn to_recursive_value(&self) -> RecursiveValue<'_>;
-
-    /// Convert to a mutable recursive value for unified handling
-    fn to_recursive_value_mut(&mut self) -> RecursiveValueMut<'_>;
-
-    fn move_inner_fields_from(&mut self, other: &mut impl FRecursive) {
-        self.get_inner_fields_mut().move_from(other);
-    }
-}
-
 /// Feature for types that can be displayed
 pub trait FDisplay {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
-
-pub trait FDisplayRecursive: FRecursive + FDisplay {
-    fn display_recursive(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.scope(|ui| {
-            ui.spacing_mut().item_spacing.x = 0.0;
-            let mut resp = self.display(ctx, ui);
-            for field in self.get_inner_fields() {
-                recursive_value_match!(field.value, v, {
-                    resp |= "[tw (]".cstr().label(ui);
-                    resp |= v.display_recursive(ctx, ui);
-                    resp |= "[tw )]".cstr().label(ui);
-                });
-            }
-            resp
-        })
-        .inner
-    }
-}
-impl<T: FRecursive + FDisplay> FDisplayRecursive for T {}
-
-pub trait FTitleRecursive: FRecursive + FTitle {
-    fn title_recursive(&self, ctx: &ClientContext) -> Cstr {
-        let mut inner = Vec::new();
-        for field in self.get_inner_fields() {
-            recursive_value_match!(field.value, v, {
-                inner.push(v.title_recursive(ctx));
-            });
-        }
-        if inner.is_empty() {
-            self.title(ctx)
-        } else {
-            format!(
-                "{}[tw (]{}[tw )]",
-                self.title(ctx),
-                inner.into_iter().join("[tw ,]")
-            )
-        }
-    }
-}
-impl<T: FRecursive + FTitle> FTitleRecursive for T {}
 
 /// Feature for types that can be edited
 pub trait FEdit {

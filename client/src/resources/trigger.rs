@@ -99,7 +99,7 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
             }
-            Event::StatusGained(caster, target) => {
+            Event::StatusGained(_, target) => {
                 let Some(owner) = get_owner_unit(ctx)? else {
                     return Ok(false);
                 };

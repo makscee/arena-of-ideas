@@ -99,8 +99,7 @@ fn inject_house_actions(unit: &mut NUnit, house: &NHouse) -> NodeResult<()> {
                 "painter.Color {{ r: {}, g: {}, b: {}, a: 255 }};\n",
                 r, g, b
             );
-            representation.material.0.code =
-                format!("{}{}", color_code, representation.material.0.code);
+            representation.script.code = format!("{}{}", color_code, representation.script.code);
         }
     }
 
@@ -676,9 +675,9 @@ fn create_fused_unit(
     let source_representation = source_behavior_node.representation.load_node(ctx)?;
     let target_representation = target_behavior_node.representation.load_node(ctx)?;
 
-    new_representation.material.0.code = format!(
+    new_representation.script.code = format!(
         "{}\n{}",
-        target_representation.material.0.code, source_representation.material.0.code
+        target_representation.script.code, source_representation.script.code
     );
     ctx.source_mut().commit(new_representation)?;
 

@@ -343,10 +343,8 @@ impl BattleAction {
                         Event::ChangeOutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
-                    debug!("Before {x}");
                     let (value, actions) =
                         Event::ChangeIncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
-                    debug!("After {value}");
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {

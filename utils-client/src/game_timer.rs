@@ -7,6 +7,7 @@ pub static GAME_TIMER: OnceCell<Mutex<GameTimer>> = OnceCell::new();
 #[derive(Debug)]
 pub struct GameTimer {
     pub playback_speed: f32,
+    pub battle_head: f32,
     play_head: f32,
     insert_head: f32,
     end: f32,
@@ -27,6 +28,7 @@ impl Default for GameTimer {
             paused: false,
             last_delta: 0.0,
             elapsed: 0.0,
+            battle_head: 0.0,
         }
     }
 }

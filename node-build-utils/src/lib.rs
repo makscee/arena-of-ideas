@@ -229,14 +229,6 @@ pub fn validate_parent_relationships(
     }
 
     // Check that content nodes only have one content parent
-    for (child_name, parents) in &content_parent_map {
-        if parents.len() > 1 {
-            return Err(format!(
-                "Content node {} has multiple content parents: {:?}. A content node can only have one content parent.",
-                child_name, parents
-            ));
-        }
-    }
 
     Ok(())
 }
@@ -514,12 +506,15 @@ pub fn generate_new(node: &NodeInfo) -> TokenStream {
 
     let field_assignments = data_fields.iter().flat_map(|field| {
         let field_name = &field.name;
-        let mut assignments = vec![quote! { #field_name, }];
+        let mut assignments = vec![];
 
         // Add history field initialization for #[var] fields
         if field.is_var && field.link_type == LinkType::None {
             let history_field_name = format_ident!("{}_history", field_name);
-            assignments.push(quote! { #history_field_name: Vec::new(), });
+            assignments.push(quote! { #field_name: #field_name.clone(), });
+            assignments.push(quote! { #history_field_name: History::new(#field_name.clone()), });
+        } else {
+            assignments.push(quote! { #field_name, });
         }
 
         assignments
@@ -602,7 +597,7 @@ pub fn generate_default_impl(node: &NodeInfo) -> TokenStream {
         // Add history field initialization for #[var] fields
         if f.is_var && f.link_type == LinkType::None {
             let history_field_name = format_ident!("{}_history", field_name);
-            inits.push(quote! { #history_field_name: Vec::new() });
+            inits.push(quote! { #history_field_name: History::new(default()) });
         }
 
         inits
@@ -764,7 +759,9 @@ pub fn generate_node_impl(nodes: &[NodeInfo]) -> TokenStream {
                 #update_link_references_impl
             }
 
+            #allow_attrs
             #var_accessor_methods
+            #allow_attrs
             #history_methods
         }
     });
@@ -1196,7 +1193,7 @@ pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         }
     };
 
-    // Generate set_var_with_history method for battle contexts
+    // Generate set_var_history method for battle contexts
     let set_var_history_arms: Vec<_> = var_fields
         .iter()
         .filter_map(|f| {
@@ -1209,10 +1206,7 @@ pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
                 Some(quote! {
                     VarName::#field_name => {
                         let new_value: #field_type = value.try_into().map_err(|_| NodeError::custom("Value conversion failed"))?;
-                        if self.#field_name != new_value {
-                            self.#field_name = new_value.clone();
-                            self.#history_field_name.push((t, new_value));
-                        }
+                        self.#history_field_name.insert(t, new_value);
                         Ok(())
                     }
                 })
@@ -1222,9 +1216,9 @@ pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
         })
         .collect();
 
-    let set_var_with_history_impl = if !set_var_history_arms.is_empty() {
+    let set_var_history_impl = if !set_var_history_arms.is_empty() {
         quote! {
-            pub fn set_var_with_history(&mut self, var: VarName, value: VarValue, t: f32) -> NodeResult<()> {
+            pub fn set_var_history(&mut self, var: VarName, value: VarValue, t: f32) -> NodeResult<()> {
                 match var {
                     #(#set_var_history_arms,)*
                     _ => self.set_var(var, value),
@@ -1234,7 +1228,7 @@ pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
     } else {
         // For nodes without history tracking, just delegate to set_var
         quote! {
-            pub fn set_var_with_history(&mut self, var: VarName, value: VarValue, _t: f32) -> NodeResult<()> {
+            pub fn set_var_history(&mut self, var: VarName, value: VarValue, _t: f32) -> NodeResult<()> {
                 self.set_var(var, value)
             }
         }
@@ -1244,7 +1238,7 @@ pub fn generate_history_methods(node: &NodeInfo) -> proc_macro2::TokenStream {
     quote! {
         impl #struct_name {
             #get_var_at_impl
-            #set_var_with_history_impl
+            #set_var_history_impl
         }
     }
 }
@@ -1263,39 +1257,22 @@ pub fn generate_var_accessor_methods(node: &NodeInfo) -> proc_macro2::TokenStrea
         .iter()
         .map(|f| {
             let field_name = &f.name;
-            let field_type = generate_field_type(f);
-            let var_name = format_ident!("{}", field_name);
 
             // Generate time-based accessor for non-link vars
             let time_accessor = if f.link_type == LinkType::None {
                 let at_method_name = format_ident!("{}_at", field_name);
+                let ease_method_name = format_ident!("{}_at_ease", field_name);
                 let history_field_name = format_ident!("{}_history", field_name);
                 let field_type_raw: proc_macro2::TokenStream = f.raw_type.parse().unwrap_or_else(|_| quote! { String });
                 quote! {
                     #allow_attrs
                     pub fn #at_method_name(&self, t: f32) -> #field_type_raw {
-                        // If no history or time is before first entry, return current value
-                        if self.#history_field_name.is_empty() || t < 0.0 {
-                            return self.#field_name.clone();
-                        }
+                        self.#history_field_name.value_at(t).unwrap_or_else(|| self.#field_name.clone())
+                    }
 
-                        // Binary search for the right time point
-                        let mut i = match self.#history_field_name.binary_search_by(|(hist_t, _)| hist_t.total_cmp(&t)) {
-                            Ok(idx) => idx,
-                            Err(idx) => {
-                                if idx == 0 {
-                                    return self.#field_name.clone();  // Before all history
-                                }
-                                idx - 1
-                            }
-                        };
-
-                        // Find the most recent change at or before time t
-                        while i + 1 < self.#history_field_name.len() && self.#history_field_name[i + 1].0 <= t {
-                            i += 1;
-                        }
-
-                        self.#history_field_name[i].1.clone()
+                    #allow_attrs
+                    pub fn #ease_method_name(&self, t: f32, tween: Tween) -> #field_type_raw {
+                        self.#history_field_name.ease(t, tween).unwrap_or_else(|| self.#field_name.clone())
                     }
                 }
             } else {
@@ -1475,32 +1452,13 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
         quote! { &self.#field_name }
     });
 
-    // Generate all other fields with default values for deserialization
-    let other_fields = node.fields.iter().filter_map(|field| {
-        if data_fields.iter().any(|df| df.name == field.name) {
-            None // Skip data fields
-        } else {
+    let tuple_field_names: Vec<_> = data_fields
+        .iter()
+        .map(|field| {
             let field_name = &field.name;
-            Some(quote! { #field_name: Default::default() })
-        }
-    });
-
-    // Generate history field initializations for var fields
-    let history_fields = node.fields.iter().filter_map(|field| {
-        if field.is_var && field.link_type == LinkType::None {
-            let field_name = &field.name;
-            let history_field_name = format_ident!("{}_history", field_name);
-            Some(quote! { #history_field_name: Vec::new() })
-        } else {
-            None
-        }
-    });
-
-    let deserialize_fields = data_fields.iter().enumerate().map(|(i, field)| {
-        let field_name = &field.name;
-        let index = syn::Index::from(i);
-        quote! { #field_name: tuple.#index }
-    });
+            quote! { #field_name }
+        })
+        .collect();
 
     if data_fields.len() == 1 {
         // Single value - serialize as single value, not tuple
@@ -1520,15 +1478,8 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                 where
                     D: serde::Deserializer<'de>,
                 {
-                    let value = serde::Deserialize::deserialize(deserializer)?;
-                    Ok(Self {
-                        id: 0,
-                        owner: 0,
-                        rating: 0,
-                        #field_name: value,
-                        #(#other_fields,)*
-                        #(#history_fields,)*
-                    })
+                    let #field_name = serde::Deserialize::deserialize(deserializer)?;
+                    Ok(Self::new(0, 0, #field_name))
                 }
             }
         }
@@ -1558,14 +1509,8 @@ pub fn generate_manual_serialize_impl(node: &NodeInfo) -> proc_macro2::TokenStre
                     D: serde::Deserializer<'de>,
                 {
                     let tuple: (#(#tuple_types),*) = serde::Deserialize::deserialize(deserializer)?;
-                    Ok(Self {
-                        id: 0,
-                        owner: 0,
-                        rating: 0,
-                        #(#deserialize_fields,)*
-                        #(#other_fields,)*
-                        #(#history_fields,)*
-                    })
+                    let (#(#tuple_field_names,)*) = tuple;
+                    Ok(Self::new(0, 0, #(#tuple_field_names),*))
                 }
             }
         }
@@ -1801,5 +1746,6 @@ pub fn generate_unit_check_functions(context_type: &str) -> proc_macro2::TokenSt
                 Ok(self.check_fusible(ctx)? && other.check_fusible(ctx)?)
             }
         }
+
     }
 }

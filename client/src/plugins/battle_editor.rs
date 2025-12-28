@@ -27,7 +27,7 @@ impl BattleEditorPlugin {
                 )
                 .filled_slot_action(
                     "[red Delete Unit]".to_string(),
-                    |team_id, unit_id, slot_index, _ctx, _ui| {
+                    |team_id, _, slot_index, _ctx, _ui| {
                         op(move |world| {
                             let mut state = world.resource_mut::<BattleEditorState>();
                             let team = if team_id == state.left_team.id {
@@ -66,7 +66,7 @@ impl BattleEditorPlugin {
                             // Add to first house or create one
                             if let Ok(houses) = team.houses.get_mut() {
                                 if houses.is_empty() {
-                                    let mut house = NHouse::placeholder();
+                                    let house = NHouse::placeholder();
                                     houses.push(house);
                                 }
                             }

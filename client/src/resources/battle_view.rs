@@ -84,7 +84,6 @@ impl<'a> BattleCameraBuilder<'a> {
 
     pub fn show(mut self, data: &mut BattleData, ui: &mut Ui) {
         let mut should_show_end_screen = false;
-
         if data.playing {
             let duration = data
                 .source
@@ -156,7 +155,7 @@ impl<'a> BattleCameraBuilder<'a> {
                 let world = ctx.world_mut()?;
 
                 for entity in world
-                    .query_filtered::<Entity, (With<NStatusRepresentation>, Without<NHouse>)>()
+                    .query_filtered::<Entity, (With<NRepresentation>, Without<NHouse>)>()
                     .iter(world)
                     .collect_vec()
                 {
@@ -166,16 +165,12 @@ impl<'a> BattleCameraBuilder<'a> {
                         .next()
                         .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                     ctx.with_status(id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());
                         }
-                        let rect = cam.rect_from_context(ctx).track()?;
-                        MaterialPaint::paint(
-                            &ctx.load::<NStatusRepresentation>(id).track()?.material,
-                            rect,
-                            ctx,
-                            ui,
-                        );
+                        let rep = ctx.load::<NRepresentation>(id).track()?;
+                        let rect = cam.rect_from_rep(&rep).track()?;
+                        rep.paint(rect, ctx, ui);
                         Ok(())
                     })
                     .notify_error_op();
@@ -192,16 +187,16 @@ impl<'a> BattleCameraBuilder<'a> {
                         continue;
                     };
                     ctx.with_owner(unit.id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());
                         }
-                        let rect = cam.rect_from_context(ctx).track()?;
                         if let Ok(behavior) = unit.behavior.load_node(ctx) {
                             if let Ok(rep) = behavior.representation.load_node(ctx) {
-                                MaterialPaint::paint(&rep.material, rect, ctx, ui);
+                                let rect = cam.rect_from_rep(&rep).track()?;
+                                unit.show_status_tags(rect, ctx, ui).ui(ui);
+                                rep.paint(rect, ctx, ui);
                             }
                         }
-                        unit.show_status_tags(rect, ctx, ui).ui(ui);
                         Ok(())
                     })
                     .ui(ui);
@@ -219,16 +214,12 @@ impl<'a> BattleCameraBuilder<'a> {
                         .next()
                         .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
                     ctx.with_owner(id, |ctx| {
-                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() && false {
+                        if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());
                         }
-                        let rect = cam.rect_from_context(ctx).track()?;
-                        MaterialPaint::paint(
-                            &ctx.load::<NRepresentation>(id).track()?.material,
-                            rect,
-                            ctx,
-                            ui,
-                        );
+                        let rep = ctx.load::<NRepresentation>(id).track()?;
+                        let rect = cam.rect_from_rep(&rep).track()?;
+                        rep.paint(rect, ctx, ui);
                         Ok(())
                     })
                     .track()
@@ -248,6 +239,7 @@ impl<'a> BattleCameraBuilder<'a> {
             self.render_end_screen(ui, result);
             self.render_end_screen_with_actions(ui, data);
         }
+        gt().battle_head = data.t;
     }
 
     fn render_end_screen(&self, ui: &mut Ui, result: bool) {
@@ -451,11 +443,9 @@ impl BattleView {
         self.pos = default();
     }
 
-    fn rect_from_context(&self, context: &ClientContext) -> Result<Rect, NodeError> {
-        let pos = context
-            .get_var(VarName::position)
-            .get_vec2()
-            .unwrap_or_default()
+    fn rect_from_rep(&self, rep: &NRepresentation) -> Result<Rect, NodeError> {
+        let pos = rep
+            .position_at_ease(gt().battle_head, Tween::QuartOut)
             .to_pos2();
         let pos = self.rect_pos(pos);
         Ok(Rect::from_center_size(pos, self.u().v2() * 2.0))
@@ -516,7 +506,7 @@ impl BattleView {
                                 ui.memory(|mem| mem.data.get_temp::<(u64, u64, i32)>(ui.id()))
                             {
                                 if response.hovered() && ui.input(|i| i.pointer.any_released()) {
-                                    let (from_team, from_unit, from_slot) = drop_target;
+                                    let (_, from_unit, from_slot) = drop_target;
                                     on_drag_drop(from_unit, from_slot, unit.id, slot, ctx);
                                     ui.memory_mut(|mem| {
                                         mem.data.remove::<(u64, u64, i32)>(ui.id());

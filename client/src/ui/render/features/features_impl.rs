@@ -312,7 +312,7 @@ impl FDisplay for Expression {
 
 impl FEdit for Expression {
     fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        let (old_value, mut response) = Selector::ui_enum(self, ui);
+        let (_, mut response) = Selector::ui_enum(self, ui);
         const DEBUG_TXT: &str = "🪲 Debug";
         const SCALE_TXT: &str = "⚖️ Scale";
         let menu_response = self
@@ -333,9 +333,6 @@ impl FEdit for Expression {
         } else if let Some(value) = menu_response.pasted() {
             *self = value.clone();
             response.mark_changed();
-        }
-        if let Some(mut old_value) = old_value {
-            self.move_inner_fields_from(&mut old_value);
         }
         response
     }
@@ -394,7 +391,7 @@ impl FEdit for Target {
                     ui.horizontal(|ui| {
                         ui.label("Slot:");
                         let mut slot_i32 = *slot as i32;
-                        let r = DragValue::new(&mut slot_i32).clamp_range(0..=8).ui(ui);
+                        let r = DragValue::new(&mut slot_i32).range(0..=8).ui(ui);
                         *slot = slot_i32 as u8;
                         r
                     })
@@ -405,7 +402,7 @@ impl FEdit for Target {
                     ui.horizontal(|ui| {
                         ui.label("Slot:");
                         let mut slot_i32 = *slot as i32;
-                        let r = DragValue::new(&mut slot_i32).clamp_range(0..=8).ui(ui);
+                        let r = DragValue::new(&mut slot_i32).range(0..=8).ui(ui);
                         *slot = slot_i32 as u8;
                         r
                     })
@@ -477,13 +474,7 @@ impl FDisplay for Action {
 
 impl FEdit for Action {
     fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        "[tw Action:]".cstr().label(ui);
-        self.as_recursive_mut(|_, ui, v| call_on_recursive_value_mut!(v, edit_self, ui, ctx))
-            .with_layout(RecursiveLayout::Tree { indent: 0.0 })
-            .compose(ctx, ui)
-    }
-    fn edit_self(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        let (old_value, mut response) = Selector::ui_enum(self, ui);
+        let (_, mut response) = Selector::ui_enum(self, ui);
         let menu_resp = self
             .as_empty_mut()
             .with_menu()
@@ -492,9 +483,6 @@ impl FEdit for Action {
             .compose_with_menu(ctx, ui);
         if let Some(value) = menu_resp.pasted() {
             *self = value.clone();
-        }
-        if let Some(mut old_val) = old_value {
-            self.move_inner_fields_from(&mut old_val);
         }
         fn house_selector(
             ui: &mut Ui,
@@ -567,27 +555,21 @@ impl FEdit for Action {
 }
 
 // PainterAction
-impl FTitle for Material {
+impl FTitle for RhaiScript<PainterAction> {
     fn title(&self, _: &ClientContext) -> Cstr {
         self.cstr()
     }
 }
 
-impl FDescription for Material {
+impl FDescription for RhaiScript<PainterAction> {
     fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
-        format!("Script with {} lines", self.0.code.lines().count())
+        format!("Script with {} lines", self.code.lines().count())
     }
 }
 
-impl FDisplay for Material {
+impl FDisplay for RhaiScript<PainterAction> {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
         self.paint_viewer(ctx, ui)
-    }
-}
-
-impl FEdit for Material {
-    fn edit(&mut self, ui: &mut Ui, ctx: &ClientContext) -> Response {
-        self.0.edit(ui, ctx)
     }
 }
 
@@ -602,11 +584,7 @@ impl FDescription for Behavior {
         format!(
             "{}:\n{}",
             self.trigger.cstr(),
-            self.effect
-                .actions
-                .iter()
-                .map(|a| a.title_recursive(ctx))
-                .join("\n")
+            self.effect.actions.iter().map(|a| a.title(ctx)).join("\n")
         )
     }
 }
@@ -1373,53 +1351,23 @@ impl FTag for NStatusBehavior {
     }
 }
 
-impl FDisplay for NStatusRepresentation {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.material.display(ctx, ui)
-    }
-}
-
-impl FTitle for NStatusRepresentation {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        "Status Representation".cstr()
-    }
-}
-
-impl FDescription for NStatusRepresentation {
-    fn description_cstr(&self, _: &ClientContext) -> Cstr {
-        self.material.cstr()
-    }
-}
-
-impl FStats for NStatusRepresentation {
+impl FStats for NRepresentation {
     fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
         vec![]
     }
 }
 
-impl FTag for NStatusRepresentation {
+impl FTag for NRepresentation {
     fn tag_name(&self, _: &ClientContext) -> Cstr {
         "Representation".cstr()
     }
 
     fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(self.material.cstr())
+        Some(self.script.cstr())
     }
 
     fn tag_color(&self, _: &ClientContext) -> Color32 {
         Color32::from_rgb(0, 128, 128)
-    }
-}
-
-impl FPlaceholder for NStatusRepresentation {
-    fn placeholder() -> Self {
-        NStatusRepresentation::new(
-            next_id(),
-            player_id(),
-            default(),
-            true,
-            Material::new("painter.circle(0.5);".to_string()),
-        )
     }
 }
 
@@ -1436,7 +1384,7 @@ impl FTitle for NTeam {
 }
 
 impl FDescription for NTeam {
-    fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
+    fn description_cstr(&self, _ctx: &ClientContext) -> Cstr {
         "Team description".to_owned()
     }
 }
@@ -1812,53 +1760,21 @@ impl FDisplay for NUnitBehavior {
     }
 }
 
-impl FTitle for NUnitRepresentation {
-    fn title(&self, _: &ClientContext) -> Cstr {
-        "Unit Representation".cstr()
-    }
-}
-
 impl FTitle for NRepresentation {
     fn title(&self, _: &ClientContext) -> Cstr {
         "Representation".cstr()
     }
 }
 
-impl FDescription for NUnitRepresentation {
+impl FDescription for NRepresentation {
     fn description_cstr(&self, ctx: &ClientContext) -> Cstr {
-        self.material.description_cstr(ctx)
-    }
-}
-
-impl FStats for NUnitRepresentation {
-    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
-        vec![]
-    }
-}
-
-impl FTag for NUnitRepresentation {
-    fn tag_name(&self, _: &ClientContext) -> Cstr {
-        "Material".cstr()
-    }
-
-    fn tag_value(&self, _: &ClientContext) -> Option<Cstr> {
-        Some(self.material.cstr())
-    }
-
-    fn tag_color(&self, _: &ClientContext) -> Color32 {
-        Color32::from_rgb(0, 128, 128)
-    }
-}
-
-impl FDisplay for NUnitRepresentation {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.material.display(ctx, ui)
+        self.script.description_cstr(ctx)
     }
 }
 
 impl FDisplay for NRepresentation {
     fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        self.material.display(ctx, ui)
+        self.script.display(ctx, ui)
     }
 }
 
@@ -1911,7 +1827,7 @@ impl FPlaceholder for NStatusBehavior {
             schema::Trigger::BattleStart,
             schema::RhaiScript::empty(),
         )
-        .with_representation(NStatusRepresentation::placeholder())
+        .with_representation(NRepresentation::placeholder())
     }
 }
 impl FPlaceholder for NTeamSlot {
@@ -1986,7 +1902,7 @@ impl FEdit for ShopSlot {
 }
 
 impl FEdit for CardKind {
-    fn edit(&mut self, ui: &mut Ui, _ctx: &ClientContext) -> Response {
+    fn edit(&mut self, _ui: &mut Ui, _ctx: &ClientContext) -> Response {
         // let (_, response) = Selector::ui_iter(self, ui);
         // response
         todo!()
@@ -2030,10 +1946,8 @@ impl FTitle for Vec<Box<PainterAction>> {
 }
 
 impl FDisplay for Vec<Box<PainterAction>> {
-    fn display(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        let mut response = format!("List ({})", self.len()).label(ui);
-        for item in self {}
-        response
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+        format!("List ({})", self.len()).label(ui)
     }
 }
 
@@ -2050,7 +1964,7 @@ impl FPlaceholder for NUnitBehavior {
             ),
         )
         .with_stats(NUnitStats::placeholder())
-        .with_representation(NUnitRepresentation::placeholder())
+        .with_representation(NRepresentation::placeholder())
     }
 }
 
@@ -2158,14 +2072,16 @@ impl FEdit for Colorix {
     }
 }
 
-impl FPlaceholder for NUnitRepresentation {
+impl FPlaceholder for NRepresentation {
     fn placeholder() -> Self {
-        NUnitRepresentation::new(
+        NRepresentation::new(
             next_id(),
             0,
             default(),
             true,
-            Material::new("painter.circle(0.5);".to_string()),
+            0.0,
+            0.0,
+            RhaiScript::new("painter.circle(0.5);".to_string()),
         )
     }
 }
@@ -2174,16 +2090,20 @@ impl FPlaceholder for NUnitRepresentation {
 // FCompactView Implementations
 // ============================================================================
 
-impl FCompactView for Material {
-    fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        let (rect, _) = ui.allocate_exact_size((LINE_HEIGHT * 2.0).v2(), Sense::click());
-        MaterialPaint::paint(self, rect, ctx, ui);
-    }
+// impl FCompactView for RhaiScript<PainterAction> {
+//     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
+//         let (rect, _) = ui.allocate_exact_size((LINE_HEIGHT * 2.0).v2(), Sense::click());
+//         let mut p = Painter::new(rect, ui.ctx());
+//         if let Ok(color) = ctx.get_var(VarName::color).get_color() {
+//             p.color = color;
+//         }
+//         self.paint(rect, ctx, &mut p, ui);
+//     }
 
-    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
-        ui.label(&self.0.code);
-    }
-}
+//     fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
+//         ui.label(&self.code);
+//     }
+// }
 
 impl FCompactView for NUnit {
     fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
@@ -2230,14 +2150,10 @@ impl FCompactView for NHouse {
     }
 }
 
-impl FCompactView for NUnitRepresentation {
-    fn render_compact(&self, ctx: &ClientContext, ui: &mut Ui) {
-        self.material.render_compact(ctx, ui);
-    }
+impl FCompactView for NRepresentation {
+    fn render_compact(&self, _ctx: &ClientContext, _ui: &mut Ui) {}
 
-    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
-        self.material.render_hover(ctx, ui);
-    }
+    fn render_hover(&self, _ctx: &ClientContext, _ui: &mut Ui) {}
 }
 
 impl FCompactView for NUnitBehavior {
@@ -2249,7 +2165,7 @@ impl FCompactView for NUnitBehavior {
         });
     }
 
-    fn render_hover(&self, ctx: &ClientContext, ui: &mut Ui) {
+    fn render_hover(&self, _ctx: &ClientContext, ui: &mut Ui) {
         ui.vertical(|ui| {
             ui.strong("Unit Behavior");
             ui.separator();
@@ -2401,13 +2317,13 @@ impl FPreview for NUnit {
     fn preview(&self, ctx: &ClientContext, ui: &mut Ui, rect: Rect) {
         ctx.exec_ref(|ctx| {
             let mat = if let Ok(behavior) = self.behavior.load_node(ctx) {
-                if let Ok(rep) = behavior.representation.load_node(ctx) {
-                    rep.material.clone()
+                if let Ok(rep) = behavior.representation.get() {
+                    rep.script.clone()
                 } else {
-                    unit_rep().material.clone()
+                    unit_rep().script.clone()
                 }
             } else {
-                unit_rep().material.clone()
+                unit_rep().script.clone()
             };
             MatRect::new(rect.size())
                 .add_mat(&mat, self.id)

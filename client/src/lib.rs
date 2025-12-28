@@ -106,8 +106,6 @@ pub fn run() {
             UiPlugin,
             LoginPlugin,
             GameStatePlugin,
-            NodeStatePlugin,
-            RepresentationPlugin,
             GameTimerPlugin,
             WindowPlugin,
             MatchPlugin,

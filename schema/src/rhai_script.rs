@@ -1,12 +1,11 @@
-use ecolor::Color32;
-use serde::{Deserialize, Serialize};
-use std::sync::{Arc, RwLock};
+use super::*;
 
 /// A Rhai script that can be compiled and executed to produce actions of type T
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RhaiScript<T> {
     pub code: String,
     pub description: String,
+    pub scope: HashMap<VarName, VarValue>,
     #[serde(skip)]
     compiled_ast: Arc<RwLock<Option<rhai::AST>>>,
     #[serde(skip)]
@@ -26,26 +25,20 @@ impl<T> PartialEq for RhaiScript<T> {
 impl<T> Default for RhaiScript<T> {
     fn default() -> Self {
         Self {
-            code: String::new(),
-            description: String::new(),
-            compiled_ast: Arc::new(RwLock::new(None)),
-            compile_error: Arc::new(RwLock::new(None)),
-            run_error: Arc::new(RwLock::new(None)),
-            _phantom: std::marker::PhantomData,
+            code: default(),
+            description: default(),
+            compiled_ast: default(),
+            compile_error: default(),
+            run_error: default(),
+            _phantom: default(),
+            scope: default(),
         }
     }
 }
 
 impl<T> RhaiScript<T> {
     pub fn new(code: String) -> Self {
-        Self {
-            code,
-            description: String::new(),
-            compiled_ast: Arc::new(RwLock::new(None)),
-            compile_error: Arc::new(RwLock::new(None)),
-            run_error: Arc::new(RwLock::new(None)),
-            _phantom: std::marker::PhantomData,
-        }
+        Self { code, ..default() }
     }
 
     pub fn with_description(mut self, description: String) -> Self {
@@ -54,14 +47,7 @@ impl<T> RhaiScript<T> {
     }
 
     pub fn empty() -> Self {
-        Self {
-            code: String::new(),
-            description: String::new(),
-            compiled_ast: Arc::new(RwLock::new(None)),
-            compile_error: Arc::new(RwLock::new(None)),
-            run_error: Arc::new(RwLock::new(None)),
-            _phantom: std::marker::PhantomData,
-        }
+        Self::default()
     }
 
     /// Get the compiled AST, compiling if necessary

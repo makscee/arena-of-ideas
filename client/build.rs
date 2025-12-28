@@ -63,7 +63,7 @@ fn generate_client_nodes(nodes: &[NodeInfo]) -> proc_macro2::TokenStream {
                 let inner_type: proc_macro2::TokenStream =
                     field.raw_type.parse().unwrap_or_else(|_| quote! { String });
                 field_defs.push(quote! {
-                    pub #history_field_name: Vec<(f32, #inner_type)>
+                    pub #history_field_name: History<#inner_type>
                 });
             }
 

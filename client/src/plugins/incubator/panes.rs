@@ -139,7 +139,7 @@ impl IncubatorPanes {
                             node.rating().cstr_expanded().label(ui);
                             render_vote_btns(id, ui);
                         });
-                        if node.kind() == NodeKind::NUnitRepresentation {
+                        if node.kind() == NodeKind::NRepresentation {
                             node.display(ctx, ui);
                             ui.separator();
                         }
@@ -217,7 +217,7 @@ impl IncubatorPanes {
                         node.edit(ui, &EMPTY_CONTEXT);
                     }
                 }
-                if kind == ContentNodeKind::NUnitRepresentation {
+                if kind == ContentNodeKind::NRepresentation {
                     with_incubator_source(|ctx| {
                         let parent = parent.to_not_found()?;
                         let mut unit = ctx
@@ -227,7 +227,7 @@ impl IncubatorPanes {
                             .load_mut(ctx)?
                             .get_mut()?
                             .representation
-                            .set_loaded(node.force_cast::<NUnitRepresentation>().clone());
+                            .set_loaded(node.force_cast::<NRepresentation>().clone());
                         unit.as_card().compose(ctx, ui);
                         Ok(())
                     })
@@ -267,7 +267,7 @@ impl IncubatorPanes {
         suggestions
             .as_list(|node, ctx, ui| {
                 render_node_menu_btn::<T>(ui, ctx, node.id());
-                if node.kind() == NodeKind::NUnitRepresentation {
+                if node.kind() == NodeKind::NRepresentation {
                     node.display(ctx, ui);
                 }
                 let desc = ctx
@@ -340,7 +340,7 @@ impl IncubatorPanes {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(unit_id, NodeKind::NUnitBehavior).ok();
-                    Self::pane_component::<NUnitRepresentation>(ui, ctx, unit_id, parent)
+                    Self::pane_component::<NRepresentation>(ui, ctx, unit_id, parent)
                 })
             } else {
                 Ok(())

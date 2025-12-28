@@ -62,7 +62,7 @@ bevy_egui = { version = "0.38", default-features = false, features = [
     "immutable_ctx",
     "manage_clipboard",
 ] }
-ecolor = { version = "0.33.0", features = ["color-hex", "serde"] }
+ecolor = { version = "0.33.3", features = ["color-hex", "serde"] }
 lerp = "0.5.0"
 indexmap = { version = "2.12.1", features = ["serde"] }
 colored = "3.0.0"
@@ -71,9 +71,9 @@ chrono = { version = "0.4.42", default-features = false, features = [
     "std",
     "now",
 ] }
-egui_extras = { version = "0.33.0", features = ["svg"] }
+egui_extras = { version = "0.33.3", features = ["svg"] }
 egui-notify = "0.21.0"
-egui_tiles = "0.14.0"
+egui_tiles = "0.14.1"
 humanize-duration = "0.0.7"
 parking_lot = "0.12.5"
 syn = "2.0.111"
@@ -87,7 +87,7 @@ log = "0.4.29"
 glam = { version = "0.30.9", features = ["serde"] }
 color-hex = "0.2.0"
 
-rhai = { version = "1.23.5", default-features = false, features = [
+rhai = { version = "1.23.6", default-features = false, features = [
     "std",
     "serde",
     "sync",
@@ -98,10 +98,11 @@ rhai = { version = "1.23.5", default-features = false, features = [
 bimap = { version = "0.6.3", features = ["serde"] }
 backtrace = "0.3.76"
 mlua = { version = "0.11.5", features = ["lua54", "vendored"] }
-epaint_default_fonts = "0.33.2"
+epaint_default_fonts = "0.33.3"
 
 [dependencies]
 client = { path = "client" }
+log-once = "0.4.1"
 
 [build-dependencies]
 schema = { path = "schema" }

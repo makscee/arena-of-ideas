@@ -1113,17 +1113,19 @@ impl ContextSource for Sources<'_> {
         // Update the node itself
         let kind = self.get_node_kind(node_id)?;
         for kind in kind.with_other_components() {
+            if !kind.var_names().contains(&var) {
+                continue;
+            }
             node_kind_match!(kind, {
                 if self
                     .load_mut::<NodeType>(node_id)
                     .is_ok_and(|mut n| n.set_var(var, value.clone()).is_ok())
                 {
+                    self.var_updated(node_id, var, value);
                     break;
                 }
             });
         }
-        // Call var_updated for history tracking
-        self.var_updated(node_id, var, value);
         Ok(())
     }
 
@@ -1134,9 +1136,12 @@ impl ContextSource for Sources<'_> {
             let kind = self.get_node_kind(node_id).ok();
             if let Some(kind) = kind {
                 for kind in kind.with_other_components() {
+                    if !kind.var_names().contains(&var) {
+                        continue;
+                    }
                     node_kind_match!(kind, {
                         if let Ok(mut node) = self.load_mut::<NodeType>(node_id) {
-                            if node.set_var_with_history(var, value.clone(), t).is_ok() {
+                            if node.set_var_history(var, value.clone(), t).is_ok() {
                                 break;
                             }
                         }

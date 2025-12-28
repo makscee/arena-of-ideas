@@ -255,17 +255,17 @@ impl MatchPlugin {
 
                     if let Ok(slot_unit) = slot.unit.get_mut() {
                         // Filled slot - show unit with MatRect
-                        let mat = if let Ok(behavior) = slot_unit.behavior.get() {
+                        let rep = if let Ok(behavior) = slot_unit.behavior.get() {
                             if let Ok(rep) = behavior.representation.get() {
-                                rep.material.clone()
+                                rep.clone()
                             } else {
-                                unit_rep().material.clone()
+                                unit_rep().clone()
                             }
                         } else {
-                            unit_rep().material.clone()
+                            unit_rep().clone()
                         };
                         let response = MatRect::new(egui::vec2(100.0, 100.0))
-                            .add_mat(&mat, slot_unit.id)
+                            .add_mat(&rep.script, slot_unit.id)
                             .unit_rep_with_default(slot_unit.id)
                             .ui(ui, ctx)
                             .on_hover_ui(|ui| {
@@ -390,12 +390,12 @@ impl MatchPlugin {
                 for unit in m.bench.get()? {
                     let mat = if let Ok(behavior) = unit.behavior.get() {
                         if let Ok(rep) = behavior.representation.get() {
-                            rep.material.clone()
+                            rep.script.clone()
                         } else {
-                            unit_rep().material.clone()
+                            unit_rep().script.clone()
                         }
                     } else {
-                        unit_rep().material.clone()
+                        unit_rep().script.clone()
                     };
                     let response = MatRect::new(egui::vec2(100.0, 100.0))
                         .add_mat(&mat, unit.id)
@@ -437,7 +437,7 @@ impl MatchPlugin {
         })
     }
 
-    fn show_fusion_input_window(ctx: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
+    fn show_fusion_input_window(_: &mut ClientContext, ui: &mut Ui) -> NodeResult<()> {
         ui.vertical_centered_justified(|ui| {
             "Unit Fusion".cstr_s(CstrStyle::Heading2).label(ui);
             "Select fusion options for trigger, target, and effect:"
@@ -447,7 +447,7 @@ impl MatchPlugin {
             ui.separator();
 
             let mut choice = ['?'; 3];
-            let mut valid = true;
+            let mut valid;
 
             let positions = [("Trigger", 0), ("Target", 1), ("Effect", 2)];
 

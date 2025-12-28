@@ -103,10 +103,9 @@ impl NodeKindOnSpawn for NodeKind {
                 if let Ok(behavior) = unit.behavior.load_node(ctx) {
                     if let Ok(mut rep) = behavior.representation.load_node(ctx) {
                         // Material is now a script, so we merge the code
-                        let default_mat_code = unit_rep().material.0.code.clone();
+                        let default_mat_code = unit_rep().script.code.clone();
                         if !default_mat_code.is_empty() {
-                            rep.material.0.code =
-                                format!("{}\n{}", rep.material.0.code, default_mat_code);
+                            rep.script.code = format!("{}\n{}", rep.script.code, default_mat_code);
                         }
                         rep.spawn(ctx, Some(entity))?;
                     } else {
@@ -121,7 +120,7 @@ impl NodeKindOnSpawn for NodeKind {
             }
             NodeKind::NStatusMagic => {
                 if ctx
-                    .get_children_of_kind(id, NodeKind::NStatusRepresentation)?
+                    .get_children_of_kind(id, NodeKind::NRepresentation)?
                     .is_empty()
                 {
                     let rep_id = next_id();

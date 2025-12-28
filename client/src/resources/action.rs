@@ -24,7 +24,7 @@ impl ActionImpl for Action {
         println!(
             "{} {}",
             "action:".dimmed().purple(),
-            self.title_recursive(ctx).to_colored(),
+            self.title(ctx).to_colored(),
         );
         let mut actions = Vec::default();
         match self {

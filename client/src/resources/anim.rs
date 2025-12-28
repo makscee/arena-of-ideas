@@ -88,28 +88,30 @@ impl AnimAction {
             AnimAction::SpawnPainter { code } => {
                 let entity = ctx.world_mut()?.spawn_empty().id();
                 let id = next_id();
-                let material = Material::new(code.clone());
-                NRepresentation::new(id, 0, default(), true, material)
-                    .spawn(ctx, Some(entity))
-                    .track()?;
-                ctx.world_mut()?.entity_mut(entity).insert(Vfx);
-
+                let material = RhaiScript::new(code.clone());
                 let mut t = ctx.battle_mut()?.duration;
-                let vars_layers = ctx.get_vars_layers();
-
-                // Use set_var to track history in nodes directly
-                ctx.source_mut()
-                    .set_var(id, VarName::visible, false.into())?;
-                ctx.battle_mut()?.duration = t;
-                ctx.source_mut()
-                    .set_var(id, VarName::visible, true.into())?;
+                let mut rep = NRepresentation::new(
+                    id,
+                    0,
+                    ctx.get_var(VarName::position)
+                        .get_vec2()
+                        .unwrap_or_default(),
+                    true,
+                    t,
+                    a.duration,
+                    material,
+                );
+                ctx.world_mut()?.entity_mut(entity).insert(Vfx);
+                for (var, value) in ctx.get_vars_layers() {
+                    rep.script.scope.insert(var, value);
+                }
+                rep.visible_history.insert(0.0, false);
+                rep.visible_history.insert(t, true);
+                if a.duration > 0.0 {
+                    rep.visible_history.insert(t + a.duration, false);
+                }
+                rep.spawn(ctx, Some(entity)).track()?;
                 ctx.battle_mut()?.duration = t + a.duration;
-                ctx.source_mut()
-                    .set_var(id, VarName::visible, false.into())?;
-                ctx.battle_mut()?.duration = t;
-                ctx.source_mut().set_var(id, VarName::t, 0.0.into())?;
-                ctx.battle_mut()?.duration = t + 0.0001;
-                ctx.source_mut().set_var(id, VarName::t, 1.0.into())?;
 
                 ctx.battle_mut()?.duration = t;
                 a.targets = vec![id];
@@ -128,7 +130,7 @@ impl Animator {
     pub fn new() -> Self {
         Self {
             targets: Vec::new(),
-            duration: 1.0,
+            duration: animation_time(),
             timeframe: 0.0,
         }
     }

@@ -31,7 +31,7 @@ if unit.dmg > 0 {
 } else {
     painter.color(255, 255, 255, 255);
 }
-painter.text(`[b ${unit.hp - unit.dmg}`);
+painter.text(`[b ${unit.hp - unit.dmg}]`);
 painter.translate([0.68, 0.85]);
 painter.paint();
 
@@ -47,6 +47,6 @@ painter.circle(0.24);
 
 // Power text
 painter.color(255, 255, 255, 255);
-painter.text(`[b ${unit.pwr}`);
+painter.text(`[b ${unit.pwr}]`);
 painter.translate([-0.68, 0.85]);
 painter.paint();

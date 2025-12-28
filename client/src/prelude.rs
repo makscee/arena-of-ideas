@@ -1,7 +1,7 @@
 pub use std::time::Duration;
 
 pub use crate::stdb::*;
-pub use crate::ui::render::FieldsMover;
+
 pub use crate::{nodes::*, plugins::*, resources::*, ui::*, utils::*};
 pub use anyhow::{Context as _, Result, anyhow};
 pub use backtrace::Backtrace;

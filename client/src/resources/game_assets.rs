@@ -2,17 +2,17 @@ use spacetimedb_lib::de::serde::DeserializeWrapper;
 
 use super::*;
 
-static UNIT_REP: OnceCell<NUnitRepresentation> = OnceCell::new();
-static STATUS_REP: OnceCell<NStatusRepresentation> = OnceCell::new();
+static UNIT_REP: OnceCell<NRepresentation> = OnceCell::new();
+static STATUS_REP: OnceCell<NRepresentation> = OnceCell::new();
 static ANIMATIONS: OnceCell<HashMap<String, Anim>> = OnceCell::new();
 
 static GLOBAL_SETTINGS: OnceCell<GlobalSettings> = OnceCell::new();
 
-pub fn unit_rep() -> &'static NUnitRepresentation {
+pub fn unit_rep() -> &'static NRepresentation {
     UNIT_REP.get().expect("Unit representation not initialized")
 }
 
-pub fn status_rep() -> &'static NStatusRepresentation {
+pub fn status_rep() -> &'static NRepresentation {
     STATUS_REP
         .get()
         .expect("Status representation not initialized")
@@ -31,18 +31,18 @@ pub fn global_settings_local() -> &'static GlobalSettings {
 pub fn init_for_tests() {
     UNIT_REP
         .set({
-            let mut rep = NUnitRepresentation::default();
+            let mut rep = NRepresentation::default();
             rep.set_id(1);
-            rep.material = Material::default();
+            rep.script = RhaiScript::default();
             rep
         })
         .ok();
 
     STATUS_REP
         .set({
-            let mut rep = NStatusRepresentation::default();
+            let mut rep = NRepresentation::default();
             rep.set_id(2);
-            rep.material = Material::default();
+            rep.script = RhaiScript::default();
             rep
         })
         .ok();
@@ -118,22 +118,26 @@ pub fn parse_content_tree() {
     // std::fs::create_dir_all(format!("{path}{}", dir.path().to_str().unwrap())).unwrap();
     // dir.extract(path).unwrap();
     let unit_rep_code = include_str!("../../../assets/ron/unit_rep.rhai");
-    let unit_rep = NUnitRepresentation::new(
+    let unit_rep = NRepresentation::new(
         next_id(),
         0,
         default(),
         true,
-        Material::new(unit_rep_code.to_string()),
+        0.0,
+        0.0,
+        RhaiScript::new(unit_rep_code.to_string()),
     );
     UNIT_REP.set(unit_rep).unwrap();
 
     let status_rep_code = include_str!("../../../assets/ron/status_rep.rhai");
-    let status_rep = NStatusRepresentation::new(
+    let status_rep = NRepresentation::new(
         next_id(),
         0,
         default(),
         true,
-        Material::new(status_rep_code.to_string()),
+        0.0,
+        0.0,
+        RhaiScript::new(status_rep_code.to_string()),
     );
     STATUS_REP.set(status_rep).unwrap();
     let mut animations = HashMap::default();

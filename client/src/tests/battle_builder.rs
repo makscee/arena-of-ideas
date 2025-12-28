@@ -301,9 +301,9 @@ impl UnitBuilder {
         state.set_id(self.id + 2);
         state.stax = 1;
 
-        let mut representation = NUnitRepresentation::default();
+        let mut representation = NRepresentation::default();
         representation.set_id(self.id + 4);
-        representation.material = Material::default();
+        representation.script = RhaiScript::default();
 
         let mut unit = NUnit::default();
         unit.set_id(self.id);
@@ -376,9 +376,9 @@ impl StatusBuilder {
         let rep_id = self.id + 2;
         let state_id = self.id + 3;
 
-        let mut representation = NStatusRepresentation::default();
+        let mut representation = NRepresentation::default();
         representation.set_id(rep_id);
-        representation.material = Material::default();
+        representation.script = RhaiScript::default();
 
         let mut behavior = NStatusBehavior::default();
         behavior.set_id(behavior_id);

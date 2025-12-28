@@ -93,17 +93,7 @@ pub struct NStatusMagic {
 pub struct NStatusBehavior {
     pub trigger: Trigger,
     pub effect: RhaiScript<StatusAction>,
-    pub representation: Component<NStatusRepresentation>,
-}
-
-#[derive(Node)]
-#[content]
-pub struct NStatusRepresentation {
-    #[var]
-    pub position: Vec2,
-    #[var]
-    pub visible: bool,
-    pub material: Material,
+    pub representation: Component<NRepresentation>,
 }
 
 #[derive(Node)]
@@ -177,7 +167,7 @@ pub struct NUnitBehavior {
     pub target: Target,
     pub effect: RhaiScript<UnitAction>,
     pub stats: Component<NUnitStats>,
-    pub representation: Component<NUnitRepresentation>,
+    pub representation: Component<NRepresentation>,
 }
 
 #[derive(Node)]
@@ -191,19 +181,12 @@ pub struct NUnitStats {
 
 #[derive(Node)]
 #[content]
-pub struct NUnitRepresentation {
-    #[var]
-    pub position: Vec2,
-    #[var]
-    pub visible: bool,
-    pub material: Material,
-}
-
-#[derive(Node)]
 pub struct NRepresentation {
     #[var]
     pub position: Vec2,
     #[var]
     pub visible: bool,
-    pub material: Material,
+    pub t_birth: f32,
+    pub t_duration: f32,
+    pub script: RhaiScript<PainterAction>,
 }

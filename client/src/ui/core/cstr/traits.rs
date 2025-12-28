@@ -217,17 +217,17 @@ impl ToCstr for Behavior {
     }
 }
 
-impl ToCstr for Material {
+impl ToCstr for RhaiScript<PainterAction> {
     fn cstr(&self) -> Cstr {
-        if self.0.code.is_empty() {
+        if self.code.is_empty() {
             "Material(empty)".to_string()
         } else {
-            format!("Material({})", self.0.code.lines().count())
+            format!("Material({})", self.code.lines().count())
         }
     }
 
     fn cstr_expanded(&self) -> Cstr {
-        self.0.code.clone()
+        self.code.clone()
     }
 }
 

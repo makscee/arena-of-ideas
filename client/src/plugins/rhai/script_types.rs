@@ -22,6 +22,9 @@ where
     ) -> Result<(Vec<T>, Scope<'static>), Box<EvalAltResult>> {
         let mut scope = scope_builder.into();
 
+        for (var, value) in &self.scope {
+            scope.push(var.as_ref(), value.dynamic());
+        }
         for (var, value) in ctx.get_vars_layers() {
             scope.push(var.as_ref(), value.dynamic());
         }

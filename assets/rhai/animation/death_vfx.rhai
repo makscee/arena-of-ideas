@@ -1,6 +1,7 @@
 animator.spawn_painter(`
     painter.scale_rect(2.0);
     painter.color("#a70101ab");
+    let t = t_unit;
     painter.alpha(4.0 - t * 4.0);
     for i in 0..30 {
         painter.circle(0.2);

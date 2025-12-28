@@ -1,37 +1,5 @@
 use super::*;
 
-/// MatRect widget for rendering materials with customizable clipping effects
-///
-/// Usage examples:
-///
-/// // Single material
-/// MatRect::new(egui::Vec2::new(60.0, 60.0))
-///     .add_mat(&material, owner_id)
-///     .ui(ui, context);
-///
-/// // Multiple materials with different clipping effects
-/// MatRect::new(egui::Vec2::new(60.0, 60.0))
-///     .add_mat(&material1, owner_id1)
-///     .add_mat_with_config(&material2, owner_id2, RenderConfig::default()
-///         .clip_horizontal(0.0, 30.0)
-///         .alpha(0.7))
-///     .add_mat_with_config(&material3, owner_id3, RenderConfig::default()
-///         .clip_circle(egui::Vec2::new(30.0, 30.0), 15.0)
-///         .scale(0.8))
-///     .render_unit_rep(true)
-///     .ui(ui, context);
-///
-/// // Batch set materials with custom unit_rep configuration
-/// MatRect::new(egui::Vec2::new(60.0, 60.0))
-///     .materials(vec![
-///         (&material1, owner_id1, RenderConfig::default()),
-///         (&material2, owner_id2, RenderConfig::default().alpha(0.6))
-///     ])
-///     .unit_rep(fusion_id, RenderConfig::default()
-///         .alpha(0.5)
-///         .offset(egui::Vec2::new(5.0, 5.0)))
-///     .ui(ui, context);
-
 #[derive(Clone, Copy, Debug)]
 pub enum ClipMode {
     None,
@@ -68,7 +36,7 @@ impl Default for RenderConfig {
 
 pub struct MatRect<'a> {
     size: egui::Vec2,
-    materials: Vec<(&'a Material, u64, RenderConfig)>,
+    materials: Vec<(&'a RhaiScript<PainterAction>, u64, RenderConfig)>,
     unit_rep: Option<(u64, RenderConfig)>,
     enabled: bool,
     active: bool,
@@ -87,12 +55,15 @@ impl<'a> MatRect<'a> {
         }
     }
 
-    pub fn materials(mut self, materials: Vec<(&'a Material, u64, RenderConfig)>) -> Self {
+    pub fn materials(
+        mut self,
+        materials: Vec<(&'a RhaiScript<PainterAction>, u64, RenderConfig)>,
+    ) -> Self {
         self.materials = materials;
         self
     }
 
-    pub fn add_mat(mut self, material: &'a Material, owner_id: u64) -> Self {
+    pub fn add_mat(mut self, material: &'a RhaiScript<PainterAction>, owner_id: u64) -> Self {
         self.materials
             .push((material, owner_id, RenderConfig::default()));
         self
@@ -100,7 +71,7 @@ impl<'a> MatRect<'a> {
 
     pub fn add_mat_with_config(
         mut self,
-        material: &'a Material,
+        material: &'a RhaiScript<PainterAction>,
         owner_id: u64,
         config: RenderConfig,
     ) -> Self {
@@ -169,7 +140,7 @@ impl<'a> MatRect<'a> {
 
     fn render_material(
         &self,
-        material: &Material,
+        material: &RhaiScript<PainterAction>,
         owner_id: u64,
         rect: Rect,
         config: &RenderConfig,
@@ -196,7 +167,11 @@ impl<'a> MatRect<'a> {
         // Try to get entity from owner_id - could be any node type
         ctx.exec_ref(|ctx| {
             ctx.with_owner(owner_id, |ctx| {
-                MaterialPaint::paint(material, clipped_rect, ctx, ui);
+                let mut p = Painter::new(clipped_rect, ui.ctx());
+                if let Ok(color) = ctx.get_var(VarName::color).get_color() {
+                    p.color = color;
+                }
+                material.paint_err(ctx, &mut p, ui);
                 Ok(())
             })
         })
@@ -208,7 +183,7 @@ impl<'a> MatRect<'a> {
             .active(self.active)
             .corners(self.corners);
 
-        button.ui(ui, |color, rect, _, ui| {
+        button.ui(ui, |_, rect, _, ui| {
             let content_rect = rect.shrink(5.0);
 
             // Render all materials
@@ -236,7 +211,11 @@ impl<'a> MatRect<'a> {
                 }
                 ctx.exec_ref(|ctx| {
                     ctx.with_owner(*owner_id, |ctx| {
-                        MaterialPaint::paint(&unit_rep().material, clipped_rect, ctx, ui);
+                        let mut p = Painter::new(clipped_rect, ui.ctx());
+                        if let Ok(color) = ctx.get_var(VarName::color).get_color() {
+                            p.color = color;
+                        }
+                        unit_rep().script.paint_err(ctx, &mut p, ui);
                         Ok(())
                     })
                 })

@@ -1,10 +1,11 @@
+use super::*;
+use ::rhai::Dynamic;
+use bevy::log::error_once;
+use bevy_egui::egui::LayerId;
 use emath::{Rot2, TSTransform};
 use epaint::{
     CircleShape, CubicBezierShape, RectShape, TessellationOptions, Tessellator, TextShape,
 };
-
-use super::*;
-use schema::PainterAction;
 
 pub struct Painter {
     pub rect: Rect,
@@ -12,6 +13,7 @@ pub struct Painter {
     pub hollow: Option<f32>,
     pub mesh: egui::Mesh,
     pub tesselator: Tessellator,
+    pub scope: HashMap<String, Dynamic>,
 }
 
 impl Painter {
@@ -22,6 +24,7 @@ impl Painter {
             mesh: egui::Mesh::default(),
             tesselator: new_tesselator(0.0, ctx),
             hollow: None,
+            scope: HashMap::new(),
         }
     }
 }
@@ -44,49 +47,63 @@ fn new_tesselator(feathering: f32, ctx: &egui::Context) -> Tessellator {
     )
 }
 
-pub trait Paint {
-    fn paint_err(&self, context: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool>;
-
-    fn paint(&self, context: &ClientContext, p: &mut Painter, ui: &mut Ui) {
-        match self.paint_err(context, p, ui) {
-            Ok(_) => {}
-            Err(e) => {
-                log::error!("Paint error: {}", e);
-            }
-        }
-    }
-
-    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
-        ui.label("Paint")
-    }
+pub trait PaintScript {
+    fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()>;
+    fn paint_err(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui);
+    fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response;
 }
 
-impl Paint for Material {
-    fn paint_err(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<bool> {
+impl PaintScript for RhaiScript<PainterAction> {
+    fn paint(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) -> NodeResult<()> {
         let mut scope = ::rhai::Scope::new();
         scope.push("painter", Vec::<PainterAction>::new());
         if let Some(t) = ctx.t() {
             scope.push("t", t);
         }
-
-        // Execute the Rhai script to get painter actions
-        let actions = match self.0.execute(scope, ctx) {
-            Ok(actions) => actions,
-            Err(err) => {
-                log::error!("Painter script execution error: {}", err);
-                return Ok(false);
-            }
+        for (var, value) in p.scope.take() {
+            scope.push(var, value);
         }
-        .0;
-
-        // Process each action
-        for action in actions {
-            if process_painter_action(action, ctx, p, ui)? {
-                return Ok(true);
+        ctx.exec_ref(|ctx| {
+            for (var, value) in &self.scope {
+                ctx.set_var_layer(*var, value.clone());
             }
-        }
+            let actions = match self.execute(scope, ctx) {
+                Ok(actions) => actions,
+                Err(err) => {
+                    error_once!("Painter script execution error: {}\n{:#}", err, self.code);
+                    return Ok(());
+                }
+            }
+            .0;
+            for action in actions {
+                if process_painter_action(action, ctx, p, ui)? {
+                    break;
+                }
+            }
+            Ok(())
+        })
+    }
 
-        Ok(false)
+    fn paint_err(&self, ctx: &ClientContext, p: &mut Painter, ui: &mut Ui) {
+        if let Err(e) = self.paint(ctx, p, ui) {
+            let rect = p.rect;
+            ui.scope_builder(
+                UiBuilder::new().layer_id(LayerId::debug()).max_rect(rect),
+                |ui| {
+                    "[red [b (e)]]".cstr().button(ui).on_hover_ui(|ui| {
+                        ui.vertical(|ui| {
+                            format!("[red {e}]").label_w(ui);
+                            error!("{e}");
+                            ui.separator();
+                            self.code.label(ui);
+                            for l in ctx.layers() {
+                                format!("{l:?}").label(ui);
+                            }
+                        });
+                    });
+                },
+            );
+        }
     }
 
     fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
@@ -98,9 +115,42 @@ impl Paint for Material {
         if let Ok(color) = ctx.get_var(VarName::color).get_color() {
             painter.color = color;
         }
-        let _ = self.paint_err(ctx, &mut painter, ui);
+        let _ = self.paint(ctx, &mut painter, ui);
 
         response
+    }
+}
+
+impl NRepresentation {
+    fn fill_scope(&self, ctx: &ClientContext, p: &mut Painter) {
+        if let Ok(color) = ctx.get_var(VarName::color).get_color() {
+            p.color = color;
+        }
+        p.scope
+            .insert("t_birth".to_owned(), self.t_birth.to_dynamic());
+        if self.t_duration > 0.0 {
+            p.scope
+                .insert("t_duration".to_owned(), self.t_duration.to_dynamic());
+            p.scope.insert(
+                "t_unit".to_owned(),
+                ((ctx.t().unwrap_or(0.0) - self.t_birth) / self.t_duration).to_dynamic(),
+            );
+        }
+    }
+    pub fn paint(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) {
+        let mut p = Painter::new(rect, ui.ctx());
+        self.fill_scope(ctx, &mut p);
+        self.script.paint_err(ctx, &mut p, ui);
+    }
+
+    pub fn paint_err(&self, rect: Rect, ctx: &ClientContext, ui: &mut Ui) -> NodeResult<()> {
+        let mut p = Painter::new(rect, ui.ctx());
+        self.fill_scope(ctx, &mut p);
+        self.script.paint(ctx, &mut p, ui)
+    }
+
+    pub fn paint_viewer(&self, ctx: &ClientContext, ui: &mut Ui) -> Response {
+        self.script.paint_viewer(ctx, ui)
     }
 }
 
