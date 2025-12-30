@@ -89,7 +89,6 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
 
         ui.label("Script Code:");
         let syntax = rhai_syntax();
-        let editor_height = 300.0;
         let mut saved = false;
         let response = ui
             .group(|ui| {
@@ -115,14 +114,14 @@ pub fn show_rhai_script_editor<T: schema::ScriptAction>(
 
         let mut editor_response = ui
             .group(|ui| {
-                ui.set_min_height(editor_height);
+                // ui.set_min_height(editor_height);
                 CodeEditor::default()
                     .id_source("rhai_script_editor")
-                    .with_rows((editor_height / 14.0) as usize)
                     .with_fontsize(13.0)
                     .with_theme(ColorTheme::SONOKAI)
                     .with_syntax(syntax)
                     .with_numlines(true)
+                    .vscroll(false)
                     .show_with_completer(ui, &mut script.code, &mut rhai_completer())
                     .response
             })

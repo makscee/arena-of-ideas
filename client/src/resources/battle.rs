@@ -17,6 +17,8 @@
 //! - Saving updates history for var fields automatically
 //! - Use time-based accessors like `node.hp_at(t)` for time-based var retrieval in simulations
 
+use std::os::fd::IntoRawFd;
+
 use rand_chacha::rand_core::SeedableRng;
 
 use super::*;
@@ -437,6 +439,12 @@ impl BattleAction {
                 } => {
                     let (house, status) = find_status_by_path(status_path, ctx)?;
                     let color = house.color.load_node(ctx)?.color.c32();
+                    let status_name = status.status_name.clone();
+                    let stax_delta = status.state.load_node(ctx)?.stax;
+                    let target_pos = ctx
+                        .get_var_inherited(*target_id, VarName::position)
+                        .unwrap_or_default();
+
                     BattleSimulation::apply_status(
                         ctx,
                         *caster_id,
@@ -444,6 +452,44 @@ impl BattleAction {
                         status.clone(),
                         color,
                     )?;
+
+                    let mut total_stax = stax_delta;
+                    for child in ctx
+                        .get_children_of_kind(*target_id, NodeKind::NStatusMagic)
+                        .track()?
+                    {
+                        if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
+                            if child_status.status_name == status_name {
+                                if let Ok(state) = child_status.state.load_node(ctx) {
+                                    total_stax = state.stax;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    let color = color.to_hex();
+                    add_actions.push(
+                        Self::new_text(
+                            format!("[b [yellow apply [{color} {}]]]", status_name),
+                            target_pos.clone(),
+                        )
+                        .with_var(VarName::scale, 1.5)
+                        .into(),
+                    );
+                    add_actions.push(Self::wait(animation_time() * 2.0));
+                    add_actions.push(
+                        Self::new_text(
+                            format!(
+                                "[b {} [{color} {}] ({})]",
+                                stax_delta.cstr_expanded(),
+                                status_name,
+                                total_stax
+                            ),
+                            target_pos,
+                        )
+                        .with_var(VarName::scale, 2.0)
+                        .into(),
+                    );
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
@@ -775,7 +821,7 @@ impl BattleSimulation {
         BattleSimulation::send_event(ctx, Event::TurnEnd)?;
         Ok(())
     }
-    pub fn add_text(&mut self, text_type: BattleText, text: String) {
+    fn add_text(&mut self, text_type: BattleText, text: String) {
         self.battle_texts
             .entry(text_type)
             .or_insert_with(Vec::new)
@@ -790,7 +836,7 @@ impl BattleSimulation {
                 .map(|(_, text)| text.as_str())
         })
     }
-    pub fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
+    fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
         info!("{} {event}", "event:".dimmed().blue());
         ctx.exec_mut(|ctx| {
             match &event {
@@ -915,14 +961,14 @@ impl BattleSimulation {
             Ok(())
         })
     }
-    pub fn apply_status(
+    fn apply_status(
         ctx: &mut ClientContext,
         caster: u64,
         target: u64,
         status: NStatusMagic,
         color: Color32,
     ) -> NodeResult<()> {
-        let t = ctx.t().to_not_found()?;
+        let t = ctx.battle()?.duration;
         let mut new_index = 0;
         for child in ctx
             .get_children_of_kind(target, NodeKind::NStatusMagic)
@@ -946,33 +992,26 @@ impl BattleSimulation {
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
-        let status_id = status.id;
-        let new_status = status.remap_ids();
+        let mut new_status = status.remap_ids();
+        new_status
+            .state
+            .get_mut()?
+            .index_history
+            .insert(t, new_index.into_raw_fd());
+        let rep = new_status.representation.get_mut()?;
+        rep.visible_history.insert(0.0, false);
+        rep.visible_history.insert(t, true);
+        rep.script.scope.insert(VarName::color, color.into());
         let new_status_id = new_status.id();
         new_status.spawn(ctx, Some(entity))?;
-        // Status is already saved with its charges during spawn
-
         ctx.add_link(target, new_status_id)?;
 
-        // Use set_var to track history in nodes directly
-        let current_t = ctx.battle_mut()?.duration;
-        ctx.battle_mut()?.duration = 0.0;
-        ctx.source_mut()
-            .set_var(new_status_id, VarName::visible, false.into())?;
-        ctx.battle_mut()?.duration = t;
-        ctx.source_mut()
-            .set_var(new_status_id, VarName::visible, true.into())?;
-        ctx.battle_mut()?.duration = current_t;
-        ctx.source_mut()
-            .set_var(new_status_id, VarName::color, color.into())?;
-        ctx.source_mut()
-            .set_var(new_status_id, VarName::index, new_index.into())?;
         BattleSimulation::send_event(ctx, Event::StatusApplied(caster, target, new_status_id))?;
         BattleSimulation::send_event(ctx, Event::StatusGained(caster, target))?;
         Ok(())
     }
 
-    pub fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
+    fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
         let entity = id.entity(ctx)?;
         ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;

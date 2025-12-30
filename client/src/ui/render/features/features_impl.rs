@@ -961,7 +961,14 @@ impl FPlaceholder for NStatusMagic {
     fn placeholder() -> Self {
         NStatusMagic::new(next_id(), player_id(), "New Status".to_string())
             .with_behavior(NStatusBehavior::placeholder())
-            .with_state(NState::new(next_id(), player_id(), 1))
+            .with_state(NStatusState::new(
+                next_id(),
+                player_id(),
+                1,
+                0,
+                HexColor::from(CYAN),
+            ))
+            .with_representation(NRepresentation::placeholder())
     }
 }
 
@@ -1697,9 +1704,42 @@ impl FDisplay for NState {
     }
 }
 
+impl FTitle for NStatusState {
+    fn title(&self, _: &ClientContext) -> Cstr {
+        format!("[tw StatusState] {}x", self.stax).cstr()
+    }
+}
+
+impl FDescription for NStatusState {
+    fn description_cstr(&self, _: &ClientContext) -> Cstr {
+        format!("{} stax", self.stax).cstr()
+    }
+}
+
+impl FStats for NStatusState {
+    fn stats(&self, _: &ClientContext) -> Vec<(VarName, VarValue)> {
+        vec![
+            (VarName::stax, self.stax.into()),
+            (VarName::index, self.index.into()),
+        ]
+    }
+}
+
+impl FDisplay for NStatusState {
+    fn display(&self, _ctx: &ClientContext, ui: &mut Ui) -> Response {
+        ui.horizontal(|ui| {
+            ui.label("stax:");
+            format!("{}", self.stax)
+                .cstr_c(Color32::from_rgb(255, 255, 0))
+                .label(ui);
+        })
+        .response
+    }
+}
+
 impl FTitle for NUnitState {
     fn title(&self, _: &ClientContext) -> Cstr {
-        format!("[tw State] {}x", self.stax).cstr()
+        format!("[tw UnitState] {}x", self.stax).cstr()
     }
 }
 
@@ -1827,7 +1867,6 @@ impl FPlaceholder for NStatusBehavior {
             schema::Trigger::BattleStart,
             schema::RhaiScript::empty(),
         )
-        .with_representation(NRepresentation::placeholder())
     }
 }
 impl FPlaceholder for NTeamSlot {
@@ -1984,8 +2023,18 @@ impl FPlaceholder for NUnitState {
     fn placeholder() -> Self {
         let mut state = NUnitState::default();
         state.set_id(next_id());
-        state.stax = 0;
+        state.stax = 1;
         state.dmg = 0;
+        state
+    }
+}
+
+impl FPlaceholder for NStatusState {
+    fn placeholder() -> Self {
+        let mut state = NStatusState::default();
+        state.set_id(next_id());
+        state.stax = 1;
+        state.index = 0;
         state
     }
 }

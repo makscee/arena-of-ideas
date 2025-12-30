@@ -99,29 +99,40 @@ impl IncubatorPanes {
         let kind = T::kind_s();
 
         if parent.is_none() {
-            format!(
-                "[b {}] [tw not found]",
-                kind.component_parent().to_not_found()?.cstr()
-            )
-            .label_w(ui);
+            // Since a component can have multiple possible parents, we can't show a specific one
+            format!("[b Component parent] [tw not found]").label_w(ui);
             return Ok(());
         }
 
         let parent = parent.unwrap();
         let fixed = base.fixed_kinds();
-        if kind.component_parent().is_none() {
+
+        // Check if this is actually a component by checking if parent has this kind as a component child
+        let parent_kind = ctx.source().get_node_kind(parent)?;
+        if !kind.is_component_child(parent_kind) {
             return Err(NodeError::custom(format!(
-                "[red Wrong component kind {kind}]]"
+                "[red Wrong component kind {kind} for parent {parent_kind}]]"
             )));
         }
+
         {
-            let mut kind = kind;
-            while let Some(parent_kind) = kind.component_parent() {
-                if !fixed.contains(&parent_kind) {
-                    format!("[b {}] [tw should be complete first]", parent_kind.cstr()).label_w(ui);
+            // Walk up the component chain using the actual parent relationship
+            let mut current_kind = kind;
+            let mut current_parent_kind = parent_kind;
+            while current_kind.is_component_child(current_parent_kind) {
+                if !fixed.contains(&current_parent_kind) {
+                    format!(
+                        "[b {}] [tw should be complete first]",
+                        current_parent_kind.cstr()
+                    )
+                    .label_w(ui);
                     return Ok(());
                 }
-                kind = parent_kind;
+                // Move up: current becomes parent, and we need to find parent's parent
+                current_kind = current_parent_kind;
+                // For now, we can't easily walk up multiple levels without actual node relationships
+                // So we'll break after checking the immediate parent
+                break;
             }
         }
 

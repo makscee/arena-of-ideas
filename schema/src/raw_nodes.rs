@@ -85,7 +85,8 @@ pub struct NStatusMagic {
     #[var]
     pub status_name: String,
     pub behavior: Component<NStatusBehavior>,
-    pub state: Component<NState>,
+    pub representation: Component<NRepresentation>,
+    pub state: Component<NStatusState>,
 }
 
 #[derive(Node)]
@@ -93,7 +94,16 @@ pub struct NStatusMagic {
 pub struct NStatusBehavior {
     pub trigger: Trigger,
     pub effect: RhaiScript<StatusAction>,
-    pub representation: Component<NRepresentation>,
+}
+
+#[derive(Node)]
+pub struct NStatusState {
+    #[var]
+    pub stax: i32,
+    #[var]
+    pub index: i32,
+    #[var]
+    pub color: HexColor,
 }
 
 #[derive(Node)]

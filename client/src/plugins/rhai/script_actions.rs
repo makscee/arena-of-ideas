@@ -51,7 +51,7 @@ impl ToBattleAction for StatusAction {
                 ],
                 format!("ability:{}", ability_name),
             )),
-            StatusAction::ModifyStacks { delta } => Ok(BattleAction::var_set(
+            StatusAction::SetStax { value: delta } => Ok(BattleAction::var_set(
                 owner_id,
                 VarName::stax,
                 VarValue::i32(*delta),
@@ -181,11 +181,9 @@ pub fn register_status_actions_type(engine: &mut Engine) {
             },
         )
         .register_fn(
-            "modify_stacks".register_completer(),
-            |actions: &mut Vec<StatusAction>, delta: i32| {
-                actions.push(StatusAction::ModifyStacks {
-                    delta: delta as i32,
-                });
+            "set_stax".register_completer(),
+            |actions: &mut Vec<StatusAction>, value: i32| {
+                actions.push(StatusAction::SetStax { value });
             },
         );
 }

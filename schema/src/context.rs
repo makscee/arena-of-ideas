@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
+use log::debug;
 
 use crate::*;
 
@@ -194,7 +195,7 @@ pub trait ContextSource {
                     // Check if this child has become an orphan
                     if !root_ids.contains(&existing_child) {
                         let child_kind = self.get_node_kind(existing_child)?;
-                        let owning_parents = child_kind.owning_parents();
+                        let owning_parents = child_kind.parents();
 
                         let mut has_owner = false;
                         for parent_kind in owning_parents {
@@ -446,13 +447,6 @@ impl<S: ContextSource> Context<S> {
     pub fn get_var_inherited(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
         if let Ok(value) = self.source().get_var(id, var) {
             return Ok(value);
-        }
-        for child_kind in self.get_kind(id)?.component_children_recursive() {
-            for child_id in self.collect_kind_children_recursive(id, child_kind)? {
-                if let Ok(value) = self.source().get_var(child_id, var) {
-                    return Ok(value);
-                }
-            }
         }
         for parent in self.get_parents(id)? {
             if let Ok(value) = self.get_var_inherited(parent, var) {

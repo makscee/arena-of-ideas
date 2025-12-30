@@ -348,27 +348,16 @@ impl<'a> Sources<'a> {
         if Self::is_component_link(link) {
             let parent_kind = link.parent_kind.to_kind();
             let child_kind = link.child_kind.to_kind();
-            let is_many_to_one = NodeKind::get_relation(parent_kind, child_kind)
-                .is_some_and(|rel| rel == schema::NodeRelation::ManyToOne);
-
-            if is_many_to_one {
-                // For many-to-one components, clone the component tree to the parent's entity
-                if self.entity(link.parent).is_ok() && self.entity(link.child).is_ok() {
-                    let parent_entity = self.entity(link.parent)?;
-                    self.clone_component_tree_for_link(link.child, parent_entity)?;
-                }
-            } else {
-                if is_incubator {
-                    debug!(
-                        "entities {:?} {:?}",
-                        self.entity(link.parent),
-                        self.entity(link.child)
-                    );
-                }
-                let parent_entity = self.entity(link.parent)?;
-                let _ = self.entity(link.child)?;
-                self.merge_component_with_rating_check(link.child, parent_entity, child_kind)?;
+            if is_incubator {
+                debug!(
+                    "entities {:?} {:?}",
+                    self.entity(link.parent),
+                    self.entity(link.child)
+                );
             }
+            let parent_entity = self.entity(link.parent)?;
+            let _ = self.entity(link.child)?;
+            self.merge_component_with_rating_check(link.child, parent_entity, child_kind)?;
         }
 
         match self {
@@ -421,59 +410,42 @@ impl<'a> Sources<'a> {
 
         // Handle component links when they are added
         if Self::is_component_link(new) {
-            // Handle this as a new link insertion for component merging
-            if self.entity(new.parent).is_ok() && self.entity(new.child).is_ok() {
-                let parent_kind = new.parent_kind.to_kind();
-                let child_kind = new.child_kind.to_kind();
-                let is_many_to_one = NodeKind::get_relation(parent_kind, child_kind)
-                    .is_some_and(|rel| rel == schema::NodeRelation::ManyToOne);
+            // Check if parent already has a child of this type
+            let existing_child_of_same_kind = {
+                let world = self.world()?;
+                let node_map = world
+                    .get_resource::<NodesMapResource>()
+                    .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
 
-                if is_many_to_one {
-                    // For many-to-one components, clone the component tree to the parent's entity
-                    if self.entity(new.parent).is_ok() && self.entity(new.child).is_ok() {
-                        let parent_entity = self.entity(new.parent)?;
-                        self.clone_component_tree_for_link(new.child, parent_entity)?;
-                    }
-                }
-            } else {
-                // Check if parent already has a child of this type
-                let existing_child_of_same_kind = {
-                    let world = self.world()?;
-                    let node_map = world
-                        .get_resource::<NodesMapResource>()
-                        .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
-
-                    // Get parent entity
-                    if let Some(&parent_entity) = node_map.entities.get(&new.parent) {
-                        // Find existing component of the same kind on parent entity
-                        node_map
-                            .entity_to_nodes
-                            .get(&parent_entity)
-                            .and_then(|nodes| {
-                                nodes
-                                    .iter()
-                                    .find(|&&node_id| {
-                                        node_map.get_kind(node_id).map_or(false, |kind| {
-                                            kind == new.child_kind.to_kind()
-                                                && node_id != new.parent
-                                        })
+                // Get parent entity
+                if let Some(&parent_entity) = node_map.entities.get(&new.parent) {
+                    // Find existing component of the same kind on parent entity
+                    node_map
+                        .entity_to_nodes
+                        .get(&parent_entity)
+                        .and_then(|nodes| {
+                            nodes
+                                .iter()
+                                .find(|&&node_id| {
+                                    node_map.get_kind(node_id).map_or(false, |kind| {
+                                        kind == new.child_kind.to_kind() && node_id != new.parent
                                     })
-                                    .copied()
-                            })
-                    } else {
-                        None
-                    }
-                };
-                // If there's an existing child of the same kind, unlink it first
-                if let Some(existing_child_id) = existing_child_of_same_kind {
-                    self.unlink_from_component_parent(existing_child_id)?;
+                                })
+                                .copied()
+                        })
+                } else {
+                    None
                 }
-                // Now unlink the new child from any existing component parent it might have
-                self.unlink_from_component_parent(new.child)?;
-                // Finally, merge the child onto the parent's entity
-                let parent_entity = self.entity(new.parent)?;
-                self.merge_component_entities_for_link(new.child, parent_entity)?;
+            };
+            // If there's an existing child of the same kind, unlink it first
+            if let Some(existing_child_id) = existing_child_of_same_kind {
+                self.unlink_from_component_parent(existing_child_id)?;
             }
+            // Now unlink the new child from any existing component parent it might have
+            self.unlink_from_component_parent(new.child)?;
+            // Finally, merge the child onto the parent's entity
+            let parent_entity = self.entity(new.parent)?;
+            self.merge_component_entities_for_link(new.child, parent_entity)?;
         }
 
         Ok(())
@@ -487,16 +459,19 @@ impl<'a> Sources<'a> {
     ) -> NodeResult<()> {
         let target_entity = self.find_or_create_component_entity(node_id, kind)?;
 
-        if let Some(parent_kind) = kind.component_parent() {
-            if let Ok(parents) = self.get_parents_of_kind(node_id, parent_kind) {
-                for parent_id in parents {
-                    if let Ok(parent_entity) = self.entity(parent_id) {
-                        let _ = self.check_and_handle_promotion_from_extras(
-                            node_id,
-                            kind,
-                            parent_entity,
-                            node_data,
-                        );
+        // Check all parents to see if any have this node as a component child
+        if let Ok(all_parents) = self.get_parents(node_id) {
+            for parent_id in all_parents {
+                if let Ok(parent_kind) = self.get_node_kind(parent_id) {
+                    if kind.is_component_child(parent_kind) {
+                        if let Ok(parent_entity) = self.entity(parent_id) {
+                            let _ = self.check_and_handle_promotion_from_extras(
+                                node_id,
+                                kind,
+                                parent_entity,
+                                node_data,
+                            );
+                        }
                     }
                 }
             }
@@ -605,26 +580,26 @@ impl<'a> Sources<'a> {
         if let Ok(existing_entity) = self.entity(node_id) {
             return Ok(existing_entity);
         }
-        // Check if we have a component parent that already exists
-        if let Some(parent_kind) = kind.component_parent() {
-            if let Ok(parents) = self.get_parents_of_kind(node_id, parent_kind) {
-                for parent_id in parents {
-                    if let Ok(entity) = self.entity(parent_id) {
-                        return Ok(entity);
+        // Check if we have any component parent that already exists
+        if let Ok(all_parents) = self.get_parents(node_id) {
+            for parent_id in all_parents {
+                if let Ok(parent_kind) = self.get_node_kind(parent_id) {
+                    if kind.is_component_child(parent_kind) {
+                        if let Ok(entity) = self.entity(parent_id) {
+                            return Ok(entity);
+                        }
                     }
                 }
             }
         }
-        // Check if we have component children that already exist
-        for child_kind in kind.component_children() {
-            match NodeKind::get_relation(kind, child_kind).unwrap() {
-                NodeRelation::ManyToOne => continue,
-                NodeRelation::OneToOne | NodeRelation::OneToMany => {}
-            }
-            if let Ok(children) = self.get_children_of_kind(node_id, child_kind) {
-                for child_id in children {
-                    if let Ok(entity) = self.entity(child_id) {
-                        return Ok(entity);
+        // Check if we have any component children that already exist
+        if let Ok(all_children) = self.get_children(node_id) {
+            for child_id in all_children {
+                if let Ok(child_kind) = self.get_node_kind(child_id) {
+                    if child_kind.is_component_child(kind) {
+                        if let Ok(entity) = self.entity(child_id) {
+                            return Ok(entity);
+                        }
                     }
                 }
             }
@@ -874,9 +849,22 @@ impl<'a> Sources<'a> {
         let Some(kind) = node_kind else {
             return Ok(()); // Node doesn't exist
         };
-        // Check if this node has a component parent type
-        if kind.component_parent().is_none() {
-            return Ok(()); // Not a component node
+        // Check if this node has any component parent types
+        // We need to check all parents to see if any have this node as a component child
+        let has_component_parent = if let Ok(parents) = self.get_parents(node_id) {
+            parents.iter().any(|&parent_id| {
+                if let Ok(parent_kind) = self.get_node_kind(parent_id) {
+                    kind.is_component_child(parent_kind)
+                } else {
+                    false
+                }
+            })
+        } else {
+            false
+        };
+
+        if !has_component_parent {
+            return Ok(()); // Not a component node or no component parent found
         }
         // Collect all nodes to move (this node and its recursive component children)
         let nodes_to_move = self.collect_component_tree_with_recursive_children(node_id)?;
@@ -913,9 +901,7 @@ impl<'a> Sources<'a> {
     fn is_component_link(link: &TNodeLink) -> bool {
         let parent_kind = link.parent_kind.to_kind();
         let child_kind = link.child_kind.to_kind();
-        child_kind
-            .component_parent()
-            .is_some_and(|kind| kind == parent_kind)
+        child_kind.is_component_child(parent_kind)
     }
 
     fn collect_component_tree_with_recursive_children(
@@ -934,19 +920,21 @@ impl<'a> Sources<'a> {
         let mut result = Vec::new();
         result.push((root_id, root_kind));
 
-        // Get all recursive component children kinds
-        let recursive_children_kinds = root_kind.component_children_recursive();
-
-        if !recursive_children_kinds.is_empty() {
-            // Find the entity this node is on
-            if let Some(&entity) = node_map.entities.get(&root_id) {
-                // Find all nodes on this entity that match the recursive children kinds
-                if let Some(entity_nodes) = node_map.entity_to_nodes.get(&entity) {
-                    for &node_id in entity_nodes {
-                        if node_id != root_id {
-                            if let Some(node_kind) = node_map.get_kind(node_id) {
-                                if recursive_children_kinds.contains(&node_kind) {
-                                    result.push((node_id, node_kind));
+        // Find the entity this node is on
+        if let Some(&entity) = node_map.entities.get(&root_id) {
+            // Find all nodes on this entity
+            if let Some(entity_nodes) = node_map.entity_to_nodes.get(&entity) {
+                for &node_id in entity_nodes {
+                    if node_id != root_id {
+                        if let Some(node_kind) = node_map.get_kind(node_id) {
+                            // Check if this node is a component child of the root
+                            if node_kind.is_component_child(root_kind) {
+                                result.push((node_id, node_kind));
+                                // Recursively add component children of this node
+                                if let Ok(mut child_result) =
+                                    self.collect_component_tree_with_recursive_children(node_id)
+                                {
+                                    result.append(&mut child_result);
                                 }
                             }
                         }
@@ -985,6 +973,14 @@ impl<'a> Sources<'a> {
             }
         });
         Ok(())
+    }
+
+    pub fn find_var_kind(&self, id: u64, var: VarName) -> NodeResult<NodeKind> {
+        self.get_nodes_map()?
+            .get_entity_kinds(self.entity(id)?)
+            .into_iter()
+            .find(|k| k.var_names().contains(&var))
+            .to_custom_e_fn(|| format!("NodeKind not found containing {var} in {id}"))
     }
 }
 
@@ -1079,14 +1075,7 @@ pub enum StdbUpdate {
 impl ContextSource for Sources<'_> {
     fn get_var(&self, node_id: u64, var: VarName) -> NodeResult<VarValue> {
         let entity = self.entity(node_id).track()?;
-        let kind = self
-            .get_node_kind(node_id)
-            .track()?
-            .with_other_components()
-            .into_iter()
-            .find(|k| k.var_names().contains(&var))
-            .to_not_found()
-            .track()?;
+        let kind = self.find_var_kind(node_id, var)?;
         let world = self.world().track()?;
 
         // Use time-based accessor if we have a time context (in battles)
@@ -1112,20 +1101,16 @@ impl ContextSource for Sources<'_> {
     fn set_var(&mut self, node_id: u64, var: VarName, value: VarValue) -> NodeResult<()> {
         // Update the node itself
         let kind = self.get_node_kind(node_id)?;
-        for kind in kind.with_other_components() {
-            if !kind.var_names().contains(&var) {
-                continue;
-            }
-            node_kind_match!(kind, {
-                if self
-                    .load_mut::<NodeType>(node_id)
-                    .is_ok_and(|mut n| n.set_var(var, value.clone()).is_ok())
-                {
-                    self.var_updated(node_id, var, value);
-                    break;
-                }
-            });
-        }
+        let kind = if kind.var_names().contains(&var) {
+            kind
+        } else {
+            self.find_var_kind(node_id, var)?
+        };
+        node_kind_match!(kind, {
+            self.load_mut::<NodeType>(node_id)?
+                .set_var(var, value.clone())?;
+        });
+        self.var_updated(node_id, var, value);
         Ok(())
     }
 
@@ -1133,21 +1118,13 @@ impl ContextSource for Sources<'_> {
         if let Ok(sim) = self.battle_mut() {
             // Track history in battle contexts using the new history fields
             let t = sim.duration;
-            let kind = self.get_node_kind(node_id).ok();
-            if let Some(kind) = kind {
-                for kind in kind.with_other_components() {
-                    if !kind.var_names().contains(&var) {
-                        continue;
-                    }
-                    node_kind_match!(kind, {
-                        if let Ok(mut node) = self.load_mut::<NodeType>(node_id) {
-                            if node.set_var_history(var, value.clone(), t).is_ok() {
-                                break;
-                            }
-                        }
-                    });
-                }
-            }
+            let kind = self.find_var_kind(node_id, var).unwrap();
+            node_kind_match!(kind, {
+                self.load_mut::<NodeType>(node_id)
+                    .unwrap()
+                    .set_var_history(var, value.clone(), t)
+                    .unwrap()
+            });
         }
     }
 

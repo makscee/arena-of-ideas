@@ -376,26 +376,17 @@ impl StatusBuilder {
         let rep_id = self.id + 2;
         let state_id = self.id + 3;
 
-        let mut representation = NRepresentation::default();
-        representation.set_id(rep_id);
-        representation.script = RhaiScript::default();
-
-        let mut behavior = NStatusBehavior::default();
-        behavior.set_id(behavior_id);
-        behavior.trigger = self.trigger;
-        behavior.effect =
-            RhaiScript::new(self.script).with_description("Status effect".to_string());
-        behavior.representation.set_loaded(representation);
-
-        let mut state = NState::default();
-        state.set_id(state_id);
-        state.stax = 1;
-
-        let mut status = NStatusMagic::default();
-        status.set_id(self.id);
+        let mut status = NStatusMagic::default()
+            .with_representation(NRepresentation::default().with_id(rep_id))
+            .with_behavior(NStatusBehavior::new(
+                behavior_id,
+                0,
+                self.trigger,
+                RhaiScript::new(self.script).with_description("Status effect".to_string()),
+            ))
+            .with_state(NStatusState::new(state_id, 0, 1, 0, default()))
+            .with_id(self.id);
         status.status_name = format!("Status {}", self.id);
-        status.behavior.set_loaded(behavior);
-        status.state.set_loaded(state);
 
         status
     }

@@ -1,9 +1,10 @@
 use node_build_utils::*;
-use quote::quote;
-use std::collections::HashMap;
-use std::env;
-use std::fs;
-use std::path::Path;
+use quote::{format_ident, quote};
+use std::{
+    collections::{HashMap, HashSet},
+    env, fs,
+    path::Path,
+};
 
 fn main() {
     println!("cargo:rerun-if-changed=src/raw_nodes.rs");
@@ -120,6 +121,58 @@ fn generate_is_one_to_many_arms(node_map: &HashMap<String, NodeInfo>) -> proc_ma
     }
 }
 
+fn generate_is_component_child_arms(
+    component_children: &HashMap<String, HashSet<String>>,
+) -> proc_macro2::TokenStream {
+    let arms: Vec<_> = component_children
+        .iter()
+        .map(|(parent, children)| {
+            let parent_ident = format_ident!("{}", parent);
+            let child_patterns: Vec<_> = children
+                .iter()
+                .map(|child| {
+                    let child_ident = format_ident!("{}", child);
+                    quote! { NodeKind::#child_ident }
+                })
+                .collect();
+
+            quote! {
+                NodeKind::#parent_ident => {
+                    matches!(self, #(#child_patterns)|*)
+                }
+            }
+        })
+        .collect();
+
+    quote! { #(#arms)* }
+}
+
+fn generate_component_children_arms(
+    component_children: &HashMap<String, HashSet<String>>,
+) -> proc_macro2::TokenStream {
+    let arms: Vec<_> = component_children
+        .iter()
+        .map(|(parent, children)| {
+            let parent_ident = format_ident!("{}", parent);
+            let child_idents: Vec<_> = children
+                .iter()
+                .map(|child| {
+                    let child_ident = format_ident!("{}", child);
+                    quote! { children.push(NodeKind::#child_ident); }
+                })
+                .collect();
+
+            quote! {
+                NodeKind::#parent_ident => {
+                    #(#child_idents)*
+                }
+            }
+        })
+        .collect();
+
+    quote! { #(#arms)* }
+}
+
 fn generate_node_kind(
     nodes: &[NodeInfo],
     node_map: &HashMap<String, NodeInfo>,
@@ -140,22 +193,12 @@ fn generate_node_kind(
     let relationships = build_relationship_maps(node_map);
 
     // Generate match arms for relationship functions
-    let component_parent_arms = generate_parent_arms(&relationships.component_parents);
-    let component_children_arms = generate_children_arms(&relationships.component_children);
-    let component_children_recursive_arms =
-        generate_children_recursive_arms(&relationships.component_children);
+    let is_component_child_arms =
+        generate_is_component_child_arms(&relationships.component_children);
+    let component_children_arms =
+        generate_component_children_arms(&relationships.component_children);
     let owned_parent_arms = generate_owning_parent_arms(&relationships.owned_parents);
     let owned_children_arms = generate_owning_children_arms(&relationships.owned_children);
-    let other_components_arms = generate_other_components_arms(
-        &relationships.component_parents,
-        &relationships.component_children,
-    );
-
-    // Generate is_one_to_many function
-    let is_one_to_many_arms = generate_is_one_to_many_arms(node_map);
-
-    // Generate get_relation function
-    let node_relation_arms = generate_node_relation_arms(node_map);
 
     let allow_attrs = generated_code_allow_attrs();
     quote! {
@@ -205,34 +248,15 @@ fn generate_node_kind(
                 matches!(self, #(NodeKind::#named_nodes)|*)
             }
 
-            pub fn component_parent(self) -> Option<NodeKind> {
-                match self {
-                    #component_parent_arms
-                    _ => None,
+            pub fn is_component_child(self, parent_kind: NodeKind) -> bool {
+                match parent_kind {
+                    #is_component_child_arms
+                    _ => false,
                 }
             }
 
-            pub fn component_children(self) -> HashSet<NodeKind> {
-                match self {
-                    #component_children_arms
-                    _ => HashSet::new(),
-                }
-            }
-
-            pub fn component_children_recursive(self) -> HashSet<NodeKind> {
-                match self {
-                    #component_children_recursive_arms
-                    _ => HashSet::new(),
-                }
-            }
-
-            pub fn owning_parents(self) -> Vec<NodeKind> {
+            pub fn parents(self) -> Vec<NodeKind> {
                 let mut parents = Vec::new();
-
-                // Add component parent if exists
-                if let Some(parent) = self.component_parent() {
-                    parents.push(parent);
-                }
 
                 // Add owned parent if exists
                 match self {
@@ -243,11 +267,14 @@ fn generate_node_kind(
                 parents
             }
 
-            pub fn owning_children(self) -> Vec<NodeKind> {
+            pub fn children(self) -> Vec<NodeKind> {
                 let mut children = Vec::new();
 
                 // Add component children
-                children.extend(self.component_children());
+                match self {
+                    #component_children_arms
+                    _ => {}
+                }
 
                 // Add owned children
                 match self {
@@ -256,35 +283,6 @@ fn generate_node_kind(
                 }
 
                 children
-            }
-
-            pub fn other_components(self) -> HashSet<NodeKind> {
-                match self {
-                    #other_components_arms
-                    _ => HashSet::new(),
-                }
-            }
-
-            pub fn is_one_to_many(parent: NodeKind, child: NodeKind) -> bool {
-                match (parent, child) {
-                    #is_one_to_many_arms
-                    _ => false,
-                }
-            }
-
-            pub fn get_relation(parent: NodeKind, child: NodeKind) -> Option<NodeRelation> {
-                match (parent, child) {
-                    #node_relation_arms
-                    _ => None,
-                }
-            }
-
-            pub fn base_kind(self) -> NodeKind {
-                let mut current = self;
-                while let Some(parent_kind) = current.component_parent() {
-                    current = parent_kind;
-                }
-                current
             }
         }
 

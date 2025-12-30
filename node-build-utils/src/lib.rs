@@ -234,14 +234,12 @@ pub fn validate_parent_relationships(
 }
 
 pub struct RelationshipMaps {
-    pub component_parents: HashMap<String, String>,
     pub component_children: HashMap<String, HashSet<String>>,
     pub owned_parents: HashMap<String, String>,
     pub owned_children: HashMap<String, HashSet<String>>,
 }
 
 pub fn build_relationship_maps(node_map: &HashMap<String, NodeInfo>) -> RelationshipMaps {
-    let mut component_parents: HashMap<String, String> = HashMap::new();
     let mut component_children: HashMap<String, HashSet<String>> = HashMap::new();
     let mut owned_parents: HashMap<String, String> = HashMap::new();
     let mut owned_children: HashMap<String, HashSet<String>> = HashMap::new();
@@ -250,7 +248,6 @@ pub fn build_relationship_maps(node_map: &HashMap<String, NodeInfo>) -> Relation
         for field in &node_info.fields {
             match field.link_type {
                 LinkType::Component => {
-                    component_parents.insert(field.target_type.clone(), node_name.clone());
                     component_children
                         .entry(node_name.clone())
                         .or_insert_with(HashSet::new)
@@ -269,7 +266,6 @@ pub fn build_relationship_maps(node_map: &HashMap<String, NodeInfo>) -> Relation
     }
 
     RelationshipMaps {
-        component_parents,
         component_children,
         owned_parents,
         owned_children,
@@ -378,64 +374,6 @@ pub fn generate_owning_children_arms(
             }
         }
     });
-    quote! { #(#arms)* }
-}
-
-pub fn generate_other_components_arms(
-    component_parents: &HashMap<String, String>,
-    component_children: &HashMap<String, HashSet<String>>,
-) -> TokenStream {
-    let mut component_groups: HashMap<String, HashSet<String>> = HashMap::new();
-
-    for node in component_parents.keys().chain(component_children.keys()) {
-        let mut group = HashSet::new();
-        let mut to_visit = vec![node.clone()];
-        let mut visited = HashSet::new();
-
-        while let Some(current) = to_visit.pop() {
-            if visited.contains(&current) {
-                continue;
-            }
-            visited.insert(current.clone());
-            group.insert(current.clone());
-
-            if let Some(parent) = component_parents.get(&current) {
-                to_visit.push(parent.clone());
-            }
-
-            if let Some(children) = component_children.get(&current) {
-                for child in children {
-                    to_visit.push(child.clone());
-                }
-            }
-        }
-
-        group.remove(node);
-        component_groups.insert(node.clone(), group);
-    }
-
-    let arms: Vec<TokenStream> = component_groups
-        .iter()
-        .map(|(node, others)| {
-            let node_ident = format_ident!("{}", node);
-            let other_idents: Vec<TokenStream> = others
-                .iter()
-                .map(|other| {
-                    let other_ident = format_ident!("{}", other);
-                    quote! { set.insert(NodeKind::#other_ident); }
-                })
-                .collect();
-
-            quote! {
-                NodeKind::#node_ident => {
-                    let mut set = HashSet::new();
-                    #(#other_idents)*
-                    set
-                },
-            }
-        })
-        .collect();
-
     quote! { #(#arms)* }
 }
 

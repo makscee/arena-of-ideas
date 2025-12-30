@@ -125,8 +125,8 @@ pub enum StatusAction {
         ability_name: String,
         target_id: u64,
     },
-    ModifyStacks {
-        delta: i32,
+    SetStax {
+        value: i32,
     },
 }
 

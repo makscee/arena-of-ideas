@@ -155,7 +155,7 @@ impl<'a> BattleCameraBuilder<'a> {
                 let world = ctx.world_mut()?;
 
                 for entity in world
-                    .query_filtered::<Entity, (With<NRepresentation>, Without<NHouse>)>()
+                    .query_filtered::<Entity, (With<NRepresentation>, With<NStatusMagic>, Without<NHouse>)>()
                     .iter(world)
                     .collect_vec()
                 {
@@ -163,7 +163,7 @@ impl<'a> BattleCameraBuilder<'a> {
                     let id = ids
                         .into_iter()
                         .next()
-                        .ok_or(NodeError::entity_not_found(entity.index() as u64))?;
+                        .ok_or(NodeError::id_not_found(entity.generation().to_bits(), entity.index()))?;
                     ctx.with_status(id, |ctx| {
                         if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());
@@ -177,15 +177,10 @@ impl<'a> BattleCameraBuilder<'a> {
                 }
 
                 let world = ctx.world_mut()?;
-                for slot in world
-                    .query::<&NTeamSlot>()
-                    .iter(world)
-                    .cloned()
-                    .collect_vec()
+                for unit in world
+                    .query::<&NUnit>()
+                    .iter(world).cloned().collect_vec()
                 {
-                    let Ok(unit) = slot.unit.load_node(ctx) else {
-                        continue;
-                    };
                     ctx.with_owner(unit.id, |ctx| {
                         if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());
@@ -204,7 +199,7 @@ impl<'a> BattleCameraBuilder<'a> {
 
                 let world = ctx.world_mut()?;
                 for entity in world
-                    .query_filtered::<Entity, With<NRepresentation>>()
+                    .query_filtered::<Entity, (With<NRepresentation>, With<Vfx>)>()
                     .iter(world)
                     .collect_vec()
                 {
