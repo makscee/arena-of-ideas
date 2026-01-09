@@ -163,7 +163,7 @@ impl<'a> BattleCameraBuilder<'a> {
                     let id = ids
                         .into_iter()
                         .next()
-                        .ok_or(NodeError::id_not_found(entity.generation().to_bits(), entity.index()))?;
+                        .ok_or(NodeError::custom(format!("Entity {}:{} not found", entity.generation(), entity.index())))?;
                     ctx.with_status(id, |ctx| {
                         if !ctx.get_var(VarName::visible).get_bool().unwrap_or_default() {
                             return Ok(());

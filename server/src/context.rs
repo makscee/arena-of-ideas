@@ -35,7 +35,11 @@ impl<'a> ServerSource<'a> {
 
         let expected_kind = T::kind_s();
         if tnode.kind.to_kind() != expected_kind {
-            return Err(NodeError::invalid_kind(expected_kind, tnode.kind.to_kind()));
+            return Err(NodeError::custom(format!(
+                "Invalid node kind: expected {}, got {}",
+                expected_kind,
+                tnode.kind.to_kind()
+            )));
         }
 
         tnode.to_node::<T>()

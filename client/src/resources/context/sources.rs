@@ -169,7 +169,7 @@ impl<'a> Sources<'a> {
     pub fn get_battle_simulation(&self) -> NodeResult<&BattleSimulation> {
         match self {
             Sources::Battle(sim, _) => Ok(sim),
-            _ => Err(NodeError::custom("Not a battle source")),
+            _ => bail!("Not a battle source"),
         }
     }
 
@@ -185,7 +185,7 @@ impl<'a> Sources<'a> {
             Sources::Solid(world) | Sources::Core(world) | Sources::Incubator(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(s) => s.world(),
-            Sources::None => Err(NodeError::custom("No world in empty source")),
+            Sources::None => bail_not_in_context!("No world in empty source"),
         }
     }
 
@@ -193,17 +193,17 @@ impl<'a> Sources<'a> {
         match self {
             Sources::Solid(world) | Sources::Core(world) | Sources::Incubator(world) => Ok(world),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
-            Sources::SourceRef(_) => Err(NodeError::custom(
-                "Cannot get mutable world from source ref",
-            )),
-            Sources::None => Err(NodeError::custom("No world in empty source")),
+            Sources::SourceRef(_) => {
+                bail!("Cannot get mutable world from source ref")
+            }
+            Sources::None => bail_not_in_context!("No world in empty source"),
         }
     }
 
     pub fn get_nodes_map(&self) -> NodeResult<&NodesMapResource> {
         self.world()?
             .get_resource::<NodesMapResource>()
-            .ok_or_else(|| NodeError::custom("NodesMapResource resource not found"))
+            .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))
     }
 
     fn get_nodes_map_mut(&mut self) -> NodeResult<Mut<'_, NodesMapResource>> {
@@ -215,13 +215,13 @@ impl<'a> Sources<'a> {
     fn get_links_data(&self) -> NodeResult<&NodesLinkResource> {
         self.world()?
             .get_resource::<NodesLinkResource>()
-            .ok_or_else(|| NodeError::custom("NodeLinksData resource not found"))
+            .ok_or_else(|| NodeError::not_in_context("NodeLinksData"))
     }
 
     fn get_links_data_mut(&mut self) -> NodeResult<Mut<'_, NodesLinkResource>> {
         self.world_mut()?
             .get_resource_mut::<NodesLinkResource>()
-            .ok_or_else(|| NodeError::custom("NodeLinksData resource not found"))
+            .ok_or_else(|| NodeError::not_in_context("NodeLinksData"))
     }
 
     pub fn entity(&self, node_id: u64) -> NodeResult<Entity> {
@@ -415,7 +415,7 @@ impl<'a> Sources<'a> {
                 let world = self.world()?;
                 let node_map = world
                     .get_resource::<NodesMapResource>()
-                    .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                    .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
 
                 // Get parent entity
                 if let Some(&parent_entity) = node_map.entities.get(&new.parent) {
@@ -640,7 +640,7 @@ impl<'a> Sources<'a> {
             let world = self.world()?;
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
 
             node_map
                 .entity_to_nodes
@@ -733,7 +733,7 @@ impl<'a> Sources<'a> {
                     let should_despawn = {
                         let node_map = world
                             .get_resource::<NodesMapResource>()
-                            .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                            .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
                         node_map
                             .entity_to_nodes
                             .get(&child_entity)
@@ -768,7 +768,7 @@ impl<'a> Sources<'a> {
         let source_entity = {
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
             node_map
                 .entities
                 .get(&child_id)
@@ -792,7 +792,7 @@ impl<'a> Sources<'a> {
         let should_despawn = {
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
             node_map
                 .entity_to_nodes
                 .get(&source_entity)
@@ -817,7 +817,7 @@ impl<'a> Sources<'a> {
         let source_entity = {
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
             node_map
                 .entities
                 .get(&child_id)
@@ -843,7 +843,7 @@ impl<'a> Sources<'a> {
             let world = self.world()?;
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
             node_map.get_kind(node_id)
         };
         let Some(kind) = node_kind else {
@@ -878,7 +878,7 @@ impl<'a> Sources<'a> {
         let current_entity = {
             let node_map = world
                 .get_resource::<NodesMapResource>()
-                .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+                .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
             node_map
                 .entities
                 .get(&node_id)
@@ -911,7 +911,7 @@ impl<'a> Sources<'a> {
         let world = self.world()?;
         let node_map = world
             .get_resource::<NodesMapResource>()
-            .ok_or_else(|| NodeError::custom("NodesMapResource not found"))?;
+            .ok_or_else(|| NodeError::not_in_context("NodesMapResource"))?;
 
         let root_kind = node_map
             .get_kind(root_id)
@@ -980,7 +980,9 @@ impl<'a> Sources<'a> {
             .get_entity_kinds(self.entity(id)?)
             .into_iter()
             .find(|k| k.var_names().contains(&var))
-            .to_custom_e_fn(|| format!("NodeKind not found containing {var} in {id}"))
+            .ok_or_else(|| {
+                NodeError::custom(format!("NodeKind not found containing {var} in {id}"))
+            })
     }
 }
 
@@ -990,7 +992,7 @@ impl ClientSource for Sources<'_> {
             Sources::Solid(w) | Sources::Core(w) | Sources::Incubator(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&sim.world),
             Sources::SourceRef(source) => source.world(),
-            Sources::None => Err(NodeError::custom("No world available")),
+            Sources::None => bail_not_in_context!("No world available"),
         }
     }
 
@@ -998,8 +1000,8 @@ impl ClientSource for Sources<'_> {
         match self {
             Sources::Solid(w) | Sources::Core(w) | Sources::Incubator(w) => Ok(w),
             Sources::Battle(sim, _) => Ok(&mut sim.world),
-            Sources::SourceRef(_) => Err(NodeError::custom("Can't mutate World of SourceRef")),
-            Sources::None => Err(NodeError::custom("No world available")),
+            Sources::SourceRef(_) => bail!("Can't mutate World of SourceRef"),
+            Sources::None => bail_not_in_context!("No world available"),
         }
     }
 
@@ -1025,14 +1027,14 @@ impl ClientSource for Sources<'_> {
         match self {
             Sources::Battle(sim, _) => Ok(sim),
             Sources::SourceRef(source) => source.battle(),
-            _ => Err(NodeError::custom("Not a battle source")),
+            _ => bail!("Not a battle source"),
         }
     }
 
     fn battle_mut(&mut self) -> NodeResult<&mut BattleSimulation> {
         match self {
             Sources::Battle(sim, _) => Ok(sim),
-            _ => Err(NodeError::custom("Not a battle source")),
+            _ => bail!("Not a battle source"),
         }
     }
 
@@ -1055,9 +1057,9 @@ impl ClientSource for Sources<'_> {
         match self {
             Sources::Battle(sim, _) => Ok(&mut sim.rng),
             Sources::SourceRef(_) => {
-                Err(NodeError::custom("Cannot get mutable RNG from source ref"))
+                bail!("Cannot get mutable RNG from source ref")
             }
-            _ => Err(NodeError::custom("RNG only available in battle context")),
+            _ => bail_not_in_context!("RNG only available in battle context"),
         }
     }
 }

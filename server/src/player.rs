@@ -32,7 +32,7 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
 fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, 0, name).get_data())
-        .to_custom_e_s("Player not found")?;
+        .ok_or_else(|| NodeError::custom("Player not found"))?;
     debug!("{player:?}");
     if player
         .player_data
@@ -170,7 +170,7 @@ pub trait GetPlayer {
 impl GetPlayer for ServerContext<'_> {
     fn player(&self) -> NodeResult<NPlayer> {
         let identity = NPlayer::find_identity(self, &self.source().rctx().sender)
-            .to_custom_e("NPlayerIdentity not found")
+            .ok_or_else(|| NodeError::custom("NPlayerIdentity not found"))
             .track()?;
         let id = self
             .get_parents_of_kind(identity.id, NodeKind::NPlayer)?

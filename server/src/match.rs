@@ -44,7 +44,7 @@ fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> NodeResult<u64> {
             .load_nodes(ctx)?
             .into_iter()
             .find_map(|f| if f.floor == floor { Some(f.id) } else { None })
-            .to_custom_err_fn(|| format!("Pool floor {floor} not found"))
+            .ok_or_else(|| NodeError::custom(format!("Pool floor {} not found", floor)))
     }
 }
 
@@ -140,11 +140,11 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let offer = m
         .shop_offers
         .last_mut()
-        .to_custom_e_s("No active shop offers")?;
+        .ok_or_else(|| NodeError::custom("No active shop offers"))?;
     let slot = offer
         .case
         .get_mut(shop_idx as usize)
-        .to_custom_e_s_fn(|| format!("Shop slot {shop_idx} not found"))?;
+        .ok_or_else(|| "Shop slot not found".to_string())?;
     if slot.sold {
         return Err("Shop slot already sold".to_string());
     }
@@ -338,13 +338,14 @@ fn match_submit_battle_result(
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
                 let last_floor = arena.last_floor;
                 let mut bosses = arena.floor_bosses.load_nodes(ctx)?;
-                let mut boss = bosses
+                let boss = bosses
                     .iter_mut()
                     .find(|f| f.floor == current_floor)
-                    .to_custom_err_fn(|| format!("Floor boss not found for {current_floor}"))?
-                    .clone();
+                    .ok_or_else(|| {
+                        NodeError::custom(format!("Floor boss not found for {}", current_floor))
+                    })?;
                 boss.team.set_loaded(new_boss_team);
-                ctx.source_mut().commit(boss)?;
+                ctx.source_mut().commit(boss.take())?;
 
                 if current_floor == last_floor {
                     m.state = MatchState::ChampionShop;

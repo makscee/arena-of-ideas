@@ -187,13 +187,13 @@ impl TreeExt for Tree<Pane> {
         let cur_tile = self
             .tiles
             .get_mut(cur)
-            .to_custom_e("Failed to get current tile")?;
+            .ok_or_else(|| NodeError::custom("Failed to get current tile"))?;
         match cur_tile {
             Tile::Pane(_) => {
                 let container = self
                     .tiles
                     .parent_of(cur)
-                    .to_custom_e("Failed to get parent of current tile")?;
+                    .ok_or_else(|| NodeError::custom("Failed to get parent of current tile"))?;
                 match self.tiles.get_mut(container).unwrap() {
                     Tile::Pane(_) => unreachable!(),
                     Tile::Container(container) => container.add_child(new),

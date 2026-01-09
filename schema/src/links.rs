@@ -68,7 +68,7 @@ pub trait MultipleLink<T: Node> {
                 self.set_loaded(vec![node]);
                 Ok(self.get_mut()?.first_mut().unwrap())
             }
-            _ => Err(NodeError::custom(
+            _ => Err(NodeError::invalid_state(
                 "Cannot push to link that is not Loaded or None",
             )),
         }
@@ -91,16 +91,16 @@ impl<T: Node> SingleLink<T> for Component<T> {
     fn get(&self) -> NodeResult<&T> {
         match self {
             Component::Loaded { data, .. } => Ok(data),
-            Component::None { .. } => Err(NodeError::custom("Component link is None")),
-            _ => Err(NodeError::custom("Component link not loaded")),
+            Component::None { .. } => Err(NodeError::not_in_context("Component link")),
+            _ => Err(NodeError::not_in_context("Component link")),
         }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
             Component::Loaded { data, .. } => Ok(data),
-            Component::None { .. } => Err(NodeError::custom("Component link is None")),
-            _ => Err(NodeError::custom("Component link not loaded")),
+            Component::None { .. } => Err(NodeError::not_in_context("Component link")),
+            _ => Err(NodeError::not_in_context("Component link")),
         }
     }
 
@@ -110,7 +110,7 @@ impl<T: Node> SingleLink<T> for Component<T> {
             Component::Loaded { data, .. } => Ok(data),
             other => {
                 *self = other;
-                Err(NodeError::custom("Component link not loaded"))
+                Err(NodeError::not_in_context("Component link"))
             }
         }
     }
@@ -166,16 +166,16 @@ impl<T: Node> SingleLink<T> for Owned<T> {
     fn get(&self) -> NodeResult<&T> {
         match self {
             Owned::Loaded { data, .. } => Ok(data),
-            Owned::None { .. } => Err(NodeError::custom("Owned link is None")),
-            _ => Err(NodeError::custom("Owned link not loaded")),
+            Owned::None { .. } => Err(NodeError::not_in_context("Owned link")),
+            _ => Err(NodeError::not_in_context("Owned link")),
         }
     }
 
     fn get_mut(&mut self) -> NodeResult<&mut T> {
         match self {
             Owned::Loaded { data, .. } => Ok(data),
-            Owned::None { .. } => Err(NodeError::custom("Owned link is None")),
-            _ => Err(NodeError::custom("Owned link not loaded")),
+            Owned::None { .. } => Err(NodeError::not_in_context("Owned link")),
+            _ => Err(NodeError::not_in_context("Owned link")),
         }
     }
 
@@ -185,7 +185,7 @@ impl<T: Node> SingleLink<T> for Owned<T> {
             Owned::Loaded { data, .. } => Ok(data),
             other => {
                 *self = other;
-                Err(NodeError::custom("Owned link not loaded"))
+                Err(NodeError::not_in_context("Owned link"))
             }
         }
     }
@@ -241,7 +241,7 @@ impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
     fn get(&self) -> NodeResult<&Vec<T>> {
         match self {
             OwnedMultiple::Loaded { data, .. } => Ok(data),
-            _ => Err(NodeError::custom("OwnedMultiple link not loaded")),
+            _ => Err(NodeError::not_in_context("OwnedMultiple link")),
         }
     }
 
@@ -252,7 +252,7 @@ impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
                 self.set_loaded(Vec::new());
                 self.get_mut()
             }
-            _ => Err(NodeError::custom("OwnedMultiple link not loaded")),
+            _ => Err(NodeError::not_in_context("OwnedMultiple link")),
         }
     }
 
@@ -262,7 +262,7 @@ impl<T: Node> MultipleLink<T> for OwnedMultiple<T> {
             OwnedMultiple::Loaded { data, .. } => Ok(data),
             other => {
                 *self = other;
-                Err(NodeError::custom("OwnedMultiple link not loaded"))
+                Err(NodeError::not_in_context("OwnedMultiple link"))
             }
         }
     }

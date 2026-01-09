@@ -95,12 +95,12 @@ impl ExpressionImpl for Expression {
                 .battle()?
                 .offset_unit(ctx.owner()?, -1)
                 .map(|e| e.into())
-                .to_custom_e("No front unit found"),
+                .ok_or_else(|| NodeError::custom("No front unit found")),
             Expression::adjacent_back => ctx
                 .battle()?
                 .offset_unit(ctx.owner()?, 1)
                 .map(|e| e.into())
-                .to_custom_e("No back unit found"),
+                .ok_or_else(|| NodeError::custom("No back unit found")),
             Expression::sin(x) => Ok(x.get_f32(ctx)?.sin().into()),
             Expression::cos(x) => Ok(x.get_f32(ctx)?.cos().into()),
             Expression::even(x) => Ok((x.get_i32(ctx)? % 2 == 0).into()),
@@ -130,7 +130,7 @@ impl ExpressionImpl for Expression {
                 .get_u64_list(ctx)?
                 .choose(ctx.rng()?)
                 .map(|id| VarValue::u64(*id))
-                .to_custom_e("No units found"),
+                .ok_or_else(|| NodeError::custom("No units found")),
             Expression::neg(x) => x.get_value(ctx)?.neg(),
             Expression::str_macro(s, v) => {
                 let s = s.get_string(ctx)?;
