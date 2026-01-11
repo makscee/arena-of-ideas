@@ -43,6 +43,7 @@ fn load_assets(world: &mut World) {
     };
 
     world.insert_resource(assets);
+    GameState::Loaded.set_next(world);
 }
 
 #[derive(Resource, Clone)]
