@@ -8,6 +8,9 @@ use bevy_egui::{
 
 use super::*;
 
+use crate::ui::core::cstr::init_style_map;
+use crate::ui::core::colorix;
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -47,6 +50,11 @@ impl UiPlugin {
 }
 fn setup_ui(mut ctx: Query<&mut EguiContext>) {
     let ctx = ctx.single_mut().unwrap().get().clone();
+
+    // Initialize the style map as early as possible to prevent crashes
+    // when other code tries to parse styled strings before it's initialized
+    init_style_map(&colorix());
+
     pd_mut(|d| {
         let colorix = &mut d.client_settings.theme;
         colorix.generate_scale();
