@@ -51,12 +51,6 @@ mlua = { workspace = true }
 rhai = { workspace = true }
 egui_code_editor = "0.2.20"
 
-bevy_asset_loader = { git = "https://github.com/NiklasEi/bevy_asset_loader.git", branch = "bevy_main", features = [
-    "standard_dynamic_assets",
-] }
-bevy_common_assets = { git = "https://github.com/NiklasEi/bevy_common_assets.git", branch = "bevy_main", features = [
-    "ron",
-] }
 anyhow = "1.0.100"
 clap = { version = "4.5.51", features = ["derive"] }
 hex = "0.4.3"

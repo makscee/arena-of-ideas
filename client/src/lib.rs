@@ -84,15 +84,6 @@ pub fn run() {
     app.add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
-        .add_loading_state(
-            LoadingState::new(GameState::Loading)
-                .continue_to_state(GameState::Loaded)
-                .on_failure_continue_to_state(GameState::Error)
-                .load_collection::<AudioAssets>()
-                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
-                    "ron/_dynamic.assets.ron",
-                ),
-        )
         .add_systems(
             PreStartup,
             (setup_camera_system.before(EguiStartupSet::InitContexts),),
