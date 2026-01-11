@@ -378,11 +378,7 @@ impl GameState {
         *TARGET_STATE.lock() = self;
     }
     pub fn set_next(self, world: &mut World) {
-        info!(
-            "{} {}",
-            "Set next state:".dimmed(),
-            self.cstr().to_colored()
-        );
+        info!("{} {}", "Set next state:".dimmed(), self);
         world.resource_mut::<NextState<GameState>>().set(self);
     }
     pub fn set_next_op(self) {
