@@ -45,9 +45,8 @@ impl ExpressionImpl for Expression {
             Expression::var_or_zero(var) => ctx.owner_var(*var).or_else(|_| Ok(0.into())),
             Expression::state_var(x, var) => {
                 let id = x.get_u64(ctx)?;
-                NodeStateHistory::load(id.entity(ctx)?, ctx)?
-                    .get(*var)
-                    .to_e(*var)
+                // Use context source's get_var which now uses built-in node history
+                ctx.source().get_var(id, *var)
             }
             Expression::value(v) => Ok(v.clone()),
             Expression::f32(v) | Expression::f32_slider(v) => Ok((*v).into()),
@@ -96,12 +95,12 @@ impl ExpressionImpl for Expression {
                 .battle()?
                 .offset_unit(ctx.owner()?, -1)
                 .map(|e| e.into())
-                .to_custom_e("No front unit found"),
+                .ok_or_else(|| NodeError::custom("No front unit found")),
             Expression::adjacent_back => ctx
                 .battle()?
                 .offset_unit(ctx.owner()?, 1)
                 .map(|e| e.into())
-                .to_custom_e("No back unit found"),
+                .ok_or_else(|| NodeError::custom("No back unit found")),
             Expression::sin(x) => Ok(x.get_f32(ctx)?.sin().into()),
             Expression::cos(x) => Ok(x.get_f32(ctx)?.cos().into()),
             Expression::even(x) => Ok((x.get_i32(ctx)? % 2 == 0).into()),
@@ -131,7 +130,7 @@ impl ExpressionImpl for Expression {
                 .get_u64_list(ctx)?
                 .choose(ctx.rng()?)
                 .map(|id| VarValue::u64(*id))
-                .to_custom_e("No units found"),
+                .ok_or_else(|| NodeError::custom("No units found")),
             Expression::neg(x) => x.get_value(ctx)?.neg(),
             Expression::str_macro(s, v) => {
                 let s = s.get_string(ctx)?;
@@ -193,6 +192,13 @@ impl ExpressionImpl for Expression {
                     .eval::<i32>()
                     .map_err(|e| format!("lua error: {e}"))?;
                 Ok(v.into())
+            }
+            Expression::list(exprs) => {
+                let mut values = Vec::new();
+                for expr in exprs {
+                    values.push(Box::new(expr.get_value(ctx)?));
+                }
+                Ok(VarValue::list(values))
             }
         }
     }

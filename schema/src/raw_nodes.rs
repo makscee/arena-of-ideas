@@ -53,7 +53,6 @@ pub struct NHouse {
     pub ability: Component<NAbilityMagic>,
     pub status: Component<NStatusMagic>,
     pub state: Component<NState>,
-    pub units: RefMultiple<NUnit>,
 }
 
 #[derive(Node)]
@@ -75,7 +74,7 @@ pub struct NAbilityMagic {
 #[derive(Node)]
 #[content]
 pub struct NAbilityEffect {
-    pub effect: Effect,
+    pub effect: RhaiScript<AbilityAction>,
 }
 
 #[derive(Node)]
@@ -85,20 +84,25 @@ pub struct NStatusMagic {
     #[var]
     pub status_name: String,
     pub behavior: Component<NStatusBehavior>,
-    pub state: Component<NState>,
+    pub representation: Component<NRepresentation>,
+    pub state: Component<NStatusState>,
 }
 
 #[derive(Node)]
 #[content]
 pub struct NStatusBehavior {
-    pub reactions: Vec<Reaction>,
-    pub representation: Component<NStatusRepresentation>,
+    pub trigger: Trigger,
+    pub effect: RhaiScript<StatusAction>,
 }
 
 #[derive(Node)]
-#[content]
-pub struct NStatusRepresentation {
-    pub material: Material,
+pub struct NStatusState {
+    #[var]
+    pub stax: i32,
+    #[var]
+    pub index: i32,
+    #[var]
+    pub color: HexColor,
 }
 
 #[derive(Node)]
@@ -135,7 +139,7 @@ pub struct NMatch {
     pub shop_offers: Vec<ShopOffer>,
     pub battle_history: Vec<u64>,
     pub pending_battle: Option<u64>,
-    pub fusion: Option<(u64, u64, Vec<PackedNodes>)>,
+    pub fusion: Option<(u64, u64)>,
 
     pub shop_pool: Owned<NShopPool>,
     pub slots: OwnedMultiple<NTeamSlot>,
@@ -168,9 +172,11 @@ pub struct NUnit {
 #[derive(Node)]
 #[content]
 pub struct NUnitBehavior {
-    pub reactions: Vec<Reaction>,
+    pub trigger: Trigger,
+    pub target: Target,
+    pub effect: RhaiScript<UnitAction>,
     pub stats: Component<NUnitStats>,
-    pub representation: Component<NUnitRepresentation>,
+    pub representation: Component<NRepresentation>,
 }
 
 #[derive(Node)]
@@ -184,11 +190,12 @@ pub struct NUnitStats {
 
 #[derive(Node)]
 #[content]
-pub struct NUnitRepresentation {
-    pub material: Material,
-}
-
-#[derive(Node)]
 pub struct NRepresentation {
-    pub material: Material,
+    #[var]
+    pub position: Vec2,
+    #[var]
+    pub visible: bool,
+    pub t_birth: f32,
+    pub t_duration: f32,
+    pub script: RhaiScript<PainterAction>,
 }

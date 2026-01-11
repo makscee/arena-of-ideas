@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use super::*;
 
 pub struct BattleEditorPlugin;
 
@@ -27,7 +27,7 @@ impl BattleEditorPlugin {
                 )
                 .filled_slot_action(
                     "[red Delete Unit]".to_string(),
-                    |team_id, unit_id, slot_index, _ctx, _ui| {
+                    |team_id, _, slot_index, _ctx, _ui| {
                         op(move |world| {
                             let mut state = world.resource_mut::<BattleEditorState>();
                             let team = if team_id == state.left_team.id {
@@ -41,15 +41,6 @@ impl BattleEditorPlugin {
                                 if let Some(slot) = slots.iter_mut().find(|s| s.index == slot_index)
                                 {
                                     slot.unit.set_none();
-                                }
-                            }
-
-                            // Remove from houses
-                            if let Ok(houses) = team.houses.get_mut() {
-                                for house in houses {
-                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
-                                        node_ids.retain(|&id| id != unit_id);
-                                    }
                                 }
                             }
 
@@ -75,13 +66,8 @@ impl BattleEditorPlugin {
                             // Add to first house or create one
                             if let Ok(houses) = team.houses.get_mut() {
                                 if houses.is_empty() {
-                                    let mut house = NHouse::placeholder();
-                                    house.units.set_ids(vec![unit.id]);
+                                    let house = NHouse::placeholder();
                                     houses.push(house);
-                                } else if let Some(house) = houses.first_mut() {
-                                    if let RefMultiple::Ids { node_ids, .. } = &mut house.units {
-                                        node_ids.push(unit.id);
-                                    }
                                 }
                             }
 
@@ -211,7 +197,7 @@ impl BattleEditorPlugin {
         });
     }
 
-    pub fn pane_edit_graph(left: bool, ui: &mut Ui, world: &mut World) {
+    pub fn pane_edit_graph(ui: &mut Ui, world: &mut World) {
         ui.horizontal(|ui| {
             let saved_teams = pd().client_state.saved_teams.clone();
 
@@ -280,18 +266,105 @@ impl BattleEditorPlugin {
             }
         });
 
-        if let Some(mut state) = world.get_resource_mut::<BattleEditorState>() {
-            let needs_reload = if left {
-                state.left_team.render_recursive_edit(ui)
-            } else {
-                state.right_team.render_recursive_edit(ui)
-            };
+        // Tree view for both teams
+        ui.label("Team Structures");
+        ui.separator();
+        let mut needs_reload = false;
+        ScrollArea::vertical().show(ui, |ui| {
+            world.resource_scope(|world, mut state: Mut<BattleEditorState>| {
+                world
+                    .resource::<BattleData>()
+                    .source
+                    .exec_context_ref(|ctx| {
+                        ui.collapsing("Left Team", |ui| {
+                            needs_reload |= Self::render_team_tree(&mut state.left_team, ui, ctx);
+                        });
+                        ui.separator();
+                        ui.collapsing("Right Team", |ui| {
+                            needs_reload |= Self::render_team_tree(&mut state.right_team, ui, ctx);
+                        });
 
-            if needs_reload {
-                BattleEditorPlugin::save_changes_and_reload(world);
-            }
+                        Ok(())
+                    })
+                    .ui(ui);
+            });
+        });
+        if needs_reload {
+            BattleEditorPlugin::save_changes_and_reload(world);
+        }
+    }
+
+    fn render_team_tree(team: &mut NTeam, ui: &mut Ui, ctx: &ClientContext) -> bool {
+        team.render_recursive_tree(
+            ui,
+            ctx,
+            &|node_id, node_kind, ctx| {
+                node_kind_match!(node_kind, {
+                    if let Ok(node) = ctx.load::<NodeType>(node_id) {
+                        format!("[tw {}:] {}", node_kind, node.title(ctx))
+                    } else {
+                        format!("[tw {}]: _", node_kind)
+                    }
+                })
+            },
+            &|node_id, node_kind, _ctx, ui| {
+                ui.horizontal(|ui| {
+                    if ui.button("📝 Inspect").clicked() {
+                        ui.ctx().data_mut(|data| {
+                            data.insert_temp(
+                                egui::Id::new("selected_editor_node"),
+                                (node_id, node_kind),
+                            );
+                        });
+                    }
+                });
+            },
+        )
+    }
+
+    pub fn pane_inspector(ui: &mut Ui, world: &mut World) {
+        ui.label("Inspector");
+        ui.separator();
+
+        let selected_data = ui
+            .ctx()
+            .data(|data| data.get_temp::<(u64, NodeKind)>(egui::Id::new("selected_editor_node")));
+
+        if let Some((node_id, node_kind)) = selected_data {
+            ScrollArea::vertical().show(ui, |ui| {
+                let mut needs_reload = false;
+                format!("[tw #]{node_id} {node_kind}").label(ui);
+
+                world.resource_scope(|world, mut state: Mut<BattleEditorState>| {
+                    world
+                        .resource::<BattleData>()
+                        .source
+                        .exec_context_ref(|ctx| {
+                            let BattleEditorState {
+                                left_team,
+                                right_team,
+                                ..
+                            } = state.as_mut();
+                            node_kind_match!(node_kind, {
+                                if let Some(node) = left_team
+                                    .find_mut::<NodeType>(node_id)
+                                    .or_else(|| right_team.find_mut::<NodeType>(node_id))
+                                {
+                                    needs_reload = node.edit(ui, ctx).changed();
+                                }
+                            });
+
+                            Ok(())
+                        })
+                        .ui(ui);
+                });
+
+                if needs_reload {
+                    BattleEditorPlugin::save_changes_and_reload(world);
+                }
+            });
         } else {
-            "[red [b BattleEditorState] not found]".cstr().label(ui);
+            ui.label("Select a node from the tree to inspect");
         }
     }
 
@@ -322,6 +395,7 @@ impl BattleEditorPlugin {
             .unwrap_or(true);
 
         let state = world.resource_mut::<BattleEditorState>();
+
         pd_mut(|pd| {
             pd.client_state
                 .set_battle_test_teams(&state.left_team, &state.right_team)

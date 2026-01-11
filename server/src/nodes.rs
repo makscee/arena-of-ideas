@@ -16,22 +16,22 @@ pub trait ServerNode: Sized + schema::Node {
             .nodes_world()
             .id()
             .find(id)
-            .to_not_found_msg(format!("node#{id}"))?;
+            .ok_or_else(|| NodeError::custom(format!("node#{} not found", id)))?;
         if node.kind == kind {
             node.to_node()
         } else {
-            Err(NodeError::invalid_kind(
+            Err(NodeError::custom(format!(
+                "Invalid node kind: expected {}, got {}",
                 kind.to_kind(),
-                NodeKind::from_str(&node.kind).unwrap_or(NodeKind::None),
-            ))
+                NodeKind::from_str(&node.kind).unwrap_or(NodeKind::None)
+            )))
         }
     }
     fn load_parent<T: ServerNode>(&self, ctx: &ServerContext) -> NodeResult<T> {
         let kind = T::kind_s();
-        let parent_id = self
-            .id()
-            .get_kind_parent(ctx.rctx(), kind)
-            .to_custom_err_fn(|| format!("{kind} parent of {} not found", self.id()))?;
+        let parent_id = self.id().get_kind_parent(ctx.rctx(), kind).ok_or_else(|| {
+            NodeError::custom(format!("{kind} parent of {} not found", self.id()))
+        })?;
         T::load(ctx.source(), parent_id)
     }
     fn insert(mut self, ctx: &ServerContext) -> Self {

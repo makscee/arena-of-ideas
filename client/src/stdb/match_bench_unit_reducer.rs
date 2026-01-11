@@ -63,6 +63,7 @@ impl match_bench_unit for super::RemoteReducers {
         MatchBenchUnitCallbackId(self.imp.on_reducer(
             "match_bench_unit",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

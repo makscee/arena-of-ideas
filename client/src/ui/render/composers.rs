@@ -1,8 +1,5 @@
 use super::*;
 
-pub mod recursive;
-pub use recursive::*;
-
 mod advanced_composers;
 pub use advanced_composers::*;
 

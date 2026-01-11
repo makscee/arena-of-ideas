@@ -180,7 +180,7 @@ impl BattlePlugin {
         };
 
         BattleView::builder()
-            .on_battle_end(|ui, _res| {})
+            .on_battle_end(|_, _res| {})
             .show(data.as_mut(), ui);
 
         Ok(())

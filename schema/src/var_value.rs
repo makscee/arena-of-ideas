@@ -1,9 +1,3 @@
-use ecolor::Color32;
-
-use glam::{Vec2, vec2};
-use itertools::Itertools;
-use std::cmp::Ordering;
-
 use super::*;
 
 /// Trait to enable chaining VarValue methods on NodeResult<VarValue>
@@ -66,6 +60,18 @@ pub enum VarValue {
 }
 
 impl VarValue {
+    pub fn dynamic(&self) -> Dynamic {
+        match self {
+            VarValue::i32(v) => v.to_dynamic(),
+            VarValue::f32(v) => v.to_dynamic(),
+            VarValue::u64(v) => v.to_dynamic(),
+            VarValue::bool(v) => v.to_dynamic(),
+            VarValue::String(v) => v.to_dynamic(),
+            VarValue::Vec2(v) => v.to_dynamic(),
+            VarValue::Color32(v) => v.to_hex().to_dynamic(),
+            VarValue::list(v) => v.to_dynamic(),
+        }
+    }
     pub fn get_string(&self) -> Result<String, NodeError> {
         self.as_ref();
         match self {
@@ -336,9 +342,80 @@ impl From<i32> for VarValue {
         VarValue::i32(value)
     }
 }
-impl Into<i32> for VarValue {
-    fn into(self) -> i32 {
-        self.get_i32().unwrap()
+
+impl From<u64> for VarValue {
+    fn from(value: u64) -> Self {
+        VarValue::u64(value)
+    }
+}
+
+impl From<bool> for VarValue {
+    fn from(value: bool) -> Self {
+        VarValue::bool(value)
+    }
+}
+
+impl From<String> for VarValue {
+    fn from(value: String) -> Self {
+        VarValue::String(value)
+    }
+}
+
+impl From<Color32> for VarValue {
+    fn from(value: Color32) -> Self {
+        VarValue::Color32(value)
+    }
+}
+
+impl From<HexColor> for VarValue {
+    fn from(value: HexColor) -> Self {
+        VarValue::Color32(value.c32())
+    }
+}
+
+impl From<Vec2> for VarValue {
+    fn from(value: Vec2) -> Self {
+        VarValue::Vec2(value)
+    }
+}
+
+impl TryFrom<VarValue> for Vec2 {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_vec2()
+    }
+}
+
+impl TryFrom<VarValue> for bool {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_bool()
+    }
+}
+
+impl TryFrom<VarValue> for u64 {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_u64()
+    }
+}
+
+impl TryFrom<VarValue> for f32 {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_f32()
+    }
+}
+
+impl TryFrom<VarValue> for i32 {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_i32()
     }
 }
 impl From<usize> for VarValue {
@@ -346,81 +423,37 @@ impl From<usize> for VarValue {
         VarValue::i32(value as i32)
     }
 }
-impl Into<usize> for VarValue {
-    fn into(self) -> usize {
-        self.get_i32().unwrap() as usize
-    }
-}
+
 impl From<f32> for VarValue {
     fn from(value: f32) -> Self {
         VarValue::f32(value)
     }
 }
-impl Into<f32> for VarValue {
-    fn into(self) -> f32 {
-        self.get_f32().unwrap()
+
+impl TryFrom<VarValue> for String {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_string()
     }
 }
-impl From<u64> for VarValue {
-    fn from(value: u64) -> Self {
-        VarValue::u64(value)
+
+impl TryFrom<VarValue> for Color32 {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_color()
     }
 }
-impl Into<u64> for VarValue {
-    fn into(self) -> u64 {
-        self.get_u64().unwrap()
+
+impl TryFrom<VarValue> for HexColor {
+    type Error = NodeError;
+
+    fn try_from(value: VarValue) -> Result<Self, Self::Error> {
+        value.get_color().map(|c| c.into())
     }
 }
-impl From<bool> for VarValue {
-    fn from(value: bool) -> Self {
-        VarValue::bool(value)
-    }
-}
-impl Into<bool> for VarValue {
-    fn into(self) -> bool {
-        self.get_bool().unwrap()
-    }
-}
-impl From<String> for VarValue {
-    fn from(value: String) -> Self {
-        VarValue::String(value)
-    }
-}
-impl Into<String> for VarValue {
-    fn into(self) -> String {
-        self.get_string().unwrap()
-    }
-}
-impl From<Color32> for VarValue {
-    fn from(value: Color32) -> Self {
-        VarValue::Color32(value)
-    }
-}
-impl Into<Color32> for VarValue {
-    fn into(self) -> Color32 {
-        self.get_color().unwrap()
-    }
-}
-impl From<HexColor> for VarValue {
-    fn from(value: HexColor) -> Self {
-        VarValue::Color32(value.c32())
-    }
-}
-impl Into<HexColor> for VarValue {
-    fn into(self) -> HexColor {
-        self.get_color().unwrap().into()
-    }
-}
-impl From<Vec2> for VarValue {
-    fn from(value: Vec2) -> Self {
-        VarValue::Vec2(value)
-    }
-}
-impl Into<Vec2> for VarValue {
-    fn into(self) -> Vec2 {
-        self.get_vec2().unwrap()
-    }
-}
+
 impl<T> From<Vec<T>> for VarValue
 where
     T: Into<VarValue>,

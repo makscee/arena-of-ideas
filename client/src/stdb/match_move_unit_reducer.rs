@@ -70,6 +70,7 @@ impl match_move_unit for super::RemoteReducers {
         MatchMoveUnitCallbackId(self.imp.on_reducer(
             "match_move_unit",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

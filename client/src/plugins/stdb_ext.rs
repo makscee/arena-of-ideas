@@ -80,6 +80,7 @@ pub trait NodeIdExt {
     fn label(self, ui: &mut Ui) -> Response;
     fn node_rating(self) -> Option<i32>;
     fn fixed_kinds(self) -> HashSet<NodeKind>;
+    fn is_complete(self) -> bool;
 }
 
 impl NodeIdExt for u64 {
@@ -123,5 +124,18 @@ impl NodeIdExt for u64 {
             .map(|cp| cp.kinds)
             .unwrap_or_default();
         HashSet::from_iter(kinds.into_iter().map(|k| k.to_kind()))
+    }
+    fn is_complete(self) -> bool {
+        let kinds = self.fixed_kinds();
+
+        kinds.contains(&NodeKind::NUnit)
+            && kinds.contains(&NodeKind::NUnitBehavior)
+            && kinds.contains(&NodeKind::NUnitStats)
+            || kinds.contains(&NodeKind::NHouse)
+                && kinds.contains(&NodeKind::NHouseColor)
+                && (kinds.contains(&NodeKind::NAbilityMagic)
+                    && kinds.contains(&NodeKind::NAbilityEffect)
+                    || kinds.contains(&NodeKind::NStatusMagic)
+                        && kinds.contains(&NodeKind::NStatusBehavior))
     }
 }

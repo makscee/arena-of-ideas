@@ -63,6 +63,7 @@ impl match_shop_buy for super::RemoteReducers {
         MatchShopBuyCallbackId(self.imp.on_reducer(
             "match_shop_buy",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

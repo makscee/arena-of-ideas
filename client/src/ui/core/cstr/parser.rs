@@ -36,7 +36,7 @@ pub fn cstr_parse_into_job(s: &str, alpha: f32, job: &mut LayoutJob, style: &Sty
             ' ' => {
                 match parse_state {
                     ParseState::Token => {
-                        style_state.push_token(&cur);
+                        style_state.push_token(&cur, s);
                         cur.clear();
                     }
                     ParseState::HexColor => {

@@ -63,18 +63,29 @@ impl GameState {
                 let mut tiles = Tiles::default();
                 let view = tiles.insert_pane(Pane::Battle(BattlePane::ViewEditor));
 
-                // Left team graph
-                let left_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditLeftGraph));
+                // Team tree view (shows both teams)
+                let team_tree = tiles.insert_pane(Pane::Battle(BattlePane::TeamTree));
 
-                // Right team graph
-                let right_team_graph = tiles.insert_pane(Pane::Battle(BattlePane::EditRightGraph));
+                // Inspector pane
+                let inspector = tiles.insert_pane(Pane::Battle(BattlePane::Inspector));
 
-                let team_tabs = tiles.insert_tab_tile([left_team_graph, right_team_graph].into());
-                let root = tiles.insert_vertical_tile([view, team_tabs].into());
-                if let Tile::Container(h) = tiles.get_mut(root).unwrap() {
+                // Tree and inspector side by side
+                let bottom_half = tiles.insert_horizontal_tile([team_tree, inspector].into());
+
+                // View on top, tree/inspector on bottom
+                let root = tiles.insert_vertical_tile([view, bottom_half].into());
+
+                // Set proportions
+                if let Tile::Container(v) = tiles.get_mut(root).unwrap() {
+                    if let Container::Linear(v) = v {
+                        v.shares.set_share(view, 1.0);
+                        v.shares.set_share(bottom_half, 2.5);
+                    }
+                }
+                if let Tile::Container(h) = tiles.get_mut(bottom_half).unwrap() {
                     if let Container::Linear(h) = h {
-                        h.shares.set_share(view, 1.0);
-                        h.shares.set_share(team_tabs, 2.5);
+                        h.shares.set_share(team_tree, 1.0);
+                        h.shares.set_share(inspector, 1.0);
                     }
                 }
                 tile_tree.tree = Tree::new(TREE_ID, root, tiles);
@@ -132,7 +143,7 @@ impl GameState {
                 let house_color = tiles.insert_pane(Pane::Incubator(IncubatorPane::HouseColor));
 
                 let houses_content = tiles.insert_horizontal_tile(
-                    [houses_left_column, right_content, house_color].into(),
+                    [houses_left_column, house_color, right_content].into(),
                 );
                 if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
                     if let Container::Linear(h) = h {
@@ -141,7 +152,7 @@ impl GameState {
                 }
                 if let Tile::Container(h) = tiles.get_mut(houses_content).unwrap() {
                     if let Container::Linear(h) = h {
-                        h.shares.set_share(house_color, 0.6);
+                        h.shares.set_share(house_color, 0.7);
                     }
                 }
 
@@ -203,8 +214,8 @@ pub enum Pane {
 pub enum BattlePane {
     View,
     ViewEditor,
-    EditLeftGraph,
-    EditRightGraph,
+    TeamTree,
+    Inspector,
 }
 #[derive(PartialEq, Eq, Clone, Copy, Hash, AsRefStr, Serialize, Deserialize, Debug, Display)]
 pub enum ShopPane {
@@ -306,8 +317,8 @@ impl Pane {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => BattlePlugin::pane_view(ui, world)?,
                 BattlePane::ViewEditor => BattleEditorPlugin::pane_view(ui, world),
-                BattlePane::EditLeftGraph => BattleEditorPlugin::pane_edit_graph(true, ui, world),
-                BattlePane::EditRightGraph => BattleEditorPlugin::pane_edit_graph(false, ui, world),
+                BattlePane::TeamTree => BattleEditorPlugin::pane_edit_graph(ui, world),
+                BattlePane::Inspector => BattleEditorPlugin::pane_inspector(ui, world),
             },
             Pane::Incubator(pane) => IncubatorPlugin::pane(pane, ui, world)?,
             Pane::WorldDownload => world_download_ui_system(ui, world),

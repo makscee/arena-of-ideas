@@ -82,7 +82,7 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
                             ui_widget = Some(quote! {
                                 ui.label(#label);
                                 ui.collapsing("edit", |ui| {
-                                    if settings.#field_name.edit(ui).changed() {
+                                    if settings.#field_name.edit(ui, &EMPTY_CONTEXT).changed() {
                                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                                     }
                                 });
@@ -104,7 +104,7 @@ pub fn derive_settings(input: TokenStream) -> TokenStream {
             } else {
                 ui_code.push(quote! {
                     ui.label(#label);
-                    if settings.#field_name.edit(ui) {
+                    if settings.#field_name.edit(ui, &EMPTY_CONTEXT) {
                         pd_mut(|d| d.client_settings.#field_name = settings.#field_name.clone());
                     }
                 });

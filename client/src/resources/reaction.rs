@@ -9,17 +9,15 @@ pub trait BehaviorImpl {
     ) -> NodeResult<Vec<BattleAction>>;
 }
 
-impl BehaviorImpl for Vec<Reaction> {
+impl BehaviorImpl for Behavior {
     fn react_actions(&self, event: &Event, ctx: &ClientContext) -> Option<&Vec<Action>> {
-        for reaction in self.iter() {
-            match reaction.trigger.fire(event, ctx) {
-                Ok(fired) => {
-                    if fired {
-                        return Some(&reaction.effect.actions);
-                    }
+        match self.trigger.fire(event, ctx) {
+            Ok(fired) => {
+                if fired {
+                    return Some(&self.effect.actions);
                 }
-                Err(e) => error!("trigger {} fire err: {e}", reaction.trigger),
             }
+            Err(e) => error!("trigger {} fire err: {e}", self.trigger),
         }
         None
     }

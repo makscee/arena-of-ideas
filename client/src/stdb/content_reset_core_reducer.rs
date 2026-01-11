@@ -59,6 +59,7 @@ impl content_reset_core for super::RemoteReducers {
         ContentResetCoreCallbackId(self.imp.on_reducer(
             "content_reset_core",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

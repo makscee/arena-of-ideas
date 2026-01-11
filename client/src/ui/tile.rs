@@ -105,8 +105,8 @@ impl egui_tiles::Behavior<Pane> for TreeBehavior {
             Pane::Battle(pane) => match pane {
                 BattlePane::View => "Battle View".into(),
                 BattlePane::ViewEditor => "Battle View Editor".into(),
-                BattlePane::EditLeftGraph => "Left Team".into(),
-                BattlePane::EditRightGraph => "Right Team".into(),
+                BattlePane::TeamTree => "Team Tree".into(),
+                BattlePane::Inspector => "Inspector".into(),
             },
             Pane::Shop(pane) => pane.as_ref().into(),
             _ => view.as_ref().into(),
@@ -187,13 +187,13 @@ impl TreeExt for Tree<Pane> {
         let cur_tile = self
             .tiles
             .get_mut(cur)
-            .to_custom_e("Failed to get current tile")?;
+            .ok_or_else(|| NodeError::custom("Failed to get current tile"))?;
         match cur_tile {
             Tile::Pane(_) => {
                 let container = self
                     .tiles
                     .parent_of(cur)
-                    .to_custom_e("Failed to get parent of current tile")?;
+                    .ok_or_else(|| NodeError::custom("Failed to get parent of current tile"))?;
                 match self.tiles.get_mut(container).unwrap() {
                     Tile::Pane(_) => unreachable!(),
                     Tile::Container(container) => container.add_child(new),

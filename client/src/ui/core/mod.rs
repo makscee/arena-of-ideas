@@ -47,10 +47,15 @@ const BAR_OPEN_FLAG_KEY: LazyCell<Id> = LazyCell::new(|| Id::new("bar open"));
 
 pub trait UiExt {
     fn any_bar_open(&mut self) -> bool;
+    fn key_down(&self, key: Key) -> bool;
 }
 
 impl UiExt for Ui {
     fn any_bar_open(&mut self) -> bool {
         self.ctx().get_frame_flag(*BAR_OPEN_FLAG_KEY)
+    }
+
+    fn key_down(&self, key: Key) -> bool {
+        !self.ctx().wants_keyboard_input() && self.ctx().input(|r| r.key_pressed(key))
     }
 }

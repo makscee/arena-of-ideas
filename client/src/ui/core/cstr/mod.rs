@@ -38,7 +38,7 @@ pub trait ToCstr {
         for (i, char) in chars.into_iter().enumerate() {
             let h = i as f32 / len as f32 + gt().play_head() * 0.1;
             let color = Hsva::new(h.fract(), 1.0, 1.0, 1.0);
-            c = c + &String::from(char).cstr_c(color.into());
+            c = c + String::from(char).cstr_c(color.into()).as_str();
         }
         c
     }

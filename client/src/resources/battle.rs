@@ -5,22 +5,78 @@
 //! ## Reading Nodes
 //! - Load nodes from context by reference using `ctx.load::<NodeType>(id)?`
 //! - Access inner nodes with generated `*_ref()` methods that can be chained with `?`
-//! - For var fields, use `NodeStateHistory::find_var(ctx, var, entity)` or `ctx.get_var(var)`
+//! - For var fields, use `ctx.get_var(var)` which now uses built-in node history
 //!
 //! ## Editing Nodes
 //! 1. Get owned node value (can clone a loaded reference): `let mut node = ctx.load::<NodeType>(id)?.clone()`
 //! 2. Edit fields with generated `set_*()` methods for data fields or `set_var(var, value)` for var fields
-//! 3. Save the node with `node.save(ctx)?` - this calls `set_dirty()` and updates NodeStateHistory
+//! 3. Save the node with `node.save(ctx)?` - this calls `set_dirty()` and updates history in nodes
 //!
 //! ## Var Fields
-//! - All var field operations go through context and NodeStateHistory for battle simulation variants
+//! - All var field operations go through context for battle simulation variants
 //! - Saving updates history for var fields automatically
-//! - Use `NodeStateHistory::get_at(t, var)` for time-based var retrieval in simulations
+//! - Use time-based accessors like `node.hp_at(t)` for time-based var retrieval in simulations
+
+use std::os::fd::IntoRawFd;
 
 use rand_chacha::rand_core::SeedableRng;
 
 use super::*;
 use crate::resources::context::{NodesLinkResource, NodesMapResource};
+
+fn find_ability_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, NAbilityMagic)> {
+    let parts: Vec<&str> = path.split('/').collect();
+    if parts.len() != 2 {
+        bail!("Ability path must be in format 'House/Ability', got {path}");
+    }
+
+    let house_name = parts[0];
+    let ability_name = parts[1];
+
+    let team = ctx.first_parent_recursive(ctx.owner()?, NodeKind::NTeam)?;
+    let houses = ctx.collect_kind_children_recursive(team, NodeKind::NHouse)?;
+
+    for house_id in houses {
+        let house = ctx.load_ref::<NHouse>(house_id)?;
+        if house.house_name == house_name {
+            if let Ok(mut ability) = house.ability.load_node(ctx) {
+                if ability.ability_name == ability_name {
+                    ability.load_all(ctx)?;
+                    return Ok((house.clone(), ability));
+                }
+            }
+        }
+    }
+
+    Err(NodeError::custom(format!("{} not found", path)))
+}
+
+fn find_status_by_path(path: &str, ctx: &ClientContext) -> NodeResult<(NHouse, NStatusMagic)> {
+    let parts: Vec<&str> = path.split('/').collect();
+    if parts.len() != 2 {
+        bail!("Status path must be in format 'House/Status'");
+    }
+
+    let house_name = parts[0];
+    let status_name = parts[1];
+
+    let team = ctx.first_parent_recursive(ctx.owner()?, NodeKind::NTeam)?;
+    let houses = ctx.collect_kind_children_recursive(team, NodeKind::NHouse)?;
+
+    for house_id in houses {
+        let house = ctx.load_ref::<NHouse>(house_id)?;
+        if house.house_name == house_name {
+            if let Ok(mut status) = house.status.load_node(ctx) {
+                if status.status_name == status_name {
+                    status.load_all(ctx)?;
+                    return Ok((house.clone(), status));
+                }
+            }
+        }
+    }
+
+    Err(NodeError::custom(format!("{} not found", path)))
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct Battle {
@@ -139,7 +195,16 @@ pub enum BattleAction {
     heal(u64, u64, i32),
     death(u64),
     spawn(u64),
-    apply_status(u64, u64, NStatusMagic, Color32),
+    apply_status {
+        caster_id: u64,
+        target_id: u64,
+        status_path: String,
+    },
+    use_ability {
+        caster_id: u64,
+        target_id: u64,
+        ability_path: String,
+    },
     send_event(Event),
     vfx(Vec<ContextLayer>, String),
     wait(f32),
@@ -148,11 +213,6 @@ pub enum BattleAction {
 impl Hash for BattleAction {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            BattleAction::var_set(id, var, value) => {
-                id.hash(state);
-                var.hash(state);
-                value.hash(state);
-            }
             BattleAction::strike(a, b) => {
                 a.hash(state);
                 b.hash(state);
@@ -164,12 +224,23 @@ impl Hash for BattleAction {
             }
             BattleAction::death(a) | BattleAction::spawn(a) => a.hash(state),
             BattleAction::fatigue(a) => a.hash(state),
-            BattleAction::apply_status(caster, target, status, _) => {
-                caster.hash(state);
-                target.hash(state);
-                status.id.hash(state);
-                // Note: stax are in state component, using status_name for hash consistency
-                status.status_name.hash(state);
+            BattleAction::apply_status {
+                caster_id,
+                target_id,
+                status_path,
+            } => {
+                caster_id.hash(state);
+                target_id.hash(state);
+                status_path.hash(state);
+            }
+            BattleAction::use_ability {
+                caster_id,
+                target_id,
+                ability_path,
+            } => {
+                caster_id.hash(state);
+                target_id.hash(state);
+                ability_path.hash(state);
             }
             BattleAction::send_event(event) => event.hash(state),
             _ => {
@@ -186,16 +257,20 @@ impl ToCstr for BattleAction {
             BattleAction::damage(a, b, x) => format!("{a}>{b}-{x}"),
             BattleAction::heal(a, b, x) => format!("{a}>{b}+{x}"),
             BattleAction::death(a) => format!("x{a}"),
-            BattleAction::var_set(a, var, value) => format!("{a}>${var}>{value}"),
+            BattleAction::var_set(a, var, value) => format!("{a}${var}>{value}"),
             BattleAction::spawn(a) => format!("*{a}"),
-            BattleAction::apply_status(caster, target, status, color) => {
-                format!(
-                    "{caster} +[{} {}]>{target}({})",
-                    color.to_hex(),
-                    status.status_name,
-                    status.state.get().unwrap().stax
-                )
+            BattleAction::apply_status {
+                caster_id,
+                target_id,
+                status_path,
+            } => {
+                format!("{caster_id} +{status_path}>{target_id}")
             }
+            BattleAction::use_ability {
+                caster_id,
+                target_id,
+                ability_path,
+            } => format!("{caster_id}@{target_id}:{ability_path}"),
             BattleAction::wait(t) => format!("~{t}"),
             BattleAction::vfx(_, vfx) => format!("vfx({vfx})"),
             BattleAction::send_event(e) => format!("event({e})"),
@@ -240,7 +315,7 @@ impl BattleAction {
                 BattleAction::death(a) => {
                     let position = ctx
                         .with_owner(*a, |context| context.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("death_vfx")
                             .with_var(VarName::position, position)
@@ -253,7 +328,9 @@ impl BattleAction {
                     let owner_pos = ctx
                         .get_var_inherited(*a, VarName::position)
                         .unwrap_or_default();
-                    let target_pos = ctx.get_var_inherited(*b, VarName::position).track()?;
+                    let target_pos = ctx
+                        .get_var_inherited(*b, VarName::position)
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -261,11 +338,11 @@ impl BattleAction {
                             .into(),
                     );
                     let (value, actions) =
-                        Event::OutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
+                        Event::ChangeOutgoingDamage(*a, *b).update_value(ctx, (*x).into(), *a);
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     let (value, actions) =
-                        Event::IncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
+                        Event::ChangeIncomingDamage(*a, *b).update_value(ctx, x.into(), *b);
                     add_actions.extend(actions);
                     let x = value.get_i32()?.at_least(0);
                     if x > 0 {
@@ -297,10 +374,10 @@ impl BattleAction {
                 BattleAction::heal(a, b, x) => {
                     let owner_pos = ctx
                         .with_owner(*a, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     let target_pos = ctx
                         .with_owner(*b, |ctx| ctx.get_var(VarName::position))
-                        .track()?;
+                        .unwrap_or_default();
                     add_actions.push(
                         Self::new_vfx("range_effect_vfx")
                             .with_var(VarName::position, owner_pos)
@@ -351,11 +428,86 @@ impl BattleAction {
                     add_actions.push(Self::wait(animation_time()));
                     true
                 }
-                BattleAction::apply_status(caster, target, status, color) => {
-                    BattleSimulation::apply_status(ctx, *caster, *target, status.clone(), *color)
-                        .log();
+                BattleAction::apply_status {
+                    caster_id,
+                    target_id,
+                    status_path,
+                } => {
+                    let (house, status) = find_status_by_path(status_path, ctx)?;
+                    let color = house.color.load_node(ctx)?.color.c32();
+                    let status_name = status.status_name.clone();
+                    let stax_delta = status.state.load_node(ctx)?.stax;
+                    let target_pos = ctx
+                        .get_var_inherited(*target_id, VarName::position)
+                        .unwrap_or_default();
+
+                    BattleSimulation::apply_status(
+                        ctx,
+                        *caster_id,
+                        *target_id,
+                        status.clone(),
+                        color,
+                    )?;
+
+                    let mut total_stax = stax_delta;
+                    for child in ctx
+                        .get_children_of_kind(*target_id, NodeKind::NStatusMagic)
+                        .track()?
+                    {
+                        if let Ok(child_status) = ctx.load::<NStatusMagic>(child) {
+                            if child_status.status_name == status_name {
+                                if let Ok(state) = child_status.state.load_node(ctx) {
+                                    total_stax = state.stax;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    let color = color.to_hex();
+                    add_actions.push(
+                        Self::new_text(
+                            format!("[b [yellow apply [{color} {}]]]", status_name),
+                            target_pos.clone(),
+                        )
+                        .with_var(VarName::scale, 1.5)
+                        .into(),
+                    );
+                    add_actions.push(Self::wait(animation_time() * 2.0));
+                    add_actions.push(
+                        Self::new_text(
+                            format!(
+                                "[b {} [{color} {}] ({})]",
+                                stax_delta.cstr_expanded(),
+                                status_name,
+                                total_stax
+                            ),
+                            target_pos,
+                        )
+                        .with_var(VarName::scale, 2.0)
+                        .into(),
+                    );
                     add_actions.push(Self::wait(animation_time()));
                     true
+                }
+                BattleAction::use_ability {
+                    caster_id,
+                    target_id,
+                    ability_path,
+                } => {
+                    let (_, ability) = find_ability_by_path(ability_path, ctx)?;
+                    let effect = ability.effect.load_node(ctx)?;
+                    let target = ctx.load::<NUnit>(*target_id).track()?;
+                    let actions = effect
+                        .effect
+                        .execute_ability(ability.clone(), target, ctx)
+                        .to_node_result()?;
+                    let result = actions.is_empty();
+                    for action in actions {
+                        if let Ok(battle_action) = action.to_battle_action(ctx, *caster_id) {
+                            add_actions.push(battle_action);
+                        }
+                    }
+                    result
                 }
                 BattleAction::wait(t) => {
                     ctx.battle_mut()?.duration += *t;
@@ -502,7 +654,7 @@ impl BattleSimulation {
                 return Ok(right);
             }
         }
-        Err(NodeError::custom(format!(
+        Err(NodeError::not_in_context(format!(
             "Failed to find allies: {id} is not in any team"
         )))
     }
@@ -515,7 +667,7 @@ impl BattleSimulation {
         } else if right.contains(&id) {
             return Ok(left);
         }
-        Err(NodeError::custom(format!(
+        Err(NodeError::not_in_context(format!(
             "Failed to find enemies: {id} is not in any team"
         )))
     }
@@ -588,10 +740,8 @@ impl BattleSimulation {
             for (var, value) in vars {
                 let (value, new_actions) = Event::UpdateStat(var).update_value(ctx, value, id);
                 actions.extend(new_actions);
-                let t = ctx.t().to_not_found()?;
-                let entity = id.entity(ctx)?;
-                let mut state = NodeStateHistory::load_mut(entity, ctx)?;
-                state.insert(t, 0.0, var, value);
+                // History is now tracked directly in nodes via set_var
+                ctx.source_mut().set_var(id, var, value)?;
             }
             process_actions(ctx, actions);
 
@@ -600,9 +750,14 @@ impl BattleSimulation {
                 .into_iter()
                 .enumerate()
             {
-                if ctx.load::<NState>(status).track()?.stax > 0 {
-                    ctx.source_mut()
-                        .set_var(status, VarName::index, (index as i32).into())?;
+                if let Ok(status_node) = ctx.load::<NStatusMagic>(status).track() {
+                    if let Ok(state) = status_node.state.load_node(ctx) {
+                        if state.stax > 0 {
+                            ctx.source_mut()
+                                .set_var(status, VarName::index, (index as i32).into())
+                                .ok();
+                        }
+                    }
                 }
             }
         }
@@ -614,6 +769,9 @@ impl BattleSimulation {
             BattleText::Turn,
             format!("[tw Turn] [yellow [b {}]]", sim.turns),
         );
+
+        let sync_actions = ctx.battle()?.slots_sync();
+        process_actions(ctx, sync_actions);
 
         let sim = ctx.battle()?;
         if !sim.units_left.is_empty() && !sim.units_right.is_empty() {
@@ -656,12 +814,10 @@ impl BattleSimulation {
         process_actions(ctx, actions);
         let a = BattleSimulation::death_check(ctx)?;
         process_actions(ctx, a);
-        let sync_actions = ctx.battle()?.slots_sync();
-        process_actions(ctx, sync_actions);
         BattleSimulation::send_event(ctx, Event::TurnEnd)?;
         Ok(())
     }
-    pub fn add_text(&mut self, text_type: BattleText, text: String) {
+    fn add_text(&mut self, text_type: BattleText, text: String) {
         self.battle_texts
             .entry(text_type)
             .or_insert_with(Vec::new)
@@ -676,7 +832,7 @@ impl BattleSimulation {
                 .map(|(_, text)| text.as_str())
         })
     }
-    pub fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
+    fn send_event(ctx: &mut ClientContext, event: Event) -> NodeResult<()> {
         info!("{} {event}", "event:".dimmed().blue());
         ctx.exec_mut(|ctx| {
             match &event {
@@ -700,23 +856,48 @@ impl BattleSimulation {
                     fusion_statuses.extend(statuses.into_iter().map(|s_id| (id, s_id)));
                 }
                 ctx.with_layers([ContextLayer::Owner(id)], |ctx| {
-                    match ctx
-                        .load::<NUnit>(id)
-                        .track()?
-                        .clone()
-                        .behavior
-                        .load_node_mut(ctx)?
-                        .reactions
-                        .react_battle_actions(&event, ctx)
-                    {
-                        Ok(actions) => {
-                            if !actions.is_empty() {
-                                ctx.battle_mut()?.fired.insert(id);
-                                process_actions(ctx, actions);
+                    if let Ok(unit) = ctx.load::<NUnit>(id).track() {
+                        if let Ok(behavior) = unit.clone().behavior.load_node(ctx) {
+                            if behavior.trigger.fire(&event, ctx)? {
+                                use crate::plugins::rhai::{RhaiScriptUnitExt, TargetResolver};
+
+                                match behavior.target.resolve_targets(ctx) {
+                                    Ok(target_ids) => {
+                                        if !target_ids.is_empty() {
+                                            ctx.battle_mut()?.fired.insert(id);
+                                            let mut all_battle_actions = Vec::new();
+
+                                            for target_id in target_ids {
+                                                if let Ok(target_unit) = ctx.load::<NUnit>(target_id).track() {
+                                                    match behavior.effect.execute_unit(
+                                                        unit.clone(),
+                                                        target_unit,
+                                                        0,
+                                                        ctx,
+                                                    ) {
+                                                        Ok(actions) => {
+                                                            for action in actions {
+                                                                use crate::plugins::rhai::ToBattleAction;
+                                                                if let Ok(ba) = action.to_battle_action(ctx, id) {
+                                                                    all_battle_actions.push(ba);
+                                                                }
+                                                            }
+                                                        }
+                                                        Err(e) => error!("NFusion event {event} failed: {e}"),
+                                                    }
+                                                }
+                                            }
+
+                                            if !all_battle_actions.is_empty() {
+                                                process_actions(ctx, all_battle_actions);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => error!("Failed to resolve targets for unit behavior: {e}"),
+                                }
                             }
                         }
-                        Err(e) => error!("NFusion event {event} failed: {e}"),
-                    };
+                    }
                     Ok(())
                 })
                 .log();
@@ -738,9 +919,27 @@ impl BattleSimulation {
                             return Ok(vec![]);
                         }
                         let behavior = status.behavior.load_node(ctx).track()?;
-                        let actions = behavior.reactions.react_actions(&event, ctx);
-                        if let Some(actions) = actions {
-                            actions.clone().process(ctx)
+                        if behavior.trigger.fire(&event, ctx)? {
+                            match behavior.effect.execute_status(status.clone(), stax, ctx) {
+                                Ok(actions) => {
+                                    if !actions.is_empty() {
+                                        let owner_id = fusion_id;
+                                        let mut battle_actions = Vec::new();
+                                        for action in actions {
+                                            use crate::plugins::rhai::ToBattleAction;
+                                            if let Ok(ba) = action.to_battle_action(ctx, owner_id) {
+                                                battle_actions.push(ba);
+                                            }
+                                        }
+                                        process_actions(ctx, battle_actions);
+                                    }
+                                    Ok(default())
+                                }
+                                Err(e) => {
+                                    error!("Status behavior failed: {e}");
+                                    Ok(default())
+                                }
+                            }
                         } else {
                             Ok(default())
                         }
@@ -758,14 +957,14 @@ impl BattleSimulation {
             Ok(())
         })
     }
-    pub fn apply_status(
+    fn apply_status(
         ctx: &mut ClientContext,
         caster: u64,
         target: u64,
         status: NStatusMagic,
         color: Color32,
     ) -> NodeResult<()> {
-        let t = ctx.t().to_not_found()?;
+        let t = ctx.battle()?.duration;
         let mut new_index = 0;
         for child in ctx
             .get_children_of_kind(target, NodeKind::NStatusMagic)
@@ -789,23 +988,26 @@ impl BattleSimulation {
             }
         }
         let entity = ctx.world_mut()?.spawn_empty().id();
-        let new_status = status.remap_ids();
+        let mut new_status = status.remap_ids();
+        new_status
+            .state
+            .get_mut()?
+            .index_history
+            .insert(t, new_index.into_raw_fd());
+        let rep = new_status.representation.get_mut()?;
+        rep.visible_history.insert(0.0, false);
+        rep.visible_history.insert(t, true);
+        rep.script.scope.insert(VarName::color, color.into());
         let new_status_id = new_status.id();
         new_status.spawn(ctx, Some(entity))?;
-        // Status is already saved with its charges during spawn
-
         ctx.add_link(target, new_status_id)?;
 
-        let mut state = NodeStateHistory::load_mut(entity, ctx)?;
-        state.insert(0.0, 0.0, VarName::visible, false.into());
-        state.insert(t, 0.0, VarName::visible, true.into());
-        state.insert(t, 0.0, VarName::color, color.into());
-        state.insert(t, 0.0, VarName::index, new_index.into());
         BattleSimulation::send_event(ctx, Event::StatusApplied(caster, target, new_status_id))?;
+        BattleSimulation::send_event(ctx, Event::StatusGained(caster, target))?;
         Ok(())
     }
 
-    pub fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
+    fn die(ctx: &mut ClientContext, id: u64) -> NodeResult<Vec<BattleAction>> {
         let entity = id.entity(ctx)?;
         ctx.world_mut()?.entity_mut(entity).insert(Corpse);
         let mut died = false;

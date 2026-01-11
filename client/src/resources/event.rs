@@ -23,22 +23,6 @@ impl EventImpl for Event {
                 ContextLayer::Var(VarName::value, value.clone()),
             ],
             |ctx| {
-                if let Some(actions) = ctx
-                    .load::<NUnitBehavior>(owner)
-                    .ok()
-                    .and_then(|ub| ub.reactions.react_actions(self, ctx).cloned())
-                {
-                    for action in actions {
-                        match action.process(ctx) {
-                            Ok(actions) => {
-                                battle_actions.extend(actions);
-                            }
-                            Err(e) => {
-                                e.log();
-                            }
-                        }
-                    }
-                }
                 let statuses = ctx
                     .load_children_ref::<NStatusMagic>(owner)?
                     .into_iter()
@@ -49,22 +33,24 @@ impl EventImpl for Event {
 
                 for status in statuses {
                     let status_id = status.id;
-                    if status.state.load_node(ctx)?.stax <= 0 {
+                    let x = status.state.load_node(ctx)?.stax;
+                    if x <= 0 {
                         continue;
                     }
                     let new_value = ctx.with_status(status_id, |ctx| {
-                        if let Some(actions) = status
-                            .behavior.load_node(ctx)?
-                            .reactions
-                            .react_actions(self, ctx)
-                            .cloned()
-                        {
-                            match actions.process(ctx) {
-                                Ok(actions) => {
-                                    battle_actions.extend(actions);
-                                }
-                                Err(e) => {
-                                    return Err(e);
+                        if let Ok(behavior) = status.behavior.load_node(ctx) {
+                            if behavior.trigger.fire(self, ctx).ok().unwrap_or(false) {
+                                if let Ok((actions, modified_value)) = behavior
+                                    .effect
+                                    .execute_status_with_value(status.clone(), x, ctx)
+                                {
+                                    for action in actions {
+                                        use crate::plugins::rhai::ToBattleAction;
+                                        if let Ok(ba) = action.to_battle_action(ctx, status_id) {
+                                            battle_actions.push(ba);
+                                        }
+                                    }
+                                    return Ok(modified_value);
                                 }
                             }
                         }

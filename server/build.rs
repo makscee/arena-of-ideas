@@ -45,13 +45,25 @@ fn generate_server_nodes(
         let struct_name = &node.name;
 
         // Generate fields
-        let fields = node.fields.iter().map(|field| {
+        let fields = node.fields.iter().flat_map(|field| {
             let field_name = &field.name;
             let field_type = generate_field_type(field);
 
-            quote! {
+            let mut field_defs = vec![quote! {
                 pub #field_name: #field_type
+            }];
+
+            // Add history field for #[var] fields
+            if field.is_var && field.link_type == LinkType::None {
+                let history_field_name = quote::format_ident!("{}_history", field_name);
+                let inner_type: proc_macro2::TokenStream =
+                    field.raw_type.parse().unwrap_or_else(|_| quote! { String });
+                field_defs.push(quote! {
+                    pub #history_field_name: History<#inner_type>
+                });
             }
+
+            field_defs
         });
 
         // Generate new() method with parameters

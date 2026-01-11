@@ -1,6 +1,6 @@
 mod action;
-mod anim;
-mod battle;
+pub mod anim;
+pub mod battle;
 mod battle_view;
 mod client_settings;
 mod client_state;
@@ -12,9 +12,8 @@ mod game_option;
 mod game_state;
 mod painter;
 mod rarity;
-mod reaction;
+pub mod reaction;
 mod trigger;
-mod tween;
 
 use super::*;
 
@@ -34,4 +33,3 @@ pub use painter::*;
 pub use rarity::*;
 pub use reaction::*;
 pub use trigger::*;
-pub use tween::*;

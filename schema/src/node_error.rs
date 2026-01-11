@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use rhai::{Dynamic, Variant};
 use std::panic::Location;
 use thiserror::Error;
 use var_value::VarValue;
@@ -39,10 +40,18 @@ impl std::fmt::Display for SourceTrace {
             .locations
             .iter()
             .map(|loc| {
-                let file = if let Some(pos) = loc.file().find("arena-of-ideas/") {
-                    &loc.file()[pos + "arena-of-ideas/".len()..]
+                let file_path = loc.file();
+                let file = if file_path.len() > 15 {
+                    let truncated = &file_path[file_path.len() - 15..];
+                    if let Some(pos) = truncated.find("/") {
+                        &truncated[pos + 1..]
+                    } else {
+                        truncated
+                    }
+                } else if let Some(pos) = file_path.rfind("/") {
+                    &file_path[pos + 1..]
                 } else {
-                    loc.file().split('/').last().unwrap_or(loc.file())
+                    file_path
                 };
                 format!("{}:{}:{}", file, loc.line(), loc.column())
             })
@@ -56,27 +65,22 @@ pub enum NodeError {
     #[error("Node not found: {0} {1}")]
     NotFound(u64, SourceTrace),
 
-    #[error("Linked node not found: node {node_id} has no {kind} link {location}")]
-    LinkedNodeNotFound {
-        node_id: u64,
-        kind: NodeKind,
+    #[error("Entity not found: {0} {1}")]
+    EntityNotFound(u64, SourceTrace),
+
+    #[error("Variable not found: {0} {1}")]
+    VarNotFound(VarName, SourceTrace),
+
+    #[error("Invalid state: {context} {location}")]
+    InvalidState {
+        context: String,
         location: SourceTrace,
     },
 
-    #[error("Invalid node kind: expected {expected}, got {actual} {location}")]
-    InvalidKind {
-        expected: NodeKind,
-        actual: NodeKind,
-        location: SourceTrace,
-    },
+    #[error("Not in context: {0} {1}")]
+    NotInContext(String, SourceTrace),
 
-    #[error("Failed to load node: {0} {1}")]
-    LoadError(String, SourceTrace),
-
-    #[error("Failed to cast node: {0}")]
-    CastError(SourceTrace),
-
-    #[error("Operation {op} for {} not supported {} {location}", values.iter().map(|v| format!("{v:?}")).join(", "), msg.clone().unwrap_or_default())]
+    #[error("Operation {op} not supported {location}")]
     OperationNotSupported {
         values: Vec<VarValue>,
         op: &'static str,
@@ -84,23 +88,34 @@ pub enum NodeError {
         location: SourceTrace,
     },
 
-    #[error("Value not found for {0} {1}")]
-    VarNotFound(VarName, SourceTrace),
-
-    #[error("Custom error: {0} {1}")]
+    #[error("{0} {1}")]
     Custom(String, SourceTrace),
-
-    #[error("Entity#{0}_{1} not linked to id {2}")]
-    IdNotFound(u32, u32, SourceTrace),
-
-    #[error("Id#{0} not linked to Entity {1}")]
-    EntityNotFound(u64, SourceTrace),
-
-    #[error("Not found: {0} {1}")]
-    NotFoundGeneric(String, SourceTrace),
 }
 
 pub type NodeResult<T> = Result<T, NodeError>;
+
+pub trait ToDynamicResult {
+    fn dynamic_result(&self) -> Dynamic;
+}
+
+impl<T: Clone + Variant> ToDynamicResult for NodeResult<T> {
+    fn dynamic_result(&self) -> Dynamic {
+        match self {
+            Ok(value) => value.to_dynamic(),
+            Err(_) => Dynamic::UNIT,
+        }
+    }
+}
+
+pub trait ToDynamic {
+    fn to_dynamic(&self) -> Dynamic;
+}
+
+impl<T: Clone + Variant> ToDynamic for T {
+    fn to_dynamic(&self) -> Dynamic {
+        Dynamic::from(self.clone())
+    }
+}
 
 impl NodeError {
     #[track_caller]
@@ -109,41 +124,8 @@ impl NodeError {
     }
 
     #[track_caller]
-    pub fn linked_node_not_found(node_id: u64, kind: NodeKind) -> Self {
-        NodeError::LinkedNodeNotFound {
-            node_id,
-            kind,
-            location: Location::caller().into(),
-        }
-    }
-
-    #[track_caller]
-    pub fn invalid_kind(expected: NodeKind, actual: NodeKind) -> Self {
-        NodeError::InvalidKind {
-            expected,
-            actual,
-            location: Location::caller().into(),
-        }
-    }
-
-    #[track_caller]
-    pub fn load_error(msg: impl Into<String>) -> Self {
-        NodeError::LoadError(msg.into(), Location::caller().into())
-    }
-
-    #[track_caller]
-    pub fn cast_error() -> Self {
-        NodeError::CastError(Location::caller().into())
-    }
-
-    #[track_caller]
     pub fn var_not_found(var: VarName) -> Self {
         NodeError::VarNotFound(var, Location::caller().into())
-    }
-
-    #[track_caller]
-    pub fn id_not_found(entity_high: u32, entity_low: u32) -> Self {
-        NodeError::IdNotFound(entity_high, entity_low, Location::caller().into())
     }
 
     #[track_caller]
@@ -157,8 +139,16 @@ impl NodeError {
     }
 
     #[track_caller]
-    pub fn not_found_generic(msg: impl Into<String>) -> Self {
-        NodeError::NotFoundGeneric(msg.into(), Location::caller().into())
+    pub fn not_in_context(msg: impl Into<String>) -> Self {
+        NodeError::NotInContext(msg.into(), Location::caller().into())
+    }
+
+    #[track_caller]
+    pub fn invalid_state(context: impl Into<String>) -> Self {
+        NodeError::InvalidState {
+            context: context.into(),
+            location: Location::caller().into(),
+        }
     }
 
     #[track_caller]
@@ -222,6 +212,8 @@ pub trait NodeErrorResultExt<T> {
     fn to_str_err(self) -> Result<T, String>;
     #[track_caller]
     fn track(self) -> Self;
+    #[track_caller]
+    fn with_context(self, msg: impl Into<String>) -> Self;
 }
 
 impl<T> NodeErrorResultExt<T> for NodeResult<T> {
@@ -253,34 +245,53 @@ impl<T> NodeErrorResultExt<T> for NodeResult<T> {
                 NodeError::NotFound(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
-                NodeError::LinkedNodeNotFound { location, .. } => {
-                    *location = location.clone().add_location(current_location);
-                }
-                NodeError::InvalidKind { location, .. } => {
-                    *location = location.clone().add_location(current_location);
-                }
-                NodeError::LoadError(_, trace) => {
+                NodeError::EntityNotFound(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
-                NodeError::CastError(trace) => {
+                NodeError::VarNotFound(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::InvalidState { location, .. } => {
+                    *location = location.clone().add_location(current_location);
+                }
+                NodeError::NotInContext(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
                 NodeError::OperationNotSupported { location, .. } => {
                     *location = location.clone().add_location(current_location);
                 }
-                NodeError::VarNotFound(_, trace) => {
-                    *trace = trace.clone().add_location(current_location);
-                }
                 NodeError::Custom(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
-                NodeError::IdNotFound(_, _, trace) => {
+            }
+            e
+        })
+    }
+
+    #[track_caller]
+    fn with_context(self, _msg: impl Into<String>) -> Self {
+        let current_location = Location::caller();
+        self.map_err(|mut e| {
+            match &mut e {
+                NodeError::NotFound(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
                 NodeError::EntityNotFound(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
-                NodeError::NotFoundGeneric(_, trace) => {
+                NodeError::VarNotFound(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::InvalidState { location, .. } => {
+                    *location = location.clone().add_location(current_location);
+                }
+                NodeError::NotInContext(_, trace) => {
+                    *trace = trace.clone().add_location(current_location);
+                }
+                NodeError::OperationNotSupported { location, .. } => {
+                    *location = location.clone().add_location(current_location);
+                }
+                NodeError::Custom(_, trace) => {
                     *trace = trace.clone().add_location(current_location);
                 }
             }
@@ -297,40 +308,17 @@ impl NodeError {
 
 pub trait OptionNodeExt<T> {
     #[track_caller]
-    fn to_custom_err(self, msg: impl Into<String>) -> NodeResult<T>;
-    #[track_caller]
-    fn to_custom_err_fn(self, f: impl FnOnce() -> String) -> NodeResult<T>;
-    #[track_caller]
     fn to_not_found(self) -> NodeResult<T>;
     #[track_caller]
     fn to_var_not_found(self, var: VarName) -> NodeResult<T>;
     #[track_caller]
-    fn to_not_found_msg(self, msg: impl Into<String>) -> NodeResult<T>;
-    fn to_not_found_id(self, id: u64) -> NodeResult<T>;
-    fn ok_or_str(self, msg: impl Into<String>) -> Result<T, String>;
-    fn ok_or_str_fn(self, f: impl FnOnce() -> String) -> Result<T, String>;
-    #[track_caller]
-    fn to_custom_e(self, s: impl Into<String>) -> NodeResult<T>;
-    #[track_caller]
-    fn to_custom_e_fn(self, s: impl FnOnce() -> String) -> NodeResult<T>;
-    fn to_custom_e_s(self, s: impl Into<String>) -> Result<T, String>;
-    fn to_custom_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String>;
+    fn not_in_context(self, context: impl Into<String>) -> NodeResult<T>;
 }
 
 impl<T> OptionNodeExt<T> for Option<T> {
     #[track_caller]
-    fn to_custom_err(self, msg: impl Into<String>) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::custom(msg))
-    }
-
-    #[track_caller]
-    fn to_custom_err_fn(self, f: impl FnOnce() -> String) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::custom(f()))
-    }
-
-    #[track_caller]
     fn to_not_found(self) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::not_found_generic(type_name_short::<T>()))
+        self.ok_or_else(|| NodeError::custom(format!("{} not found", type_name_short::<T>())))
     }
 
     #[track_caller]
@@ -339,38 +327,8 @@ impl<T> OptionNodeExt<T> for Option<T> {
     }
 
     #[track_caller]
-    fn to_not_found_msg(self, msg: impl Into<String>) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::not_found_generic(msg))
-    }
-
-    fn to_not_found_id(self, id: u64) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::not_found(id))
-    }
-
-    fn ok_or_str(self, msg: impl Into<String>) -> Result<T, String> {
-        self.ok_or_else(|| msg.into())
-    }
-
-    fn ok_or_str_fn(self, f: impl FnOnce() -> String) -> Result<T, String> {
-        self.ok_or_else(|| f())
-    }
-
-    #[track_caller]
-    fn to_custom_e(self, s: impl Into<String>) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::custom(s))
-    }
-
-    #[track_caller]
-    fn to_custom_e_fn(self, s: impl FnOnce() -> String) -> NodeResult<T> {
-        self.ok_or_else(|| NodeError::custom(s()))
-    }
-
-    fn to_custom_e_s(self, s: impl Into<String>) -> Result<T, String> {
-        self.ok_or_else(|| s.into())
-    }
-
-    fn to_custom_e_s_fn(self, s: impl FnOnce() -> String) -> Result<T, String> {
-        self.ok_or_else(|| s())
+    fn not_in_context(self, context: impl Into<String>) -> NodeResult<T> {
+        self.ok_or_else(|| NodeError::not_in_context(context))
     }
 }
 
@@ -396,4 +354,32 @@ impl<T, E: std::fmt::Display> ResultNodeExt<T, E> for Result<T, E> {
     fn to_node_err(self) -> NodeResult<T> {
         self.map_err(|e| NodeError::custom(e.to_string()))
     }
+}
+
+#[macro_export]
+macro_rules! bail {
+    ($msg:expr) => {
+        return Err($crate::NodeError::custom($msg))
+    };
+}
+
+#[macro_export]
+macro_rules! bail_not_found {
+    ($id:expr) => {
+        return Err($crate::NodeError::not_found($id))
+    };
+}
+
+#[macro_export]
+macro_rules! bail_var {
+    ($var:expr) => {
+        return Err($crate::NodeError::var_not_found($var))
+    };
+}
+
+#[macro_export]
+macro_rules! bail_not_in_context {
+    ($msg:expr) => {
+        return Err($crate::NodeError::not_in_context($msg))
+    };
 }

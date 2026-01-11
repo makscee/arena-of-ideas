@@ -1,6 +1,5 @@
 mod composers;
 pub mod features;
-mod recursive_impl;
 
 pub use composers::*;
 pub use features::*;
@@ -87,22 +86,6 @@ pub trait Render: Sized {
         Self: FCard,
     {
         CardComposer::new(self)
-    }
-
-    fn as_recursive<F>(&self, f: F) -> RecursiveComposer<'_, Self, F>
-    where
-        Self: FRecursive,
-        F: FnMut(&ClientContext, &mut Ui, RecursiveValue<'_>) -> Response,
-    {
-        RecursiveComposer::new(self, f)
-    }
-
-    fn as_recursive_mut<F>(&mut self, f: F) -> RecursiveComposerMut<'_, Self, F>
-    where
-        Self: FRecursive,
-        F: FnMut(&ClientContext, &mut Ui, &mut RecursiveValueMut<'_>) -> Response,
-    {
-        RecursiveComposerMut::new_mut(self, f)
     }
 
     fn as_selector_mut(&mut self) -> SelectorComposer<'_, Self>

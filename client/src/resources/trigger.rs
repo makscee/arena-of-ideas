@@ -1,7 +1,7 @@
 use super::*;
 
 pub trait TriggerImpl {
-    fn fire(&self, event: &Event, context: &ClientContext) -> NodeResult<bool>;
+    fn fire(&self, event: &Event, ctx: &ClientContext) -> NodeResult<bool>;
 }
 
 fn get_owner_unit<'a>(ctx: &'a ClientContext) -> NodeResult<Option<&'a NUnit>> {
@@ -96,6 +96,30 @@ impl TriggerImpl for Trigger {
                     return Ok(true);
                 }
                 if matches!(self, Trigger::StatusApplied) && owner.id == *caster {
+                    return Ok(true);
+                }
+            }
+            Event::StatusGained(_, target) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::StatusGained) && owner.id == *target {
+                    return Ok(true);
+                }
+            }
+            Event::ChangeOutgoingDamage(source, _) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::ChangeOutgoingDamage) && owner.id == *source {
+                    return Ok(true);
+                }
+            }
+            Event::ChangeIncomingDamage(_, target) => {
+                let Some(owner) = get_owner_unit(ctx)? else {
+                    return Ok(false);
+                };
+                if matches!(self, Trigger::ChangeIncomingDamage) && owner.id == *target {
                     return Ok(true);
                 }
             }

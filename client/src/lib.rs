@@ -70,6 +70,7 @@ pub fn run() {
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
     parse_content_tree();
+    init_completer();
     GameState::set_target(target);
     let default_plugins = DefaultPlugins
         .set(bevy::log::LogPlugin {
@@ -85,15 +86,6 @@ pub fn run() {
     app.add_systems(Startup, setup)
         .add_systems(OnEnter(GameState::Error), on_error_state)
         .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
-        .add_loading_state(
-            LoadingState::new(GameState::Loading)
-                .continue_to_state(GameState::Loaded)
-                .on_failure_continue_to_state(GameState::Error)
-                .load_collection::<AudioAssets>()
-                .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
-                    "ron/_dynamic.assets.ron",
-                ),
-        )
         .add_systems(
             PreStartup,
             (setup_camera_system.before(EguiStartupSet::InitContexts),),
@@ -107,8 +99,6 @@ pub fn run() {
             UiPlugin,
             LoginPlugin,
             GameStatePlugin,
-            NodeStatePlugin,
-            RepresentationPlugin,
             GameTimerPlugin,
             WindowPlugin,
             MatchPlugin,
@@ -139,6 +129,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn setup(world: &mut World) {
     let ctx = world.query::<&EguiContext>().single(world).unwrap().get();
     egui_extras::install_image_loaders(&ctx);
+    pd_save_settings();
 }
 
 fn on_error_state(world: &mut World) {

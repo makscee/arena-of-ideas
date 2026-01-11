@@ -1,3 +1,5 @@
+use ::core::f32;
+
 use bevy_egui::egui::epaint::{PathShape, PathStroke};
 use egui::epaint::CubicBezierShape;
 
@@ -40,13 +42,11 @@ pub fn center_window(name: &str, ctx: &egui::Context, add_contents: impl FnOnce(
         .fixed_pos(ctx.content_rect().center())
         .title_bar(false)
         .order(Order::Foreground)
-        .max_width(600.0)
+        .max_width(ctx.content_rect().width() - 20.0)
+        .max_height(ctx.content_rect().height() - 100.0)
         .resizable([false, false])
         .show(ctx, |ui| {
-            ui.set_max_height(ui.ctx().content_rect().height() * 0.9);
-            ScrollArea::vertical().show(ui, |ui| {
-                add_contents(ui);
-            });
+            add_contents(ui);
         });
 }
 pub fn popup(

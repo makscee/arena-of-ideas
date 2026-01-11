@@ -267,13 +267,13 @@ fn subscribe_reducer(reducer: reducer_registry::AllReducers) {
                 });
             });
         }
-        AllReducers::AdminAddToCore => {
-            cn().reducers.on_admin_add_to_core(|e, _, _| {
+        AllReducers::AdminEditOwner => {
+            cn().reducers.on_admin_edit_owner(|e, _, _| {
                 default_callback(e);
             });
         }
-        AllReducers::AdminEditNode => {
-            cn().reducers.on_admin_edit_node(|e, _, _| {
+        AllReducers::AdminEditNodes => {
+            cn().reducers.on_admin_edit_nodes(|e, _| {
                 default_callback(e);
             });
         }
@@ -659,8 +659,22 @@ mod tests {
     fn test_load_different_extras_from_incubator() {
         let mut incubator_source = Sources::new_incubator();
         let unit_node = NUnit::new(3000, ID_INCUBATOR, default()).to_tnode();
-        let mut behavior_1 = NUnitBehavior::new(3001, ID_INCUBATOR, default()).to_tnode();
-        let mut behavior_2 = NUnitBehavior::new(3002, ID_INCUBATOR, default()).to_tnode();
+        let mut behavior_1 = NUnitBehavior::new(
+            3001,
+            ID_INCUBATOR,
+            schema::Trigger::BattleStart,
+            schema::Target::default(),
+            schema::RhaiScript::empty(),
+        )
+        .to_tnode();
+        let mut behavior_2 = NUnitBehavior::new(
+            3002,
+            ID_INCUBATOR,
+            schema::Trigger::BattleStart,
+            schema::Target::default(),
+            schema::RhaiScript::empty(),
+        )
+        .to_tnode();
         behavior_1.rating = 3;
         behavior_2.rating = 2;
 

@@ -21,9 +21,12 @@ pub enum Event {
     BeforeStrike(u64, u64),
     AfterStrike(u64, u64),
     StatusApplied(u64, u64, u64),
+    StatusGained(u64, u64),
     UpdateStat(VarName),
     Death(u64),
     OutgoingDamage(u64, u64),
     IncomingDamage(u64, u64),
+    ChangeOutgoingDamage(u64, u64),
+    ChangeIncomingDamage(u64, u64),
     DamageDealt(u64, u64, i32),
 }

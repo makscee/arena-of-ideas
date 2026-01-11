@@ -23,6 +23,9 @@ impl TestBuilder {
     }
 
     fn init_test_logging() {
+        // unsafe {
+        //     std::env::set_var("RUST_BACKTRACE", "1");
+        // }
         static INIT: OnceLock<()> = OnceLock::new();
         INIT.get_or_init(|| {
             struct TestLogger;
@@ -78,35 +81,30 @@ impl TestBuilder {
         self
     }
 
-    pub fn add_reaction(mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
+    pub fn add_reaction(mut self, trigger: Trigger, target: Target, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add reaction without a team");
-        team.add_reaction(trigger, actions);
+        team.add_reaction(trigger, target, script);
         self
     }
 
-    pub fn add_ability(mut self, id: u64, actions: Vec<Action>) -> Self {
+    pub fn add_ability(mut self, id: u64, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add ability without a team");
-        team.add_ability(id, actions);
+        team.add_ability(id, script);
         self
     }
 
-    pub fn add_status(
-        mut self,
-        id: u64,
-        trigger: Trigger,
-        actions: impl Into<Vec<Action>>,
-    ) -> Self {
+    pub fn add_status(mut self, id: u64, trigger: Trigger, script: String) -> Self {
         let team = self
             .teams
             .last_mut()
             .expect("Cannot add status without a team");
-        team.add_status(id, trigger, actions);
+        team.add_status(id, trigger, script);
         self
     }
 
@@ -151,28 +149,28 @@ impl TeamBuilder {
         house.add_unit(id, pwr, hp);
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_reaction(&mut self, trigger: Trigger, target: Target, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add reaction without a house");
-        house.add_reaction(trigger, actions);
+        house.add_reaction(trigger, target, script);
     }
 
-    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
+    fn add_ability(&mut self, id: u64, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add ability without a house");
-        house.add_ability(id, actions);
+        house.add_ability(id, script);
     }
 
-    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_status(&mut self, id: u64, trigger: Trigger, script: String) {
         let house = self
             .houses
             .last_mut()
             .expect("Cannot add status without a house");
-        house.add_status(id, trigger, actions);
+        house.add_status(id, trigger, script);
     }
 
     fn build(self) -> NTeam {
@@ -215,30 +213,36 @@ impl HouseBuilder {
         }
     }
 
+    fn house_name(&self) -> String {
+        format!("House {}", self.id)
+    }
+
+    fn ability_path(&self, ability_id: u64) -> String {
+        format!("{}/Ability {}", self.house_name(), ability_id)
+    }
+
+    fn status_path(&self, status_id: u64) -> String {
+        format!("{}/Status {}", self.house_name(), status_id)
+    }
+
     fn add_unit(&mut self, id: u64, pwr: i32, hp: i32) {
         self.units.push(UnitBuilder::new(id, pwr, hp));
     }
 
-    fn add_reaction(&mut self, trigger: Trigger, actions: impl Into<Vec<Action>>) {
+    fn add_reaction(&mut self, trigger: Trigger, target: Target, script: String) {
         let unit = self
             .units
             .last_mut()
             .expect("Cannot add reaction without a unit");
-        unit.reaction = Some(Reaction {
-            trigger,
-            effect: Effect {
-                description: "Unit reaction".to_string(),
-                actions: actions.into(),
-            },
-        });
+        unit.behavior = Some((trigger, target, script));
     }
 
-    fn add_ability(&mut self, id: u64, actions: Vec<Action>) {
-        self.ability = Some(AbilityBuilder::new(id, actions));
+    fn add_ability(&mut self, id: u64, script: String) {
+        self.ability = Some(AbilityBuilder::new(id, script));
     }
 
-    fn add_status(&mut self, id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) {
-        self.status = Some(StatusBuilder::new(id, trigger, actions));
+    fn add_status(&mut self, id: u64, trigger: Trigger, script: String) {
+        self.status = Some(StatusBuilder::new(id, trigger, script));
     }
 
     fn build(self) -> (NHouse, Vec<NUnit>) {
@@ -257,10 +261,6 @@ impl HouseBuilder {
         house.set_id(self.id);
         house.house_name = format!("House {}", self.id);
         house.color.set_loaded(color);
-        house.units = RefMultiple::Ids {
-            parent_id: self.id,
-            node_ids: built_units.iter().map(|u| u.id).collect(),
-        };
 
         if let Some(ability_builder) = self.ability {
             house.ability.set_loaded(ability_builder.build());
@@ -278,7 +278,7 @@ struct UnitBuilder {
     id: u64,
     pwr: i32,
     hp: i32,
-    reaction: Option<Reaction>,
+    behavior: Option<(Trigger, Target, String)>,
 }
 
 impl UnitBuilder {
@@ -287,7 +287,7 @@ impl UnitBuilder {
             id,
             pwr,
             hp,
-            reaction: None,
+            behavior: None,
         }
     }
 
@@ -301,30 +301,25 @@ impl UnitBuilder {
         state.set_id(self.id + 2);
         state.stax = 1;
 
-        let mut representation = NUnitRepresentation::default();
+        let mut representation = NRepresentation::default();
         representation.set_id(self.id + 4);
-        representation.material = Material::default();
+        representation.script = RhaiScript::default();
 
         let mut unit = NUnit::default();
         unit.set_id(self.id);
         unit.unit_name = format!("Unit {}", self.id);
         unit.state.set_loaded(state);
 
-        if let Some(reaction) = self.reaction {
-            let mut behavior = NUnitBehavior::default();
-            behavior.set_id(self.id + 3);
-            behavior.reactions = vec![reaction];
-            behavior.stats.set_loaded(stats);
-            behavior.representation.set_loaded(representation);
-            unit.behavior.set_loaded(behavior);
-        } else {
-            let mut behavior = NUnitBehavior::default();
-            behavior.set_id(self.id + 3);
-            behavior.reactions = vec![];
-            behavior.stats.set_loaded(stats);
-            behavior.representation.set_loaded(representation);
-            unit.behavior.set_loaded(behavior);
+        let mut behavior = NUnitBehavior::default();
+        behavior.set_id(self.id + 3);
+        if let Some((trigger, target, script)) = self.behavior {
+            behavior.trigger = trigger;
+            behavior.target = target;
+            behavior.effect = RhaiScript::new(script).with_description("Unit reaction".to_string());
         }
+        behavior.stats.set_loaded(stats);
+        behavior.representation.set_loaded(representation);
+        unit.behavior.set_loaded(behavior);
 
         unit
     }
@@ -333,15 +328,15 @@ impl UnitBuilder {
 pub struct AbilityBuilder {
     id: u64,
     name: String,
-    actions: Vec<Action>,
+    script: String,
 }
 
 impl AbilityBuilder {
-    fn new(id: u64, actions: Vec<Action>) -> Self {
+    fn new(id: u64, script: String) -> Self {
         Self {
             id,
             name: format!("Ability {}", id),
-            actions,
+            script,
         }
     }
 
@@ -350,10 +345,7 @@ impl AbilityBuilder {
 
         let mut effect = NAbilityEffect::default();
         effect.set_id(effect_id);
-        effect.effect = Effect {
-            description: "Ability".to_string(),
-            actions: self.actions,
-        };
+        effect.effect = RhaiScript::new(self.script).with_description("Ability".to_string());
 
         let mut ability = NAbilityMagic::default();
         ability.set_id(self.id);
@@ -366,20 +358,16 @@ impl AbilityBuilder {
 
 struct StatusBuilder {
     id: u64,
-    reactions: Vec<Reaction>,
+    trigger: Trigger,
+    script: String,
 }
 
 impl StatusBuilder {
-    fn new(id: u64, trigger: Trigger, actions: impl Into<Vec<Action>>) -> Self {
+    fn new(id: u64, trigger: Trigger, script: String) -> Self {
         Self {
             id,
-            reactions: vec![Reaction {
-                trigger,
-                effect: Effect {
-                    description: "Status effect".to_string(),
-                    actions: actions.into(),
-                },
-            }],
+            trigger,
+            script,
         }
     }
 
@@ -388,24 +376,17 @@ impl StatusBuilder {
         let rep_id = self.id + 2;
         let state_id = self.id + 3;
 
-        let mut representation = NStatusRepresentation::default();
-        representation.set_id(rep_id);
-        representation.material = Material::default();
-
-        let mut behavior = NStatusBehavior::default();
-        behavior.set_id(behavior_id);
-        behavior.reactions = self.reactions;
-        behavior.representation.set_loaded(representation);
-
-        let mut state = NState::default();
-        state.set_id(state_id);
-        state.stax = 1;
-
-        let mut status = NStatusMagic::default();
-        status.set_id(self.id);
+        let mut status = NStatusMagic::default()
+            .with_representation(NRepresentation::default().with_id(rep_id))
+            .with_behavior(NStatusBehavior::new(
+                behavior_id,
+                0,
+                self.trigger,
+                RhaiScript::new(self.script).with_description("Status effect".to_string()),
+            ))
+            .with_state(NStatusState::new(state_id, 0, 1, 0, default()))
+            .with_id(self.id);
         status.status_name = format!("Status {}", self.id);
-        status.behavior.set_loaded(behavior);
-        status.state.set_loaded(state);
 
         status
     }

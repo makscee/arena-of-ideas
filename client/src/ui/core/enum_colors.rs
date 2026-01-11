@@ -22,8 +22,8 @@ impl EnumColor for Action {
             Action::noop => low_contrast_text(),
             Action::deal_damage => RED,
             Action::heal_damage => GREEN,
-            Action::use_ability(_) => ORANGE,
-            Action::apply_status(_) => PURPLE,
+            Action::use_ability(..) => ORANGE,
+            Action::apply_status(..) => PURPLE,
             Action::set_status(..) => PURPLE,
             Action::change_status_stax(..) => ORANGE,
             Action::debug(..) => high_contrast_text(),
@@ -52,6 +52,23 @@ impl EnumColor for Trigger {
             | Trigger::StatusGained
             | Trigger::StatusApplied => YELLOW,
             Trigger::ChangeStat(var) => var.color(),
+            Trigger::Any(_) => YELLOW,
+        }
+    }
+}
+
+impl EnumColor for Target {
+    fn color(&self) -> Color32 {
+        match self {
+            Target::Owner | Target::Caster => high_contrast_text(),
+            Target::RandomEnemy | Target::RandomAlly | Target::Attacker | Target::Target => YELLOW,
+            Target::AdjacentBack
+            | Target::AdjacentFront
+            | Target::AllyAtSlot(_)
+            | Target::EnemyAtSlot(_) => ORANGE,
+            Target::AllEnemies | Target::AllAllies => RED,
+            Target::All => PURPLE,
+            Target::List(_) => BLUE,
         }
     }
 }
@@ -124,6 +141,7 @@ impl EnumColor for Expression {
             | Expression::less_then(_a, _b)
             | Expression::fallback(_a, _b) => RED,
             Expression::r#if(_a, _b, _c) | Expression::oklch(_a, _b, _c) => PURPLE,
+            Expression::list(_) => YELLOW,
         }
     }
 }

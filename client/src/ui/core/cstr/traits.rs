@@ -136,48 +136,19 @@ impl ToCstr for Expression {
     }
 }
 
-impl ToCstr for PainterAction {
-    fn cstr(&self) -> Cstr {
-        self.as_ref().cstr_c(CYAN)
-    }
-
-    fn cstr_expanded(&self) -> Cstr {
-        let inner = match self {
-            PainterAction::circle(x)
-            | PainterAction::rectangle(x)
-            | PainterAction::text(x)
-            | PainterAction::hollow(x)
-            | PainterAction::translate(x)
-            | PainterAction::rotate(x)
-            | PainterAction::scale_mesh(x)
-            | PainterAction::scale_rect(x)
-            | PainterAction::alpha(x)
-            | PainterAction::feathering(x)
-            | PainterAction::color(x) => x.cstr_expanded(),
-            PainterAction::curve {
-                thickness,
-                curvature,
-            } => format!(
-                "{}, {}",
-                thickness.cstr_expanded(),
-                curvature.cstr_expanded()
-            ),
-            PainterAction::repeat(x, a) => format!("{}, {}", x.cstr_expanded(), a.cstr_expanded()),
-            PainterAction::list(vec) => vec.into_iter().map(|a| a.cstr_expanded()).join(", "),
-            PainterAction::if_ok(expr, actions) => {
-                let actions_str = actions.into_iter().map(|a| a.cstr_expanded()).join(", ");
-                format!("{}, [{}]", expr.cstr_expanded(), actions_str)
-            }
-            PainterAction::exit => Default::default(),
-            PainterAction::paint => Default::default(),
-        };
-        format!("{}({inner})", self.cstr())
-    }
-}
-
 impl ToCstr for Trigger {
     fn cstr(&self) -> Cstr {
-        let mut s = self.as_ref().to_owned().cstr_c(self.color());
+        let mut s = match self {
+            Trigger::Any(triggers) => {
+                let trigger_strs = triggers
+                    .iter()
+                    .map(|t| t.cstr())
+                    .collect::<Vec<_>>()
+                    .join(" | ");
+                format!("Any({})", trigger_strs).cstr()
+            }
+            _ => self.as_ref().to_owned().cstr_c(self.color()),
+        };
         match self {
             Trigger::ChangeStat(var) => {
                 s += " ";
@@ -194,7 +165,8 @@ impl ToCstr for Trigger {
             | Trigger::StatusGained
             | Trigger::ChangeOutgoingDamage
             | Trigger::ChangeIncomingDamage
-            | Trigger::AllyDeath => {}
+            | Trigger::AllyDeath
+            | Trigger::Any(_) => {}
         }
         s
     }
@@ -218,7 +190,23 @@ impl ToCstr for NodeError {
     }
 }
 
-impl ToCstr for Reaction {
+impl ToCstr for Target {
+    fn cstr(&self) -> Cstr {
+        match self {
+            Target::List(targets) => {
+                let target_strs = targets
+                    .iter()
+                    .map(|t| t.cstr())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("List({})", target_strs).cstr()
+            }
+            _ => self.as_ref().to_owned().cstr_c(self.color()),
+        }
+    }
+}
+
+impl ToCstr for Behavior {
     fn cstr(&self) -> Cstr {
         format!(
             "[b {}]: {}\n[s {}]",
@@ -229,13 +217,17 @@ impl ToCstr for Reaction {
     }
 }
 
-impl ToCstr for Material {
+impl ToCstr for RhaiScript<PainterAction> {
     fn cstr(&self) -> Cstr {
-        format!("Material([th {}])", self.0.len())
+        if self.code.is_empty() {
+            "Material(empty)".to_string()
+        } else {
+            format!("Material({})", self.code.lines().count())
+        }
     }
 
     fn cstr_expanded(&self) -> Cstr {
-        self.0.iter().map(|a| a.cstr()).join("\n")
+        self.code.clone()
     }
 }
 

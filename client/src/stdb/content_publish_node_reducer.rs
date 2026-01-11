@@ -67,6 +67,7 @@ impl content_publish_node for super::RemoteReducers {
         ContentPublishNodeCallbackId(self.imp.on_reducer(
             "content_publish_node",
             Box::new(move |ctx: &super::ReducerEventContext| {
+                #[allow(irrefutable_let_patterns)]
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {

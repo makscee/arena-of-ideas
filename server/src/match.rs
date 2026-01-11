@@ -1,8 +1,5 @@
-use std::mem;
-
 use schema::MatchState;
 use spacetimedb::rand::{Rng, seq::SliceRandom};
-use strum::IntoEnumIterator;
 
 use crate::battle_table::TBattle;
 
@@ -47,7 +44,7 @@ fn ensure_floor_pool(ctx: &mut ServerContext, floor: i32) -> NodeResult<u64> {
             .load_nodes(ctx)?
             .into_iter()
             .find_map(|f| if f.floor == floor { Some(f.id) } else { None })
-            .to_custom_err_fn(|| format!("Pool floor {floor} not found"))
+            .ok_or_else(|| NodeError::custom(format!("Pool floor {} not found", floor)))
     }
 }
 
@@ -74,6 +71,66 @@ fn create_battle(
     Ok(battle_id)
 }
 
+fn inject_house_actions(unit: &mut NUnit, house: &NHouse) -> NodeResult<()> {
+    let house_name = house.house_name.clone();
+    let house_color = house.color.get()?.color.clone();
+    let ability_name = house.ability.get().ok().map(|a| a.ability_name.clone());
+    let status_name = house.status.get().ok().map(|s| s.status_name.clone());
+
+    if let Ok(behavior) = unit.behavior.get_mut() {
+        behavior.effect.code = inject_actions(
+            &behavior.effect.code,
+            &house_name,
+            &ability_name,
+            &status_name,
+        );
+
+        if let Ok(representation) = behavior.representation.get_mut() {
+            let hex_str = house_color.0.trim_start_matches('#');
+            let (r, g, b) = if hex_str.len() == 6 {
+                let r = u8::from_str_radix(&hex_str[0..2], 16).unwrap_or(255);
+                let g = u8::from_str_radix(&hex_str[2..4], 16).unwrap_or(255);
+                let b = u8::from_str_radix(&hex_str[4..6], 16).unwrap_or(255);
+                (r, g, b)
+            } else {
+                (255, 255, 255)
+            };
+            let color_code = format!(
+                "painter.Color {{ r: {}, g: {}, b: {}, a: 255 }};\n",
+                r, g, b
+            );
+            representation.script.code = format!("{}{}", color_code, representation.script.code);
+        }
+    }
+
+    Ok(())
+}
+
+fn inject_actions(
+    code: &str,
+    house_name: &str,
+    ability_name: &Option<String>,
+    status_name: &Option<String>,
+) -> String {
+    let mut result = code.to_string();
+
+    if let Some(name) = ability_name {
+        result = result.replace(
+            "use_ability(",
+            &format!("use_ability(\"{}/{}\", ", house_name, name),
+        );
+    }
+
+    if let Some(name) = status_name {
+        result = result.replace(
+            "apply_status(",
+            &format!("apply_status(\"{}/{}\", ", house_name, name),
+        );
+    }
+
+    result
+}
+
 #[reducer]
 fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
@@ -83,11 +140,11 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
     let offer = m
         .shop_offers
         .last_mut()
-        .to_custom_e_s("No active shop offers")?;
+        .ok_or_else(|| NodeError::custom("No active shop offers"))?;
     let slot = offer
         .case
         .get_mut(shop_idx as usize)
-        .to_custom_e_s_fn(|| format!("Shop slot {shop_idx} not found"))?;
+        .ok_or_else(|| "Shop slot not found".to_string())?;
     if slot.sold {
         return Err("Shop slot already sold".to_string());
     }
@@ -106,21 +163,14 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .track()?
                 .take();
             let house_id = ctx.first_parent(team_unit.id, NodeKind::NHouse)?;
+            let house = ctx.load::<NHouse>(house_id).track()?;
+            inject_house_actions(&mut team_unit, &house).track()?;
             team_unit =
                 team_unit
                     .remap_ids(ctx)
                     .with_state(NUnitState::new(ctx.next_id(), pid, 1, 0));
-            let unit_id = team_unit.id;
+            let _unit_id = team_unit.id;
             m.bench.push(team_unit)?;
-            m.shop_pool
-                .get_mut()?
-                .houses
-                .get_mut()?
-                .iter_mut()
-                .find(|h| h.id == house_id)
-                .to_not_found()?
-                .units
-                .push_id(unit_id)?;
         }
         CardKind::House => {
             let house = ctx
@@ -131,17 +181,17 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 .take();
             let shop_pool = m.shop_pool.get_mut()?;
             let houses = shop_pool.houses.get_mut()?;
-            let house_to_use = if let Some(existing_house) =
+            let _house_to_use = if let Some(existing_house) =
                 houses.iter_mut().find(|h| h.house_name == house.house_name)
             {
                 existing_house.state.get_mut()?.stax += 1;
                 existing_house
             } else {
-                let new_house = house.remap_ids(ctx).with_owner(pid).with_state(NState::new(
-                    ctx.next_id(),
-                    pid,
-                    1,
-                ));
+                let new_house = house
+                    .clone()
+                    .remap_ids(ctx)
+                    .with_owner(pid)
+                    .with_state(NState::new(ctx.next_id(), pid, 1));
                 shop_pool.houses.push(new_house)?
             };
             let all_core_units = NUnit::collect_owner(ctx, ID_CORE);
@@ -149,13 +199,9 @@ fn match_shop_buy(ctx: &ReducerContext, shop_idx: u8) -> Result<(), String> {
                 return Err("No core units found".into());
             }
             for mut unit in all_core_units.choose_multiple(&mut ctx.rng(), 5).cloned() {
-                let new_unit = unit
-                    .load_components(ctx)
-                    .track()?
-                    .take()
-                    .remap_ids(ctx)
-                    .with_owner(pid);
-                house_to_use.units.push_id(new_unit.id)?;
+                unit.load_components(ctx).track()?;
+                inject_house_actions(&mut unit, &house).track()?;
+                let new_unit = unit.remap_ids(ctx).with_owner(pid);
                 shop_pool.units.push(new_unit)?;
             }
         }
@@ -292,13 +338,14 @@ fn match_submit_battle_result(
                 let new_boss_team = player_team.clone().remap_ids(ctx).with_owner(pid);
                 let last_floor = arena.last_floor;
                 let mut bosses = arena.floor_bosses.load_nodes(ctx)?;
-                let mut boss = bosses
+                let boss = bosses
                     .iter_mut()
                     .find(|f| f.floor == current_floor)
-                    .to_custom_err_fn(|| format!("Floor boss not found for {current_floor}"))?
-                    .clone();
+                    .ok_or_else(|| {
+                        NodeError::custom(format!("Floor boss not found for {}", current_floor))
+                    })?;
                 boss.team.set_loaded(new_boss_team);
-                ctx.source_mut().commit(boss)?;
+                ctx.source_mut().commit(boss.take())?;
 
                 if current_floor == last_floor {
                     m.state = MatchState::ChampionShop;
@@ -454,7 +501,7 @@ fn match_stack_unit(ctx: &ReducerContext, unit_id: u64, target_unit_id: u64) -> 
     target_unit_state.stax += stax;
     ctx.source_mut().commit(target_unit_state)?;
 
-    let mut target_behavior = target_unit.behavior.load_node(ctx)?;
+    let target_behavior = target_unit.behavior.load_node(ctx)?;
     let mut target_unit_stats = target_behavior.stats.load_node(ctx)?;
     target_unit_stats.hp += stax;
     target_unit_stats.pwr += stax;
@@ -490,34 +537,29 @@ fn match_start_fusion(ctx: &ReducerContext, source_id: u64, target_id: u64) -> R
     }
 
     let mut m = player.active_match.load_node(ctx)?;
-
-    let mut packed_variants = Vec::new();
-    for fusion_type in FusionType::iter() {
-        packed_variants.push(create_fused_unit(
-            ctx,
-            &mut source,
-            &mut target,
-            fusion_type,
-        )?);
-    }
-
-    m.fusion = Some((source_id, target_id, packed_variants));
+    m.fusion = Some((source_id, target_id));
     ctx.source_mut().commit(m)?;
     Ok(())
 }
 
 #[reducer]
-fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), String> {
+fn match_choose_fusion(ctx: &ReducerContext, fusion_choice: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let player = ctx.player()?;
     let mut m = player.active_match.load_node(ctx)?;
-    let Some((source_id, target_id, ref variants)) = m.fusion.take() else {
+    let Some((source_id, target_id)) = m.fusion.take() else {
         return Err("No fusion in progress".into());
     };
     ctx.source_mut().commit(m)?;
-    let fusion_idx = fusion_index as usize;
-    if fusion_idx >= variants.len() {
-        return Err("Invalid fusion type index".into());
+
+    // Validate fusion choice string
+    if fusion_choice.len() != 3 {
+        return Err("Fusion choice must be exactly 3 characters".into());
+    }
+
+    let chars: Vec<char> = fusion_choice.chars().collect();
+    if !chars.contains(&'<') || !chars.contains(&'>') || !chars.contains(&'=') {
+        return Err("Fusion choice must contain exactly one '<', '>', and '='".into());
     }
     let houses = target_id
         .collect_kind_parents(ctx.rctx(), NodeKind::NHouse)
@@ -527,11 +569,17 @@ fn match_choose_fusion(ctx: &ReducerContext, fusion_index: i32) -> Result<(), St
     let slot = target_id
         .find_kind_parent(ctx.rctx(), NodeKind::NTeamSlot)
         .to_not_found()?;
+    let source = ctx.load::<NUnit>(source_id)?.load_components(ctx)?.take();
+    let target = ctx.load::<NUnit>(target_id)?.load_components(ctx)?.take();
+
     TNode::delete_by_id_recursive(ctx.rctx(), target_id);
     TNode::delete_by_id_recursive(ctx.rctx(), source_id);
 
-    let packed = &variants[fusion_idx];
-    let merged_unit = NUnit::unpack(packed)?.remap_ids(ctx).with_owner(player.id);
+    let merged_unit_id = create_fused_unit(ctx, &source, &target, &fusion_choice)?;
+    let merged_unit = ctx
+        .load::<NUnit>(merged_unit_id)?
+        .remap_ids(ctx)
+        .with_owner(player.id);
     let unit_id = merged_unit.id;
     ctx.source_mut().commit(merged_unit)?;
     for house in houses {
@@ -554,89 +602,88 @@ fn match_cancel_fusion(ctx: &ReducerContext) -> Result<(), String> {
 
 fn create_fused_unit(
     ctx: &mut ServerContext,
-    source: &mut NUnit,
-    target: &mut NUnit,
-    fusion_type: FusionType,
-) -> NodeResult<PackedNodes> {
+    source: &NUnit,
+    target: &NUnit,
+    fusion_choice: &str,
+) -> NodeResult<u64> {
     let mut new_unit = target.clone();
+    new_unit.unit_name = format!("{}{}", target.unit_name, source.unit_name);
 
-    let mut front_name = target.unit_name.clone();
-    let mut back_name = source.unit_name.clone();
-    match fusion_type {
-        FusionType::StickFront => {
-            mem::swap(&mut front_name, &mut back_name);
-        }
-        FusionType::StickBack | FusionType::PushBack => {}
-    }
-    let front_half = front_name.len() / 2;
-    let back_half = back_name.len() / 2;
-    let name_a = &front_name[..front_half];
-    let name_b = &back_name[back_name.len() - back_half..];
+    let source_behavior_node = source.behavior.load_node(ctx)?;
+    let target_behavior_node = target.behavior.load_node(ctx)?;
 
-    new_unit.unit_name = format!("{name_a}{name_b}");
+    let mut new_behavior_node = NUnitBehavior::new(
+        ctx.next_id(),
+        new_unit.id,
+        default(),
+        default(),
+        RhaiScript::empty(),
+    );
+    new_behavior_node.stats = target_behavior_node.stats.clone();
+    new_behavior_node.representation = target_behavior_node.representation.clone();
 
-    let mut new_behavior = new_unit.behavior.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let target_behavior = target.behavior.load_node(ctx)?;
-    let reactions = &mut new_behavior.reactions;
-    match fusion_type {
-        FusionType::StickFront => {
-            *reactions = source_behavior.reactions.clone();
-            reactions.last_mut().unwrap().effect.actions.extend(
-                target_behavior
-                    .reactions
-                    .first()
-                    .unwrap()
-                    .effect
-                    .actions
-                    .clone()
-                    .into_iter(),
+    let chars: Vec<char> = fusion_choice.chars().collect();
+    let trigger_choice = chars[0];
+    let target_choice = chars[1];
+    let effect_choice = chars[2];
+
+    let merged_trigger = match trigger_choice {
+        '<' => source_behavior_node.trigger.clone(),
+        '>' => target_behavior_node.trigger.clone(),
+        '=' => Trigger::Any(vec![
+            source_behavior_node.trigger.clone(),
+            target_behavior_node.trigger.clone(),
+        ]),
+        _ => return Err(format!("Invalid trigger choice: {}", trigger_choice).into()),
+    };
+
+    let merged_target = match target_choice {
+        '<' => source_behavior_node.target.clone(),
+        '>' => target_behavior_node.target.clone(),
+        '=' => Target::List(vec![
+            source_behavior_node.target.clone(),
+            target_behavior_node.target.clone(),
+        ]),
+        _ => return Err(format!("Invalid target choice: {}", target_choice).into()),
+    };
+
+    let merged_effect = match effect_choice {
+        '<' => source_behavior_node.effect.clone(),
+        '>' => target_behavior_node.effect.clone(),
+        '=' => {
+            let merged_code = format!(
+                "{}\n{}",
+                source_behavior_node.effect.code, target_behavior_node.effect.code
             );
-            reactions.extend(target_behavior.reactions[1..].iter().cloned());
-        }
-        FusionType::StickBack => {
-            reactions.last_mut().unwrap().effect.actions.extend(
-                source_behavior
-                    .reactions
-                    .first()
-                    .unwrap()
-                    .effect
-                    .actions
-                    .clone()
-                    .into_iter(),
+            let mut merged = RhaiScript::new(merged_code);
+            merged.description = format!(
+                "{}\n{}",
+                source_behavior_node.effect.description, target_behavior_node.effect.description
             );
-            reactions.extend(source_behavior.reactions[1..].iter().cloned());
+            merged
         }
-        FusionType::PushBack => {
-            reactions.extend(source_behavior.reactions.clone().into_iter());
-        }
-    }
-    ctx.source_mut().commit(new_behavior)?;
+        _ => return Err(format!("Invalid effect choice: {}", effect_choice).into()),
+    };
 
-    let new_behavior = new_unit.behavior.load_node(ctx)?;
-    let mut new_representation = new_behavior.representation.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let source_representation = source_behavior.representation.load_node(ctx)?;
-    let target_behavior = target.behavior.load_node(ctx)?;
-    let target_representation = target_behavior.representation.load_node(ctx)?;
-    let actions = &mut new_representation.material.0;
-    match fusion_type {
-        FusionType::StickFront => {
-            *actions = source_representation.material.0.clone();
-            actions.push(PainterAction::paint);
-            actions.extend(target_representation.material.0.clone().into_iter());
-        }
-        FusionType::StickBack | FusionType::PushBack => {
-            actions.push(PainterAction::paint);
-            actions.extend(source_representation.material.0.clone().into_iter());
-        }
-    }
+    new_behavior_node.trigger = merged_trigger;
+    new_behavior_node.target = merged_target;
+    new_behavior_node.effect = merged_effect;
+
+    ctx.source_mut().commit(new_behavior_node.clone())?;
+    new_unit.behavior.set_loaded(new_behavior_node);
+
+    let mut new_representation = target_behavior_node.representation.load_node(ctx)?;
+    let source_representation = source_behavior_node.representation.load_node(ctx)?;
+    let target_representation = target_behavior_node.representation.load_node(ctx)?;
+
+    new_representation.script.code = format!(
+        "{}\n{}",
+        target_representation.script.code, source_representation.script.code
+    );
     ctx.source_mut().commit(new_representation)?;
 
-    let mut new_behavior = new_unit.behavior.load_node(ctx)?;
-    let mut new_stats = new_behavior.stats.load_node(ctx)?;
-    let source_behavior = source.behavior.load_node(ctx)?;
-    let source_stats = source_behavior.stats.load_node(ctx)?;
+    let mut new_stats = target_behavior_node.stats.load_node(ctx)?;
+    let source_stats = source_behavior_node.stats.load_node(ctx)?;
     new_stats.hp += source_stats.hp;
     new_stats.pwr += source_stats.pwr;
     ctx.source_mut().commit(new_stats)?;
@@ -646,7 +693,7 @@ fn create_fused_unit(
     new_state.stax += source_state.stax;
     ctx.source_mut().commit(new_state)?;
 
-    Ok(new_unit.pack())
+    Ok(new_unit.id)
 }
 
 #[reducer]
@@ -673,7 +720,7 @@ fn match_insert(ctx: &ReducerContext) -> Result<(), String> {
         default(),
         vec![], // battle_history
         None,   // pending_battle
-        None,   // fusion
+        None,   // fusion (now stores just unit ids)
     )
     .with_shop_pool(NShopPool::new(ctx.next_id(), pid))
     .with_slots(team_slots);
@@ -714,16 +761,7 @@ impl NMatch {
 
         // Copy houses but remove any references to bench or shop_pool units
         let shop_pool = self.shop_pool.get()?;
-        for mut house in shop_pool.houses.get()?.clone() {
-            house.units = RefMultiple::Ids {
-                parent_id: house.id,
-                node_ids: house
-                    .units
-                    .ids()?
-                    .into_iter()
-                    .filter(|u| slot_units.contains(u))
-                    .collect_vec(),
-            };
+        for house in shop_pool.houses.get()?.clone() {
             team.houses.push(house)?;
         }
 

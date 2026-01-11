@@ -128,16 +128,10 @@ impl Selector {
     {
         let mut changed = false;
         let combo_response = ComboBox::from_id_salt(ui.next_auto_id())
-            .selected_text(
-                value
-                    .cstr_c(name_color(&value.cstr().to_string()))
-                    .widget(1.0, ui.style()),
-            )
+            .selected_text(value.cstr().widget(1.0, ui.style()))
             .show_ui(ui, |ui| {
                 for e in values {
-                    let text = e
-                        .cstr_c(name_color(&e.cstr().to_string()))
-                        .widget(1.0, ui.style());
+                    let text = e.cstr().widget(1.0, ui.style());
                     if ui.selectable_value(value, e.clone(), text).changed() {
                         changed = true;
                     }

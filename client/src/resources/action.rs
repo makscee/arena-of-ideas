@@ -24,7 +24,7 @@ impl ActionImpl for Action {
         println!(
             "{} {}",
             "action:".dimmed().purple(),
-            self.title_recursive(ctx).to_colored(),
+            self.title(ctx).to_colored(),
         );
         let mut actions = Vec::default();
         match self {
@@ -96,77 +96,23 @@ impl ActionImpl for Action {
                     }
                 }
             }
-            Action::use_ability(ability_id) => {
-                let owner = ctx.owner()?;
-                let ability = ctx.load::<NAbilityMagic>(*ability_id)?;
-                let x = ctx
-                    .load::<NUnitState>(owner)
-                    .unwrap_or_default()
-                    .stax
-                    .at_least(1);
-                let color = ctx.color();
-                let name = ability.ability_name.clone();
-                let effect = ability.effect.load_node(ctx)?.effect.actions.clone();
-                ctx.with_layers(
-                    [
-                        ContextLayer::Var(VarName::stax, x.into()),
-                        ContextLayer::Var(VarName::value, x.into()),
-                    ],
-                    |ctx| {
-                        actions.extend(effect.process(ctx).track()?);
-                        Ok(())
-                    },
-                )?;
-                let text = format!("use [b x{x}] [{} {name}]", color.to_hex());
-                let position = ctx.get_var(VarName::position).track()?;
-                actions.push(BattleAction::new_text(text, position).into());
-            }
-            Action::apply_status(status_id) => {
-                let owner = ctx.owner()?;
-                let status = ctx.load::<NStatusMagic>(*status_id)?;
-                let x = ctx
-                    .load::<NUnitState>(owner)
-                    .unwrap_or_default()
-                    .stax
-                    .at_least(1);
-                let color = ctx.color();
-                let name = status.status_name.clone();
-                let status = status
-                    .clone()
-                    .load_components(ctx)?
-                    .take()
-                    .with_state(NState::new(next_id(), player_id(), x));
-                let targets = ctx.get_targets();
-                if targets.is_empty() {
-                    return Err("No targets".into());
-                }
-                let text = format!("apply [b x{x}] [{} {name}]", color.to_hex());
-                actions.push(
-                    BattleAction::new_text(
-                        text,
-                        ctx.get_var(VarName::position).get_vec2().track()?,
-                    )
-                    .into(),
+            Action::use_ability(house_name, ability_name, color) => {
+                // TODO: Migrate to Rhai script execution system
+                // This action type is being replaced by NUnitBehavior with RhaiScript
+                log::warn!(
+                    "Action::use_ability not yet migrated to Rhai scripts: {} / {}",
+                    house_name,
+                    ability_name
                 );
-                for target in targets {
-                    actions.push(BattleAction::apply_status(
-                        owner,
-                        target,
-                        status.clone().remap_ids(),
-                        color,
-                    ));
-                    let position = ctx
-                        .get_var_inherited(target, VarName::position)
-                        .get_vec2()?;
-                    actions.push(
-                        BattleAction::new_text(
-                            format!("gain [b x{x}] [{} {name}]", color.to_hex()),
-                            position,
-                        )
-                        .into(),
-                    );
-                    actions.push(BattleAction::wait(animation_time()));
-                }
+            }
+            Action::apply_status(house_name, status_name, color) => {
+                // TODO: Migrate to Rhai script execution system
+                // This action type is being replaced by NStatusBehavior with RhaiScript
+                log::warn!(
+                    "Action::apply_status not yet migrated to Rhai scripts: {} / {}",
+                    house_name,
+                    status_name
+                );
             }
             Action::set_status(x) => {
                 let status_id = x.get_u64(ctx)?;

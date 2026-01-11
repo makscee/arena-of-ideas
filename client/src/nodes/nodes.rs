@@ -86,21 +86,6 @@ impl NodeKindOnSpawn for NodeKind {
     fn on_spawn(self, ctx: &mut ClientContext, id: u64) -> NodeResult<()> {
         debug!("on spawn {self} {id} ");
         let entity = ctx.entity(id).track()?;
-        let vars = node_kind_match!(self, ctx.load::<NodeType>(id).track()?.get_vars());
-
-        // Only create NodeStateHistory for battle simulations
-        if ctx.battle().is_ok() {
-            let world = ctx.world_mut()?;
-            let mut emut = world.entity_mut(entity);
-            let mut ns = if let Some(ns) = emut.get_mut::<NodeStateHistory>() {
-                ns
-            } else {
-                emut.insert(NodeStateHistory::default())
-                    .get_mut::<NodeStateHistory>()
-                    .unwrap()
-            };
-            ns.init_vars(vars.into_iter());
-        }
 
         let world = ctx.world_mut()?;
         let mut emut = world.entity_mut(entity);
@@ -117,7 +102,11 @@ impl NodeKindOnSpawn for NodeKind {
                 let unit = ctx.load::<NUnit>(id)?;
                 if let Ok(behavior) = unit.behavior.load_node(ctx) {
                     if let Ok(mut rep) = behavior.representation.load_node(ctx) {
-                        rep.material.0.append(&mut unit_rep().material.0.clone());
+                        // Material is now a script, so we merge the code
+                        let default_mat_code = unit_rep().script.code.clone();
+                        if !default_mat_code.is_empty() {
+                            rep.script.code = format!("{}\n{}", rep.script.code, default_mat_code);
+                        }
                         rep.spawn(ctx, Some(entity))?;
                     } else {
                         let rep_id = next_id();
@@ -131,7 +120,7 @@ impl NodeKindOnSpawn for NodeKind {
             }
             NodeKind::NStatusMagic => {
                 if ctx
-                    .get_children_of_kind(id, NodeKind::NStatusRepresentation)?
+                    .get_children_of_kind(id, NodeKind::NRepresentation)?
                     .is_empty()
                 {
                     let rep_id = next_id();

@@ -25,7 +25,10 @@ impl IncubatorPanes {
                     _ => unreachable!(),
                 };
                 node_list
-                    .as_list(|(id, name, rating, owner), _ctx, ui| {
+                    .as_list(|(id, name, rating, owner), ctx, ui| {
+                        named_node_kind_match!(kind, {
+                            render_node_menu_btn::<NamedNodeType>(ui, ctx, *id);
+                        });
                         let color = if inspected_id == Some(*id) {
                             YELLOW
                         } else {
@@ -33,8 +36,10 @@ impl IncubatorPanes {
                         };
                         let marker = if *owner == ID_CORE {
                             "⭐️"
+                        } else if id.is_complete() {
+                            "✔️"
                         } else if id.fixed_kinds().contains(&kind.to_kind()) {
-                            "📌"
+                            "✏️"
                         } else {
                             ""
                         };
@@ -85,7 +90,7 @@ impl IncubatorPanes {
         Self::render_node_list(ui, world, NamedNodeKind::NHouse)
     }
 
-    fn pane_component<T: ClientNode + FDescription>(
+    fn pane_component<T: ClientNode + FDescription + FRecursiveNodeEdit>(
         ui: &mut Ui,
         ctx: &mut ClientContext,
         base: u64,
@@ -94,25 +99,40 @@ impl IncubatorPanes {
         let kind = T::kind_s();
 
         if parent.is_none() {
-            format!("[b {}] [tw parent not found]", kind.cstr()).label_w(ui);
+            // Since a component can have multiple possible parents, we can't show a specific one
+            format!("[b Component parent] [tw not found]").label_w(ui);
             return Ok(());
         }
 
         let parent = parent.unwrap();
         let fixed = base.fixed_kinds();
-        if kind.component_parent().is_none() {
+
+        // Check if this is actually a component by checking if parent has this kind as a component child
+        let parent_kind = ctx.source().get_node_kind(parent)?;
+        if !kind.is_component_child(parent_kind) {
             return Err(NodeError::custom(format!(
-                "[red Wrong component kind {kind}]]"
+                "[red Wrong component kind {kind} for parent {parent_kind}]]"
             )));
         }
+
         {
-            let mut kind = kind;
-            while let Some(parent_kind) = kind.component_parent() {
-                if !fixed.contains(&parent_kind) {
-                    format!("[b {}] [tw should be complete first]", parent_kind.cstr()).label_w(ui);
+            // Walk up the component chain using the actual parent relationship
+            let mut current_kind = kind;
+            let mut current_parent_kind = parent_kind;
+            while current_kind.is_component_child(current_parent_kind) {
+                if !fixed.contains(&current_parent_kind) {
+                    format!(
+                        "[b {}] [tw should be complete first]",
+                        current_parent_kind.cstr()
+                    )
+                    .label_w(ui);
                     return Ok(());
                 }
-                kind = parent_kind;
+                // Move up: current becomes parent, and we need to find parent's parent
+                current_kind = current_parent_kind;
+                // For now, we can't easily walk up multiple levels without actual node relationships
+                // So we'll break after checking the immediate parent
+                break;
             }
         }
 
@@ -122,22 +142,23 @@ impl IncubatorPanes {
         ui.separator();
 
         if fixed.contains(&kind) {
-            let id = ctx.first_child_recursive(base, kind)?;
-            return ui
-                .vertical_centered_justified(|ui| -> NodeResult<()> {
-                    let node = ctx.load::<T>(id)?;
-                    ui.horizontal(|ui| {
-                        node.rating().cstr_expanded().label(ui);
-                        render_vote_btns(id, ui);
-                    });
-                    if node.kind() == NodeKind::NUnitRepresentation {
-                        node.display(ctx, ui);
-                        ui.separator();
-                    }
-                    node.description_cstr(ctx).label_w(ui);
-                    Ok(())
-                })
-                .inner;
+            if let Ok(id) = ctx.first_child_recursive(base, kind) {
+                return ui
+                    .vertical_centered_justified(|ui| -> NodeResult<()> {
+                        let node = ctx.load::<T>(id)?;
+                        ui.horizontal(|ui| {
+                            node.rating().cstr_expanded().label(ui);
+                            render_vote_btns(id, ui);
+                        });
+                        if node.kind() == NodeKind::NRepresentation {
+                            node.display(ctx, ui);
+                            ui.separator();
+                        }
+                        node.description_cstr(ctx).label_w(ui);
+                        Ok(())
+                    })
+                    .inner;
+            }
         }
 
         Self::render_suggestion_button::<T>(ui, Some(parent)).ui(ui);
@@ -153,23 +174,23 @@ impl IncubatorPanes {
         }
         let kind = T::kind_s().to_content()?;
         let mut node = T::default();
-        Confirmation::new(&format!("Create new {}", kind))
+        Confirmation::new(&format!("Create new {}", kind.to_kind().cstr()))
             .accept_name("[green ✅ Create]")
             .cancel_name("Cancel")
+            .fullscreen()
             .content(move |ui, _world, button_pressed| {
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
-                        if cn.reactions.is_empty() {
-                            cn.reactions.push(default());
-                        }
-                        let reaction = cn.reactions.first_mut().unwrap();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut reaction.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
                             changed = true;
                         }
-                        if Input::new("Unit Description")
-                            .ui_string(&mut reaction.effect.description, ui)
+                        if Selector::ui_enum(&mut cn.target, ui).1.changed() {
+                            changed = true;
+                        }
+                        if Input::new("Unit Effect Script")
+                            .ui_string(&mut cn.effect.code, ui)
                             .changed()
                         {
                             changed = true;
@@ -180,16 +201,12 @@ impl IncubatorPanes {
                     }
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
-                        if cn.reactions.is_empty() {
-                            cn.reactions.push(default());
-                        }
-                        let reaction = cn.reactions.first_mut().unwrap();
                         let mut changed = false;
-                        if Selector::ui_enum(&mut reaction.trigger, ui).1.changed() {
+                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
                             changed = true;
                         }
-                        if Input::new("Status Description")
-                            .ui_string(&mut reaction.effect.description, ui)
+                        if Input::new("Status Effect Script")
+                            .ui_string(&mut cn.effect.code, ui)
                             .changed()
                         {
                             changed = true;
@@ -208,10 +225,27 @@ impl IncubatorPanes {
                         }
                     }
                     _ => {
-                        node.edit(ui);
+                        node.edit(ui, &EMPTY_CONTEXT);
                     }
                 }
-                node.display(&EMPTY_CONTEXT, ui);
+                if kind == ContentNodeKind::NRepresentation {
+                    with_incubator_source(|ctx| {
+                        let parent = parent.to_not_found()?;
+                        let mut unit = ctx
+                            .load_or_first_parent_recursive_ref::<NUnit>(parent)?
+                            .clone();
+                        unit.behavior
+                            .load_mut(ctx)?
+                            .get_mut()?
+                            .representation
+                            .set_loaded(node.force_cast::<NRepresentation>().clone());
+                        unit.as_card().compose(ctx, ui);
+                        Ok(())
+                    })
+                    .ui(ui);
+                } else {
+                    node.display(&EMPTY_CONTEXT, ui);
+                }
                 if let Some(true) = button_pressed {
                     cn().reducers
                         .content_suggest_node(kind.to_string(), node.get_data(), parent)
@@ -222,7 +256,7 @@ impl IncubatorPanes {
         Ok(())
     }
 
-    fn render_component_list<T: ClientNode + FDisplay + FDescription>(
+    fn render_component_list<T: ClientNode + FDisplay + FDescription + FRecursiveNodeEdit>(
         ui: &mut Ui,
         ctx: &ClientContext,
         parent: u64,
@@ -243,7 +277,8 @@ impl IncubatorPanes {
 
         suggestions
             .as_list(|node, ctx, ui| {
-                if node.kind() == NodeKind::NUnitRepresentation {
+                render_node_menu_btn::<T>(ui, ctx, node.id());
+                if node.kind() == NodeKind::NRepresentation {
                     node.display(ctx, ui);
                 }
                 let desc = ctx
@@ -256,37 +291,6 @@ impl IncubatorPanes {
             })
             .with_hover(move |node, _, ui| {
                 render_vote_btns(node.id(), ui);
-                if cn()
-                    .db
-                    .creators()
-                    .node_id()
-                    .find(&node.id())
-                    .is_some_and(|n| n.player_id == player_id())
-                    && "[red Delete]".cstr().button(ui).clicked()
-                {
-                    let node_id = node.id();
-                    op(move |world| {
-                        Confirmation::new("Are you sure you want to delete?")
-                            .accept_name("[red Delete]")
-                            .cancel_name("Cancel")
-                            .content(move |ui, world, button_pressed| {
-                                with_incubator_source(|ctx| {
-                                    ui.vertical_centered(|ui| -> NodeResult<()> {
-                                        ctx.load::<T>(node_id)?.display(ctx, ui);
-                                        Ok(())
-                                    })
-                                    .inner
-                                })
-                                .ui(ui);
-                                if let Some(true) = button_pressed {
-                                    cn().reducers
-                                        .content_delete_node(node_id)
-                                        .notify_error(world);
-                                }
-                            })
-                            .push(world);
-                    });
-                }
             })
             .compose(ctx, ui);
 
@@ -347,7 +351,7 @@ impl IncubatorPanes {
             if let Some(unit_id) = state.inspected_unit {
                 with_incubator_source(|ctx| {
                     let parent = ctx.first_child(unit_id, NodeKind::NUnitBehavior).ok();
-                    Self::pane_component::<NUnitRepresentation>(ui, ctx, unit_id, parent)
+                    Self::pane_component::<NRepresentation>(ui, ctx, unit_id, parent)
                 })
             } else {
                 Ok(())
@@ -427,4 +431,86 @@ fn render_vote_btns(id: u64, ui: &mut Ui) {
             cn().reducers.content_upvote_node(id).notify_error_op();
         }
     });
+}
+
+fn render_node_menu_btn<T: ClientNode + FRecursiveNodeEdit>(
+    ui: &mut Ui,
+    ctx: &ClientContext,
+    id: u64,
+) {
+    let is_creator = cn()
+        .db
+        .creators()
+        .node_id()
+        .find(&id)
+        .is_some_and(|n| n.player_id == player_id());
+    if !is_creator && !is_dev_mode() {
+        return;
+    }
+    let mut menu = id.as_empty().with_menu();
+    if is_dev_mode() {
+        menu = menu.add_action("Edit", |id, ctx| {
+            let mut node = ctx
+                .load::<T>(id)
+                .unwrap()
+                .load_components(ctx)
+                .unwrap()
+                .take();
+            Confirmation::new("Edit Node")
+                .fullscreen()
+                .accept_name("Publish")
+                .content(move |ui, world, btn_pressed| {
+                    node.render_recursive_edit(ui, &EMPTY_CONTEXT);
+                    if let Some(btn) = btn_pressed {
+                        if btn {
+                            cn().reducers
+                                .admin_edit_nodes(node.pack().to_string())
+                                .notify_error(world);
+                        }
+                    }
+                })
+                .push_op();
+            None
+        });
+        let is_core = id.get_node().unwrap().owner == ID_CORE;
+        menu = menu.add_action(
+            if is_core {
+                "Remove from Core"
+            } else {
+                "Add to Core"
+            },
+            move |id, _| {
+                cn().reducers
+                    .admin_edit_owner(id, if is_core { ID_INCUBATOR } else { ID_CORE })
+                    .notify_error_op();
+                None
+            },
+        );
+    }
+
+    if is_creator {
+        menu = menu.add_dangerous_action("Delete", |id, _| {
+            op(move |world| {
+                Confirmation::new("Are you sure you want to delete?")
+                    .accept_name("[red Delete]")
+                    .cancel_name("Cancel")
+                    .content(move |ui, world, button_pressed| {
+                        with_incubator_source(|ctx| {
+                            ui.vertical_centered(|ui| -> NodeResult<()> {
+                                ctx.load::<T>(id)?.display(ctx, ui);
+                                Ok(())
+                            })
+                            .inner
+                        })
+                        .ui(ui);
+                        if let Some(true) = button_pressed {
+                            cn().reducers.content_delete_node(id).notify_error(world);
+                        }
+                    })
+                    .push(world);
+            });
+            None
+        });
+    }
+    menu.compose_with_menu(ctx, ui);
 }

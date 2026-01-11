@@ -8,7 +8,7 @@ pub struct TCreationParts {
 }
 
 pub trait CreationPartHelper {
-    fn base_id(self, kind: NodeKind, ctx: &ServerContext) -> NodeResult<u64>;
+    fn base_id(self, ctx: &ServerContext) -> NodeResult<u64>;
     fn complete_kind(self, ctx: &ServerContext, kind: ContentNodeKind) -> NodeResult<()>;
     fn uncomplete_kind(self, ctx: &ServerContext, kind: ContentNodeKind) -> NodeResult<()>;
     fn check_kind(self, ctx: &ServerContext, kind: ContentNodeKind) -> NodeResult<bool>;
@@ -16,12 +16,9 @@ pub trait CreationPartHelper {
 }
 
 impl CreationPartHelper for u64 {
-    fn base_id(self, kind: NodeKind, ctx: &ServerContext) -> NodeResult<u64> {
-        let base_kind = kind.base_kind();
-        if kind == base_kind {
-            return Ok(self);
-        }
-        ctx.first_parent_recursive(self, base_kind)
+    fn base_id(self, ctx: &ServerContext) -> NodeResult<u64> {
+        ctx.first_parent_recursive(self, NodeKind::NUnit)
+            .or_else(|_| ctx.first_parent_recursive(self, NodeKind::NHouse))
     }
 
     fn complete_kind(self, ctx: &ServerContext, kind: ContentNodeKind) -> NodeResult<()> {
@@ -86,22 +83,37 @@ impl TNode {
 impl TCreationParts {
     pub fn complete_node_part(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
         let kind = node.kind();
-        let base_id = node.id.base_id(kind, ctx)?;
+        let base_id = node.id.base_id(ctx)?;
 
         let content_kind = node.get_content_kind()?;
         if base_id.check_kind(ctx, content_kind)? {
             return Ok(());
         }
 
-        let Some(parent_kind) = kind.component_parent() else {
+        // Get all parents and check if any have this node as a component child
+        let parents = ctx
+            .rctx()
+            .db
+            .node_links()
+            .child()
+            .filter(&node.id)
+            .collect_vec();
+        let mut parent_id = None;
+
+        for link in &parents {
+            if link
+                .child_kind
+                .to_kind()
+                .is_component_child(link.parent_kind.to_kind())
+            {
+                parent_id = Some(link.parent);
+            }
+        }
+
+        let Some(parent_id) = parent_id else {
             base_id.complete_kind(ctx, content_kind)?;
             return Ok(());
         };
-
-        let parent_id = node
-            .id
-            .get_kind_parent(ctx.rctx(), parent_kind)
-            .to_not_found()?;
 
         let other_links: Vec<_> = ctx
             .rctx()
@@ -125,16 +137,14 @@ impl TCreationParts {
     }
 
     pub fn uncomplete_node_part(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
-        let kind = node.kind();
-        let base_id = node.id.base_id(kind, ctx)?;
+        let base_id = node.id.base_id(ctx)?;
         let content_kind = node.get_content_kind()?;
         base_id.uncomplete_kind(ctx, content_kind)?;
         Ok(())
     }
 
     pub fn check_base_completion(ctx: &ServerContext, node: &TNode) -> NodeResult<()> {
-        let kind = node.kind();
-        let base_id = node.id.base_id(kind, ctx)?;
+        let base_id = node.id.base_id(ctx)?;
         let base_kind = base_id.kind(ctx.rctx()).to_not_found()?;
 
         let completed_kinds = base_id.get_completed_kinds(ctx)?;

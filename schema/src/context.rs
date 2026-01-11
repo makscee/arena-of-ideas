@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
+use log::debug;
 
 use crate::*;
 
@@ -194,7 +195,7 @@ pub trait ContextSource {
                     // Check if this child has become an orphan
                     if !root_ids.contains(&existing_child) {
                         let child_kind = self.get_node_kind(existing_child)?;
-                        let owning_parents = child_kind.owning_parents();
+                        let owning_parents = child_kind.parents();
 
                         let mut has_owner = false;
                         for parent_kind in owning_parents {
@@ -366,7 +367,7 @@ impl<S: ContextSource> Context<S> {
                 ContextLayer::Owner(id) => Some(*id),
                 _ => None,
             })
-            .ok_or_else(|| NodeError::custom("No owner in context"))
+            .ok_or_else(|| NodeError::not_in_context("owner"))
     }
 
     pub fn target(&self) -> Option<u64> {
@@ -405,7 +406,7 @@ impl<S: ContextSource> Context<S> {
         if let Some(target) = self.target() {
             self.get_var_inherited(target, var).track()
         } else {
-            Err(NodeError::custom("No target in context"))
+            Err(NodeError::not_in_context("target"))
         }
     }
 
@@ -413,7 +414,7 @@ impl<S: ContextSource> Context<S> {
         if let Some(caster) = self.caster() {
             self.get_var_inherited(caster, var).track()
         } else {
-            Err(NodeError::custom("No caster in context"))
+            Err(NodeError::not_in_context("caster"))
         }
     }
 
@@ -421,7 +422,7 @@ impl<S: ContextSource> Context<S> {
         if let Some(status) = self.status() {
             self.get_var_inherited(status, var).track()
         } else {
-            Err(NodeError::custom("No status in context"))
+            Err(NodeError::not_in_context("status"))
         }
     }
 
@@ -439,20 +440,13 @@ impl<S: ContextSource> Context<S> {
         if let Ok(owner) = self.owner() {
             self.get_var_inherited(owner, var).track()
         } else {
-            Err(NodeError::custom("Cannot get var without owner"))
+            Err(NodeError::not_in_context("var without owner"))
         }
     }
 
     pub fn get_var_inherited(&self, id: u64, var: VarName) -> NodeResult<VarValue> {
         if let Ok(value) = self.source().get_var(id, var) {
             return Ok(value);
-        }
-        for child_kind in self.get_kind(id)?.component_children_recursive() {
-            for child_id in self.collect_kind_children_recursive(id, child_kind)? {
-                if let Ok(value) = self.source().get_var(child_id, var) {
-                    return Ok(value);
-                }
-            }
         }
         for parent in self.get_parents(id)? {
             if let Ok(value) = self.get_var_inherited(parent, var) {
@@ -560,7 +554,7 @@ impl<S: ContextSource> Context<S> {
         self.get_parents_of_kind(id, kind)?
             .into_iter()
             .next()
-            .ok_or_else(|| NodeError::custom(format!("No parent of kind {:?}", kind)))
+            .ok_or_else(|| NodeError::not_in_context(format!("No parent of kind {:?}", kind)))
     }
 
     pub fn first_parent_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
@@ -575,7 +569,7 @@ impl<S: ContextSource> Context<S> {
             }
         }
 
-        Err(NodeError::custom(format!(
+        Err(NodeError::not_in_context(format!(
             "No parent of kind {:?} found recursively",
             kind
         )))
@@ -585,7 +579,9 @@ impl<S: ContextSource> Context<S> {
         self.get_children_of_kind(id, kind)?
             .into_iter()
             .next()
-            .ok_or_else(|| NodeError::custom(format!("No child of kind {:?} for {}", kind, id)))
+            .ok_or_else(|| {
+                NodeError::not_in_context(format!("No child of kind {:?} for {}", kind, id))
+            })
     }
 
     pub fn first_child_recursive(&self, id: u64, kind: NodeKind) -> NodeResult<u64> {
@@ -600,7 +596,7 @@ impl<S: ContextSource> Context<S> {
             }
         }
 
-        Err(NodeError::custom(format!(
+        Err(NodeError::not_in_context(format!(
             "No child of kind {:?} found recursively",
             kind
         )))
