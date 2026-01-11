@@ -8,15 +8,11 @@ use spacetimedb_sdk::__codegen::{self as __sdk, __lib, __sats, __ws};
 #[sats(crate = __lib)]
 pub(super) struct RegisterArgs {
     pub name: String,
-    pub pass: String,
 }
 
 impl From<RegisterArgs> for super::Reducer {
     fn from(args: RegisterArgs) -> Self {
-        Self::Register {
-            name: args.name,
-            pass: args.pass,
-        }
+        Self::Register { name: args.name }
     }
 }
 
@@ -36,7 +32,7 @@ pub trait register {
     /// This method returns immediately, and errors only if we are unable to send the request.
     /// The reducer will run asynchronously in the future,
     ///  and its status can be observed by listening for [`Self::on_register`] callbacks.
-    fn register(&self, name: String, pass: String) -> __sdk::Result<()>;
+    fn register(&self, name: String) -> __sdk::Result<()>;
     /// Register a callback to run whenever we are notified of an invocation of the reducer `register`.
     ///
     /// Callbacks should inspect the [`__sdk::ReducerEvent`] contained in the [`super::ReducerEventContext`]
@@ -46,7 +42,7 @@ pub trait register {
     /// to cancel the callback.
     fn on_register(
         &self,
-        callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
+        callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
     ) -> RegisterCallbackId;
     /// Cancel a callback previously registered by [`Self::on_register`],
     /// causing it not to run in the future.
@@ -54,13 +50,12 @@ pub trait register {
 }
 
 impl register for super::RemoteReducers {
-    fn register(&self, name: String, pass: String) -> __sdk::Result<()> {
-        self.imp
-            .call_reducer("register", RegisterArgs { name, pass })
+    fn register(&self, name: String) -> __sdk::Result<()> {
+        self.imp.call_reducer("register", RegisterArgs { name })
     }
     fn on_register(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &String, &String) + Send + 'static,
+        mut callback: impl FnMut(&super::ReducerEventContext, &String) + Send + 'static,
     ) -> RegisterCallbackId {
         RegisterCallbackId(self.imp.on_reducer(
             "register",
@@ -69,7 +64,7 @@ impl register for super::RemoteReducers {
                 let super::ReducerEventContext {
                     event:
                         __sdk::ReducerEvent {
-                            reducer: super::Reducer::Register { name, pass },
+                            reducer: super::Reducer::Register { name },
                             ..
                         },
                     ..
@@ -77,7 +72,7 @@ impl register for super::RemoteReducers {
                 else {
                     unreachable!()
                 };
-                callback(ctx, name, pass)
+                callback(ctx, name)
             }),
         ))
     }

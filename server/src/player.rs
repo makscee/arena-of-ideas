@@ -1,24 +1,16 @@
-use bcrypt_no_getrandom::{hash_with_salt, verify};
-use spacetimedb::rand::RngCore;
-
 use super::*;
 
 use schema::NodeKind;
 
 #[reducer]
-fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
+fn register(ctx: &ReducerContext, name: String) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let name = NPlayer::validate_name(ctx, name)?;
-    let pass_hash = Some(NPlayer::hash_pass(ctx, pass)?);
     NPlayer::clear_identity(ctx, &ctx.rctx().sender);
     let mut player = NPlayer::new(ctx.next_id(), ID_PLAYERS, name);
-    player.player_data.set_loaded(NPlayerData::new(
-        ctx.next_id(),
-        ID_PLAYERS,
-        pass_hash,
-        false,
-        0,
-    ));
+    player
+        .player_data
+        .set_loaded(NPlayerData::new(ctx.next_id(), ID_PLAYERS, false, 0));
     player.identity.set_loaded(NPlayerIdentity::new(
         ctx.next_id(),
         ID_PLAYERS,
@@ -26,36 +18,6 @@ fn register(ctx: &ReducerContext, name: String, pass: String) -> Result<(), Stri
     ));
     ctx.source_mut().commit(player)?;
     Ok(())
-}
-
-#[reducer]
-fn login(ctx: &ReducerContext, name: String, pass: String) -> Result<(), String> {
-    let ctx = &mut ctx.as_context();
-    let mut player = NPlayer::find_by_data(ctx, &NPlayer::new(0, 0, name).get_data())
-        .ok_or_else(|| NodeError::custom("Player not found"))?;
-    debug!("{player:?}");
-    if player
-        .player_data
-        .load_node(ctx)
-        .track()?
-        .pass_hash
-        .is_none()
-    {
-        return Err("No password set for player".to_owned());
-    }
-    if !player.check_pass(pass) {
-        Err("Wrong name or password".to_owned())
-    } else {
-        NPlayer::clear_identity(ctx, &ctx.rctx().sender);
-        player.identity.set_loaded(NPlayerIdentity::new(
-            ctx.next_id(),
-            ID_PLAYERS,
-            Some(ctx.rctx().sender.to_string()),
-        ));
-        player = player.login(ctx)?;
-        ctx.source_mut().commit(player)?;
-        Ok(())
-    }
 }
 
 #[reducer]
@@ -71,20 +33,6 @@ fn logout(ctx: &ReducerContext) -> Result<(), String> {
     let ctx = &mut ctx.as_context();
     let player = ctx.player()?.logout(ctx)?;
     player.identity.load_node(ctx)?.delete(ctx);
-    Ok(())
-}
-
-#[reducer]
-fn set_password(ctx: &ReducerContext, old_pass: String, new_pass: String) -> Result<(), String> {
-    let ctx = &mut ctx.as_context();
-    let mut player = ctx.player()?;
-    if !player.check_pass(old_pass) {
-        return Err("Old password did not match".to_owned());
-    }
-    if let Ok(player_data) = player.player_data.load_node_mut(ctx) {
-        player_data.pass_hash = Some(NPlayer::hash_pass(ctx, new_pass)?);
-    }
-    ctx.source_mut().commit(player)?;
     Ok(())
 }
 
@@ -112,46 +60,20 @@ impl NPlayer {
             Ok(name)
         }
     }
-    fn check_pass(&self, pass: String) -> bool {
-        if let Ok(player_data) = self.player_data.get() {
-            if let Some(pass_hash) = &player_data.pass_hash {
-                match verify(pass, pass_hash) {
-                    Ok(v) => v,
-                    Err(e) => {
-                        log::error!("Password verify error: {e}");
-                        false
-                    }
-                }
-            } else {
-                true
-            }
-        } else {
-            true
-        }
-    }
-    fn hash_pass(ctx: &ServerContext, pass: String) -> Result<String, String> {
-        let mut salt = [0u8; 16];
-        ctx.rng().fill_bytes(&mut salt);
-        match hash_with_salt(pass, 13, salt) {
-            Ok(hash) => Ok(hash.to_string()),
-            Err(e) => Err(e.to_string()),
-        }
-    }
     pub fn find_identity(ctx: &ServerContext, identity: &Identity) -> Option<NPlayerIdentity> {
         NPlayerIdentity::find_by_data(ctx, &ron::to_string(&Some(identity.to_string())).unwrap())
             .into_iter()
             .next()
     }
-    fn login(self, ctx: &ServerContext) -> NodeResult<Self> {
+    fn login(mut self, ctx: &ServerContext) -> NodeResult<Self> {
         let ts = ctx.rctx().timestamp.to_micros_since_unix_epoch() as u64;
-        let mut data = self.player_data.load_node(ctx)?;
-        debug!("{data:?}");
+        let data = self.player_data.load_node_mut(ctx)?;
         data.last_login = ts;
         data.online = true;
         Ok(self)
     }
-    fn logout(self, ctx: &ServerContext) -> Result<Self, String> {
-        let mut data = self.player_data.load_node(ctx)?;
+    fn logout(mut self, ctx: &ServerContext) -> Result<Self, String> {
+        let data = self.player_data.load_node_mut(ctx)?;
         data.online = false;
         Ok(self)
     }

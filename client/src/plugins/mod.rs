@@ -10,6 +10,7 @@ mod r#match;
 mod persistent_data;
 pub mod rhai;
 mod stdb;
+pub mod stdb_auth;
 mod stdb_ext;
 mod tile;
 mod ui;

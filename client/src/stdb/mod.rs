@@ -31,7 +31,6 @@ pub mod global_settings_table;
 pub mod global_settings_type;
 pub mod identity_disconnected_reducer;
 pub mod login_by_identity_reducer;
-pub mod login_reducer;
 pub mod logout_reducer;
 pub mod match_abandon_reducer;
 pub mod match_bench_unit_reducer;
@@ -52,7 +51,6 @@ pub mod match_submit_battle_result_reducer;
 pub mod node_links_table;
 pub mod nodes_world_table;
 pub mod register_reducer;
-pub mod set_password_reducer;
 pub mod t_battle_type;
 pub mod t_creation_parts_type;
 pub mod t_creators_type;
@@ -121,7 +119,6 @@ pub use identity_disconnected_reducer::{
 pub use login_by_identity_reducer::{
     login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
 };
-pub use login_reducer::{login, set_flags_for_login, LoginCallbackId};
 pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
 pub use match_abandon_reducer::{
     match_abandon, set_flags_for_match_abandon, MatchAbandonCallbackId,
@@ -171,7 +168,6 @@ pub use match_submit_battle_result_reducer::{
 pub use node_links_table::*;
 pub use nodes_world_table::*;
 pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
-pub use set_password_reducer::{set_flags_for_set_password, set_password, SetPasswordCallbackId};
 pub use t_battle_type::TBattle;
 pub use t_creation_parts_type::TCreationParts;
 pub use t_creators_type::TCreators;
@@ -233,10 +229,6 @@ pub enum Reducer {
         timer: DailyUpdateTimer,
     },
     IdentityDisconnected,
-    Login {
-        name: String,
-        pass: String,
-    },
     LoginByIdentity,
     Logout,
     MatchAbandon,
@@ -277,11 +269,6 @@ pub enum Reducer {
     },
     Register {
         name: String,
-        pass: String,
-    },
-    SetPassword {
-        old_pass: String,
-        new_pass: String,
     },
 }
 
@@ -307,7 +294,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::ContentUpvoteNode { .. } => "content_upvote_node",
             Reducer::DailyUpdateReducer { .. } => "daily_update_reducer",
             Reducer::IdentityDisconnected => "identity_disconnected",
-            Reducer::Login { .. } => "login",
             Reducer::LoginByIdentity => "login_by_identity",
             Reducer::Logout => "logout",
             Reducer::MatchAbandon => "match_abandon",
@@ -326,7 +312,6 @@ impl __sdk::Reducer for Reducer {
             Reducer::MatchStartFusion { .. } => "match_start_fusion",
             Reducer::MatchSubmitBattleResult { .. } => "match_submit_battle_result",
             Reducer::Register { .. } => "register",
-            Reducer::SetPassword { .. } => "set_password",
             _ => unreachable!(),
         }
     }
@@ -396,11 +381,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
             "identity_disconnected" => Ok(__sdk::parse_reducer_args::<
                 identity_disconnected_reducer::IdentityDisconnectedArgs,
             >("identity_disconnected", &value.args)?
-            .into()),
-            "login" => Ok(__sdk::parse_reducer_args::<login_reducer::LoginArgs>(
-                "login",
-                &value.args,
-            )?
             .into()),
             "login_by_identity" => Ok(__sdk::parse_reducer_args::<
                 login_by_identity_reducer::LoginByIdentityArgs,
@@ -481,13 +461,6 @@ impl TryFrom<__ws::ReducerCallInfo<__ws::BsatnFormat>> for Reducer {
                 &value.args,
             )?
             .into()),
-            "set_password" => Ok(
-                __sdk::parse_reducer_args::<set_password_reducer::SetPasswordArgs>(
-                    "set_password",
-                    &value.args,
-                )?
-                .into(),
-            ),
             unknown => {
                 Err(
                     __sdk::InternalError::unknown_name("reducer", unknown, "ReducerCallInfo")
