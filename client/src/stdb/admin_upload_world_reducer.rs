@@ -56,8 +56,8 @@ pub trait admin_upload_world {
     fn on_admin_upload_world(
         &self,
         callback: impl FnMut(&super::ReducerEventContext, &GlobalSettings, &Vec<String>, &Vec<String>)
-            + Send
-            + 'static,
+        + Send
+        + 'static,
     ) -> AdminUploadWorldCallbackId;
     /// Cancel a callback previously registered by [`Self::on_admin_upload_world`],
     /// causing it not to run in the future.
@@ -82,9 +82,13 @@ impl admin_upload_world for super::RemoteReducers {
     }
     fn on_admin_upload_world(
         &self,
-        mut callback: impl FnMut(&super::ReducerEventContext, &GlobalSettings, &Vec<String>, &Vec<String>)
-            + Send
-            + 'static,
+        mut callback: impl FnMut(
+            &super::ReducerEventContext,
+            &GlobalSettings,
+            &Vec<String>,
+            &Vec<String>,
+        ) + Send
+        + 'static,
     ) -> AdminUploadWorldCallbackId {
         AdminUploadWorldCallbackId(self.imp.on_reducer(
             "admin_upload_world",

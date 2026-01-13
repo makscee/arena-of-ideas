@@ -62,50 +62,50 @@ pub mod votes_history_table;
 pub mod votes_table;
 
 pub use admin_add_gold_reducer::{
-    admin_add_gold, set_flags_for_admin_add_gold, AdminAddGoldCallbackId,
+    AdminAddGoldCallbackId, admin_add_gold, set_flags_for_admin_add_gold,
 };
 pub use admin_add_votes_reducer::{
-    admin_add_votes, set_flags_for_admin_add_votes, AdminAddVotesCallbackId,
+    AdminAddVotesCallbackId, admin_add_votes, set_flags_for_admin_add_votes,
 };
 pub use admin_daily_update_reducer::{
-    admin_daily_update, set_flags_for_admin_daily_update, AdminDailyUpdateCallbackId,
+    AdminDailyUpdateCallbackId, admin_daily_update, set_flags_for_admin_daily_update,
 };
 pub use admin_delete_node_recursive_reducer::{
-    admin_delete_node_recursive, set_flags_for_admin_delete_node_recursive,
-    AdminDeleteNodeRecursiveCallbackId,
+    AdminDeleteNodeRecursiveCallbackId, admin_delete_node_recursive,
+    set_flags_for_admin_delete_node_recursive,
 };
 pub use admin_edit_nodes_reducer::{
-    admin_edit_nodes, set_flags_for_admin_edit_nodes, AdminEditNodesCallbackId,
+    AdminEditNodesCallbackId, admin_edit_nodes, set_flags_for_admin_edit_nodes,
 };
 pub use admin_edit_owner_reducer::{
-    admin_edit_owner, set_flags_for_admin_edit_owner, AdminEditOwnerCallbackId,
+    AdminEditOwnerCallbackId, admin_edit_owner, set_flags_for_admin_edit_owner,
 };
 pub use admin_upload_world_reducer::{
-    admin_upload_world, set_flags_for_admin_upload_world, AdminUploadWorldCallbackId,
+    AdminUploadWorldCallbackId, admin_upload_world, set_flags_for_admin_upload_world,
 };
 pub use battle_table::*;
 pub use content_delete_node_reducer::{
-    content_delete_node, set_flags_for_content_delete_node, ContentDeleteNodeCallbackId,
+    ContentDeleteNodeCallbackId, content_delete_node, set_flags_for_content_delete_node,
 };
 pub use content_downvote_node_reducer::{
-    content_downvote_node, set_flags_for_content_downvote_node, ContentDownvoteNodeCallbackId,
+    ContentDownvoteNodeCallbackId, content_downvote_node, set_flags_for_content_downvote_node,
 };
 pub use content_publish_node_reducer::{
-    content_publish_node, set_flags_for_content_publish_node, ContentPublishNodeCallbackId,
+    ContentPublishNodeCallbackId, content_publish_node, set_flags_for_content_publish_node,
 };
 pub use content_reset_core_reducer::{
-    content_reset_core, set_flags_for_content_reset_core, ContentResetCoreCallbackId,
+    ContentResetCoreCallbackId, content_reset_core, set_flags_for_content_reset_core,
 };
 pub use content_suggest_node_reducer::{
-    content_suggest_node, set_flags_for_content_suggest_node, ContentSuggestNodeCallbackId,
+    ContentSuggestNodeCallbackId, content_suggest_node, set_flags_for_content_suggest_node,
 };
 pub use content_upvote_node_reducer::{
-    content_upvote_node, set_flags_for_content_upvote_node, ContentUpvoteNodeCallbackId,
+    ContentUpvoteNodeCallbackId, content_upvote_node, set_flags_for_content_upvote_node,
 };
 pub use creation_parts_table::*;
 pub use creators_table::*;
 pub use daily_update_reducer_reducer::{
-    daily_update_reducer, set_flags_for_daily_update_reducer, DailyUpdateReducerCallbackId,
+    DailyUpdateReducerCallbackId, daily_update_reducer, set_flags_for_daily_update_reducer,
 };
 pub use daily_update_timer_table::*;
 pub use daily_update_timer_type::DailyUpdateTimer;
@@ -114,60 +114,60 @@ pub use global_data_type::GlobalData;
 pub use global_settings_table::*;
 pub use global_settings_type::GlobalSettings;
 pub use identity_disconnected_reducer::{
-    identity_disconnected, set_flags_for_identity_disconnected, IdentityDisconnectedCallbackId,
+    IdentityDisconnectedCallbackId, identity_disconnected, set_flags_for_identity_disconnected,
 };
 pub use login_by_identity_reducer::{
-    login_by_identity, set_flags_for_login_by_identity, LoginByIdentityCallbackId,
+    LoginByIdentityCallbackId, login_by_identity, set_flags_for_login_by_identity,
 };
-pub use logout_reducer::{logout, set_flags_for_logout, LogoutCallbackId};
+pub use logout_reducer::{LogoutCallbackId, logout, set_flags_for_logout};
 pub use match_abandon_reducer::{
-    match_abandon, set_flags_for_match_abandon, MatchAbandonCallbackId,
+    MatchAbandonCallbackId, match_abandon, set_flags_for_match_abandon,
 };
 pub use match_bench_unit_reducer::{
-    match_bench_unit, set_flags_for_match_bench_unit, MatchBenchUnitCallbackId,
+    MatchBenchUnitCallbackId, match_bench_unit, set_flags_for_match_bench_unit,
 };
 pub use match_boss_battle_reducer::{
-    match_boss_battle, set_flags_for_match_boss_battle, MatchBossBattleCallbackId,
+    MatchBossBattleCallbackId, match_boss_battle, set_flags_for_match_boss_battle,
 };
 pub use match_cancel_fusion_reducer::{
-    match_cancel_fusion, set_flags_for_match_cancel_fusion, MatchCancelFusionCallbackId,
+    MatchCancelFusionCallbackId, match_cancel_fusion, set_flags_for_match_cancel_fusion,
 };
 pub use match_choose_fusion_reducer::{
-    match_choose_fusion, set_flags_for_match_choose_fusion, MatchChooseFusionCallbackId,
+    MatchChooseFusionCallbackId, match_choose_fusion, set_flags_for_match_choose_fusion,
 };
 pub use match_complete_reducer::{
-    match_complete, set_flags_for_match_complete, MatchCompleteCallbackId,
+    MatchCompleteCallbackId, match_complete, set_flags_for_match_complete,
 };
-pub use match_insert_reducer::{match_insert, set_flags_for_match_insert, MatchInsertCallbackId};
+pub use match_insert_reducer::{MatchInsertCallbackId, match_insert, set_flags_for_match_insert};
 pub use match_move_unit_reducer::{
-    match_move_unit, set_flags_for_match_move_unit, MatchMoveUnitCallbackId,
+    MatchMoveUnitCallbackId, match_move_unit, set_flags_for_match_move_unit,
 };
 pub use match_sell_unit_reducer::{
-    match_sell_unit, set_flags_for_match_sell_unit, MatchSellUnitCallbackId,
+    MatchSellUnitCallbackId, match_sell_unit, set_flags_for_match_sell_unit,
 };
 pub use match_settings_type::MatchSettings;
 pub use match_shop_buy_reducer::{
-    match_shop_buy, set_flags_for_match_shop_buy, MatchShopBuyCallbackId,
+    MatchShopBuyCallbackId, match_shop_buy, set_flags_for_match_shop_buy,
 };
 pub use match_shop_reroll_reducer::{
-    match_shop_reroll, set_flags_for_match_shop_reroll, MatchShopRerollCallbackId,
+    MatchShopRerollCallbackId, match_shop_reroll, set_flags_for_match_shop_reroll,
 };
 pub use match_stack_unit_reducer::{
-    match_stack_unit, set_flags_for_match_stack_unit, MatchStackUnitCallbackId,
+    MatchStackUnitCallbackId, match_stack_unit, set_flags_for_match_stack_unit,
 };
 pub use match_start_battle_reducer::{
-    match_start_battle, set_flags_for_match_start_battle, MatchStartBattleCallbackId,
+    MatchStartBattleCallbackId, match_start_battle, set_flags_for_match_start_battle,
 };
 pub use match_start_fusion_reducer::{
-    match_start_fusion, set_flags_for_match_start_fusion, MatchStartFusionCallbackId,
+    MatchStartFusionCallbackId, match_start_fusion, set_flags_for_match_start_fusion,
 };
 pub use match_submit_battle_result_reducer::{
-    match_submit_battle_result, set_flags_for_match_submit_battle_result,
-    MatchSubmitBattleResultCallbackId,
+    MatchSubmitBattleResultCallbackId, match_submit_battle_result,
+    set_flags_for_match_submit_battle_result,
 };
 pub use node_links_table::*;
 pub use nodes_world_table::*;
-pub use register_reducer::{register, set_flags_for_register, RegisterCallbackId};
+pub use register_reducer::{RegisterCallbackId, register, set_flags_for_register};
 pub use t_battle_type::TBattle;
 pub use t_creation_parts_type::TCreationParts;
 pub use t_creators_type::TCreators;
@@ -898,21 +898,21 @@ impl __sdk::SubscriptionHandle for SubscriptionHandle {
 /// either a [`DbConnection`] or an [`EventContext`] and operate on either.
 pub trait RemoteDbContext:
     __sdk::DbContext<
-    DbView = RemoteTables,
-    Reducers = RemoteReducers,
-    SetReducerFlags = SetReducerFlags,
-    SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
->
+        DbView = RemoteTables,
+        Reducers = RemoteReducers,
+        SetReducerFlags = SetReducerFlags,
+        SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
+    >
 {
 }
 impl<
-        Ctx: __sdk::DbContext<
+    Ctx: __sdk::DbContext<
             DbView = RemoteTables,
             Reducers = RemoteReducers,
             SetReducerFlags = SetReducerFlags,
             SubscriptionBuilder = __sdk::SubscriptionBuilder<RemoteModule>,
         >,
-    > RemoteDbContext for Ctx
+> RemoteDbContext for Ctx
 {
 }
 

@@ -54,8 +54,8 @@ pub trait content_suggest_node {
     fn on_content_suggest_node(
         &self,
         callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
-            + Send
-            + 'static,
+        + Send
+        + 'static,
     ) -> ContentSuggestNodeCallbackId;
     /// Cancel a callback previously registered by [`Self::on_content_suggest_node`],
     /// causing it not to run in the future.
@@ -77,8 +77,8 @@ impl content_suggest_node for super::RemoteReducers {
     fn on_content_suggest_node(
         &self,
         mut callback: impl FnMut(&super::ReducerEventContext, &String, &String, &Option<u64>)
-            + Send
-            + 'static,
+        + Send
+        + 'static,
     ) -> ContentSuggestNodeCallbackId {
         ContentSuggestNodeCallbackId(self.imp.on_reducer(
             "content_suggest_node",
