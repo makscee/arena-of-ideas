@@ -2,15 +2,39 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: ['**']  # Run on all branches
   pull_request:
-    branches: [main]
+    branches: ['**']  # Run on all branches
   workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Build the project
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install Dependencies
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - name: Build project
+        run: cargo build --release --verbose
+
   # Run cargo test
   test:
     name: Test Suite
@@ -19,22 +43,26 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-      - name: Cache
-        uses: actions/cache@v3
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry/index/
+          key: ${{ runner.os }}-cargo-registry-index-${{ hashFiles('**/Cargo.toml') }}
+      - name: Cache cargo build
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
-            ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('**/Cargo.toml') }}
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.toml') }}
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Run cargo test
-        run: cargo test
+        run: cargo test --verbose
       - name: Run test scenarios
         run: cargo run -- --mode test
 
@@ -46,12 +74,11 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
-      - name: Cache
-        uses: actions/cache@v3
+      - name: Cache cargo build
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
-            ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
@@ -61,15 +88,15 @@ jobs:
         with:
           components: clippy
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Run clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
   # Run cargo fmt --all -- --check
   format:
     name: Format
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
