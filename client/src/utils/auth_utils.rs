@@ -1,5 +1,5 @@
-use base64::{prelude::BASE64_URL_SAFE_NO_PAD, Engine};
-use rand::{rng, Rng};
+use base64::{Engine, prelude::BASE64_URL_SAFE_NO_PAD};
+use rand::{Rng, rng};
 use sha2::{Digest, Sha256};
 
 const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\

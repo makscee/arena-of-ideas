@@ -1,5 +1,5 @@
 use super::*;
-use ::rhai::{Array, Dynamic, Engine, Variant};
+use ::rhai::{Array, Dynamic, Engine};
 
 pub fn array_to_vec2(arr: &Array) -> Option<(f32, f32)> {
     if arr.len() < 2 {

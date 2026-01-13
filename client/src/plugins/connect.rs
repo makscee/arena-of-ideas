@@ -1,4 +1,3 @@
-use jsonwebtoken::{TokenData, dangerous::insecure_decode};
 use spacetimedb_lib::Identity;
 use spacetimedb_sdk::credentials;
 
@@ -43,7 +42,7 @@ pub(crate) fn creds_store() -> credentials::File {
 
 fn store_token_data(ao: Res<AuthOption>, mut ld: ResMut<LoginData>) {
     // TODO: need secure decode with verification for prod - https://docs.rs/jsonwebtoken/latest/jsonwebtoken/fn.decode.html
-    let token = ao.id_token.as_ref().unwrap();
+    // let token = ao.id_token.as_ref().unwrap();
     // let token_data: TokenData<Claims> = insecure_decode(token).expect("Failed to decode token");
     // ld.username = token_data.claims.preferred_username;
     ld.username = "izarma".to_string();

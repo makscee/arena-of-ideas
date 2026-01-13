@@ -13,7 +13,7 @@ use bevy::{
     state::app::AppExtStates,
 };
 use bevy_egui::{EguiContextSettings, EguiPlugin, EguiStartupSet};
-use clap::{Parser, ValueEnum, command};
+use clap::{Parser, ValueEnum};
 use include_dir::include_dir;
 pub use prelude::*;
 
