@@ -183,34 +183,46 @@ impl IncubatorPanes {
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
+                        if let Some((_, code)) = render_script_templates(kind, ui) {
+                            cn.effect.code = code.to_string();
+                            cn.effect.clear_compiled();
+                        }
                         Selector::ui_enum(&mut cn.trigger, ui);
                         Selector::ui_enum(&mut cn.target, ui);
                         show_rhai_script_editor(&mut cn.effect, ui);
-                        if !cn.effect.code.is_empty() {
-                            if cn.effect.compile_error.read().unwrap().is_some() {
-                                script_valid = false;
-                            }
+                        if !cn.effect.code.is_empty()
+                            && cn.effect.compile_error.read().unwrap().is_some()
+                        {
+                            script_valid = false;
                         }
                         node.inject_data(&cn.get_data()).unwrap();
                     }
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
+                        if let Some((_, code)) = render_script_templates(kind, ui) {
+                            cn.effect.code = code.to_string();
+                            cn.effect.clear_compiled();
+                        }
                         Selector::ui_enum(&mut cn.trigger, ui);
                         show_rhai_script_editor(&mut cn.effect, ui);
-                        if !cn.effect.code.is_empty() {
-                            if cn.effect.compile_error.read().unwrap().is_some() {
-                                script_valid = false;
-                            }
+                        if !cn.effect.code.is_empty()
+                            && cn.effect.compile_error.read().unwrap().is_some()
+                        {
+                            script_valid = false;
                         }
                         node.inject_data(&cn.get_data()).unwrap();
                     }
                     ContentNodeKind::NAbilityEffect => {
                         let mut cn = node.force_cast::<NAbilityEffect>().clone();
+                        if let Some((_, code)) = render_script_templates(kind, ui) {
+                            cn.effect.code = code.to_string();
+                            cn.effect.clear_compiled();
+                        }
                         show_rhai_script_editor(&mut cn.effect, ui);
-                        if !cn.effect.code.is_empty() {
-                            if cn.effect.compile_error.read().unwrap().is_some() {
-                                script_valid = false;
-                            }
+                        if !cn.effect.code.is_empty()
+                            && cn.effect.compile_error.read().unwrap().is_some()
+                        {
+                            script_valid = false;
                         }
                         node.inject_data(&cn.get_data()).unwrap();
                     }
@@ -417,6 +429,65 @@ impl IncubatorPanes {
             }
         })
     }
+}
+
+fn render_script_templates(
+    kind: ContentNodeKind,
+    ui: &mut Ui,
+) -> Option<(&'static str, &'static str)> {
+    let templates: &[(&str, &str)] = match kind {
+        ContentNodeKind::NUnitBehavior => &[
+            (
+                "Apply status to self",
+                "unit_actions.apply_status(\"House/Status\", owner.id, 1);",
+            ),
+            (
+                "Apply status to target",
+                "unit_actions.apply_status(\"House/Status\", target.id, 1);",
+            ),
+            (
+                "Use ability on target",
+                "unit_actions.use_ability(\"House/Ability\", target.id);",
+            ),
+            (
+                "Apply status to all enemies",
+                "for e in ctx.get_enemies(owner.id) {\n    unit_actions.apply_status(\"House/Status\", e, 1);\n}",
+            ),
+        ],
+        ContentNodeKind::NStatusBehavior => &[
+            ("Deal damage", "status_actions.deal_damage(x);"),
+            ("Heal damage", "status_actions.heal_damage(x);"),
+            (
+                "Shield (reduce incoming)",
+                "let delta = min(x, value);\nstatus_actions.set_stax(x - delta);\nvalue -= delta;",
+            ),
+        ],
+        ContentNodeKind::NAbilityEffect => &[
+            ("Deal damage", "ability_actions.deal_damage(3);"),
+            ("Heal target", "ability_actions.heal_damage(3);"),
+            (
+                "Damage and apply status",
+                "ability_actions.deal_damage(2);\nability_actions.change_status(\"House/Status\", 1);",
+            ),
+        ],
+        _ => &[],
+    };
+
+    if templates.is_empty() {
+        return None;
+    }
+
+    let mut selected = None;
+    ui.horizontal_wrapped(|ui| {
+        ui.label("Templates:");
+        for (name, code) in templates {
+            if ui.small_button(*name).clicked() {
+                selected = Some((*name, *code));
+            }
+        }
+    });
+    ui.separator();
+    selected
 }
 
 fn render_vote_btns(id: u64, ui: &mut Ui) {
