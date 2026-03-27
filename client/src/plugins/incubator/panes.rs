@@ -1,4 +1,4 @@
-use super::{ai_gen::*, *};
+use super::{ai_gen::*, battle_preview::*, *};
 
 pub struct IncubatorPanes;
 
@@ -175,6 +175,7 @@ impl IncubatorPanes {
         let kind = T::kind_s().to_content()?;
         let mut node = T::default();
         let mut ai_state = AiGenState::default();
+        let mut preview_result: Option<String> = None;
         Confirmation::new(&format!("Create new {}", kind.to_kind().cstr()))
             .accept_name("[green ✅ Create]")
             .cancel_name("Cancel")
@@ -199,6 +200,19 @@ impl IncubatorPanes {
                             && cn.effect.compile_error.read().unwrap().is_some()
                         {
                             script_valid = false;
+                        }
+                        // Battle preview button
+                        if !cn.effect.code.is_empty() && script_valid {
+                            if ui.button("Preview Battle (1v1 vs dummy)").clicked() {
+                                let result = run_battle_preview(
+                                    cn.trigger.clone(),
+                                    cn.target.clone(),
+                                    &cn.effect.code,
+                                    1,
+                                    4,
+                                );
+                                preview_result = Some(result);
+                            }
                         }
                         node.inject_data(&cn.get_data()).unwrap();
                     }
@@ -287,6 +301,9 @@ impl IncubatorPanes {
                     .ui(ui);
                 } else {
                     node.display(&EMPTY_CONTEXT, ui);
+                }
+                if let Some(ref result) = preview_result {
+                    ui.colored_label(egui::Color32::LIGHT_BLUE, format!("Battle: {result}"));
                 }
                 if !script_valid {
                     ui.colored_label(egui::Color32::RED, "⚠ Fix script errors before creating");

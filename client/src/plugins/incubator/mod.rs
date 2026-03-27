@@ -1,5 +1,6 @@
 mod actions;
 pub mod ai_gen;
+pub mod battle_preview;
 mod panes;
 mod state;
 
