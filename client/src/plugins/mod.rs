@@ -5,7 +5,7 @@ mod battle_editor;
 mod connect;
 mod game_timer;
 pub mod headless;
-mod incubator;
+pub mod incubator;
 mod login;
 mod r#match;
 mod persistent_data;

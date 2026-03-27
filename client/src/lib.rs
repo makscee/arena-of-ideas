@@ -68,6 +68,7 @@ pub fn run() {
     let mut app = App::new();
     let args = Args::try_parse().unwrap_or_default();
     ARGS.set(args.clone()).unwrap();
+    // SAFETY: called at program start before any threads are spawned
     unsafe {
         std::env::set_var("RUST_BACKTRACE", "1");
         std::env::set_var("RUST_LIB_BACKTRACE", "0");
@@ -214,8 +215,77 @@ fn setup_camera_system(mut commands: Commands) {
 
 fn run_test_scenarios_headless() {
     resources::game_assets::init_for_tests();
-    println!("Running test scenarios headlessly...");
-    println!("Content tree parsed, game logic initialized.");
-    println!("Test mode completed successfully.");
-    std::process::exit(0);
+    colorix().generate_palettes();
+    init_style_map(&colorix());
+    println!("=== Running headless test scenarios ===");
+
+    let mut passed = 0;
+    let mut failed = 0;
+
+    let run_test = |name: &str, f: fn() -> String| -> bool {
+        print!("  {name}... ");
+        match std::panic::catch_unwind(f) {
+            Ok(r) => {
+                println!("OK ({r})");
+                true
+            }
+            Err(e) => {
+                let msg = e
+                    .downcast_ref::<String>()
+                    .map(|s| s.as_str())
+                    .or_else(|| e.downcast_ref::<&str>().copied())
+                    .unwrap_or("unknown panic");
+                println!("PANIC ({msg})");
+                false
+            }
+        }
+    };
+
+    // Test 1: Simple 1v1 battle
+    if run_test("1v1 battle (2 pwr vs 1 pwr)", || {
+        plugins::incubator::battle_preview::run_battle_preview(
+            Trigger::BattleStart,
+            Target::Owner,
+            "// basic unit",
+            2,
+            4,
+        )
+    }) {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 2: Battle with script
+    if run_test("Scripted unit behavior", || {
+        plugins::incubator::battle_preview::run_battle_preview(
+            Trigger::BattleStart,
+            Target::Owner,
+            "// no-op",
+            1,
+            3,
+        )
+    }) {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    // Test 3: Zero stats edge case
+    if run_test("Zero-stat edge case", || {
+        plugins::incubator::battle_preview::run_battle_preview(
+            Trigger::BattleStart,
+            Target::Owner,
+            "// zero stats",
+            0,
+            0,
+        )
+    }) {
+        passed += 1;
+    } else {
+        failed += 1;
+    }
+
+    println!("=== Results: {passed} passed, {failed} failed ===");
+    std::process::exit(if failed > 0 { 1 } else { 0 });
 }
