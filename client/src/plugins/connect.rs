@@ -90,6 +90,11 @@ impl ConnectPlugin {
             Ok(c) => c,
             Err(e) => {
                 error!("Connection failed: {e}");
+                // Clear stale credentials to prevent reconnect loops
+                let creds_dir = home::home_dir()
+                    .unwrap()
+                    .join(".spacetimedb_client_credentials");
+                let _ = std::fs::remove_file(creds_dir.join("aoi_creds"));
                 op(|world| {
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
                     world.insert_resource(AuthOption::default());
