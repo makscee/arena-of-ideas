@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use super::*;
-use crate::plugins::connect::creds_store;
+use crate::plugins::connect::ConnectPlugin;
 use bevy::render::view::screenshot::{save_to_disk, Screenshot};
 
 pub struct HeadlessPlugin;
@@ -140,41 +140,37 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
 
     match phase {
         TestPhase::WaitingForTitle => {
-            // Auto-handle auth: inject stored credentials and let normal flow proceed
+            // Auto-handle auth: connect anonymously for test-flow
             if current_state == GameState::Auth && phase_frame > 5 {
                 let auth_attempts = world.resource::<HeadlessState>().auth_attempts;
-                if auth_attempts > 1 {
-                    finish_test(
-                        world,
-                        false,
-                        "Auth failed. No valid credentials. Run the game normally to login first.",
-                    );
-                    return;
-                }
-                let has_token = world
-                    .get_resource::<AuthOption>()
-                    .is_some_and(|ao| ao.id_token.is_some());
-                if !has_token {
-                    world.resource_mut::<HeadlessState>().auth_attempts += 1;
-                    info!("[test-flow] At Auth, loading stored credentials...");
-                    match creds_store().load() {
-                        Ok(Some(token)) => {
-                            info!("[test-flow] Injecting stored token into AuthOption");
-                            world.insert_resource(AuthOption {
-                                id_token: Some(token),
-                            });
-                            // Let the normal state machine handle Connect -> Login -> Title
-                            GameState::proceed(world);
-                        }
-                        _ => {
-                            finish_test(
-                                world,
-                                false,
-                                "No stored credentials. Run the game normally once to login.",
-                            );
-                            return;
-                        }
+                if auth_attempts > 0 {
+                    if phase_frame > 60 * 10 {
+                        finish_test(
+                            world,
+                            false,
+                            "Auth/connect timed out after anonymous connection attempt.",
+                        );
                     }
+                    return; // Wait for async connect callback
+                }
+                world.resource_mut::<HeadlessState>().auth_attempts += 1;
+                info!("[test-flow] Connecting anonymously for test-flow...");
+                // Set dummy token to satisfy AuthOption check
+                world.insert_resource(AuthOption {
+                    id_token: Some("anonymous".to_string()),
+                });
+                // Connect with None token — SDK will create/reuse anonymous identity
+                ConnectPlugin::connect(None, |_, identity, token| {
+                    info!("[test-flow] Connected anonymously as {identity}");
+                    let token = token.to_owned();
+                    save_player_identity(identity);
+                    op(move |world| {
+                        ConnectOption { identity, token }.save(world);
+                        GameState::proceed(world);
+                    });
+                });
+                if is_connected() {
+                    let _ = cn().reducers.login_by_identity();
                 }
             }
             // Auto-handle registration: if at Login and player doesn't exist, register
@@ -218,6 +214,9 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
             if phase_frame < 30 {
                 return; // Wait for UI to settle
             }
+            // First abandon any existing match, then create new one
+            info!("[test-flow] Abandoning any existing match...");
+            let _ = cn().reducers.match_abandon();
             info!("[test-flow] Calling match_insert_then...");
             match cn().reducers.match_insert_then(|_ctx, result| {
                 match result {
@@ -227,18 +226,16 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                     }
                     Ok(Err(e)) => {
                         error!("[test-flow] match_insert server error: {e}");
+                        // Might already have an active match, try going to Shop
+                        GameState::Shop.set_next_op();
                     }
                     Err(e) => {
                         error!("[test-flow] match_insert internal error: {e:?}");
                     }
                 }
             }) {
-                Ok(()) => {
-                    info!("[test-flow] match_insert_then called");
-                }
-                Err(e) => {
-                    info!("[test-flow] match_insert_then error: {e:?}");
-                }
+                Ok(()) => info!("[test-flow] match_insert_then called"),
+                Err(e) => info!("[test-flow] match_insert_then error: {e:?}"),
             }
             world.resource_mut::<HeadlessState>().test_phase = TestPhase::InShop;
         }
@@ -280,7 +277,8 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                 .reducers
                 .match_start_battle_then(|_ctx, result| match result {
                     Ok(Ok(())) => {
-                        info!("[test-flow] Battle started on server");
+                        info!("[test-flow] Battle started on server, transitioning to Battle");
+                        GameState::Battle.set_next_op();
                     }
                     Ok(Err(e)) => {
                         error!("[test-flow] start_battle server error: {e}");
