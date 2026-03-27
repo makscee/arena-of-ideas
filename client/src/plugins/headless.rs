@@ -217,7 +217,25 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                             GameState::Battle.set_next_op();
                         }
                         Ok(Err(e)) => {
-                            error!("[test-flow] start_battle server error: {e}");
+                            if e.contains("boss") {
+                                info!("[test-flow] Boss floor, trying boss battle...");
+                                let _ = cn().reducers.match_boss_battle_then(
+                                    |_ctx, result| match result {
+                                        Ok(Ok(())) => {
+                                            info!("[test-flow] Boss battle started");
+                                            GameState::Battle.set_next_op();
+                                        }
+                                        Ok(Err(e)) => {
+                                            error!("[test-flow] boss_battle error: {e}");
+                                        }
+                                        Err(e) => {
+                                            error!("[test-flow] boss_battle internal: {e:?}");
+                                        }
+                                    },
+                                );
+                            } else {
+                                error!("[test-flow] start_battle server error: {e}");
+                            }
                         }
                         Err(e) => {
                             error!("[test-flow] start_battle internal error: {e:?}");

@@ -92,25 +92,24 @@ pub fn register_unit_type(engine: &mut Engine) {
             unit.unit_name.clone()
         })
         .register_get("dmg".register_completer(), |unit: &mut NUnit| {
-            unit.state.get().unwrap().dmg_at(gt().battle_head)
+            unit.state
+                .get()
+                .map(|s| s.dmg_at(gt().battle_head))
+                .unwrap_or(0)
         })
         .register_get("hp".register_completer(), |unit: &mut NUnit| {
             unit.behavior
                 .get()
-                .unwrap()
-                .stats
-                .get()
-                .unwrap()
-                .hp_at(gt().battle_head)
+                .and_then(|b| b.stats.get())
+                .map(|s| s.hp_at(gt().battle_head))
+                .unwrap_or(0)
         })
         .register_get("pwr".register_completer(), |unit: &mut NUnit| {
             unit.behavior
                 .get()
-                .unwrap()
-                .stats
-                .get()
-                .unwrap()
-                .pwr_at(gt().battle_head)
+                .and_then(|b| b.stats.get())
+                .map(|s| s.pwr_at(gt().battle_head))
+                .unwrap_or(0)
         });
 }
 
