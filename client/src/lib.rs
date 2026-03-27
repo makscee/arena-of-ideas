@@ -35,6 +35,9 @@ pub struct Args {
     /// Screenshot output path
     #[arg(long, default_value = "screenshots/screenshot.png")]
     output: Option<String>,
+    /// Timeout in seconds for test-flow mode
+    #[arg(long, default_value = "120")]
+    timeout: Option<u64>,
 }
 
 static ARGS: OnceCell<Args> = OnceCell::new();
@@ -52,6 +55,7 @@ pub enum RunMode {
     WorldDownload,
     WorldUpload,
     Headless,
+    TestFlow,
 }
 
 fn fmt_layer(_app: &mut App) -> Option<bevy::log::BoxedFmtLayer> {
@@ -69,7 +73,7 @@ pub fn run() {
         std::env::set_var("RUST_LIB_BACKTRACE", "0");
         std::env::set_var("NO_COLOR", "1");
     }
-    let is_headless = args.mode == RunMode::Headless;
+    let is_headless = matches!(args.mode, RunMode::Headless | RunMode::TestFlow);
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
         RunMode::Shop => GameState::Shop,
@@ -84,11 +88,13 @@ pub fn run() {
             Some("battle") => GameState::Battle,
             _ => GameState::Title,
         },
+        RunMode::TestFlow => GameState::Title,
     };
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
     if is_headless {
         // Ensure screenshots directory exists
+        std::fs::create_dir_all("screenshots").ok();
         let output = args.output.clone().unwrap_or("screenshots/screenshot.png".into());
         if let Some(parent) = std::path::Path::new(&output).parent() {
             std::fs::create_dir_all(parent).ok();
@@ -166,9 +172,16 @@ pub fn run() {
             ))
             .init_state::<GameState>();
         if is_headless {
+            let headless_mode = if args.mode == RunMode::TestFlow {
+                HeadlessMode::GameplayTest
+            } else {
+                HeadlessMode::Screenshot
+            };
             app.insert_resource(HeadlessArgs {
+                mode: headless_mode,
                 wait_frames: args.frames.unwrap_or(30),
                 output: args.output.unwrap_or("screenshots/screenshot.png".into()),
+                timeout_secs: args.timeout.unwrap_or(120),
             })
             .add_plugins(HeadlessPlugin);
         }
