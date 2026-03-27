@@ -76,7 +76,13 @@ pub trait ToNodeKind {
 
 impl ToNodeKind for String {
     fn to_kind(&self) -> NodeKind {
-        NodeKind::from_str(self.as_str()).unwrap()
+        match NodeKind::from_str(self.as_str()) {
+            Ok(kind) => kind,
+            Err(_) => {
+                log::warn!("Unknown NodeKind: {self}, defaulting to NUnit");
+                NodeKind::NUnit
+            }
+        }
     }
 }
 

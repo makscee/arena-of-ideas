@@ -48,7 +48,7 @@ impl LoginPlugin {
             }
         }).ok();
     }
-    fn complete() {
+    pub fn complete() {
         subscribe_game(Self::on_subscribed);
         subscribe_reducers();
     }

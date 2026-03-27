@@ -4,3 +4,5 @@
 ArenaOfIdeas.*
 *.code-workspace
 flamegraph*
+screenshots/
+docs/

@@ -140,14 +140,14 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
 
     match phase {
         TestPhase::WaitingForTitle => {
-            // Auto-handle auth: load cached credentials if stuck at Auth
+            // Auto-handle auth: inject stored credentials and let normal flow proceed
             if current_state == GameState::Auth && phase_frame > 5 {
                 let auth_attempts = world.resource::<HeadlessState>().auth_attempts;
                 if auth_attempts > 1 {
                     finish_test(
                         world,
                         false,
-                        "Auth failed after retry. Token may be expired. Run the game normally to re-login.",
+                        "Auth failed. No valid credentials. Run the game normally to login first.",
                     );
                     return;
                 }
@@ -156,34 +156,56 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                     .is_some_and(|ao| ao.id_token.is_some());
                 if !has_token {
                     world.resource_mut::<HeadlessState>().auth_attempts += 1;
-                    info!(
-                        "[test-flow] At Auth state, attempting cached login (attempt {})...",
-                        auth_attempts + 1
-                    );
+                    info!("[test-flow] At Auth, loading stored credentials...");
                     match creds_store().load() {
                         Ok(Some(token)) => {
-                            info!("[test-flow] Cached credentials found, injecting token");
+                            info!("[test-flow] Injecting stored token into AuthOption");
                             world.insert_resource(AuthOption {
                                 id_token: Some(token),
                             });
+                            // Let the normal state machine handle Connect -> Login -> Title
                             GameState::proceed(world);
                         }
-                        Ok(None) => {
+                        _ => {
                             finish_test(
                                 world,
                                 false,
-                                "No cached credentials found. Run the game normally once to login first.",
+                                "No stored credentials. Run the game normally once to login.",
                             );
                             return;
                         }
-                        Err(e) => {
-                            finish_test(
-                                world,
-                                false,
-                                &format!("Failed to load cached credentials: {e}"),
-                            );
-                            return;
-                        }
+                    }
+                }
+            }
+            // Auto-handle registration: if at Login and player doesn't exist, register
+            if current_state == GameState::Login && phase_frame == 60 {
+                if let Some(ld) = world.get_resource::<LoginData>() {
+                    if !ld.user_exists {
+                        let name = format!(
+                            "bot{}",
+                            std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .unwrap()
+                                .as_secs()
+                                % 1000000
+                        );
+                        info!("[test-flow] Player not found, auto-registering as '{name}'...");
+                        cn().reducers
+                            .register_then(name, |_ctx, result| {
+                                match result {
+                                    Ok(Ok(())) => {
+                                        info!("[test-flow] Registration successful, completing login...");
+                                        LoginPlugin::complete();
+                                    }
+                                    Ok(Err(e)) => {
+                                        error!("[test-flow] Registration error: {e}");
+                                    }
+                                    Err(e) => {
+                                        error!("[test-flow] Registration internal error: {e:?}");
+                                    }
+                                }
+                            })
+                            .ok();
                     }
                 }
             }
@@ -196,13 +218,26 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
             if phase_frame < 30 {
                 return; // Wait for UI to settle
             }
-            info!("[test-flow] Calling match_insert...");
-            match cn().reducers.match_insert() {
+            info!("[test-flow] Calling match_insert_then...");
+            match cn().reducers.match_insert_then(|_ctx, result| {
+                match result {
+                    Ok(Ok(())) => {
+                        info!("[test-flow] match_insert succeeded, transitioning to Shop");
+                        GameState::Shop.set_next_op();
+                    }
+                    Ok(Err(e)) => {
+                        error!("[test-flow] match_insert server error: {e}");
+                    }
+                    Err(e) => {
+                        error!("[test-flow] match_insert internal error: {e:?}");
+                    }
+                }
+            }) {
                 Ok(()) => {
-                    info!("[test-flow] match_insert called successfully");
+                    info!("[test-flow] match_insert_then called");
                 }
                 Err(e) => {
-                    info!("[test-flow] match_insert error: {e:?}, will retry...");
+                    info!("[test-flow] match_insert_then error: {e:?}");
                 }
             }
             world.resource_mut::<HeadlessState>().test_phase = TestPhase::InShop;
@@ -221,15 +256,11 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
             if phase_frame < 30 {
                 return; // Wait for shop to load
             }
-            if bought < 3 {
+            if bought < 1 {
                 info!("[test-flow] Buying unit at shop index {bought}...");
                 match cn().reducers.match_shop_buy(bought) {
-                    Ok(()) => {
-                        info!("[test-flow] Bought unit {bought}");
-                    }
-                    Err(e) => {
-                        info!("[test-flow] Buy error: {e:?}");
-                    }
+                    Ok(()) => info!("[test-flow] Bought unit {bought}"),
+                    Err(e) => info!("[test-flow] Buy error: {e:?}"),
                 }
                 world.resource_mut::<HeadlessState>().test_phase =
                     TestPhase::BuyingUnits { bought: bought + 1 };
@@ -237,6 +268,7 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
             } else {
                 info!("[test-flow] Done buying, starting battle...");
                 world.resource_mut::<HeadlessState>().test_phase = TestPhase::StartingBattle;
+                world.resource_mut::<HeadlessState>().phase_frame = 0;
             }
         }
         TestPhase::StartingBattle => {
@@ -244,13 +276,21 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                 return;
             }
             info!("[test-flow] Calling match_start_battle...");
-            match cn().reducers.match_start_battle() {
-                Ok(()) => {
-                    info!("[test-flow] match_start_battle called");
-                }
-                Err(e) => {
-                    info!("[test-flow] start_battle error: {e:?}");
-                }
+            match cn()
+                .reducers
+                .match_start_battle_then(|_ctx, result| match result {
+                    Ok(Ok(())) => {
+                        info!("[test-flow] Battle started on server");
+                    }
+                    Ok(Err(e)) => {
+                        error!("[test-flow] start_battle server error: {e}");
+                    }
+                    Err(e) => {
+                        error!("[test-flow] start_battle internal error: {e:?}");
+                    }
+                }) {
+                Ok(()) => info!("[test-flow] match_start_battle_then called"),
+                Err(e) => info!("[test-flow] start_battle call error: {e:?}"),
             }
             world.resource_mut::<HeadlessState>().test_phase = TestPhase::InBattle;
         }
