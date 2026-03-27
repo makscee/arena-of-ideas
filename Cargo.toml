@@ -36,6 +36,7 @@ bevy = { version = "0.18.1", default-features = false, features = [
     "x11",
     "bevy_state",
     "bevy_log",
+    "png",
 ] }
 spacetimedb = "2.1.0"
 spacetimedb-sdk = "2.1.0"

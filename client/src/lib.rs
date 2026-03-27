@@ -10,7 +10,7 @@ mod utils;
 
 use bevy::{
     app::PreStartup, asset::AssetPlugin, diagnostic::FrameTimeDiagnosticsPlugin,
-    state::app::AppExtStates,
+    state::app::AppExtStates, window::WindowResolution,
 };
 use bevy_egui::{EguiContextSettings, EguiPlugin, EguiStartupSet};
 use clap::{Parser, ValueEnum};
@@ -26,6 +26,15 @@ pub struct Args {
     mode: RunMode,
     #[arg(short, long)]
     extra: Option<String>,
+    /// Target screen for headless mode (title, shop, editor, incubator, battle)
+    #[arg(long, default_value = "title")]
+    screen: Option<String>,
+    /// Frames to wait before taking screenshot
+    #[arg(long, default_value = "30")]
+    frames: Option<u32>,
+    /// Screenshot output path
+    #[arg(long, default_value = "screenshots/screenshot.png")]
+    output: Option<String>,
 }
 
 static ARGS: OnceCell<Args> = OnceCell::new();
@@ -42,6 +51,7 @@ pub enum RunMode {
     Sync,
     WorldDownload,
     WorldUpload,
+    Headless,
 }
 
 fn fmt_layer(_app: &mut App) -> Option<bevy::log::BoxedFmtLayer> {
@@ -59,6 +69,7 @@ pub fn run() {
         std::env::set_var("RUST_LIB_BACKTRACE", "0");
         std::env::set_var("NO_COLOR", "1");
     }
+    let is_headless = args.mode == RunMode::Headless;
     let target = match args.mode {
         RunMode::Regular => GameState::Title,
         RunMode::Shop => GameState::Shop,
@@ -66,9 +77,23 @@ pub fn run() {
         RunMode::Sync => GameState::ServerSync,
         RunMode::WorldDownload => GameState::WorldDownload,
         RunMode::WorldUpload => GameState::WorldUpload,
+        RunMode::Headless => match args.screen.as_deref() {
+            Some("shop") => GameState::Shop,
+            Some("editor") => GameState::Editor,
+            Some("incubator") => GameState::Incubator,
+            Some("battle") => GameState::Battle,
+            _ => GameState::Title,
+        },
     };
     PersistentDataPlugin::load();
     GAME_TIMER.set(default()).unwrap();
+    if is_headless {
+        // Ensure screenshots directory exists
+        let output = args.output.clone().unwrap_or("screenshots/screenshot.png".into());
+        if let Some(parent) = std::path::Path::new(&output).parent() {
+            std::fs::create_dir_all(parent).ok();
+        }
+    }
     let is_test = args.mode == RunMode::Test;
     if is_test {
         // Headless mode: no window, no rendering, no UI, no state machine
@@ -80,7 +105,7 @@ pub fn run() {
     init_completer();
     GameState::set_target(target);
     {
-        let default_plugins = DefaultPlugins
+        let mut default_plugins = DefaultPlugins
             .set(bevy::log::LogPlugin {
                 level: pd().client_settings.log_level.into(),
                 // filter: "info,debug,wgpu_core=warn,wgpu_hal=warn,naga=warn".into(),
@@ -91,6 +116,17 @@ pub fn run() {
                 file_path: "assets".to_string(),
                 ..default()
             });
+        if is_headless {
+            default_plugins = default_plugins.set(bevy::window::WindowPlugin {
+                primary_window: Some(bevy::window::Window {
+                    visible: false,
+                    resolution: WindowResolution::new(1920, 1080),
+                    title: "Arena of Ideas [Headless]".into(),
+                    ..default()
+                }),
+                ..default()
+            });
+        }
         app.add_systems(Startup, setup)
             .add_systems(OnEnter(GameState::Error), on_error_state)
             .add_plugins((default_plugins, FrameTimeDiagnosticsPlugin::new(10)))
@@ -129,6 +165,13 @@ pub fn run() {
                 NotificationsPlugin,
             ))
             .init_state::<GameState>();
+        if is_headless {
+            app.insert_resource(HeadlessArgs {
+                wait_frames: args.frames.unwrap_or(30),
+                output: args.output.unwrap_or("screenshots/screenshot.png".into()),
+            })
+            .add_plugins(HeadlessPlugin);
+        }
         app.run();
     }
 }
