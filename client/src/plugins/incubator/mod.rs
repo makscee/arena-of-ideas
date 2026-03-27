@@ -1,4 +1,5 @@
 mod actions;
+pub mod ai_gen;
 mod panes;
 mod state;
 

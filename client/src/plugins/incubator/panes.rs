@@ -1,4 +1,4 @@
-use super::*;
+use super::{ai_gen::*, *};
 
 pub struct IncubatorPanes;
 
@@ -174,6 +174,7 @@ impl IncubatorPanes {
         }
         let kind = T::kind_s().to_content()?;
         let mut node = T::default();
+        let mut ai_state = AiGenState::default();
         Confirmation::new(&format!("Create new {}", kind.to_kind().cstr()))
             .accept_name("[green ✅ Create]")
             .cancel_name("Cancel")
@@ -183,6 +184,10 @@ impl IncubatorPanes {
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
+                        if let Some(code) = render_ai_gen(kind, &mut ai_state, ui) {
+                            cn.effect.code = code;
+                            cn.effect.clear_compiled();
+                        }
                         if let Some((_, code)) = render_script_templates(kind, ui) {
                             cn.effect.code = code.to_string();
                             cn.effect.clear_compiled();
@@ -199,6 +204,10 @@ impl IncubatorPanes {
                     }
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
+                        if let Some(code) = render_ai_gen(kind, &mut ai_state, ui) {
+                            cn.effect.code = code;
+                            cn.effect.clear_compiled();
+                        }
                         if let Some((_, code)) = render_script_templates(kind, ui) {
                             cn.effect.code = code.to_string();
                             cn.effect.clear_compiled();
@@ -214,6 +223,10 @@ impl IncubatorPanes {
                     }
                     ContentNodeKind::NAbilityEffect => {
                         let mut cn = node.force_cast::<NAbilityEffect>().clone();
+                        if let Some(code) = render_ai_gen(kind, &mut ai_state, ui) {
+                            cn.effect.code = code;
+                            cn.effect.clear_compiled();
+                        }
                         if let Some((_, code)) = render_script_templates(kind, ui) {
                             cn.effect.code = code.to_string();
                             cn.effect.clear_compiled();
