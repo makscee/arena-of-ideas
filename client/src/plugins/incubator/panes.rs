@@ -179,50 +179,40 @@ impl IncubatorPanes {
             .cancel_name("Cancel")
             .fullscreen()
             .content(move |ui, _world, button_pressed| {
+                let mut script_valid = true;
                 match kind {
                     ContentNodeKind::NUnitBehavior => {
                         let mut cn = node.force_cast::<NUnitBehavior>().clone();
-                        let mut changed = false;
-                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
-                            changed = true;
+                        Selector::ui_enum(&mut cn.trigger, ui);
+                        Selector::ui_enum(&mut cn.target, ui);
+                        show_rhai_script_editor(&mut cn.effect, ui);
+                        if !cn.effect.code.is_empty() {
+                            if cn.effect.compile_error.read().unwrap().is_some() {
+                                script_valid = false;
+                            }
                         }
-                        if Selector::ui_enum(&mut cn.target, ui).1.changed() {
-                            changed = true;
-                        }
-                        if Input::new("Unit Effect Script")
-                            .ui_string(&mut cn.effect.code, ui)
-                            .changed()
-                        {
-                            changed = true;
-                        }
-                        if changed {
-                            node.inject_data(&cn.get_data()).unwrap();
-                        }
+                        node.inject_data(&cn.get_data()).unwrap();
                     }
                     ContentNodeKind::NStatusBehavior => {
                         let mut cn = node.force_cast::<NStatusBehavior>().clone();
-                        let mut changed = false;
-                        if Selector::ui_enum(&mut cn.trigger, ui).1.changed() {
-                            changed = true;
+                        Selector::ui_enum(&mut cn.trigger, ui);
+                        show_rhai_script_editor(&mut cn.effect, ui);
+                        if !cn.effect.code.is_empty() {
+                            if cn.effect.compile_error.read().unwrap().is_some() {
+                                script_valid = false;
+                            }
                         }
-                        if Input::new("Status Effect Script")
-                            .ui_string(&mut cn.effect.code, ui)
-                            .changed()
-                        {
-                            changed = true;
-                        }
-                        if changed {
-                            node.inject_data(&cn.get_data()).unwrap();
-                        }
+                        node.inject_data(&cn.get_data()).unwrap();
                     }
                     ContentNodeKind::NAbilityEffect => {
                         let mut cn = node.force_cast::<NAbilityEffect>().clone();
-                        if Input::new("Effect Description")
-                            .ui_string(&mut cn.effect.description, ui)
-                            .changed()
-                        {
-                            node.inject_data(&cn.get_data()).unwrap();
+                        show_rhai_script_editor(&mut cn.effect, ui);
+                        if !cn.effect.code.is_empty() {
+                            if cn.effect.compile_error.read().unwrap().is_some() {
+                                script_valid = false;
+                            }
                         }
+                        node.inject_data(&cn.get_data()).unwrap();
                     }
                     _ => {
                         node.edit(ui, &EMPTY_CONTEXT);
@@ -246,10 +236,17 @@ impl IncubatorPanes {
                 } else {
                     node.display(&EMPTY_CONTEXT, ui);
                 }
+                if !script_valid {
+                    ui.colored_label(egui::Color32::RED, "⚠ Fix script errors before creating");
+                }
                 if let Some(true) = button_pressed {
-                    cn().reducers
-                        .content_suggest_node(kind.to_string(), node.get_data(), parent)
-                        .notify_error_op();
+                    if !script_valid {
+                        "Fix script compilation errors before submitting".notify_error_op();
+                    } else {
+                        cn().reducers
+                            .content_suggest_node(kind.to_string(), node.get_data(), parent)
+                            .notify_error_op();
+                    }
                 }
             })
             .push_op();
