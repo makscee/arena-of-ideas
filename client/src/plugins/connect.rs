@@ -62,7 +62,9 @@ impl ConnectPlugin {
                 GameState::proceed(world);
             });
         });
-        let _ = cn().reducers.login_by_identity();
+        if is_connected() {
+            let _ = cn().reducers.login_by_identity();
+        }
     }
     pub fn pane(ui: &mut Ui) {
         ui.vertical_centered_justified(|ui| {
@@ -90,9 +92,8 @@ impl ConnectPlugin {
                 error!("Connection failed: {e}");
                 op(|world| {
                     pd_mut(|pd| pd.client_state.last_logged_in = None);
-                    world.remove_resource::<AuthOption>();
-                    world.remove_resource::<ConnectOption>();
-                    GameState::Auth.set_next(world);
+                    world.insert_resource(AuthOption::default());
+                    GameState::Auth.proceed_to_target(world);
                 });
                 return;
             }
