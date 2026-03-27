@@ -226,6 +226,33 @@ impl IncubatorPanes {
                         }
                         node.inject_data(&cn.get_data()).unwrap();
                     }
+                    ContentNodeKind::NUnitStats => {
+                        let mut cn = node.force_cast::<NUnitStats>().clone();
+                        ui.horizontal(|ui| {
+                            ui.label("Power:");
+                            ui.add(egui::DragValue::new(&mut cn.pwr).range(1..=10));
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("HP:");
+                            ui.add(egui::DragValue::new(&mut cn.hp).range(1..=20));
+                        });
+                        // Balance guidance
+                        let total = cn.pwr + cn.hp;
+                        let color = if total < 3 || total > 12 {
+                            egui::Color32::YELLOW
+                        } else {
+                            egui::Color32::GREEN
+                        };
+                        ui.colored_label(
+                            color,
+                            format!("Total stat budget: {} (recommended: 3-12)", total),
+                        );
+                        if cn.pwr <= 0 || cn.hp <= 0 {
+                            ui.colored_label(egui::Color32::RED, "⚠ Stats must be at least 1");
+                            script_valid = false;
+                        }
+                        node.inject_data(&cn.get_data()).unwrap();
+                    }
                     _ => {
                         node.edit(ui, &EMPTY_CONTEXT);
                     }
