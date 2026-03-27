@@ -95,7 +95,10 @@ pub fn run() {
     if is_headless {
         // Ensure screenshots directory exists
         std::fs::create_dir_all("screenshots").ok();
-        let output = args.output.clone().unwrap_or("screenshots/screenshot.png".into());
+        let output = args
+            .output
+            .clone()
+            .unwrap_or("screenshots/screenshot.png".into());
         if let Some(parent) = std::path::Path::new(&output).parent() {
             std::fs::create_dir_all(parent).ok();
         }

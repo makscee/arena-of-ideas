@@ -272,15 +272,15 @@ impl Pane {
                                     .button(ui)
                                     .clicked()
                                 {
-                                    cn().reducers.match_insert_then(|_ctx, result| {
-                                        match result {
+                                    cn().reducers
+                                        .match_insert_then(|_ctx, result| match result {
                                             Ok(Ok(())) => {
                                                 GameState::Shop.set_next_op();
                                             }
                                             Ok(Err(e)) => e.notify_error_op(),
                                             Err(e) => format!("{e:?}").notify_error_op(),
-                                        }
-                                    }).notify_error_op();
+                                        })
+                                        .notify_error_op();
                                 }
                             }
                         }

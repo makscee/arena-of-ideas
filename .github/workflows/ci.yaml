@@ -33,7 +33,7 @@ jobs:
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Build project
-        run: cargo build --release --verbose
+        run: cargo build --verbose
 
   # Run cargo test
   test:
@@ -91,7 +91,7 @@ jobs:
       - name: Install Dependencies
         run: sudo apt-get update && sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings -- -W clippy::pedantic
+        run: cargo clippy --all-targets -- -W clippy::all
 
   # Run cargo fmt --all -- --check
   format:

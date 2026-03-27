@@ -4,7 +4,7 @@ use spacetimedb_sdk::credentials;
 
 use super::*;
 use crate::plugins::connect::ConnectPlugin;
-use bevy::render::view::screenshot::{save_to_disk, Screenshot};
+use bevy::render::view::screenshot::{Screenshot, save_to_disk};
 
 pub struct HeadlessPlugin;
 
@@ -154,8 +154,9 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
             info!("[test-flow] Abandoning any existing match...");
             let _ = cn().reducers.match_abandon();
             info!("[test-flow] Calling match_insert_then...");
-            match cn().reducers.match_insert_then(|_ctx, result| {
-                match result {
+            match cn()
+                .reducers
+                .match_insert_then(|_ctx, result| match result {
                     Ok(Ok(())) => {
                         info!("[test-flow] match_insert succeeded");
                         GameState::Shop.set_next_op();
@@ -167,8 +168,7 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                     Err(e) => {
                         error!("[test-flow] match_insert internal error: {e:?}");
                     }
-                }
-            }) {
+                }) {
                 Ok(()) => info!("[test-flow] match_insert_then called"),
                 Err(e) => error!("[test-flow] match_insert_then error: {e:?}"),
             }
@@ -219,20 +219,21 @@ fn gameplay_test_mode(world: &mut World, args: &HeadlessArgs) {
                         Ok(Err(e)) => {
                             if e.contains("boss") {
                                 info!("[test-flow] Boss floor, trying boss battle...");
-                                let _ = cn().reducers.match_boss_battle_then(
-                                    |_ctx, result| match result {
-                                        Ok(Ok(())) => {
-                                            info!("[test-flow] Boss battle started");
-                                            GameState::Battle.set_next_op();
-                                        }
-                                        Ok(Err(e)) => {
-                                            error!("[test-flow] boss_battle error: {e}");
-                                        }
-                                        Err(e) => {
-                                            error!("[test-flow] boss_battle internal: {e:?}");
-                                        }
-                                    },
-                                );
+                                let _ =
+                                    cn().reducers.match_boss_battle_then(
+                                        |_ctx, result| match result {
+                                            Ok(Ok(())) => {
+                                                info!("[test-flow] Boss battle started");
+                                                GameState::Battle.set_next_op();
+                                            }
+                                            Ok(Err(e)) => {
+                                                error!("[test-flow] boss_battle error: {e}");
+                                            }
+                                            Err(e) => {
+                                                error!("[test-flow] boss_battle internal: {e:?}");
+                                            }
+                                        },
+                                    );
                             } else {
                                 error!("[test-flow] start_battle server error: {e}");
                             }
@@ -294,19 +295,13 @@ fn handle_waiting_for_title(world: &mut World, current_state: GameState, phase_f
         if connect_attempts > 0 {
             // Already attempted, wait for callback (but retry after long delay)
             if phase_frame > 60 * 5 * (connect_attempts as u32) {
-                info!(
-                    "[test-flow] Connection attempt {connect_attempts} timed out, retrying..."
-                );
+                info!("[test-flow] Connection attempt {connect_attempts} timed out, retrying...");
             } else {
                 return;
             }
         }
         if connect_attempts >= 3 {
-            finish_test(
-                world,
-                false,
-                "Failed to connect after 3 attempts.",
-            );
+            finish_test(world, false, "Failed to connect after 3 attempts.");
             return;
         }
         world.resource_mut::<HeadlessState>().connect_attempts += 1;
@@ -358,18 +353,16 @@ fn handle_waiting_for_title(world: &mut World, current_state: GameState, phase_f
                 );
                 info!("[test-flow] Auto-registering as '{name}'...");
                 cn().reducers
-                    .register_then(name, |_ctx, result| {
-                        match result {
-                            Ok(Ok(())) => {
-                                info!("[test-flow] Registration successful");
-                                LoginPlugin::complete();
-                            }
-                            Ok(Err(e)) => {
-                                error!("[test-flow] Registration error: {e}");
-                            }
-                            Err(e) => {
-                                error!("[test-flow] Registration internal error: {e:?}");
-                            }
+                    .register_then(name, |_ctx, result| match result {
+                        Ok(Ok(())) => {
+                            info!("[test-flow] Registration successful");
+                            LoginPlugin::complete();
+                        }
+                        Ok(Err(e)) => {
+                            error!("[test-flow] Registration error: {e}");
+                        }
+                        Err(e) => {
+                            error!("[test-flow] Registration internal error: {e:?}");
                         }
                     })
                     .ok();
@@ -396,10 +389,7 @@ fn take_screenshot(world: &mut World, path: &str) {
 }
 
 fn finish_test(world: &mut World, success: bool, message: &str) {
-    let screenshots = world
-        .resource::<HeadlessState>()
-        .screenshots_taken
-        .clone();
+    let screenshots = world.resource::<HeadlessState>().screenshots_taken.clone();
     let elapsed = world
         .resource::<HeadlessState>()
         .start_time

@@ -74,7 +74,8 @@ impl<R> StdbStatusExt for ReducerEvent<R> {
 
 impl ReducerEventContext {
     pub fn check_identity(&self) -> bool {
-        self.try_identity().is_some_and(|id| id == player_identity())
+        self.try_identity()
+            .is_some_and(|id| id == player_identity())
     }
 }
 

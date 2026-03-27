@@ -24,8 +24,8 @@ pub struct LoginData {
 
 impl LoginPlugin {
     fn login() {
-        cn().reducers.login_by_identity_then(|_ctx, result| {
-            match result {
+        cn().reducers
+            .login_by_identity_then(|_ctx, result| match result {
                 Ok(Ok(())) => {
                     op(|world| {
                         if let Some(mut ld) = world.get_resource_mut::<LoginData>() {
@@ -45,8 +45,8 @@ impl LoginPlugin {
                 Err(e) => {
                     format!("{e:?}").notify_error_op();
                 }
-            }
-        }).ok();
+            })
+            .ok();
     }
     pub fn complete() {
         subscribe_game(Self::on_subscribed);
@@ -100,13 +100,13 @@ impl LoginPlugin {
                 Input::new("username").ui_string(&mut ld.username, ui);
                 if Button::new("Register").ui(ui).clicked() {
                     let username = ld.username.clone();
-                    cn().reducers.register_then(username, |_ctx, result| {
-                        match result {
+                    cn().reducers
+                        .register_then(username, |_ctx, result| match result {
                             Ok(Ok(())) => LoginPlugin::complete(),
                             Ok(Err(e)) => e.notify_error_op(),
                             Err(e) => format!("{e:?}").notify_error_op(),
-                        }
-                    }).ok();
+                        })
+                        .ok();
                 }
             }
         });
